@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "remote-store"
+version = "0.1.0"
+description = "Backend-agnostic remote storage abstraction"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+
+dependencies = [
+  "typing-extensions",
+  "fsspec>=2023.10",
+]
+
+[project.optional-dependencies]
+s3 = ["boto3", "pyarrow"]
+azure = ["adlfs"]
+sftp = ["paramiko", "sshfs"]
+
+dev = [
+  "pytest",
+  "pytest-cov",
+  "mypy",
+  "ruff",
+]
+
+[tool.mypy]
+strict = true
+namespace_packages = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
