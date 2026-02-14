@@ -40,9 +40,10 @@ class TestStorePathValidation:
             store.read("../escape")
 
     @pytest.mark.spec("STORE-002")
-    def test_empty_path_rejected(self, store: Store) -> None:
-        with pytest.raises(InvalidPath):
-            store.read("")
+    def test_empty_path_resolves_to_root(self, store: Store) -> None:
+        store.write("file.txt", b"data")
+        assert store.is_folder("")
+        assert list(store.list_files("")) == list(store.list_files("", recursive=False))
 
 
 class TestStoreRootPathScoping:

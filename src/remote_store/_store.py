@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, BinaryIO
 
 from remote_store._capabilities import Capability
+from remote_store._errors import InvalidPath
 from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
@@ -30,11 +31,21 @@ class Store:
         self._root = root_path
 
     def _full_path(self, path: str) -> str:
-        """Validate and prefix path with root."""
+        """Resolve a path that may be empty (store root) or a relative subpath."""
+        if not path:
+            if self._root:
+                return self._root
+            return ""
         validated = RemotePath(path)
         if self._root:
             return f"{self._root}/{validated}"
         return str(validated)
+
+    def _require_file_path(self, path: str) -> str:
+        """Resolve a path that must be non-empty (file-targeted operations)."""
+        if not path:
+            raise InvalidPath("Path must not be empty for file operations", path=path)
+        return self._full_path(path)
 
     def supports(self, capability: Capability) -> bool:
         """Check whether the backend supports a capability."""
@@ -58,46 +69,53 @@ class Store:
         :raises NotFound: If the file does not exist.
         """
         self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
-        return self._backend.read(self._full_path(path))
+        return self._backend.read(self._require_file_path(path))
 
     def read_bytes(self, path: str) -> bytes:
         """Read full file content as bytes.
 
         :raises NotFound: If the file does not exist.
+        :raises InvalidPath: If ``path`` is empty.
         """
         self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
-        return self._backend.read_bytes(self._full_path(path))
+        return self._backend.read_bytes(self._require_file_path(path))
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         """Write content to a file.
 
         :raises AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+        :raises InvalidPath: If ``path`` is empty.
         """
         self._backend.capabilities.require(Capability.WRITE, backend=self._backend.name)
-        self._backend.write(self._full_path(path), content, overwrite=overwrite)
+        self._backend.write(self._require_file_path(path), content, overwrite=overwrite)
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         """Write content atomically.
 
         :raises CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
         :raises AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+        :raises InvalidPath: If ``path`` is empty.
         """
         self._backend.capabilities.require(Capability.ATOMIC_WRITE, backend=self._backend.name)
-        self._backend.write_atomic(self._full_path(path), content, overwrite=overwrite)
+        self._backend.write_atomic(self._require_file_path(path), content, overwrite=overwrite)
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file.
 
         :raises NotFound: If the file is missing and ``missing_ok`` is ``False``.
+        :raises InvalidPath: If ``path`` is empty.
         """
         self._backend.capabilities.require(Capability.DELETE, backend=self._backend.name)
-        self._backend.delete(self._full_path(path), missing_ok=missing_ok)
+        self._backend.delete(self._require_file_path(path), missing_ok=missing_ok)
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         """Delete a folder.
 
         :raises NotFound: If the folder is missing and ``missing_ok`` is ``False``.
+        :raises InvalidPath: If ``path`` is empty (cannot delete the store root).
         """
+        if not path:
+            raise InvalidPath("Cannot delete the store root", path=path)
         self._backend.capabilities.require(Capability.DELETE, backend=self._backend.name)
         self._backend.delete_folder(self._full_path(path), recursive=recursive, missing_ok=missing_ok)
 
@@ -118,9 +136,10 @@ class Store:
         """Get file metadata.
 
         :raises NotFound: If the file does not exist.
+        :raises InvalidPath: If ``path`` is empty.
         """
         self._backend.capabilities.require(Capability.METADATA, backend=self._backend.name)
-        return self._backend.get_file_info(self._full_path(path))
+        return self._backend.get_file_info(self._require_file_path(path))
 
     def get_folder_info(self, path: str) -> FolderInfo:
         """Get folder metadata.
@@ -135,15 +154,17 @@ class Store:
 
         :raises NotFound: If ``src`` does not exist.
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
+        :raises InvalidPath: If ``src`` or ``dst`` is empty.
         """
         self._backend.capabilities.require(Capability.MOVE, backend=self._backend.name)
-        self._backend.move(self._full_path(src), self._full_path(dst), overwrite=overwrite)
+        self._backend.move(self._require_file_path(src), self._require_file_path(dst), overwrite=overwrite)
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Copy a file.
 
         :raises NotFound: If ``src`` does not exist.
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
+        :raises InvalidPath: If ``src`` or ``dst`` is empty.
         """
         self._backend.capabilities.require(Capability.COPY, backend=self._backend.name)
-        self._backend.copy(self._full_path(src), self._full_path(dst), overwrite=overwrite)
+        self._backend.copy(self._require_file_path(src), self._require_file_path(dst), overwrite=overwrite)
