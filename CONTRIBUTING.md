@@ -80,14 +80,14 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 
 # Verify everything works
-make all    # or run each step manually:
-ruff check src/ tests/ examples/
-ruff format --check src/ tests/ examples/
-mypy src/
-pytest --cov=remote_store --cov-report=term-missing --cov-fail-under=95
+hatch run all    # or run individual steps:
+hatch run lint
+hatch run typecheck
+hatch run test-cov
+hatch run examples
 ```
 
-A `Makefile` provides shortcuts for common tasks. Run `make help` to see all targets.
+All dev scripts are defined in `pyproject.toml` under `[tool.hatch.envs.default.scripts]`. Run `hatch run` to see available commands.
 
 ## Code Style
 

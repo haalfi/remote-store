@@ -59,6 +59,31 @@ dev = [
   "jupyter",
 ]
 
+[tool.hatch.envs.default]
+dependencies = [
+  "pytest",
+  "pytest-cov",
+  "mypy",
+  "ruff",
+]
+
+[tool.hatch.envs.default.scripts]
+lint = "ruff check src/ tests/ examples/"
+format = "ruff format src/ tests/ examples/"
+format-check = "ruff format --check src/ tests/ examples/"
+typecheck = "mypy src/"
+test = "pytest"
+test-cov = "pytest --cov=remote_store --cov-report=term-missing --cov-fail-under=95"
+examples = [
+  "python examples/quickstart.py",
+  "python examples/file_operations.py",
+  "python examples/streaming_io.py",
+  "python examples/atomic_writes.py",
+  "python examples/configuration.py",
+  "python examples/error_handling.py",
+]
+all = ["lint", "format-check", "typecheck", "test-cov", "examples"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/remote_store"]
 
