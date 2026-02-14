@@ -12,7 +12,6 @@ requires-python = ">=3.10"
 
 dependencies = [
   "typing-extensions",
-  "fsspec>=2023.10",
 ]
 
 [project.optional-dependencies]
@@ -27,12 +26,25 @@ dev = [
   "ruff",
 ]
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/remote_store"]
+
 [tool.mypy]
 strict = true
 namespace_packages = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+  "spec(id): links test to a spec section ID",
+  "integration: requires external services",
+]
 
 [tool.ruff]
-line-length = 100
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "TCH"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["remote_store"]
