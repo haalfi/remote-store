@@ -378,12 +378,126 @@ Registry and backends are **passive resources**.
 
 ---
 
+## 11. Code Style
+
+This section defines the coding conventions for the project. All code must pass `ruff check`, `ruff format`, and `mypy --strict`.
+
+### 11.1 Formatting & Linting
+
+- **Formatter/linter:** ruff (line-length 120)
+- **Type checking:** mypy strict mode
+- **`from __future__ import annotations`** in every module
+
+### 11.2 Module & Package Descriptions
+
+Every module starts with a 1–2 sentence docstring explaining *why it exists*:
+
+```python
+"""Normalized error hierarchy for remote_store."""
+```
+
+Package `__init__.py` files follow the same rule:
+
+```python
+"""Backend implementations for remote_store."""
+```
+
+### 11.3 Type Annotations
+
+Public method signatures use explicit `typing` imports for clarity in IDEs:
+
+```python
+from typing import Optional, Union
+
+def __init__(self, config: Optional[RegistryConfig] = None) -> None: ...
+def write(self, path: str, content: Union[BinaryIO, bytes], *, overwrite: bool = False) -> None: ...
+```
+
+- Required args are positional; behavior flags are keyword-only (`*`).
+- Private/internal methods may use `X | None` shorthand.
+
+### 11.4 Docstrings
+
+reST-style (`:param:`, `:returns:`, `:raises:`). Short and purpose-focused:
+
+```python
+def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    """Write content to a file.
+
+    :param path: Relative path within the store.
+    :param content: Bytes or binary stream to write.
+    :param overwrite: If ``True``, replace existing file.
+    :raises AlreadyExists: If file exists and ``overwrite`` is ``False``.
+    """
+```
+
+### 11.5 Region Comments
+
+Use `# region:` / `# endregion` for **conceptual grouping only** — not around things already collapsible in IDEs (classes, functions). Useful in large classes like `LocalBackend`:
+
+```python
+# region: BE-006 through BE-007: read operations
+def read(self, path: str) -> BinaryIO:
+    ...
+
+def read_bytes(self, path: str) -> bytes:
+    ...
+# endregion
+```
+
+No empty lines between the region marker and the first item. One empty line before `# region:` and after `# endregion`.
+
+### 11.6 Method Ordering
+
+Within a class, methods are ordered by logical grouping:
+
+1. Class variables / constants
+2. `__init__`
+3. Properties
+4. Public methods (grouped by domain: read, write, delete, list, etc.)
+5. Dunder methods (`__eq__`, `__hash__`, `__repr__`)
+6. Private helpers
+
+### 11.7 Comments
+
+Minimal, long-term value only. Do not comment *what* the code does — comment *why* when the reason is non-obvious. No TODO comments without a linked issue.
+
+### 11.8 Constants
+
+- Public: `UPPER_SNAKE_CASE`
+- Private: `_UPPER_SNAKE_CASE`
+
+### 11.9 `__all__`
+
+Declared only in public-facing `__init__.py` modules. Internal modules (`_errors.py`, etc.) do not need `__all__` — the underscore prefix signals "internal".
+
+### 11.10 Error Messages
+
+f-strings with context for human-readable tracebacks. Structured attributes (`.path`, `.backend`, `.capability`) for programmatic access:
+
+```python
+raise NotFound(f"File not found: {path}", path=path, backend=self.name)
+```
+
+### 11.11 Test Style
+
+Tests are grouped into classes by spec aspect. The class docstring references the spec IDs covered:
+
+```python
+class TestRemotePathNormalization:
+    """PATH-002 through PATH-006: normalization rules."""
+
+    @pytest.mark.spec("PATH-002")
+    def test_backslash_to_forward_slash(self) -> None:
+        assert str(RemotePath("a\\b\\c")) == "a/b/c"
+
+    @pytest.mark.spec("PATH-005")
+    def test_collapse_consecutive_slashes(self) -> None:
+        assert str(RemotePath("a///b")) == "a/b"
+```
+
+Each test method carries a `@pytest.mark.spec("ID")` marker for traceability.
+
+---
+
 **End of Design Specification**
-
-Styling Hint
-
-Use typing.Optional, typing.Union, etc. for public APIs.
-Required args positional; behavior flags keyword-only.
-Short, purpose-focused reST docstrings (:param: / :returns:).
-Use # region … # endregion for conceptual grouping only.
-Black formatting (line length 200), mypy strict, minimal comments with long-term value.
