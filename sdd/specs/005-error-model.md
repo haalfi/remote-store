@@ -1,4 +1,4 @@
-# Errors Specification
+# Error Model Specification
 
 ## Overview
 

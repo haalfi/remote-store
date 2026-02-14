@@ -1,4 +1,4 @@
-# RemotePath Specification
+# Path Model Specification
 
 ## Overview
 
