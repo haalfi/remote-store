@@ -5,14 +5,46 @@ build-backend = "hatchling.build"
 [project]
 name = "remote-store"
 version = "0.1.0"
-description = "Backend-agnostic remote storage abstraction"
+description = "Backend-agnostic remote storage abstraction for Python — one API for local files, S3, Azure Blob, SFTP, and more."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
+authors = [
+  { name = "Harald Fianbakken" },
+]
+keywords = [
+  "storage",
+  "remote",
+  "s3",
+  "azure",
+  "sftp",
+  "backend",
+  "abstraction",
+  "file",
+  "streaming",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: System :: Filesystems",
+  "Typing :: Typed",
+]
 
 dependencies = [
   "typing-extensions",
 ]
+
+[project.urls]
+Repository = "https://github.com/haalfi/remote-store"
+Changelog = "https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md"
+Issues = "https://github.com/haalfi/remote-store/issues"
 
 [project.optional-dependencies]
 s3 = ["boto3", "pyarrow"]

@@ -30,6 +30,9 @@ class Store:
         self._backend = backend
         self._root = root_path
 
+    def __repr__(self) -> str:
+        return f"Store(backend={self._backend.name!r}, root_path={self._root!r})"
+
     def _full_path(self, path: str) -> str:
         """Resolve a path that may be empty (store root) or a relative subpath."""
         if not path:

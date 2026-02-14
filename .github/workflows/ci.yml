@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
-      - run: pytest --cov=remote_store --cov-report=term-missing
+      - run: pytest --cov=remote_store --cov-report=term-missing --cov-fail-under=95
 
   examples:
     runs-on: ubuntu-latest

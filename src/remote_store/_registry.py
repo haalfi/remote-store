@@ -46,6 +46,10 @@ class Registry:
         self._config.validate()
         self._backends: dict[str, Backend] = {}
 
+    def __repr__(self) -> str:
+        stores = sorted(self._config.stores.keys())
+        return f"Registry(stores={stores!r})"
+
     def get_store(self, name: str) -> Store:
         """Get a store by its profile name.
 

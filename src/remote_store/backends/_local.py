@@ -46,6 +46,10 @@ class LocalBackend(Backend):
     def _resolve(self, path: str) -> Path:
         """Resolve a relative path to an absolute path within root.
 
+        Safety: ``.resolve()`` follows symlinks to their real target, and
+        ``relative_to(self._root)`` then rejects any path that escapes the
+        root — including symlinks pointing outside it.
+
         :raises InvalidPath: If the resolved path escapes the root.
         """
         resolved = (self._root / path).resolve()
@@ -175,7 +179,9 @@ class LocalBackend(Backend):
             else:
                 full.rmdir()
         except OSError as exc:
-            if "not empty" in str(exc).lower() or "directory not empty" in str(exc).lower():
+            import errno
+
+            if exc.errno in (errno.ENOTEMPTY, 145):
                 raise NotFound(f"Folder not empty: {path}", path=path, backend=self.name) from None
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
