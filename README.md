@@ -1,6 +1,8 @@
 # remote-store
 
-Backend-agnostic remote storage abstraction for Python. One API for local files, S3, Azure Blob, SFTP, and more.
+Every project that touches files eventually writes the same glue code: read bytes from S3 here, swap in a local directory for tests there, add error handling around each call, remember to close streams. The logic is always the same, but the plumbing changes with every backend. `remote-store` extracts that pattern into a single, narrow API so your application code never knows -- or cares -- where files actually live.
+
+The library is built on a few deliberate ideas. Files are accessed through a `Store`, which is scoped to a folder and backed by a `Backend` you can swap without touching the rest of your code. Backends declare what they can do through a capability system, so unsupported operations fail with a clear error rather than a silent surprise. Configuration is immutable and declarative -- you describe your backends and stores as data, and the `Registry` handles the wiring. I/O is streaming by default, paths are validated value objects, and writes can be atomic when the backend supports it. Everything is typed, tested against specs, and designed to be understood by reading the code.
 
 ## Features
 
