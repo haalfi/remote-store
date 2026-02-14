@@ -14,7 +14,7 @@
 
 ### STORE-002: Path Validation
 
-**Invariant:** All path arguments are validated via `RemotePath`.
+**Invariant:** Non-empty path arguments are validated via `RemotePath`. Empty string `""` is accepted by folder/query methods (`exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_folder_info`) to mean "the store root." File-targeted methods (`read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `get_file_info`, `move`, `copy`) raise `InvalidPath` on empty path. See ADR-0004.
 
 ### STORE-003: Root Path Scoping
 
