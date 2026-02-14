@@ -65,6 +65,30 @@ External packages should:
 - Use `unwrap()` for native handle access
 - Reuse the conformance test suite by importing and parameterizing it
 
+## Development Setup
+
+```bash
+# Clone and enter the repo
+git clone https://github.com/haalfi/remote-store.git
+cd remote-store
+
+# Create a virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# Install with dev dependencies
+pip install -e ".[dev]"
+
+# Verify everything works
+make all    # or run each step manually:
+ruff check src/ tests/ examples/
+ruff format --check src/ tests/ examples/
+mypy src/
+pytest --cov=remote_store --cov-report=term-missing --cov-fail-under=95
+```
+
+A `Makefile` provides shortcuts for common tasks. Run `make help` to see all targets.
+
 ## Code Style
 
 See [`sdd/DESIGN.md` Section 11](sdd/DESIGN.md#11-code-style) for the full code style conventions.
@@ -79,6 +103,12 @@ See [`sdd/DESIGN.md` Section 11](sdd/DESIGN.md#11-code-style) for the full code 
 - Every spec section must have at least one test with `@pytest.mark.spec("ID")`
 - Run `pytest -m spec` to verify all spec-derived tests pass
 - Run `pytest --cov=remote_store` for coverage reports
+
+## Examples and Notebooks
+
+The `examples/` directory contains runnable Python scripts that are validated in CI. Example scripts must remain self-contained and use `tempfile.TemporaryDirectory` for cleanup.
+
+Jupyter notebooks in `examples/notebooks/` are for interactive exploration and are **not** run in CI. They require manual testing when the API changes. This is intentional: notebooks depend on visual output and interactive workflows that don't translate well to automated checks.
 
 ## Versioning
 
