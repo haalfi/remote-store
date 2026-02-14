@@ -15,8 +15,8 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install -e ".[dev]"
-      - run: ruff check src/ tests/
-      - run: ruff format --check src/ tests/
+      - run: ruff check src/ tests/ examples/
+      - run: ruff format --check src/ tests/ examples/
 
   typecheck:
     runs-on: ubuntu-latest
@@ -40,3 +40,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
       - run: pytest --cov=remote_store --cov-report=term-missing
+
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev]"
+      - run: python examples/quickstart.py
+      - run: python examples/file_operations.py
+      - run: python examples/streaming_io.py
+      - run: python examples/atomic_writes.py
+      - run: python examples/configuration.py
+      - run: python examples/error_handling.py

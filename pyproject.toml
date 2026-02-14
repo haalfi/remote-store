@@ -24,6 +24,7 @@ dev = [
   "pytest-cov",
   "mypy",
   "ruff",
+  "jupyter",
 ]
 
 [tool.hatch.build.targets.wheel]

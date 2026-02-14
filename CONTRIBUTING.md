@@ -67,6 +67,8 @@ External packages should:
 
 ## Code Style
 
+See [`sdd/DESIGN.md` Section 11](sdd/DESIGN.md#11-code-style) for the full code style conventions.
+
 - **Formatter/linter:** ruff (line-length 120)
 - **Type checking:** mypy strict mode
 - **Tests:** pytest with `@pytest.mark.spec("ID")` markers for spec traceability
