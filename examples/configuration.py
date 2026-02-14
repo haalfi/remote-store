@@ -27,11 +27,11 @@ if __name__ == "__main__":
             uploads = registry.get_store("uploads")
             reports = registry.get_store("reports")
 
-            uploads.write("images/photo.jpg", b"\xff\xd8\xff\xe0fake-jpeg-data")
-            reports.write("quarterly/q4.csv", b"revenue,profit\n100,20\n")
+            uploads.write("photo.jpg", b"\xff\xd8\xff\xe0fake-jpeg-data")
+            reports.write("q4.csv", b"revenue,profit\n100,20\n")
 
-            print("Uploads:", [f.name for f in uploads.list_files("images")])
-            print("Reports:", [f.name for f in reports.list_files("quarterly")])
+            print("Uploads:", [f.name for f in uploads.list_files("")])
+            print("Reports:", [f.name for f in reports.list_files("")])
 
     # --- Option 2: from_dict() — e.g. loaded from TOML or JSON ---
     with tempfile.TemporaryDirectory() as tmp:

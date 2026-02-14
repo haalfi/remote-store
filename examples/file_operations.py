@@ -30,9 +30,9 @@ if __name__ == "__main__":
             for f in store.list_files("docs"):
                 print(f"  {f.name} ({f.size} bytes)")
 
-            # --- List subfolders ---
-            print("\nSubfolders under docs/:")
-            for folder in store.list_folders("docs"):
+            # --- List folders at the store root ---
+            print("\nFolders at store root:")
+            for folder in store.list_folders(""):
                 print(f"  {folder}/")
 
             # --- Read ---
@@ -58,9 +58,9 @@ if __name__ == "__main__":
             store.delete("docs/readme_backup.txt")
             print(f"Deleted readme_backup.txt (exists: {store.exists('docs/readme_backup.txt')})")
 
-            # --- Recursive listing ---
-            print("\nAll files under docs/ (recursive):")
-            for f in store.list_files("docs", recursive=True):
+            # --- Recursive listing from store root ---
+            print("\nAll files (recursive):")
+            for f in store.list_files("", recursive=True):
                 print(f"  {f.path} ({f.size} bytes)")
 
     print("\nDone!")
