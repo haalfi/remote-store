@@ -10,8 +10,12 @@ __pycache__/
 .ruff_cache/
 
 # Building
-.dist/
-.build/
+dist/
+build/
+*.egg-info/
+*.whl
+*.tar.gz
 
 # Testing & Coverage
 .coverage
+htmlcov/

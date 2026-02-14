@@ -50,6 +50,14 @@ class Registry:
         stores = sorted(self._config.stores.keys())
         return f"Registry(stores={stores!r})"
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Registry):
+            return self._config == other._config
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return id(self)
+
     def get_store(self, name: str) -> Store:
         """Get a store by its profile name.
 
@@ -73,7 +81,13 @@ class Registry:
                     f"Unknown backend type '{cfg.type}'. Registered types: {sorted(_BACKEND_FACTORIES.keys())}"
                 )
             factory = _BACKEND_FACTORIES[cfg.type]
-            self._backends[name] = factory(**cfg.options)
+            try:
+                self._backends[name] = factory(**cfg.options)
+            except TypeError as exc:
+                raise ValueError(
+                    f"Invalid options for backend '{name}' (type={cfg.type!r}): {exc}. "
+                    f"Provided options: {sorted(cfg.options.keys())}"
+                ) from exc
         return self._backends[name]
 
     def close(self) -> None:

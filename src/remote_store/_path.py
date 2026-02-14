@@ -46,7 +46,11 @@ class RemotePath:
 
     @property
     def parent(self) -> Optional[RemotePath]:
-        """Parent path, or ``None`` for a single-component path."""
+        """Parent path, or ``None`` if the path has only one component.
+
+        Example: ``RemotePath("a/b").parent`` returns ``RemotePath("a")``,
+        but ``RemotePath("a").parent`` returns ``None``.
+        """
         if "/" not in self._path:
             return None
         parent_str = self._path.rsplit("/", 1)[0]

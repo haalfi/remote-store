@@ -10,7 +10,7 @@
 
 ### STORE-001: Construction
 
-**Invariant:** Constructed with a `Backend` and `root_path` string.
+**Invariant:** Constructed with a `Backend` and `root_path` string. A non-empty `root_path` is validated and normalized via `RemotePath`. An empty `root_path` means the store root is the backend root.
 
 ### STORE-002: Path Validation
 
@@ -38,7 +38,15 @@
 
 ### STORE-008: Full API Surface
 
-**Invariant:** Store exposes: `read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_file_info`, `get_folder_info`, `move`, `copy`.
+**Invariant:** Store exposes: `read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`.
+
+### STORE-009: Resource Management
+
+**Invariant:** Store supports the context manager protocol (`__enter__`/`__exit__`). Exiting the context calls `close()`, which delegates to `Backend.close()`. Store may also be used without a context manager; in that case, `close()` should be called explicitly when the store is no longer needed.
+
+### STORE-010: Equality
+
+**Invariant:** Two Store instances are equal if they share the same backend instance and have the same root path.
 
 ---
 

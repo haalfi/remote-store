@@ -48,8 +48,9 @@ class CapabilitySet:
         :raises CapabilityNotSupported: If the capability is missing.
         """
         if cap not in self._caps:
+            supported = sorted(c.value for c in self._caps)
             raise CapabilityNotSupported(
-                f"Capability '{cap.value}' is not supported",
+                f"Capability '{cap.value}' is not supported. Supported: {supported}",
                 capability=cap.value,
                 backend=backend or None,
             )

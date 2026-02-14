@@ -55,3 +55,15 @@ jobs:
       - run: python examples/atomic_writes.py
       - run: python examples/configuration.py
       - run: python examples/error_handling.py
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install build
+      - run: python -m build
+      - run: pip install dist/*.whl
+      - run: python -c "import remote_store; print(remote_store.__version__)"

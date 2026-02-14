@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING, BinaryIO, Optional
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath
@@ -10,6 +10,7 @@ from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from types import TracebackType
 
     from remote_store._backend import Backend
     from remote_store._models import FileInfo, FolderInfo
@@ -28,10 +29,33 @@ class Store:
 
     def __init__(self, backend: Backend, root_path: str = "") -> None:
         self._backend = backend
-        self._root = root_path
+        self._root = str(RemotePath(root_path)) if root_path else ""
 
     def __repr__(self) -> str:
         return f"Store(backend={self._backend.name!r}, root_path={self._root!r})"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Store):
+            return self._backend is other._backend and self._root == other._root
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash((id(self._backend), self._root))
+
+    def close(self) -> None:
+        """Close the underlying backend, releasing any held resources."""
+        self._backend.close()
+
+    def __enter__(self) -> Store:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.close()
 
     def _full_path(self, path: str) -> str:
         """Resolve a path that may be empty (store root) or a relative subpath."""

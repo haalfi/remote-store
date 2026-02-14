@@ -141,7 +141,8 @@ class Backend(abc.ABC):
         :raises CapabilityNotSupported: If backend cannot provide the requested type.
         """
         raise CapabilityNotSupported(
-            f"Backend '{self.name}' does not expose native handle of type {type_hint.__name__}",
+            f"Backend '{self.name}' does not expose native handle of type {type_hint.__name__}. "
+            f"Override unwrap() in your backend to provide native access.",
             capability="unwrap",
             backend=self.name,
         )

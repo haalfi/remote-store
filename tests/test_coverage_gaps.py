@@ -482,3 +482,116 @@ class TestRemotePathImmutability:
 
 
 # endregion
+
+# region: new audit items — close/context, __eq__, root_path validation, backend options error
+
+
+class TestStoreContextManager:
+    """Store supports close() and context manager protocol."""
+
+    def test_close(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            store = Store(backend=backend, root_path="data")
+            store.close()  # should not raise
+
+    def test_context_manager(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            with Store(backend=backend, root_path="data") as store:
+                store.write("a.txt", b"data")
+                assert store.exists("a.txt")
+
+
+class TestStoreRootPathValidation:
+    """Store constructor validates root_path."""
+
+    def test_root_path_with_dotdot_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            with pytest.raises(InvalidPath, match="\\.\\."):
+                Store(backend=backend, root_path="../escape")
+
+    def test_root_path_with_null_byte_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            with pytest.raises(InvalidPath, match="null"):
+                Store(backend=backend, root_path="bad\0path")
+
+    def test_root_path_normalized(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            store = Store(backend=backend, root_path="a//b/./c")
+            assert store._root == "a/b/c"
+
+
+class TestStoreEquality:
+    """Store __eq__ and __hash__."""
+
+    def test_same_store_equal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            a = Store(backend=backend, root_path="data")
+            b = Store(backend=backend, root_path="data")
+            assert a == b
+
+    def test_different_root_not_equal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            a = Store(backend=backend, root_path="data")
+            b = Store(backend=backend, root_path="other")
+            assert a != b
+
+    def test_different_backend_not_equal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            a = Store(backend=LocalBackend(root=tmp), root_path="data")
+            b = Store(backend=LocalBackend(root=tmp), root_path="data")
+            assert a != b  # different backend instances
+
+    def test_not_equal_to_non_store(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(backend=LocalBackend(root=tmp))
+            assert store != "not a store"
+
+
+class TestRegistryEquality:
+    """Registry __eq__."""
+
+    def test_same_config_equal(self) -> None:
+        config = RegistryConfig.from_dict({"backends": {}, "stores": {}})
+        a = Registry(config)
+        b = Registry(config)
+        assert a == b
+
+    def test_not_equal_to_non_registry(self) -> None:
+        reg = Registry()
+        assert reg != "not a registry"
+
+
+class TestRegistryBadBackendOptions:
+    """Registry wraps TypeError from bad backend options."""
+
+    def test_bad_option_key(self) -> None:
+        config = RegistryConfig.from_dict(
+            {
+                "backends": {"local": {"type": "local", "options": {"root": "/tmp", "nonexistent_opt": True}}},
+                "stores": {"main": {"backend": "local"}},
+            }
+        )
+        reg = Registry(config)
+        with pytest.raises(ValueError, match="Invalid options"):
+            reg.get_store("main")
+
+
+class TestCapabilityErrorShowsSupported:
+    """Capability error includes supported capabilities."""
+
+    def test_error_lists_supported(self) -> None:
+        from remote_store._capabilities import CapabilitySet
+
+        caps = CapabilitySet({Capability.READ, Capability.LIST})
+        with pytest.raises(CapabilityNotSupported, match="Supported"):
+            caps.require(Capability.WRITE, backend="test")
+
+
+# endregion
