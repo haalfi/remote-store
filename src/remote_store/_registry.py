@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from remote_store._config import RegistryConfig
 from remote_store._store import Store
@@ -40,7 +40,7 @@ class Registry:
     :raises ValueError: If config is invalid.
     """
 
-    def __init__(self, config: RegistryConfig | None = None) -> None:
+    def __init__(self, config: Optional[RegistryConfig] = None) -> None:
         _register_builtin_backends()
         self._config = config or RegistryConfig()
         self._config.validate()
@@ -83,8 +83,8 @@ class Registry:
 
     def __exit__(
         self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
     ) -> None:
         self.close()

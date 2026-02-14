@@ -42,8 +42,7 @@ class LocalBackend(Backend):
     def capabilities(self) -> CapabilitySet:
         return _ALL_CAPABILITIES
 
-    # -- Path safety --
-
+    # region: path safety
     def _resolve(self, path: str) -> Path:
         """Resolve a relative path to an absolute path within root.
 
@@ -56,8 +55,9 @@ class LocalBackend(Backend):
             raise InvalidPath(f"Path escapes root directory: {path}", path=path, backend=self.name) from None
         return resolved
 
-    # -- Helpers --
+    # endregion
 
+    # region: helpers
     @staticmethod
     def _read_content(content: WritableContent) -> bytes:
         if isinstance(content, bytes):
@@ -73,8 +73,9 @@ class LocalBackend(Backend):
             modified_at=datetime.fromtimestamp(st.st_mtime, tz=timezone.utc),
         )
 
-    # -- Backend contract --
+    # endregion
 
+    # region: BE-004 through BE-005: existence checks
     def exists(self, path: str) -> bool:
         return self._resolve(path).exists()
 
@@ -84,6 +85,9 @@ class LocalBackend(Backend):
     def is_folder(self, path: str) -> bool:
         return self._resolve(path).is_dir()
 
+    # endregion
+
+    # region: BE-006 through BE-007: read operations
     def read(self, path: str) -> BinaryIO:
         full = self._resolve(path)
         try:
@@ -102,6 +106,9 @@ class LocalBackend(Backend):
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
+    # endregion
+
+    # region: BE-008 through BE-011: write operations
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         full = self._resolve(path)
         if not overwrite and full.exists():
@@ -141,6 +148,9 @@ class LocalBackend(Backend):
             return True
         return False
 
+    # endregion
+
+    # region: BE-012 through BE-013: delete operations
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         full = self._resolve(path)
         try:
@@ -169,6 +179,9 @@ class LocalBackend(Backend):
                 raise NotFound(f"Folder not empty: {path}", path=path, backend=self.name) from None
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
+    # endregion
+
+    # region: BE-014 through BE-017: listing and metadata
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         full = self._resolve(path)
         if not full.is_dir():
@@ -220,6 +233,9 @@ class LocalBackend(Backend):
             modified_at=modified_at,
         )
 
+    # endregion
+
+    # region: BE-018 through BE-019: move and copy
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         src_full = self._resolve(src)
         dst_full = self._resolve(dst)
@@ -245,3 +261,5 @@ class LocalBackend(Backend):
             shutil.copy2(str(src_full), str(dst_full))
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {src} -> {dst}", path=src, backend=self.name) from None
+
+    # endregion

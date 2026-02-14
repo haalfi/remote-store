@@ -16,22 +16,27 @@ def local_backend() -> LocalBackend:
         yield LocalBackend(root=tmp)  # type: ignore[misc]
 
 
-@pytest.mark.spec("BE-021")
-def test_path_traversal_rejected(local_backend: LocalBackend) -> None:
-    """Resolved paths must stay within root."""
-    with pytest.raises(InvalidPath):
-        local_backend.read("../../etc/passwd")
+class TestLocalBackendErrorMapping:
+    """BE-021: Backend-native exceptions never leak."""
+
+    @pytest.mark.spec("BE-021")
+    def test_path_traversal_rejected(self, local_backend: LocalBackend) -> None:
+        """Resolved paths must stay within root."""
+        with pytest.raises(InvalidPath):
+            local_backend.read("../../etc/passwd")
+
+    @pytest.mark.spec("BE-021")
+    def test_native_errors_mapped(self, local_backend: LocalBackend) -> None:
+        """FileNotFoundError maps to NotFound."""
+        from remote_store._errors import NotFound
+
+        with pytest.raises(NotFound):
+            local_backend.read_bytes("nonexistent.txt")
 
 
-@pytest.mark.spec("BE-021")
-def test_native_errors_mapped(local_backend: LocalBackend) -> None:
-    """FileNotFoundError maps to NotFound."""
-    from remote_store._errors import NotFound
+class TestLocalBackendIdentity:
+    """BE-002: Local backend name."""
 
-    with pytest.raises(NotFound):
-        local_backend.read_bytes("nonexistent.txt")
-
-
-@pytest.mark.spec("BE-002")
-def test_local_backend_name(local_backend: LocalBackend) -> None:
-    assert local_backend.name == "local"
+    @pytest.mark.spec("BE-002")
+    def test_name(self, local_backend: LocalBackend) -> None:
+        assert local_backend.name == "local"

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Final
+from typing import Final, Optional
 
 from remote_store._errors import InvalidPath
 
@@ -45,7 +45,7 @@ class RemotePath:
         return self._path.rsplit("/", 1)[-1]
 
     @property
-    def parent(self) -> RemotePath | None:
+    def parent(self) -> Optional[RemotePath]:
         """Parent path, or ``None`` for a single-component path."""
         if "/" not in self._path:
             return None
