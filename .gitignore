@@ -1,5 +1,7 @@
-# IDEs
+# IDEs & tools
 .venv/
+.vscode/
+.claude/
 
 # Caching
 __pycache__/
@@ -10,3 +12,6 @@ __pycache__/
 # Building
 .dist/
 .build/
+
+# Testing & Coverage
+.coverage
