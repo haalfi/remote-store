@@ -1,4 +1,12 @@
-# remote-store
+<p align="center">
+  <img src="assets/logo.png" width="320">
+</p>
+
+<h1 align="center">remote-store</h1>
+
+<p align="center">
+  Streaming-First API
+</p>
 
 Every project that touches files eventually writes the same glue code: read bytes from S3 here, swap in a local directory for tests there, add error handling around each call, remember to close streams. The logic is always the same, but the plumbing changes with every backend. `remote-store` extracts that pattern into a single, narrow API so your application code never knows -- or cares -- where files actually live.
 
