@@ -28,8 +28,6 @@ NOW = datetime(2024, 1, 1, tzinfo=timezone.utc)
 
 
 # region: _types.py — verify type aliases are importable and usable
-
-
 class TestTypeAliases:
     """Ensure type aliases in _types.py are importable."""
 
@@ -45,9 +43,8 @@ class TestTypeAliases:
 
 # endregion
 
+
 # region: _store.py — __repr__, empty path with no root, _require_file_path, delete_folder("")
-
-
 class TestStoreRepr:
     """Store.__repr__ for debugging."""
 
@@ -172,9 +169,8 @@ class TestStoreEmptyPathRejection:
 
 # endregion
 
+
 # region: _config.py — TypeError branches in from_dict
-
-
 class TestConfigFromDictErrors:
     """from_dict() error branches."""
 
@@ -197,9 +193,8 @@ class TestConfigFromDictErrors:
 
 # endregion
 
+
 # region: _errors.py — __repr__ edge cases
-
-
 class TestErrorReprEdgeCases:
     """Cover uncovered __repr__ branches."""
 
@@ -239,9 +234,8 @@ class TestErrorReprEdgeCases:
 
 # endregion
 
+
 # region: _models.py — __eq__ NotImplemented, FolderInfo hash
-
-
 class TestModelEqualityNotImplemented:
     """Cover __eq__ returning NotImplemented for non-model types."""
 
@@ -269,9 +263,8 @@ class TestModelEqualityNotImplemented:
 
 # endregion
 
+
 # region: _capabilities.py — CapabilitySet repr
-
-
 class TestCapabilitySetRepr:
     """Cover CapabilitySet.__repr__."""
 
@@ -285,9 +278,8 @@ class TestCapabilitySetRepr:
 
 # endregion
 
+
 # region: _registry.py — __repr__, unknown backend type
-
-
 class TestRegistryRepr:
     """Registry.__repr__ for debugging."""
 
@@ -322,9 +314,8 @@ class TestRegistryUnknownBackendType:
 
 # endregion
 
+
 # region: _local.py — delete_folder edge cases, _is_fd_closed, non-dir errors
-
-
 class TestLocalBackendDeleteFolderEdgeCases:
     """Cover delete_folder edge cases."""
 
@@ -464,9 +455,8 @@ class TestLocalBackendUnwrap:
 
 # endregion
 
+
 # region: _path.py — immutability guards
-
-
 class TestRemotePathImmutability:
     """Cover __setattr__ and __delattr__."""
 
@@ -483,9 +473,8 @@ class TestRemotePathImmutability:
 
 # endregion
 
+
 # region: new audit items — close/context, __eq__, root_path validation, backend options error
-
-
 class TestStoreContextManager:
     """Store supports close() and context manager protocol."""
 

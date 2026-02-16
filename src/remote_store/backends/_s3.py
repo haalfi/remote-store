@@ -70,7 +70,6 @@ class S3Backend(Backend):
         return _ALL_CAPABILITIES
 
     # region: lazy filesystem
-
     @property
     def _fs(self) -> Any:
         if self._fs_instance is None:
@@ -93,7 +92,6 @@ class S3Backend(Backend):
     # endregion
 
     # region: path helpers
-
     def _s3_path(self, path: str) -> str:
         if path:
             return f"{self._bucket}/{path}"
@@ -108,7 +106,6 @@ class S3Backend(Backend):
     # endregion
 
     # region: error mapping
-
     @contextmanager
     def _errors(self, path: str = "") -> Iterator[None]:
         """Map s3fs/botocore exceptions to remote_store errors."""
@@ -137,7 +134,6 @@ class S3Backend(Backend):
     # endregion
 
     # region: helpers
-
     @staticmethod
     def _read_content(content: WritableContent) -> bytes:
         if isinstance(content, bytes):
@@ -165,7 +161,6 @@ class S3Backend(Backend):
     # endregion
 
     # region: existence checks
-
     def exists(self, path: str) -> bool:
         with self._errors(path):
             return bool(self._fs.exists(self._s3_path(path)))
@@ -189,7 +184,6 @@ class S3Backend(Backend):
     # endregion
 
     # region: read operations
-
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
             data = self._fs.cat_file(self._s3_path(path))
@@ -202,7 +196,6 @@ class S3Backend(Backend):
     # endregion
 
     # region: write operations
-
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         with self._errors(path):
             if not overwrite and self._fs.exists(self._s3_path(path)):
@@ -217,7 +210,6 @@ class S3Backend(Backend):
     # endregion
 
     # region: delete operations
-
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._errors(path):
             if not self._fs.exists(self._s3_path(path)):
@@ -248,7 +240,6 @@ class S3Backend(Backend):
     # endregion
 
     # region: listing operations
-
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         try:
             s3_path = self._s3_path(path)
@@ -298,7 +289,6 @@ class S3Backend(Backend):
     # endregion
 
     # region: metadata
-
     def get_file_info(self, path: str) -> FileInfo:
         with self._errors(path):
             info = self._fs.info(self._s3_path(path))
@@ -339,7 +329,6 @@ class S3Backend(Backend):
     # endregion
 
     # region: move and copy
-
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         with self._errors(src):
             if not self._fs.exists(self._s3_path(src)):
@@ -360,7 +349,6 @@ class S3Backend(Backend):
     # endregion
 
     # region: lifecycle
-
     def close(self) -> None:
         if self._fs_instance is not None:
             self._fs_instance.clear_instance_cache()

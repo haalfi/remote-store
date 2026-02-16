@@ -60,8 +60,6 @@ def s3_backend(moto_server: str) -> Iterator[Backend]:
 
 
 # region: Construction (S3-001 through S3-005)
-
-
 class TestS3Construction:
     """S3-001 through S3-005: construction and identity."""
 
@@ -115,8 +113,6 @@ class TestS3Construction:
 
 
 # region: S3 Object Model (S3-006 through S3-009)
-
-
 class TestS3FolderSemantics:
     """S3-006 through S3-009: virtual folder behavior."""
 
@@ -167,8 +163,6 @@ class TestS3FolderSemantics:
 
 
 # region: Operations (S3-010 through S3-014)
-
-
 class TestS3AtomicWrite:
     """S3-010: atomic write via S3 PUT."""
 
@@ -287,8 +281,6 @@ class TestS3MoveCopy:
 
 
 # region: Error Mapping (S3-015 through S3-018)
-
-
 class TestS3ErrorMapping:
     """S3-015 through S3-018: error mapping."""
 
@@ -325,8 +317,6 @@ class TestS3ErrorMapping:
 
 
 # region: Resource Management (S3-019, S3-020)
-
-
 class TestS3Lifecycle:
     """S3-019, S3-020: close and unwrap."""
 
@@ -356,8 +346,6 @@ class TestS3Lifecycle:
 
 
 # region: Configuration (S3-021, S3-022)
-
-
 class TestS3Configuration:
     """S3-021, S3-022: client options and credential chain."""
 
@@ -387,8 +375,6 @@ class TestS3Configuration:
 
 
 # region: Read/Write roundtrip
-
-
 class TestS3ReadWrite:
     """Basic read/write roundtrip to verify full stack."""
 
@@ -426,8 +412,6 @@ class TestS3ReadWrite:
 
 
 # region: Listing and Metadata
-
-
 class TestS3Listing:
     """File and folder listing operations."""
 
