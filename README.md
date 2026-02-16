@@ -107,7 +107,7 @@ Interactive Jupyter notebooks are available in [`examples/notebooks/`](examples/
 | Backend | Status | Install |
 |---------|--------|---------|
 | Local filesystem | Built-in | `pip install remote-store` |
-| Amazon S3 / MinIO | Planned | `pip install remote-store[s3]` |
+| Amazon S3 / MinIO | Built-in | `pip install remote-store[s3]` |
 | Azure Blob / ADLS | Planned | `pip install remote-store[azure]` |
 | SFTP / SSH | Planned | `pip install remote-store[sftp]` |
 
