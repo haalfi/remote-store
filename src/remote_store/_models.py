@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -28,8 +28,8 @@ class FileInfo:
     name: str
     size: int
     modified_at: datetime
-    checksum: Optional[str] = None
-    content_type: Optional[str] = None
+    checksum: str | None = None
+    content_type: str | None = None
     extra: dict[str, object] = dataclasses.field(default_factory=dict)
 
     def __eq__(self, other: object) -> bool:
@@ -55,7 +55,7 @@ class FolderInfo:
     path: RemotePath
     file_count: int
     total_size: int
-    modified_at: Optional[datetime] = None
+    modified_at: datetime | None = None
     extra: dict[str, object] = dataclasses.field(default_factory=dict)
 
     def __eq__(self, other: object) -> bool:

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 
 class RemoteStoreError(Exception):
     """Base class for all remote_store errors.
@@ -13,7 +11,7 @@ class RemoteStoreError(Exception):
     :param backend: The backend name involved, if any.
     """
 
-    def __init__(self, message: str = "", *, path: Optional[str] = None, backend: Optional[str] = None) -> None:
+    def __init__(self, message: str = "", *, path: str | None = None, backend: str | None = None) -> None:
         self.path = path
         self.backend = backend
         super().__init__(message)
@@ -62,8 +60,8 @@ class CapabilityNotSupported(RemoteStoreError):
         self,
         message: str = "",
         *,
-        path: Optional[str] = None,
-        backend: Optional[str] = None,
+        path: str | None = None,
+        backend: str | None = None,
         capability: str = "",
     ) -> None:
         self.capability = capability

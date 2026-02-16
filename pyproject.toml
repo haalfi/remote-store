@@ -62,6 +62,7 @@ dev = [
   "jupyter",
   "s3fs",
   "moto[server,s3]",
+  "pre-commit",
 ]
 
 [tool.hatch.envs.default]
@@ -72,6 +73,7 @@ dependencies = [
   "ruff",
   "s3fs",
   "moto[server,s3]",
+  "pre-commit",
 ]
 
 [tool.hatch.envs.default.scripts]
@@ -89,6 +91,7 @@ examples = [
   "python examples/configuration.py",
   "python examples/error_handling.py",
 ]
+pre-commit-install = "pre-commit install"
 all = ["lint", "format-check", "typecheck", "test-cov", "examples"]
 
 [tool.hatch.build.targets.wheel]
