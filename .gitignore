@@ -19,3 +19,6 @@ build/
 # Testing & Coverage
 .coverage
 htmlcov/
+
+# Documentation
+site/

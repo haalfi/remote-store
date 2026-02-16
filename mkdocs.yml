@@ -1,0 +1,115 @@
+site_name: remote-store
+site_url: https://remote-store.readthedocs.io/
+site_description: Backend-agnostic remote storage abstraction for Python.
+repo_url: https://github.com/haalfi/remote-store
+repo_name: haalfi/remote-store
+
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - toc.follow
+
+plugins:
+  - search
+  - include-markdown
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: sphinx
+            merge_init_into_class: true
+            members_order: source
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            heading_level: 2
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.snippets:
+      base_path: ["."]
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+validation:
+  links:
+    not_found: info
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Examples:
+      - Overview: examples/index.md
+      - Quickstart: examples/quickstart.md
+      - File Operations: examples/file-operations.md
+      - Streaming I/O: examples/streaming-io.md
+      - Atomic Writes: examples/atomic-writes.md
+      - Configuration: examples/configuration.md
+      - Error Handling: examples/error-handling.md
+  - API Reference:
+      - Overview: api/index.md
+      - Store: api/store.md
+      - Registry: api/registry.md
+      - Backend: api/backend.md
+      - Config: api/config.md
+      - Models: api/models.md
+      - RemotePath: api/path.md
+      - Capabilities: api/capabilities.md
+      - Errors: api/errors.md
+  - Backends:
+      - Overview: backends/index.md
+      - Local: backends/local.md
+      - S3: backends/s3.md
+  - Design:
+      - Overview: design/index.md
+      - Design Document: design/design-spec.md
+      - Process: design/process.md
+      - Specs:
+          - Overview: design/specs/index.md
+          - "001: Store API": design/specs/001-store-api.md
+          - "002: Registry & Config": design/specs/002-registry-config.md
+          - "003: Backend Contract": design/specs/003-backend-adapter-contract.md
+          - "004: Path Model": design/specs/004-path-model.md
+          - "005: Error Model": design/specs/005-error-model.md
+          - "006: Streaming I/O": design/specs/006-streaming-io.md
+          - "007: Atomic Writes": design/specs/007-atomic-writes.md
+          - "008: S3 Backend": design/specs/008-s3-backend.md
+      - ADRs:
+          - Overview: design/adrs/index.md
+          - "0001: Architecture": design/adrs/0001-architecture-store-registry-backends.md
+          - "0002: Config Resolution": design/adrs/0002-config-resolution-no-merge.md
+          - "0003: fsspec": design/adrs/0003-fsspec-is-implementation-detail.md
+          - "0004: Empty Path": design/adrs/0004-empty-path-semantics.md
+  - Contributing: contributing.md
+  - Changelog: changelog.md
+  - Development Story: development-story.md

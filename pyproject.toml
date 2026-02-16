@@ -48,11 +48,20 @@ dependencies = [
 Repository = "https://github.com/haalfi/remote-store"
 Changelog = "https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md"
 Issues = "https://github.com/haalfi/remote-store/issues"
+Documentation = "https://remote-store.readthedocs.io/"
 
 [project.optional-dependencies]
 s3 = ["s3fs"]
 azure = ["adlfs"]
 sftp = ["paramiko", "sshfs"]
+
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5",
+  "mkdocstrings[python]>=0.27",
+  "mkdocs-include-markdown-plugin>=7.0",
+  "s3fs",
+]
 
 dev = [
   "pytest",
@@ -74,6 +83,10 @@ dependencies = [
   "s3fs",
   "moto[server,s3]",
   "pre-commit",
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5",
+  "mkdocstrings[python]>=0.27",
+  "mkdocs-include-markdown-plugin>=7.0",
 ]
 
 [tool.hatch.envs.default.scripts]
@@ -91,6 +104,8 @@ examples = [
   "python examples/configuration.py",
   "python examples/error_handling.py",
 ]
+docs = "mkdocs serve"
+docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"
 all = ["lint", "format-check", "typecheck", "test-cov", "examples"]
 
