@@ -211,7 +211,7 @@ class SFTPBackend(Backend):
             retry=retry_if_exception_type((paramiko.SSHException, OSError, EOFError)),
             stop=stop_after_attempt(3),
             wait=wait_exponential(multiplier=1, min=2, max=10),
-            before_sleep=before_sleep_log(log, logging.WARNING),  # type: ignore[arg-type]
+            before_sleep=before_sleep_log(log, logging.WARNING),  # type: ignore[arg-type,unused-ignore]
             reraise=True,
         )
         def _do_connect() -> None:
