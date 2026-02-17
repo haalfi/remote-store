@@ -90,6 +90,7 @@ nav:
       - Overview: backends/index.md
       - Local: backends/local.md
       - S3: backends/s3.md
+      - SFTP: backends/sftp.md
   - Design:
       - Overview: design/index.md
       - Design Document: design/design-spec.md
@@ -104,6 +105,7 @@ nav:
           - "006: Streaming I/O": design/specs/006-streaming-io.md
           - "007: Atomic Writes": design/specs/007-atomic-writes.md
           - "008: S3 Backend": design/specs/008-s3-backend.md
+          - "009: SFTP Backend": design/specs/009-sftp-backend.md
       - ADRs:
           - Overview: design/adrs/index.md
           - "0001: Architecture": design/adrs/0001-architecture-store-registry-backends.md
