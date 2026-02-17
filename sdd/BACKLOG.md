@@ -30,6 +30,11 @@ Must be resolved before PyPI + ReadTheDocs publish.
   Add `CITATION.cff` to repo root for GitHub's citation button.
   Include author, title, version, license, repository URL, DOI (if applicable).
 
+- [ ] **BL-006 — Protect master branch with ruleset**
+  Create a GitHub repository ruleset that enforces all changes go through pull
+  requests. Include: require PR with at least 1 approval, block force pushes,
+  restrict branch deletion. Apply to `master` (default branch).
+
 ---
 
 ## Backlog (Prioritized)
