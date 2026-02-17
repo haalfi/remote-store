@@ -105,6 +105,20 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Expose a `RetryPolicy` dataclass in `BackendConfig.options` so users can tune
   attempts, backoff, and jitter per-backend.
 
+- [ ] **ID-011 — Python 3.14 support**
+  Add `Programming Language :: Python :: 3.14` classifier to `pyproject.toml`,
+  add `"3.14"` to the CI test matrix, and validate all dependencies (paramiko,
+  tenacity, s3fs) work on 3.14. PEP 649 (deferred annotations) is the main
+  risk area.
+
+- [ ] **ID-012 — Pin minimum dependency versions**
+  Public extras have no lower bounds (`paramiko`, `tenacity`, `s3fs`). Users
+  can resolve ancient, incompatible versions. Add minimum pins based on actual
+  API usage: `paramiko>=2.2` (needs `posix_rename`), `tenacity>=4.0`
+  (`before_sleep_log`, `retry_if_exception_type`), `s3fs>=2022.1`
+  (`clear_instance_cache`, `client_kwargs`). Also remove `typing-extensions`
+  (unused — Python 3.10+ covers all needs) and `adlfs` (no Azure backend yet).
+
 ---
 
 ## Done
