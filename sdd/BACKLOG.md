@@ -35,6 +35,14 @@ Must be resolved before PyPI + ReadTheDocs publish.
   requests. Include: require PR with at least 1 approval, block force pushes,
   restrict branch deletion. Apply to `master` (default branch).
 
+- [ ] **BL-007 — Pin minimum dependency versions & clean up extras**
+  Public extras have no lower bounds — pip can resolve ancient, incompatible
+  versions. Add minimum pins: `paramiko>=2.2` (needs `posix_rename`),
+  `tenacity>=4.0` (`before_sleep_log`, `retry_if_exception_type`),
+  `s3fs>=2022.1` (`clear_instance_cache`, `client_kwargs`). Remove
+  `typing-extensions` (unused — Python 3.10+ covers all needs) and `adlfs`
+  (no Azure backend yet).
+
 ---
 
 ## Backlog (Prioritized)
@@ -110,14 +118,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   add `"3.14"` to the CI test matrix, and validate all dependencies (paramiko,
   tenacity, s3fs) work on 3.14. PEP 649 (deferred annotations) is the main
   risk area.
-
-- [ ] **ID-012 — Pin minimum dependency versions**
-  Public extras have no lower bounds (`paramiko`, `tenacity`, `s3fs`). Users
-  can resolve ancient, incompatible versions. Add minimum pins based on actual
-  API usage: `paramiko>=2.2` (needs `posix_rename`), `tenacity>=4.0`
-  (`before_sleep_log`, `retry_if_exception_type`), `s3fs>=2022.1`
-  (`clear_instance_cache`, `client_kwargs`). Also remove `typing-extensions`
-  (unused — Python 3.10+ covers all needs) and `adlfs` (no Azure backend yet).
 
 ---
 
