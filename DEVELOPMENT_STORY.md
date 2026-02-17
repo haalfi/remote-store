@@ -6,13 +6,14 @@ This document chronicles how `remote-store` was built as a collaboration between
 
 | Metric | Value |
 |--------|-------|
-| Source code | ~1,200 lines |
-| Tests | 221 tests, ~1,860 lines |
-| Specs & docs | ~1,400 lines |
+| Source code | ~2,400 lines (4 backends) |
+| Tests | 453 tests, ~3,500 lines |
+| Specs & docs | ~1,700 lines |
 | Examples | ~350 lines (6 scripts, 3 notebooks) |
-| Coverage | 99.3% |
-| Calendar time | 1 day of focused work |
-| Commits | 13 |
+| Documentation site | MkDocs Material |
+| Coverage | 95% |
+| Calendar time | 3 days of focused work |
+| Commits | 24 |
 
 ## The Approach: Specs First, Code Second
 
@@ -108,6 +109,60 @@ d56dc18  Polish package for release: metadata, repr, coverage, changelog
 66c540a  Add Makefile and dev setup docs to CONTRIBUTING.md
 ```
 
+### Phase 6: S3 Backend (AI-led, human-reviewed)
+
+The first remote backend. The human identified s3fs as the right abstraction layer and wrote the spec (`008-s3-backend.md`). Claude Code then implemented against it in plan mode:
+
+- `S3Backend` using s3fs/aiobotocore (~210 lines)
+- Session-scoped moto HTTP server for testing (avoiding Python 3.13 PEP 667 incompatibility with `mock_aws()`)
+- S3-specific tests plus full conformance suite
+- Logo design prompt (human picked the final version)
+
+```
+52d3799  Add S3Backend with s3fs, spec, tests, and logo
+```
+
+### Phase 7: Developer tooling (collaborative)
+
+The human pushed for tighter development workflow. Claude Code set up:
+
+- **Pre-commit hooks**: ruff lint+format and mypy, replacing manual `make lint` with automatic enforcement
+- **MkDocs Material site**: Full documentation site with API reference, getting started guide, backend docs, and design docs
+- **Hatch scripts**: Replaced Makefile with `pyproject.toml`-native scripts (`hatch run lint`, `hatch run test-cov`, etc.)
+
+```
+2e46651  Add pre-commit hooks for ruff and mypy
+7fdde35  Add MkDocs Material documentation site
+39ea749  Fix S3 backend status in README and add docs CI job
+```
+
+### Phase 8: SFTP Backend (AI-led, human-reviewed)
+
+The most complex backend, using pure paramiko (not sshfs or fsspec's SFTPFileSystem, which hardcodes `AutoAddPolicy`). The human wrote a detailed plan covering:
+
+- Host key policies (STRICT / TRUST_ON_FIRST_USE / AUTO_ADD)
+- PEM key sanitization (Azure Key Vault quirk from legacy code)
+- Simulated atomic writes (temp file + `posix_rename`, with documented orphan caveat)
+- Tenacity retry with exponential backoff for transient SSH errors
+
+Claude Code implemented the full stack in one session:
+
+- Spec `009-sftp-backend.md` (27 spec items)
+- In-process SFTP test server using paramiko's `ServerInterface` + `SFTPServerInterface`
+- `SFTPBackend` (~420 lines) with lazy connection, staleness detection, and full Backend ABC compliance
+- SFTP-specific tests plus conformance suite (453 total tests)
+
+**The debugging was instructive.** Initial test runs had 24 failures -- all reads returning "Failure." A debug script isolated the issue to `SFTPHandle.stat()` in the test server: it used `SFTPServer.convert_errno(os.fstat(...))` instead of `SFTPAttributes.from_stat(os.fstat(...))`, causing `prefetch()` to fail because the handle stat returned errno codes as file metadata. A subtle API misuse that produced confusing errors far from the root cause.
+
+**CI revealed a pip resolver surprise.** After pushing, CI failed with all S3 tests broken -- despite no S3 code changes. Investigation showed that botocore 1.42.50 had released between CI runs. The new version caused pip to silently downgrade s3fs from 2026.2.0 to 0.4.2 (ancient, no aiobotocore) rather than failing with a resolution error. The fix: pin `s3fs>=2024.2.0` to prevent the fallback.
+
+**Cross-platform mypy differences.** The `before_sleep_log(log, ...)` call from tenacity had a type mismatch on local mypy (Logger vs LoggerProtocol) but not on CI. Using `# type: ignore[arg-type,unused-ignore]` handles both environments -- the combined codes suppress the error where it exists and silence the "unused ignore" warning where it doesn't.
+
+```
+f3b7df9  Add SFTPBackend with paramiko, spec, tests, and bump to v0.2.0
+3956b4d  Fix CI: pin s3fs>=2024.2.0 and fix cross-platform type:ignore
+```
+
 ## What Worked Well
 
 ### Specs as a shared contract
@@ -126,11 +181,21 @@ Before large tasks, Claude Code entered "plan mode" -- proposing a detailed plan
 
 The empty path bug was found because writing examples forced real API usage. This is a well-known benefit of dogfooding, but it's worth noting that **AI-written examples caught an issue that human-written tests missed.** The tests were spec-compliant but the spec itself had a gap.
 
+### Detailed plans pay for themselves
+
+The SFTP backend plan was unusually detailed -- specifying constructor params, region structure, temp file naming patterns, and even the test server architecture. This upfront investment meant the entire implementation (spec + server + backend + tests + wiring) was completed in a single session with no false starts. **The more complex the task, the more a detailed plan pays off.**
+
+### Legacy code as a knowledge source
+
+The SFTP backend drew from battle-tested legacy code (`legacy/sftp/sftp_store.py`) for PEM sanitization and host key handling. Claude Code extracted the proven patterns and adapted them to the new Backend ABC contract. **Pointing AI at working legacy code is often more effective than describing requirements from scratch.**
+
 ## What Was Surprising
 
-### Cross-platform bugs surface unexpectedly
+### Cross-platform issues surface in layers
 
 The Windows errno fix was discovered because Claude Code ran tests on a German-locale Windows machine. The `delete_folder` method was catching `OSError` and checking `if "not empty" in str(exc)` -- which fails when the OS returns "Das Verzeichnis ist nicht leer." The fix (checking `exc.errno` instead) is obvious in hindsight but easy to miss in an English-only development environment.
+
+The SFTP work added another layer: mypy type-checking results differed between Windows (local) and Linux (CI) due to different tenacity stub versions. **Cross-platform doesn't just mean "runs on both OSes" -- it means the entire toolchain (linters, type checkers, dependency resolvers) behaves consistently.**
 
 ### The human's role shifts
 
@@ -146,6 +211,10 @@ This is closer to a tech lead role than a traditional developer role.
 
 The first pass of examples had issues: Unicode characters that broke on Windows consoles, f-string syntax not supported on Python 3.10, and `RemotePath("")` calls that triggered validation errors. Each required a fix-and-rerun cycle. **Generated documentation isn't done until it actually runs.**
 
+### Unpinned dependencies are a time bomb
+
+The s3fs downgrade incident was particularly insidious: pip silently installed a 2-year-old version instead of failing with a resolution error. The CI was green one day and broken the next, with zero code changes to the affected component. **Pin lower bounds on all non-trivial dependencies, especially in dev/CI configurations where transitive dependency trees are large.**
+
 ## What Could Be Better
 
 ### Spec coverage of edge cases
@@ -155,6 +224,10 @@ The specs didn't address empty path semantics, which led to a runtime discovery.
 ### Test-before-spec updates
 
 When we fixed the empty path handling, the code and tests were updated first, and the spec was updated afterward. In strict SDD, the spec should change first. In practice, the fix-then-document flow was faster for a bug-like issue, but it's a discipline worth noting.
+
+### Test server complexity
+
+The in-process SFTP test server (~275 lines) is nearly as complex as some backends. The `SFTPHandle.stat()` bug showed that test infrastructure can harbor subtle bugs of its own. A dedicated debug script was needed to isolate the issue -- standard test output just showed "Failure" with no useful context. **Test servers deserve the same care as production code.**
 
 ## Lessons for Others
 
@@ -169,6 +242,10 @@ When we fixed the empty path handling, the code and tests were updated first, an
 5. **Document decisions as you go.** ADRs and spec updates are cheap to write in the moment but expensive to reconstruct later. We documented the empty path decision as ADR-0004 immediately after making it.
 
 6. **Audit before release.** Asking "what's missing?" and getting a structured, prioritized list is one of the highest-value uses of AI pair programming. It surfaces blind spots you've adapted to.
+
+7. **Pin your dependency lower bounds.** Unpinned deps in CI will eventually bite you. A `>=` pin costs nothing and prevents silent downgrades that produce baffling failures.
+
+8. **Point AI at legacy code.** If you have working code that solves part of the problem, show it to the AI. It will extract the relevant patterns faster than you can describe them.
 
 ## Reproducing This Workflow
 
