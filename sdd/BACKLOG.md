@@ -11,22 +11,22 @@ Status legend: `[ ]` pending · `[-]` in progress · `[x]` done
 
 Must be resolved before PyPI + ReadTheDocs publish.
 
-- [ ] **BL-001 — PyPI publish workflow**
+- [x] **BL-001 — PyPI publish workflow**
   Add GitHub Actions job (new `publish.yml` or extend `ci.yml`) triggered on `v*` tags.
   Build sdist + wheel, publish via trusted publishing (OIDC) or API token.
 
-- [ ] **BL-002 — SFTP backend documentation**
+- [x] **BL-002 — SFTP backend documentation**
   Create `docs/backends/sftp.md` (installation, usage, options, API ref).
   Update `docs/backends/index.md` to mark SFTP as built-in, not planned.
 
-- [ ] **BL-003 — README backends table outdated**
+- [x] **BL-003 — README backends table outdated**
   SFTP is listed as "Planned" but shipped in v0.2.0. Update to "Built-in".
 
-- [ ] **BL-004 — README & project description tone rework**
+- [x] **BL-004 — README & project description tone rework**
   Current tone is too academic. Rewrite README and pyproject description to be
   approachable, dev-friendly, and scannable. Keep it practical over formal.
 
-- [ ] **BL-005 — CITATION.cff**
+- [x] **BL-005 — CITATION.cff**
   Add `CITATION.cff` to repo root for GitHub's citation button.
   Include author, title, version, license, repository URL, DOI (if applicable).
 
