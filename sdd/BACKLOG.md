@@ -64,6 +64,42 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Let users define backend config via Pydantic `BaseSettings` for env-var binding,
   `.env` file loading, and validation. Optional `pydantic` dependency.
 
+- [ ] **ID-004 — Structured logging & metrics hooks**
+  Add optional `logging` calls at key points (connection open/close, read/write,
+  retries, errors). Lets users debug in production without changing the public API.
+  Consider a lightweight callback/event system for metrics collection.
+
+- [ ] **ID-005 — Built-in `from_toml()` config loader**
+  Use `tomllib` (stdlib in 3.11+, `tomli` backport for 3.10) to add
+  `RegistryConfig.from_toml(path)` alongside the existing `from_dict()`.
+  Eliminates boilerplate for every user who keeps config in `pyproject.toml` or a
+  standalone `.toml` file.
+
+- [ ] **ID-006 — Progress callbacks for large transfers**
+  Add an optional `callback: Callable[[int], None]` parameter to `read()` and
+  `write()` reporting bytes transferred. Enables progress bars (e.g. `tqdm`)
+  without adding dependencies.
+
+- [ ] **ID-007 — `Store.glob()` surface API**
+  Expose a `Store.glob(pattern)` method backed by `Capability.GLOB` (already
+  declared but unused). Local has it, S3 can do prefix filtering natively, SFTP
+  would need client-side filtering. Ships alongside or after BK-002.
+
+- [ ] **ID-008 — Checksum verification on read/write**
+  Add a `verify_checksum=True` option to `read()` / `write()`. Populate
+  `FileInfo.checksum` consistently across backends (S3 ETag, local SHA-256).
+  Gives users data-integrity guarantees with a single flag.
+
+- [ ] **ID-009 — `Store.upload()` / `Store.download()` convenience methods**
+  Dedicated methods for the most common real-world pattern: local file path in,
+  remote path out (and vice versa). Eliminates the open-file-wrap-in-BytesIO
+  dance.
+
+- [ ] **ID-010 — Retry policy configuration**
+  SFTP has hardcoded retry logic (3 attempts, 2–10 s backoff via `tenacity`).
+  Expose a `RetryPolicy` dataclass in `BackendConfig.options` so users can tune
+  attempts, backoff, and jitter per-backend.
+
 ---
 
 ## Done
