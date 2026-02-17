@@ -229,6 +229,31 @@ When we fixed the empty path handling, the code and tests were updated first, an
 
 The in-process SFTP test server (~275 lines) is nearly as complex as some backends. The `SFTPHandle.stat()` bug showed that test infrastructure can harbor subtle bugs of its own. A dedicated debug script was needed to isolate the issue -- standard test output just showed "Failure" with no useful context. **Test servers deserve the same care as production code.**
 
+### A living backlog beats a static roadmap
+
+After the production readiness audit (Phase 5), we realized loose ideas were
+scattered across commit messages and review comments. We created
+`sdd/BACKLOG.md` as a single, tiered tracker:
+
+| Tier | Prefix | Purpose |
+|------|--------|---------|
+| Release Blockers | `BL-NNN` | Must ship before the next PyPI publish |
+| Backlog | `BK-NNN` | Committed work, queued behind blockers |
+| Ideas | `ID-NNN` | Parking lot — not evaluated, not committed |
+| Done | `DONE-NNN` | Completed items kept for reference |
+
+Items graduate upward: an Idea becomes a Backlog item when someone scopes it
+and commits to an RFC; a Backlog item becomes a Release Blocker when it's
+required for the upcoming release. Code-changing items still go through the
+full SDD pipeline (spec → tests → code); operational items (CI, branch
+protection, dependency pins) are tracked and closed directly.
+
+This turned out to be surprisingly useful for AI-assisted development.
+**Giving Claude Code a structured backlog to read means it can propose
+promotions, spot dependencies between items, and draft new entries in the
+right tier with the right prefix** — without the human re-explaining the
+prioritization scheme each session.
+
 ## Lessons for Others
 
 1. **Write specs before involving AI.** The clearer your specs, the better the AI's output. Vague requirements produce vague code.
