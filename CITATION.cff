@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "remote-store"
+abstract: >-
+  Unified backend-agnostic file storage for Python with a single API
+  for local, S3, Azure Blob, SFTP, and more.
+type: software
+version: 0.2.0
+date-released: 2026-02-17
+license: MIT
+repository-code: https://github.com/haalfi/remote-store
+url: https://remote-store.readthedocs.io/
+authors:
+  - family-names: Alferi
+    given-names: Harald
+keywords:
+  - file-storage
+  - object-storage
+  - storage-abstraction
+  - python
+  - s3
+  - sftp
