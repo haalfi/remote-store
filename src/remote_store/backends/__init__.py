@@ -8,5 +8,12 @@ try:
     from remote_store.backends._s3 import S3Backend
 
     __all__ = [*__all__, "S3Backend"]
-except ImportError:
+except ImportError:  # pragma: no cover
+    pass
+
+try:
+    from remote_store.backends._sftp import SFTPBackend
+
+    __all__ = [*__all__, "SFTPBackend"]
+except ImportError:  # pragma: no cover
     pass

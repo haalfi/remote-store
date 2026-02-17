@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor bumps may contain breaking changes.
 
+## [0.2.0] - 2026-02-17
+
+### Added
+
+- **SFTP backend** via pure paramiko with host key policies (STRICT / TOFU / AUTO_ADD), PEM key sanitization, and tenacity retry on transient SSH errors
+- Simulated atomic writes (temp file + rename) with documented orphan-file caveat
+- `HostKeyPolicy` enum and `load_private_key()` utility for key management
+- `_sanitize_pem()` for Azure Key Vault PEM compatibility
+
+### Changed
+
+- `sftp` optional dependency changed from `paramiko + sshfs` to `paramiko + tenacity`
+- Version bumped to 0.2.0
+
+---
+
 ## [0.1.0] - 2026-02-14
 
 ### Added

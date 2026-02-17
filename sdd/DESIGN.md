@@ -404,17 +404,16 @@ Package `__init__.py` files follow the same rule:
 
 ### 11.3 Type Annotations
 
-Public method signatures use explicit `typing` imports for clarity in IDEs:
+Public method signatures use PEP 604 union syntax (Python >=3.10):
 
 ```python
-from typing import Optional, Union
-
-def __init__(self, config: Optional[RegistryConfig] = None) -> None: ...
-def write(self, path: str, content: Union[BinaryIO, bytes], *, overwrite: bool = False) -> None: ...
+def __init__(self, config: RegistryConfig | None = None) -> None: ...
+def write(self, path: str, content: BinaryIO | bytes, *, overwrite: bool = False) -> None: ...
 ```
 
 - Required args are positional; behavior flags are keyword-only (`*`).
-- Private/internal methods may use `X | None` shorthand.
+- `X | None` replaces `Optional[X]`, `X | Y` replaces `Union[X, Y]` (PEP 604).
+- `typing` imports only for generics not yet built-in (`Callable`, `Iterator`, etc.).
 
 ### 11.4 Docstrings
 
