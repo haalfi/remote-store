@@ -18,6 +18,7 @@ This repository follows **Spec-Driven Development (SDD)**: every feature, contra
 ```
 sdd/
   000-process.md              # This file — how specs work
+  BACKLOG.md                  # Release blockers, prioritized work, and ideas
   specs/
     001-store-api.md          # Store API + metadata models
     002-registry-config.md    # Registry lifecycle + configuration
