@@ -151,3 +151,9 @@ for cap in cs:
 **Invariant:** `unwrap(type_hint)` returns the native backend handle if it matches the requested type.
 **Raises:** `CapabilityNotSupported` if the backend cannot provide the requested type.
 **Rationale:** See [ADR-0003](../adrs/0003-fsspec-is-implementation-detail.md).
+
+### BE-023: to_key()
+
+**Invariant:** `to_key(native_path)` converts a backend-native or absolute path to a backend-relative key by stripping the backend's own root/prefix. The default implementation is the identity function.
+**Postconditions:** Pure, deterministic, total (never raises). If the input path does not start with the backend's root, it is returned unchanged.
+**See also:** [010-native-path-resolution.md](010-native-path-resolution.md) (NPR-003 through NPR-009), [ADR-0005](../adrs/0005-native-path-resolution.md).

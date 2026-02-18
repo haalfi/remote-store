@@ -97,11 +97,11 @@ class S3Backend(Backend):
             return f"{self._bucket}/{path}"
         return self._bucket
 
-    def _rel_path(self, s3_path: str) -> str:
+    def to_key(self, native_path: str) -> str:
         prefix = f"{self._bucket}/"
-        if s3_path.startswith(prefix):
-            return s3_path[len(prefix) :]
-        return s3_path
+        if native_path.startswith(prefix):
+            return native_path[len(prefix) :]
+        return native_path
 
     # endregion
 
@@ -249,13 +249,13 @@ class S3Backend(Backend):
                 results: dict[str, Any] = self._fs.find(s3_path, detail=True)
                 for s3_key, info in results.items():
                     if info.get("type") == "file":
-                        rel = self._rel_path(s3_key)
+                        rel = self.to_key(s3_key)
                         yield self._info_to_fileinfo(info, rel)
             else:
                 entries: list[dict[str, Any]] = self._fs.ls(s3_path, detail=True)
                 for info in entries:
                     if info.get("type") == "file":
-                        rel = self._rel_path(info["name"])
+                        rel = self.to_key(info["name"])
                         yield self._info_to_fileinfo(info, rel)
         except RemoteStoreError:  # pragma: no cover -- defensive
             raise

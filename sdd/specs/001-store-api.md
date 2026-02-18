@@ -38,7 +38,7 @@
 
 ### STORE-008: Full API Surface
 
-**Invariant:** Store exposes: `read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`.
+**Invariant:** Store exposes: `read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`, `to_key`.
 
 ### STORE-009: Resource Management
 
@@ -47,6 +47,18 @@
 ### STORE-010: Equality
 
 **Invariant:** Two Store instances are equal if they share the same backend instance and have the same root path.
+
+### STORE-011: to_key()
+
+**Invariant:** `to_key(path)` converts an absolute or backend-native path to a store-relative key. Composes `backend.to_key()` (strips backend root) with store-root stripping (removes `root_path` prefix).
+**Raises:** `InvalidPath` if the path does not belong to this store (does not start with `root_path` after backend stripping).
+**Postconditions:** The returned key is directly usable as input to any Store method.
+**See also:** [010-native-path-resolution.md](010-native-path-resolution.md) (NPR-010 through NPR-013).
+
+### STORE-012: Round-Trip Path Invariant
+
+**Invariant:** Paths returned by listing and metadata methods (`list_files`, `get_file_info`, `get_folder_info`) are store-relative — `root_path` is stripped from `FileInfo.path` and `FolderInfo.path`. The returned path is directly usable as input to other Store methods without modification.
+**See also:** [010-native-path-resolution.md](010-native-path-resolution.md) (NPR-001, NPR-014 through NPR-016).
 
 ---
 

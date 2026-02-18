@@ -59,6 +59,17 @@ class LocalBackend(Backend):
             raise InvalidPath(f"Path escapes root directory: {path}", path=path, backend=self.name) from None
         return resolved
 
+    def to_key(self, native_path: str) -> str:
+        root_str = str(self._root)
+        # Normalize the input to use forward slashes for comparison
+        normalized = native_path.replace("\\", "/")
+        root_prefix = root_str.replace("\\", "/")
+        if normalized.startswith(root_prefix + "/"):
+            return normalized[len(root_prefix) + 1 :]
+        if normalized == root_prefix:
+            return ""
+        return native_path
+
     # endregion
 
     # region: helpers
@@ -195,12 +206,12 @@ class LocalBackend(Backend):
         if recursive:
             for item in full.rglob("*"):
                 if item.is_file():
-                    rel = str(item.relative_to(self._root)).replace("\\", "/")
+                    rel = self.to_key(str(item))
                     yield self._stat_to_fileinfo(rel, item)
         else:
             for item in full.iterdir():
                 if item.is_file():
-                    rel = str(item.relative_to(self._root)).replace("\\", "/")
+                    rel = self.to_key(str(item))
                     yield self._stat_to_fileinfo(rel, item)
 
     def list_folders(self, path: str) -> Iterator[str]:

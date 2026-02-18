@@ -66,6 +66,13 @@ Next actions once release blockers are cleared.
   SFTP does not. Spec the chosen approach or document why it stays per-backend.
   → Spec: TBD (extends `003-backend-adapter-contract.md`)
 
+- [ ] **BK-004 — Python 3.14 support**
+  *(Promoted from ID-011.)*
+  Add `Programming Language :: Python :: 3.14` classifier to `pyproject.toml`,
+  add `"3.14"` to the CI test matrix, and validate all dependencies (paramiko,
+  tenacity, s3fs) work on 3.14. PEP 649 (deferred annotations) is the main
+  risk area.
+
 ---
 
 ## Ideas (Unprioritized)
@@ -120,11 +127,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Expose a `RetryPolicy` dataclass in `BackendConfig.options` so users can tune
   attempts, backoff, and jitter per-backend.
 
-- [ ] **ID-011 — Python 3.14 support**
-  Add `Programming Language :: Python :: 3.14` classifier to `pyproject.toml`,
-  add `"3.14"` to the CI test matrix, and validate all dependencies (paramiko,
-  tenacity, s3fs) work on 3.14. PEP 649 (deferred annotations) is the main
-  risk area.
+- [x] **ID-011 — Python 3.14 support** *(promoted to BK-004)*
 
 - [ ] **ID-012 — Performance benchmarks**
   Add benchmarks for large file operations, streaming throughput, and atomic
@@ -146,3 +149,10 @@ Items completed and kept here for reference.
 - [x] **DONE-001 — PEP 604 type hints**
   All source files already use `X | Y` syntax with `from __future__ import annotations`.
   mypy strict mode enforced in CI. No action needed.
+
+- [x] **DONE-002 — Native path resolution (`to_key`)** *(was BK-003)*
+  Fixed the Store round-trip bug (listing returned backend-relative paths that
+  included `root_path`, breaking re-use as input) and added public
+  `Store.to_key(path)` / `Backend.to_key()` for converting native paths to
+  store-relative keys.
+  → Spec: `sdd/specs/010-native-path-resolution.md`

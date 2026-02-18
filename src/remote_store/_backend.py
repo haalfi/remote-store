@@ -131,6 +131,18 @@ class Backend(abc.ABC):
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
 
+    def to_key(self, native_path: str) -> str:
+        """Convert a backend-native path to a backend-relative key.
+
+        Strips the backend's own root/prefix from the path. The default
+        implementation is the identity function — backends with a native
+        root (filesystem path, bucket prefix, base_path) override this.
+
+        :param native_path: Absolute or backend-native path string.
+        :returns: Path relative to the backend's root.
+        """
+        return native_path
+
     def close(self) -> None:  # noqa: B027
         """Release resources. Default is a no-op."""
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from typing import TYPE_CHECKING, BinaryIO
 
 from remote_store._capabilities import Capability
@@ -73,6 +74,51 @@ class Store:
         if not path:
             raise InvalidPath("Path must not be empty for file operations", path=path)
         return self._full_path(path)
+
+    def _strip_root(self, backend_rel: str) -> str:
+        """Strip ``root_path`` prefix from a backend-relative path.
+
+        :returns: Store-relative key.
+        :raises InvalidPath: If the path does not start with ``root_path``.
+        """
+        if not self._root:
+            return backend_rel
+        if backend_rel == self._root:
+            return ""
+        prefix = self._root + "/"
+        if backend_rel.startswith(prefix):
+            return backend_rel[len(prefix) :]
+        raise InvalidPath(
+            f"Path {backend_rel!r} is not under store root {self._root!r}",
+            path=backend_rel,
+        )
+
+    def _rebase_file_info(self, info: FileInfo) -> FileInfo:
+        """Return a copy of *info* with its path rebased to store-relative."""
+        rel = self._strip_root(str(info.path))
+        if rel == str(info.path):
+            return info
+        return dataclasses.replace(info, path=RemotePath(rel))
+
+    def _rebase_folder_info(self, info: FolderInfo) -> FolderInfo:
+        """Return a copy of *info* with its path rebased to store-relative."""
+        rel = self._strip_root(str(info.path))
+        if rel == str(info.path):
+            return info
+        return dataclasses.replace(info, path=RemotePath(rel))
+
+    def to_key(self, path: str) -> str:
+        """Convert an absolute or backend-native path to a store-relative key.
+
+        Composes ``backend.to_key()`` (strips the backend's native root) with
+        store-root stripping (removes ``root_path`` prefix).
+
+        :param path: Absolute, backend-native, or backend-relative path.
+        :returns: Key relative to this store's ``root_path``.
+        :raises InvalidPath: If the path does not belong to this store.
+        """
+        backend_rel = self._backend.to_key(path)
+        return self._strip_root(backend_rel)
 
     def supports(self, capability: Capability) -> bool:
         """Check whether the backend supports a capability."""
@@ -149,10 +195,14 @@ class Store:
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         """List files under path.
 
+        Returned ``FileInfo.path`` values are store-relative keys (``root_path``
+        is stripped), so they can be fed directly back into other Store methods.
+
         :param recursive: Include files in all subdirectories.
         """
         self._backend.capabilities.require(Capability.LIST, backend=self._backend.name)
-        return self._backend.list_files(self._full_path(path), recursive=recursive)
+        for info in self._backend.list_files(self._full_path(path), recursive=recursive):
+            yield self._rebase_file_info(info)
 
     def list_folders(self, path: str) -> Iterator[str]:
         """List immediate subfolder names."""
@@ -166,7 +216,8 @@ class Store:
         :raises InvalidPath: If ``path`` is empty.
         """
         self._backend.capabilities.require(Capability.METADATA, backend=self._backend.name)
-        return self._backend.get_file_info(self._require_file_path(path))
+        info = self._backend.get_file_info(self._require_file_path(path))
+        return self._rebase_file_info(info)
 
     def get_folder_info(self, path: str) -> FolderInfo:
         """Get folder metadata.
@@ -174,7 +225,8 @@ class Store:
         :raises NotFound: If the folder does not exist.
         """
         self._backend.capabilities.require(Capability.METADATA, backend=self._backend.name)
-        return self._backend.get_folder_info(self._full_path(path))
+        info = self._backend.get_folder_info(self._full_path(path))
+        return self._rebase_folder_info(info)
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Move/rename a file.
