@@ -324,6 +324,35 @@ class TestBackendLifecycle:
         backend.close()
 
 
+class TestBackendToKey:
+    """NPR-003 through NPR-008: to_key reverse path resolution."""
+
+    @pytest.mark.spec("NPR-003")
+    def test_to_key_exists(self, backend: Backend) -> None:
+        assert hasattr(backend, "to_key")
+        assert callable(backend.to_key)
+
+    @pytest.mark.spec("NPR-004")
+    def test_to_key_is_deterministic(self, backend: Backend) -> None:
+        assert backend.to_key("some/path") == backend.to_key("some/path")
+
+    @pytest.mark.spec("NPR-005")
+    def test_to_key_passthrough_for_relative(self, backend: Backend) -> None:
+        """Relative paths with no matching prefix pass through unchanged."""
+        result = backend.to_key("some/path")
+        assert isinstance(result, str)
+
+    @pytest.mark.spec("NPR-003")
+    def test_to_key_round_trip_with_listing(self, backend: Backend) -> None:
+        """Paths from list_files can be converted back via to_key."""
+        backend.write("tk/a.txt", b"a")
+        files = list(backend.list_files("tk"))
+        assert len(files) == 1
+        # The path in FileInfo should be a valid backend-relative key
+        key = str(files[0].path)
+        assert backend.read_bytes(key) == b"a"
+
+
 class TestBackendUnwrap:
     """BE-022: unwrap raises by default."""
 

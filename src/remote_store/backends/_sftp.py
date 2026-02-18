@@ -294,6 +294,16 @@ class SFTPBackend(Backend):
 
     # region: path helpers
 
+    def to_key(self, native_path: str) -> str:
+        if self._base_path == "/":
+            # Strip leading slash
+            return native_path.lstrip("/")
+        if native_path.startswith(self._base_path + "/"):
+            return native_path[len(self._base_path) + 1:]
+        if native_path == self._base_path:
+            return ""
+        return native_path
+
     def _sftp_path(self, path: str) -> str:
         """Convert a relative remote_store path to an absolute SFTP path."""
         if path:
