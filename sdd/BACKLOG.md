@@ -32,8 +32,9 @@ Must be resolved before PyPI + ReadTheDocs publish.
 
 - [ ] **BL-006 — Protect master branch with ruleset**
   Create a GitHub repository ruleset that enforces all changes go through pull
-  requests. Include: require PR with at least 1 approval, block force pushes,
-  restrict branch deletion. Apply to `master` (default branch).
+  requests. Include: require PR (0 approvals for solo dev), require CI status
+  checks, block force pushes, restrict branch deletion. Apply to `master`.
+  Blocked: requires GitHub Pro or public repo. Activate when repo goes public.
 
 - [ ] **BL-007 — Pin minimum dependency versions & clean up extras**
   Public extras have no lower bounds — pip can resolve ancient, incompatible
