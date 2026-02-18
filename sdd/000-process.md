@@ -18,6 +18,7 @@ This repository follows **Spec-Driven Development (SDD)**: every feature, contra
 ```
 sdd/
   000-process.md              # This file — how specs work
+  BACKLOG.md                  # Tiered work tracker (blockers → backlog → ideas → done)
   specs/
     001-store-api.md          # Store API + metadata models
     002-registry-config.md    # Registry lifecycle + configuration
@@ -101,6 +102,45 @@ RFCs are proposals for new features or significant changes. They follow the spec
 4. The RFC file is kept for historical reference
 
 Format: `sdd/rfcs/rfc-NNNN-<short-title>.md` — see `rfc-template.md`.
+
+## Backlog
+
+All work — from half-formed ideas to ship-blocking tasks — is tracked in
+`sdd/BACKLOG.md`. Items live in one of four tiers and graduate upward as they
+are evaluated and prioritized:
+
+```
+Ideas  →  Backlog (Prioritized)  →  Release Blockers  →  Done
+```
+
+| Tier | Prefix | Meaning |
+|------|--------|---------|
+| **Release Blockers** | `BL-NNN` | Must be resolved before the next PyPI publish. |
+| **Backlog** | `BK-NNN` | Committed work, queued behind blockers. |
+| **Ideas** | `ID-NNN` | Parking lot — not evaluated, not committed to. |
+| **Done** | `DONE-NNN` | Completed items kept for reference. |
+
+### How items move
+
+- Anyone can add an **Idea** at any time — just append to the Ideas section.
+- An Idea is promoted to **Backlog** when it has a clear scope and someone
+  commits to writing an RFC or spec for it.
+- A Backlog item becomes a **Release Blocker** when it is required for the
+  upcoming release (e.g. missing docs, broken extras, CI gaps).
+- Once completed, items move to **Done** with their original description
+  preserved.
+
+### Relationship to specs
+
+Backlog items that involve code changes must still go through the SDD pipeline:
+the item tracks *what* needs doing; the RFC/spec tracks *how*.
+
+```
+BACKLOG.md (what)  →  rfcs/rfc-NNNN.md (proposal)  →  specs/NNN-*.md (contract)  →  tests  →  code
+```
+
+Operational items (CI config, branch protection, dependency pins) skip the
+RFC/spec step — they are tracked and closed directly in the backlog.
 
 ## Rules
 

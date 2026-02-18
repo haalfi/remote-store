@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "remote-store"
 version = "0.2.0"
-description = "Unified backend agnostic file storage for Python with a single API for local, S3, Azure Blob, SFTP, and more."
+description = "One simple API for file storage. Local, S3, SFTP, Azure. Same methods, swappable backends, zero reinvention."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
@@ -17,6 +17,8 @@ keywords = [
   "object-storage",
   "filesystem",
   "storage-abstraction",
+  "citizen-developer",
+  "low-code",
   "api",
   "streaming",
   "atomic-writes",
