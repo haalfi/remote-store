@@ -66,6 +66,9 @@ One-paragraph purpose statement.
 | `ERR` | Errors | `005-error-model.md` |
 | `SIO` | Streaming I/O | `006-streaming-io.md` |
 | `AW` | Atomic writes | `007-atomic-writes.md` |
+| `S3` | S3 backend | `008-s3-backend.md` |
+| `SFTP` | SFTP backend | `009-sftp-backend.md` |
+| `NPR` | Native path resolution | `010-native-path-resolution.md` |
 
 ## Test ↔ Spec Traceability
 
