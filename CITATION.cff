@@ -9,7 +9,7 @@ version: 0.2.0
 date-released: 2026-02-17
 license: MIT
 repository-code: https://github.com/haalfi/remote-store
-url: https://github.com/haalfi/remote-store
+url: https://haalfi.github.io/remote-store/
 authors:
   - family-names: Alferi
     given-names: Harald

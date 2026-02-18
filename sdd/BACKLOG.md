@@ -44,7 +44,7 @@ Must be resolved before PyPI + ReadTheDocs publish.
   `typing-extensions` (unused — Python 3.10+ covers all needs) and `adlfs`
   (no Azure backend yet).
 
-- [ ] **BL-008 — Set up docs hosting**
+- [x] **BL-008 — Set up docs hosting**
   Configure ReadTheDocs or GitHub Pages so the documentation site is actually
   reachable. Currently `mkdocs.yml`, `CITATION.cff`, and `pyproject.toml` all
   reference a URL that 404s. Once hosting is live, update the URLs to point to
