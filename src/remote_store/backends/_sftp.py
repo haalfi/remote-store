@@ -299,7 +299,7 @@ class SFTPBackend(Backend):
             # Strip leading slash
             return native_path.lstrip("/")
         if native_path.startswith(self._base_path + "/"):
-            return native_path[len(self._base_path) + 1:]
+            return native_path[len(self._base_path) + 1 :]
         if native_path == self._base_path:
             return ""
         return native_path

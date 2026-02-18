@@ -100,7 +100,7 @@ class S3Backend(Backend):
     def to_key(self, native_path: str) -> str:
         prefix = f"{self._bucket}/"
         if native_path.startswith(prefix):
-            return native_path[len(prefix):]
+            return native_path[len(prefix) :]
         return native_path
 
     # endregion

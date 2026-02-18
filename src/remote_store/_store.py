@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, BinaryIO
-
 import dataclasses
+from typing import TYPE_CHECKING, BinaryIO
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath
@@ -88,7 +87,7 @@ class Store:
             return ""
         prefix = self._root + "/"
         if backend_rel.startswith(prefix):
-            return backend_rel[len(prefix):]
+            return backend_rel[len(prefix) :]
         raise InvalidPath(
             f"Path {backend_rel!r} is not under store root {self._root!r}",
             path=backend_rel,

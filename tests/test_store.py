@@ -9,7 +9,6 @@ import pytest
 from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, InvalidPath, NotFound
 from remote_store._models import FileInfo, FolderInfo
-from remote_store._path import RemotePath
 from remote_store._store import Store
 from remote_store.backends._local import LocalBackend
 
