@@ -66,12 +66,12 @@ Next actions once release blockers are cleared.
   SFTP does not. Spec the chosen approach or document why it stays per-backend.
   → Spec: TBD (extends `003-backend-adapter-contract.md`)
 
-- [ ] **BK-003 — Native path resolution**
-  Let backends participate in path resolution instead of relying solely on
-  `RemotePath` normalization. Add a `resolve_path(path: str) -> str` hook to the
-  Backend ABC so each backend can apply its own canonical form (S3 key encoding,
-  SFTP chroot-relative paths, Azure container/blob separation, case sensitivity).
-  The Store calls the hook before every operation, after `RemotePath` validation.
+- [ ] **BK-003 — Native path resolution (`to_key`)**
+  Fix the Store round-trip bug (listing returns backend-relative paths that
+  include `root_path`, breaking re-use as input) and add a public
+  `Store.to_key(path)` helper for converting absolute/backend-native paths to
+  store-relative keys. Backed by `Backend.to_key()` which replaces the ad-hoc
+  `_rel_path` / `relative_to` stripping scattered across backends.
   → Spec: `sdd/specs/010-native-path-resolution.md`
 
 - [ ] **BK-004 — Python 3.14 support**

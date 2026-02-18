@@ -2,162 +2,247 @@
 
 ## Overview
 
-Native path resolution allows backends to transform validated paths into their
-canonical, backend-specific form before every I/O operation. Today `RemotePath`
-applies a single set of normalization rules (PATH-002 through PATH-006) that
-work for most backends, but some storage systems have additional or different
-canonicalization needs (S3 key encoding, SFTP chroot-relative paths, Azure
-container/blob separation, case-insensitive filesystems). This spec introduces
-a `resolve_path` hook on the Backend ABC and defines how the Store integrates it.
+This spec defines bidirectional path resolution between backend-native paths and
+store-relative keys. The primary motivation is **round-trip safety**: paths
+returned by the Store API must be directly usable as input to other Store
+methods. A secondary motivation is a **public helper** for users who receive
+absolute or backend-native paths from external sources and need to convert them
+to store-relative keys.
+
+The solution is `to_key` — a method at both the Backend and Store levels that
+converts native paths to relative keys.
 
 **Relationship to existing specs:**
-- Extends `003-backend-adapter-contract.md` (new abstract method on Backend)
+- Extends `003-backend-adapter-contract.md` (new method on Backend ABC)
 - Complements `004-path-model.md` (RemotePath validation is unchanged)
 - See also: [ADR-0005](../adrs/0005-native-path-resolution.md)
 
 ---
 
-## Design Principles
+## The Problem
 
-### NPR-001: Two-Phase Path Pipeline
+### NPR-001: Round-Trip Invariant
 
-**Invariant:** Path handling is split into two sequential phases:
+**Invariant:** Any path returned by a Store method (in `FileInfo.path`,
+`FolderInfo.path`, or `list_folders` results) must be directly usable as input
+to other Store methods without modification.
 
-1. **Validation** — `RemotePath` rejects unsafe paths (null bytes, `..` segments,
-   empty strings). This phase is backend-agnostic and cannot be bypassed.
-2. **Resolution** — The backend's `resolve_path()` transforms the validated path
-   string into its native canonical form.
+**Example:**
+```python
+store = Store(backend=local, root_path="data")
+store.write("reports/q1.csv", content)
 
-**Postconditions:** Phase 1 always runs before phase 2. A backend never receives
-an unvalidated path.
+for f in store.list_files(""):
+    data = store.read_bytes(str(f.path))  # must work — no manual stripping
+```
 
-### NPR-002: RemotePath Invariants Are Preserved
+**Current violation:** `FileInfo.path` includes the store's `root_path` prefix
+(e.g. `"data/reports/q1.csv"` instead of `"reports/q1.csv"`), causing double-
+prefixing when fed back into Store methods.
 
-**Invariant:** All existing `RemotePath` validation rules (PATH-001 through
-PATH-014) remain in force. `resolve_path` receives the output of `RemotePath`
-normalization and may further transform it, but cannot relax safety invariants.
+### NPR-002: External Path Conversion
+
+**Invariant:** `Store.to_key(path)` converts an absolute or backend-native path
+to a store-relative key that can be used with any Store method.
+
+**Example:**
+```python
+store = Store(backend=sftp, root_path="data")
+
+# Path from an SFTP server log
+key = store.to_key("/srv/sftp/data/reports/q1.csv")
+assert key == "reports/q1.csv"
+
+content = store.read_bytes(key)  # works
+```
 
 ---
 
-## Backend Hook
+## Backend: `to_key`
 
-### NPR-003: resolve_path Method
+### NPR-003: Backend.to_key Method
 
 **Invariant:** The Backend ABC gains a concrete (non-abstract) method:
 ```python
-def resolve_path(self, path: str) -> str:
-    """Transform a validated path into the backend's canonical form.
+def to_key(self, native_path: str) -> str:
+    """Convert a backend-native path to a backend-relative key.
 
-    :param path: Normalized path string (output of RemotePath).
-    :returns: Backend-canonical path string.
+    :param native_path: Absolute or backend-native path string.
+    :returns: Path relative to the backend's root.
     """
-    return path  # default: identity
+    return native_path  # default: identity
 ```
 **Postconditions:** The default implementation is the identity function.
-Backends that do not need custom resolution inherit the default and are
-unaffected.
+Backends that have no concept of a native root (or whose I/O already operates
+on relative keys) inherit the default unchanged.
 
-### NPR-004: resolve_path Contract
+### NPR-004: Backend.to_key Contract
 
-**Invariant:** Implementations of `resolve_path` must satisfy:
+**Invariant:** Implementations of `to_key` must satisfy:
 1. **Deterministic** — same input always produces the same output.
 2. **Pure** — no side effects, no I/O, no network calls.
-3. **Total** — must return a string for every valid input; must not raise.
-4. **Non-empty** — must not return an empty string for a non-empty input.
+3. **Total** — must return a string for every input; must not raise.
 
-**Raises:** If a backend violates rule 4, the Store raises `InvalidPath`.
+### NPR-005: Backend.to_key Is Stripping, Not Validation
 
-### NPR-005: resolve_path Is Not Validation
+**Invariant:** `to_key` strips the backend's own root/prefix from the path.
+It does not validate path safety — that is `RemotePath`'s responsibility. If
+the input path does not start with the backend's root, the backend returns the
+input unchanged (best-effort).
 
-**Invariant:** `resolve_path` must not reject paths. Path rejection is the
-exclusive responsibility of `RemotePath` (phase 1). If a backend cannot
-represent a particular path, the operation will fail naturally at the I/O level
-with the appropriate error (e.g. `NotFound`, `PermissionDenied`).
+### NPR-006: LocalBackend.to_key
+
+**Invariant:** `LocalBackend.to_key(native_path)` strips the backend's
+filesystem root directory.
+**Example:**
+```python
+backend = LocalBackend("/tmp/store")
+backend.to_key("/tmp/store/data/file.txt")  # → "data/file.txt"
+backend.to_key("data/file.txt")             # → "data/file.txt" (no prefix, unchanged)
+```
+**Postconditions:** Replaces the inline `Path.relative_to(self._root)` calls
+currently scattered across listing methods.
+
+### NPR-007: S3Backend.to_key
+
+**Invariant:** `S3Backend.to_key(native_path)` strips the bucket prefix.
+**Example:**
+```python
+backend = S3Backend(bucket="my-bucket")
+backend.to_key("my-bucket/data/file.txt")   # → "data/file.txt"
+backend.to_key("data/file.txt")             # → "data/file.txt" (no prefix, unchanged)
+```
+**Postconditions:** Replaces the existing `_rel_path()` helper with a public,
+contract-backed method.
+
+### NPR-008: SFTPBackend.to_key
+
+**Invariant:** `SFTPBackend.to_key(native_path)` strips the configured
+`base_path`.
+**Example:**
+```python
+backend = SFTPBackend(host="srv", base_path="/srv/sftp")
+backend.to_key("/srv/sftp/data/file.txt")   # → "data/file.txt"
+backend.to_key("data/file.txt")             # → "data/file.txt" (no prefix, unchanged)
+```
+
+### NPR-009: Future Backends
+
+**Invariant:** New backends (Azure Blob, GCS, etc.) implement `to_key` to strip
+their native root/prefix. The method is the single extension point for
+backend-specific reverse path resolution.
 
 ---
 
-## Store Integration
+## Store: `to_key`
 
-### NPR-006: Store Calls resolve_path
+### NPR-010: Store.to_key Method
 
-**Invariant:** `Store._full_path()` calls `backend.resolve_path()` after
-`RemotePath` validation and root-path joining. The resolved path is what the
-backend receives for all subsequent I/O.
+**Invariant:** `Store.to_key(path)` is a public method that composes backend
+conversion with store-root stripping:
+
+```python
+def to_key(self, path: str) -> str:
+    """Convert an absolute or backend-native path to a store-relative key.
+
+    :param path: Absolute, backend-native, or backend-relative path.
+    :returns: Key relative to this store's root_path.
+    """
+```
 
 **Sequence:**
 ```
-user path  →  RemotePath(path)  →  join with root_path  →  backend.resolve_path()  →  backend I/O
+native_path  →  backend.to_key()  →  strip root_path prefix  →  store-relative key
 ```
 
-### NPR-007: Empty Path Bypass
+### NPR-011: Store.to_key Composition
 
-**Invariant:** When `_full_path("")` resolves to the store root (per ADR-0004),
-`resolve_path` is still called on the root path string. This ensures the root
-path itself is canonicalized by the backend.
+**Invariant:** `Store.to_key` calls `backend.to_key(path)` first, then strips
+its own `root_path` prefix from the result. The two levels are independent and
+composable.
 
-### NPR-008: resolve_path Called Once Per Operation
+**Example:**
+```python
+# SFTP backend with base_path="/srv/sftp", store with root_path="data"
+store = Store(backend=sftp, root_path="data")
 
-**Invariant:** For any single Store operation, `resolve_path` is called exactly
-once per path argument. Multi-path operations (e.g. `move(src, dst)`) call it
-once per path.
+# Full chain: "/srv/sftp/data/reports/q1.csv"
+#   → backend.to_key → "data/reports/q1.csv"
+#   → strip root_path → "reports/q1.csv"
+store.to_key("/srv/sftp/data/reports/q1.csv")  # → "reports/q1.csv"
+```
 
----
+### NPR-012: Store.to_key With No root_path
 
-## Backend-Specific Behaviors
+**Invariant:** When `root_path` is empty, `Store.to_key` returns the result of
+`backend.to_key` directly (nothing to strip).
 
-### NPR-009: Local Backend
+### NPR-013: Store.to_key With Unrelated Path
 
-**Invariant:** `LocalBackend.resolve_path()` is the identity (inherits default).
-Local paths are already handled by `RemotePath` normalization and Python's
-`pathlib`.
+**Invariant:** If the path (after backend stripping) does not start with
+`root_path`, `Store.to_key` raises `InvalidPath`. The path does not belong to
+this store.
 
-### NPR-010: S3 Backend
-
-**Invariant:** `S3Backend.resolve_path()` may apply:
-- Stripping a leading `/` (S3 keys are never slash-prefixed).
-- Encoding rules for special characters if needed.
-
-**Postconditions:** The returned string is a valid S3 object key.
-
-### NPR-011: SFTP Backend
-
-**Invariant:** `SFTPBackend.resolve_path()` may prepend the configured
-`base_path` or apply chroot-relative resolution.
-**Postconditions:** The returned string is an absolute POSIX path on the remote
-server.
-
-### NPR-012: Future Backends
-
-**Invariant:** New backends (Azure Blob, GCS, etc.) implement `resolve_path` to
-handle their native path conventions. The hook is the single extension point for
-backend-specific path logic.
+**Example:**
+```python
+store = Store(backend=local, root_path="data")
+store.to_key("/tmp/store/other/file.txt")  # → InvalidPath (not under "data/")
+```
 
 ---
 
-## Error Handling
+## Round-Trip Fix
 
-### NPR-013: Post-Resolution Empty Path Guard
+### NPR-014: Store Listing Methods Return Store-Relative Paths
 
-**Invariant:** If `resolve_path` returns an empty string, the Store raises
-`InvalidPath` before calling any backend I/O method.
+**Invariant:** `list_files`, `get_file_info`, and `get_folder_info` strip
+`root_path` from the paths in returned `FileInfo` / `FolderInfo` objects.
+The returned `path` attribute contains a store-relative key.
 
-### NPR-014: No Exception Leakage from resolve_path
+**Example:**
+```python
+store = Store(backend=local, root_path="data")
+store.write("reports/q1.csv", content)
 
-**Invariant:** If a backend's `resolve_path` raises an unexpected exception, the
-Store catches it and raises `RemoteStoreError` with the original exception as
-cause. This maintains the no-native-exception-leakage guarantee (BE-021).
+files = list(store.list_files(""))
+assert str(files[0].path) == "reports/q1.csv"  # NOT "data/reports/q1.csv"
+```
+
+### NPR-015: list_folders Returns Store-Relative Names
+
+**Invariant:** `list_folders` returns immediate subfolder **names** (not full
+paths). This is already the current behavior and is unaffected by this spec.
+
+### NPR-016: Round-Trip With Nested Paths
+
+**Invariant:** Round-trip works at any nesting depth:
+```python
+store = Store(backend=local, root_path="project/data")
+store.write("2024/q1/report.csv", content)
+
+for f in store.list_files("", recursive=True):
+    assert store.read_bytes(str(f.path))  # works for all depths
+```
 
 ---
 
-## Capability and Backward Compatibility
+## Validation and Safety
 
-### NPR-015: No New Capability Required
+### NPR-017: RemotePath Invariants Are Preserved
 
-**Invariant:** `resolve_path` is not gated by a `Capability`. All backends have
-it (with the identity default). There is no `Capability.NATIVE_PATH_RESOLUTION`.
+**Invariant:** All existing `RemotePath` validation rules (PATH-001 through
+PATH-014) remain in force. `to_key` output is validated through `RemotePath`
+before use in Store methods — the same as any user-provided path.
 
-### NPR-016: Backward Compatibility
+### NPR-018: No New Capability Required
 
-**Invariant:** Existing backends that do not override `resolve_path` behave
-identically to the current system. The default identity implementation ensures
-zero behavioral change for backends that do not opt in.
+**Invariant:** `to_key` is not gated by a `Capability`. All backends have it
+(with the identity default). There is no `Capability.NATIVE_PATH_RESOLUTION`.
+
+### NPR-019: Backward Compatibility
+
+**Invariant:** Existing backends that do not override `to_key` behave
+identically to the current system for forward operations (rel→abs via
+`_full_path`). The listing round-trip fix is a **bug fix**, not a behavioral
+change — current behavior (leaking `root_path` in returned paths) is incorrect
+per NPR-001.
