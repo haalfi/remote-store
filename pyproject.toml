@@ -17,8 +17,6 @@ keywords = [
   "object-storage",
   "filesystem",
   "storage-abstraction",
-  "citizen-developer",
-  "low-code",
   "api",
   "streaming",
   "atomic-writes",
@@ -50,7 +48,7 @@ dependencies = [
 Repository = "https://github.com/haalfi/remote-store"
 Changelog = "https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md"
 Issues = "https://github.com/haalfi/remote-store/issues"
-Documentation = "https://remote-store.readthedocs.io/"
+Documentation = "https://github.com/haalfi/remote-store"
 
 [project.optional-dependencies]
 s3 = ["s3fs"]

@@ -1,6 +1,6 @@
 site_name: remote-store
-site_url: https://remote-store.readthedocs.io/
-site_description: Backend-agnostic remote storage abstraction for Python.
+site_url: https://github.com/haalfi/remote-store
+site_description: One simple API for file storage. Local, S3, SFTP, Azure. Same methods, swappable backends, zero reinvention.
 repo_url: https://github.com/haalfi/remote-store
 repo_name: haalfi/remote-store
 

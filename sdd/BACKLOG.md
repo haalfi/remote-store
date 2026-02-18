@@ -43,6 +43,12 @@ Must be resolved before PyPI + ReadTheDocs publish.
   `typing-extensions` (unused — Python 3.10+ covers all needs) and `adlfs`
   (no Azure backend yet).
 
+- [ ] **BL-008 — Set up docs hosting**
+  Configure ReadTheDocs or GitHub Pages so the documentation site is actually
+  reachable. Currently `mkdocs.yml`, `CITATION.cff`, and `pyproject.toml` all
+  reference a URL that 404s. Once hosting is live, update the URLs to point to
+  the real site.
+
 ---
 
 ## Backlog (Prioritized)
@@ -118,6 +124,17 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   add `"3.14"` to the CI test matrix, and validate all dependencies (paramiko,
   tenacity, s3fs) work on 3.14. PEP 649 (deferred annotations) is the main
   risk area.
+
+- [ ] **ID-012 — Performance benchmarks**
+  Add benchmarks for large file operations, streaming throughput, and atomic
+  writes across backends. Use `pytest-benchmark` or a standalone script suite.
+  Establishes a baseline before optimizing and catches regressions.
+
+- [ ] **ID-013 — Async Store / Backend API**
+  Async version of `Store` and `Backend` for use in async frameworks (FastAPI,
+  aiohttp, etc.). Could be a parallel `AsyncStore` class or an async mode on
+  the existing `Store`. Needs design decision on whether to wrap sync backends
+  with `asyncio.to_thread` or require native async backends.
 
 ---
 
