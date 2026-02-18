@@ -150,8 +150,12 @@ Backends define:
 - path normalization rules
 - validation logic
 - canonical representation
+- reverse resolution via `to_key()` (native/absolute path → backend-relative key)
 
-No implicit path rewriting occurs in the core.
+The Store composes `Backend.to_key()` with its own `root_path` stripping to
+provide a full native-to-store-relative conversion. Listing methods apply this
+automatically so that returned paths are directly usable as input (round-trip
+invariant). No implicit path rewriting occurs in the core.
 
 ---
 

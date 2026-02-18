@@ -66,14 +66,6 @@ Next actions once release blockers are cleared.
   SFTP does not. Spec the chosen approach or document why it stays per-backend.
   → Spec: TBD (extends `003-backend-adapter-contract.md`)
 
-- [ ] **BK-003 — Native path resolution (`to_key`)**
-  Fix the Store round-trip bug (listing returns backend-relative paths that
-  include `root_path`, breaking re-use as input) and add a public
-  `Store.to_key(path)` helper for converting absolute/backend-native paths to
-  store-relative keys. Backed by `Backend.to_key()` which replaces the ad-hoc
-  `_rel_path` / `relative_to` stripping scattered across backends.
-  → Spec: `sdd/specs/010-native-path-resolution.md`
-
 - [ ] **BK-004 — Python 3.14 support**
   *(Promoted from ID-011.)*
   Add `Programming Language :: Python :: 3.14` classifier to `pyproject.toml`,
@@ -157,3 +149,10 @@ Items completed and kept here for reference.
 - [x] **DONE-001 — PEP 604 type hints**
   All source files already use `X | Y` syntax with `from __future__ import annotations`.
   mypy strict mode enforced in CI. No action needed.
+
+- [x] **DONE-002 — Native path resolution (`to_key`)** *(was BK-003)*
+  Fixed the Store round-trip bug (listing returned backend-relative paths that
+  included `root_path`, breaking re-use as input) and added public
+  `Store.to_key(path)` / `Backend.to_key()` for converting native paths to
+  store-relative keys.
+  → Spec: `sdd/specs/010-native-path-resolution.md`
