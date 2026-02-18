@@ -40,9 +40,7 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 
-dependencies = [
-  "typing-extensions",
-]
+dependencies = []
 
 [project.urls]
 Repository = "https://github.com/haalfi/remote-store"
@@ -51,16 +49,15 @@ Issues = "https://github.com/haalfi/remote-store/issues"
 Documentation = "https://github.com/haalfi/remote-store"
 
 [project.optional-dependencies]
-s3 = ["s3fs"]
-azure = ["adlfs"]
-sftp = ["paramiko", "tenacity"]
+s3 = ["s3fs>=2024.2.0"]
+sftp = ["paramiko>=2.2", "tenacity>=4.0"]
 
 docs = [
   "mkdocs>=1.6",
   "mkdocs-material>=9.5",
   "mkdocstrings[python]>=0.27",
   "mkdocs-include-markdown-plugin>=7.0",
-  "s3fs",
+  "s3fs>=2024.2.0",
 ]
 
 dev = [
@@ -71,8 +68,8 @@ dev = [
   "jupyter",
   "s3fs>=2024.2.0",
   "moto[server,s3]",
-  "paramiko",
-  "tenacity",
+  "paramiko>=2.2",
+  "tenacity>=4.0",
   "types-paramiko",
   "pre-commit",
 ]
@@ -85,8 +82,8 @@ dependencies = [
   "ruff",
   "s3fs>=2024.2.0",
   "moto[server,s3]",
-  "paramiko",
-  "tenacity",
+  "paramiko>=2.2",
+  "tenacity>=4.0",
   "types-paramiko",
   "pre-commit",
   "mkdocs>=1.6",

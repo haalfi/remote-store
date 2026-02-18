@@ -40,7 +40,6 @@ Backends that need extra dependencies use extras:
 ```bash
 pip install remote-store[s3]      # Amazon S3 / MinIO
 pip install remote-store[sftp]    # SFTP / SSH
-pip install remote-store[azure]   # Azure Blob / ADLS (planned)
 ```
 
 ## Quick Start
@@ -130,7 +129,7 @@ All write/move/copy methods accept `overwrite=True` to replace existing files.
 |Local filesystem |Built-in  |                     |
 |Amazon S3 / MinIO|Built-in  |`remote-store[s3]`   |
 |SFTP / SSH       |Built-in  |`remote-store[sftp]` |
-|Azure Blob / ADLS|Planned   |`remote-store[azure]`|
+|Azure Blob / ADLS|Planned   |                     |
 
 ## Examples
 

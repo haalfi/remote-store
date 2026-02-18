@@ -36,7 +36,7 @@ Must be resolved before PyPI + ReadTheDocs publish.
   checks, block force pushes, restrict branch deletion. Apply to `master`.
   Blocked: requires GitHub Pro or public repo. Activate when repo goes public.
 
-- [ ] **BL-007 — Pin minimum dependency versions & clean up extras**
+- [x] **BL-007 — Pin minimum dependency versions & clean up extras**
   Public extras have no lower bounds — pip can resolve ancient, incompatible
   versions. Add minimum pins: `paramiko>=2.2` (needs `posix_rename`),
   `tenacity>=4.0` (`before_sleep_log`, `retry_if_exception_type`),

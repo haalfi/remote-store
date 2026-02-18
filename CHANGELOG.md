@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor bumps may contain breaking changes.
 
+## [Unreleased]
+
+### Changed
+
+- Pinned minimum versions on public extras: `s3fs>=2024.2.0`, `paramiko>=2.2`, `tenacity>=4.0`
+- Removed `typing-extensions` from core dependencies (unused -- Python 3.10+ covers all needs)
+- Removed `azure` extra (`adlfs`) -- no Azure backend exists yet; will be re-added with the backend
+
+---
+
 ## [0.2.0] - 2026-02-17
 
 ### Added
