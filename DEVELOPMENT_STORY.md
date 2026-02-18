@@ -15,6 +15,14 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Calendar time | 3 days of focused work |
 | Commits | 24 |
 
+## Origin: Citizen Developers Shouldn't Need to Learn boto3
+
+The idea for `remote-store` came from a simple observation: teams that include citizen developers -- analysts, scientists, domain experts who write Python but aren't software engineers -- kept getting stuck on file storage. Every cloud provider has its own SDK, its own auth dance, its own streaming quirks. The experienced devs on the team would write wrapper code, but it was never reusable across projects, and the citizen devs couldn't maintain it.
+
+The goal was to give those teams a single API that hides the backend complexity entirely. A data analyst who can write `store.write("report.csv", data)` shouldn't need to understand S3 multipart uploads or SFTP channel management. The same code should work whether files live on a shared drive, an S3 bucket, or an SFTP server -- and switching between them should be a config change, not a code change.
+
+That citizen-developer use case shaped every design decision: immutable config (so non-experts can't accidentally mutate state), clear error messages (no raw `botocore` tracebacks), capability declarations (so unsupported operations fail with an explanation, not a cryptic exception), and streaming by default (so large files just work without anyone tuning buffer sizes).
+
 ## The Approach: Specs First, Code Second
 
 The project follows **Spec-Driven Development (SDD)** -- every feature starts as a specification before any code is written. This turned out to be an excellent fit for AI-assisted development, because:
