@@ -39,6 +39,8 @@ reinvent file I/O. It just gives every backend the same simple front door.
 
 ## Installation
 
+Install from [PyPI](https://pypi.org/project/remote-store/):
+
 ```bash
 pip install remote-store
 ```
