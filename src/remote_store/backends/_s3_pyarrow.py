@@ -41,9 +41,9 @@ class _PyArrowBinaryIO(io.RawIOBase):
         return True
 
     def seekable(self) -> bool:
-        return self._pa.seekable()
+        return bool(self._pa.seekable())
 
-    def readinto(self, b: bytearray | memoryview) -> int:
+    def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
         data = self._pa.read(len(b))
         n = len(data)
         b[:n] = data
@@ -51,10 +51,10 @@ class _PyArrowBinaryIO(io.RawIOBase):
 
     def seek(self, offset: int, whence: int = 0) -> int:
         self._pa.seek(offset, whence)
-        return self._pa.tell()
+        return int(self._pa.tell())
 
     def tell(self) -> int:
-        return self._pa.tell()
+        return int(self._pa.tell())
 
     def close(self) -> None:
         if not self.closed:

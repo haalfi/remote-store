@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import errno
-import io
 import logging
 import os
 import re
@@ -415,7 +414,8 @@ class SFTPBackend(Backend):
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
-            return self._sftp.file(sftp_path, "r")
+            f: BinaryIO = self._sftp.file(sftp_path, "r")
+            return f
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
@@ -686,9 +686,8 @@ class SFTPBackend(Backend):
                     self._sftp.rename(src_sftp, dst_sftp)
                 except OSError:
                     # Fallback: stream copy + delete
-                    with self._sftp.file(src_sftp, "r") as src_f:
-                        with self._sftp.file(dst_sftp, "w") as dst_f:
-                            shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
+                    with self._sftp.file(src_sftp, "r") as src_f, self._sftp.file(dst_sftp, "w") as dst_f:
+                        shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
                     self._sftp.remove(src_sftp)
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
@@ -716,9 +715,8 @@ class SFTPBackend(Backend):
             self._ensure_parent_dirs(dst_sftp)
 
             # Stream source to destination (no server-side copy in SFTP)
-            with self._sftp.file(src_sftp, "r") as src_f:
-                with self._sftp.file(dst_sftp, "w") as dst_f:
-                    shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
+            with self._sftp.file(src_sftp, "r") as src_f, self._sftp.file(dst_sftp, "w") as dst_f:
+                shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
 
     # endregion
 

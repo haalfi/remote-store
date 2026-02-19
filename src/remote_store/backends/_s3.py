@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import io
 import shutil
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -181,7 +180,8 @@ class S3Backend(Backend):
     # region: read operations
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
-            return self._fs.open(self._s3_path(path), "rb")
+            f: BinaryIO = self._fs.open(self._s3_path(path), "rb")
+            return f
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):

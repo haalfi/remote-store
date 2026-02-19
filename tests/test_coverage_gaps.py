@@ -433,7 +433,6 @@ class TestLocalBackendWriteAtomicCleanup:
 
             def failing_fdopen(fd, mode="r"):
                 f = original_fdopen(fd, mode)
-                original_write = f.write
 
                 def bad_write(data: bytes) -> int:
                     raise OSError("disk full")
