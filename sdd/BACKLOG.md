@@ -67,10 +67,12 @@ Must be resolved before PyPI + ReadTheDocs publish.
 
 Next actions once release blockers are cleared.
 
-- [ ] **BK-001 — Azure Blob backend**
+- [-] **BK-001 — Azure backend**
   Write RFC (`sdd/rfcs/rfc-0002-azure-backend.md`), graduate to spec
-  (`sdd/specs/010-azure-backend.md`), implement with `adlfs`.
-  → Spec: TBD
+  (`sdd/specs/012-azure-backend.md`), implement with `azure-storage-file-datalake`
+  directly (not `adlfs`). See RFC-0002 for rationale.
+  → RFC: `sdd/rfcs/rfc-0002-azure-backend.md` (Accepted)
+  → Spec: `sdd/specs/012-azure-backend.md`
 
 - [ ] **BK-002 — Glob / pattern matching strategy**
   Decide per-backend glob vs client-side abstraction. S3 has native prefix listing,
