@@ -44,10 +44,10 @@ classifiers = [
 dependencies = []
 
 [project.urls]
+Documentation = "https://remote-store.readthedocs.io/"
 Repository = "https://github.com/haalfi/remote-store"
 Changelog = "https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md"
 Issues = "https://github.com/haalfi/remote-store/issues"
-Documentation = "https://haalfi.github.io/remote-store/"
 
 [project.optional-dependencies]
 s3 = ["s3fs>=2024.2.0"]

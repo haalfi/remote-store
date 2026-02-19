@@ -50,6 +50,17 @@ Must be resolved before PyPI + ReadTheDocs publish.
   Done: Pages enabled (source: GitHub Actions) at https://haalfi.github.io/remote-store/.
   Workflow `.github/workflows/docs.yml` deploys on push to master.
 
+- [x] **BL-009 — Fix broken PyPI logo and badges**
+  README logo used a relative path (`assets/logo.png`) which doesn't resolve on PyPI's
+  CDN. Changed to absolute raw GitHub URL. Added PyPI version, Python versions, RTD,
+  and license badges.
+
+- [x] **BL-010 — Publish documentation to Read the Docs**
+  Set up Read the Docs hosting alongside GitHub Pages. Updated `.readthedocs.yaml`
+  (bumped to ubuntu-24.04), pointed `Documentation` URL in `pyproject.toml` to
+  `https://remote-store.readthedocs.io/`, added RTD badge to README.
+  Done: project imported on RTD, docs live at https://remote-store.readthedocs.io/.
+
 ---
 
 ## Backlog (Prioritized)
