@@ -25,11 +25,8 @@ from paramiko import (
     Transport,
 )
 
-# ---------------------------------------------------------------------------
-# Stub SSH server -- accepts all auth
-# ---------------------------------------------------------------------------
 
-
+# region: stub SSH server -- accepts all auth
 class StubServer(ServerInterface):
     """Minimal SSH server that accepts all authentication."""
 
@@ -43,11 +40,10 @@ class StubServer(ServerInterface):
         return OPEN_SUCCEEDED
 
 
-# ---------------------------------------------------------------------------
-# SFTP handle -- wraps a real file descriptor
-# ---------------------------------------------------------------------------
+# endregion
 
 
+# region: SFTP handle -- wraps a real file descriptor
 class StubSFTPHandle(SFTPHandle):
     """SFTP handle that wraps a real file on the local filesystem."""
 
@@ -61,11 +57,10 @@ class StubSFTPHandle(SFTPHandle):
         return paramiko.SFTP_OK
 
 
-# ---------------------------------------------------------------------------
-# SFTP server interface -- maps operations to local filesystem
-# ---------------------------------------------------------------------------
+# endregion
 
 
+# region: SFTP server interface -- maps operations to local filesystem
 class StubSFTPServer(SFTPServerInterface):
     """SFTP server backed by a local directory tree."""
 
@@ -191,11 +186,10 @@ class StubSFTPServer(SFTPServerInterface):
         return paramiko.SFTP_OP_UNSUPPORTED
 
 
-# ---------------------------------------------------------------------------
-# Server lifecycle
-# ---------------------------------------------------------------------------
+# endregion
 
 
+# region: server lifecycle
 def _accept_connections(
     server_socket: socket.socket,
     host_key: RSAKey,
@@ -275,3 +269,6 @@ def stop_sftp_server(
     with contextlib.suppress(OSError):
         server_socket.close()
     thread.join(timeout=5)
+
+
+# endregion
