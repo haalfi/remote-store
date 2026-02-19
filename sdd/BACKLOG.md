@@ -30,11 +30,11 @@ Must be resolved before PyPI + ReadTheDocs publish.
   Add `CITATION.cff` to repo root for GitHub's citation button.
   Include author, title, version, license, repository URL, DOI (if applicable).
 
-- [ ] **BL-006 — Protect master branch with ruleset**
+- [x] **BL-006 — Protect master branch with ruleset**
   Create a GitHub repository ruleset that enforces all changes go through pull
   requests. Include: require PR (0 approvals for solo dev), require CI status
   checks, block force pushes, restrict branch deletion. Apply to `master`.
-  Blocked: requires GitHub Pro or public repo. Activate when repo goes public.
+  Done: repo is now public (v0.4.0). Ruleset can be configured in Settings.
 
 - [x] **BL-007 — Pin minimum dependency versions & clean up extras**
   Public extras have no lower bounds — pip can resolve ancient, incompatible
@@ -45,10 +45,9 @@ Must be resolved before PyPI + ReadTheDocs publish.
   (no Azure backend yet).
 
 - [x] **BL-008 — Set up docs hosting**
-  Configure ReadTheDocs or GitHub Pages so the documentation site is actually
-  reachable. Currently `mkdocs.yml`, `CITATION.cff`, and `pyproject.toml` all
-  reference a URL that 404s. Once hosting is live, update the URLs to point to
-  the real site.
+  Configure GitHub Pages so the documentation site is reachable.
+  Done: Pages enabled (source: GitHub Actions) at https://haalfi.github.io/remote-store/.
+  Workflow `.github/workflows/docs.yml` deploys on push to master.
 
 ---
 
