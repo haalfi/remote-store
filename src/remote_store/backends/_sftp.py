@@ -417,7 +417,6 @@ class SFTPBackend(Backend):
     # endregion
 
     # region: read operations
-
     def read(self, path: str) -> io.BytesIO:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
@@ -448,7 +447,6 @@ class SFTPBackend(Backend):
     # endregion
 
     # region: write operations
-
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
@@ -500,7 +498,6 @@ class SFTPBackend(Backend):
     # endregion
 
     # region: delete operations
-
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
@@ -560,7 +557,6 @@ class SFTPBackend(Backend):
     # endregion
 
     # region: listing operations
-
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         try:
             sftp_path = self._sftp_path(path)
@@ -598,7 +594,6 @@ class SFTPBackend(Backend):
     # endregion
 
     # region: metadata
-
     def get_file_info(self, path: str) -> FileInfo:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
@@ -666,7 +661,6 @@ class SFTPBackend(Backend):
     # endregion
 
     # region: move and copy
-
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         with self._errors(src):
             src_sftp = self._sftp_path(src)
@@ -741,7 +735,6 @@ class SFTPBackend(Backend):
     # endregion
 
     # region: lifecycle
-
     def close(self) -> None:
         self._close_clients()
 
