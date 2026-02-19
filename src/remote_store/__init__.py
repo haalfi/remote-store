@@ -17,7 +17,7 @@ from remote_store._path import RemotePath
 from remote_store._registry import Registry, register_backend
 from remote_store._store import Store
 
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 
 __all__ = [
     # Core

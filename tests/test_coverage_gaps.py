@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import tempfile
 from datetime import datetime, timezone
 from unittest.mock import patch
@@ -356,7 +357,7 @@ class TestLocalBackendPermissionErrors:
             backend = LocalBackend(root=tmp)
             backend.write("secret.txt", b"data")
             with (
-                patch("pathlib.Path.read_bytes", side_effect=PermissionError("denied")),
+                patch("builtins.open", side_effect=PermissionError("denied")),
                 pytest.raises(PermissionDenied),
             ):
                 backend.read("secret.txt")
@@ -428,13 +429,21 @@ class TestLocalBackendWriteAtomicCleanup:
     def test_write_atomic_cleanup_on_failure(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             backend = LocalBackend(root=tmp)
-            with patch("os.write", side_effect=OSError("disk full")), pytest.raises(OSError, match="disk full"):
+            original_fdopen = os.fdopen
+
+            def failing_fdopen(fd, mode="r"):
+                f = original_fdopen(fd, mode)
+
+                def bad_write(data: bytes) -> int:
+                    raise OSError("disk full")
+
+                f.write = bad_write
+                return f
+
+            with patch("os.fdopen", side_effect=failing_fdopen), pytest.raises(OSError, match="disk full"):
                 backend.write_atomic("test.txt", b"data")
             # Temp file should be cleaned up
             assert not backend.exists("test.txt")
-
-    def test_is_fd_closed_true(self) -> None:
-        assert LocalBackend._is_fd_closed(999999) is True
 
     def test_write_atomic_permission_denied(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

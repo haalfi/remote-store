@@ -185,6 +185,38 @@ Finally, the `pyproject.toml` metadata changes (Documentation URL, README fixes)
 
 **The lesson: "works on GitHub" is not the same as "works everywhere the package appears."** PyPI, Read the Docs, and GitHub each render the same source files differently, with different rules for resolving paths, images, and links. A pre-release checklist that includes checking the rendered output on each platform would have caught all of these issues before users did.
 
+### Phase 10: The Streaming Audit (v0.4.3)
+
+The README says "streaming by default" and spec SIO-001 mandates that `read()` returns a `BinaryIO` that streams from the backend. But when the human asked to **review whether streaming actually worked**, every single backend turned out to load the entire file into memory.
+
+The pattern was the same in all four backends: `read()` called something that fetched the full content, wrapped it in `BytesIO`, and returned that. Callers got a `BinaryIO` that quacked correctly but had already consumed all the memory. Writes had the same problem — `BinaryIO` content was `.read()` into a `bytes` object before being written.
+
+**The fixes were backend-specific but shared a theme:**
+
+| Backend | Before | After |
+|---------|--------|-------|
+| Local | `BytesIO(path.read_bytes())` | `open(path, "rb")` — real file handle |
+| S3 | `BytesIO(fs.cat_file(path))` | `fs.open(path, "rb")` — HTTP range requests |
+| S3-PyArrow | `BytesIO(pa_fs.open_input_stream(...).read())` | Custom `_PyArrowBinaryIO(io.RawIOBase)` adapter + `BufferedReader` |
+| SFTP | `BytesIO(sftp.file(...).read())` | Return `SFTPFile` directly (no `prefetch()`) |
+
+For writes, all backends gained `shutil.copyfileobj()` for `BinaryIO` content, which copies in chunks without materializing the full stream.
+
+**The PyArrow adapter was the trickiest.** PyArrow's `RandomAccessFile` doesn't implement Python's `BinaryIO` protocol — it has `read()` and `seek()` but no `readinto()`, which `io.BufferedReader` requires. The solution was a thin `io.RawIOBase` subclass that bridges `readinto()` → `read()`, wrapped in `BufferedReader` for buffering. About 20 lines to glue two ecosystems together.
+
+**The lesson is uncomfortable: specs that aren't enforced by tests drift from reality.** Spec SIO-001 said "streaming," and every backend's `read()` signature returned `BinaryIO`, so mypy was happy and tests passed. But no test verified that the returned `BinaryIO` actually streamed from the backend rather than from a pre-filled buffer. The type system validated the interface; it couldn't validate the behavior behind it.
+
+This session also caught two housekeeping issues:
+- **ReadTheDocs deep links need `/en/latest/`**: The README linked to `readthedocs.io/api/store/` which 404'd because RTD requires a version prefix. Another instance of the Phase 9 lesson — "works on GitHub ≠ works everywhere."
+- **Versioning docs were duplicated and diverged**: `CONTRIBUTING.md` had the current policy (bump-my-version, single source file), while `sdd/000-process.md` still described the old manual process. Consolidated to CONTRIBUTING.md with a pointer from process.md.
+
+```
+0fc7116  Fix streaming read/write to avoid loading entire files into memory
+712950e  Consolidate versioning docs into CONTRIBUTING.md
+7f1776a  Fix broken API reference link in README for PyPI
+76ec1b3  Bump version to 0.4.3
+```
+
 ## What Worked Well
 
 ### Specs as a shared contract
@@ -293,6 +325,10 @@ prioritization scheme each session.
 7. **Pin your dependency lower bounds.** Unpinned deps in CI will eventually bite you. A `>=` pin costs nothing and prevents silent downgrades that produce baffling failures.
 
 8. **Point AI at legacy code.** If you have working code that solves part of the problem, show it to the AI. It will extract the relevant patterns faster than you can describe them.
+
+9. **Test behavior, not just interfaces.** A method that returns `BinaryIO` can satisfy mypy and pass functional tests while secretly loading everything into memory. If your spec promises streaming, write a test that proves it streams — e.g., verify that reading a large file doesn't allocate proportional memory, or that the returned handle reads lazily from the source.
+
+10. **Periodically audit spec claims against implementation.** Specs drift. A dedicated "does the code still do what the spec says?" review caught four backends worth of non-streaming `read()` implementations hiding behind correct type signatures.
 
 ## Reproducing This Workflow
 

@@ -147,35 +147,8 @@ RFC/spec step — they are tracked and closed directly in the backlog.
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). While pre-1.0,
-minor bumps may contain breaking changes.
-
-### Version locations
-
-The version string lives in **two** places — both must be updated together:
-
-| File | Field |
-|------|-------|
-| `pyproject.toml` | `version = "X.Y.Z"` |
-| `src/remote_store/__init__.py` | `__version__ = "X.Y.Z"` |
-
-### When to bump
-
-| Change type | Bump | Examples |
-|-------------|------|----------|
-| New public API, feature, or backend | **minor** (`0.X.0`) | `Store.to_key()`, new backend, new config loader |
-| Bug fix, internal refactor | **patch** (`0.0.X`) | Fix round-trip bug, update retry logic |
-| Breaking API change (pre-1.0) | **minor** (`0.X.0`) | Remove method, rename parameter |
-| Breaking API change (post-1.0) | **major** (`X.0.0`) | — |
-| CI, docs, metadata-only | **no bump** | Add classifier, update README |
-
-### How to bump
-
-1. Update `pyproject.toml` and `src/remote_store/__init__.py`.
-2. Move the `[Unreleased]` section in `CHANGELOG.md` under a new
-   `[X.Y.Z] - YYYY-MM-DD` heading and add a fresh `[Unreleased]` above it.
-3. Commit the version bump **in the same PR** as the feature or fix that
-   triggers it.
+See [CONTRIBUTING.md § Versioning](../CONTRIBUTING.md#versioning) for the canonical
+versioning policy, bump rules, and tooling.
 
 ## Rules
 

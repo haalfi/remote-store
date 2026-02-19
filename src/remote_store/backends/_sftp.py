@@ -4,17 +4,17 @@ from __future__ import annotations
 
 import contextlib
 import errno
-import io
 import logging
 import os
 import re
+import shutil
 import stat
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from enum import Enum
 from io import StringIO
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -364,12 +364,6 @@ class SFTPBackend(Backend):
 
     # region: helpers
 
-    @staticmethod
-    def _read_content(content: WritableContent) -> bytes:
-        if isinstance(content, bytes):
-            return content
-        return content.read()
-
     def _stat_to_fileinfo(self, path: str, attrs: Any) -> FileInfo:
         """Convert paramiko SFTPAttributes to a FileInfo."""
         name = path.rsplit("/", 1)[-1] if "/" in path else path
@@ -417,19 +411,11 @@ class SFTPBackend(Backend):
     # endregion
 
     # region: read operations
-    def read(self, path: str) -> io.BytesIO:
+    def read(self, path: str) -> BinaryIO:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
-            try:
-                with self._sftp.file(sftp_path, "r") as f:
-                    f.prefetch()
-                    data = f.read()
-            except OSError as exc:
-                code = getattr(exc, "errno", None)
-                if code == errno.ENOENT:
-                    raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-                raise
-            return io.BytesIO(data)
+            f: BinaryIO = self._sftp.file(sftp_path, "r")
+            return f
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
@@ -458,9 +444,11 @@ class SFTPBackend(Backend):
                     if getattr(exc, "errno", None) != errno.ENOENT:
                         raise
             self._ensure_parent_dirs(sftp_path)
-            data = self._read_content(content)
             with self._sftp.file(sftp_path, "w") as f:
-                f.write(data)
+                if isinstance(content, bytes):
+                    f.write(content)
+                else:
+                    shutil.copyfileobj(content, f, _CHUNK_SIZE)
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         with self._errors(path):
@@ -473,7 +461,6 @@ class SFTPBackend(Backend):
                     if getattr(exc, "errno", None) != errno.ENOENT:
                         raise
             self._ensure_parent_dirs(sftp_path)
-            data = self._read_content(content)
             # Write to temp file, then rename
             name = sftp_path.rsplit("/", 1)[-1] if "/" in sftp_path else sftp_path
             parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else "."
@@ -481,7 +468,10 @@ class SFTPBackend(Backend):
             tmp_path = f"{parent}/{tmp_name}"
             try:
                 with self._sftp.file(tmp_path, "w") as f:
-                    f.write(data)
+                    if isinstance(content, bytes):
+                        f.write(content)
+                    else:
+                        shutil.copyfileobj(content, f, _CHUNK_SIZE)
                 try:
                     self._sftp.posix_rename(tmp_path, sftp_path)
                 except OSError:  # pragma: no cover -- fallback for servers without posix_rename
@@ -695,10 +685,9 @@ class SFTPBackend(Backend):
                             self._sftp.remove(dst_sftp)
                     self._sftp.rename(src_sftp, dst_sftp)
                 except OSError:
-                    # Fallback: copy + delete
-                    data = self._sftp.file(src_sftp, "r").read()
-                    with self._sftp.file(dst_sftp, "w") as f:
-                        f.write(data)
+                    # Fallback: stream copy + delete
+                    with self._sftp.file(src_sftp, "r") as src_f, self._sftp.file(dst_sftp, "w") as dst_f:
+                        shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
                     self._sftp.remove(src_sftp)
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
@@ -725,12 +714,9 @@ class SFTPBackend(Backend):
 
             self._ensure_parent_dirs(dst_sftp)
 
-            # Read source, write to destination (no server-side copy in SFTP)
-            with self._sftp.file(src_sftp, "r") as f:
-                f.prefetch()
-                data = f.read()
-            with self._sftp.file(dst_sftp, "w") as f:
-                f.write(data)
+            # Stream source to destination (no server-side copy in SFTP)
+            with self._sftp.file(src_sftp, "r") as src_f, self._sftp.file(dst_sftp, "w") as dst_f:
+                shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
 
     # endregion
 

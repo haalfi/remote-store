@@ -15,6 +15,20 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ---
 
+## [0.4.3] - 2026-02-19
+
+### Fixed
+
+- **Streaming read/write loaded entire files into memory** -- all four backends (Local, S3, S3-PyArrow, SFTP) now use true streaming for `read()` and `write()` with `BinaryIO` content, matching the spec's streaming-first intent
+- **SFTP copy/move buffered entire files** -- `copy()` and `move()` fallback now stream chunks using `_CHUNK_SIZE` instead of loading source into memory
+- **Broken API reference link in README** -- ReadTheDocs URL was missing `/en/latest/` prefix, causing 404 on PyPI
+
+### Changed
+
+- **Versioning docs consolidated** -- removed outdated duplicate from `sdd/000-process.md`, canonical source is now `CONTRIBUTING.md`
+
+---
+
 ## [0.4.2] - 2026-02-19
 
 ### Fixed

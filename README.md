@@ -39,6 +39,8 @@ reinvent file I/O. It just gives every backend the same simple front door.
 
 ## Installation
 
+Install from [PyPI](https://pypi.org/project/remote-store/):
+
 ```bash
 pip install remote-store
 ```
@@ -139,7 +141,7 @@ config = RegistryConfig.from_dict({
 
 All write/move/copy methods accept `overwrite=True` to replace existing files.
 
-For full details, see the [API reference](https://remote-store.readthedocs.io/api/store/).
+For full details, see the [API reference](https://remote-store.readthedocs.io/en/latest/api/store/).
 
 ## Supported Backends
 

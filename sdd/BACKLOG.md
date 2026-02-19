@@ -146,6 +146,19 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   the existing `Store`. Needs design decision on whether to wrap sync backends
   with `asyncio.to_thread` or require native async backends.
 
+- [ ] **ID-014 — Streaming conformance tests**
+  Add tests that verify `read()` returns a true streaming handle — not a
+  `BytesIO` wrapping the full content. v0.4.3 fixed all four backends, but
+  nothing in the test suite prevents regression. Could assert that the returned
+  object is not a `BytesIO`, or mock the underlying transport to verify lazy
+  reads. Extends spec SIO-001.
+
+- [ ] **ID-015 — Audit external deep links**
+  v0.4.3 fixed a broken ReadTheDocs link in the README (missing `/en/latest/`
+  prefix). Other docs, docstrings, or example files may contain similar
+  bare RTD URLs. Sweep for `readthedocs.io/` links without a version prefix
+  and fix them. One-time task.
+
 ---
 
 ## Done

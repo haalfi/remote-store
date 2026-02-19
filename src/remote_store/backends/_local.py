@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import io
 import os
 import shutil
 import tempfile
@@ -73,12 +72,6 @@ class LocalBackend(Backend):
     # endregion
 
     # region: helpers
-    @staticmethod
-    def _read_content(content: WritableContent) -> bytes:
-        if isinstance(content, bytes):
-            return content
-        return content.read()
-
     def _stat_to_fileinfo(self, path: str, full: Path) -> FileInfo:
         st = full.stat()
         return FileInfo(
@@ -106,7 +99,7 @@ class LocalBackend(Backend):
     def read(self, path: str) -> BinaryIO:
         full = self._resolve(path)
         try:
-            return io.BytesIO(full.read_bytes())
+            return open(str(full), "rb")  # noqa: SIM115
         except FileNotFoundError:
             raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
         except PermissionError:
@@ -130,8 +123,11 @@ class LocalBackend(Backend):
             raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
         try:
             full.parent.mkdir(parents=True, exist_ok=True)
-            data = self._read_content(content)
-            full.write_bytes(data)
+            if isinstance(content, bytes):
+                full.write_bytes(content)
+            else:
+                with open(str(full), "wb") as f:
+                    shutil.copyfileobj(content, f)
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
@@ -141,27 +137,20 @@ class LocalBackend(Backend):
             raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
         try:
             full.parent.mkdir(parents=True, exist_ok=True)
-            data = self._read_content(content)
             fd, tmp_path = tempfile.mkstemp(dir=str(full.parent))
             try:
-                os.write(fd, data)
-                os.close(fd)
+                with os.fdopen(fd, "wb") as f:
+                    if isinstance(content, bytes):
+                        f.write(content)
+                    else:
+                        shutil.copyfileobj(content, f)
                 os.replace(tmp_path, str(full))
             except BaseException:
-                os.close(fd) if not self._is_fd_closed(fd) else None
                 if os.path.exists(tmp_path):
                     os.unlink(tmp_path)
                 raise
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-
-    @staticmethod
-    def _is_fd_closed(fd: int) -> bool:
-        try:
-            os.fstat(fd)
-        except OSError:
-            return True
-        return False
 
     # endregion
 
