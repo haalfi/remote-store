@@ -73,7 +73,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install build
+      - run: pip install build twine
       - run: python -m build
+      - run: twine check dist/*
       - run: pip install dist/*.whl
       - run: python -c "import remote_store; print(remote_store.__version__)"

@@ -75,6 +75,8 @@ dev = [
   "tenacity>=4.0",
   "types-paramiko",
   "pre-commit",
+  "bump-my-version>=0.28",
+  "twine",
 ]
 
 [tool.hatch.envs.default]
@@ -139,3 +141,29 @@ ignore = ["UP045"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["remote_store"]
+
+# --- Version management ---
+# Run: bump-my-version bump patch|minor|major
+# Bumps version in all three locations atomically.
+
+[tool.bumpversion]
+current_version = "0.4.1"
+commit = true
+tag = true
+tag_name = "v{new_version}"
+message = "Bump version: {current_version} → {new_version}"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "src/remote_store/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "CITATION.cff"
+search = "version: {current_version}"
+replace = "version: {new_version}"
