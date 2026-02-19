@@ -69,6 +69,7 @@ dev = [
   "ruff",
   "jupyter",
   "s3fs>=2024.2.0",
+  "pyarrow>=14.0.0",
   "moto[server,s3]",
   "paramiko>=2.2",
   "tenacity>=4.0",
