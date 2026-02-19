@@ -15,15 +15,21 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **`Store.to_key(path)`** — public method to convert backend-native paths to store-relative keys
 - **`Backend.to_key()`** — backend-level native-path-to-key conversion
 - Python 3.14 support — added to CI test matrix and PyPI classifiers
+- **PyPI publish workflow** — trusted publishing (OIDC) via GitHub Actions on `v*` tags (BL-001)
+- **SFTP backend documentation** — `docs/backends/sftp.md` with installation, usage, and API reference (BL-002)
+- **CITATION.cff** — enables GitHub's "Cite this repository" button (BL-005)
+- **Development backlog** — `sdd/BACKLOG.md` for tracking release blockers, prioritized work, and ideas
 - Versioning policy added to SDD process doc (`sdd/000-process.md`)
-- Set up GitHub Pages docs hosting via `actions/deploy-pages`
+- Set up GitHub Pages docs hosting via `actions/deploy-pages` (BL-008)
 
 ### Fixed
 
 - Store round-trip bug: `list()` returned backend-relative paths that included `root_path`, breaking re-use as input to `read()`/`delete()`
+- CI: fixed cross-platform `type: ignore` comments for S3 backend
 
 ### Changed
 
+- **README rewritten** — approachable, dev-friendly tone with scannable layout (BL-003, BL-004)
 - Pinned minimum versions on public extras: `s3fs>=2024.2.0`, `paramiko>=2.2`, `tenacity>=4.0`
 - Removed `typing-extensions` from core dependencies (unused -- Python 3.10+ covers all needs)
 - Removed `azure` extra (`adlfs`) -- no Azure backend exists yet; will be re-added with the backend
