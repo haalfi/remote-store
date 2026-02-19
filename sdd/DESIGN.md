@@ -34,10 +34,11 @@ The package is designed to be:
 4. Explicit configuration always wins  
 5. Backend capabilities are declared, not assumed  
 6. Fail early and explicitly  
-7. No framework or event-loop dependencies  
-8. Compatible with structured concurrency  
-9. Citizen-dev friendly, senior-dev capable  
-10. fsspec is an implementation detail, not the API  
+7. No framework or event-loop dependencies
+8. Absolute minimal runtime dependencies
+9. Compatible with structured concurrency
+10. Citizen-dev friendly, senior-dev capable
+11. fsspec is an implementation detail, not the API  
 
 ---
 
