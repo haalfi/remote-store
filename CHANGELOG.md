@@ -6,6 +6,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+---
+
+## [0.4.2] - 2026-02-19
+
 ### Fixed
 
 - **PyPI relative links broken** -- README example scripts, notebooks, and CONTRIBUTING.md links used relative paths (`examples/quickstart.py`, `CONTRIBUTING.md`, etc.) which resolve to 404 on PyPI; converted all to absolute GitHub URLs
