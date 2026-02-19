@@ -55,11 +55,11 @@ Must be resolved before PyPI + ReadTheDocs publish.
   CDN. Changed to absolute raw GitHub URL. Added PyPI version, Python versions, RTD,
   and license badges.
 
-- [-] **BL-010 — Publish documentation to Read the Docs**
+- [x] **BL-010 — Publish documentation to Read the Docs**
   Set up Read the Docs hosting alongside GitHub Pages. Updated `.readthedocs.yaml`
   (bumped to ubuntu-24.04), pointed `Documentation` URL in `pyproject.toml` to
   `https://remote-store.readthedocs.io/`, added RTD badge to README.
-  Remaining: import the project at https://readthedocs.org/dashboard/import/.
+  Done: project imported on RTD, docs live at https://remote-store.readthedocs.io/.
 
 ---
 
