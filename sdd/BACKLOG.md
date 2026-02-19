@@ -66,13 +66,6 @@ Next actions once release blockers are cleared.
   SFTP does not. Spec the chosen approach or document why it stays per-backend.
   → Spec: TBD (extends `003-backend-adapter-contract.md`)
 
-- [ ] **BK-004 — Python 3.14 support**
-  *(Promoted from ID-011.)*
-  Add `Programming Language :: Python :: 3.14` classifier to `pyproject.toml`,
-  add `"3.14"` to the CI test matrix, and validate all dependencies (paramiko,
-  tenacity, s3fs) work on 3.14. PEP 649 (deferred annotations) is the main
-  risk area.
-
 ---
 
 ## Ideas (Unprioritized)
@@ -156,3 +149,9 @@ Items completed and kept here for reference.
   `Store.to_key(path)` / `Backend.to_key()` for converting native paths to
   store-relative keys.
   → Spec: `sdd/specs/010-native-path-resolution.md`
+
+- [x] **DONE-003 — Python 3.14 support** *(was BK-004)*
+  Added `3.14` to CI test matrix and `Programming Language :: Python :: 3.14`
+  classifier. No code changes needed — codebase already uses
+  `from __future__ import annotations` everywhere (DONE-001) and performs no
+  runtime annotation inspection, so PEP 649 is a non-issue.

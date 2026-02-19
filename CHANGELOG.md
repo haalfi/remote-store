@@ -6,9 +6,21 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+---
+
+## [0.3.0] - 2026-02-18
+
 ### Added
 
+- **`Store.to_key(path)`** — public method to convert backend-native paths to store-relative keys
+- **`Backend.to_key()`** — backend-level native-path-to-key conversion
+- Python 3.14 support — added to CI test matrix and PyPI classifiers
+- Versioning policy added to SDD process doc (`sdd/000-process.md`)
 - Set up GitHub Pages docs hosting via `actions/deploy-pages`
+
+### Fixed
+
+- Store round-trip bug: `list()` returned backend-relative paths that included `root_path`, breaking re-use as input to `read()`/`delete()`
 
 ### Changed
 
