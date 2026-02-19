@@ -142,22 +142,22 @@ All write/move/copy methods accept `overwrite=True` to replace existing files.
 
 ## Examples
 
-Runnable scripts in [`examples/`](examples/):
+Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples):
 
-|Script                                           |What it shows                                  |
-|-------------------------------------------------|-----------------------------------------------|
-|[quickstart.py](examples/quickstart.py)          |Minimal config, write, read                    |
-|[file_operations.py](examples/file_operations.py)|Read, write, delete, move, copy, list, metadata|
-|[streaming_io.py](examples/streaming_io.py)      |Streaming writes and reads with `BytesIO`      |
-|[atomic_writes.py](examples/atomic_writes.py)    |Atomic writes and overwrite semantics          |
-|[configuration.py](examples/configuration.py)    |Config-as-code, `from_dict()`, multiple stores |
-|[error_handling.py](examples/error_handling.py)   |Catching `NotFound`, `AlreadyExists`, etc.     |
+|Script                                                                                            |What it shows                                  |
+|--------------------------------------------------------------------------------------------------|-----------------------------------------------|
+|[quickstart.py](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py)       |Minimal config, write, read                    |
+|[file_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/file_operations.py)|Read, write, delete, move, copy, list, metadata|
+|[streaming_io.py](https://github.com/haalfi/remote-store/blob/master/examples/streaming_io.py)   |Streaming writes and reads with `BytesIO`      |
+|[atomic_writes.py](https://github.com/haalfi/remote-store/blob/master/examples/atomic_writes.py) |Atomic writes and overwrite semantics          |
+|[configuration.py](https://github.com/haalfi/remote-store/blob/master/examples/configuration.py) |Config-as-code, `from_dict()`, multiple stores |
+|[error_handling.py](https://github.com/haalfi/remote-store/blob/master/examples/error_handling.py)|Catching `NotFound`, `AlreadyExists`, etc.     |
 
-Interactive Jupyter notebooks are available in [`examples/notebooks/`](examples/notebooks/).
+Interactive Jupyter notebooks are available in [`examples/notebooks/`](https://github.com/haalfi/remote-store/tree/master/examples/notebooks).
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the spec-driven development workflow, code style, and how to add new backends.
+See [CONTRIBUTING.md](https://github.com/haalfi/remote-store/blob/master/CONTRIBUTING.md) for the spec-driven development workflow, code style, and how to add new backends.
 
 ## License
 
