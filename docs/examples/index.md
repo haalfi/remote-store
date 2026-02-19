@@ -5,10 +5,10 @@ Runnable example scripts demonstrating every feature of `remote-store`. Each exa
 | Example | Description |
 |---------|-------------|
 | [Quickstart](quickstart.md) | Minimal config, write, and read |
-| [File Operations](file-operations.md) | Read, write, delete, move, copy, list, and metadata |
+| [File Operations](file-operations.md) | Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key |
 | [Streaming I/O](streaming-io.md) | Streaming writes and reads with `BytesIO` |
 | [Atomic Writes](atomic-writes.md) | Atomic writes and overwrite semantics |
-| [Configuration](configuration.md) | Config-as-code, `from_dict()`, multiple stores |
+| [Configuration](configuration.md) | Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs |
 | [Error Handling](error-handling.md) | Catching `NotFound`, `AlreadyExists`, and more |
 
 Interactive Jupyter notebooks are also available in the

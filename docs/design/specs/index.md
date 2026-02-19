@@ -12,3 +12,6 @@ Every feature in `remote-store` is defined by a specification before implementat
 | 006 | [Streaming I/O](006-streaming-io.md) | Stream-based reads and writes |
 | 007 | [Atomic Writes](007-atomic-writes.md) | Atomic write operations |
 | 008 | [S3 Backend](008-s3-backend.md) | Amazon S3 backend implementation |
+| 009 | [SFTP Backend](009-sftp-backend.md) | SFTP/SSH backend implementation |
+| 010 | [Native Path Resolution](010-native-path-resolution.md) | Bidirectional path conversion via `to_key` |
+| 011 | [S3-PyArrow Backend](011-s3-pyarrow-backend.md) | High-throughput S3 backend using PyArrow |

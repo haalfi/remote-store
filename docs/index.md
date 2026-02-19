@@ -7,9 +7,7 @@ hide:
   <img src="assets/logo.png" width="320" alt="remote-store logo">
 </p>
 
-<h2 align="center">Backend-agnostic remote storage for Python</h2>
-
-<p align="center"><em>One API for local files, S3, Azure Blob, SFTP, and more.</em></p>
+<h2 align="center">One simple API for file storage. Local, S3, SFTP, Azure.<br>Same methods, swappable backends, zero reinvention.</h2>
 
 ---
 
