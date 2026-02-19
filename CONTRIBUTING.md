@@ -123,6 +123,14 @@ Jupyter notebooks in `examples/notebooks/` are for interactive exploration and a
 
 This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor bumps may contain breaking changes. The public API surface is everything in `remote_store.__init__.__all__`.
 
+Version is managed with [`bump-my-version`](https://github.com/callowayproject/bump-my-version). A single command bumps `pyproject.toml`, `src/remote_store/__init__.py`, and `CITATION.cff` atomically, commits, and tags:
+
+```bash
+bump-my-version bump patch   # 0.4.1 → 0.4.2
+bump-my-version bump minor   # 0.4.1 → 0.5.0
+bump-my-version bump major   # 0.4.1 → 1.0.0
+```
+
 ## Consistency Checklists
 
 Documentation, examples, and metadata live in many places. Use these checklists to keep them in sync.
@@ -153,9 +161,7 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 
 ### Release
 
-- [ ] Version bumped in `pyproject.toml`
-- [ ] Version bumped in `src/remote_store/__init__.py`
-- [ ] Version bumped in `CITATION.cff`
+- [ ] `bump-my-version bump patch|minor|major` (bumps `pyproject.toml`, `__init__.py`, `CITATION.cff`)
 - [ ] CHANGELOG.md updated
 - [ ] `hatch run all` passes (lint, typecheck, test-cov, examples)
 - [ ] `mkdocs build --strict` passes
