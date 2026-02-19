@@ -16,7 +16,12 @@ authors:
 keywords:
   - file-storage
   - object-storage
+  - filesystem
   - storage-abstraction
-  - python
+  - api
+  - streaming
+  - atomic-writes
   - s3
+  - azure-blob-storage
   - sftp
+  - fsspec

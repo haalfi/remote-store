@@ -5,7 +5,7 @@
 <h1 align="center">remote-store</h1>
 
 <p align="center">
-  One simple API for file storage: swappable backends, zero reinvention.
+  One simple API for file storage. Local, S3, SFTP, Azure. Same methods, swappable backends, zero reinvention.
 </p>
 
 <p align="center">
@@ -121,14 +121,24 @@ config = RegistryConfig.from_dict({
 
 **Manage**
 
-|Method               |Description    |
-|---------------------|---------------|
-|`delete(path)`       |Delete a file  |
-|`delete_folder(path)`|Delete a folder|
-|`move(src, dst)`     |Move or rename |
-|`copy(src, dst)`     |Copy a file    |
+|Method               |Description                                   |
+|---------------------|----------------------------------------------|
+|`delete(path)`       |Delete a file                                 |
+|`delete_folder(path)`|Delete a folder                               |
+|`move(src, dst)`     |Move or rename                                |
+|`copy(src, dst)`     |Copy a file                                   |
+
+**Utility**
+
+|Method               |Description                                   |
+|---------------------|----------------------------------------------|
+|`supports(capability)`|Check if the backend supports a capability   |
+|`to_key(path)`       |Convert native/absolute path to store-relative key|
+|`close()`            |Close the underlying backend                  |
 
 All write/move/copy methods accept `overwrite=True` to replace existing files.
+
+For full details, see the [API reference](https://remote-store.readthedocs.io/api/store/).
 
 ## Supported Backends
 
@@ -147,10 +157,10 @@ Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/ma
 |Script                                                                                            |What it shows                                  |
 |--------------------------------------------------------------------------------------------------|-----------------------------------------------|
 |[quickstart.py](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py)       |Minimal config, write, read                    |
-|[file_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/file_operations.py)|Read, write, delete, move, copy, list, metadata|
+|[file_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/file_operations.py)|Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key|
 |[streaming_io.py](https://github.com/haalfi/remote-store/blob/master/examples/streaming_io.py)   |Streaming writes and reads with `BytesIO`      |
 |[atomic_writes.py](https://github.com/haalfi/remote-store/blob/master/examples/atomic_writes.py) |Atomic writes and overwrite semantics          |
-|[configuration.py](https://github.com/haalfi/remote-store/blob/master/examples/configuration.py) |Config-as-code, `from_dict()`, multiple stores |
+|[configuration.py](https://github.com/haalfi/remote-store/blob/master/examples/configuration.py) |Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs|
 |[error_handling.py](https://github.com/haalfi/remote-store/blob/master/examples/error_handling.py)|Catching `NotFound`, `AlreadyExists`, etc.     |
 
 Interactive Jupyter notebooks are available in [`examples/notebooks/`](https://github.com/haalfi/remote-store/tree/master/examples/notebooks).

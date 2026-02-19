@@ -1,6 +1,7 @@
-"""Configuration — config-as-code, from_dict(), and multiple stores.
+"""Configuration — config-as-code, from_dict(), multiple stores, and backend configs.
 
-Demonstrates different ways to create and use RegistryConfig.
+Demonstrates different ways to create and use RegistryConfig, including
+configuration for S3, S3-PyArrow, and SFTP backends.
 """
 
 from __future__ import annotations
@@ -56,6 +57,59 @@ if __name__ == "__main__":
 
             print(f"\nfrom_dict() data: {data.read_bytes('input.csv').decode().strip()}")
             print(f"from_dict() logs: {logs.read_bytes('app.log').decode().strip()}")
+
+    # --- Backend configs for S3, S3-PyArrow, and SFTP ---
+    # These are config-only examples. They show the structure but don't
+    # connect to real services (no live credentials here).
+
+    s3_config = RegistryConfig(
+        backends={
+            "s3": BackendConfig(
+                type="s3",
+                options={
+                    "bucket": "my-bucket",
+                    "key": "AKIAIOSFODNN7EXAMPLE",
+                    "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                    "region_name": "eu-central-1",
+                },
+            ),
+        },
+        stores={
+            "data": StoreProfile(backend="s3", root_path="data"),
+            "backups": StoreProfile(backend="s3", root_path="backups"),
+        },
+    )
+    print(f"\nS3 config: {len(s3_config.stores)} stores on {len(s3_config.backends)} backend(s)")
+
+    s3pa_config = RegistryConfig(
+        backends={
+            "s3pa": BackendConfig(
+                type="s3-pyarrow",
+                options={
+                    "bucket": "big-data-bucket",
+                    "region_name": "us-east-1",
+                },
+            ),
+        },
+        stores={"lake": StoreProfile(backend="s3pa", root_path="lake/v1")},
+    )
+    print(f"S3-PyArrow config: {len(s3pa_config.stores)} store(s)")
+
+    sftp_config = RegistryConfig(
+        backends={
+            "sftp": BackendConfig(
+                type="sftp",
+                options={
+                    "host": "files.example.com",
+                    "username": "deploy",
+                    "password": "secret",
+                    "base_path": "/srv/data",
+                },
+            ),
+        },
+        stores={"uploads": StoreProfile(backend="sftp", root_path="uploads")},
+    )
+    print(f"SFTP config: {len(sftp_config.stores)} store(s)")
 
     # --- Config validation: referencing unknown backend raises ValueError ---
     try:

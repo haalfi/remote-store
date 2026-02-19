@@ -9,7 +9,7 @@
 
 ## Specifications
 
-Eight specs define the full public API:
+Eleven specs define the full public API:
 
 - [001: Store API](specs/001-store-api.md)
 - [002: Registry & Config](specs/002-registry-config.md)
@@ -19,6 +19,9 @@ Eight specs define the full public API:
 - [006: Streaming I/O](specs/006-streaming-io.md)
 - [007: Atomic Writes](specs/007-atomic-writes.md)
 - [008: S3 Backend](specs/008-s3-backend.md)
+- [009: SFTP Backend](specs/009-sftp-backend.md)
+- [010: Native Path Resolution](specs/010-native-path-resolution.md)
+- [011: S3-PyArrow Backend](specs/011-s3-pyarrow-backend.md)
 
 ## Architecture Decision Records
 
@@ -26,3 +29,4 @@ Eight specs define the full public API:
 - [0002: Config Resolution -- No Merge](adrs/0002-config-resolution-no-merge.md)
 - [0003: fsspec is an Implementation Detail](adrs/0003-fsspec-is-implementation-detail.md)
 - [0004: Empty Path Semantics](adrs/0004-empty-path-semantics.md)
+- [0005: Native Path Resolution](adrs/0005-native-path-resolution.md)

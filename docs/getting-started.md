@@ -10,10 +10,12 @@ Install the core package:
 pip install remote-store
 ```
 
-For S3 support, include the extra:
+Backends that need extra dependencies use extras:
 
 ```bash
-pip install remote-store[s3]
+pip install remote-store[s3]           # Amazon S3 / MinIO
+pip install remote-store[s3-pyarrow]  # S3 with PyArrow (high-throughput)
+pip install remote-store[sftp]        # SFTP / SSH
 ```
 
 ## Your First Store
@@ -74,14 +76,23 @@ The `Store` provides a full set of file operations:
 | `read(path)` | Open a file for streaming reads |
 | `read_bytes(path)` | Read full file content as bytes |
 | `exists(path)` | Check if a file or folder exists |
+| `is_file(path)` / `is_folder(path)` | Type checks |
 | `delete(path)` | Delete a file |
+| `delete_folder(path)` | Delete a folder |
 | `move(src, dst)` | Move or rename a file |
 | `copy(src, dst)` | Copy a file |
 | `list_files(path)` | Iterate over files |
 | `list_folders(path)` | Iterate over subfolders |
+| `get_file_info(path)` | File metadata (`FileInfo`) |
+| `get_folder_info(path)` | Folder metadata (`FolderInfo`) |
+| `supports(capability)` | Check if the backend supports a capability |
+| `to_key(path)` | Convert native/absolute path to store-relative key |
+| `close()` | Close the underlying backend |
+
+For the full method signatures and parameters, see the [Store API reference](api/store.md).
 
 ## Next Steps
 
 - Browse the [Examples](examples/index.md) for runnable scripts covering each feature
 - Read the [API Reference](api/index.md) for full details on every class and method
-- Learn about [Backends](backends/index.md) to connect to S3, Azure, and more
+- Learn about [Backends](backends/index.md) to connect to S3, SFTP, and more
