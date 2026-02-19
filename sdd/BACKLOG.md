@@ -34,7 +34,8 @@ Must be resolved before PyPI + ReadTheDocs publish.
   Create a GitHub repository ruleset that enforces all changes go through pull
   requests. Include: require PR (0 approvals for solo dev), require CI status
   checks, block force pushes, restrict branch deletion. Apply to `master`.
-  Done: repo is now public (v0.4.0). Ruleset can be configured in Settings.
+  Done: repo public, ruleset "Protect master" active -- require PRs (0 approvals),
+  require CI (lint, typecheck, test 3.10-3.14), block force push. Admin bypass enabled.
 
 - [x] **BL-007 — Pin minimum dependency versions & clean up extras**
   Public extras have no lower bounds — pip can resolve ancient, incompatible
