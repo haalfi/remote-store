@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import shutil
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
@@ -28,6 +29,37 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 _ALL_CAPABILITIES = CapabilitySet(set(Capability))
+
+
+class _PyArrowBinaryIO(io.RawIOBase):
+    """Adapt a PyArrow RandomAccessFile to Python BinaryIO."""
+
+    def __init__(self, pa_file: Any) -> None:
+        self._pa = pa_file
+
+    def readable(self) -> bool:
+        return True
+
+    def seekable(self) -> bool:
+        return self._pa.seekable()
+
+    def readinto(self, b: bytearray | memoryview) -> int:
+        data = self._pa.read(len(b))
+        n = len(data)
+        b[:n] = data
+        return n
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        self._pa.seek(offset, whence)
+        return self._pa.tell()
+
+    def tell(self) -> int:
+        return self._pa.tell()
+
+    def close(self) -> None:
+        if not self.closed:
+            self._pa.close()
+            super().close()
 
 
 class S3PyArrowBackend(Backend):
@@ -199,12 +231,6 @@ class S3PyArrowBackend(Backend):
     # endregion
 
     # region: helpers
-    @staticmethod
-    def _read_content(content: WritableContent) -> bytes:
-        if isinstance(content, bytes):
-            return content
-        return content.read()
-
     def _info_to_fileinfo(self, info: dict[str, Any], path: str) -> FileInfo:
         """Convert an s3fs info dict to a FileInfo."""
         name = path.rsplit("/", 1)[-1] if "/" in path else path
@@ -251,9 +277,9 @@ class S3PyArrowBackend(Backend):
     # region: read operations (pyarrow)
     def read(self, path: str) -> BinaryIO:
         with self._pyarrow_errors(path):
-            stream = self._pa_fs.open_input_stream(self._pa_path(path))
-            data = stream.read()
-            return io.BytesIO(data)
+            pa_file = self._pa_fs.open_input_file(self._pa_path(path))
+            raw = _PyArrowBinaryIO(pa_file)
+            return io.BufferedReader(raw)
 
     def read_bytes(self, path: str) -> bytes:
         with self._pyarrow_errors(path):
@@ -267,11 +293,15 @@ class S3PyArrowBackend(Backend):
         with self._s3fs_errors(path):
             if not overwrite and self._s3fs.exists(self._s3_path(path)):
                 raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-        data = self._read_content(content)
         with self._pyarrow_errors(path):
             out = self._pa_fs.open_output_stream(self._pa_path(path))
-            out.write(data)
-            out.close()
+            try:
+                if isinstance(content, bytes):
+                    out.write(content)
+                else:
+                    shutil.copyfileobj(content, out)
+            finally:
+                out.close()
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         # S3 PUT is inherently atomic (S3PA-013)

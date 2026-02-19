@@ -412,16 +412,6 @@ class TestSFTPHelpers:
         assert backend._sftp_path("file.txt") == "/data/file.txt"
         assert backend._sftp_path("") == "/data"
 
-    def test_read_content_bytes(self) -> None:
-        """_read_content with bytes returns bytes directly."""
-        assert SFTPBackend._read_content(b"hello") == b"hello"
-
-    def test_read_content_binaryio(self) -> None:
-        """_read_content with BinaryIO returns read bytes."""
-        import io
-
-        assert SFTPBackend._read_content(io.BytesIO(b"stream")) == b"stream"
-
     def test_resolve_host_keys_direct(self) -> None:
         """Direct known_host_keys takes precedence."""
         backend = SFTPBackend(

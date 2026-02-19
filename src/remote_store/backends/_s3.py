@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import shutil
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
@@ -134,12 +135,6 @@ class S3Backend(Backend):
     # endregion
 
     # region: helpers
-    @staticmethod
-    def _read_content(content: WritableContent) -> bytes:
-        if isinstance(content, bytes):
-            return content
-        return content.read()
-
     def _info_to_fileinfo(self, info: dict[str, Any], path: str) -> FileInfo:
         """Convert an s3fs info dict to a FileInfo."""
         name = path.rsplit("/", 1)[-1] if "/" in path else path
@@ -186,8 +181,7 @@ class S3Backend(Backend):
     # region: read operations
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
-            data = self._fs.cat_file(self._s3_path(path))
-            return io.BytesIO(data)
+            return self._fs.open(self._s3_path(path), "rb")
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
@@ -200,8 +194,11 @@ class S3Backend(Backend):
         with self._errors(path):
             if not overwrite and self._fs.exists(self._s3_path(path)):
                 raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-            data = self._read_content(content)
-            self._fs.pipe_file(self._s3_path(path), data)
+            if isinstance(content, bytes):
+                self._fs.pipe_file(self._s3_path(path), content)
+            else:
+                with self._fs.open(self._s3_path(path), "wb") as f:
+                    shutil.copyfileobj(content, f)
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         # S3 PUT is inherently atomic (S3-010)
