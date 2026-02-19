@@ -9,6 +9,6 @@ repos:
     rev: v1.15.0
     hooks:
       - id: mypy
-        additional_dependencies: [s3fs, paramiko, tenacity, types-paramiko]
+        additional_dependencies: [s3fs, paramiko, tenacity, types-paramiko, pyarrow]
         args: [--config-file=pyproject.toml]
         files: ^src/

@@ -155,3 +155,10 @@ Items completed and kept here for reference.
   classifier. No code changes needed — codebase already uses
   `from __future__ import annotations` everywhere (DONE-001) and performs no
   runtime annotation inspection, so PEP 649 is a non-issue.
+
+- [x] **DONE-004 — S3-PyArrow hybrid backend** *(v0.4.0)*
+  Hybrid S3 backend using PyArrow's C++ S3 filesystem for data-path operations
+  (read, write, copy) and s3fs for control-path operations (listing, metadata,
+  deletion). Drop-in alternative to S3Backend with the same constructor
+  signature. New optional extra: `s3-pyarrow`.
+  → Spec: `sdd/specs/011-s3-pyarrow-backend.md`

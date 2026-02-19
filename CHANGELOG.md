@@ -8,6 +8,18 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ---
 
+## [0.4.0] - 2026-02-19
+
+### Added
+
+- **S3-PyArrow hybrid backend** -- uses PyArrow's C++ S3 filesystem for reads/writes/copies (higher throughput for large files) and s3fs for listing/metadata/deletion. Drop-in alternative to `S3Backend` with the same constructor signature.
+  - Install via `pip install remote-store[s3-pyarrow]`
+  - Spec: `sdd/specs/011-s3-pyarrow-backend.md`
+- New optional extra: `s3-pyarrow` (requires `s3fs>=2024.2.0` and `pyarrow>=14.0.0`)
+- Dual `unwrap()` support: returns either `pyarrow.fs.S3FileSystem` or `s3fs.S3FileSystem`
+
+---
+
 ## [0.3.0] - 2026-02-18
 
 ### Added

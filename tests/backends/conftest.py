@@ -27,6 +27,17 @@ def _s3_available() -> bool:
         return False
 
 
+def _s3_pyarrow_available() -> bool:
+    try:
+        import moto  # noqa: F401
+        import pyarrow  # noqa: F401
+        import s3fs  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def _sftp_available() -> bool:
     try:
         import paramiko  # noqa: F401
@@ -94,13 +105,18 @@ _s3_param = pytest.param(
     marks=pytest.mark.skipif(not _s3_available(), reason="moto/s3fs not installed"),
 )
 
+_s3_pyarrow_param = pytest.param(
+    "s3-pyarrow",
+    marks=pytest.mark.skipif(not _s3_pyarrow_available(), reason="pyarrow/s3fs not installed"),
+)
+
 _sftp_param = pytest.param(
     "sftp",
     marks=pytest.mark.skipif(not _sftp_available(), reason="paramiko not installed"),
 )
 
 
-@pytest.fixture(params=["local", _s3_param, _sftp_param])
+@pytest.fixture(params=["local", _s3_param, _s3_pyarrow_param, _sftp_param])
 def backend(
     request: pytest.FixtureRequest,
     moto_server: str | None,
@@ -126,6 +142,30 @@ def backend(
         )
         client.create_bucket(Bucket=bucket)
         b = S3Backend(
+            bucket=bucket,
+            key="testing",
+            secret="testing",
+            region_name="us-east-1",
+            endpoint_url=moto_server,
+        )
+        yield b
+        b.close()
+    elif request.param == "s3-pyarrow":
+        import boto3
+
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        assert moto_server is not None
+        bucket = f"conformance-pa-{uuid.uuid4().hex[:8]}"
+        client = boto3.client(
+            "s3",
+            endpoint_url=moto_server,
+            aws_access_key_id="testing",
+            aws_secret_access_key="testing",
+            region_name="us-east-1",
+        )
+        client.create_bucket(Bucket=bucket)
+        b = S3PyArrowBackend(
             bucket=bucket,
             key="testing",
             secret="testing",

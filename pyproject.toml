@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "remote-store"
-version = "0.3.0"
+version = "0.4.0"
 description = "One simple API for file storage. Local, S3, SFTP, Azure. Same methods, swappable backends, zero reinvention."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -51,6 +51,7 @@ Documentation = "https://haalfi.github.io/remote-store/"
 
 [project.optional-dependencies]
 s3 = ["s3fs>=2024.2.0"]
+s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
 sftp = ["paramiko>=2.2", "tenacity>=4.0"]
 
 docs = [
@@ -85,6 +86,7 @@ dependencies = [
   "moto[server,s3]",
   "paramiko>=2.2",
   "tenacity>=4.0",
+  "pyarrow>=14.0.0",
   "types-paramiko",
   "pre-commit",
   "mkdocs>=1.6",
