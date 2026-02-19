@@ -171,6 +171,20 @@ f3b7df9  Add SFTPBackend with paramiko, spec, tests, and bump to v0.2.0
 3956b4d  Fix CI: pin s3fs>=2024.2.0 and fix cross-platform type:ignore
 ```
 
+### Phase 9: Going Public (collaborative)
+
+Making the repository public exposed a category of problems that don't exist while a project is private: **everything that works "by reference" locally breaks "by value" on external platforms.**
+
+The first casualty was the PyPI listing. The README logo used a relative path (`assets/logo.png`), which renders fine on GitHub but produces a broken image on PyPI -- their CDN proxies images through `pypi-camo.freetls.fastly.net` and can't resolve relative paths. The fix was straightforward (absolute raw GitHub URL), but the failure was invisible until the package was actually published and someone looked at the PyPI page.
+
+The second issue was documentation hosting. The project had GitHub Pages set up via a CI workflow, but Read the Docs was missing. RTD provides versioned docs, search, and the familiar `readthedocs.io` URL that the Python community expects. The `.readthedocs.yaml` config had been written speculatively during setup but never activated -- the project needed to be imported on readthedocs.org, the build OS needed updating, and the `Documentation` URL in `pyproject.toml` was still pointing to GitHub Pages.
+
+The third issue was subtler: the documentation site itself was out of date. Specs 010 (native path resolution) and 011 (S3-PyArrow backend) had been added to `sdd/specs/` during development, but never copied to `docs/design/specs/` or added to `mkdocs.yml` navigation. Same for ADR-0005. The docs site was shipping a version of the design documentation that was two specs and one ADR behind the actual source of truth. **When docs live in two places (source-of-truth in `sdd/` and rendered site in `docs/`), keeping them in sync is a manual step that's easy to forget.**
+
+Finally, the `pyproject.toml` metadata changes (Documentation URL, README fixes) don't take effect on PyPI until a new version is published. PyPI serves whatever was in the sdist/wheel at upload time. This means every metadata fix requires a version bump and release -- there's no way to patch the PyPI listing in place.
+
+**The lesson: "works on GitHub" is not the same as "works everywhere the package appears."** PyPI, Read the Docs, and GitHub each render the same source files differently, with different rules for resolving paths, images, and links. A pre-release checklist that includes checking the rendered output on each platform would have caught all of these issues before users did.
+
 ## What Worked Well
 
 ### Specs as a shared contract

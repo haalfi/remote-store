@@ -8,6 +8,28 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ---
 
+## [0.4.1] - 2026-02-19
+
+### Fixed
+
+- **PyPI logo broken** -- README image used relative path (`assets/logo.png`) which doesn't resolve on PyPI's CDN; changed to absolute raw GitHub URL
+- **Documentation site out of date** -- specs 010 (native path resolution) and 011 (S3-PyArrow backend) and ADR-0005 were missing from the MkDocs site and navigation
+- **Navigation on RTD** -- added `navigation.instant` to MkDocs Material config so sidebar stays visible across page loads
+
+### Added
+
+- PyPI version, Python versions, Read the Docs, and license badges in README
+- Read the Docs publishing (`remote-store.readthedocs.io`)
+- "Going Public" section in DEVELOPMENT_STORY.md
+
+### Changed
+
+- `Documentation` URL in `pyproject.toml` now points to Read the Docs instead of GitHub Pages
+- `CITATION.cff` URL updated to Read the Docs
+- `.readthedocs.yaml` build OS bumped to ubuntu-24.04
+
+---
+
 ## [0.4.0] - 2026-02-19
 
 ### Added

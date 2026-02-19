@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "remote-store"
-version = "0.4.0"
+version = "0.4.1"
 description = "One simple API for file storage. Local, S3, SFTP, Azure. Same methods, swappable backends, zero reinvention."
 readme = "README.md"
 license = { file = "LICENSE" }
