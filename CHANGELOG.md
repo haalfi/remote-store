@@ -6,6 +6,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **Community standards** -- CODE_OF_CONDUCT.md (Contributor Covenant v2.1), SECURITY.md (vulnerability reporting policy), issue templates (bug report + feature request), PR template, and CODEOWNERS
+- **Dependabot** -- automated dependency updates for pip and GitHub Actions (weekly, Mondays)
+- **CodeQL** -- GitHub code scanning workflow for Python on push/PR and weekly schedule
+- Security section in README linking to vulnerability reporting
+
 ---
 
 ## [0.4.2] - 2026-02-19

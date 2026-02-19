@@ -170,6 +170,10 @@ Interactive Jupyter notebooks are available in [`examples/notebooks/`](https://g
 
 See [CONTRIBUTING.md](https://github.com/haalfi/remote-store/blob/master/CONTRIBUTING.md) for the spec-driven development workflow, code style, and how to add new backends.
 
+## Security
+
+To report a vulnerability, please use [GitHub Security Advisories](https://github.com/haalfi/remote-store/security/advisories/new) instead of opening a public issue. See [SECURITY.md](https://github.com/haalfi/remote-store/blob/master/SECURITY.md) for details.
+
 ## License
 
 MIT
