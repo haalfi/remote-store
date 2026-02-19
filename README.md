@@ -34,6 +34,7 @@ reinvent file I/O. It just gives every backend the same simple front door.
 - **Swappable via config:** switch backends without touching application code
 - **Streaming by default:** reads and writes handle large files without blowing up memory
 - **Atomic writes** where the backend supports it
+- **Zero runtime dependencies:** the core package installs nothing; backend extras pull in only what they need
 - **Typed & tested:** strict mypy, spec-driven test suite
 
 ## Installation

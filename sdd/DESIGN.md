@@ -34,10 +34,23 @@ The package is designed to be:
 4. Explicit configuration always wins  
 5. Backend capabilities are declared, not assumed  
 6. Fail early and explicitly  
-7. No framework or event-loop dependencies  
-8. Compatible with structured concurrency  
-9. Citizen-dev friendly, senior-dev capable  
-10. fsspec is an implementation detail, not the API  
+7. No framework or event-loop dependencies
+8. Minimal, rock-solid dependencies (see §2.1)
+9. Compatible with structured concurrency
+10. Citizen-dev friendly, senior-dev capable
+11. fsspec is an implementation detail, not the API
+
+### 2.1 Dependency Policy
+
+**Runtime dependencies** — keep absolute minimal:
+- The core package has **zero** runtime dependencies (`dependencies = []`).
+- Backend extras pull in only what they need; each dependency must be well-known, battle-tested, and best-in-class for its purpose.
+- Minimum versions are always pinned (`>=X.Y`) to guarantee the features we rely on.
+
+**Dev dependencies** — keep minimal and non-overlapping:
+- Every dev dependency must bring a clear, distinct benefit (no two tools covering the same job).
+- Prefer established, single-purpose tools (ruff over pylint+isort+black, pytest over unittest, etc.).
+- Pin minimum versions the same way as runtime extras.
 
 ---
 
