@@ -139,7 +139,7 @@ config = RegistryConfig.from_dict({
 
 All write/move/copy methods accept `overwrite=True` to replace existing files.
 
-For full details, see the [API reference](https://remote-store.readthedocs.io/api/store/).
+For full details, see the [API reference](https://remote-store.readthedocs.io/en/latest/api/store/).
 
 ## Supported Backends
 
