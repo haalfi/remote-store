@@ -1,11 +1,18 @@
 <p align="center">
-  <img src="assets/logo.png" width="320">
+  <img src="https://raw.githubusercontent.com/haalfi/remote-store/master/assets/logo.png" width="320" alt="remote-store logo">
 </p>
 
 <h1 align="center">remote-store</h1>
 
 <p align="center">
   One simple API for file storage: swappable backends, zero reinvention.
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/remote-store/"><img src="https://img.shields.io/pypi/v/remote-store" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/remote-store/"><img src="https://img.shields.io/pypi/pyversions/remote-store" alt="Python versions"></a>
+  <a href="https://remote-store.readthedocs.io/"><img src="https://readthedocs.org/projects/remote-store/badge/?version=latest" alt="Documentation Status"></a>
+  <a href="https://github.com/haalfi/remote-store/blob/master/LICENSE"><img src="https://img.shields.io/pypi/l/remote-store" alt="License"></a>
 </p>
 
 `remote-store` gives you one simple API to read, write, list, and delete files.
