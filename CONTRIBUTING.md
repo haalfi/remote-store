@@ -123,6 +123,18 @@ Jupyter notebooks in `examples/notebooks/` are for interactive exploration and a
 
 This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor bumps may contain breaking changes. The public API surface is everything in `remote_store.__init__.__all__`.
 
+### When to bump
+
+| Change type | Bump | Examples |
+|-------------|------|----------|
+| New public API, feature, or backend | **minor** (`0.X.0`) | `Store.to_key()`, new backend, new config loader |
+| Bug fix, internal refactor | **patch** (`0.0.X`) | Fix round-trip bug, update retry logic |
+| Breaking API change (pre-1.0) | **minor** (`0.X.0`) | Remove method, rename parameter |
+| Breaking API change (post-1.0) | **major** (`X.0.0`) | — |
+| CI, docs, metadata-only | **no bump** | Add classifier, update README |
+
+### How to bump
+
 Version is managed with [`bump-my-version`](https://github.com/callowayproject/bump-my-version). A single command bumps `pyproject.toml`, `src/remote_store/__init__.py`, and `CITATION.cff` atomically, commits, and tags:
 
 ```bash
@@ -130,6 +142,8 @@ bump-my-version bump patch   # 0.4.1 → 0.4.2
 bump-my-version bump minor   # 0.4.1 → 0.5.0
 bump-my-version bump major   # 0.4.1 → 1.0.0
 ```
+
+After bumping, move the `[Unreleased]` section in `CHANGELOG.md` under a new `[X.Y.Z] - YYYY-MM-DD` heading and add a fresh `[Unreleased]` above it.
 
 ## Consistency Checklists
 
