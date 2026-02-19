@@ -22,6 +22,10 @@ sdd/
     005-error-model.md
     006-streaming-io.md
     007-atomic-writes.md
+    008-s3-backend.md
+    009-sftp-backend.md
+    010-native-path-resolution.md
+    011-s3-pyarrow-backend.md
   adrs/                       # Architecture Decision Records (immutable)
   rfcs/                       # Proposals under discussion
 ```
@@ -48,6 +52,11 @@ Prefixes: `STORE`, `MOD` (models), `CFG` (config), `REG` (registry), `BE` (backe
 2. Implement `Backend` ABC in `src/remote_store/backends/_<name>.py`
 3. Add a conformance fixture in `tests/backends/conftest.py`
 4. The entire conformance suite (`tests/backends/test_conformance.py`) runs automatically
+5. Add user-facing docs in `docs/backends/<name>.md` and register in `mkdocs.yml` nav
+6. Update `docs/backends/index.md` (Supported Backends table)
+7. Update `README.md` (Supported Backends table + Installation extras)
+8. Add backend config example to `examples/configuration.py`
+9. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`
 
 ## Adding an Extension
 
@@ -113,3 +122,42 @@ Jupyter notebooks in `examples/notebooks/` are for interactive exploration and a
 ## Versioning
 
 This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor bumps may contain breaking changes. The public API surface is everything in `remote_store.__init__.__all__`.
+
+## Consistency Checklists
+
+Documentation, examples, and metadata live in many places. Use these checklists to keep them in sync.
+
+### New backend
+
+- [ ] Spec in `sdd/specs/`
+- [ ] Implementation in `src/remote_store/backends/_<name>.py`
+- [ ] Conformance fixture in `tests/backends/conftest.py`
+- [ ] User docs page `docs/backends/<name>.md`
+- [ ] Added to `docs/backends/index.md` table
+- [ ] Added to `mkdocs.yml` nav under Backends
+- [ ] Added to README.md Supported Backends table
+- [ ] Added to README.md Installation extras (if applicable)
+- [ ] Added to `docs/getting-started.md` Installation extras (if applicable)
+- [ ] Backend config example in `examples/configuration.py`
+- [ ] Extra added to `pyproject.toml` `[project.optional-dependencies]` (if applicable)
+- [ ] Spec index updated: `docs/design/specs/index.md` + `docs/design/index.md`
+- [ ] CONTRIBUTING.md Repository Structure updated
+
+### New Store method
+
+- [ ] Added to `_store.py`
+- [ ] Added to README.md Store API table
+- [ ] Added to `docs/getting-started.md` Core Operations table
+- [ ] Demonstrated in an `examples/` script (extend existing where possible)
+- [ ] `docs/examples/index.md` description updated if example scope changed
+
+### Release
+
+- [ ] Version bumped in `pyproject.toml`
+- [ ] Version bumped in `src/remote_store/__init__.py`
+- [ ] Version bumped in `CITATION.cff`
+- [ ] CHANGELOG.md updated
+- [ ] `hatch run all` passes (lint, typecheck, test-cov, examples)
+- [ ] `mkdocs build --strict` passes
+- [ ] Tagline consistent: `pyproject.toml` = README.md = `docs/index.md` = `mkdocs.yml` = `CITATION.cff`
+- [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
