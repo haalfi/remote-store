@@ -3,7 +3,7 @@
 Tracking file for release blockers, prioritized work, and unprioritized ideas.
 Items graduate through the SDD pipeline: **Idea → Backlog → RFC/Spec → Tests → Code**.
 
-Status legend: `[ ]` pending · `[-]` in progress · `[x]` done
+Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 ---
 
@@ -67,11 +67,11 @@ Must be resolved before PyPI + ReadTheDocs publish.
 
 Next actions once release blockers are cleared.
 
-- [-] **BK-001 — Azure backend**
-  Write RFC (`sdd/rfcs/rfc-0002-azure-backend.md`), graduate to spec
+- [~] **BK-001 — Azure backend**
+  Write RFC (`sdd/rfcs/rfc-0001-azure-backend.md`), graduate to spec
   (`sdd/specs/012-azure-backend.md`), implement with `azure-storage-file-datalake`
-  directly (not `adlfs`). See RFC-0002 for rationale.
-  → RFC: `sdd/rfcs/rfc-0002-azure-backend.md` (Accepted)
+  directly (not `adlfs`). See RFC-0001 for rationale.
+  → RFC: `sdd/rfcs/rfc-0001-azure-backend.md` (accepted)
   → Spec: `sdd/specs/012-azure-backend.md`
 
 - [ ] **BK-002 — Glob / pattern matching strategy**

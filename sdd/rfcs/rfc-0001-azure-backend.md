@@ -1,4 +1,4 @@
-# RFC-0002: Azure Backend via Direct ADLS Gen2 SDK
+# RFC-0001: Azure Backend via Direct ADLS Gen2 SDK
 
 ## Status
 
@@ -84,14 +84,15 @@ Strips the `{container}/` prefix from native paths (analogous to S3Backend strip
 
 ### New spec sections
 
-The full spec (`012-azure-backend.md`) defines invariants AZ-001 through AZ-025, covering:
+The full spec (`012-azure-backend.md`) defines invariants AZ-001 through AZ-032, covering:
 - Construction and validation (AZ-001 through AZ-005)
 - HNS detection and adaptive behavior (AZ-006)
 - Filesystem model (AZ-007 through AZ-011)
-- Operations (AZ-012 through AZ-017)
-- Error mapping (AZ-018 through AZ-021)
-- Resource management (AZ-022 through AZ-023)
-- Configuration (AZ-024 through AZ-025)
+- Path inspection: exists, is_file, is_folder (AZ-012 through AZ-013)
+- Operations: atomic write, delete, move, copy, glob, read, write, metadata (AZ-014 through AZ-024)
+- Error mapping (AZ-025 through AZ-028)
+- Resource management (AZ-029 through AZ-030)
+- Configuration (AZ-031 through AZ-032)
 
 ## Alternatives Considered
 
