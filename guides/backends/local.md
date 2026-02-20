@@ -22,7 +22,3 @@ with Registry(config) as registry:
 | Option | Type | Description |
 |--------|------|-------------|
 | `root` | `str` | Root directory for file storage (required) |
-
-## API Reference
-
-::: remote_store.backends.LocalBackend

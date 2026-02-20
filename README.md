@@ -21,6 +21,14 @@ or anywhere else. You just swap the backend config.
 
 That's the whole trick.
 
+### Who is this for?
+
+- **Citizen developers** -- analysts, scientists, and domain experts who write Python but shouldn't need to learn `boto3`, `paramiko`, or cloud-specific SDKs just to read and write files.
+- **Platform teams** -- engineers who set up the infrastructure and want to hand their colleagues a simple, safe API that can't be misused.
+- **Anyone tired of rewriting storage glue** -- if you've wrapped S3 or SFTP access more than once, this is that wrapper, tested and maintained.
+
+The library was born from enabling citizen-developer teams: the config is immutable so non-experts can't accidentally break state, errors are clear instead of raw SDK tracebacks, and streaming just works without tuning buffer sizes.
+
 Reads and writes stream by default, so large files just work.
 Under the hood, each backend delegates to the library you'd pick anyway
 (`boto3`, `paramiko`, `azure-storage-blob`, …). This package doesn't
@@ -152,6 +160,8 @@ For full details, see the [API reference](https://remote-store.readthedocs.io/en
 |S3 (PyArrow)         |Built-in  |`remote-store[s3-pyarrow]`  |
 |SFTP / SSH           |Built-in  |`remote-store[sftp]`        |
 |Azure Blob / ADLS    |Planned   |                            |
+
+Detailed configuration guides for each backend are in [`guides/backends/`](guides/backends/).
 
 ## Examples
 

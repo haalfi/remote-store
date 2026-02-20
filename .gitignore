@@ -20,5 +20,6 @@ build/
 .coverage
 htmlcov/
 
-# Documentation
+# Documentation (docs/ is fully generated — see sdd/adrs/0006-documentation-architecture.md)
+docs/
 site/
