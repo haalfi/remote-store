@@ -109,10 +109,34 @@ def _spec_entries() -> list[tuple[str, str, str]]:
     return entries
 
 
+def _rfc_entries() -> list[tuple[str, str, str]]:
+    """Return (number, slug, title) for each RFC in sdd/rfcs/."""
+    rfcs_dir = ROOT / "sdd" / "rfcs"
+    entries = []
+    for p in sorted(rfcs_dir.glob("rfc-*.md")):
+        if p.stem == "rfc-template":
+            continue
+        # e.g. "rfc-0001-azure-backend" → num="0001"
+        parts = p.stem.split("-", 2)  # ["rfc", "0001", "azure-backend"]
+        num = parts[1] if len(parts) > 1 else p.stem
+        first_line = p.read_text().split("\n", 1)[0]
+        title = first_line.lstrip("# ").strip()
+        entries.append((num, p.stem, title))
+    return entries
+
+
+def _rewrite_links(text: str, replacements: dict[str, str]) -> str:
+    """Replace relative link targets in markdown text."""
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    return text
+
+
 def _build_pages() -> list:
     """Build the complete list of page definitions."""
     adr_entries = _adr_entries()
     spec_entries = _spec_entries()
+    rfc_entries = _rfc_entries()
 
     # --- ADR index ---
     adr_rows = "\n".join(
@@ -129,7 +153,7 @@ def _build_pages() -> list:
 
     # --- Spec index ---
     spec_rows = "\n".join(
-        f"| {num} | [{title}]({slug}.md) | "
+        f"| {num} | [{title}]({slug}.md) |"
         for num, slug, title in spec_entries
     )
     spec_index_content = (
@@ -137,8 +161,8 @@ def _build_pages() -> list:
         "Every feature in `remote-store` is defined by a specification "
         "before implementation begins. Specs are the single source of "
         "truth for behavior.\n\n"
-        "| # | Spec | Description |\n"
-        "|---|------|-------------|\n"
+        "| # | Spec |\n"
+        "|---|------|\n"
         f"{spec_rows}\n"
     )
 
@@ -268,11 +292,33 @@ hide:
 %}
 """
 
+    # --- Rewritten content pages ---
+    # CONTRIBUTING.md links to sdd/ paths that don't exist in the docs tree.
+    # We read the file, rewrite links to their docs-tree equivalents, and
+    # emit as a LiteralPage so links work on both GitHub and in MkDocs.
+    contributing_text = _rewrite_links(
+        (ROOT / "CONTRIBUTING.md").read_text(),
+        {
+            "](sdd/000-process.md)": "](design/process.md)",
+            "](sdd/rfcs/rfc-template.md)": "](design/rfcs/rfc-template.md)",
+            "](sdd/DESIGN.md#11-code-style)": "](design/design-spec.md#11-code-style)",
+        },
+    )
+
+    # sdd/000-process.md links to ../CONTRIBUTING.md (uppercase) which maps
+    # to contributing.md (lowercase) in the docs tree.
+    process_text = _rewrite_links(
+        (ROOT / "sdd" / "000-process.md").read_text(),
+        {
+            "](../CONTRIBUTING.md#versioning)": "](../contributing.md#versioning)",
+        },
+    )
+
     pages: list = [
         # --- Landing & top-level ---
         LiteralPage("index.md", index_content),
         LiteralPage("getting-started.md", getting_started_content),
-        IncludeMarkdown("contributing.md", "../CONTRIBUTING.md"),
+        LiteralPage("contributing.md", contributing_text),
         IncludeMarkdown("changelog.md", "../CHANGELOG.md"),
         IncludeMarkdown("development-story.md", "../DEVELOPMENT_STORY.md"),
         # --- Examples ---
@@ -406,10 +452,7 @@ hide:
             "design/design-spec.md",
             "../../sdd/DESIGN.md",
         ),
-        IncludeMarkdown(
-            "design/process.md",
-            "../../sdd/000-process.md",
-        ),
+        LiteralPage("design/process.md", process_text),
         # --- Specs ---
         LiteralPage("design/specs/index.md", spec_index_content),
     ]
@@ -436,6 +479,24 @@ hide:
 
     # ADR index
     pages.append(LiteralPage("design/adrs/index.md", adr_index_content))
+
+    # Add RFC wrapper pages (linked from specs, e.g. 012-azure-backend → rfcs/)
+    for _num, slug, _title in rfc_entries:
+        pages.append(
+            IncludeMarkdown(
+                f"design/rfcs/{slug}.md",
+                f"../../../sdd/rfcs/{slug}.md",
+                rewrite_urls=False,
+            )
+        )
+    # RFC template (linked from CONTRIBUTING.md)
+    pages.append(
+        IncludeMarkdown(
+            "design/rfcs/rfc-template.md",
+            "../../../sdd/rfcs/rfc-template.md",
+            rewrite_urls=False,
+        )
+    )
 
     return pages
 
@@ -477,6 +538,11 @@ def _render(page) -> str:  # noqa: ANN001
         return page.content
 
     if isinstance(page, GuideInclude):
+        # URL rewriting is disabled because guides use relative links
+        # (e.g. s3-pyarrow.md → s3.md) that already resolve correctly
+        # in docs/ since the directory structure mirrors guides/.
+        # If guides ever link outside their own directory, this will
+        # need a rewrite strategy similar to _rewrite_links().
         parts = [
             "{%\n"
             f'   include-markdown "{page.source}"\n'
