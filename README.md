@@ -161,7 +161,7 @@ For full details, see the [API reference](https://remote-store.readthedocs.io/en
 |SFTP / SSH           |Built-in  |`remote-store[sftp]`        |
 |Azure Blob / ADLS    |Planned   |                            |
 
-Detailed configuration guides for each backend are in [`guides/backends/`](guides/backends/).
+Detailed configuration guides for each backend are in [`guides/backends/`](https://remote-store.readthedocs.io/en/latest/backends/).
 
 ## Examples
 

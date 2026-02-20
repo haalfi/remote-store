@@ -52,8 +52,8 @@ Prefixes: `STORE`, `MOD` (models), `CFG` (config), `REG` (registry), `BE` (backe
 2. Implement `Backend` ABC in `src/remote_store/backends/_<name>.py`
 3. Add a conformance fixture in `tests/backends/conftest.py`
 4. The entire conformance suite (`tests/backends/test_conformance.py`) runs automatically
-5. Add user-facing docs in `docs/backends/<name>.md` and register in `mkdocs.yml` nav
-6. Update `docs/backends/index.md` (Supported Backends table)
+5. Add user-facing guide in `guides/backends/<name>.md` and register in `mkdocs.yml` nav
+6. Update `guides/backends/index.md` (Supported Backends table)
 7. Update `README.md` (Supported Backends table + Installation extras)
 8. Add backend config example to `examples/configuration.py`
 9. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`
@@ -154,24 +154,20 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 - [ ] Spec in `sdd/specs/`
 - [ ] Implementation in `src/remote_store/backends/_<name>.py`
 - [ ] Conformance fixture in `tests/backends/conftest.py`
-- [ ] User docs page `docs/backends/<name>.md`
-- [ ] Added to `docs/backends/index.md` table
+- [ ] User guide in `guides/backends/<name>.md`
+- [ ] Added to `guides/backends/index.md` table
 - [ ] Added to `mkdocs.yml` nav under Backends
 - [ ] Added to README.md Supported Backends table
 - [ ] Added to README.md Installation extras (if applicable)
-- [ ] Added to `docs/getting-started.md` Installation extras (if applicable)
 - [ ] Backend config example in `examples/configuration.py`
 - [ ] Extra added to `pyproject.toml` `[project.optional-dependencies]` (if applicable)
-- [ ] Spec index updated: `docs/design/specs/index.md` + `docs/design/index.md`
 - [ ] CONTRIBUTING.md Repository Structure updated
 
 ### New Store method
 
 - [ ] Added to `_store.py`
 - [ ] Added to README.md Store API table
-- [ ] Added to `docs/getting-started.md` Core Operations table
 - [ ] Demonstrated in an `examples/` script (extend existing where possible)
-- [ ] `docs/examples/index.md` description updated if example scope changed
 
 ### Release
 
