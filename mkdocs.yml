@@ -110,6 +110,7 @@ nav:
           - "009: SFTP Backend": design/specs/009-sftp-backend.md
           - "010: Native Path Resolution": design/specs/010-native-path-resolution.md
           - "011: S3-PyArrow Backend": design/specs/011-s3-pyarrow-backend.md
+          - "012: Azure Backend": design/specs/012-azure-backend.md
       - ADRs:
           - Overview: design/adrs/index.md
           - "0001: Architecture": design/adrs/0001-architecture-store-registry-backends.md
@@ -117,6 +118,7 @@ nav:
           - "0003: fsspec": design/adrs/0003-fsspec-is-implementation-detail.md
           - "0004: Empty Path": design/adrs/0004-empty-path-semantics.md
           - "0005: Native Path Resolution": design/adrs/0005-native-path-resolution.md
+          - "0006: Documentation Architecture": design/adrs/0006-documentation-architecture.md
   - Contributing: contributing.md
   - Changelog: changelog.md
   - Development Story: development-story.md

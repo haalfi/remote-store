@@ -73,7 +73,3 @@ pa_fs = backend.unwrap(PyArrowS3)
 # s3fs filesystem (control path)
 s3_fs = backend.unwrap(s3fs.S3FileSystem)
 ```
-
-## API Reference
-
-::: remote_store.backends.S3PyArrowBackend

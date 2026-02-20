@@ -127,8 +127,7 @@ The SFTP backend supports all capabilities **except** `GLOB`:
 | `METADATA` | Yes | |
 | `GLOB` | No | No server-side glob; not offered to avoid misleading perf |
 
-!!! warning "Atomic write caveat"
-    Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the connection drops between write and rename, the orphan temp file will remain on the server.
+> **Atomic write caveat:** Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the connection drops between write and rename, the orphan temp file will remain on the server.
 
 ## Escape Hatch
 
@@ -140,7 +139,3 @@ import paramiko
 sftp_client = backend.unwrap(paramiko.SFTPClient)
 sftp_client.listdir_attr("/custom/path")
 ```
-
-## API Reference
-
-::: remote_store.backends.SFTPBackend
