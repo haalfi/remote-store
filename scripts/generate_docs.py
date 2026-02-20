@@ -258,7 +258,7 @@ run them directly.
 | Example | Description |
 |---------|-------------|
 | [Quickstart](quickstart.md) | Minimal config, write, and read |
-| [File Operations](file-operations.md) | Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key |
+| [File Operations](file-operations.md) | Full Store API: read, write, delete, move, copy, list, metadata |
 | [Streaming I/O](streaming-io.md) | Streaming writes and reads with `BytesIO` |
 | [Atomic Writes](atomic-writes.md) | Atomic writes and overwrite semantics |
 | [Configuration](configuration.md) | Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs |
@@ -577,8 +577,7 @@ def generate(*, clean: bool = False) -> None:
     # Generate all pages
     pages = _build_pages()
     for page in pages:
-        # All page types have docs_path as the first field
-        docs_path = page[0] if not isinstance(page, LiteralPage) else page.docs_path
+        docs_path = page.docs_path
         out = DOCS / docs_path
         out.parent.mkdir(parents=True, exist_ok=True)
         content = _render(page)

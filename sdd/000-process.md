@@ -19,6 +19,7 @@ This repository follows **Spec-Driven Development (SDD)**: every feature, contra
 sdd/
   000-process.md              # This file — how specs work
   BACKLOG.md                  # Tiered work tracker (blockers → backlog → ideas → done)
+  DESIGN.md                   # Overall design document & conventions
   specs/
     001-store-api.md          # Store API + metadata models
     002-registry-config.md    # Registry lifecycle + configuration
@@ -27,10 +28,18 @@ sdd/
     005-error-model.md        # Error hierarchy
     006-streaming-io.md       # Streaming I/O semantics
     007-atomic-writes.md      # Atomic write contract
+    008-s3-backend.md         # S3 backend
+    009-sftp-backend.md       # SFTP backend
+    010-native-path-resolution.md  # Native path resolution
+    011-s3-pyarrow-backend.md # S3-PyArrow hybrid backend
+    012-azure-backend.md      # Azure backend (planned)
   adrs/
     0001-*.md                 # Architecture Decision Records
   rfcs/
     rfc-template.md           # Template for new proposals
+guides/
+  backends/                   # User-facing backend configuration guides
+    index.md, local.md, s3.md, s3-pyarrow.md, sftp.md
 ```
 
 ## Spec Format
