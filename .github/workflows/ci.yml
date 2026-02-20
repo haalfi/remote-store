@@ -64,6 +64,7 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install -e ".[docs]"
+      - run: python scripts/generate_docs.py
       - run: mkdocs build --strict
 
   package:

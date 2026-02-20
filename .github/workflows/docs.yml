@@ -25,6 +25,7 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install -e ".[docs]"
+      - run: python scripts/generate_docs.py
       - run: mkdocs build --strict
       - uses: actions/upload-pages-artifact@v4
         with:
