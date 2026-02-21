@@ -162,31 +162,10 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
 - [ ] **ID-016 — PyArrow FileSystemHandler adapter**
   Implement a `StoreFileSystemHandler` in `ext/arrow.py` that wraps any
   `Store` into a `pyarrow.fs.PyFileSystem` via `pyarrow.fs.FileSystemHandler`.
-  Enables seamless use of any backend with PyArrow/Pandas operations:
-  `pq.write_table(table, path, filesystem=pa_fs)`,
-  `pd.read_parquet(path, filesystem=pa_fs)`, `ds.dataset(path, filesystem=pa_fs)`.
-  The Store API maps nearly 1:1 to FileSystemHandler (`read` → `open_input_stream`,
-  `list_files` → `get_file_info_selector`, `delete` → `delete_file`, etc.).
-  Main design challenge: `open_output_stream` must return a writable `NativeFile`
-  synchronously while Store's `write()` takes content as input — needs a buffer
-  adapter. Inverse of `unwrap()`: instead of reaching *into* a backend's native
-  handle, this wraps any Store *into* a PyArrow filesystem. Optional `pyarrow`
-  dependency, zero impact on core. Aligns with ADR-0003.
-  **Data lake integration (Iceberg / Delta Lake):** This adapter is the single
-  leverage point for Parquet-based data lake frameworks. PyIceberg ships
-  `PyArrowFileIO` which wraps any `pyarrow.fs.FileSystem` — so the chain
-  `Store → StoreFileSystemHandler → PyFileSystem → PyArrowFileIO → PyIceberg`
-  works without Iceberg knowing about remote-store. Delta Lake (delta-rs Python
-  bindings) accepts a `filesystem` parameter (PyArrow filesystem) for read/write
-  operations — same story. DuckDB and Polars also accept PyArrow filesystems.
-  One adapter, entire ecosystem. Considerations: (1) Delta Lake relies on atomic
-  rename for commit — Store already has `move()` and `write_atomic()`, though
-  S3's lack of true rename (copy+delete) is a known limitation that Delta handles
-  via its own log protocol. (2) Data lakes list heavily during query planning —
-  `get_file_info_selector` performance matters and should be benchmarked (see
-  ID-012). (3) Catalog management (Iceberg REST/Hive/Glue catalogs, Delta
-  transaction logs) lives above the storage layer and is out of scope — correctly
-  so. Remote-store's job is to be the filesystem they write to.
+  Enables seamless use of any backend with PyArrow, Pandas, Iceberg, Delta Lake,
+  DuckDB, and Polars. Optional `pyarrow` dependency, zero impact on core.
+  Aligns with ADR-0003.
+  → RFC: `sdd/rfcs/rfc-0002-pyarrow-filesystem-adapter.md`
 
 ---
 
