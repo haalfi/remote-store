@@ -159,6 +159,20 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   bare RTD URLs. Sweep for `readthedocs.io/` links without a version prefix
   and fix them. One-time task.
 
+- [ ] **ID-016 — PyArrow FileSystemHandler adapter**
+  Implement a `StoreFileSystemHandler` in `ext/arrow.py` that wraps any
+  `Store` into a `pyarrow.fs.PyFileSystem` via `pyarrow.fs.FileSystemHandler`.
+  Enables seamless use of any backend with PyArrow/Pandas operations:
+  `pq.write_table(table, path, filesystem=pa_fs)`,
+  `pd.read_parquet(path, filesystem=pa_fs)`, `ds.dataset(path, filesystem=pa_fs)`.
+  The Store API maps nearly 1:1 to FileSystemHandler (`read` → `open_input_stream`,
+  `list_files` → `get_file_info_selector`, `delete` → `delete_file`, etc.).
+  Main design challenge: `open_output_stream` must return a writable `NativeFile`
+  synchronously while Store's `write()` takes content as input — needs a buffer
+  adapter. Inverse of `unwrap()`: instead of reaching *into* a backend's native
+  handle, this wraps any Store *into* a PyArrow filesystem. Optional `pyarrow`
+  dependency, zero impact on core. Aligns with ADR-0003.
+
 ---
 
 ## Done
