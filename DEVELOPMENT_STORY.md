@@ -217,7 +217,7 @@ This session also caught two housekeeping issues:
 76ec1b3  Bump version to 0.4.3
 ```
 
-### Phase 11: AI Reviewing AI (meta-discovery)
+### Phase 11: AI Reviewing AI (AI-reviewed)
 
 After 14 PRs, the human asked Claude Code to review the merged pull requests -- looking for patterns, missed issues, and quality gaps. The twist: **both the PRs and the reviews were produced by Claude Code, just in different sessions.** The authoring sessions wrote specs, code, and documentation; a separate reviewing session evaluated them cold.
 
