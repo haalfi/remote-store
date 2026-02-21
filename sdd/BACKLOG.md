@@ -172,6 +172,21 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   adapter. Inverse of `unwrap()`: instead of reaching *into* a backend's native
   handle, this wraps any Store *into* a PyArrow filesystem. Optional `pyarrow`
   dependency, zero impact on core. Aligns with ADR-0003.
+  **Data lake integration (Iceberg / Delta Lake):** This adapter is the single
+  leverage point for Parquet-based data lake frameworks. PyIceberg ships
+  `PyArrowFileIO` which wraps any `pyarrow.fs.FileSystem` — so the chain
+  `Store → StoreFileSystemHandler → PyFileSystem → PyArrowFileIO → PyIceberg`
+  works without Iceberg knowing about remote-store. Delta Lake (delta-rs Python
+  bindings) accepts a `filesystem` parameter (PyArrow filesystem) for read/write
+  operations — same story. DuckDB and Polars also accept PyArrow filesystems.
+  One adapter, entire ecosystem. Considerations: (1) Delta Lake relies on atomic
+  rename for commit — Store already has `move()` and `write_atomic()`, though
+  S3's lack of true rename (copy+delete) is a known limitation that Delta handles
+  via its own log protocol. (2) Data lakes list heavily during query planning —
+  `get_file_info_selector` performance matters and should be benchmarked (see
+  ID-012). (3) Catalog management (Iceberg REST/Hive/Glue catalogs, Delta
+  transaction logs) lives above the storage layer and is out of scope — correctly
+  so. Remote-store's job is to be the filesystem they write to.
 
 ---
 
