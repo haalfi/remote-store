@@ -159,6 +159,14 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   bare RTD URLs. Sweep for `readthedocs.io/` links without a version prefix
   and fix them. One-time task.
 
+- [ ] **ID-016 — PyArrow FileSystemHandler adapter**
+  Implement a `StoreFileSystemHandler` in `ext/arrow.py` that wraps any
+  `Store` into a `pyarrow.fs.PyFileSystem` via `pyarrow.fs.FileSystemHandler`.
+  Enables seamless use of any backend with PyArrow, Pandas, Iceberg, Delta Lake,
+  DuckDB, and Polars. Optional `pyarrow` dependency, zero impact on core.
+  Aligns with ADR-0003.
+  → RFC: `sdd/rfcs/rfc-0002-pyarrow-filesystem-adapter.md`
+
 ---
 
 ## Done

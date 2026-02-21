@@ -217,6 +217,23 @@ This session also caught two housekeeping issues:
 76ec1b3  Bump version to 0.4.3
 ```
 
+### Phase 11: AI Reviewing AI (AI-reviewed)
+
+After 14 PRs, the human asked Claude Code to review the merged pull requests -- looking for patterns, missed issues, and quality gaps. The twist: **both the PRs and the reviews were produced by Claude Code, just in different sessions.** The authoring sessions wrote specs, code, and documentation; a separate reviewing session evaluated them cold.
+
+Only 2 of the 14 PRs had received substantive review. But those two reviews caught real issues:
+
+- **PR #1** (backlog + README rewrite): 3 non-blocking items — a dead documentation URL (`readthedocs.io` referenced before hosting existed), stale `mkdocs.yml` description, and misleading `pyproject.toml` keywords.
+- **PR #11** (Azure backend RFC + spec): 6 critical issues + 4 minor notes — wrong RFC numbering, invalid markdown checkbox syntax, 7 Backend ABC methods with no spec coverage, GLOB capability declared but unexplained, cross-references instead of inline explanations, ambiguous return types.
+
+All 6 critical issues on PR #11 were fixed before merge. The 12 unreviewed PRs shipped as-is.
+
+**The most revealing pattern was the authoring session's blind spot: completeness, not correctness.** The reviewing session didn't find things that were *wrong* — it found things that were *missing*. Seven abstract methods without invariants, a capability declared but never specified, return types left ambiguous. The authoring session "knew" how those would work and didn't realize the output was incomplete. A second session, reading the artifacts without that context, immediately spotted the gaps.
+
+**Same model, different role, different results.** Both sessions had identical capabilities, but the reviewing session found issues the authoring session created. The difference wasn't intelligence — it was framing. The author optimizes for producing; the reviewer optimizes for interrogating. Session isolation prevented the reviewer from inheriting the author's assumptions, which is exactly what code review is supposed to provide.
+
+**The practical implication for solo maintainers:** separate sessions simulate a two-person team. The context boundary between sessions acts as the "different person" that review traditionally requires. The cost of a review session is low; the 2 PRs that received reviews caught issues that would have persisted in the 12 that didn't.
+
 ## What Worked Well
 
 ### Specs as a shared contract
@@ -250,6 +267,10 @@ The SFTP backend drew from battle-tested legacy code (`legacy/sftp/sftp_store.py
 The Windows errno fix was discovered because Claude Code ran tests on a German-locale Windows machine. The `delete_folder` method was catching `OSError` and checking `if "not empty" in str(exc)` -- which fails when the OS returns "Das Verzeichnis ist nicht leer." The fix (checking `exc.errno` instead) is obvious in hindsight but easy to miss in an English-only development environment.
 
 The SFTP work added another layer: mypy type-checking results differed between Windows (local) and Linux (CI) due to different tenacity stub versions. **Cross-platform doesn't just mean "runs on both OSes" -- it means the entire toolchain (linters, type checkers, dependency resolvers) behaves consistently.**
+
+### Session isolation as a review mechanism
+
+The most unexpected quality win wasn't a tool or a process — it was the context boundary between Claude Code sessions. A reviewing session, with no memory of the authoring session's reasoning, approached the same artifacts as a genuinely independent reader. It didn't have to fight the urge to skim past familiar code; the code wasn't familiar. This produced reviews that were qualitatively different from "check your own work" — closer to what you'd get from a colleague who reads your PR for the first time.
 
 ### The human's role shifts
 
@@ -329,6 +350,8 @@ prioritization scheme each session.
 9. **Test behavior, not just interfaces.** A method that returns `BinaryIO` can satisfy mypy and pass functional tests while secretly loading everything into memory. If your spec promises streaming, write a test that proves it streams — e.g., verify that reading a large file doesn't allocate proportional memory, or that the returned handle reads lazily from the source.
 
 10. **Periodically audit spec claims against implementation.** Specs drift. A dedicated "does the code still do what the spec says?" review caught four backends worth of non-streaming `read()` implementations hiding behind correct type signatures.
+
+11. **Review in a separate session from authoring.** A single AI session reviewing its own output suffers from the same blind spot a human developer has proofreading their own code — the author's mental model fills in gaps the artifact doesn't. A fresh session reads the output cold and catches what the authoring session "knew" but didn't write down. This is especially valuable for design documents (specs, RFCs) where correctness means completeness and internal consistency, not just "does it compile."
 
 ## Reproducing This Workflow
 
