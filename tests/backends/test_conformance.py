@@ -353,6 +353,61 @@ class TestBackendToKey:
         assert backend.read_bytes(key) == b"a"
 
 
+class TestStreamingConformance:
+    """SIO-001, SIO-003: streaming must not load entire files into memory."""
+
+    @pytest.mark.spec("SIO-001")
+    def test_read_returns_true_stream_not_bytesio(self, backend: Backend) -> None:
+        """read() must return a true streaming handle, not a BytesIO wrapper."""
+        backend.write("stream_test.bin", b"hello streaming")
+        stream = backend.read("stream_test.bin")
+        assert not isinstance(stream, io.BytesIO), "read() must not wrap content in BytesIO -- this defeats streaming"
+        assert stream.read() == b"hello streaming"
+        stream.close()
+
+    @pytest.mark.spec("SIO-001")
+    def test_read_supports_chunked_reads(self, backend: Backend) -> None:
+        """Streams must support reading in fixed-size chunks."""
+        content = b"A" * 1000
+        backend.write("chunks.bin", content)
+        stream = backend.read("chunks.bin")
+        chunks = []
+        while True:
+            chunk = stream.read(100)
+            if not chunk:
+                break
+            assert len(chunk) <= 100
+            chunks.append(chunk)
+        assert b"".join(chunks) == content
+        stream.close()
+
+    @pytest.mark.spec("SIO-001")
+    def test_read_stream_position_starts_at_zero(self, backend: Backend) -> None:
+        """Stream must be positioned at the start on return."""
+        backend.write("pos.bin", b"0123456789")
+        stream = backend.read("pos.bin")
+        first = stream.read(3)
+        assert first == b"012"
+        rest = stream.read()
+        assert rest == b"3456789"
+        stream.close()
+
+    @pytest.mark.spec("SIO-003")
+    def test_write_from_binaryio_streams_content(self, backend: Backend) -> None:
+        """write() with BinaryIO must not require the caller to materialize bytes."""
+        content = b"X" * 8192
+        backend.write("binio_write.bin", io.BytesIO(content))
+        assert backend.read_bytes("binio_write.bin") == content
+
+    @pytest.mark.spec("SIO-003")
+    def test_write_binaryio_reads_from_current_position(self, backend: Backend) -> None:
+        """write() must read BinaryIO from its current position, not from start."""
+        buf = io.BytesIO(b"HEADER_PAYLOAD")
+        buf.seek(7)  # Skip past "HEADER_"
+        backend.write("partial_pos.bin", buf)
+        assert backend.read_bytes("partial_pos.bin") == b"PAYLOAD"
+
+
 class TestBackendUnwrap:
     """BE-022: unwrap raises by default."""
 
