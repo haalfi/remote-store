@@ -12,6 +12,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **Dependabot** -- automated dependency updates for pip and GitHub Actions (weekly, Mondays)
 - **CodeQL** -- GitHub code scanning workflow for Python on push/PR and weekly schedule
 - Security section in README linking to vulnerability reporting
+- **Streaming conformance tests** -- 5 tests (x4 backends) that prevent regression of v0.4.3 streaming fixes: not-BytesIO assertion, chunked reads, stream position, BinaryIO write, and write-from-current-position (SIO-001, SIO-003)
 
 ---
 

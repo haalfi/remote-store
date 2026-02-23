@@ -146,12 +146,10 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   the existing `Store`. Needs design decision on whether to wrap sync backends
   with `asyncio.to_thread` or require native async backends.
 
-- [ ] **ID-014 — Streaming conformance tests**
-  Add tests that verify `read()` returns a true streaming handle — not a
-  `BytesIO` wrapping the full content. v0.4.3 fixed all four backends, but
-  nothing in the test suite prevents regression. Could assert that the returned
-  object is not a `BytesIO`, or mock the underlying transport to verify lazy
-  reads. Extends spec SIO-001.
+- [x] **ID-014 — Streaming conformance tests** *(done)*
+  Added `TestStreamingConformance` class in `test_conformance.py` with 5 tests
+  (x4 backends = 20 test cases): not-BytesIO assertion, chunked reads, stream
+  position, BinaryIO write, and write-from-current-position. Spec: SIO-001, SIO-003.
 
 - [ ] **ID-015 — Audit external deep links**
   v0.4.3 fixed a broken ReadTheDocs link in the README (missing `/en/latest/`
