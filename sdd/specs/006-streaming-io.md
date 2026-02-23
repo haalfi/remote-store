@@ -7,7 +7,7 @@ All I/O in `remote_store` is streaming-first. Read operations return `BinaryIO` 
 ## SIO-001: Streaming Reads
 
 **Invariant:** `Backend.read(path)` returns a `BinaryIO` stream positioned at the start.
-**Postconditions:** The caller is responsible for consuming and closing the stream.
+**Postconditions:** The caller is responsible for consuming and closing the stream. The returned stream is not guaranteed to be seekable. Seekability is a backend-level property (e.g. local files are seekable, HTTP-based streams typically are not), not a Store API contract. Callers that require seekability should use `read_bytes()` and wrap in `BytesIO`.
 **Example:**
 ```python
 stream = backend.read("data.bin")

@@ -60,6 +60,7 @@ Backends that need extra dependencies use extras:
 pip install "remote-store[s3]"           # Amazon S3 / MinIO
 pip install "remote-store[s3-pyarrow]"   # S3 with PyArrow (high-throughput)
 pip install "remote-store[sftp]"         # SFTP / SSH
+pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
 ```
 
 ## Quick Start
@@ -160,7 +161,7 @@ For full details, see the [API reference](https://remote-store.readthedocs.io/en
 |Amazon S3 / MinIO    |Built-in  |`remote-store[s3]`          |
 |S3 (PyArrow)         |Built-in  |`remote-store[s3-pyarrow]`  |
 |SFTP / SSH           |Built-in  |`remote-store[sftp]`        |
-|Azure Blob / ADLS    |Planned   |                            |
+|Azure Blob / ADLS    |Built-in  |`remote-store[azure]`       |
 
 Detailed configuration guides for each backend are in [`guides/backends/`](https://remote-store.readthedocs.io/en/latest/backends/).
 

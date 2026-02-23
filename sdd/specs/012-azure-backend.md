@@ -162,8 +162,8 @@ AzureBackend(
 
 ### AZ-020: read()
 
-**Invariant:** `read(path)` returns a `BinaryIO` stream. The implementation calls `download_file()` on the `DataLakeFileClient` and wraps the response in a seekable `BytesIO` buffer.
-**Postconditions:** The entire file content is downloaded into memory before returning. The returned stream is seekable and rewindable. For large files, callers should prefer chunked access via `unwrap()` + native SDK streaming.
+**Invariant:** `read(path)` returns a `BinaryIO` stream via `_AzureBinaryIO`, a forward-only streaming adapter wrapping `StorageStreamDownloader.chunks()`. The raw adapter is wrapped in `io.BufferedReader` for efficient buffered reads.
+**Postconditions:** Data is streamed on demand — the full file is not loaded into memory. The stream is forward-only (not seekable). Callers that require seekability should use `read_bytes()` + `BytesIO`.
 **Raises:** `NotFound` if the file does not exist.
 
 ### AZ-021: read_bytes()

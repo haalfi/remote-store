@@ -47,6 +47,25 @@ def _sftp_available() -> bool:
         return False
 
 
+def _azure_available() -> bool:
+    try:
+        import azure.storage.filedatalake  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+def _azurite_reachable() -> bool:
+    """Check if Azurite is reachable (started externally via Docker)."""
+    try:
+        s = socket.create_connection(("127.0.0.1", 10000), timeout=1)
+        s.close()
+        return True
+    except OSError:
+        return False
+
+
 def _free_port() -> int:
     with socket.socket() as s:
         s.bind(("", 0))
@@ -115,12 +134,40 @@ _sftp_param = pytest.param(
     marks=pytest.mark.skipif(not _sftp_available(), reason="paramiko not installed"),
 )
 
+_azure_param = pytest.param(
+    "azure",
+    marks=pytest.mark.skipif(
+        not _azure_available() or not _azurite_reachable(),
+        reason="azure SDK not installed or Azurite not reachable",
+    ),
+)
 
-@pytest.fixture(params=["local", _s3_param, _s3_pyarrow_param, _sftp_param])
+
+_AZURITE_CONN_STR = (
+    "DefaultEndpointsProtocol=http;"
+    "AccountName=devstoreaccount1;"
+    "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
+    "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+    "QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;"
+    "TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
+)
+
+
+@pytest.fixture(scope="session")
+def azurite_server() -> Iterator[str | None]:
+    """Provide Azurite connection string if available."""
+    if not _azure_available() or not _azurite_reachable():
+        yield None
+        return
+    yield _AZURITE_CONN_STR
+
+
+@pytest.fixture(params=["local", _s3_param, _s3_pyarrow_param, _sftp_param, _azure_param])
 def backend(
     request: pytest.FixtureRequest,
     moto_server: str | None,
     sftp_server: tuple[int, str] | None,
+    azurite_server: str | None,
 ) -> Iterator[Backend]:
     """Parameterized backend fixture. Add new backends here."""
     if request.param == "local":
@@ -191,5 +238,21 @@ def backend(
         )
         yield b
         b.close()
+    elif request.param == "azure":
+        from remote_store.backends._azure import AzureBackend
+
+        assert azurite_server is not None
+        container = f"conformance-{uuid.uuid4().hex[:8]}"
+        # Create the container via the SDK
+        from azure.storage.filedatalake import DataLakeServiceClient
+
+        service = DataLakeServiceClient.from_connection_string(azurite_server)
+        service.create_file_system(container)
+        b = AzureBackend(container=container, connection_string=azurite_server)
+        yield b
+        # Cleanup
+        b.close()
+        service.delete_file_system(container)
+        service.close()
     else:
         pytest.skip(f"Unknown backend: {request.param}")

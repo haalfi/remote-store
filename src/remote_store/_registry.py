@@ -32,6 +32,14 @@ def _register_builtin_backends() -> None:
     if "local" not in _BACKEND_FACTORIES:
         register_backend("local", LocalBackend)
 
+    if "azure" not in _BACKEND_FACTORIES:
+        try:
+            from remote_store.backends._azure import AzureBackend
+
+            register_backend("azure", AzureBackend)
+        except ImportError:  # pragma: no cover
+            pass
+
 
 class Registry:
     """Manages backend lifecycle and provides access to named stores.
