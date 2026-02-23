@@ -5,7 +5,7 @@ The SFTP backend stores files on any SSH/SFTP server using [paramiko](https://ww
 ## Installation
 
 ```bash
-pip install remote-store[sftp]
+pip install "remote-store[sftp]"
 ```
 
 This pulls in `paramiko` and `tenacity` (for automatic retry on transient SSH errors).

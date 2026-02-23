@@ -11,6 +11,7 @@
 <p align="center">
   <a href="https://pypi.org/project/remote-store/"><img src="https://img.shields.io/pypi/v/remote-store" alt="PyPI version"></a>
   <a href="https://pypi.org/project/remote-store/"><img src="https://img.shields.io/pypi/pyversions/remote-store" alt="Python versions"></a>
+  <a href="https://github.com/haalfi/remote-store/actions/workflows/ci.yml"><img src="https://github.com/haalfi/remote-store/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://remote-store.readthedocs.io/"><img src="https://readthedocs.org/projects/remote-store/badge/?version=latest" alt="Documentation Status"></a>
   <a href="https://github.com/haalfi/remote-store/blob/master/LICENSE"><img src="https://img.shields.io/pypi/l/remote-store" alt="License"></a>
 </p>
@@ -56,9 +57,9 @@ pip install remote-store
 Backends that need extra dependencies use extras:
 
 ```bash
-pip install remote-store[s3]           # Amazon S3 / MinIO
-pip install remote-store[s3-pyarrow]  # S3 with PyArrow (high-throughput)
-pip install remote-store[sftp]        # SFTP / SSH
+pip install "remote-store[s3]"           # Amazon S3 / MinIO
+pip install "remote-store[s3-pyarrow]"   # S3 with PyArrow (high-throughput)
+pip install "remote-store[sftp]"         # SFTP / SSH
 ```
 
 ## Quick Start

@@ -5,7 +5,7 @@ Drop-in alternative to the [S3 backend](s3.md) that uses [PyArrow's C++ S3 files
 ## Installation
 
 ```bash
-pip install remote-store[s3-pyarrow]
+pip install "remote-store[s3-pyarrow]"
 ```
 
 This pulls in both `s3fs` and `pyarrow`.
