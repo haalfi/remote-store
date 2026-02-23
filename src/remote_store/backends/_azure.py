@@ -1,4 +1,4 @@
-"""Azure Storage backend using azure-storage-file-datalake directly."""
+"""Azure Storage backend -- Blob SDK for non-HNS, DataLake SDK for HNS."""
 
 from __future__ import annotations
 
@@ -47,14 +47,12 @@ class _AzureBinaryIO(io.RawIOBase):
 
     def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
         wanted = len(b)
-        # Accumulate enough data from the iterator
         while len(self._buf) < wanted:
             try:
                 chunk = next(self._iter)
             except StopIteration:
                 break
             self._buf += chunk
-        # Return what we have
         available = self._buf[:wanted]
         self._buf = self._buf[wanted:]
         n = len(available)
@@ -63,16 +61,17 @@ class _AzureBinaryIO(io.RawIOBase):
 
     def close(self) -> None:
         if not self.closed:
-            self._iter = iter(())  # release reference
+            self._iter = iter(())
             self._buf = b""
             super().close()
 
 
 class AzureBackend(Backend):
-    """Azure Storage backend using ``azure-storage-file-datalake``.
+    """Azure Storage backend.
 
-    Targets ADLS Gen2 (Hierarchical Namespace) as the primary use case while
-    remaining fully functional against plain Blob Storage accounts without HNS.
+    Uses the Blob SDK for non-HNS accounts (plain Blob Storage, Azurite) and
+    the DataLake SDK for HNS accounts (ADLS Gen2) to get atomic rename and
+    real directory support.
 
     :param container: Azure Storage container name (required, non-empty).
     :param account_name: Storage account name.
@@ -81,7 +80,7 @@ class AzureBackend(Backend):
     :param sas_token: Shared Access Signature token.
     :param connection_string: Azure Storage connection string.
     :param credential: Any credential object (e.g. ``DefaultAzureCredential()``).
-    :param client_options: Additional options passed to ``DataLakeServiceClient``.
+    :param client_options: Additional options passed to service clients.
     """
 
     def __init__(
@@ -108,8 +107,11 @@ class AzureBackend(Backend):
         self._connection_string = connection_string
         self._credential = credential
         self._client_options = client_options or {}
-        self._service_client: Any = None
-        self._fs_client: Any = None
+        # Lazy instances
+        self._blob_service_instance: Any = None
+        self._cc_instance: Any = None
+        self._datalake_service_instance: Any = None
+        self._fs_instance: Any = None
         self._hns_enabled: bool | None = None
 
     @property
@@ -120,59 +122,98 @@ class AzureBackend(Backend):
     def capabilities(self) -> CapabilitySet:
         return _ALL_CAPABILITIES
 
-    # region: lazy connection
+    # region: credential helper
+
+    def _resolve_credential(self) -> Any:
+        """Build credential from constructor params."""
+        cred = self._credential
+        if cred is None and self._account_key is not None:
+            cred = self._account_key
+        elif cred is None and self._sas_token is not None:
+            cred = self._sas_token
+        elif cred is None:
+            try:
+                from azure.identity import DefaultAzureCredential
+
+                cred = DefaultAzureCredential()
+            except ImportError:
+                raise BackendUnavailable(
+                    "No credential provided and azure-identity is not installed. "
+                    "Install azure-identity or provide account_key/sas_token/credential.",
+                    backend=self.name,
+                ) from None
+        return cred
+
+    # endregion
+
+    # region: lazy connection -- Blob SDK (always used for non-HNS)
 
     @property
-    def _client(self) -> Any:
-        """Lazy DataLakeServiceClient."""
-        if self._service_client is None:
+    def _blob_service(self) -> Any:
+        """Lazy BlobServiceClient."""
+        if self._blob_service_instance is None:
+            from azure.storage.blob import BlobServiceClient
+
+            opts: dict[str, Any] = dict(self._client_options)
+            if self._connection_string:
+                self._blob_service_instance = BlobServiceClient.from_connection_string(self._connection_string, **opts)
+            else:
+                url = self._account_url
+                if url is None and self._account_name is not None:
+                    url = f"https://{self._account_name}.blob.core.windows.net"
+                assert url is not None  # guaranteed by __init__ validation
+                cred = self._resolve_credential()
+                self._blob_service_instance = BlobServiceClient(account_url=url, credential=cred, **opts)
+        return self._blob_service_instance
+
+    @property
+    def _cc(self) -> Any:
+        """Lazy ContainerClient (Blob SDK)."""
+        if self._cc_instance is None:
+            self._cc_instance = self._blob_service.get_container_client(self._container)
+        return self._cc_instance
+
+    # endregion
+
+    # region: lazy connection -- DataLake SDK (used for HNS only)
+
+    @property
+    def _datalake_service(self) -> Any:
+        """Lazy DataLakeServiceClient (only used for HNS accounts)."""
+        if self._datalake_service_instance is None:
             from azure.storage.filedatalake import DataLakeServiceClient
 
             opts: dict[str, Any] = dict(self._client_options)
-
             if self._connection_string:
-                self._service_client = DataLakeServiceClient.from_connection_string(self._connection_string, **opts)
+                self._datalake_service_instance = DataLakeServiceClient.from_connection_string(
+                    self._connection_string, **opts
+                )
             else:
-                # Build credential
-                cred = self._credential
-                if cred is None and self._account_key is not None:
-                    cred = self._account_key
-                elif cred is None and self._sas_token is not None:
-                    cred = self._sas_token
-                elif cred is None:
-                    # Attempt DefaultAzureCredential
-                    try:
-                        from azure.identity import DefaultAzureCredential
-
-                        cred = DefaultAzureCredential()
-                    except ImportError:
-                        raise BackendUnavailable(
-                            "No credential provided and azure-identity is not installed. "
-                            "Install azure-identity or provide account_key/sas_token/credential.",
-                            backend=self.name,
-                        ) from None
-
                 url = self._account_url
                 if url is None and self._account_name is not None:
                     url = f"https://{self._account_name}.dfs.core.windows.net"
-
-                assert url is not None  # guaranteed by __init__ validation
-                self._service_client = DataLakeServiceClient(account_url=url, credential=cred, **opts)
-        return self._service_client
+                assert url is not None
+                cred = self._resolve_credential()
+                self._datalake_service_instance = DataLakeServiceClient(account_url=url, credential=cred, **opts)
+        return self._datalake_service_instance
 
     @property
     def _fs(self) -> Any:
-        """Lazy FileSystemClient for the configured container."""
-        if self._fs_client is None:
-            self._fs_client = self._client.get_file_system_client(self._container)
-        return self._fs_client
+        """Lazy FileSystemClient (DataLake SDK, HNS only)."""
+        if self._fs_instance is None:
+            self._fs_instance = self._datalake_service.get_file_system_client(self._container)
+        return self._fs_instance
+
+    # endregion
+
+    # region: HNS detection
 
     @property
     def _hns(self) -> bool:
         """Whether the storage account has Hierarchical Namespace enabled."""
         if self._hns_enabled is None:
             try:
-                info = self._client.get_account_information()
+                info = self._blob_service.get_account_information()
                 self._hns_enabled = bool(info.get("is_hns_enabled", False))
             except Exception:
                 _log.warning(
@@ -244,16 +285,12 @@ class AzureBackend(Backend):
 
     # region: helpers
 
-    def _get_file_client(self, path: str) -> Any:
-        """Get a DataLakeFileClient for the given path."""
-        return self._fs.get_file_client(self._azure_path(path))
-
-    def _get_directory_client(self, path: str) -> Any:
-        """Get a DataLakeDirectoryClient for the given path."""
-        return self._fs.get_directory_client(self._azure_path(path))
+    def _blob_client(self, path: str) -> Any:
+        """Get a BlobClient for the given path."""
+        return self._cc.get_blob_client(self._azure_path(path))
 
     def _props_to_fileinfo(self, props: Any, path: str) -> FileInfo:
-        """Convert path properties to FileInfo."""
+        """Convert blob/path properties to FileInfo."""
         name = path.rsplit("/", 1)[-1] if "/" in path else path
         size = getattr(props, "size", None) or getattr(props, "content_length", 0) or 0
         modified = getattr(props, "last_modified", None)
@@ -276,14 +313,15 @@ class AzureBackend(Backend):
         with self._errors(path):
             azure_path = self._azure_path(path)
             if not azure_path:
-                # Root always "exists"
                 return True
+            # Check as blob
+            bc = self._cc.get_blob_client(azure_path)
             try:
-                self._fs.get_file_client(azure_path).get_file_properties()
+                bc.get_blob_properties()
                 return True
             except Exception:
                 pass
-            # Check as directory
+            # Check as folder
             if self._hns:
                 try:
                     self._fs.get_directory_client(azure_path).get_directory_properties()
@@ -291,22 +329,18 @@ class AzureBackend(Backend):
                 except Exception:
                     return False
             else:
-                # non-HNS: check if any blobs exist with this prefix
-                paths = self._fs.get_paths(path=azure_path, recursive=False, max_results=1)
-                return any(True for _ in paths)
+                prefix = azure_path.rstrip("/") + "/"
+                blobs = self._cc.list_blobs(name_starts_with=prefix, results_per_page=1)
+                return any(True for _ in blobs)
 
     def is_file(self, path: str) -> bool:
         with self._errors(path):
+            bc = self._blob_client(path)
             try:
-                props = self._get_file_client(path).get_file_properties()
-                is_dir = getattr(props.get("metadata", {}), "get", lambda *_: None)("hdi_isfolder")
-                if is_dir:
-                    return False
-                # HNS: check is_directory attribute
-                resource_type = getattr(props, "metadata", {}).get("hdi_isfolder", None)
-                if resource_type:
-                    return False
-                return not getattr(props, "is_directory", False)
+                props = bc.get_blob_properties()
+                # HNS directories have metadata hdi_isfolder=true
+                meta = getattr(props, "metadata", None) or {}
+                return not meta.get("hdi_isfolder")
             except Exception:
                 return False
 
@@ -317,15 +351,14 @@ class AzureBackend(Backend):
                 return True
             if self._hns:
                 try:
-                    props = self._fs.get_directory_client(azure_path).get_directory_properties()
-                    return bool(getattr(props, "is_directory", True))
+                    self._fs.get_directory_client(azure_path).get_directory_properties()
+                    return True
                 except Exception:
                     return False
             else:
-                # non-HNS: folder exists if any blobs have this prefix
                 prefix = azure_path.rstrip("/") + "/"
-                paths = self._fs.get_paths(path=prefix, recursive=False, max_results=1)
-                return any(True for _ in paths)
+                blobs = self._cc.list_blobs(name_starts_with=prefix, results_per_page=1)
+                return any(True for _ in blobs)
 
     # endregion
 
@@ -333,16 +366,15 @@ class AzureBackend(Backend):
 
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
-            fc = self._get_file_client(path)
-            downloader = fc.download_file()
+            bc = self._blob_client(path)
+            downloader = bc.download_blob()
             raw = _AzureBinaryIO(downloader.chunks())
             return io.BufferedReader(raw)
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
-            fc = self._get_file_client(path)
-            downloader = fc.download_file()
-            return bytes(downloader.readall())
+            bc = self._blob_client(path)
+            return bytes(bc.download_blob().readall())
 
     # endregion
 
@@ -350,19 +382,16 @@ class AzureBackend(Backend):
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         with self._errors(path):
-            fc = self._get_file_client(path)
+            bc = self._blob_client(path)
             if not overwrite:
                 try:
-                    fc.get_file_properties()
+                    bc.get_blob_properties()
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
                 except AlreadyExists:
                     raise
                 except Exception:
-                    pass  # File doesn't exist, proceed
-            if isinstance(content, bytes):
-                fc.upload_data(content, overwrite=True)
-            else:
-                fc.upload_data(content, overwrite=True)
+                    pass  # Blob doesn't exist, proceed
+            bc.upload_blob(content, overwrite=True)
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         if not self._hns:
@@ -371,31 +400,26 @@ class AzureBackend(Backend):
             return
 
         with self._errors(path):
-            fc = self._get_file_client(path)
+            bc = self._blob_client(path)
             if not overwrite:
                 try:
-                    fc.get_file_properties()
+                    bc.get_blob_properties()
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
                 except AlreadyExists:
                     raise
                 except Exception:
                     pass
 
-            # Write to temp file, then atomic rename
+            # HNS: write to temp file via DFS, then atomic rename
             azure_path = self._azure_path(path)
-            name = azure_path.rsplit("/", 1)[-1] if "/" in azure_path else azure_path
+            basename = azure_path.rsplit("/", 1)[-1] if "/" in azure_path else azure_path
             parent = azure_path.rsplit("/", 1)[0] if "/" in azure_path else ""
-            tmp_name = f".~tmp.{name}.{uuid.uuid4().hex[:8]}"
+            tmp_name = f".~tmp.{basename}.{uuid.uuid4().hex[:8]}"
             tmp_path = f"{parent}/{tmp_name}" if parent else tmp_name
 
             tmp_fc = self._fs.get_file_client(tmp_path)
             try:
-                if isinstance(content, bytes):
-                    tmp_fc.upload_data(content, overwrite=True)
-                else:
-                    tmp_fc.upload_data(content, overwrite=True)
-
-                # Atomic rename
+                tmp_fc.upload_data(content, overwrite=True)
                 new_name = f"{self._container}/{azure_path}"
                 tmp_fc.rename_file(new_name)
             except Exception:
@@ -409,9 +433,9 @@ class AzureBackend(Backend):
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._errors(path):
-            fc = self._get_file_client(path)
+            bc = self._blob_client(path)
             try:
-                fc.delete_file()
+                bc.delete_blob()
             except Exception as exc:
                 mapped = self._classify(exc, path)
                 if isinstance(mapped, NotFound):
@@ -437,7 +461,6 @@ class AzureBackend(Backend):
                     raise mapped from None
 
                 if not recursive:
-                    # Check if directory is empty
                     children = list(self._fs.get_paths(path=azure_path, recursive=False, max_results=1))
                     if children:
                         raise RemoteStoreError(f"Folder not empty: {path}", path=path, backend=self.name)
@@ -445,23 +468,13 @@ class AzureBackend(Backend):
             else:
                 # non-HNS: list and delete all blobs with this prefix
                 prefix = azure_path.rstrip("/") + "/"
-                found = False
-                paths = list(self._fs.get_paths(path=prefix, recursive=True))
-                if paths:
-                    found = True
+                blobs = list(self._cc.list_blobs(name_starts_with=prefix))
+                if blobs:
                     if not recursive:
                         raise RemoteStoreError(f"Folder not empty: {path}", path=path, backend=self.name)
-                    for p in paths:
-                        self._fs.get_file_client(p.name).delete_file()
-                else:
-                    # Check direct path as well (edge case: "folder" blob)
-                    try:
-                        self._fs.get_file_client(azure_path).get_file_properties()
-                        found = True
-                    except Exception:
-                        pass
-
-                if not found and not missing_ok:
+                    for blob in blobs:
+                        self._cc.get_blob_client(blob.name).delete_blob()
+                elif not missing_ok:
                     raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 
     # endregion
@@ -471,33 +484,52 @@ class AzureBackend(Backend):
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         with self._errors(path):
             azure_path = self._azure_path(path)
-            try:
-                paths = self._fs.get_paths(path=azure_path or "/", recursive=recursive)
-                for p in paths:
-                    if not getattr(p, "is_directory", False):
-                        rel = str(p.name)
-                        yield self._props_to_fileinfo(p, rel)
-            except Exception as exc:
-                mapped = self._classify(exc, path)
-                if isinstance(mapped, NotFound):
-                    return
-                raise mapped from None
+            prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
+
+            if self._hns:
+                try:
+                    paths = self._fs.get_paths(path=azure_path or "/", recursive=recursive)
+                    for p in paths:
+                        if not getattr(p, "is_directory", False):
+                            yield self._props_to_fileinfo(p, str(p.name))
+                except Exception as exc:
+                    mapped = self._classify(exc, path)
+                    if isinstance(mapped, NotFound):
+                        return
+                    raise mapped from None
+            elif recursive:
+                blobs = self._cc.list_blobs(name_starts_with=prefix)
+                for blob in blobs:
+                    yield self._props_to_fileinfo(blob, blob.name)
+            else:
+                blobs = self._cc.walk_blobs(name_starts_with=prefix)
+                for item in blobs:
+                    if not getattr(item, "prefix", None):
+                        yield self._props_to_fileinfo(item, item.name)
 
     def list_folders(self, path: str) -> Iterator[str]:
         with self._errors(path):
             azure_path = self._azure_path(path)
-            try:
-                paths = self._fs.get_paths(path=azure_path or "/", recursive=False)
-                for p in paths:
-                    if getattr(p, "is_directory", False):
-                        folder_path = str(p.name)
-                        folder_name = folder_path.rstrip("/").rsplit("/", 1)[-1]
+            prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
+
+            if self._hns:
+                try:
+                    paths = self._fs.get_paths(path=azure_path or "/", recursive=False)
+                    for p in paths:
+                        if getattr(p, "is_directory", False):
+                            folder_name = str(p.name).rstrip("/").rsplit("/", 1)[-1]
+                            yield folder_name
+                except Exception as exc:
+                    mapped = self._classify(exc, path)
+                    if isinstance(mapped, NotFound):
+                        return
+                    raise mapped from None
+            else:
+                blobs = self._cc.walk_blobs(name_starts_with=prefix)
+                for item in blobs:
+                    if getattr(item, "prefix", None):
+                        folder_name = item.prefix.rstrip("/").rsplit("/", 1)[-1]
                         yield folder_name
-            except Exception as exc:
-                mapped = self._classify(exc, path)
-                if isinstance(mapped, NotFound):
-                    return
-                raise mapped from None
 
     # endregion
 
@@ -505,9 +537,10 @@ class AzureBackend(Backend):
 
     def get_file_info(self, path: str) -> FileInfo:
         with self._errors(path):
-            fc = self._get_file_client(path)
-            props = fc.get_file_properties()
-            if getattr(props, "is_directory", False):
+            bc = self._blob_client(path)
+            props = bc.get_blob_properties()
+            meta = getattr(props, "metadata", None) or {}
+            if meta.get("hdi_isfolder"):
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name)
             return self._props_to_fileinfo(props, path)
 
@@ -519,21 +552,21 @@ class AzureBackend(Backend):
                 dc = self._fs.get_directory_client(azure_path)
                 dc.get_directory_properties()  # raises if not found
 
-            # Gather stats from files under this path
-            paths = list(self._fs.get_paths(path=azure_path or "/", recursive=True))
+            # Gather stats from files under this prefix
+            prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
             file_count = 0
             total_size = 0
             latest_modified: datetime | None = None
-            for p in paths:
-                if not getattr(p, "is_directory", False):
-                    file_count += 1
-                    total_size += getattr(p, "content_length", 0) or 0
-                    modified = getattr(p, "last_modified", None)
-                    if modified is not None:
-                        if modified.tzinfo is None:
-                            modified = modified.replace(tzinfo=timezone.utc)
-                        if latest_modified is None or modified > latest_modified:
-                            latest_modified = modified
+
+            for blob in self._cc.list_blobs(name_starts_with=prefix):
+                file_count += 1
+                total_size += blob.size or 0
+                modified = blob.last_modified
+                if modified is not None:
+                    if modified.tzinfo is None:
+                        modified = modified.replace(tzinfo=timezone.utc)
+                    if latest_modified is None or modified > latest_modified:
+                        latest_modified = modified
 
             if file_count == 0 and not self._hns:
                 raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
@@ -551,14 +584,13 @@ class AzureBackend(Backend):
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         with self._errors(src):
-            src_fc = self._get_file_client(src)
-            # Check source exists
-            src_fc.get_file_properties()
+            src_bc = self._blob_client(src)
+            src_bc.get_blob_properties()  # raises NotFound if missing
 
-            dst_fc = self._get_file_client(dst)
+            dst_bc = self._blob_client(dst)
             if not overwrite:
                 try:
-                    dst_fc.get_file_properties()
+                    dst_bc.get_blob_properties()
                     raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
                 except AlreadyExists:
                     raise
@@ -566,46 +598,46 @@ class AzureBackend(Backend):
                     pass
 
             if self._hns:
-                # Atomic rename
+                src_fc = self._fs.get_file_client(self._azure_path(src))
                 new_name = f"{self._container}/{self._azure_path(dst)}"
                 src_fc.rename_file(new_name)
             else:
-                # Copy + delete
-                dst_fc.upload_data(src_fc.download_file().readall(), overwrite=True)
-                src_fc.delete_file()
+                # Copy + delete via blob SDK
+                data = src_bc.download_blob().readall()
+                dst_bc.upload_blob(data, overwrite=True)
+                src_bc.delete_blob()
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         with self._errors(src):
-            src_fc = self._get_file_client(src)
-            # Check source exists
-            src_fc.get_file_properties()
+            src_bc = self._blob_client(src)
+            src_bc.get_blob_properties()  # raises NotFound if missing
 
-            dst_fc = self._get_file_client(dst)
+            dst_bc = self._blob_client(dst)
             if not overwrite:
                 try:
-                    dst_fc.get_file_properties()
+                    dst_bc.get_blob_properties()
                     raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
                 except AlreadyExists:
                     raise
                 except Exception:
                     pass
 
-            # Server-side copy via start_copy
-            dst_fc.upload_data(src_fc.download_file().readall(), overwrite=True)
+            dst_bc.start_copy_from_url(src_bc.url)
 
     # endregion
 
     # region: lifecycle
 
     def close(self) -> None:
-        if self._fs_client is not None:
-            with contextlib.suppress(Exception):
-                self._fs_client.close()
-            self._fs_client = None
-        if self._service_client is not None:
-            with contextlib.suppress(Exception):
-                self._service_client.close()
-            self._service_client = None
+        clients = (self._cc_instance, self._blob_service_instance, self._fs_instance, self._datalake_service_instance)
+        for client in clients:
+            if client is not None:
+                with contextlib.suppress(Exception):
+                    client.close()
+        self._cc_instance = None
+        self._blob_service_instance = None
+        self._fs_instance = None
+        self._datalake_service_instance = None
         self._hns_enabled = None
 
     def unwrap(self, type_hint: type[T]) -> T:

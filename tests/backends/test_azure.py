@@ -150,7 +150,7 @@ class TestAzureHNSDetection:
         backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
         mock_client = MagicMock()
         mock_client.get_account_information.return_value = {"is_hns_enabled": True}
-        backend._service_client = mock_client
+        backend._blob_service_instance = mock_client
         assert backend._hns is True
 
     @pytest.mark.spec("AZ-006")
@@ -158,7 +158,7 @@ class TestAzureHNSDetection:
         backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
         mock_client = MagicMock()
         mock_client.get_account_information.return_value = {"is_hns_enabled": False}
-        backend._service_client = mock_client
+        backend._blob_service_instance = mock_client
         assert backend._hns is False
 
     @pytest.mark.spec("AZ-006")
@@ -166,7 +166,7 @@ class TestAzureHNSDetection:
         backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
         mock_client = MagicMock()
         mock_client.get_account_information.side_effect = Exception("network error")
-        backend._service_client = mock_client
+        backend._blob_service_instance = mock_client
         assert backend._hns is False
 
     @pytest.mark.spec("AZ-006")
@@ -174,7 +174,7 @@ class TestAzureHNSDetection:
         backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
         mock_client = MagicMock()
         mock_client.get_account_information.return_value = {"is_hns_enabled": True}
-        backend._service_client = mock_client
+        backend._blob_service_instance = mock_client
         # Access twice
         _ = backend._hns
         _ = backend._hns

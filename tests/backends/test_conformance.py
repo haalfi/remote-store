@@ -169,8 +169,8 @@ class TestBackendDelete:
 
     @pytest.mark.spec("BE-013")
     def test_delete_folder_empty(self, backend: Backend) -> None:
-        if backend.name in ("s3", "s3-pyarrow"):
-            pytest.skip("S3 virtual folders vanish when last object is deleted (S3-009)")
+        if backend.name in ("s3", "s3-pyarrow", "azure"):
+            pytest.skip("Virtual folders vanish when last object is deleted (S3-009/AZ-006)")
         backend.write("dir/file.txt", b"x")
         backend.delete("dir/file.txt")
         backend.delete_folder("dir")
