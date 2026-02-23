@@ -40,9 +40,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Start Azurite
         run: |
-          docker run -d --name azurite -p 10000:10000 \
-            mcr.microsoft.com/azure-storage/azurite \
-            azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck
+          npx azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck &
           # Wait for Azurite to be ready
           for i in $(seq 1 30); do
             nc -z 127.0.0.1 10000 && break || sleep 1
