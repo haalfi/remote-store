@@ -24,3 +24,10 @@ try:
     __all__ = [*__all__, "SFTPBackend"]
 except ImportError:  # pragma: no cover
     pass
+
+try:
+    from remote_store.backends._azure import AzureBackend
+
+    __all__ = [*__all__, "AzureBackend"]
+except ImportError:  # pragma: no cover
+    pass

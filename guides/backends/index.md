@@ -10,7 +10,7 @@
 | [Amazon S3 / MinIO](s3.md) | Built-in | `pip install "remote-store[s3]"` |
 | [S3 (PyArrow)](s3-pyarrow.md) | Built-in | `pip install "remote-store[s3-pyarrow]"` |
 | [SFTP / SSH](sftp.md) | Built-in | `pip install "remote-store[sftp]"` |
-| Azure Blob / ADLS | Planned | |
+| [Azure Blob / ADLS](azure.md) | Built-in | `pip install "remote-store[azure]"` |
 
 ## Custom Backends
 

@@ -67,10 +67,12 @@ Must be resolved before PyPI + ReadTheDocs publish.
 
 Next actions once release blockers are cleared.
 
-- [~] **BK-001 — Azure backend**
+- [x] **BK-001 — Azure backend**
   Write RFC (`sdd/rfcs/rfc-0001-azure-backend.md`), graduate to spec
   (`sdd/specs/012-azure-backend.md`), implement with `azure-storage-file-datalake`
   directly (not `adlfs`). See RFC-0001 for rationale.
+  Done: `AzureBackend` implemented in v0.5.0 with HNS adaptive behavior,
+  streaming reads, Azurite CI, and full conformance suite.
   → RFC: `sdd/rfcs/rfc-0001-azure-backend.md` (accepted)
   → Spec: `sdd/specs/012-azure-backend.md`
 

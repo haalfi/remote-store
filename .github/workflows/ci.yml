@@ -38,6 +38,13 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Start Azurite
+        run: |
+          npx azurite@3.33.0 --blobHost 0.0.0.0 --skipApiVersionCheck &
+          for i in $(seq 1 30); do
+            nc -z 127.0.0.1 10000 && break || sleep 1
+          done
+          nc -z 127.0.0.1 10000 || { echo "::error::Azurite failed to start"; exit 1; }
       - run: pip install -e ".[dev]"
       - run: pytest --cov=remote_store --cov-report=term-missing --cov-fail-under=95
 

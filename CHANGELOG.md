@@ -6,6 +6,18 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **Azure backend** (`AzureBackend`) -- new built-in backend for Azure Blob Storage and ADLS Gen2 using `azure-storage-file-datalake` directly. Adapts at runtime to Hierarchical Namespace (HNS) accounts for atomic rename and real directories, while remaining fully functional on plain Blob Storage. Install with `pip install "remote-store[azure]"`. (BK-001, spec 012)
+- **Streaming reads for Azure** -- `read()` returns a forward-only streaming `BinaryIO` via `_AzureBinaryIO` adapter wrapping `StorageStreamDownloader.chunks()`, consistent with other backends
+- **Azurite CI integration** -- Azure backend tests run against Azurite Docker emulator in CI
+- **Azure backend guide** -- `guides/backends/azure.md` with installation, auth options, HNS vs non-HNS behavior, and Azurite local development
+
+### Changed
+
+- **SIO-001 seekability clarification** -- `read()` streams are not guaranteed to be seekable; seekability is a backend-level property. Callers needing seekability should use `read_bytes()` + `BytesIO`
+- **AZ-020 spec updated** -- changed from BytesIO wrapper to streaming adapter
+
 ---
 
 ## [0.4.4] - 2026-02-23
