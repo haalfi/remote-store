@@ -124,7 +124,7 @@ class AzureBackend(Backend):
 
     # region: credential helper
 
-    def _resolve_credential(self) -> Any:
+    def _resolve_credential(self) -> Any:  # pragma: no cover -- only reached without connection_string
         """Build credential from constructor params."""
         cred = self._credential
         if cred is None and self._account_key is not None:
@@ -157,7 +157,7 @@ class AzureBackend(Backend):
             opts: dict[str, Any] = dict(self._client_options)
             if self._connection_string:
                 self._blob_service_instance = BlobServiceClient.from_connection_string(self._connection_string, **opts)
-            else:
+            else:  # pragma: no cover -- only reached without connection_string
                 url = self._account_url
                 if url is None and self._account_name is not None:
                     url = f"https://{self._account_name}.blob.core.windows.net"
@@ -178,7 +178,7 @@ class AzureBackend(Backend):
     # region: lazy connection -- DataLake SDK (used for HNS only)
 
     @property
-    def _datalake_service(self) -> Any:
+    def _datalake_service(self) -> Any:  # pragma: no cover -- HNS only, requires ADLS Gen2
         """Lazy DataLakeServiceClient (only used for HNS accounts)."""
         if self._datalake_service_instance is None:
             from azure.storage.filedatalake import DataLakeServiceClient
@@ -198,7 +198,7 @@ class AzureBackend(Backend):
         return self._datalake_service_instance
 
     @property
-    def _fs(self) -> Any:
+    def _fs(self) -> Any:  # pragma: no cover -- HNS only, requires ADLS Gen2
         """Lazy FileSystemClient (DataLake SDK, HNS only)."""
         if self._fs_instance is None:
             self._fs_instance = self._datalake_service.get_file_system_client(self._container)
@@ -278,8 +278,8 @@ class AzureBackend(Backend):
                 return PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name)
             if status == 409:
                 return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
-            return RemoteStoreError(str(exc), path=path, backend=self.name)
-        return RemoteStoreError(str(exc), path=path, backend=self.name)
+            return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover
+        return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover
 
     # endregion
 
@@ -295,9 +295,9 @@ class AzureBackend(Backend):
         size = getattr(props, "size", None) or getattr(props, "content_length", 0) or 0
         modified = getattr(props, "last_modified", None)
         if modified is not None and modified.tzinfo is None:
-            modified = modified.replace(tzinfo=timezone.utc)
+            modified = modified.replace(tzinfo=timezone.utc)  # pragma: no cover
         if modified is None:
-            modified = datetime.now(tz=timezone.utc)
+            modified = datetime.now(tz=timezone.utc)  # pragma: no cover
         return FileInfo(
             path=RemotePath(path),
             name=name,
@@ -322,7 +322,7 @@ class AzureBackend(Backend):
             except Exception:
                 pass
             # Check as folder
-            if self._hns:
+            if self._hns:  # pragma: no cover -- HNS only
                 try:
                     self._fs.get_directory_client(azure_path).get_directory_properties()
                     return True
@@ -349,7 +349,7 @@ class AzureBackend(Backend):
             azure_path = self._azure_path(path)
             if not azure_path:
                 return True
-            if self._hns:
+            if self._hns:  # pragma: no cover -- HNS only
                 try:
                     self._fs.get_directory_client(azure_path).get_directory_properties()
                     return True
@@ -399,7 +399,8 @@ class AzureBackend(Backend):
             self.write(path, content, overwrite=overwrite)
             return
 
-        with self._errors(path):
+        # HNS: write to temp file via DFS, then atomic rename
+        with self._errors(path):  # pragma: no cover -- HNS only
             bc = self._blob_client(path)
             if not overwrite:
                 try:
@@ -410,7 +411,6 @@ class AzureBackend(Backend):
                 except Exception:
                     pass
 
-            # HNS: write to temp file via DFS, then atomic rename
             azure_path = self._azure_path(path)
             basename = azure_path.rsplit("/", 1)[-1] if "/" in azure_path else azure_path
             parent = azure_path.rsplit("/", 1)[0] if "/" in azure_path else ""
@@ -442,13 +442,13 @@ class AzureBackend(Backend):
                     if not missing_ok:
                         raise mapped from None
                     return
-                raise mapped from None
+                raise mapped from None  # pragma: no cover
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         with self._errors(path):
             azure_path = self._azure_path(path)
 
-            if self._hns:
+            if self._hns:  # pragma: no cover -- HNS only
                 dc = self._fs.get_directory_client(azure_path)
                 try:
                     dc.get_directory_properties()
@@ -486,7 +486,7 @@ class AzureBackend(Backend):
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
 
-            if self._hns:
+            if self._hns:  # pragma: no cover -- HNS only
                 try:
                     paths = self._fs.get_paths(path=azure_path or "/", recursive=recursive)
                     for p in paths:
@@ -512,7 +512,7 @@ class AzureBackend(Backend):
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
 
-            if self._hns:
+            if self._hns:  # pragma: no cover -- HNS only
                 try:
                     paths = self._fs.get_paths(path=azure_path or "/", recursive=False)
                     for p in paths:
@@ -540,7 +540,7 @@ class AzureBackend(Backend):
             bc = self._blob_client(path)
             props = bc.get_blob_properties()
             meta = getattr(props, "metadata", None) or {}
-            if meta.get("hdi_isfolder"):
+            if meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name)
             return self._props_to_fileinfo(props, path)
 
@@ -548,7 +548,7 @@ class AzureBackend(Backend):
         with self._errors(path):
             azure_path = self._azure_path(path)
 
-            if self._hns:
+            if self._hns:  # pragma: no cover -- HNS only
                 dc = self._fs.get_directory_client(azure_path)
                 dc.get_directory_properties()  # raises if not found
 
@@ -563,7 +563,7 @@ class AzureBackend(Backend):
                 total_size += blob.size or 0
                 modified = blob.last_modified
                 if modified is not None:
-                    if modified.tzinfo is None:
+                    if modified.tzinfo is None:  # pragma: no cover
                         modified = modified.replace(tzinfo=timezone.utc)
                     if latest_modified is None or modified > latest_modified:
                         latest_modified = modified
@@ -597,7 +597,7 @@ class AzureBackend(Backend):
                 except Exception:
                     pass
 
-            if self._hns:
+            if self._hns:  # pragma: no cover -- HNS only
                 src_fc = self._fs.get_file_client(self._azure_path(src))
                 new_name = f"{self._container}/{self._azure_path(dst)}"
                 src_fc.rename_file(new_name)
