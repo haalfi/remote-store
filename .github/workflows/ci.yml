@@ -40,8 +40,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Start Azurite
         run: |
-          npx azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck &
-          # Wait for Azurite to be ready
+          npx azurite --blobHost 0.0.0.0 --skipApiVersionCheck &
           for i in $(seq 1 30); do
             nc -z 127.0.0.1 10000 && break || sleep 1
           done
