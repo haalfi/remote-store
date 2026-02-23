@@ -19,7 +19,7 @@ The original backlog item (BK-001) proposed using `adlfs`, the fsspec wrapper. A
 ### New backend: `AzureBackend`
 
 **Module:** `remote_store.backends._azure`
-**Optional extra:** `pip install remote-store[azure]`
+**Optional extra:** `pip install "remote-store[azure]"`
 **Dependencies:** `azure-storage-file-datalake`, `azure-identity` (optional, for `DefaultAzureCredential`)
 **Spec:** `sdd/specs/012-azure-backend.md`
 

@@ -172,6 +172,12 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Aligns with ADR-0003.
   → RFC: `sdd/rfcs/rfc-0002-pyarrow-filesystem-adapter.md`
 
+- [ ] **ID-018 — conda-forge publishing**
+  Submit a staged-recipes PR to conda-forge so users can `conda install -c
+  conda-forge remote-store`. Pure-Python wheel, so the recipe should be
+  straightforward. Consider once the project reaches Beta or if user demand
+  appears. Reference: https://conda-forge.org/docs/maintainer/adding_pkgs/
+
 ---
 
 ## Done

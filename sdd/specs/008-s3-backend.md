@@ -6,7 +6,7 @@
 
 This is the fsspec-based S3 backend. A future native backend using boto3 + pyarrow.fs directly may follow for advanced data engineering workloads.
 
-**Dependencies:** `s3fs` (optional extra: `pip install remote-store[s3]`)
+**Dependencies:** `s3fs` (optional extra: `pip install "remote-store[s3]"`)
 
 ---
 

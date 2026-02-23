@@ -7,7 +7,7 @@
 Unlike the S3 backends (which use `s3fs`, an fsspec wrapper), this backend uses the Azure SDK directly. This avoids the fragile string-based error mapping, gives access to native ADLS Gen2 semantics (atomic rename, real directories), and prevents the need for a second hybrid backend later. See [RFC-0001](../rfcs/rfc-0001-azure-backend.md) for the full rationale.
 
 **Dependencies:** `azure-storage-file-datalake`, `azure-identity` (optional, for `DefaultAzureCredential`)
-**Optional extra:** `pip install remote-store[azure]`
+**Optional extra:** `pip install "remote-store[azure]"`
 
 ---
 
