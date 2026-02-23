@@ -6,7 +6,7 @@
 
 This is a drop-in alternative to `S3Backend` with the same constructor signature. Users who need maximum read/write throughput for large files should prefer this backend.
 
-**Dependencies:** `s3fs`, `pyarrow` (optional extra: `pip install remote-store[s3-pyarrow]`)
+**Dependencies:** `s3fs`, `pyarrow` (optional extra: `pip install "remote-store[s3-pyarrow]"`)
 
 ---
 

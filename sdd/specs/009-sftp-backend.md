@@ -11,7 +11,7 @@ provides explicit host key policy control via a `HostKeyPolicy` enum, PEM key
 sanitization for Azure Key Vault compatibility, and tenacity-based retry for
 transient SSH errors.
 
-**Dependencies:** `paramiko`, `tenacity` (optional extra: `pip install remote-store[sftp]`)
+**Dependencies:** `paramiko`, `tenacity` (optional extra: `pip install "remote-store[sftp]"`)
 
 ---
 
