@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import io
 import logging
+import re
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -228,8 +229,8 @@ class AzureBackend(Backend):
     # region: path helpers
 
     def _azure_path(self, path: str) -> str:
-        """Normalize path for Azure (strip leading /)."""
-        return path.lstrip("/")
+        """Normalize path for Azure (strip leading /, collapse double separators)."""
+        return re.sub(r"/+", "/", path).lstrip("/")
 
     def to_key(self, native_path: str) -> str:
         prefix = f"{self._container}/"
@@ -310,6 +311,8 @@ class AzureBackend(Backend):
     # region: existence checks
 
     def exists(self, path: str) -> bool:
+        from azure.core.exceptions import ResourceNotFoundError
+
         with self._errors(path):
             azure_path = self._azure_path(path)
             if not azure_path:
@@ -319,7 +322,7 @@ class AzureBackend(Backend):
             try:
                 bc.get_blob_properties()
                 return True
-            except Exception:
+            except ResourceNotFoundError:
                 pass
             # Check as folder
             if self._hns:  # pragma: no cover -- HNS only
@@ -334,6 +337,8 @@ class AzureBackend(Backend):
                 return any(True for _ in blobs)
 
     def is_file(self, path: str) -> bool:
+        from azure.core.exceptions import ResourceNotFoundError
+
         with self._errors(path):
             bc = self._blob_client(path)
             try:
@@ -341,7 +346,7 @@ class AzureBackend(Backend):
                 # HNS directories have metadata hdi_isfolder=true
                 meta = getattr(props, "metadata", None) or {}
                 return not meta.get("hdi_isfolder")
-            except Exception:
+            except ResourceNotFoundError:
                 return False
 
     def is_folder(self, path: str) -> bool:
@@ -381,6 +386,8 @@ class AzureBackend(Backend):
     # region: write operations
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+        from azure.core.exceptions import ResourceNotFoundError
+
         with self._errors(path):
             bc = self._blob_client(path)
             if not overwrite:
@@ -389,7 +396,7 @@ class AzureBackend(Backend):
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
                 except AlreadyExists:
                     raise
-                except Exception:
+                except ResourceNotFoundError:
                     pass  # Blob doesn't exist, proceed
             bc.upload_blob(content, overwrite=True)
 
@@ -400,6 +407,8 @@ class AzureBackend(Backend):
             return
 
         # HNS: write to temp file via DFS, then atomic rename
+        from azure.core.exceptions import ResourceNotFoundError
+
         with self._errors(path):  # pragma: no cover -- HNS only
             bc = self._blob_client(path)
             if not overwrite:
@@ -408,7 +417,7 @@ class AzureBackend(Backend):
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
                 except AlreadyExists:
                     raise
-                except Exception:
+                except ResourceNotFoundError:
                     pass
 
             azure_path = self._azure_path(path)
@@ -466,13 +475,13 @@ class AzureBackend(Backend):
                         raise RemoteStoreError(f"Folder not empty: {path}", path=path, backend=self.name)
                 dc.delete_directory()
             else:
-                # non-HNS: list and delete all blobs with this prefix
+                # non-HNS: virtual folders via blob prefix
                 prefix = azure_path.rstrip("/") + "/"
-                blobs = list(self._cc.list_blobs(name_starts_with=prefix))
-                if blobs:
+                first = list(self._cc.list_blobs(name_starts_with=prefix, results_per_page=1))
+                if first:
                     if not recursive:
                         raise RemoteStoreError(f"Folder not empty: {path}", path=path, backend=self.name)
-                    for blob in blobs:
+                    for blob in self._cc.list_blobs(name_starts_with=prefix):
                         self._cc.get_blob_client(blob.name).delete_blob()
                 elif not missing_ok:
                     raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
@@ -583,6 +592,8 @@ class AzureBackend(Backend):
     # region: move and copy
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        from azure.core.exceptions import ResourceNotFoundError
+
         with self._errors(src):
             src_bc = self._blob_client(src)
             src_bc.get_blob_properties()  # raises NotFound if missing
@@ -594,7 +605,7 @@ class AzureBackend(Backend):
                     raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
                 except AlreadyExists:
                     raise
-                except Exception:
+                except ResourceNotFoundError:
                     pass
 
             if self._hns:  # pragma: no cover -- HNS only
@@ -602,12 +613,13 @@ class AzureBackend(Backend):
                 new_name = f"{self._container}/{self._azure_path(dst)}"
                 src_fc.rename_file(new_name)
             else:
-                # Copy + delete via blob SDK
-                data = src_bc.download_blob().readall()
-                dst_bc.upload_blob(data, overwrite=True)
+                # Server-side copy + delete
+                dst_bc.start_copy_from_url(src_bc.url)
                 src_bc.delete_blob()
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        from azure.core.exceptions import ResourceNotFoundError
+
         with self._errors(src):
             src_bc = self._blob_client(src)
             src_bc.get_blob_properties()  # raises NotFound if missing
@@ -619,7 +631,7 @@ class AzureBackend(Backend):
                     raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
                 except AlreadyExists:
                     raise
-                except Exception:
+                except ResourceNotFoundError:
                     pass
 
             dst_bc.start_copy_from_url(src_bc.url)

@@ -243,16 +243,18 @@ def backend(
 
         assert azurite_server is not None
         container = f"conformance-{uuid.uuid4().hex[:8]}"
-        # Create the container via the SDK
-        from azure.storage.filedatalake import DataLakeServiceClient
+        from azure.storage.blob import BlobServiceClient
 
-        service = DataLakeServiceClient.from_connection_string(azurite_server)
-        service.create_file_system(container)
+        service = BlobServiceClient.from_connection_string(azurite_server)
+        try:
+            service.create_container(container)
+        except Exception:
+            service.close()
+            raise
         b = AzureBackend(container=container, connection_string=azurite_server)
         yield b
-        # Cleanup
         b.close()
-        service.delete_file_system(container)
+        service.delete_container(container)
         service.close()
     else:
         pytest.skip(f"Unknown backend: {request.param}")

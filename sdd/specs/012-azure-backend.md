@@ -2,9 +2,9 @@
 
 ## Overview
 
-`AzureBackend` implements the `Backend` ABC for Azure Storage using `azure-storage-file-datalake` directly. It targets ADLS Gen2 (Hierarchical Namespace) accounts as the primary use case, while remaining fully functional against plain Blob Storage accounts without HNS.
+`AzureBackend` implements the `Backend` ABC for Azure Storage using a dual-client architecture: `azure-storage-blob` (BlobServiceClient) for non-HNS accounts and `azure-storage-file-datalake` (DataLakeServiceClient) for HNS-only features. It targets ADLS Gen2 (Hierarchical Namespace) accounts as the primary use case, while remaining fully functional against plain Blob Storage accounts without HNS.
 
-Unlike the S3 backends (which use `s3fs`, an fsspec wrapper), this backend uses the Azure SDK directly. This avoids the fragile string-based error mapping, gives access to native ADLS Gen2 semantics (atomic rename, real directories), and prevents the need for a second hybrid backend later. See [RFC-0001](../rfcs/rfc-0001-azure-backend.md) for the full rationale.
+Unlike the S3 backends (which use `s3fs`, an fsspec wrapper), this backend uses the Azure SDK directly. The dual-client design exists because the DFS wire protocol (used by `azure-storage-file-datalake`) is not supported by Azurite or plain Blob Storage accounts — only the Blob API works everywhere. HNS-only features (atomic rename, real directories) use the DataLake SDK; all other operations use the Blob SDK. See [RFC-0001](../rfcs/rfc-0001-azure-backend.md) for the full rationale.
 
 **Dependencies:** `azure-storage-file-datalake`, `azure-identity` (optional, for `DefaultAzureCredential`)
 **Optional extra:** `pip install "remote-store[azure]"`
@@ -47,7 +47,7 @@ AzureBackend(
 
 ### AZ-004: Lazy Connection
 
-**Invariant:** No network call occurs during `__init__`. The `FileSystemClient` (and HNS detection) are deferred to first use.
+**Invariant:** No network call occurs during `__init__`. The `BlobServiceClient`, `DataLakeServiceClient` (HNS only), and HNS detection are deferred to first use.
 **Rationale:** Same as S3-004 — the backend may be created during application wiring before the network is available.
 
 ### AZ-005: Construction Validation
@@ -110,8 +110,8 @@ AzureBackend(
 
 ### AZ-012: exists()
 
-**Invariant (HNS):** `exists(path)` calls `get_path_properties()` and returns `True` if the path exists (file or directory), `False` on `ResourceNotFoundError`.
-**Invariant (no HNS):** `exists(path)` issues a HEAD request for the blob. Returns `True` if found, `False` on 404.
+**Invariant (HNS):** `exists(path)` first checks for a blob via `BlobClient.get_blob_properties()`, then checks for a directory via `DataLakeDirectoryClient.get_directory_properties()`. Returns `True` if either exists, `False` on `ResourceNotFoundError`.
+**Invariant (no HNS):** `exists(path)` issues a HEAD request for the blob via `BlobClient.get_blob_properties()`. Returns `True` if found, `False` on `ResourceNotFoundError`. Falls back to prefix check for folders.
 **Postconditions:** Never raises `NotFound` — returns `False` instead (per BE-004).
 
 ### AZ-013: is_file() and is_folder()
@@ -173,22 +173,22 @@ AzureBackend(
 
 ### AZ-022: write()
 
-**Invariant:** `write(path, content, overwrite=False)` uploads content via `upload_data()` on the `DataLakeFileClient`.
+**Invariant:** `write(path, content, overwrite=False)` uploads content via `BlobClient.upload_blob()` (Blob SDK).
 **Preconditions:** `content` is `bytes` or `BinaryIO`.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. Existence check uses `ResourceNotFoundError` (not broad exception catch) to avoid swallowing auth/network errors.
 **Postconditions (HNS):** Intermediate directories are created automatically by the ADLS Gen2 service.
 **Postconditions (no HNS):** No intermediate directory creation needed (flat blob namespace).
 
 ### AZ-023: get_file_info()
 
-**Invariant:** `get_file_info(path)` returns a `FileInfo` populated from `get_path_properties()`.
+**Invariant:** `get_file_info(path)` returns a `FileInfo` populated from `BlobClient.get_blob_properties()`.
 **Mapped fields:**
 - `path`: the store-relative key
-- `size`: from `content_length`
-- `last_modified`: from `last_modified` (UTC datetime)
-- `etag`: from `etag`
-- `content_type`: from `content_settings.content_type`
+- `name`: filename component of the path
+- `size`: from `content_length` (or `size` for HNS path objects)
+- `modified_at`: from `last_modified` (UTC datetime)
 
+**Note:** `etag` and `content_type` are not included in `FileInfo` — the model does not have these fields. If needed in future, extend `FileInfo` and update this mapping.
 **Raises:** `NotFound` if the file does not exist.
 
 ### AZ-024: get_folder_info()
@@ -243,8 +243,8 @@ backend.to_key("data/file.txt")               # -> "data/file.txt" (no prefix, u
 
 ### AZ-029: close()
 
-**Invariant:** `close()` closes the underlying `FileSystemClient` and `DataLakeServiceClient`.
-**Postconditions:** Safe to call multiple times. After close, further operations will fail.
+**Invariant:** `close()` closes the underlying `BlobServiceClient`, `ContainerClient`, and (if HNS) `FileSystemClient` and `DataLakeServiceClient`. Resets all cached instances and HNS detection state.
+**Postconditions:** Safe to call multiple times. Note: because lazy properties re-initialize on next use, the backend is technically reusable after `close()`. This is consistent with S3Backend's behavior.
 
 ### AZ-030: unwrap()
 
@@ -258,7 +258,7 @@ backend.to_key("data/file.txt")               # -> "data/file.txt" (no prefix, u
 
 ### AZ-031: Client Options Passthrough
 
-**Invariant:** The `client_options` dict is merged into the `DataLakeServiceClient` configuration, allowing advanced settings (custom timeouts, retry policies, proxies, API version overrides, etc.).
+**Invariant:** The `client_options` dict is merged into both the `BlobServiceClient` and `DataLakeServiceClient` configurations, allowing advanced settings (custom timeouts, retry policies, proxies, API version overrides, etc.).
 **Postconditions:** Explicit constructor parameters (`account_key`, `sas_token`, `credential`, etc.) take precedence over keys in `client_options`.
 
 ### AZ-032: Default Credential Chain

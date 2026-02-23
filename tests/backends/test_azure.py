@@ -26,12 +26,15 @@ from remote_store._errors import (  # noqa: E402
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderInfo  # noqa: E402
-from remote_store.backends._azure import AzureBackend  # noqa: E402
+from remote_store.backends._azure import AzureBackend, _AzureBinaryIO  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from remote_store._backend import Backend
+
+
+# -- Shared Azurite helpers (imported from conftest where possible) -----------
 
 
 def _azurite_reachable() -> bool:
@@ -45,14 +48,8 @@ def _azurite_reachable() -> bool:
         return False
 
 
-_AZURITE_CONN_STR = (
-    "DefaultEndpointsProtocol=http;"
-    "AccountName=devstoreaccount1;"
-    "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
-    "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
-    "QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;"
-    "TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
-)
+# Re-use the connection string from conftest
+from tests.backends.conftest import _AZURITE_CONN_STR  # noqa: E402
 
 _needs_azurite = pytest.mark.skipif(
     not _azurite_reachable(),
@@ -66,21 +63,89 @@ def azure_backend() -> Iterator[Backend]:
     if not _azurite_reachable():
         pytest.skip("Azurite not reachable")
 
-    from azure.storage.filedatalake import DataLakeServiceClient
+    from azure.storage.blob import BlobServiceClient
 
     container = f"test-az-{uuid.uuid4().hex[:8]}"
-    service = DataLakeServiceClient.from_connection_string(_AZURITE_CONN_STR)
-    service.create_file_system(container)
+    service = BlobServiceClient.from_connection_string(_AZURITE_CONN_STR)
+    try:
+        service.create_container(container)
+    except Exception:
+        service.close()
+        raise
 
     backend = AzureBackend(container=container, connection_string=_AZURITE_CONN_STR)
     yield backend
 
     backend.close()
-    service.delete_file_system(container)
+    service.delete_container(container)
     service.close()
 
 
-# region: Construction (AZ-001, AZ-005)
+# =============================================================================
+# _AzureBinaryIO unit tests
+# =============================================================================
+
+
+class TestAzureBinaryIO:
+    """Unit tests for the streaming adapter."""
+
+    def test_empty_iterator(self) -> None:
+        stream = _AzureBinaryIO(iter([]))
+        wrapped = io.BufferedReader(stream)
+        assert wrapped.read() == b""
+
+    def test_read_exact_chunk(self) -> None:
+        stream = _AzureBinaryIO(iter([b"hello"]))
+        wrapped = io.BufferedReader(stream)
+        assert wrapped.read(5) == b"hello"
+
+    def test_read_less_than_chunk(self) -> None:
+        stream = _AzureBinaryIO(iter([b"hello world"]))
+        wrapped = io.BufferedReader(stream)
+        assert wrapped.read(5) == b"hello"
+        assert wrapped.read(6) == b" world"
+
+    def test_read_more_than_chunk(self) -> None:
+        stream = _AzureBinaryIO(iter([b"ab", b"cd", b"ef"]))
+        wrapped = io.BufferedReader(stream)
+        assert wrapped.read(4) == b"abcd"
+        assert wrapped.read(2) == b"ef"
+
+    def test_read_all(self) -> None:
+        stream = _AzureBinaryIO(iter([b"chunk1", b"chunk2"]))
+        wrapped = io.BufferedReader(stream)
+        assert wrapped.read() == b"chunk1chunk2"
+
+    def test_readable(self) -> None:
+        stream = _AzureBinaryIO(iter([]))
+        assert stream.readable() is True
+
+    def test_close_then_read(self) -> None:
+        stream = _AzureBinaryIO(iter([b"data"]))
+        stream.close()
+        assert stream.closed
+
+    def test_close_idempotent(self) -> None:
+        stream = _AzureBinaryIO(iter([b"data"]))
+        stream.close()
+        stream.close()
+        assert stream.closed
+
+    def test_exact_boundary_reads(self) -> None:
+        """Read exactly at chunk boundaries."""
+        stream = _AzureBinaryIO(iter([b"aaa", b"bbb", b"ccc"]))
+        wrapped = io.BufferedReader(stream)
+        assert wrapped.read(3) == b"aaa"
+        assert wrapped.read(3) == b"bbb"
+        assert wrapped.read(3) == b"ccc"
+        assert wrapped.read(1) == b""
+
+
+# =============================================================================
+# Construction (AZ-001, AZ-005)
+# =============================================================================
+
+
 class TestAzureConstruction:
     """AZ-001, AZ-005: construction and validation."""
 
@@ -138,10 +203,40 @@ class TestAzureConstruction:
             AzureBackend(container="test")
 
 
-# endregion
+# =============================================================================
+# Path normalization (AZ-011)
+# =============================================================================
 
 
-# region: HNS Detection (AZ-006)
+class TestAzurePathNormalization:
+    """AZ-011: path normalization."""
+
+    @pytest.mark.spec("AZ-011")
+    def test_strips_leading_slash(self) -> None:
+        backend = AzureBackend(container="test", account_name="x")
+        assert backend._azure_path("/a/b/c.txt") == "a/b/c.txt"
+
+    @pytest.mark.spec("AZ-011")
+    def test_collapses_double_separators(self) -> None:
+        backend = AzureBackend(container="test", account_name="x")
+        assert backend._azure_path("a//b///c.txt") == "a/b/c.txt"
+
+    @pytest.mark.spec("AZ-011")
+    def test_combined_normalization(self) -> None:
+        backend = AzureBackend(container="test", account_name="x")
+        assert backend._azure_path("//a//b/c.txt") == "a/b/c.txt"
+
+    @pytest.mark.spec("AZ-011")
+    def test_empty_string(self) -> None:
+        backend = AzureBackend(container="test", account_name="x")
+        assert backend._azure_path("") == ""
+
+
+# =============================================================================
+# HNS Detection (AZ-006)
+# =============================================================================
+
+
 class TestAzureHNSDetection:
     """AZ-006: HNS detection with mocked SDK."""
 
@@ -175,17 +270,16 @@ class TestAzureHNSDetection:
         mock_client = MagicMock()
         mock_client.get_account_information.return_value = {"is_hns_enabled": True}
         backend._blob_service_instance = mock_client
-        # Access twice
         _ = backend._hns
         _ = backend._hns
-        # Should only be called once
         mock_client.get_account_information.assert_called_once()
 
 
-# endregion
+# =============================================================================
+# Error mapping (AZ-025 through AZ-028)
+# =============================================================================
 
 
-# region: Error mapping (AZ-025 through AZ-028)
 class TestAzureErrorMapping:
     """AZ-025 through AZ-028: structured error classification."""
 
@@ -252,6 +346,31 @@ class TestAzureErrorMapping:
         mapped = backend._classify(ServiceRequestError("connection refused"), "")
         assert isinstance(mapped, BackendUnavailable)
 
+    @pytest.mark.spec("AZ-025")
+    def test_service_response_error_maps_to_unavailable(self) -> None:
+        from azure.core.exceptions import ServiceResponseError
+
+        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        mapped = backend._classify(ServiceResponseError("bad response"), "")
+        assert isinstance(mapped, BackendUnavailable)
+
+    @pytest.mark.spec("AZ-025")
+    def test_generic_http_error_maps_to_remote_store_error(self) -> None:
+        from azure.core.exceptions import HttpResponseError
+
+        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        exc = HttpResponseError("server error")
+        exc.status_code = 500
+        mapped = backend._classify(exc, "file.txt")
+        assert isinstance(mapped, RemoteStoreError)
+        assert not isinstance(mapped, NotFound | AlreadyExists | PermissionDenied)
+
+    @pytest.mark.spec("AZ-025")
+    def test_unknown_exception_maps_to_remote_store_error(self) -> None:
+        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        mapped = backend._classify(RuntimeError("unexpected"), "file.txt")
+        assert isinstance(mapped, RemoteStoreError)
+
     @pytest.mark.spec("AZ-026")
     def test_no_native_exception_leaks(self) -> None:
         """The error context manager converts all exceptions."""
@@ -278,10 +397,45 @@ class TestAzureErrorMapping:
             raise NotFound("custom", path="test", backend="azure")
 
 
-# endregion
+# =============================================================================
+# Credential resolution (AZ-032)
+# =============================================================================
 
 
-# region: to_key (AZ-027)
+class TestAzureCredentialResolution:
+    """AZ-032: credential resolution paths."""
+
+    @pytest.mark.spec("AZ-032")
+    def test_account_key_used_as_credential(self) -> None:
+        backend = AzureBackend(container="test", account_name="x", account_key="mykey")
+        cred = backend._resolve_credential()
+        assert cred == "mykey"
+
+    @pytest.mark.spec("AZ-032")
+    def test_sas_token_used_as_credential(self) -> None:
+        backend = AzureBackend(container="test", account_name="x", sas_token="mysas")
+        cred = backend._resolve_credential()
+        assert cred == "mysas"
+
+    @pytest.mark.spec("AZ-032")
+    def test_explicit_credential_used(self) -> None:
+        sentinel = object()
+        backend = AzureBackend(container="test", account_name="x", credential=sentinel)
+        cred = backend._resolve_credential()
+        assert cred is sentinel
+
+    @pytest.mark.spec("AZ-032")
+    def test_account_key_takes_precedence_over_sas(self) -> None:
+        backend = AzureBackend(container="test", account_name="x", account_key="key", sas_token="sas")
+        cred = backend._resolve_credential()
+        assert cred == "key"
+
+
+# =============================================================================
+# to_key (AZ-027)
+# =============================================================================
+
+
 class TestAzureToKey:
     """AZ-027: to_key strips container prefix."""
 
@@ -301,10 +455,11 @@ class TestAzureToKey:
         assert backend.to_key("") == ""
 
 
-# endregion
+# =============================================================================
+# unwrap (AZ-030)
+# =============================================================================
 
 
-# region: unwrap (AZ-030)
 class TestAzureUnwrap:
     """AZ-030: unwrap returns FileSystemClient."""
 
@@ -315,10 +470,11 @@ class TestAzureUnwrap:
             backend.unwrap(str)
 
 
-# endregion
+# =============================================================================
+# Lifecycle (AZ-029)
+# =============================================================================
 
 
-# region: Lifecycle (AZ-029)
 class TestAzureLifecycle:
     """AZ-029: close() behavior."""
 
@@ -335,10 +491,139 @@ class TestAzureLifecycle:
         backend.close()
 
 
-# endregion
+# =============================================================================
+# HNS code path mock tests
+# =============================================================================
 
 
-# region: Integration tests (require Azurite)
+class TestAzureHNSPaths:
+    """Mock-based tests for HNS code paths that can't be tested with Azurite."""
+
+    def _make_hns_backend(self) -> AzureBackend:
+        """Create a backend with HNS enabled and mocked SDK clients."""
+        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        backend._hns_enabled = True
+        # Mock blob service (still used for some operations)
+        backend._blob_service_instance = MagicMock()
+        backend._cc_instance = MagicMock()
+        # Mock datalake service
+        backend._datalake_service_instance = MagicMock()
+        backend._fs_instance = MagicMock()
+        return backend
+
+    def test_exists_checks_directory_on_hns(self) -> None:
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = self._make_hns_backend()
+        # Blob doesn't exist
+        bc = MagicMock()
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("not found")
+        backend._cc_instance.get_blob_client.return_value = bc
+        # Directory exists
+        dc = MagicMock()
+        backend._fs_instance.get_directory_client.return_value = dc
+        assert backend.exists("my-dir") is True
+        dc.get_directory_properties.assert_called_once()
+
+    def test_exists_returns_false_on_hns_when_missing(self) -> None:
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = self._make_hns_backend()
+        bc = MagicMock()
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("not found")
+        backend._cc_instance.get_blob_client.return_value = bc
+        dc = MagicMock()
+        dc.get_directory_properties.side_effect = Exception("not found")
+        backend._fs_instance.get_directory_client.return_value = dc
+        assert backend.exists("missing") is False
+
+    def test_is_folder_uses_directory_client_on_hns(self) -> None:
+        backend = self._make_hns_backend()
+        dc = MagicMock()
+        backend._fs_instance.get_directory_client.return_value = dc
+        assert backend.is_folder("my-dir") is True
+        dc.get_directory_properties.assert_called_once()
+
+    def test_move_uses_rename_on_hns(self) -> None:
+        backend = self._make_hns_backend()
+        # src blob exists
+        src_bc = MagicMock()
+        dst_bc = MagicMock()
+        from azure.core.exceptions import ResourceNotFoundError
+
+        dst_bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance.get_blob_client.side_effect = [src_bc, dst_bc]
+        # Mock the file client for rename
+        fc = MagicMock()
+        backend._fs_instance.get_file_client.return_value = fc
+        backend.move("src.txt", "dst.txt")
+        fc.rename_file.assert_called_once_with("test/dst.txt")
+
+    def test_write_atomic_uses_temp_and_rename_on_hns(self) -> None:
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = self._make_hns_backend()
+        bc = MagicMock()
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance.get_blob_client.return_value = bc
+        tmp_fc = MagicMock()
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+        backend.write_atomic("dir/file.txt", b"content")
+        tmp_fc.upload_data.assert_called_once()
+        tmp_fc.rename_file.assert_called_once()
+
+    def test_delete_folder_uses_directory_client_on_hns(self) -> None:
+        backend = self._make_hns_backend()
+        dc = MagicMock()
+        backend._fs_instance.get_directory_client.return_value = dc
+        backend._fs_instance.get_paths.return_value = []  # empty folder
+        backend.delete_folder("my-dir", recursive=False)
+        dc.delete_directory.assert_called_once()
+
+    def test_delete_folder_hns_non_recursive_non_empty_raises(self) -> None:
+        backend = self._make_hns_backend()
+        dc = MagicMock()
+        backend._fs_instance.get_directory_client.return_value = dc
+        backend._fs_instance.get_paths.return_value = [MagicMock()]  # has children
+        with pytest.raises(RemoteStoreError, match="not empty"):
+            backend.delete_folder("my-dir", recursive=False)
+
+    def test_list_files_uses_get_paths_on_hns(self) -> None:
+        backend = self._make_hns_backend()
+        mock_path = MagicMock()
+        mock_path.is_directory = False
+        mock_path.name = "dir/file.txt"
+        mock_path.size = 42
+        mock_path.last_modified = None
+        backend._fs_instance.get_paths.return_value = [mock_path]
+        files = list(backend.list_files("dir"))
+        assert len(files) == 1
+        assert files[0].name == "file.txt"
+
+    def test_list_folders_uses_get_paths_on_hns(self) -> None:
+        backend = self._make_hns_backend()
+        mock_path = MagicMock()
+        mock_path.is_directory = True
+        mock_path.name = "parent/sub"
+        backend._fs_instance.get_paths.return_value = [mock_path]
+        folders = list(backend.list_folders("parent"))
+        assert folders == ["sub"]
+
+    def test_get_folder_info_checks_directory_on_hns(self) -> None:
+        backend = self._make_hns_backend()
+        dc = MagicMock()
+        backend._fs_instance.get_directory_client.return_value = dc
+        backend._cc_instance.list_blobs.return_value = []  # empty dir
+        info = backend.get_folder_info("my-dir")
+        dc.get_directory_properties.assert_called_once()
+        assert info.file_count == 0
+
+
+# =============================================================================
+# Integration tests (require Azurite)
+# =============================================================================
+
+
 @_needs_azurite
 class TestAzureIntegration:
     """Integration tests using Azurite emulator."""
@@ -535,6 +820,3 @@ class TestAzureIntegration:
 
         fs = azure_backend.unwrap(FileSystemClient)
         assert isinstance(fs, FileSystemClient)
-
-
-# endregion
