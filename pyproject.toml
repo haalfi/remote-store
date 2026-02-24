@@ -56,6 +56,8 @@ s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
 sftp = ["paramiko>=2.2", "tenacity>=4.0"]
 azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
 
+bench = ["pytest-benchmark>=4.0", "adlfs>=2024.2.0", "sshfs>=2023.1.0"]
+
 docs = [
   "mkdocs>=1.6",
   "mkdocs-material>=9.5",
@@ -97,6 +99,9 @@ dependencies = [
   "types-paramiko",
   "azure-storage-file-datalake>=12.16.0",
   "azure-identity>=1.0.0",
+  "pytest-benchmark",
+  "adlfs>=2024.2.0",
+  "sshfs>=2023.1.0",
   "pre-commit",
   "mkdocs>=1.6",
   "mkdocs-material>=9.5",
@@ -119,6 +124,11 @@ examples = [
   "python examples/configuration.py",
   "python examples/error_handling.py",
 ]
+bench = "pytest benchmarks/ -v --benchmark-sort=mean -m 'not slow'"
+bench-full = "pytest benchmarks/ -v --benchmark-sort=mean"
+bench-save = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-autosave -m 'not slow'"
+bench-compare = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-compare"
+bench-cloud = "pytest benchmarks/ -v --infra cloud --benchmark-sort=mean -m 'not slow'"
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"
@@ -136,6 +146,7 @@ testpaths = ["tests"]
 markers = [
   "spec(id): links test to a spec section ID",
   "integration: requires external services",
+  "slow: long-running benchmark (large files, large listings)",
 ]
 
 [tool.ruff]

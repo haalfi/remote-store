@@ -1,0 +1,48 @@
+# Docker Compose for remote-store backend benchmarking.
+#
+# Starts MinIO (S3-compatible), Azurite (Azure Blob emulator), and an
+# OpenSSH-based SFTP server so benchmarks can run against realistic
+# network services instead of pure in-process mocks.
+#
+# Usage:
+#   docker compose up -d
+#   pytest benchmarks/ -v
+#   docker compose down -v
+
+services:
+  minio:
+    image: minio/minio:RELEASE.2025-01-20T14-49-07Z
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "127.0.0.1:9001:9001"   # console — localhost only
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.33.0
+    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
+    ports:
+      - "10000:10000"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "10000"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  sftp:
+    image: atmoz/sftp:alpine-3.7
+    ports:
+      - "2222:22"
+    command: benchuser:benchpass:::upload
+    healthcheck:
+      test: ["CMD-SHELL", "ssh-keyscan -p 22 127.0.0.1 >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

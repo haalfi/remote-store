@@ -93,6 +93,7 @@ nav:
       - S3: backends/s3.md
       - S3-PyArrow: backends/s3-pyarrow.md
       - SFTP: backends/sftp.md
+  - Performance: performance.md
   - Design:
       - Overview: design/index.md
       - Design Document: design/design-spec.md
