@@ -16,6 +16,10 @@
   <a href="https://github.com/haalfi/remote-store/blob/master/LICENSE"><img src="https://img.shields.io/pypi/l/remote-store" alt="License"></a>
 </p>
 
+> **Alpha software.** The API may change between minor versions. Not recommended
+> for production use yet. See the [changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
+> for what's new, and [open an issue](https://github.com/haalfi/remote-store/issues) if something breaks.
+
 `remote-store` gives you one simple API to read, write, list, and delete files.
 The same methods work whether your files live on disk, in S3, on an SFTP server,
 or anywhere else. You just swap the backend config.
