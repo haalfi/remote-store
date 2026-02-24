@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -27,6 +28,13 @@ import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ModuleNotFoundError:  # python-dotenv is optional
+    pass
 
 GITHUB_OWNER = "haalfi"
 GITHUB_REPO = "remote-store"
@@ -545,13 +553,13 @@ def main() -> None:
     parser.add_argument("--json", action="store_true", help="Output as JSON instead of a table.")
     parser.add_argument(
         "--github-token",
-        default=None,
-        help="GitHub personal access token (raises rate limit from 60 to 5 000 req/h).",
+        default=os.getenv("GITHUB_TOKEN"),
+        help="GitHub personal access token (raises rate limit from 60 to 5 000 req/h). Falls back to GITHUB_TOKEN env var.",
     )
     parser.add_argument(
         "--rtd-token",
-        default=None,
-        help="Read the Docs API token (required for RTD v3 API access).",
+        default=os.getenv("RTD_TOKEN"),
+        help="Read the Docs API token (required for RTD v3 API access). Falls back to RTD_TOKEN env var.",
     )
     args = parser.parse_args()
 
