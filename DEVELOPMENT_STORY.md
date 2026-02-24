@@ -6,7 +6,7 @@ This document chronicles how `remote-store` was built as a collaboration between
 
 | Metric | Value |
 |--------|-------|
-| Source code | ~2,400 lines (4 backends) |
+| Source code | ~2,900 lines (5 backends) |
 | Tests | 453 tests, ~3,500 lines |
 | Specs & docs | ~1,700 lines |
 | Examples | ~350 lines (6 scripts, 3 notebooks) |
@@ -234,6 +234,24 @@ All 6 critical issues on PR #11 were fixed before merge. The 12 unreviewed PRs s
 
 **The practical implication for solo maintainers:** separate sessions simulate a two-person team. The context boundary between sessions acts as the "different person" that review traditionally requires. The cost of a review session is low; the 2 PRs that received reviews caught issues that would have persisted in the 12 that didn't.
 
+### Phase 12: Adversarial Audit (AI-vs-AI)
+
+Phase 11 used a second AI session as a code reviewer. Phase 12 took it further: the human asked a fresh Claude Code session to act as an adversary -- "prove this package wrong." Four parallel AI agents independently audited security, test quality, API design, and CI/docs, then the human consolidated findings.
+
+The audit produced 60+ findings. Three were critical:
+
+1. **The README Quick Start for S3 doesn't work.** `_register_builtin_backends()` only registers `local` and `azure`. S3, SFTP, and S3-PyArrow must be manually imported and registered. The documented happy path for the three most common remote backends crashes on first use.
+2. **The GLOB capability is a ghost.** Four backends declare support; no `glob()` method exists anywhere. The capability system says "yes" to something the code can't do.
+3. **`S3Backend.close()` calls a class method** (`clear_instance_cache()`) that affects all S3FileSystem instances in the process, potentially breaking other backends.
+
+Beyond the critical items, the audit exposed a pattern: **the "unified interface" promise breaks down at the edges.** `get_folder_info` on empty folders returns success on LocalBackend but raises `NotFound` on S3/SFTP/Azure. `delete_folder` on non-empty folders raises `NotFound` (wrong type) on local but `RemoteStoreError` (base class) on others. These are the exact scenarios where backend interchangeability matters most -- error handling -- and the backends disagree.
+
+The audit also found that thread safety (claimed by STORE-007) has zero implementation (no locks on lazy init) and zero tests (no concurrency tests exist). The 95% test coverage includes tests like `assert WritableContent is not None` that hit import lines without verifying behavior.
+
+**The lesson: reviewing PRs catches local issues; adversarial auditing catches systemic ones.** PR review asks "is this change correct?" Adversarial auditing asks "does the whole thing hold together?" The TOCTOU race conditions, cross-backend semantic inconsistencies, and docs-to-code drift were invisible at the PR level because each PR was internally consistent. They only became visible when looking at the system as a whole.
+
+Full findings: `sdd/audit-001-adversarial-review.md`. Backlog items: `sdd/BACKLOG.md` section "Audit Findings (AUD-001)".
+
 ## What Worked Well
 
 ### Specs as a shared contract
@@ -352,6 +370,8 @@ prioritization scheme each session.
 10. **Periodically audit spec claims against implementation.** Specs drift. A dedicated "does the code still do what the spec says?" review caught four backends worth of non-streaming `read()` implementations hiding behind correct type signatures.
 
 11. **Review in a separate session from authoring.** A single AI session reviewing its own output suffers from the same blind spot a human developer has proofreading their own code — the author's mental model fills in gaps the artifact doesn't. A fresh session reads the output cold and catches what the authoring session "knew" but didn't write down. This is especially valuable for design documents (specs, RFCs) where correctness means completeness and internal consistency, not just "does it compile."
+
+12. **Run adversarial audits after major releases.** PR reviews catch local issues; adversarial audits catch systemic ones. Cross-backend semantic inconsistencies, capability declarations with no implementation, and docs-to-code drift are invisible at the PR level because each PR is internally consistent. Asking a fresh session to "prove this package wrong" with parallel specialized agents (security, tests, design, CI) surfaces the cross-cutting concerns that no single review would find. The cost is one session; the yield is a prioritized list of real problems ranked by severity.
 
 ## Reproducing This Workflow
 
