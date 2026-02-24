@@ -30,11 +30,11 @@ class TestLargeFilePerformance:
     allocations and misses mmap / native-library buffers.
     """
 
-    _LARGE_SIZE = 10 * 1_048_576  # 10 MB
-
     @pytest.fixture()
     def large_payload(self) -> bytes:
-        return b"L" * self._LARGE_SIZE
+        from benchmarks.conftest import BENCH_LARGE_FILE_MB
+
+        return b"L" * (BENCH_LARGE_FILE_MB * 1_048_576)
 
     def test_write_large(self, bench_backend: Backend, large_payload: bytes, benchmark: Any) -> None:
         import tracemalloc

@@ -17,12 +17,12 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
-# Comparative: flat and recursive listing (50 files)
+# Comparative: flat listing (50 files)
 # ---------------------------------------------------------------------------
 
 
 class TestListPerformance:
-    """Comparative listing speed (bench_target)."""
+    """Comparative listing speed with 50 files (bench_target)."""
 
     @pytest.fixture(autouse=True)
     def _populate(self, bench_target: BenchTarget) -> None:
@@ -38,12 +38,125 @@ class TestListPerformance:
 
 
 # ---------------------------------------------------------------------------
-# Remote-store only: directory-scale operations
+# Comparative: large listing (1000 files)
+# ---------------------------------------------------------------------------
+
+
+class TestListPerformanceLarge:
+    """Comparative listing speed with 1000 files (bench_target)."""
+
+    @pytest.fixture(autouse=True)
+    def _populate(self, bench_target: BenchTarget) -> None:
+        self._dir = f"listlarge/{uuid.uuid4().hex[:8]}"
+        for i in range(1000):
+            bench_target.write(f"{self._dir}/file_{i:06d}.txt", b"x")
+
+    def test_list_1000_files(self, bench_target: BenchTarget, benchmark: Any) -> None:
+        def _list() -> None:
+            bench_target.list_files(self._dir)
+
+        benchmark(_list)
+
+
+# ---------------------------------------------------------------------------
+# Remote-store only: 10k listing (slow)
+# ---------------------------------------------------------------------------
+
+
+class TestListPerformance10k:
+    """Listing 10k files -- for cloud runs."""
+
+    @pytest.fixture(autouse=True)
+    def _populate(self, bench_backend: Backend) -> None:
+        self._dir = f"list10k/{uuid.uuid4().hex[:8]}"
+        for i in range(10_000):
+            bench_backend.write(f"{self._dir}/file_{i:06d}.txt", b"x")
+
+    @pytest.mark.slow
+    def test_list_10k_files(self, bench_backend: Backend, benchmark: Any) -> None:
+        """List 10,000 files recursively."""
+
+        def _list() -> None:
+            files = list(bench_backend.list_files(self._dir, recursive=True))
+            assert len(files) == 10_000
+
+        benchmark.pedantic(_list, rounds=3, warmup_rounds=0)
+
+
+# ---------------------------------------------------------------------------
+# Remote-store only: deep hierarchy (5 levels, branching factor 5, ~3k files)
+# ---------------------------------------------------------------------------
+
+
+class TestDeepHierarchyPerformance:
+    """List files in a deep hierarchy: 5 levels, branching factor 5."""
+
+    _TOTAL_FILES = 0
+
+    @pytest.fixture(autouse=True)
+    def _populate_deep(self, bench_backend: Backend) -> None:
+        self._root = f"deep/{uuid.uuid4().hex[:8]}"
+        self._count = 0
+        self._build_tree(bench_backend, self._root, depth=5, breadth=5, counter=[0])
+        self._expected = self._count
+
+    def _build_tree(self, backend: Backend, prefix: str, depth: int, breadth: int, counter: list[int]) -> None:
+        if depth == 0:
+            return
+        # Write 2 files at this level
+        for i in range(2):
+            backend.write(f"{prefix}/f_{i}.txt", b"x")
+            self._count += 1
+        # Recurse into subdirectories
+        for d in range(breadth):
+            self._build_tree(backend, f"{prefix}/d{d}", depth - 1, breadth, counter)
+
+    @pytest.mark.slow
+    def test_list_deep_recursive(self, bench_backend: Backend, benchmark: Any) -> None:
+        """Recursively list all files in the deep hierarchy."""
+
+        def _list() -> None:
+            files = list(bench_backend.list_files(self._root, recursive=True))
+            assert len(files) == self._expected
+
+        benchmark.pedantic(_list, rounds=3, warmup_rounds=0)
+
+
+# ---------------------------------------------------------------------------
+# Remote-store only: per-folder stats (real-world use case)
+# ---------------------------------------------------------------------------
+
+
+class TestPerFolderStats:
+    """Iterate list_folders + get_folder_info per subfolder -- the real-world
+    scenario of summing files/sizes per hierarchy level."""
+
+    @pytest.fixture(autouse=True)
+    def _populate_hierarchy(self, bench_backend: Backend) -> None:
+        self._root = f"folderstats/{uuid.uuid4().hex[:8]}"
+        # Create 10 folders with varying file counts
+        for d in range(10):
+            for i in range(d * 5 + 5):  # 5, 10, 15, ... 50 files
+                bench_backend.write(f"{self._root}/folder_{d:02d}/file_{i:04d}.txt", b"x" * 100)
+
+    def test_per_folder_stats(self, bench_backend: Backend, benchmark: Any) -> None:
+        """Iterate folders and gather info for each."""
+
+        def _stats() -> None:
+            folders = list(bench_backend.list_folders(self._root))
+            for folder in folders:
+                bench_backend.get_folder_info(f"{self._root}/{folder}")
+
+        benchmark(_stats)
+
+
+# ---------------------------------------------------------------------------
+# Remote-store only: directory-scale operations (200 files)
 # ---------------------------------------------------------------------------
 
 
 class TestDirectoryScalePerformance:
-    """Measure directory operations at scale — remote-store only.
+    """Measure directory operations at scale -- remote-store only.
 
     The hierarchy has 3 levels of nesting with 200 files total::
 

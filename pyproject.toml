@@ -122,9 +122,11 @@ examples = [
   "python examples/configuration.py",
   "python examples/error_handling.py",
 ]
-bench = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-min-rounds=5"
-bench-save = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-min-rounds=5 --benchmark-autosave"
+bench = "pytest benchmarks/ -v --benchmark-sort=mean -m 'not slow'"
+bench-full = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-min-rounds=3"
+bench-save = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-autosave -m 'not slow'"
 bench-compare = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-compare"
+bench-cloud = "pytest benchmarks/ -v --infra cloud --benchmark-sort=mean -m 'not slow'"
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"
@@ -142,6 +144,7 @@ testpaths = ["tests"]
 markers = [
   "spec(id): links test to a spec section ID",
   "integration: requires external services",
+  "slow: long-running benchmark (large files, large listings)",
 ]
 
 [tool.ruff]
