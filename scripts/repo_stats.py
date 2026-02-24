@@ -2,14 +2,18 @@
 """Gather and display statistics for the remote-store project.
 
 Pulls data from three sources:
-  1. GitHub API  – repo metadata, stars, forks, issues, contributors
-  2. PyPI JSON API – releases, package sizes, Python classifiers
-  3. PyPI Stats / pepy.tech – download counts
+  1. GitHub API  – repo metadata, stars, forks, issues, traffic & clones
+  2. PyPI JSON API + pypistats + pepy.tech – releases, downloads, usage
+  3. Read the Docs API – build status, versions
 
 Usage::
 
     python scripts/repo_stats.py            # print to stdout
     python scripts/repo_stats.py --json     # machine-readable JSON
+
+For full traffic data supply a GitHub token with push access::
+
+    python scripts/repo_stats.py --github-token ghp_…
 """
 
 from __future__ import annotations
@@ -17,6 +21,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -30,9 +35,13 @@ RTD_PROJECT = "remote-store"
 
 GITHUB_API = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}"
 PYPI_API = f"https://pypi.org/pypi/{PYPI_PACKAGE}/json"
-PYPISTATS_API = f"https://pypistats.org/api/packages/{PYPI_PACKAGE}/recent"
+PYPISTATS_API = f"https://pypistats.org/api/packages/{PYPI_PACKAGE}"
+PEPY_API = f"https://api.pepy.tech/api/v2/projects/{PYPI_PACKAGE}"
 RTD_API = f"https://readthedocs.org/api/v3/projects/{RTD_PROJECT}/"
 RTD_BUILDS_URL = f"https://readthedocs.org/api/v3/projects/{RTD_PROJECT}/builds/"
+
+_MAX_RETRIES = 3
+_BACKOFF_BASE = 2  # seconds
 
 
 # ---------------------------------------------------------------------------
@@ -40,17 +49,30 @@ RTD_BUILDS_URL = f"https://readthedocs.org/api/v3/projects/{RTD_PROJECT}/builds/
 # ---------------------------------------------------------------------------
 
 def _get_json(url: str, *, token: str | None = None) -> dict[str, Any] | None:
-    """Fetch JSON from *url*, returning ``None`` on any HTTP error."""
+    """Fetch JSON from *url* with retry on 429, returning ``None`` on failure."""
     headers = {"Accept": "application/json", "User-Agent": "remote-store-stats/1.0"}
     if token:
         headers["Authorization"] = f"token {token}"
     req = urllib.request.Request(url, headers=headers)
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return json.loads(resp.read().decode())
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:
-        print(f"  [warn] {url}: {exc}", file=sys.stderr)
-        return None
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return json.loads(resp.read().decode())
+        except urllib.error.HTTPError as exc:
+            if exc.code == 429 and attempt < _MAX_RETRIES:
+                wait = _BACKOFF_BASE ** (attempt + 1)
+                retry_after = exc.headers.get("Retry-After")
+                if retry_after and retry_after.isdigit():
+                    wait = max(wait, int(retry_after))
+                print(f"  [429] {url} — retrying in {wait}s …", file=sys.stderr)
+                time.sleep(wait)
+                continue
+            print(f"  [warn] {url}: {exc}", file=sys.stderr)
+            return None
+        except (urllib.error.URLError, TimeoutError) as exc:
+            print(f"  [warn] {url}: {exc}", file=sys.stderr)
+            return None
+    return None
 
 
 def _iso(dt_str: str | None) -> str:
@@ -93,6 +115,13 @@ class GitHubStats:
     topics: list[str] = field(default_factory=list)
     archived: bool = False
     contributors: int = 0
+    # Traffic (requires push-access token)
+    views_14d: int | None = None
+    unique_visitors_14d: int | None = None
+    clones_14d: int | None = None
+    unique_cloners_14d: int | None = None
+    referrers: list[dict[str, Any]] = field(default_factory=list)
+    popular_paths: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -112,9 +141,18 @@ class PyPIStats:
 
 @dataclass
 class DownloadStats:
+    # pypistats.org
     last_day: int | None = None
     last_week: int | None = None
     last_month: int | None = None
+    # pepy.tech
+    pepy_total: int | None = None
+    pepy_versions: dict[str, int] = field(default_factory=dict)
+    # pypistats per-system breakdown
+    by_system: dict[str, int] = field(default_factory=dict)
+    # pypistats per-version breakdown
+    by_version: dict[str, int] = field(default_factory=dict)
+    source: str = "—"
 
 
 @dataclass
@@ -159,8 +197,32 @@ def fetch_github(token: str | None = None) -> GitHubStats:
     contribs = _get_json(f"{GITHUB_API}/contributors?per_page=1&anon=true", token=token)
     if isinstance(contribs, list):
         stats.contributors = len(contribs)
-        # GitHub paginates — check the Link header for the real count
-        # For simplicity we just count what we get; full count needs header parsing.
+
+    # Traffic endpoints (require push access)
+    views = _get_json(f"{GITHUB_API}/traffic/views", token=token)
+    if views:
+        stats.views_14d = views.get("count")
+        stats.unique_visitors_14d = views.get("uniques")
+
+    clones = _get_json(f"{GITHUB_API}/traffic/clones", token=token)
+    if clones:
+        stats.clones_14d = clones.get("count")
+        stats.unique_cloners_14d = clones.get("uniques")
+
+    referrers = _get_json(f"{GITHUB_API}/traffic/popular/referrers", token=token)
+    if isinstance(referrers, list):
+        stats.referrers = [
+            {"source": r.get("referrer", "?"), "count": r.get("count", 0), "uniques": r.get("uniques", 0)}
+            for r in referrers[:10]
+        ]
+
+    paths = _get_json(f"{GITHUB_API}/traffic/popular/paths", token=token)
+    if isinstance(paths, list):
+        stats.popular_paths = [
+            {"path": p.get("path", "?"), "count": p.get("count", 0), "uniques": p.get("uniques", 0)}
+            for p in paths[:10]
+        ]
+
     return stats
 
 
@@ -214,12 +276,44 @@ def fetch_pypi() -> PyPIStats:
 
 def fetch_downloads() -> DownloadStats:
     stats = DownloadStats()
-    data = _get_json(PYPISTATS_API)
-    if data and "data" in data:
-        d = data["data"]
+
+    # --- pypistats.org  (recent totals) ---
+    recent = _get_json(f"{PYPISTATS_API}/recent")
+    if recent and "data" in recent:
+        d = recent["data"]
         stats.last_day = d.get("last_day")
         stats.last_week = d.get("last_week")
         stats.last_month = d.get("last_month")
+        stats.source = "pypistats.org"
+
+    # --- pypistats.org  (per Python version, last month) ---
+    by_ver = _get_json(f"{PYPISTATS_API}/python_minor?period=month")
+    if by_ver and "data" in by_ver:
+        agg: dict[str, int] = {}
+        for row in by_ver["data"]:
+            cat = row.get("category", "null")
+            agg[cat] = agg.get(cat, 0) + row.get("downloads", 0)
+        stats.by_version = dict(sorted(agg.items(), key=lambda kv: -kv[1]))
+
+    # --- pypistats.org  (per OS, last month) ---
+    by_sys = _get_json(f"{PYPISTATS_API}/system?period=month")
+    if by_sys and "data" in by_sys:
+        agg2: dict[str, int] = {}
+        for row in by_sys["data"]:
+            cat = row.get("category", "null")
+            agg2[cat] = agg2.get(cat, 0) + row.get("downloads", 0)
+        stats.by_system = dict(sorted(agg2.items(), key=lambda kv: -kv[1]))
+
+    # --- pepy.tech  (total + per-version totals, fallback) ---
+    pepy = _get_json(PEPY_API)
+    if pepy:
+        stats.pepy_total = pepy.get("total_downloads")
+        versions = pepy.get("versions", {})
+        if isinstance(versions, dict):
+            stats.pepy_versions = {v: sum(d.values()) if isinstance(d, dict) else 0 for v, d in versions.items()}
+        if stats.source == "—":
+            stats.source = "pepy.tech"
+
     return stats
 
 
@@ -291,6 +385,23 @@ def print_report(
     if gh.topics:
         print(f"  Topics           : {', '.join(gh.topics)}")
 
+    # GitHub Traffic
+    if gh.views_14d is not None:
+        print(_sep("GitHub Traffic  (last 14 days)"))
+        print(f"  Page views       : {gh.views_14d:,}  ({gh.unique_visitors_14d:,} unique visitors)")
+        print(f"  Git clones       : {gh.clones_14d:,}  ({gh.unique_cloners_14d:,} unique cloners)")
+        if gh.referrers:
+            print(f"  Top referrers    :")
+            for r in gh.referrers:
+                print(f"    {r['source']:<25s}  {r['count']:>5,} views  ({r['uniques']:,} unique)")
+        if gh.popular_paths:
+            print(f"  Popular pages    :")
+            for p in gh.popular_paths:
+                print(f"    {p['path']:<45s}  {p['count']:>5,} views  ({p['uniques']:,} unique)")
+    else:
+        print(_sep("GitHub Traffic  (last 14 days)"))
+        print("  (unavailable — supply --github-token with push access)")
+
     # PyPI
     print(_sep("PyPI  —  pypi.org/project/remote-store"))
     print(f"  Latest version   : {pypi.version}")
@@ -309,14 +420,29 @@ def print_report(
         print(f"  Keywords         : {', '.join(pypi.keywords)}")
 
     # Downloads
-    print(_sep("PyPI Downloads  (via pypistats.org)"))
+    print(_sep("PyPI Downloads"))
     if dl.last_day is not None:
         print(f"  Last day         : {dl.last_day:,}")
         print(f"  Last week        : {dl.last_week:,}")
         print(f"  Last month       : {dl.last_month:,}")
-    else:
+    if dl.pepy_total is not None:
+        print(f"  Total (all time) : {dl.pepy_total:,}  (via pepy.tech)")
+    if dl.by_system:
+        print(f"  By operating system :")
+        for os_name, count in dl.by_system.items():
+            print(f"    {os_name or 'null':<20s}  {count:>8,}")
+    if dl.by_version:
+        print(f"  By Python version   :")
+        for ver, count in dl.by_version.items():
+            print(f"    {ver or 'null':<20s}  {count:>8,}")
+    if dl.pepy_versions:
+        print(f"  By package version  :")
+        for ver, count in sorted(dl.pepy_versions.items()):
+            if count > 0:
+                print(f"    {ver:<20s}  {count:>8,}")
+    if dl.last_day is None and dl.pepy_total is None:
         print("  (download stats unavailable — try again later or visit")
-        print("   https://pypistats.org/packages/remote-store )")
+        print("   https://pypistats.org/packages/remote-store")
         print("   https://pepy.tech/projects/remote-store )")
 
     # Read the Docs
@@ -362,6 +488,14 @@ def to_dict(
             "updated_at": gh.updated_at,
             "pushed_at": gh.pushed_at,
             "topics": gh.topics,
+            "traffic": {
+                "views_14d": gh.views_14d,
+                "unique_visitors_14d": gh.unique_visitors_14d,
+                "clones_14d": gh.clones_14d,
+                "unique_cloners_14d": gh.unique_cloners_14d,
+                "referrers": gh.referrers,
+                "popular_paths": gh.popular_paths,
+            },
         },
         "pypi": {
             "url": f"https://pypi.org/project/{PYPI_PACKAGE}/",
@@ -377,10 +511,14 @@ def to_dict(
             "keywords": pypi.keywords,
         },
         "downloads": {
-            "source": "pypistats.org",
+            "source": dl.source,
             "last_day": dl.last_day,
             "last_week": dl.last_week,
             "last_month": dl.last_month,
+            "pepy_total": dl.pepy_total,
+            "by_system": dl.by_system,
+            "by_python_version": dl.by_version,
+            "by_package_version": dl.pepy_versions,
         },
         "readthedocs": {
             "url": rtd.url,
