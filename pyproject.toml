@@ -121,9 +121,9 @@ examples = [
   "python examples/configuration.py",
   "python examples/error_handling.py",
 ]
-bench = "pytest benchmarks/ -v"
-bench-save = "pytest benchmarks/ -v --benchmark-autosave"
-bench-compare = "pytest benchmarks/ -v --benchmark-compare"
+bench = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-min-rounds=5"
+bench-save = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-min-rounds=5 --benchmark-autosave"
+bench-compare = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-compare"
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"

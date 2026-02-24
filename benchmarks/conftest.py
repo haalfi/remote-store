@@ -10,7 +10,7 @@ import os
 import socket
 import tempfile
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -20,6 +20,65 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from remote_store._backend import Backend
+
+
+# ---------------------------------------------------------------------------
+# Post-run throughput computation (uses final stats from JSON output)
+# ---------------------------------------------------------------------------
+
+
+def pytest_benchmark_update_json(config: Any, benchmarks: Any, output_json: Any) -> None:
+    """Inject ``throughput_MBps`` into saved JSON from ``payload_bytes`` + mean."""
+    for bench in output_json.get("benchmarks", []):
+        extra = bench.get("extra_info", {})
+        payload = extra.get("payload_bytes")
+        mean = bench.get("stats", {}).get("mean")
+        if payload and mean and mean > 0:
+            extra["throughput_MBps"] = round(payload / mean / 1_048_576, 2)
+
+
+def pytest_terminal_summary(terminalreporter: Any, config: Any) -> None:
+    """Print a throughput summary table after the benchmark run."""
+    # Collect results from the benchmark plugin if available
+    benchmarks = getattr(config, "_benchmarks", None)
+    if not benchmarks:
+        # Try the plugin directly
+        plugin = config.pluginmanager.getplugin("benchmark")
+        if plugin and hasattr(plugin, "benchmarks"):
+            benchmarks = plugin.benchmarks
+    if not benchmarks:
+        return
+
+    rows: list[tuple[str, str, str, str, str]] = []
+    for bench in benchmarks:
+        extra = getattr(bench, "extra_info", {}) if hasattr(bench, "extra_info") else bench.get("extra_info", {})
+        payload = extra.get("payload_bytes")
+        if not payload:
+            continue
+        stats = getattr(bench, "stats", None)
+        if not stats:
+            continue
+        mean = getattr(stats, "mean", 0)
+        stddev = getattr(stats, "stddev", 0)
+        if mean <= 0:
+            continue
+        tp = payload / mean / 1_048_576
+        name = getattr(bench, "fullname", "") or getattr(bench, "name", "?")
+        peak_mem = extra.get("peak_memory_MB")
+        mem_str = f"{peak_mem:.2f}" if peak_mem is not None else "-"
+        rows.append((name, f"{payload:,}", f"{tp:.2f}", f"{stddev * 1000:.3f}", mem_str))
+
+    if not rows:
+        return
+
+    terminalreporter.section("Throughput Summary")
+    hdr = f"{'Test':<60} {'Bytes':>12} {'MB/s':>10} {'StdDev ms':>12} {'Peak MB':>10}"
+    terminalreporter.line(hdr)
+    terminalreporter.line("-" * len(hdr))
+    for name, sz, tp, sd, mem in rows:
+        # Truncate long names
+        short = name if len(name) <= 58 else "..." + name[-55:]
+        terminalreporter.line(f"{short:<60} {sz:>12} {tp:>10} {sd:>12} {mem:>10}")
 
 
 # ---------------------------------------------------------------------------
