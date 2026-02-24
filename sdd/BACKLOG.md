@@ -87,73 +87,75 @@ Next actions once release blockers are cleared.
 
 From adversarial review of v0.5.0. Full details: `sdd/audit-001-adversarial-review.md`.
 
-**Critical -- fix before next release:**
+**Critical (confirmed) -- fix before next release:**
 
 - [ ] **AF-001 — Auto-register S3/SFTP/S3-PyArrow backends in Registry**
   `_register_builtin_backends()` only registers `local` and `azure`. README S3 Quick Start is broken.
-  → Audit: C-1
+  → Audit: C-1 (confirmed)
 
 - [ ] **AF-002 — Remove or gate GLOB/RECURSIVE_LIST ghost capabilities**
   4 backends claim GLOB support; no `glob()` method exists. Either remove from `CapabilitySet` or
   implement BK-002 first. `RECURSIVE_LIST` is also unused.
-  → Audit: C-2, M-7
+  → Audit: C-2, M-7 (confirmed). Related: BK-002 (glob strategy).
 
-- [ ] **AF-003 — Fix `S3Backend.close()` global cache nuke**
-  `clear_instance_cache()` is a class method that affects all instances in the process.
-  → Audit: C-3
+**High -- semantic bugs & process-wide side effects:**
 
-**High -- semantic bugs:**
+- [ ] **AF-003 — Fix `S3Backend.close()` global cache side effect**
+  `clear_instance_cache()` is a class method. Existing refs still work, but new backends after
+  the clear create duplicates instead of reusing. Resource leak risk, not data corruption.
+  → Audit: H-0 (partial, downgraded from Critical)
 
 - [ ] **AF-004 — Unify `get_folder_info` behavior on empty folders**
   LocalBackend returns success; S3/SFTP/Azure raise `NotFound`. Pick one semantic.
-  → Audit: H-1
+  → Audit: H-1 (unverified)
 
 - [ ] **AF-005 — Fix `delete_folder` error types**
   LocalBackend raises `NotFound` for non-empty folders (wrong). Others use base `RemoteStoreError`.
   Consider adding a `NotEmpty` error or documenting the chosen behavior.
-  → Audit: H-2
+  → Audit: H-2 (unverified)
 
 - [ ] **AF-006 — Fix native exception leakage through lazy streams**
   `read()` returns inside `_errors()` context manager but the stream is lazy. Backend-native
   exceptions during data reads leak unmapped.
-  → Audit: H-3
+  → Audit: H-3 (unverified)
 
 - [ ] **AF-007 — Wire Azure backend into docs site**
   Add to `mkdocs.yml` nav, `generate_docs.py`, and remove `not_found: info` suppression.
-  → Audit: H-6
+  → Audit: H-4 (unverified)
 
 **Medium -- security & design:**
 
 - [ ] **AF-008 — Add credential masking to backend `__repr__`**
   All backends store secrets as plain attributes. Add `__repr__` that masks sensitive fields.
-  → Audit: M-2
+  → Audit: M-2 (confirmed)
 
 - [ ] **AF-009 — Fix `Registry.close()` to close all backends on error**
   Wrap in try/finally so one failed `close()` doesn't skip the rest.
-  → Audit: M-9
+  → Audit: M-9 (confirmed)
 
 - [ ] **AF-010 — Document TOCTOU and non-atomic move limitations**
-  `overwrite=False` has inherent TOCTOU. S3 `move()` is copy+delete. Document these in
-  guides or API docs so users know the guarantees.
-  → Audit: H-4, H-5
+  `overwrite=False` has inherent TOCTOU (M-4, downgraded from High: inherent limitation).
+  S3 `move()` is copy+delete (L-21, downgraded from High: per spec S3-013, not a bug).
+  Document these in guides or API docs so users know the guarantees.
+  → Audit: M-4 (partial), L-21 (design-intent)
 
 - [ ] **AF-011 — Remove dead `RemoteFile`/`RemoteFolder` from public API**
   Nothing uses them. Remove from `_models.py` and `__all__`.
-  → Audit: M-6
+  → Audit: M-6 (confirmed)
 
 **Medium -- testing & CI:**
 
 - [ ] **AF-012 — Add capability gating tests (STORE-006)**
   Test that Store methods raise `CapabilityNotSupported` for backends missing capabilities.
-  → Audit: M-11
+  → Audit: M-11 (unverified)
 
 - [ ] **AF-013 — Add PermissionDenied/BackendUnavailable error path tests**
   S3-016, S3-017, SFTP-021/022/023 have zero test coverage.
-  → Audit: M-16
+  → Audit: M-16 (unverified)
 
 - [ ] **AF-014 — Add CI gate to publish workflow**
   Require CI workflow to pass before PyPI publish.
-  → Audit: M-18
+  → Audit: M-18 (unverified)
 
 - [ ] **AF-015 — Update stale v0.5.0 docs**
   SECURITY.md versions, CONTRIBUTING.md structure, examples/configuration.py Azure example,

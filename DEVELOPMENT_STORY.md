@@ -8,12 +8,12 @@ This document chronicles how `remote-store` was built as a collaboration between
 |--------|-------|
 | Source code | ~2,900 lines (5 backends) |
 | Tests | 453 tests, ~3,500 lines |
-| Specs & docs | ~1,700 lines |
+| Specs & docs | 12 specs, 6 ADRs, ~1,700 lines |
 | Examples | ~350 lines (6 scripts, 3 notebooks) |
 | Documentation site | MkDocs Material |
 | Coverage | 95% |
-| Calendar time | 3 days of focused work |
-| Commits | 24 |
+| Calendar time | ~3 weeks of sessions |
+| Commits | 28 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
@@ -238,11 +238,12 @@ All 6 critical issues on PR #11 were fixed before merge. The 12 unreviewed PRs s
 
 Phase 11 used a second AI session as a code reviewer. Phase 12 took it further: the human asked a fresh Claude Code session to act as an adversary -- "prove this package wrong." Four parallel AI agents independently audited security, test quality, API design, and CI/docs, then the human consolidated findings.
 
-The audit produced 60+ findings. Three were critical:
+The audit produced 47 findings across four severity tiers. Two were critical (after post-audit verification downgraded one from Critical to High):
 
 1. **The README Quick Start for S3 doesn't work.** `_register_builtin_backends()` only registers `local` and `azure`. S3, SFTP, and S3-PyArrow must be manually imported and registered. The documented happy path for the three most common remote backends crashes on first use.
 2. **The GLOB capability is a ghost.** Four backends declare support; no `glob()` method exists anywhere. The capability system says "yes" to something the code can't do.
-3. **`S3Backend.close()` calls a class method** (`clear_instance_cache()`) that affects all S3FileSystem instances in the process, potentially breaking other backends.
+
+A third finding -- `S3Backend.close()` calling a process-wide `clear_instance_cache()` -- was initially rated Critical but downgraded to High after verification showed existing filesystem references remain valid (the cache is a lookup table, not a lifecycle manager).
 
 Beyond the critical items, the audit exposed a pattern: **the "unified interface" promise breaks down at the edges.** `get_folder_info` on empty folders returns success on LocalBackend but raises `NotFound` on S3/SFTP/Azure. `delete_folder` on non-empty folders raises `NotFound` (wrong type) on local but `RemoteStoreError` (base class) on others. These are the exact scenarios where backend interchangeability matters most -- error handling -- and the backends disagree.
 
