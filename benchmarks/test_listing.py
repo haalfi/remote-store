@@ -1,4 +1,8 @@
-"""Listing benchmarks — flat, recursive, and directory-scale."""
+"""Listing benchmarks — flat, recursive, and directory-scale.
+
+Comparative tests use ``bench_target`` (flat listing).
+Directory-scale tests stay ``bench_backend``-only (complex multi-op).
+"""
 
 from __future__ import annotations
 
@@ -8,34 +12,38 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 if TYPE_CHECKING:
+    from benchmarks.targets._protocol import BenchTarget
     from remote_store._backend import Backend
 
 
+# ---------------------------------------------------------------------------
+# Comparative: flat and recursive listing (50 files)
+# ---------------------------------------------------------------------------
+
+
 class TestListPerformance:
-    """Measure listing speed with a populated directory (50 files)."""
+    """Comparative listing speed (bench_target)."""
 
     @pytest.fixture(autouse=True)
-    def _populate(self, bench_backend: Backend) -> None:
+    def _populate(self, bench_target: BenchTarget) -> None:
         self._dir = f"listbench/{uuid.uuid4().hex[:8]}"
         for i in range(50):
-            bench_backend.write(f"{self._dir}/file_{i:04d}.txt", b"x")
+            bench_target.write(f"{self._dir}/file_{i:04d}.txt", b"x")
 
-    def test_list_files(self, bench_backend: Backend, benchmark: Any) -> None:
+    def test_list_files(self, bench_target: BenchTarget, benchmark: Any) -> None:
         def _list() -> None:
-            list(bench_backend.list_files(self._dir))
+            bench_target.list_files(self._dir)
 
         benchmark(_list)
 
-    def test_list_files_recursive(self, bench_backend: Backend, benchmark: Any) -> None:
-        def _list() -> None:
-            list(bench_backend.list_files(self._dir, recursive=True))
 
-        benchmark(_list)
+# ---------------------------------------------------------------------------
+# Remote-store only: directory-scale operations
+# ---------------------------------------------------------------------------
 
 
 class TestDirectoryScalePerformance:
-    """Measure directory operations at scale: listing, renaming, deletion
-    across a multi-level folder hierarchy with hundreds of files.
+    """Measure directory operations at scale — remote-store only.
 
     The hierarchy has 3 levels of nesting with 200 files total::
 

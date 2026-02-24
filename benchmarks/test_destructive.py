@@ -1,4 +1,8 @@
-"""Destructive operation benchmarks — delete, copy, move."""
+"""Destructive operation benchmarks.
+
+Comparative: single-file delete via ``bench_target``.
+Remote-store only: copy, move, directory-scale destructive ops via ``bench_backend``.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 if TYPE_CHECKING:
+    from benchmarks.targets._protocol import BenchTarget
     from remote_store._backend import Backend
 
 
@@ -15,27 +20,37 @@ def _unique(prefix: str = "bench") -> str:
     return f"{prefix}/{uuid.uuid4().hex[:12]}.bin"
 
 
-class TestDeletePerformance:
-    """Measure delete latency."""
+# ---------------------------------------------------------------------------
+# Comparative: delete single file
+# ---------------------------------------------------------------------------
 
-    def test_delete(self, bench_backend: Backend, benchmark: Any) -> None:
+
+class TestDeletePerformance:
+    """Comparative delete latency (bench_target)."""
+
+    def test_delete(self, bench_target: BenchTarget, benchmark: Any) -> None:
         pool_size = 200
         paths: list[str] = []
         for _ in range(pool_size):
             p = _unique("del")
-            bench_backend.write(p, b"y")
+            bench_target.write(p, b"y")
             paths.append(p)
         counter = iter(range(pool_size))
 
         def _delete() -> None:
             i = next(counter)
-            bench_backend.delete(paths[i])
+            bench_target.delete(paths[i])
 
         benchmark.pedantic(_delete, rounds=pool_size, iterations=1, warmup_rounds=0)
 
 
+# ---------------------------------------------------------------------------
+# Remote-store only: copy / move
+# ---------------------------------------------------------------------------
+
+
 class TestCopyMovePerformance:
-    """Measure copy and move latency with a small file."""
+    """Copy and move latency — remote-store only."""
 
     def test_copy(self, bench_backend: Backend, benchmark: Any) -> None:
         src = _unique("cpsrc")
@@ -62,8 +77,13 @@ class TestCopyMovePerformance:
         benchmark.pedantic(_move, rounds=pool_size, iterations=1, warmup_rounds=0)
 
 
+# ---------------------------------------------------------------------------
+# Remote-store only: directory-scale destructive operations
+# ---------------------------------------------------------------------------
+
+
 class TestDirectoryDestructivePerformance:
-    """Destructive directory-scale operations (copy, move, delete across subtrees)."""
+    """Destructive directory-scale operations — remote-store only."""
 
     @pytest.fixture(autouse=True)
     def _populate_hierarchy(self, bench_backend: Backend) -> None:

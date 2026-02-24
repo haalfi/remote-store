@@ -315,6 +315,234 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
 
 
 # ---------------------------------------------------------------------------
+# Comparative benchmark target fixture
+# ---------------------------------------------------------------------------
+
+
+def _adlfs_available() -> bool:
+    try:
+        import adlfs  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def _sshfs_available() -> bool:
+    try:
+        import sshfs  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def _build_target_params() -> list[Any]:
+    """Build parametrized (backend_type, target_kind) entries for bench_target."""
+    params: list[Any] = []
+
+    # Local
+    params.append(pytest.param(("local", "remote_store"), id="local-remote_store"))
+    params.append(pytest.param(("local", "pathlib_raw"), id="local-pathlib_raw"))
+    params.append(pytest.param(("local", "fsspec_local"), id="local-fsspec_local"))
+
+    # S3 (MinIO)
+    s3_skip = pytest.mark.skipif(not _minio_available(), reason="MinIO not reachable or s3fs not installed")
+    params.append(pytest.param(("s3", "remote_store"), id="s3-minio-remote_store", marks=s3_skip))
+    params.append(pytest.param(("s3", "boto3_raw"), id="s3-minio-boto3_raw", marks=s3_skip))
+    params.append(pytest.param(("s3", "s3fs"), id="s3-minio-s3fs", marks=s3_skip))
+
+    # S3-PyArrow (MinIO)
+    pa_skip = pytest.mark.skipif(
+        not _s3_pyarrow_available(), reason="MinIO not reachable or pyarrow/s3fs not installed"
+    )
+    params.append(pytest.param(("s3-pyarrow", "remote_store"), id="s3-pyarrow-minio-remote_store", marks=pa_skip))
+
+    # SFTP
+    sftp_skip = pytest.mark.skipif(
+        not _sftp_docker_available(), reason="SFTP container not reachable or paramiko not installed"
+    )
+    params.append(pytest.param(("sftp", "remote_store"), id="sftp-docker-remote_store", marks=sftp_skip))
+    params.append(pytest.param(("sftp", "paramiko_raw"), id="sftp-docker-paramiko_raw", marks=sftp_skip))
+    sshfs_skip = [
+        sftp_skip,
+        pytest.mark.skipif(not _sshfs_available(), reason="sshfs not installed"),
+    ]
+    params.append(pytest.param(("sftp", "sshfs"), id="sftp-docker-sshfs", marks=sshfs_skip))
+
+    # Azure (Azurite)
+    az_skip = pytest.mark.skipif(not _azurite_available(), reason="Azurite not reachable or azure SDK not installed")
+    params.append(pytest.param(("azure", "remote_store"), id="azure-azurite-remote_store", marks=az_skip))
+    params.append(pytest.param(("azure", "azure_blob_raw"), id="azure-azurite-azure_blob_raw", marks=az_skip))
+    adlfs_skip = [
+        az_skip,
+        pytest.mark.skipif(not _adlfs_available(), reason="adlfs not installed"),
+    ]
+    params.append(pytest.param(("azure", "adlfs"), id="azure-azurite-adlfs", marks=adlfs_skip))
+
+    return params
+
+
+@pytest.fixture(params=_build_target_params())
+def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
+    """Yield a BenchTarget for comparative benchmarks.
+
+    Each parametrization is a ``(backend_type, target_kind)`` pair.
+    Test IDs look like ``test_write[s3-minio-remote_store]``.
+    """
+    from benchmarks.targets._remote_store import RemoteStoreTarget
+
+    backend_type, target_kind = request.param
+    tag = uuid.uuid4().hex[:8]
+
+    if backend_type == "local":
+        with tempfile.TemporaryDirectory() as tmp:
+            if target_kind == "remote_store":
+                yield RemoteStoreTarget(LocalBackend(root=tmp))
+            elif target_kind == "pathlib_raw":
+                from benchmarks.targets._raw_sdk import PathLibRawTarget
+
+                yield PathLibRawTarget(root=tmp)
+            elif target_kind == "fsspec_local":
+                from benchmarks.targets._fsspec import LocalFsspecTarget
+
+                yield LocalFsspecTarget(root=tmp)
+
+    elif backend_type in ("s3", "s3-pyarrow"):
+        import boto3
+
+        bucket = f"bench-tgt-{tag}"
+        client = boto3.client(
+            "s3",
+            endpoint_url=MINIO_ENDPOINT,
+            aws_access_key_id=MINIO_ACCESS_KEY,
+            aws_secret_access_key=MINIO_SECRET_KEY,
+            region_name="us-east-1",
+        )
+        client.create_bucket(Bucket=bucket)
+        try:
+            if target_kind == "remote_store":
+                if backend_type == "s3":
+                    from remote_store.backends._s3 import S3Backend
+
+                    b = S3Backend(
+                        bucket=bucket,
+                        key=MINIO_ACCESS_KEY,
+                        secret=MINIO_SECRET_KEY,
+                        region_name="us-east-1",
+                        endpoint_url=MINIO_ENDPOINT,
+                    )
+                else:
+                    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+                    b = S3PyArrowBackend(
+                        bucket=bucket,
+                        key=MINIO_ACCESS_KEY,
+                        secret=MINIO_SECRET_KEY,
+                        region_name="us-east-1",
+                        endpoint_url=MINIO_ENDPOINT,
+                    )
+                t = RemoteStoreTarget(b)
+                yield t
+                t.close()
+            elif target_kind == "boto3_raw":
+                from benchmarks.targets._raw_sdk import Boto3RawTarget
+
+                yield Boto3RawTarget(bucket=bucket, client=client)
+            elif target_kind == "s3fs":
+                from benchmarks.targets._fsspec import S3fsTarget
+
+                yield S3fsTarget(
+                    bucket=bucket,
+                    endpoint_url=MINIO_ENDPOINT,
+                    key=MINIO_ACCESS_KEY,
+                    secret=MINIO_SECRET_KEY,
+                )
+        finally:
+            # Cleanup bucket
+            resp = client.list_objects_v2(Bucket=bucket)
+            for obj in resp.get("Contents", []):
+                client.delete_object(Bucket=bucket, Key=obj["Key"])
+            client.delete_bucket(Bucket=bucket)
+
+    elif backend_type == "sftp":
+        base_path = f"/upload/bench_tgt_{tag}"
+        if target_kind == "remote_store":
+            from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
+
+            b = SFTPBackend(
+                host=SFTP_HOST,
+                port=SFTP_PORT,
+                username=SFTP_USER,
+                password=SFTP_PASS,
+                base_path=base_path,
+                host_key_policy=HostKeyPolicy.AUTO_ADD,
+                connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            )
+            t = RemoteStoreTarget(b)
+            yield t
+            t.close()
+        elif target_kind == "paramiko_raw":
+            from benchmarks.targets._raw_sdk import ParamikoRawTarget
+
+            t = ParamikoRawTarget(
+                host=SFTP_HOST,
+                port=SFTP_PORT,
+                username=SFTP_USER,
+                password=SFTP_PASS,
+                base_path=base_path,
+            )
+            yield t
+            t.close()
+        elif target_kind == "sshfs":
+            from benchmarks.targets._fsspec import SshfsTarget
+
+            yield SshfsTarget(
+                host=SFTP_HOST,
+                port=SFTP_PORT,
+                username=SFTP_USER,
+                password=SFTP_PASS,
+                base_path=base_path,
+            )
+        # Cleanup SFTP directory
+        import paramiko
+
+        transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
+        transport.connect(username=SFTP_USER, password=SFTP_PASS)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        assert sftp is not None
+        _sftp_rmtree(sftp, base_path)
+        sftp.close()
+        transport.close()
+
+    elif backend_type == "azure":
+        from azure.storage.blob import BlobServiceClient
+
+        container = f"bench-tgt-{tag}"
+        service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
+        service.create_container(container)
+        try:
+            if target_kind == "remote_store":
+                from remote_store.backends._azure import AzureBackend
+
+                b = AzureBackend(container=container, connection_string=AZURITE_CONN_STR)
+                t = RemoteStoreTarget(b)
+                yield t
+                t.close()
+            elif target_kind == "azure_blob_raw":
+                from benchmarks.targets._raw_sdk import AzureBlobRawTarget
+
+                t = AzureBlobRawTarget(container=container, connection_string=AZURITE_CONN_STR)
+                yield t
+                t.close()
+            elif target_kind == "adlfs":
+                from benchmarks.targets._fsspec import AdlfsTarget
+
+                yield AdlfsTarget(container=container, connection_string=AZURITE_CONN_STR)
+        finally:
+            service.delete_container(container)
+            service.close()
+
+
+# ---------------------------------------------------------------------------
 # Payload fixtures (various file sizes)
 # ---------------------------------------------------------------------------
 
