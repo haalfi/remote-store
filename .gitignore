@@ -3,6 +3,9 @@
 .vscode/
 .claude/
 
+# Secrets
+.env
+
 # Caching
 __pycache__/
 .pytest_cache/
