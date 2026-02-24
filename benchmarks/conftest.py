@@ -86,6 +86,23 @@ def pytest_terminal_summary(terminalreporter: Any, config: Any) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _sftp_rmtree(sftp: Any, path: str) -> None:
+    """Recursively remove a directory tree via paramiko SFTP."""
+    import stat
+
+    try:
+        entries = sftp.listdir_attr(path)
+    except FileNotFoundError:
+        return
+    for entry in entries:
+        child = f"{path}/{entry.filename}"
+        if stat.S_ISDIR(entry.st_mode):  # type: ignore[arg-type]
+            _sftp_rmtree(sftp, child)
+        else:
+            sftp.remove(child)
+    sftp.rmdir(path)
+
+
 def _port_open(host: str, port: int, timeout: float = 1.0) -> bool:
     try:
         with socket.create_connection((host, port), timeout=timeout):
@@ -254,6 +271,8 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
         client.delete_bucket(Bucket=bucket)
 
     elif request.param == "sftp":
+        import paramiko
+
         from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
 
         base_path = f"/upload/bench_{tag}"
@@ -268,6 +287,14 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
         )
         yield b
         b.close()
+        # Cleanup: remove benchmark directory from SFTP server
+        transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
+        transport.connect(username=SFTP_USER, password=SFTP_PASS)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        assert sftp is not None
+        _sftp_rmtree(sftp, base_path)
+        sftp.close()
+        transport.close()
 
     elif request.param == "azure":
         from azure.storage.blob import BlobServiceClient
@@ -295,7 +322,7 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
 @pytest.fixture(
     params=[
         pytest.param(1_024, id="1KB"),
-        pytest.param(64_1024, id="64KB"),
+        pytest.param(65_536, id="64KB"),
         pytest.param(1_048_576, id="1MB"),
     ]
 )

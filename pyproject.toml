@@ -67,7 +67,6 @@ docs = [
 dev = [
   "pytest",
   "pytest-cov",
-  "pytest-benchmark",
   "mypy",
   "ruff",
   "jupyter",
