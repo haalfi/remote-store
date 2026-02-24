@@ -139,10 +139,7 @@ def _build_pages() -> list:
     rfc_entries = _rfc_entries()
 
     # --- ADR index ---
-    adr_rows = "\n".join(
-        f"| {num} | [{title}]({slug}.md) | Accepted |"
-        for num, slug, title in adr_entries
-    )
+    adr_rows = "\n".join(f"| {num} | [{title}]({slug}.md) | Accepted |" for num, slug, title in adr_entries)
     adr_index_content = (
         "# Architecture Decision Records\n\n"
         "ADRs capture significant design decisions and their rationale.\n\n"
@@ -152,10 +149,7 @@ def _build_pages() -> list:
     )
 
     # --- Spec index ---
-    spec_rows = "\n".join(
-        f"| {num} | [{title}]({slug}.md) |"
-        for num, slug, title in spec_entries
-    )
+    spec_rows = "\n".join(f"| {num} | [{title}]({slug}.md) |" for num, slug, title in spec_entries)
     spec_index_content = (
         "# Specifications\n\n"
         "Every feature in `remote-store` is defined by a specification "
@@ -167,14 +161,8 @@ def _build_pages() -> list:
     )
 
     # --- Design index ---
-    spec_links = "\n".join(
-        f"- [{num}: {title}](specs/{slug}.md)"
-        for num, slug, title in spec_entries
-    )
-    adr_links = "\n".join(
-        f"- [{num}: {title}](adrs/{slug}.md)"
-        for num, slug, title in adr_entries
-    )
+    spec_links = "\n".join(f"- [{num}: {title}](specs/{slug}.md)" for num, slug, title in spec_entries)
+    adr_links = "\n".join(f"- [{num}: {title}](adrs/{slug}.md)" for num, slug, title in adr_entries)
     design_index_content = (
         "# Design\n\n"
         "`remote-store` follows **Spec-Driven Development (SDD)**: every "
@@ -332,8 +320,7 @@ hide:
         SnippetPage(
             "examples/file-operations.md",
             "File Operations",
-            "Full Store API: read, write, delete, move, copy, list, "
-            "metadata, type checks, capabilities, to_key.",
+            "Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key.",
             "examples/file_operations.py",
         ),
         SnippetPage(
@@ -351,8 +338,7 @@ hide:
         SnippetPage(
             "examples/configuration.md",
             "Configuration",
-            "Config-as-code, `from_dict()`, multiple stores, "
-            "S3/SFTP backend configs.",
+            "Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs.",
             "examples/configuration.py",
         ),
         SnippetPage(
@@ -446,6 +432,11 @@ hide:
             "../../guides/backends/sftp.md",
             api_directives=["remote_store.backends.SFTPBackend"],
         ),
+        # --- Performance ---
+        IncludeMarkdown(
+            "performance.md",
+            "../guides/performance.md",
+        ),
         # --- Design ---
         LiteralPage("design/index.md", design_index_content),
         IncludeMarkdown(
@@ -508,16 +499,8 @@ hide:
 
 def _render(page) -> str:  # noqa: ANN001
     if isinstance(page, IncludeMarkdown):
-        rewrite = (
-            ""
-            if page.rewrite_urls
-            else "\n   rewrite-relative-urls=false"
-        )
-        return (
-            "{%\n"
-            f'   include-markdown "{page.source}"{rewrite}\n'
-            "%}\n"
-        )
+        rewrite = "" if page.rewrite_urls else "\n   rewrite-relative-urls=false"
+        return f'{{%\n   include-markdown "{page.source}"{rewrite}\n%}}\n'
 
     if isinstance(page, MkdocstringsPage):
         lines = [f"# {page.heading}\n"]
@@ -526,13 +509,7 @@ def _render(page) -> str:  # noqa: ANN001
         return "\n".join(lines)
 
     if isinstance(page, SnippetPage):
-        return (
-            f"# {page.title}\n\n"
-            f"{page.description}\n\n"
-            f"```python\n"
-            f'--8<-- "{page.snippet_path}"\n'
-            f"```\n"
-        )
+        return f'# {page.title}\n\n{page.description}\n\n```python\n--8<-- "{page.snippet_path}"\n```\n'
 
     if isinstance(page, LiteralPage):
         return page.content
@@ -543,12 +520,7 @@ def _render(page) -> str:  # noqa: ANN001
         # in docs/ since the directory structure mirrors guides/.
         # If guides ever link outside their own directory, this will
         # need a rewrite strategy similar to _rewrite_links().
-        parts = [
-            "{%\n"
-            f'   include-markdown "{page.source}"\n'
-            "   rewrite-relative-urls=false\n"
-            "%}\n"
-        ]
+        parts = [f'{{%\n   include-markdown "{page.source}"\n   rewrite-relative-urls=false\n%}}\n']
         if page.api_directives:
             parts.append("\n## API Reference\n")
             for directive in page.api_directives:
