@@ -67,6 +67,7 @@ docs = [
 dev = [
   "pytest",
   "pytest-cov",
+  "pytest-benchmark",
   "mypy",
   "ruff",
   "jupyter",
@@ -97,6 +98,7 @@ dependencies = [
   "types-paramiko",
   "azure-storage-file-datalake>=12.16.0",
   "azure-identity>=1.0.0",
+  "pytest-benchmark",
   "pre-commit",
   "mkdocs>=1.6",
   "mkdocs-material>=9.5",
@@ -119,6 +121,9 @@ examples = [
   "python examples/configuration.py",
   "python examples/error_handling.py",
 ]
+bench = "pytest benchmarks/ -v"
+bench-save = "pytest benchmarks/ -v --benchmark-autosave"
+bench-compare = "pytest benchmarks/ -v --benchmark-compare"
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"
