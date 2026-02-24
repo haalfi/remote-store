@@ -35,11 +35,13 @@ class TestDeletePerformance:
             p = _unique("del")
             bench_target.write(p, b"y")
             paths.append(p)
-        counter = iter(range(pool_size))
+        counter = [0]
 
         def _delete() -> None:
-            i = next(counter)
-            bench_target.delete(paths[i])
+            i = counter[0]
+            counter[0] += 1
+            if i < len(paths):
+                bench_target.delete(paths[i])
 
         benchmark.pedantic(_delete, rounds=pool_size, iterations=1, warmup_rounds=0)
 
@@ -68,11 +70,13 @@ class TestCopyMovePerformance:
             p = _unique("mvsrc")
             bench_backend.write(p, b"Z" * 4096)
             paths.append(p)
-        counter = iter(range(pool_size))
+        counter = [0]
 
         def _move() -> None:
-            i = next(counter)
-            bench_backend.move(paths[i], _unique("mvdst"))
+            i = counter[0]
+            counter[0] += 1
+            if i < len(paths):
+                bench_backend.move(paths[i], _unique("mvdst"))
 
         benchmark.pedantic(_move, rounds=pool_size, iterations=1, warmup_rounds=0)
 
@@ -113,11 +117,13 @@ class TestDirectoryDestructivePerformance:
             p = f"{self._root}/mvpool/f_{i:04d}.txt"
             bench_backend.write(p, b"m")
             paths.append(p)
-        counter = iter(range(pool_size))
+        counter = [0]
 
         def _move() -> None:
-            i = next(counter)
-            bench_backend.move(paths[i], f"{self._root}/sub_3/{_unique('mv')}")
+            i = counter[0]
+            counter[0] += 1
+            if i < len(paths):
+                bench_backend.move(paths[i], f"{self._root}/sub_3/{_unique('mv')}")
 
         benchmark.pedantic(_move, rounds=pool_size, iterations=1, warmup_rounds=0)
 
@@ -132,10 +138,12 @@ class TestDirectoryDestructivePerformance:
             for i in range(16):
                 bench_backend.write(f"{base}/nested/f_{i:02d}.txt", b"d")
             subtrees.append(base)
-        counter = iter(range(pool_size))
+        counter = [0]
 
         def _delete() -> None:
-            i = next(counter)
-            bench_backend.delete_folder(subtrees[i], recursive=True)
+            i = counter[0]
+            counter[0] += 1
+            if i < len(subtrees):
+                bench_backend.delete_folder(subtrees[i], recursive=True)
 
         benchmark.pedantic(_delete, rounds=pool_size, iterations=1, warmup_rounds=0)

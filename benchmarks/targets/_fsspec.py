@@ -8,16 +8,25 @@ from benchmarks.targets._protocol import BenchTarget
 class S3fsTarget(BenchTarget):
     """s3fs filesystem target."""
 
-    def __init__(self, bucket: str, endpoint_url: str, key: str, secret: str) -> None:
+    def __init__(
+        self,
+        bucket: str,
+        endpoint_url: str | None = None,
+        key: str | None = None,
+        secret: str | None = None,
+    ) -> None:
         import s3fs
 
         self._bucket = bucket
-        self._fs = s3fs.S3FileSystem(
-            key=key,
-            secret=secret,
-            endpoint_url=endpoint_url,
-            client_kwargs={"region_name": "us-east-1"},
-        )
+        kwargs: dict[str, str] = {}
+        if key:
+            kwargs["key"] = key
+        if secret:
+            kwargs["secret"] = secret
+        client_kwargs: dict[str, str] = {"region_name": "us-east-1"}
+        if endpoint_url:
+            kwargs["endpoint_url"] = endpoint_url
+        self._fs = s3fs.S3FileSystem(**kwargs, client_kwargs=client_kwargs)
 
     @property
     def label(self) -> str:
@@ -42,6 +51,9 @@ class S3fsTarget(BenchTarget):
 
     def list_files(self, prefix: str) -> list[str]:
         return self._fs.ls(self._full(prefix), detail=False)
+
+    def close(self) -> None:
+        self._fs.clear_instance_cache()
 
 
 class AdlfsTarget(BenchTarget):
@@ -76,6 +88,9 @@ class AdlfsTarget(BenchTarget):
 
     def list_files(self, prefix: str) -> list[str]:
         return self._fs.ls(self._full(prefix), detail=False)
+
+    def close(self) -> None:
+        self._fs.clear_instance_cache()
 
 
 class SshfsTarget(BenchTarget):
@@ -113,6 +128,9 @@ class SshfsTarget(BenchTarget):
 
     def list_files(self, prefix: str) -> list[str]:
         return self._fs.ls(self._full(prefix), detail=False)
+
+    def close(self) -> None:
+        self._fs.close()
 
 
 class LocalFsspecTarget(BenchTarget):

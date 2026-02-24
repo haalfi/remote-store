@@ -80,7 +80,8 @@ local Docker run:
 
 - Local backend is 10-100x faster than network backends (expected).
 - SFTP has the highest TTFB due to SSH handshake overhead.
-- remote-store adds minimal overhead vs raw SDK (~5-15% for most operations).
+- remote-store adds minimal overhead vs raw SDK for most operations.
+  Run `hatch run bench` to measure the exact overhead in your environment.
 - Streaming reads keep memory constant regardless of file size.
 
 ## Analyzing Results

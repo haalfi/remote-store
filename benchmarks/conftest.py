@@ -1,7 +1,7 @@
-"""Benchmark fixtures — connect to Docker-hosted backend services.
+"""Benchmark fixtures -- connect to Docker-hosted or cloud backend services.
 
 Requires ``docker compose -f benchmarks/infra/docker-compose.yml up -d``
-to be running. Backends that are unreachable are automatically skipped.
+to be running (Docker mode), or appropriate env vars set (cloud mode).
 
 Use ``--infra cloud`` to run against real cloud services instead of Docker.
 """
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import socket
+import sys
 import tempfile
 import uuid
 from typing import TYPE_CHECKING, Any
@@ -39,6 +40,24 @@ def pytest_addoption(parser: Any) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Detect --infra mode at collection time for skip-mark evaluation
+# ---------------------------------------------------------------------------
+
+
+def _is_cloud_mode() -> bool:
+    argv = sys.argv
+    for i, arg in enumerate(argv):
+        if arg == "--infra=cloud":
+            return True
+        if arg == "--infra" and i + 1 < len(argv) and argv[i + 1] == "cloud":
+            return True
+    return False
+
+
+_CLOUD_MODE = _is_cloud_mode()
+
+
+# ---------------------------------------------------------------------------
 # Post-run throughput computation (uses final stats from JSON output)
 # ---------------------------------------------------------------------------
 
@@ -51,50 +70,6 @@ def pytest_benchmark_update_json(config: Any, benchmarks: Any, output_json: Any)
         mean = bench.get("stats", {}).get("mean")
         if payload and mean and mean > 0:
             extra["throughput_MBps"] = round(payload / mean / 1_048_576, 2)
-
-
-def pytest_terminal_summary(terminalreporter: Any, config: Any) -> None:
-    """Print a throughput summary table after the benchmark run."""
-    # Collect results from the benchmark plugin if available
-    benchmarks = getattr(config, "_benchmarks", None)
-    if not benchmarks:
-        # Try the plugin directly
-        plugin = config.pluginmanager.getplugin("benchmark")
-        if plugin and hasattr(plugin, "benchmarks"):
-            benchmarks = plugin.benchmarks
-    if not benchmarks:
-        return
-
-    rows: list[tuple[str, str, str, str, str]] = []
-    for bench in benchmarks:
-        extra = getattr(bench, "extra_info", {}) if hasattr(bench, "extra_info") else bench.get("extra_info", {})
-        payload = extra.get("payload_bytes")
-        if not payload:
-            continue
-        stats = getattr(bench, "stats", None)
-        if not stats:
-            continue
-        mean = getattr(stats, "mean", 0)
-        stddev = getattr(stats, "stddev", 0)
-        if mean <= 0:
-            continue
-        tp = payload / mean / 1_048_576
-        name = getattr(bench, "fullname", "") or getattr(bench, "name", "?")
-        peak_mem = extra.get("peak_memory_MB")
-        mem_str = f"{peak_mem:.2f}" if peak_mem is not None else "-"
-        rows.append((name, f"{payload:,}", f"{tp:.2f}", f"{stddev * 1000:.3f}", mem_str))
-
-    if not rows:
-        return
-
-    terminalreporter.section("Throughput Summary")
-    hdr = f"{'Test':<60} {'Bytes':>12} {'MB/s':>10} {'StdDev ms':>12} {'Peak MB':>10}"
-    terminalreporter.line(hdr)
-    terminalreporter.line("-" * len(hdr))
-    for name, sz, tp, sd, mem in rows:
-        # Truncate long names
-        short = name if len(name) <= 58 else "..." + name[-55:]
-        terminalreporter.line(f"{short:<60} {sz:>12} {tp:>10} {sd:>12} {mem:>10}")
 
 
 # ---------------------------------------------------------------------------
@@ -125,6 +100,17 @@ def _port_open(host: str, port: int, timeout: float = 1.0) -> bool:
             return True
     except OSError:
         return False
+
+
+def _paginated_delete_s3(client: Any, bucket: str, prefix: str = "") -> None:
+    """Delete all objects in *bucket* (optionally under *prefix*) using pagination."""
+    paginator = client.get_paginator("list_objects_v2")
+    kwargs: dict[str, str] = {"Bucket": bucket}
+    if prefix:
+        kwargs["Prefix"] = prefix
+    for page in paginator.paginate(**kwargs):
+        for obj in page.get("Contents", []):
+            client.delete_object(Bucket=bucket, Key=obj["Key"])
 
 
 # ---------------------------------------------------------------------------
@@ -168,6 +154,7 @@ CLOUD_AZURE_CONTAINER = os.environ.get("BENCH_AZURE_CONTAINER", "")
 CLOUD_SFTP_HOST = os.environ.get("BENCH_SFTP_HOST", "")
 CLOUD_SFTP_PORT = int(os.environ.get("BENCH_SFTP_PORT", "22"))
 CLOUD_SFTP_USER = os.environ.get("BENCH_SFTP_USER", "")
+CLOUD_SFTP_PASS = os.environ.get("BENCH_SFTP_PASS", "")
 CLOUD_SFTP_KEY_FILE = os.environ.get("BENCH_SFTP_KEY_FILE", "")
 
 
@@ -205,36 +192,69 @@ def _s3_pyarrow_available() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# pytest.param entries with skip markers
+# pytest.param entries with cloud-aware skip markers
 # ---------------------------------------------------------------------------
 
-_local_param = pytest.param("local", id="local")
-
-_s3_param = pytest.param(
-    "s3",
-    id="s3-minio",
-    marks=pytest.mark.skipif(not _minio_available(), reason="MinIO not reachable or s3fs not installed"),
-)
-
-_s3_pyarrow_param = pytest.param(
-    "s3-pyarrow",
-    id="s3-pyarrow-minio",
-    marks=pytest.mark.skipif(not _s3_pyarrow_available(), reason="MinIO not reachable or pyarrow/s3fs not installed"),
-)
-
-_sftp_param = pytest.param(
-    "sftp",
-    id="sftp-docker",
-    marks=pytest.mark.skipif(
+if _CLOUD_MODE:
+    _s3_skip = pytest.mark.skipif(not CLOUD_S3_BUCKET, reason="BENCH_S3_BUCKET not set for cloud mode")
+    _pa_skip = pytest.mark.skipif(not CLOUD_S3_BUCKET, reason="BENCH_S3_BUCKET not set for cloud mode")
+    _sftp_skip = pytest.mark.skipif(not CLOUD_SFTP_HOST, reason="BENCH_SFTP_HOST not set for cloud mode")
+    _azure_skip = pytest.mark.skipif(
+        not CLOUD_AZURE_CONN_STR or not CLOUD_AZURE_CONTAINER,
+        reason="AZURE_STORAGE_CONNECTION_STRING / BENCH_AZURE_CONTAINER not set for cloud mode",
+    )
+else:
+    _s3_skip = pytest.mark.skipif(not _minio_available(), reason="MinIO not reachable or s3fs not installed")
+    _pa_skip = pytest.mark.skipif(
+        not _s3_pyarrow_available(), reason="MinIO not reachable or pyarrow/s3fs not installed"
+    )
+    _sftp_skip = pytest.mark.skipif(
         not _sftp_docker_available(), reason="SFTP container not reachable or paramiko not installed"
-    ),
-)
+    )
+    _azure_skip = pytest.mark.skipif(
+        not _azurite_available(), reason="Azurite not reachable or azure SDK not installed"
+    )
 
-_azure_param = pytest.param(
-    "azure",
-    id="azure-azurite",
-    marks=pytest.mark.skipif(not _azurite_available(), reason="Azurite not reachable or azure SDK not installed"),
-)
+_local_param = pytest.param("local", id="local")
+_s3_param = pytest.param("s3", id="s3-minio", marks=_s3_skip)
+_s3_pyarrow_param = pytest.param("s3-pyarrow", id="s3-pyarrow-minio", marks=_pa_skip)
+_sftp_param = pytest.param("sftp", id="sftp-docker", marks=_sftp_skip)
+_azure_param = pytest.param("azure", id="azure-azurite", marks=_azure_skip)
+
+
+# ---------------------------------------------------------------------------
+# SFTP cleanup helper (with try/finally safety)
+# ---------------------------------------------------------------------------
+
+
+def _sftp_cleanup(
+    host: str,
+    port: int,
+    username: str,
+    base_path: str,
+    password: str | None = None,
+    key_file: str | None = None,
+) -> None:
+    """Clean up an SFTP directory tree, closing transport even on failure."""
+    import paramiko
+
+    transport = paramiko.Transport((host, port))
+    try:
+        if key_file:
+            pkey = paramiko.RSAKey.from_private_key_file(key_file)
+            transport.connect(username=username, pkey=pkey)
+        elif password:
+            transport.connect(username=username, password=password)
+        else:
+            transport.connect(username=username)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        assert sftp is not None
+        try:
+            _sftp_rmtree(sftp, base_path)
+        finally:
+            sftp.close()
+    finally:
+        transport.close()
 
 
 # ---------------------------------------------------------------------------
@@ -265,16 +285,12 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             if not CLOUD_S3_BUCKET:
                 pytest.skip("BENCH_S3_BUCKET not set for cloud mode")
             bucket = CLOUD_S3_BUCKET
-            prefix = f"bench_{tag}/"
             client = boto3.client("s3", region_name=CLOUD_S3_REGION)
-            b = S3Backend(bucket=bucket, prefix=prefix, region_name=CLOUD_S3_REGION)
+            b = S3Backend(bucket=bucket, region_name=CLOUD_S3_REGION)
             yield b
             b.close()
-            # Cleanup: only delete objects under our prefix
-            paginator = client.get_paginator("list_objects_v2")
-            for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
-                for obj in page.get("Contents", []):
-                    client.delete_object(Bucket=bucket, Key=obj["Key"])
+            # Cleanup: delete all objects (bucket should be dedicated to benchmarks)
+            _paginated_delete_s3(client, bucket)
         else:
             bucket = f"bench-s3-{tag}"
             client = boto3.client(
@@ -294,9 +310,7 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             )
             yield b
             b.close()
-            resp = client.list_objects_v2(Bucket=bucket)
-            for obj in resp.get("Contents", []):
-                client.delete_object(Bucket=bucket, Key=obj["Key"])
+            _paginated_delete_s3(client, bucket)
             client.delete_bucket(Bucket=bucket)
 
     elif request.param == "s3-pyarrow":
@@ -308,15 +322,11 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             if not CLOUD_S3_BUCKET:
                 pytest.skip("BENCH_S3_BUCKET not set for cloud mode")
             bucket = CLOUD_S3_BUCKET
-            prefix = f"bench_pa_{tag}/"
             client = boto3.client("s3", region_name=CLOUD_S3_REGION)
-            b = S3PyArrowBackend(bucket=bucket, prefix=prefix, region_name=CLOUD_S3_REGION)
+            b = S3PyArrowBackend(bucket=bucket, region_name=CLOUD_S3_REGION)
             yield b
             b.close()
-            paginator = client.get_paginator("list_objects_v2")
-            for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
-                for obj in page.get("Contents", []):
-                    client.delete_object(Bucket=bucket, Key=obj["Key"])
+            _paginated_delete_s3(client, bucket)
         else:
             bucket = f"bench-pa-{tag}"
             client = boto3.client(
@@ -336,14 +346,10 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             )
             yield b
             b.close()
-            resp = client.list_objects_v2(Bucket=bucket)
-            for obj in resp.get("Contents", []):
-                client.delete_object(Bucket=bucket, Key=obj["Key"])
+            _paginated_delete_s3(client, bucket)
             client.delete_bucket(Bucket=bucket)
 
     elif request.param == "sftp":
-        import paramiko
-
         from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
 
         if cloud:
@@ -353,6 +359,8 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             connect_kwargs: dict[str, Any] = {}
             if CLOUD_SFTP_KEY_FILE:
                 connect_kwargs["key_filename"] = CLOUD_SFTP_KEY_FILE
+            elif CLOUD_SFTP_PASS:
+                connect_kwargs["password"] = CLOUD_SFTP_PASS
             b = SFTPBackend(
                 host=CLOUD_SFTP_HOST,
                 port=CLOUD_SFTP_PORT,
@@ -363,17 +371,14 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             )
             yield b
             b.close()
-            transport = paramiko.Transport((CLOUD_SFTP_HOST, CLOUD_SFTP_PORT))
-            if CLOUD_SFTP_KEY_FILE:
-                pkey = paramiko.RSAKey.from_private_key_file(CLOUD_SFTP_KEY_FILE)
-                transport.connect(username=CLOUD_SFTP_USER, pkey=pkey)
-            else:
-                transport.connect(username=CLOUD_SFTP_USER)
-            sftp = paramiko.SFTPClient.from_transport(transport)
-            assert sftp is not None
-            _sftp_rmtree(sftp, base_path)
-            sftp.close()
-            transport.close()
+            _sftp_cleanup(
+                CLOUD_SFTP_HOST,
+                CLOUD_SFTP_PORT,
+                CLOUD_SFTP_USER,
+                base_path,
+                password=CLOUD_SFTP_PASS or None,
+                key_file=CLOUD_SFTP_KEY_FILE or None,
+            )
         else:
             base_path = f"/upload/bench_{tag}"
             b = SFTPBackend(
@@ -387,13 +392,7 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             )
             yield b
             b.close()
-            transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
-            transport.connect(username=SFTP_USER, password=SFTP_PASS)
-            sftp = paramiko.SFTPClient.from_transport(transport)
-            assert sftp is not None
-            _sftp_rmtree(sftp, base_path)
-            sftp.close()
-            transport.close()
+            _sftp_cleanup(SFTP_HOST, SFTP_PORT, SFTP_USER, base_path, password=SFTP_PASS)
 
     elif request.param == "azure":
         from azure.storage.blob import BlobServiceClient
@@ -404,14 +403,13 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             if not CLOUD_AZURE_CONN_STR or not CLOUD_AZURE_CONTAINER:
                 pytest.skip("AZURE_STORAGE_CONNECTION_STRING / BENCH_AZURE_CONTAINER not set")
             container = CLOUD_AZURE_CONTAINER
-            # Use a prefix to isolate this run's data
-            b = AzureBackend(container=container, connection_string=CLOUD_AZURE_CONN_STR, prefix=f"bench_{tag}/")
+            b = AzureBackend(container=container, connection_string=CLOUD_AZURE_CONN_STR)
             yield b
             b.close()
-            # Cleanup: delete objects under prefix
+            # Cleanup: delete all blobs (container should be dedicated to benchmarks)
             service = BlobServiceClient.from_connection_string(CLOUD_AZURE_CONN_STR)
             cc = service.get_container_client(container)
-            for blob in cc.list_blobs(name_starts_with=f"bench_{tag}/"):
+            for blob in cc.list_blobs():
                 cc.delete_blob(blob.name)
             service.close()
         else:
@@ -450,7 +448,11 @@ def _sshfs_available() -> bool:
 
 
 def _build_target_params() -> list[Any]:
-    """Build parametrized (backend_type, target_kind) entries for bench_target."""
+    """Build parametrized (backend_type, target_kind) entries for bench_target.
+
+    Skip marks are cloud-aware: in Docker mode they check port reachability,
+    in cloud mode they check for the required env vars.
+    """
     params: list[Any] = []
 
     # Local
@@ -458,39 +460,31 @@ def _build_target_params() -> list[Any]:
     params.append(pytest.param(("local", "pathlib_raw"), id="local-pathlib_raw"))
     params.append(pytest.param(("local", "fsspec_local"), id="local-fsspec_local"))
 
-    # S3 (MinIO)
-    s3_skip = pytest.mark.skipif(not _minio_available(), reason="MinIO not reachable or s3fs not installed")
-    params.append(pytest.param(("s3", "remote_store"), id="s3-minio-remote_store", marks=s3_skip))
-    params.append(pytest.param(("s3", "boto3_raw"), id="s3-minio-boto3_raw", marks=s3_skip))
-    params.append(pytest.param(("s3", "s3fs"), id="s3-minio-s3fs", marks=s3_skip))
+    # S3 (MinIO / cloud)
+    params.append(pytest.param(("s3", "remote_store"), id="s3-remote_store", marks=_s3_skip))
+    params.append(pytest.param(("s3", "boto3_raw"), id="s3-boto3_raw", marks=_s3_skip))
+    params.append(pytest.param(("s3", "s3fs"), id="s3-s3fs", marks=_s3_skip))
 
-    # S3-PyArrow (MinIO)
-    pa_skip = pytest.mark.skipif(
-        not _s3_pyarrow_available(), reason="MinIO not reachable or pyarrow/s3fs not installed"
-    )
-    params.append(pytest.param(("s3-pyarrow", "remote_store"), id="s3-pyarrow-minio-remote_store", marks=pa_skip))
+    # S3-PyArrow (MinIO / cloud)
+    params.append(pytest.param(("s3-pyarrow", "remote_store"), id="s3-pyarrow-remote_store", marks=_pa_skip))
 
     # SFTP
-    sftp_skip = pytest.mark.skipif(
-        not _sftp_docker_available(), reason="SFTP container not reachable or paramiko not installed"
-    )
-    params.append(pytest.param(("sftp", "remote_store"), id="sftp-docker-remote_store", marks=sftp_skip))
-    params.append(pytest.param(("sftp", "paramiko_raw"), id="sftp-docker-paramiko_raw", marks=sftp_skip))
+    params.append(pytest.param(("sftp", "remote_store"), id="sftp-remote_store", marks=_sftp_skip))
+    params.append(pytest.param(("sftp", "paramiko_raw"), id="sftp-paramiko_raw", marks=_sftp_skip))
     sshfs_skip = [
-        sftp_skip,
+        _sftp_skip,
         pytest.mark.skipif(not _sshfs_available(), reason="sshfs not installed"),
     ]
-    params.append(pytest.param(("sftp", "sshfs"), id="sftp-docker-sshfs", marks=sshfs_skip))
+    params.append(pytest.param(("sftp", "sshfs"), id="sftp-sshfs", marks=sshfs_skip))
 
-    # Azure (Azurite)
-    az_skip = pytest.mark.skipif(not _azurite_available(), reason="Azurite not reachable or azure SDK not installed")
-    params.append(pytest.param(("azure", "remote_store"), id="azure-azurite-remote_store", marks=az_skip))
-    params.append(pytest.param(("azure", "azure_blob_raw"), id="azure-azurite-azure_blob_raw", marks=az_skip))
+    # Azure (Azurite / cloud)
+    params.append(pytest.param(("azure", "remote_store"), id="azure-remote_store", marks=_azure_skip))
+    params.append(pytest.param(("azure", "azure_blob_raw"), id="azure-azure_blob_raw", marks=_azure_skip))
     adlfs_skip = [
-        az_skip,
+        _azure_skip,
         pytest.mark.skipif(not _adlfs_available(), reason="adlfs not installed"),
     ]
-    params.append(pytest.param(("azure", "adlfs"), id="azure-azurite-adlfs", marks=adlfs_skip))
+    params.append(pytest.param(("azure", "adlfs"), id="azure-adlfs", marks=adlfs_skip))
 
     return params
 
@@ -500,11 +494,14 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
     """Yield a BenchTarget for comparative benchmarks.
 
     Each parametrization is a ``(backend_type, target_kind)`` pair.
-    Test IDs look like ``test_write[s3-minio-remote_store]``.
+    Test IDs look like ``test_write[s3-remote_store]``.
+
+    Supports both Docker and cloud (``--infra cloud``) modes.
     """
     from benchmarks.targets._remote_store import RemoteStoreTarget
 
     backend_type, target_kind = request.param
+    cloud = request.config.getoption("--infra") == "cloud"
     tag = uuid.uuid4().hex[:8]
 
     if backend_type == "local":
@@ -523,37 +520,47 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
     elif backend_type in ("s3", "s3-pyarrow"):
         import boto3
 
-        bucket = f"bench-tgt-{tag}"
-        client = boto3.client(
-            "s3",
-            endpoint_url=MINIO_ENDPOINT,
-            aws_access_key_id=MINIO_ACCESS_KEY,
-            aws_secret_access_key=MINIO_SECRET_KEY,
-            region_name="us-east-1",
-        )
-        client.create_bucket(Bucket=bucket)
+        if cloud:
+            bucket = CLOUD_S3_BUCKET
+            client = boto3.client("s3", region_name=CLOUD_S3_REGION)
+        else:
+            bucket = f"bench-tgt-{tag}"
+            client = boto3.client(
+                "s3",
+                endpoint_url=MINIO_ENDPOINT,
+                aws_access_key_id=MINIO_ACCESS_KEY,
+                aws_secret_access_key=MINIO_SECRET_KEY,
+                region_name="us-east-1",
+            )
+            client.create_bucket(Bucket=bucket)
         try:
             if target_kind == "remote_store":
                 if backend_type == "s3":
                     from remote_store.backends._s3 import S3Backend
 
-                    b = S3Backend(
-                        bucket=bucket,
-                        key=MINIO_ACCESS_KEY,
-                        secret=MINIO_SECRET_KEY,
-                        region_name="us-east-1",
-                        endpoint_url=MINIO_ENDPOINT,
-                    )
+                    if cloud:
+                        b = S3Backend(bucket=bucket, region_name=CLOUD_S3_REGION)
+                    else:
+                        b = S3Backend(
+                            bucket=bucket,
+                            key=MINIO_ACCESS_KEY,
+                            secret=MINIO_SECRET_KEY,
+                            region_name="us-east-1",
+                            endpoint_url=MINIO_ENDPOINT,
+                        )
                 else:
                     from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
-                    b = S3PyArrowBackend(
-                        bucket=bucket,
-                        key=MINIO_ACCESS_KEY,
-                        secret=MINIO_SECRET_KEY,
-                        region_name="us-east-1",
-                        endpoint_url=MINIO_ENDPOINT,
-                    )
+                    if cloud:
+                        b = S3PyArrowBackend(bucket=bucket, region_name=CLOUD_S3_REGION)
+                    else:
+                        b = S3PyArrowBackend(
+                            bucket=bucket,
+                            key=MINIO_ACCESS_KEY,
+                            secret=MINIO_SECRET_KEY,
+                            region_name="us-east-1",
+                            endpoint_url=MINIO_ENDPOINT,
+                        )
                 t = RemoteStoreTarget(b)
                 yield t
                 t.close()
@@ -564,95 +571,126 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
             elif target_kind == "s3fs":
                 from benchmarks.targets._fsspec import S3fsTarget
 
-                yield S3fsTarget(
-                    bucket=bucket,
-                    endpoint_url=MINIO_ENDPOINT,
-                    key=MINIO_ACCESS_KEY,
-                    secret=MINIO_SECRET_KEY,
-                )
+                if cloud:
+                    t = S3fsTarget(bucket=bucket)  # type: ignore[assignment]
+                else:
+                    t = S3fsTarget(  # type: ignore[assignment]
+                        bucket=bucket,
+                        endpoint_url=MINIO_ENDPOINT,
+                        key=MINIO_ACCESS_KEY,
+                        secret=MINIO_SECRET_KEY,
+                    )
+                yield t
+                t.close()
         finally:
-            # Cleanup bucket
-            resp = client.list_objects_v2(Bucket=bucket)
-            for obj in resp.get("Contents", []):
-                client.delete_object(Bucket=bucket, Key=obj["Key"])
-            client.delete_bucket(Bucket=bucket)
+            _paginated_delete_s3(client, bucket)
+            if not cloud:
+                client.delete_bucket(Bucket=bucket)
 
     elif backend_type == "sftp":
+        if cloud:
+            host, port, user = CLOUD_SFTP_HOST, CLOUD_SFTP_PORT, CLOUD_SFTP_USER
+            password = CLOUD_SFTP_PASS or None
+            key_file = CLOUD_SFTP_KEY_FILE or None
+        else:
+            host, port, user = SFTP_HOST, SFTP_PORT, SFTP_USER
+            password = SFTP_PASS
+            key_file = None
+
         base_path = f"/upload/bench_tgt_{tag}"
-        if target_kind == "remote_store":
-            from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
+        try:
+            if target_kind == "remote_store":
+                from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
 
-            b = SFTPBackend(
-                host=SFTP_HOST,
-                port=SFTP_PORT,
-                username=SFTP_USER,
-                password=SFTP_PASS,
-                base_path=base_path,
-                host_key_policy=HostKeyPolicy.AUTO_ADD,
-                connect_kwargs={"allow_agent": False, "look_for_keys": False},
-            )
-            t = RemoteStoreTarget(b)
-            yield t
-            t.close()
-        elif target_kind == "paramiko_raw":
-            from benchmarks.targets._raw_sdk import ParamikoRawTarget
+                connect_kwargs: dict[str, Any] = {}
+                if key_file:
+                    connect_kwargs["key_filename"] = key_file
+                if not cloud:
+                    connect_kwargs.update(allow_agent=False, look_for_keys=False)
+                bk = SFTPBackend(
+                    host=host,
+                    port=port,
+                    username=user,
+                    password=password,
+                    base_path=base_path,
+                    host_key_policy=HostKeyPolicy.AUTO_ADD,
+                    connect_kwargs=connect_kwargs,
+                )
+                t = RemoteStoreTarget(bk)
+                yield t
+                t.close()
+            elif target_kind == "paramiko_raw":
+                from benchmarks.targets._raw_sdk import ParamikoRawTarget
 
-            t = ParamikoRawTarget(
-                host=SFTP_HOST,
-                port=SFTP_PORT,
-                username=SFTP_USER,
-                password=SFTP_PASS,
-                base_path=base_path,
-            )
-            yield t
-            t.close()
-        elif target_kind == "sshfs":
-            from benchmarks.targets._fsspec import SshfsTarget
+                if not password:
+                    pytest.skip("ParamikoRawTarget requires password auth")
+                t = ParamikoRawTarget(
+                    host=host,
+                    port=port,
+                    username=user,
+                    password=password,
+                    base_path=base_path,
+                )
+                yield t
+                t.close()
+            elif target_kind == "sshfs":
+                from benchmarks.targets._fsspec import SshfsTarget
 
-            yield SshfsTarget(
-                host=SFTP_HOST,
-                port=SFTP_PORT,
-                username=SFTP_USER,
-                password=SFTP_PASS,
-                base_path=base_path,
-            )
-        # Cleanup SFTP directory
-        import paramiko
-
-        transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
-        transport.connect(username=SFTP_USER, password=SFTP_PASS)
-        sftp = paramiko.SFTPClient.from_transport(transport)
-        assert sftp is not None
-        _sftp_rmtree(sftp, base_path)
-        sftp.close()
-        transport.close()
+                if not password:
+                    pytest.skip("SshfsTarget requires password auth")
+                t = SshfsTarget(
+                    host=host,
+                    port=port,
+                    username=user,
+                    password=password,
+                    base_path=base_path,
+                )
+                yield t
+                t.close()
+        finally:
+            _sftp_cleanup(host, port, user, base_path, password=password, key_file=key_file)
 
     elif backend_type == "azure":
         from azure.storage.blob import BlobServiceClient
 
-        container = f"bench-tgt-{tag}"
-        service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
-        service.create_container(container)
+        if cloud:
+            container = CLOUD_AZURE_CONTAINER
+            conn_str = CLOUD_AZURE_CONN_STR
+        else:
+            container = f"bench-tgt-{tag}"
+            conn_str = AZURITE_CONN_STR
+
+        service = BlobServiceClient.from_connection_string(conn_str)
+        if not cloud:
+            service.create_container(container)
         try:
             if target_kind == "remote_store":
                 from remote_store.backends._azure import AzureBackend
 
-                b = AzureBackend(container=container, connection_string=AZURITE_CONN_STR)
-                t = RemoteStoreTarget(b)
+                bk = AzureBackend(container=container, connection_string=conn_str)
+                t = RemoteStoreTarget(bk)
                 yield t
                 t.close()
             elif target_kind == "azure_blob_raw":
                 from benchmarks.targets._raw_sdk import AzureBlobRawTarget
 
-                t = AzureBlobRawTarget(container=container, connection_string=AZURITE_CONN_STR)
+                t = AzureBlobRawTarget(container=container, connection_string=conn_str)
                 yield t
                 t.close()
             elif target_kind == "adlfs":
                 from benchmarks.targets._fsspec import AdlfsTarget
 
-                yield AdlfsTarget(container=container, connection_string=AZURITE_CONN_STR)
+                t = AdlfsTarget(container=container, connection_string=conn_str)
+                yield t
+                t.close()
         finally:
-            service.delete_container(container)
+            if cloud:
+                # Delete all blobs but keep the container
+                cc = service.get_container_client(container)
+                for blob in cc.list_blobs():
+                    cc.delete_blob(blob.name)
+            else:
+                service.delete_container(container)
             service.close()
 
 
@@ -662,16 +700,21 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
 
 
 @pytest.fixture(
+    scope="session",
     params=[
         pytest.param(1_024, id="1KB"),
         pytest.param(65_536, id="64KB"),
         pytest.param(1_048_576, id="1MB"),
         pytest.param(10_485_760, id="10MB", marks=pytest.mark.slow),
         pytest.param(104_857_600, id="100MB", marks=pytest.mark.slow),
-    ]
+    ],
 )
 def payload(request: pytest.FixtureRequest) -> bytes:
-    """Return a bytes payload of the requested size."""
+    """Return a bytes payload of the requested size.
+
+    Session-scoped to avoid re-allocating large payloads (up to 100 MB)
+    for every test function.
+    """
     return b"X" * request.param
 
 

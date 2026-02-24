@@ -23,8 +23,8 @@ class TestTTFB:
 
     _TTFB_PAYLOAD = b"T" * 1_024
 
-    def test_ttfb_write(self, bench_backend: Backend, benchmark: Any) -> None:
-        """First-byte latency for a write operation."""
+    def test_write_latency(self, bench_backend: Backend, benchmark: Any) -> None:
+        """Measure full write latency for a tiny (1 KB) file."""
 
         def _write() -> None:
             bench_backend.write(_unique("ttfb_w"), self._TTFB_PAYLOAD)

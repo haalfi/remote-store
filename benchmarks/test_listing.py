@@ -84,23 +84,21 @@ class TestListPerformance10k:
 
 
 # ---------------------------------------------------------------------------
-# Remote-store only: deep hierarchy (5 levels, branching factor 5, ~3k files)
+# Remote-store only: deep hierarchy (5 levels, branching factor 5, 1562 files)
 # ---------------------------------------------------------------------------
 
 
 class TestDeepHierarchyPerformance:
-    """List files in a deep hierarchy: 5 levels, branching factor 5."""
-
-    _TOTAL_FILES = 0
+    """List files in a deep hierarchy: 5 levels, branching factor 5, 1562 files."""
 
     @pytest.fixture(autouse=True)
     def _populate_deep(self, bench_backend: Backend) -> None:
         self._root = f"deep/{uuid.uuid4().hex[:8]}"
         self._count = 0
-        self._build_tree(bench_backend, self._root, depth=5, breadth=5, counter=[0])
+        self._build_tree(bench_backend, self._root, depth=5, breadth=5)
         self._expected = self._count
 
-    def _build_tree(self, backend: Backend, prefix: str, depth: int, breadth: int, counter: list[int]) -> None:
+    def _build_tree(self, backend: Backend, prefix: str, depth: int, breadth: int) -> None:
         if depth == 0:
             return
         # Write 2 files at this level
@@ -109,7 +107,7 @@ class TestDeepHierarchyPerformance:
             self._count += 1
         # Recurse into subdirectories
         for d in range(breadth):
-            self._build_tree(backend, f"{prefix}/d{d}", depth - 1, breadth, counter)
+            self._build_tree(backend, f"{prefix}/d{d}", depth - 1, breadth)
 
     @pytest.mark.slow
     def test_list_deep_recursive(self, bench_backend: Backend, benchmark: Any) -> None:

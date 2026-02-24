@@ -34,7 +34,7 @@ class PathLibRawTarget(BenchTarget):
 
     def list_files(self, prefix: str) -> list[str]:
         base = self._root / prefix
-        return [str(p.relative_to(self._root)) for p in base.rglob("*") if p.is_file()]
+        return [str(p.relative_to(self._root)) for p in base.iterdir() if p.is_file()]
 
 
 class Boto3RawTarget(BenchTarget):
@@ -53,7 +53,11 @@ class Boto3RawTarget(BenchTarget):
 
     def read(self, path: str) -> bytes:
         resp = self._client.get_object(Bucket=self._bucket, Key=path)
-        return resp["Body"].read()
+        body = resp["Body"]
+        try:
+            return body.read()
+        finally:
+            body.close()
 
     def exists(self, path: str) -> bool:
         try:
@@ -118,6 +122,7 @@ class ParamikoRawTarget(BenchTarget):
 
     def read(self, path: str) -> bytes:
         with self._sftp.file(self._full(path), "rb") as f:
+            f.prefetch()
             return f.read()
 
     def exists(self, path: str) -> bool:
@@ -171,10 +176,12 @@ class AzureBlobRawTarget(BenchTarget):
         return self._container.download_blob(path).readall()
 
     def exists(self, path: str) -> bool:
+        from azure.core.exceptions import ResourceNotFoundError
+
         try:
             self._container.get_blob_client(path).get_blob_properties()
             return True
-        except Exception:
+        except ResourceNotFoundError:
             return False
 
     def delete(self, path: str) -> None:

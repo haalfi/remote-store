@@ -21,7 +21,7 @@ class RemoteStoreTarget(BenchTarget):
         return "remote_store"
 
     def write(self, path: str, data: bytes) -> None:
-        self._backend.write(path, data)
+        self._backend.write(path, data, overwrite=True)
 
     def read(self, path: str) -> bytes:
         return self._backend.read_bytes(path)
@@ -33,7 +33,7 @@ class RemoteStoreTarget(BenchTarget):
         self._backend.delete(path)
 
     def list_files(self, prefix: str) -> list[str]:
-        return list(self._backend.list_files(prefix))
+        return [fi.path for fi in self._backend.list_files(prefix)]
 
     def close(self) -> None:
         self._backend.close()
