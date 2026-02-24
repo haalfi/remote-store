@@ -130,7 +130,7 @@ class SshfsTarget(BenchTarget):
         return self._fs.ls(self._full(prefix), detail=False)
 
     def close(self) -> None:
-        self._fs.close()
+        self._fs.clear_instance_cache()
 
 
 class LocalFsspecTarget(BenchTarget):

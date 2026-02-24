@@ -56,7 +56,18 @@ s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
 sftp = ["paramiko>=2.2", "tenacity>=4.0"]
 azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
 
-bench = ["pytest-benchmark>=4.0", "adlfs>=2024.2.0", "sshfs>=2023.1.0"]
+bench = [
+  "pytest-benchmark>=4.0",
+  "boto3",
+  "s3fs>=2024.2.0",
+  "pyarrow>=14.0.0",
+  "paramiko>=2.2",
+  "tenacity>=4.0",
+  "azure-storage-file-datalake>=12.16.0",
+  "azure-identity>=1.0.0",
+  "adlfs>=2024.2.0",
+  "sshfs>=2023.1.0",
+]
 
 docs = [
   "mkdocs>=1.6",

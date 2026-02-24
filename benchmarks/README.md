@@ -3,11 +3,16 @@
 Performance benchmarks for remote-store backends, comparing remote-store,
 raw SDK calls, and fsspec implementations.
 
+## Prerequisites
+
+- **Docker** with the Compose plugin (`docker compose`)
+- **Hatch** (`pip install hatch`)
+
 ## Quick Start
 
 ```bash
-# Start Docker services
-docker compose -f benchmarks/infra/docker-compose.yml up -d
+# Start Docker services and wait for health checks to pass
+docker compose -f benchmarks/infra/docker-compose.yml up -d --wait
 
 # Run benchmarks (excludes slow tests)
 hatch run bench
@@ -55,8 +60,14 @@ hatch run bench-compare
 Uses local Docker containers. No credentials needed.
 
 ```bash
-docker compose -f benchmarks/infra/docker-compose.yml up -d
+docker compose -f benchmarks/infra/docker-compose.yml up -d --wait
 hatch run bench
+```
+
+To stop and clean up Docker services afterwards:
+
+```bash
+docker compose -f benchmarks/infra/docker-compose.yml down -v
 ```
 
 ### Cloud mode
