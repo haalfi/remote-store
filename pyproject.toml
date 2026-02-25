@@ -74,6 +74,9 @@ docs = [
   "mkdocs-material>=9.5",
   "mkdocstrings[python]>=0.27",
   "mkdocs-include-markdown-plugin>=7.0",
+  "mkdocs-gen-files>=0.5",
+  "mkdocs-literate-nav>=0.6",
+  "mkdocs-section-index>=0.3",
   "s3fs>=2024.2.0",
 ]
 
@@ -119,6 +122,9 @@ dependencies = [
   "mkdocs-material>=9.5",
   "mkdocstrings[python]>=0.27",
   "mkdocs-include-markdown-plugin>=7.0",
+  "mkdocs-gen-files>=0.5",
+  "mkdocs-literate-nav>=0.6",
+  "mkdocs-section-index>=0.3",
 ]
 
 [tool.hatch.envs.default.scripts]
