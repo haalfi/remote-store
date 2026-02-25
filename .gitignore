@@ -23,6 +23,5 @@ build/
 .coverage
 htmlcov/
 
-# Documentation (docs/ is fully generated — see sdd/adrs/0006-documentation-architecture.md)
-docs/
+# Documentation build output (source of truth is docs-src/ — see sdd/adrs/0006-documentation-architecture.md)
 site/
