@@ -8,7 +8,7 @@ body:
     attributes:
       label: remote-store version
       description: "Output of `python -c \"import remote_store; print(remote_store.__version__)\"`"
-      placeholder: "0.4.2"
+      placeholder: "e.g. 1.2.3"
     validations:
       required: true
 
