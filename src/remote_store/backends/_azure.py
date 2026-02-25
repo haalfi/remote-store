@@ -9,7 +9,7 @@ import re
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
+from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -24,6 +24,7 @@ from remote_store._errors import (
 )
 from remote_store._models import FileInfo, FolderInfo
 from remote_store._path import RemotePath
+from remote_store._stream import _ErrorMappingStream
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -375,7 +376,7 @@ class AzureBackend(Backend):
             bc = self._blob_client(path)
             downloader = bc.download_blob()
             raw = _AzureBinaryIO(downloader.chunks())
-            return io.BufferedReader(raw)
+            return io.BufferedReader(cast("io.RawIOBase", _ErrorMappingStream(raw, self._classify, path)))
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):

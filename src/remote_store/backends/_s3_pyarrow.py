@@ -6,7 +6,7 @@ import io
 import shutil
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
+from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -21,6 +21,7 @@ from remote_store._errors import (
 )
 from remote_store._models import FileInfo, FolderInfo
 from remote_store._path import RemotePath
+from remote_store._stream import _ErrorMappingStream
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -280,7 +281,7 @@ class S3PyArrowBackend(Backend):
         with self._pyarrow_errors(path):
             pa_file = self._pa_fs.open_input_file(self._pa_path(path))
             raw = _PyArrowBinaryIO(pa_file)
-            return io.BufferedReader(raw)
+            return io.BufferedReader(cast("io.RawIOBase", _ErrorMappingStream(raw, self._classify_error, path)))
 
     def read_bytes(self, path: str) -> bytes:
         with self._pyarrow_errors(path):
