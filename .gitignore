@@ -23,5 +23,5 @@ build/
 .coverage
 htmlcov/
 
-# Documentation build output (source of truth is docs-src/ — see sdd/adrs/0006-documentation-architecture.md)
+# Documentation build output (source of truth is docs-src/ — see sdd/adrs/0007-docs-src-literate-nav.md)
 site/

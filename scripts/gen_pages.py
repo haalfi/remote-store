@@ -10,7 +10,7 @@ lives in docs-src/ (the docs_dir).  This script handles only:
   5. Copying assets/ into the virtual filesystem
   6. Assembling SUMMARY.md from per-section _nav.yml files
 
-See: sdd/adrs/0006-documentation-architecture.md
+See: sdd/adrs/0007-docs-src-literate-nav.md
 """
 
 from __future__ import annotations
@@ -98,6 +98,15 @@ tmpl = (DOCS_SRC / "design" / "specs" / "_index.tmpl").read_text()
 with mkdocs_gen_files.open("design/specs/index.md", "w") as f:
     f.write(tmpl.replace("{{ spec_rows }}", spec_rows))
 
+# --- design/rfcs/index.md ---
+rfc_rows = "\n".join(
+    f"| {num} | [{title}]({slug}.md) | Proposed |"
+    for num, slug, title in rfc_entries
+)
+tmpl = (DOCS_SRC / "design" / "rfcs" / "_index.tmpl").read_text()
+with mkdocs_gen_files.open("design/rfcs/index.md", "w") as f:
+    f.write(tmpl.replace("{{ rfc_rows }}", rfc_rows))
+
 # --- design/index.md ---
 spec_links = "\n".join(
     f"- [{num}: {title}](specs/{slug}.md)" for num, slug, title in spec_entries
@@ -105,9 +114,16 @@ spec_links = "\n".join(
 adr_links = "\n".join(
     f"- [{num}: {title}](adrs/{slug}.md)" for num, slug, title in adr_entries
 )
+rfc_links = "\n".join(
+    f"- [{num}: {title}](rfcs/{slug}.md)" for num, slug, title in rfc_entries
+)
 tmpl = (DOCS_SRC / "design" / "_index.tmpl").read_text()
 with mkdocs_gen_files.open("design/index.md", "w") as f:
-    f.write(tmpl.replace("{{ spec_links }}", spec_links).replace("{{ adr_links }}", adr_links))
+    f.write(
+        tmpl.replace("{{ spec_links }}", spec_links)
+        .replace("{{ adr_links }}", adr_links)
+        .replace("{{ rfc_links }}", rfc_links)
+    )
 
 # ---------------------------------------------------------------------------
 # 3. Create wrapper pages for each spec, ADR, RFC
@@ -199,6 +215,10 @@ _scanned_sections: dict[str, list[tuple[str, str]]] = {
     "design/adrs": [
         (f"{num}: {title}", f"design/adrs/{slug}.md")
         for num, slug, title in adr_entries
+    ],
+    "design/rfcs": [
+        (f"{num}: {title}", f"design/rfcs/{slug}.md")
+        for num, slug, title in rfc_entries
     ],
 }
 

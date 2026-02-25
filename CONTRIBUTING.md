@@ -175,5 +175,5 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 - [ ] CHANGELOG.md updated
 - [ ] `hatch run all` passes (lint, typecheck, test-cov, examples)
 - [ ] `mkdocs build --strict` passes
-- [ ] Tagline consistent: `pyproject.toml` = README.md = `docs/index.md` = `mkdocs.yml` = `CITATION.cff`
+- [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
