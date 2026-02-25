@@ -5,7 +5,7 @@ abstract: >-
   One simple API for file storage. Local, S3, SFTP, Azure.
   Same methods, swappable backends, zero reinvention.
 type: software
-version: 0.5.0
+version: 0.6.0
 date-released: 2026-02-23
 license: MIT
 repository-code: https://github.com/haalfi/remote-store
