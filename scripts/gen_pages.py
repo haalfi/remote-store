@@ -214,6 +214,7 @@ nav["Backends", "Local"] = "backends/local.md"
 nav["Backends", "S3"] = "backends/s3.md"
 nav["Backends", "S3-PyArrow"] = "backends/s3-pyarrow.md"
 nav["Backends", "SFTP"] = "backends/sftp.md"
+nav["Backends", "Azure"] = "backends/azure.md"
 
 # Performance
 nav["Performance"] = "performance.md"
