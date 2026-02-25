@@ -21,10 +21,28 @@ all in the same PR, or explicitly track what remains as `[~]` in the backlog.
 ### 2. Verify beyond the diff
 
 After making a change, **search for what references the thing you changed.**
-The blast radius is always wider than the files you edited. Adding a backend?
-Check README, docs nav, examples, CONTRIBUTING structure, extras in
-`pyproject.toml`. Fixing an error type? Check if specs, tests, and docs mention
-the old behavior. Bumping a version? Search for the old version string.
+The blast radius is always wider than the files you edited.
+
+Use the ripple-check table below — it encodes the sync failures that have
+actually happened in this repo:
+
+| If you changed…            | Also check / update                                       |
+|----------------------------|-----------------------------------------------------------|
+| **A backend**              | README backends table, `pyproject.toml` extras,           |
+|                            | `guides/backends/`, docs nav, `examples/`,                |
+|                            | `sdd/specs/`, `CONTRIBUTING.md` repo structure,           |
+|                            | `_registry.py` auto-registration                          |
+| **An error type**          | `sdd/specs/005-error-model.md`, all backends' error       |
+|                            | mapping, tests for every backend                          |
+| **A capability**           | `sdd/specs/003-backend-adapter-contract.md`,              |
+|                            | every backend's `capabilities()`, Store surface API       |
+| **Version number**         | `pyproject.toml`, `src/remote_store/__init__.py`,         |
+|                            | `CITATION.cff` (version + date-released),                 |
+|                            | `CHANGELOG.md` (new heading + `[Unreleased]` section)     |
+| **A spec section**         | Tests with `@pytest.mark.spec("ID")`, BACKLOG if related  |
+| **A dependency**           | `pyproject.toml` extras + minimum pins, README install    |
+|                            | instructions, docs prerequisites                          |
+| **Store or Backend ABC**   | All backend implementations, conformance tests            |
 
 ### 3. The repo describes reality — at every commit
 
@@ -88,15 +106,16 @@ hatch run typecheck         # mypy strict on src/
 hatch run all               # lint + typecheck + test
 ```
 
-## Key conventions
+## Code conventions
 
-- **Specs are authoritative** — if code and spec disagree, fix the code.
 - **Test traceability** — spec-derived tests use `@pytest.mark.spec("ID")`.
 - **Immutable config** — dataclasses use `frozen=True`.
 - **Error mapping** — backends must map native exceptions to `RemoteStoreError`
   subtypes. Never let raw `OSError`/`botocore`/`paramiko` exceptions leak.
 - **No code without a spec** — new features need a spec section in `sdd/specs/`.
   Operational changes (CI, docs, deps) skip the spec step.
+- **Formatting** — run `hatch run lint` before committing. Pre-commit hooks
+  enforce ruff and mypy, but only on staged files.
 
 ## Repository layout
 
