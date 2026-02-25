@@ -23,5 +23,8 @@ build/
 .coverage
 htmlcov/
 
+# Benchmarks (machine-specific saved results)
+.benchmarks/
+
 # Documentation build output (source of truth is docs-src/ — see sdd/adrs/0007-docs-src-literate-nav.md)
 site/
