@@ -2,10 +2,7 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.4.x   | Yes                |
-| < 0.4   | No                 |
+Only the latest released version is supported with security updates. Please make sure you are using the most recent release before reporting a vulnerability.
 
 ## Reporting a Vulnerability
 
