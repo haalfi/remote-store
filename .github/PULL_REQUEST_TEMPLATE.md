@@ -22,3 +22,4 @@
 - [ ] Type checker passes (`hatch run typecheck`)
 - [ ] New/changed behavior is covered by tests
 - [ ] CHANGELOG.md updated (if user-facing)
+- [ ] `sdd/BACKLOG.md` updated (if this PR closes or advances a backlog item)
