@@ -31,7 +31,7 @@ actually happened in this repo:
 | **A backend**              | README backends table, `pyproject.toml` extras,           |
 |                            | `guides/backends/`, docs nav, `examples/`,                |
 |                            | `sdd/specs/`, `CONTRIBUTING.md` repo structure,           |
-|                            | `_registry.py` auto-registration                          |
+|                            | `src/remote_store/_registry.py` auto-registration         |
 | **An error type**          | `sdd/specs/005-error-model.md`, all backends' error       |
 |                            | mapping, tests for every backend                          |
 | **A capability**           | `sdd/specs/003-backend-adapter-contract.md`,              |
@@ -72,7 +72,7 @@ Before claiming a fix, **reproduce the bug and confirm it's gone**.
 | I need to…                               | Go here                                              |
 |------------------------------------------|------------------------------------------------------|
 | Find out what work is pending            | `sdd/BACKLOG.md`                                     |
-| Understand how a feature should behave   | `sdd/specs/` (find by prefix, e.g. STORE-, S3-, ERR-)|
+| Understand how a feature should behave   | `sdd/specs/` (NNN-topic.md files; section IDs inside use STORE-, S3-, ERR- etc.)|
 | Learn why a design decision was made     | `sdd/adrs/`                                          |
 | Propose a significant new feature        | Write an RFC in `sdd/rfcs/` (see `rfc-template.md`)  |
 | Record a new design decision             | Add an ADR in `sdd/adrs/`                            |
@@ -83,7 +83,7 @@ Before claiming a fix, **reproduce the bug and confirm it's gone**.
 | Understand the full SDD workflow         | `sdd/000-process.md`                                 |
 | Add or update a backend guide            | `guides/backends/` + docs nav                        |
 | Run a quick smoke test                   | `examples/` — pick one and run it                    |
-| Verify everything passes                 | `hatch run all` (lint + typecheck + test)             |
+| Verify everything passes                 | `hatch run all` (lint + format-check + typecheck + test-cov + examples) |
 
 ---
 
@@ -131,7 +131,7 @@ BK-002: Implement glob strategy with client-side fallback
 hatch run test              # run tests (pytest, 95% coverage required)
 hatch run lint              # ruff check + format
 hatch run typecheck         # mypy strict on src/
-hatch run all               # lint + typecheck + test
+hatch run all               # lint + format-check + typecheck + test-cov + examples
 ```
 
 ## Code conventions

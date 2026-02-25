@@ -110,11 +110,12 @@ From adversarial review of v0.5.0. Full details: `sdd/audit-001-adversarial-revi
   → Audit: H-0 (partial, downgraded from Critical)
   Done: v0.6.0 — Removed `clear_instance_cache()` call from S3/S3-PyArrow `close()`.
 
-- [x] **AF-004 — Unify `get_folder_info` behavior on empty folders**
+- [~] **AF-004 — Unify `get_folder_info` behavior on empty folders**
   LocalBackend returns success; S3/SFTP/Azure raise `NotFound`. Pick one semantic.
   → Audit: H-1 (unverified)
-  Done: v0.6.0 — SFTP `get_folder_info()` on empty directories now returns
-  `FolderInfo(file_count=0)` instead of raising `NotFound`.
+  Partial: v0.6.0 — SFTP fixed to return `FolderInfo(file_count=0)` on empty dirs.
+  Remaining: S3 (`_s3.py:321`) and Azure non-HNS (`_azure.py:582`) still raise
+  `NotFound` when `file_count == 0`. Need same fix for consistency with Local/SFTP.
 
 - [x] **AF-005 — Fix `delete_folder` error types**
   LocalBackend raises `NotFound` for non-empty folders (wrong). Others use base `RemoteStoreError`.
@@ -212,9 +213,10 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   without adding dependencies.
 
 - [ ] **ID-007 — `Store.glob()` surface API**
-  Expose a `Store.glob(pattern)` method backed by `Capability.GLOB` (already
-  declared but unused). Local has it, S3 can do prefix filtering natively, SFTP
-  would need client-side filtering. Ships alongside or after BK-002.
+  Expose a `Store.glob(pattern)` method. `Capability.GLOB` was removed in v0.6.0
+  (AF-002), so this would need a new capability or a different design. Local has
+  native glob, S3 can do prefix filtering, SFTP would need client-side filtering.
+  Ships alongside or after BK-002.
 
 - [ ] **ID-008 — Checksum verification on read/write**
   Add a `verify_checksum=True` option to `read()` / `write()`. Populate
