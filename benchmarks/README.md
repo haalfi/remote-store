@@ -102,6 +102,9 @@ hatch run bench-cloud
 | `hatch run bench-save` | Non-slow + save JSON | Track regressions |
 | `hatch run bench-compare` | Compare saved runs | Before/after |
 | `hatch run bench-cloud` | Non-slow on real infra | Cloud perf testing |
+| `hatch run bench-report` | Summary table from saved JSON | Quick overview |
+| `hatch run bench-report-compare` | Latest vs previous saved run | Spot regressions |
+| `hatch run bench-report-json` | Machine-readable JSON | CI / scripting |
 
 ## Environment Variables
 
@@ -162,6 +165,7 @@ benchmarks/
   test_listing.py                 # comparative (flat) + RS-only (dir-scale, deep)
   test_destructive.py             # comparative (delete) + RS-only (copy, move)
   test_large_file.py              # remote-store only (memory tracking)
+  report.py                        # summary table generator (bench-report)
   infra/
     docker-compose.yml
   README.md
