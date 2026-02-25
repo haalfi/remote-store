@@ -21,8 +21,6 @@ class Capability(enum.Enum):
     MOVE = "move"
     COPY = "copy"
     ATOMIC_WRITE = "atomic_write"
-    GLOB = "glob"
-    RECURSIVE_LIST = "recursive_list"
     METADATA = "metadata"
 
 

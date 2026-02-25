@@ -21,8 +21,6 @@ class TestCapabilityEnum:
             "MOVE",
             "COPY",
             "ATOMIC_WRITE",
-            "GLOB",
-            "RECURSIVE_LIST",
             "METADATA",
         }
         actual = {c.name for c in Capability}
