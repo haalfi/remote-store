@@ -6,14 +6,14 @@ This document chronicles how `remote-store` was built as a collaboration between
 
 | Metric | Value |
 |--------|-------|
-| Source code | ~2,900 lines (5 backends) |
-| Tests | 453 tests, ~3,500 lines |
-| Specs & docs | 12 specs, 6 ADRs, ~1,700 lines |
+| Source code | ~3,700 lines (5 backends) |
+| Tests | 556 tests, ~3,800 lines |
+| Specs & docs | 12 specs, 7 ADRs, ~1,800 lines |
 | Examples | ~350 lines (6 scripts, 3 notebooks) |
 | Documentation site | MkDocs Material |
 | Coverage | 95% |
-| Calendar time | ~3 weeks of sessions |
-| Commits | 28 |
+| Calendar time | ~4 weeks of sessions |
+| Commits | 165 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
@@ -252,6 +252,50 @@ The audit also found that thread safety (claimed by STORE-007) has zero implemen
 **The lesson: reviewing PRs catches local issues; adversarial auditing catches systemic ones.** PR review asks "is this change correct?" Adversarial auditing asks "does the whole thing hold together?" The TOCTOU race conditions, cross-backend semantic inconsistencies, and docs-to-code drift were invisible at the PR level because each PR was internally consistent. They only became visible when looking at the system as a whole.
 
 Full findings: `sdd/audit-001-adversarial-review.md`. Backlog items: `sdd/BACKLOG.md` section "Audit Findings (AUD-001)".
+
+### Phase 13: Fixing the Audit (v0.6.0)
+
+Phase 12 found the problems; Phase 13 fixed them. The human took the 7 highest-severity findings from the adversarial audit (2 Critical, 5 High) and wrote a detailed implementation plan. Claude Code executed it in a single branch (`fix/audit-critical-high`), producing one commit per finding.
+
+**The seven fixes, in merge order:**
+
+| Finding | Severity | Fix |
+|---------|----------|-----|
+| AF-005 | High | New `DirectoryNotEmpty` error type, replacing generic `NotFound` when deleting non-empty folders |
+| AF-002 | Critical | Removed `Capability.GLOB` and `Capability.RECURSIVE_LIST` -- enum members with no corresponding methods |
+| AF-001 | Critical | `_register_builtin_backends()` now auto-registers S3, SFTP, and S3-PyArrow (not just local/azure) |
+| AF-003 | High | `S3Backend.close()` no longer calls `clear_instance_cache()`, which was a process-wide side-effect |
+| AF-004 | High | SFTP `get_folder_info()` on empty folders returns `FolderInfo(file_count=0)` instead of raising `NotFound` |
+| AF-006 | High | `_ErrorMappingStream(io.RawIOBase)` proxy wraps all `read()` return values, catching `OSError` during lazy reads and mapping them through each backend's error classifier |
+| AF-007 | High | Azure backend guide wired into docs site navigation |
+
+**The stream wrapper (AF-006) was the most substantial change.** The problem: `Backend.read()` opens a stream inside an `_errors()` context manager, but the caller reads from the stream *after* the context manager exits. Any `OSError` raised during `stream.read()` would leak as a raw exception instead of being mapped to a `RemoteStoreError` subtype. The fix was a `io.RawIOBase` proxy that intercepts `read()`, `readline()`, `seek()`, and iteration, catching `OSError` and routing it through the backend's error classifier.
+
+**The review cycle was instructive.** The initial PR had all 7 fixes in a single commit. The repo owner's review returned 12 points, several of them genuine bugs:
+
+1. **Double-buffering**: Azure and S3-PyArrow were wrapping `BufferedReader(RawIOBase)` in `_ErrorMappingStream` then wrapping *that* in another `BufferedReader`. Two layers of buffering for no benefit.
+2. **Exception scope too broad**: The stream wrapper caught bare `Exception`, which would silently swallow programming errors like `TypeError` or `AttributeError`. Narrowed to `OSError` only.
+3. **`bytes()` wrapping masked `None`**: `read()` returning `bytes(None)` silently produces `b'\x00\x00\x00\x00'` (length of None's repr) instead of propagating the sentinel. Removed the wrapper.
+4. **`from None` suppressed diagnostics**: Changed to `from exc` to preserve the original traceback for debugging.
+5. **Inline imports**: Moved `_ErrorMappingStream` imports from inside methods to module top-level.
+6. **SFTP error mapping duplication**: The new `_map_exception()` method duplicated logic from `_errors()`. Refactored `_errors()` to delegate to `_map_exception()`.
+
+After addressing all 12 points, the single commit was split into 7 per-finding commits and force-pushed.
+
+**A CI-only mypy failure added a cross-version wrinkle.** The `_ErrorMappingStream` class extends `io.RawIOBase`, but Python 3.13's typeshed stubs define `BufferedReader`'s constructor with a type variable that mypy (strict mode) doesn't accept for custom `RawIOBase` subclasses. Local mypy (Windows, Python 3.12 stubs) passed; CI mypy (Linux, Python 3.13 stubs) failed. Using `type: ignore[type-var]` would pass CI but fail locally (unused-ignore). The fix: `cast("io.RawIOBase", stream)` works on both. **Yet another instance of "cross-platform" meaning the entire toolchain, not just the runtime.**
+
+**The rebase surfaced a docs architecture change.** Between the audit PR and the fix PR, master had migrated from `generate_docs.py` + `docs/` to `gen_pages.py` + `docs-src/` (ADR-0007). The AF-007 commit's changes to the deleted `generate_docs.py` were dropped during conflict resolution; the Azure guide was already in the new nav structure.
+
+```
+85b8c9c  AF-005: Add DirectoryNotEmpty error type
+2fd16ab  AF-002: Remove ghost GLOB and RECURSIVE_LIST capabilities
+305243d  AF-001: Auto-register S3, SFTP, and S3-PyArrow backends
+f3b0152  AF-003: Remove clear_instance_cache() from S3 close()
+688f996  AF-004: Fix SFTP get_folder_info on empty folders
+c56aca2  AF-006: Map native exceptions from lazy read streams
+fade101  AF-007: Wire Azure guide into docs site
+309b00b  Bump version: 0.5.0 -> 0.6.0
+```
 
 ## What Worked Well
 
