@@ -57,6 +57,34 @@ If code and spec disagree, the code is wrong. If the backlog and git history
 disagree, the backlog is wrong. When you find an inconsistency, fix the less
 authoritative side — don't leave it for someone else.
 
+### 5. Run it, don't just type-check it
+
+Verify **behavior**, not just signatures. This repo learned the hard way: every
+backend declared `read() -> BinaryIO`, mypy was happy, specs said "streaming" —
+but all four backends loaded entire files into memory. Tests checked types; none
+checked actual streaming. Before documenting that something works, **run it**.
+Before claiming a fix, **reproduce the bug and confirm it's gone**.
+
+---
+
+## Quick reference — "Where do I…?"
+
+| I need to…                               | Go here                                              |
+|------------------------------------------|------------------------------------------------------|
+| Find out what work is pending            | `sdd/BACKLOG.md`                                     |
+| Understand how a feature should behave   | `sdd/specs/` (find by prefix, e.g. STORE-, S3-, ERR-)|
+| Learn why a design decision was made     | `sdd/adrs/`                                          |
+| Propose a significant new feature        | Write an RFC in `sdd/rfcs/` (see `rfc-template.md`)  |
+| Record a new design decision             | Add an ADR in `sdd/adrs/`                            |
+| Log a bug or improvement idea            | Append to `sdd/BACKLOG.md` (Ideas section)           |
+| Document a user-facing change            | `CHANGELOG.md` — under `[Unreleased]` or version     |
+| Share a process insight or lesson learned | `DEVELOPMENT_STORY.md`                               |
+| Check or update project conventions      | `sdd/DESIGN.md`                                      |
+| Understand the full SDD workflow         | `sdd/000-process.md`                                 |
+| Add or update a backend guide            | `guides/backends/` + docs nav                        |
+| Run a quick smoke test                   | `examples/` — pick one and run it                    |
+| Verify everything passes                 | `hatch run all` (lint + typecheck + test)             |
+
 ---
 
 ## Backlog — MANDATORY
