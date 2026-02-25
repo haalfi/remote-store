@@ -456,7 +456,6 @@ class S3PyArrowBackend(Backend):
     # region: lifecycle
     def close(self) -> None:
         if self._s3fs_instance is not None:
-            self._s3fs_instance.clear_instance_cache()
             self._s3fs_instance = None
         self._pa_fs_instance = None
 

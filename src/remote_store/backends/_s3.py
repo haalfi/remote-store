@@ -349,7 +349,6 @@ class S3Backend(Backend):
     # region: lifecycle
     def close(self) -> None:
         if self._fs_instance is not None:
-            self._fs_instance.clear_instance_cache()
             self._fs_instance = None
 
     def unwrap(self, type_hint: type[T]) -> T:
