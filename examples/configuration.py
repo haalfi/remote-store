@@ -1,7 +1,7 @@
 """Configuration — config-as-code, from_dict(), multiple stores, and backend configs.
 
 Demonstrates different ways to create and use RegistryConfig, including
-configuration for S3, S3-PyArrow, and SFTP backends.
+configuration for S3, S3-PyArrow, SFTP, and Azure backends.
 """
 
 from __future__ import annotations
@@ -110,6 +110,21 @@ if __name__ == "__main__":
         stores={"uploads": StoreProfile(backend="sftp", root_path="uploads")},
     )
     print(f"SFTP config: {len(sftp_config.stores)} store(s)")
+
+    azure_config = RegistryConfig(
+        backends={
+            "azure": BackendConfig(
+                type="azure",
+                options={
+                    "container": "my-container",
+                    "account_name": "myaccount",
+                    "account_key": "base64-account-key-here",
+                },
+            ),
+        },
+        stores={"documents": StoreProfile(backend="azure", root_path="documents")},
+    )
+    print(f"Azure config: {len(azure_config.stores)} store(s)")
 
     # --- Config validation: referencing unknown backend raises ValueError ---
     try:

@@ -19,7 +19,7 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderInfo, RemoteFile, RemoteFolder
+from remote_store._models import FileInfo, FolderInfo
 from remote_store._path import RemotePath
 from remote_store._registry import Registry
 from remote_store._store import Store
@@ -254,14 +254,6 @@ class TestModelEqualityNotImplemented:
         b = FolderInfo(path=RemotePath("data"), file_count=9, total_size=99)
         assert hash(a) == hash(b)
 
-    def test_remotefile_neq_non_remotefile(self) -> None:
-        rf = RemoteFile(path=RemotePath("a.txt"))
-        assert rf != "not a RemoteFile"
-
-    def test_remotefolder_neq_non_remotefolder(self) -> None:
-        rf = RemoteFolder(path=RemotePath("data"))
-        assert rf != 42
-
 
 # endregion
 
@@ -312,6 +304,28 @@ class TestRegistryUnknownBackendType:
         reg = Registry(config)
         with pytest.raises(ValueError, match="nonexistent_backend_type"):
             reg.get_store("main")
+
+
+# endregion
+
+
+# region: backend __repr__ — credential masking (AF-008)
+class TestBackendRepr:
+    """AF-008: Backend __repr__ must mask sensitive fields."""
+
+    def test_local_repr(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            r = repr(backend)
+            assert "LocalBackend(" in r
+            assert tmp in r
+
+    def test_local_repr_no_secrets(self) -> None:
+        """LocalBackend has no secrets, but should still have a useful repr."""
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            r = repr(backend)
+            assert "LocalBackend(root=" in r
 
 
 # endregion

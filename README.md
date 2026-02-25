@@ -36,7 +36,7 @@ The library was born from enabling citizen-developer teams: the config is immuta
 
 Reads and writes stream by default, so large files just work.
 Under the hood, each backend delegates to the library you'd pick anyway
-(`boto3`, `paramiko`, `azure-storage-blob`, …). This package doesn't
+(`boto3`, `paramiko`, `azure-storage-file-datalake`, …). This package doesn't
 reinvent file I/O. It just gives every backend the same simple front door.
 
 ## What you get

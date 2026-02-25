@@ -117,6 +117,14 @@ class AzureBackend(Backend):
         self._fs_instance: Any = None
         self._hns_enabled: bool | None = None
 
+    def __repr__(self) -> str:
+        return (
+            f"AzureBackend(container={self._container!r}, "
+            f"account_name={self._account_name!r}, "
+            f"account_key='***', sas_token='***', "
+            f"connection_string='***', credential='***')"
+        )
+
     @property
     def name(self) -> str:
         return "azure"

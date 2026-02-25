@@ -2,7 +2,7 @@
 
 ## Overview
 
-`Store` is the primary user-facing abstraction — a thin, immutable wrapper around a backend, scoped to a root path. This spec also defines the metadata and identity models (`FileInfo`, `FolderInfo`, `RemoteFile`, `RemoteFolder`) that form the Store's data contract.
+`Store` is the primary user-facing abstraction — a thin, immutable wrapper around a backend, scoped to a root path. This spec also defines the metadata models (`FileInfo`, `FolderInfo`) that form the Store's data contract.
 
 ---
 
@@ -85,10 +85,6 @@
 
 **Invariant:** `FolderInfo` optional fields: `modified_at` (`datetime | None`, default `None`), `extra` (`dict[str, object]`, default empty dict).
 
-### MOD-006: RemoteFile and RemoteFolder
-
-**Invariant:** `RemoteFile` and `RemoteFolder` are immutable value objects holding a `RemotePath` via a `path` attribute.
-
 ### MOD-007: Equality and Hashing
 
-**Invariant:** `FileInfo`, `FolderInfo`, `RemoteFile`, and `RemoteFolder` support equality and hashing based on `path`.
+**Invariant:** `FileInfo` and `FolderInfo` support equality and hashing based on `path`.

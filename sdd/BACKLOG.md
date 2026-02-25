@@ -110,12 +110,13 @@ From adversarial review of v0.5.0. Full details: `sdd/audit-001-adversarial-revi
   → Audit: H-0 (partial, downgraded from Critical)
   Done: v0.6.0 — Removed `clear_instance_cache()` call from S3/S3-PyArrow `close()`.
 
-- [~] **AF-004 — Unify `get_folder_info` behavior on empty folders**
+- [x] **AF-004 — Unify `get_folder_info` behavior on empty folders**
   LocalBackend returns success; S3/SFTP/Azure raise `NotFound`. Pick one semantic.
   → Audit: H-1 (unverified)
-  Partial: v0.6.0 — SFTP fixed to return `FolderInfo(file_count=0)` on empty dirs.
-  Remaining: S3 (`_s3.py:321`) and Azure non-HNS (`_azure.py:582`) still raise
-  `NotFound` when `file_count == 0`. Need same fix for consistency with Local/SFTP.
+  Done: S3 and S3-PyArrow now return `FolderInfo(file_count=0)` when a folder
+  exists but has no files (the `exists()` check gates non-existent folders).
+  Azure non-HNS retains `NotFound` for `file_count==0` — this is correct
+  because non-HNS has no concept of empty folders (they are virtual prefixes).
 
 - [x] **AF-005 — Fix `delete_folder` error types**
   LocalBackend raises `NotFound` for non-empty folders (wrong). Others use base `RemoteStoreError`.
@@ -138,13 +139,20 @@ From adversarial review of v0.5.0. Full details: `sdd/audit-001-adversarial-revi
 
 **Medium -- security & design:**
 
-- [ ] **AF-008 — Add credential masking to backend `__repr__`**
+- [x] **AF-008 — Add credential masking to backend `__repr__`**
   All backends store secrets as plain attributes. Add `__repr__` that masks sensitive fields.
   → Audit: M-2 (confirmed)
+  Done: Added `__repr__` to all 5 backends. Sensitive fields (key, secret,
+  password, pkey, account_key, sas_token, connection_string, credential)
+  display as `'***'`. Non-sensitive fields (bucket, host, container, etc.)
+  shown in clear text.
 
-- [ ] **AF-009 — Fix `Registry.close()` to close all backends on error**
+- [x] **AF-009 — Fix `Registry.close()` to close all backends on error**
   Wrap in try/finally so one failed `close()` doesn't skip the rest.
   → Audit: M-9 (confirmed)
+  Done: `close()` now catches exceptions from individual backends, continues
+  closing the rest, always runs `_backends.clear()`, and re-raises the first
+  error encountered.
 
 - [ ] **AF-010 — Document TOCTOU and non-atomic move limitations**
   `overwrite=False` has inherent TOCTOU (M-4, downgraded from High: inherent limitation).
@@ -152,9 +160,12 @@ From adversarial review of v0.5.0. Full details: `sdd/audit-001-adversarial-revi
   Document these in guides or API docs so users know the guarantees.
   → Audit: M-4 (partial), L-21 (design-intent)
 
-- [ ] **AF-011 — Remove dead `RemoteFile`/`RemoteFolder` from public API**
+- [x] **AF-011 — Remove dead `RemoteFile`/`RemoteFolder` from public API**
   Nothing uses them. Remove from `_models.py` and `__all__`.
   → Audit: M-6 (confirmed)
+  Done: Removed class definitions from `_models.py`, imports from `__init__.py`
+  and `__all__`, associated tests (MOD-006), docs entries, and spec section.
+  Updated MOD-007 spec to reference only `FileInfo` and `FolderInfo`.
 
 **Medium -- testing & CI:**
 
@@ -170,13 +181,13 @@ From adversarial review of v0.5.0. Full details: `sdd/audit-001-adversarial-revi
   Require CI workflow to pass before PyPI publish.
   → Audit: M-18 (unverified)
 
-- [~] **AF-015 — Update stale v0.5.0 docs**
+- [x] **AF-015 — Update stale v0.5.0 docs**
   SECURITY.md versions, CONTRIBUTING.md structure, examples/configuration.py Azure example,
   README Azure SDK name, CHANGELOG `[Unreleased]` section.
   → Audit: L-1 through L-5
-  Partial: L-2 (SECURITY.md versions) fixed. Remaining: L-1 (README `azure-storage-blob`
-  → `azure-storage-file-datalake`), L-3 (CONTRIBUTING.md spec 012), L-4 (Azure example),
-  L-5 (CHANGELOG `[Unreleased]` section).
+  Done: L-1 (README `azure-storage-file-datalake`), L-2 (SECURITY.md, earlier),
+  L-3 (CONTRIBUTING.md spec 012), L-4 (Azure config example), L-5 (`[Unreleased]`
+  section in CHANGELOG).
 
 ---
 

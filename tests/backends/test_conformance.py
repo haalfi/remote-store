@@ -28,6 +28,11 @@ class TestBackendIdentity:
     def test_capabilities_is_capabilityset(self, backend: Backend) -> None:
         assert isinstance(backend.capabilities, CapabilitySet)
 
+    def test_repr_returns_string(self, backend: Backend) -> None:
+        r = repr(backend)
+        assert isinstance(r, str)
+        assert backend.name in r.lower() or backend.__class__.__name__ in r
+
 
 class TestBackendExists:
     """BE-004: exists() behavior."""

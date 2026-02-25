@@ -65,39 +65,3 @@ class FolderInfo:
 
     def __hash__(self) -> int:
         return hash(self.path)
-
-
-@dataclasses.dataclass(frozen=True, eq=False)
-class RemoteFile:
-    """Immutable value object identifying a remote file.
-
-    :param path: Normalized remote path.
-    """
-
-    path: RemotePath
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, RemoteFile):
-            return self.path == other.path
-        return NotImplemented
-
-    def __hash__(self) -> int:
-        return hash(self.path)
-
-
-@dataclasses.dataclass(frozen=True, eq=False)
-class RemoteFolder:
-    """Immutable value object identifying a remote folder.
-
-    :param path: Normalized remote path.
-    """
-
-    path: RemotePath
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, RemoteFolder):
-            return self.path == other.path
-        return NotImplemented
-
-    def __hash__(self) -> int:
-        return hash(self.path)

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from remote_store._models import FileInfo, FolderInfo, RemoteFile, RemoteFolder
+from remote_store._models import FileInfo, FolderInfo
 from remote_store._path import RemotePath
 
 NOW = datetime(2024, 1, 1, tzinfo=timezone.utc)
@@ -86,32 +86,6 @@ class TestFolderInfoFields:
         assert fi.extra == {"key": "val"}
 
 
-class TestRemoteFileRemoteFolder:
-    """MOD-006: RemoteFile and RemoteFolder are immutable value objects."""
-
-    @pytest.mark.spec("MOD-006")
-    def test_remotefile_holds_path(self) -> None:
-        rf = RemoteFile(path=RemotePath("a/b.txt"))
-        assert rf.path == RemotePath("a/b.txt")
-
-    @pytest.mark.spec("MOD-006")
-    def test_remotefile_frozen(self) -> None:
-        rf = RemoteFile(path=RemotePath("a.txt"))
-        with pytest.raises(dataclasses.FrozenInstanceError):
-            rf.path = RemotePath("b.txt")  # type: ignore[misc]
-
-    @pytest.mark.spec("MOD-006")
-    def test_remotefolder_holds_path(self) -> None:
-        rf = RemoteFolder(path=RemotePath("data"))
-        assert rf.path == RemotePath("data")
-
-    @pytest.mark.spec("MOD-006")
-    def test_remotefolder_frozen(self) -> None:
-        rf = RemoteFolder(path=RemotePath("data"))
-        with pytest.raises(dataclasses.FrozenInstanceError):
-            rf.path = RemotePath("other")  # type: ignore[misc]
-
-
 class TestModelEqualityHashing:
     """MOD-007: Equality and hashing based on path."""
 
@@ -132,15 +106,3 @@ class TestModelEqualityHashing:
         a = FolderInfo(path=RemotePath("data"), file_count=1, total_size=10)
         b = FolderInfo(path=RemotePath("data"), file_count=9, total_size=99)
         assert a == b
-
-    @pytest.mark.spec("MOD-007")
-    def test_remotefile_equality(self) -> None:
-        assert RemoteFile(path=RemotePath("a.txt")) == RemoteFile(path=RemotePath("a.txt"))
-
-    @pytest.mark.spec("MOD-007")
-    def test_remotefolder_equality(self) -> None:
-        assert RemoteFolder(path=RemotePath("data")) == RemoteFolder(path=RemotePath("data"))
-
-    @pytest.mark.spec("MOD-007")
-    def test_remotefile_not_equal_to_remotefolder(self) -> None:
-        assert RemoteFile(path=RemotePath("a")) != RemoteFolder(path=RemotePath("a"))
