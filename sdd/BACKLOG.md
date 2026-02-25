@@ -89,39 +89,51 @@ From adversarial review of v0.5.0. Full details: `sdd/audit-001-adversarial-revi
 
 **Critical (confirmed) -- fix before next release:**
 
-- [ ] **AF-001 — Auto-register S3/SFTP/S3-PyArrow backends in Registry**
+- [x] **AF-001 — Auto-register S3/SFTP/S3-PyArrow backends in Registry**
   `_register_builtin_backends()` only registers `local` and `azure`. README S3 Quick Start is broken.
   → Audit: C-1 (confirmed)
+  Done: v0.6.0 — `_register_builtin_backends()` now registers S3, SFTP, and S3-PyArrow
+  when their dependencies are installed.
 
-- [ ] **AF-002 — Remove or gate GLOB/RECURSIVE_LIST ghost capabilities**
+- [x] **AF-002 — Remove or gate GLOB/RECURSIVE_LIST ghost capabilities**
   4 backends claim GLOB support; no `glob()` method exists. Either remove from `CapabilitySet` or
   implement BK-002 first. `RECURSIVE_LIST` is also unused.
   → Audit: C-2, M-7 (confirmed). Related: BK-002 (glob strategy).
+  Done: v0.6.0 — Removed `Capability.GLOB` and `Capability.RECURSIVE_LIST` enum members.
+  BK-002 remains open for future glob design.
 
 **High -- semantic bugs & process-wide side effects:**
 
-- [ ] **AF-003 — Fix `S3Backend.close()` global cache side effect**
+- [x] **AF-003 — Fix `S3Backend.close()` global cache side effect**
   `clear_instance_cache()` is a class method. Existing refs still work, but new backends after
   the clear create duplicates instead of reusing. Resource leak risk, not data corruption.
   → Audit: H-0 (partial, downgraded from Critical)
+  Done: v0.6.0 — Removed `clear_instance_cache()` call from S3/S3-PyArrow `close()`.
 
-- [ ] **AF-004 — Unify `get_folder_info` behavior on empty folders**
+- [x] **AF-004 — Unify `get_folder_info` behavior on empty folders**
   LocalBackend returns success; S3/SFTP/Azure raise `NotFound`. Pick one semantic.
   → Audit: H-1 (unverified)
+  Done: v0.6.0 — SFTP `get_folder_info()` on empty directories now returns
+  `FolderInfo(file_count=0)` instead of raising `NotFound`.
 
-- [ ] **AF-005 — Fix `delete_folder` error types**
+- [x] **AF-005 — Fix `delete_folder` error types**
   LocalBackend raises `NotFound` for non-empty folders (wrong). Others use base `RemoteStoreError`.
   Consider adding a `NotEmpty` error or documenting the chosen behavior.
   → Audit: H-2 (unverified)
+  Done: v0.6.0 — Added `DirectoryNotEmpty` error type; non-empty folder deletes now
+  raise `DirectoryNotEmpty` instead of generic errors.
 
-- [ ] **AF-006 — Fix native exception leakage through lazy streams**
+- [x] **AF-006 — Fix native exception leakage through lazy streams**
   `read()` returns inside `_errors()` context manager but the stream is lazy. Backend-native
   exceptions during data reads leak unmapped.
   → Audit: H-3 (unverified)
+  Done: v0.6.0 — Added `_ErrorMappingStream` wrapper that catches `OSError` during
+  lazy reads and maps them through each backend's error classifier.
 
-- [ ] **AF-007 — Wire Azure backend into docs site**
+- [x] **AF-007 — Wire Azure backend into docs site**
   Add to `mkdocs.yml` nav, `generate_docs.py`, and remove `not_found: info` suppression.
   → Audit: H-4 (unverified)
+  Done: v0.6.0 — Azure guide added to docs navigation.
 
 **Medium -- security & design:**
 
@@ -157,10 +169,13 @@ From adversarial review of v0.5.0. Full details: `sdd/audit-001-adversarial-revi
   Require CI workflow to pass before PyPI publish.
   → Audit: M-18 (unverified)
 
-- [ ] **AF-015 — Update stale v0.5.0 docs**
+- [~] **AF-015 — Update stale v0.5.0 docs**
   SECURITY.md versions, CONTRIBUTING.md structure, examples/configuration.py Azure example,
   README Azure SDK name, CHANGELOG `[Unreleased]` section.
   → Audit: L-1 through L-5
+  Partial: L-2 (SECURITY.md versions) fixed. Remaining: L-1 (README `azure-storage-blob`
+  → `azure-storage-file-datalake`), L-3 (CONTRIBUTING.md spec 012), L-4 (Azure example),
+  L-5 (CHANGELOG `[Unreleased]` section).
 
 ---
 
