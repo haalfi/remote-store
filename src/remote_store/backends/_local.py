@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, BinaryIO
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
-from remote_store._errors import AlreadyExists, InvalidPath, NotFound, PermissionDenied
+from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound, PermissionDenied
 from remote_store._models import FileInfo, FolderInfo
 from remote_store._path import RemotePath
 
@@ -182,7 +182,7 @@ class LocalBackend(Backend):
             import errno
 
             if exc.errno in (errno.ENOTEMPTY, 145):
-                raise NotFound(f"Folder not empty: {path}", path=path, backend=self.name) from None
+                raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name) from None
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
     # endregion

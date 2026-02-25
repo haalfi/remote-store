@@ -21,6 +21,7 @@ from remote_store._errors import (  # noqa: E402
     AlreadyExists,
     BackendUnavailable,
     CapabilityNotSupported,
+    DirectoryNotEmpty,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
@@ -585,7 +586,7 @@ class TestAzureHNSPaths:
         dc = MagicMock()
         backend._fs_instance.get_directory_client.return_value = dc
         backend._fs_instance.get_paths.return_value = [MagicMock()]  # has children
-        with pytest.raises(RemoteStoreError, match="not empty"):
+        with pytest.raises(DirectoryNotEmpty):
             backend.delete_folder("my-dir", recursive=False)
 
     def test_list_files_uses_get_paths_on_hns(self) -> None:
@@ -699,7 +700,7 @@ class TestAzureIntegration:
 
     def test_delete_folder_non_recursive_non_empty(self, azure_backend: Backend) -> None:
         azure_backend.write("nonempty/file.txt", b"x")
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(DirectoryNotEmpty):
             azure_backend.delete_folder("nonempty", recursive=False)
 
     def test_list_files_non_recursive(self, azure_backend: Backend) -> None:

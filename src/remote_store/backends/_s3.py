@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import io
 import shutil
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
+from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -13,12 +14,14 @@ from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
     CapabilityNotSupported,
+    DirectoryNotEmpty,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderInfo
 from remote_store._path import RemotePath
+from remote_store._stream import _ErrorMappingStream
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -181,7 +184,8 @@ class S3Backend(Backend):
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
             f: BinaryIO = self._fs.open(self._s3_path(path), "rb")
-            return f
+            raw = _ErrorMappingStream(f, self._classify_error, path)
+            return io.BufferedReader(cast("io.RawIOBase", raw))
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
@@ -228,7 +232,7 @@ class S3Backend(Backend):
                 # Non-recursive: fail if folder has contents
                 contents = self._fs.ls(s3_path, detail=True)
                 if contents:
-                    raise RemoteStoreError(
+                    raise DirectoryNotEmpty(
                         f"Folder not empty: {path}",
                         path=path,
                         backend=self.name,
@@ -348,7 +352,6 @@ class S3Backend(Backend):
     # region: lifecycle
     def close(self) -> None:
         if self._fs_instance is not None:
-            self._fs_instance.clear_instance_cache()
             self._fs_instance = None
 
     def unwrap(self, type_hint: type[T]) -> T:

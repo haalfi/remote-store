@@ -13,6 +13,7 @@ from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RegistryConfig
 from remote_store._errors import (
     CapabilityNotSupported,
+    DirectoryNotEmpty,
     InvalidPath,
     NotFound,
     PermissionDenied,
@@ -324,7 +325,7 @@ class TestLocalBackendDeleteFolderEdgeCases:
         with tempfile.TemporaryDirectory() as tmp:
             backend = LocalBackend(root=tmp)
             backend.write("folder/file.txt", b"data")
-            with pytest.raises(NotFound, match="not empty"):
+            with pytest.raises(DirectoryNotEmpty):
                 backend.delete_folder("folder", recursive=False)
 
     def test_delete_folder_path_is_file(self) -> None:

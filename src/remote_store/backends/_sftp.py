@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import errno
+import io
 import logging
 import os
 import re
@@ -14,7 +15,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from enum import Enum
 from io import StringIO
-from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
+from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -22,12 +23,14 @@ from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
     CapabilityNotSupported,
+    DirectoryNotEmpty,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderInfo
 from remote_store._path import RemotePath
+from remote_store._stream import _ErrorMappingStream
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -38,7 +41,7 @@ T = TypeVar("T")
 
 log = logging.getLogger(__name__)
 
-_SFTP_CAPABILITIES = CapabilitySet({c for c in Capability if c is not Capability.GLOB})
+_SFTP_CAPABILITIES = CapabilitySet(set(Capability))
 
 # RFC 4253 compliant chunk size for SFTP data transfer
 _CHUNK_SIZE = 32768
@@ -338,27 +341,12 @@ class SFTPBackend(Backend):
     @contextmanager
     def _errors(self, path: str = "") -> Iterator[None]:
         """Map paramiko/OS exceptions to remote_store errors."""
-        import paramiko
-
         try:
             yield
         except RemoteStoreError:
             raise
-        except FileNotFoundError:
-            raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-        except OSError as exc:
-            code = getattr(exc, "errno", None)
-            if code == errno.ENOENT:
-                raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-            if code == errno.EACCES:  # pragma: no cover -- requires server-side perm setup
-                raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-            if code == errno.EEXIST:  # pragma: no cover -- caught before reaching _errors
-                raise AlreadyExists(f"Already exists: {path}", path=path, backend=self.name) from None
-            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
-        except paramiko.SSHException as exc:  # pragma: no cover -- requires SSH failure
-            raise BackendUnavailable(str(exc), path=path, backend=self.name) from None
-        except Exception as exc:  # pragma: no cover -- defensive
-            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
+        except Exception as exc:
+            raise self._map_exception(exc, path) from None
 
     # endregion
 
@@ -410,12 +398,38 @@ class SFTPBackend(Backend):
 
     # endregion
 
+    def _map_exception(self, exc: Exception, path: str) -> RemoteStoreError:
+        """Classify an exception into a remote_store error.
+
+        Single source of truth for SFTP error mapping, used by both the
+        ``_errors()`` context manager and ``_ErrorMappingStream``.
+        """
+        import paramiko
+
+        if isinstance(exc, RemoteStoreError):
+            return exc
+        if isinstance(exc, FileNotFoundError):
+            return NotFound(f"Not found: {path}", path=path, backend=self.name)
+        if isinstance(exc, OSError):
+            code = getattr(exc, "errno", None)
+            if code == errno.ENOENT:
+                return NotFound(f"Not found: {path}", path=path, backend=self.name)
+            if code == errno.EACCES:  # pragma: no cover
+                return PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name)
+            if code == errno.EEXIST:  # pragma: no cover
+                return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
+            return RemoteStoreError(str(exc), path=path, backend=self.name)
+        if isinstance(exc, paramiko.SSHException):  # pragma: no cover
+            return BackendUnavailable(str(exc), path=path, backend=self.name)
+        return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover
+
     # region: read operations
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             f: BinaryIO = self._sftp.file(sftp_path, "r")
-            return f
+            raw = _ErrorMappingStream(f, self._map_exception, path)
+            return io.BufferedReader(cast("io.RawIOBase", raw))
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
@@ -523,7 +537,7 @@ class SFTPBackend(Backend):
                 except OSError:
                     entries = []
                 if entries:
-                    raise RemoteStoreError(
+                    raise DirectoryNotEmpty(
                         f"Folder not empty: {path}",
                         path=path,
                         backend=self.name,
@@ -611,8 +625,6 @@ class SFTPBackend(Backend):
 
             file_count, total_size, latest_modified = self._collect_folder_stats(sftp_path)
 
-            if file_count == 0:
-                raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
             return FolderInfo(
                 path=RemotePath(path),
                 file_count=file_count,

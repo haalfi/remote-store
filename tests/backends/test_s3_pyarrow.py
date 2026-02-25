@@ -21,6 +21,7 @@ from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
 from remote_store._errors import (  # noqa: E402
     AlreadyExists,
     CapabilityNotSupported,
+    DirectoryNotEmpty,
     NotFound,
     RemoteStoreError,
 )
@@ -212,7 +213,7 @@ class TestS3PyArrowDeleteFolder:
     @pytest.mark.spec("S3PA-016")
     def test_delete_folder_non_recursive_non_empty(self, s3pa_backend: Backend) -> None:
         s3pa_backend.write("nonempty/file.txt", b"x")
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(DirectoryNotEmpty):
             s3pa_backend.delete_folder("nonempty", recursive=False)
 
 

@@ -19,6 +19,7 @@ from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
 from remote_store._errors import (  # noqa: E402
     AlreadyExists,
     CapabilityNotSupported,
+    DirectoryNotEmpty,
     NotFound,
     RemoteStoreError,
 )
@@ -67,14 +68,11 @@ class TestSFTPConstruction:
         assert sftp_backend.name == "sftp"
 
     @pytest.mark.spec("SFTP-003")
-    def test_declares_capabilities_except_glob(self, sftp_backend: Backend) -> None:
+    def test_declares_all_capabilities(self, sftp_backend: Backend) -> None:
         caps = sftp_backend.capabilities
         assert isinstance(caps, CapabilitySet)
         for cap in Capability:
-            if cap is Capability.GLOB:
-                assert not caps.supports(cap), "SFTP should NOT support GLOB"
-            else:
-                assert caps.supports(cap), f"Missing capability: {cap.value}"
+            assert caps.supports(cap), f"Missing capability: {cap.value}"
 
     @pytest.mark.spec("SFTP-004")
     def test_lazy_connection(self) -> None:
@@ -230,7 +228,7 @@ class TestSFTPDeleteFolder:
     @pytest.mark.spec("SFTP-017")
     def test_delete_folder_non_recursive_non_empty(self, sftp_backend: Backend) -> None:
         sftp_backend.write("nonempty/file.txt", b"x")
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(DirectoryNotEmpty):
             sftp_backend.delete_folder("nonempty", recursive=False)
 
 
@@ -536,6 +534,16 @@ class TestSFTPMetadata:
     def test_get_folder_info_not_found(self, sftp_backend: Backend) -> None:
         with pytest.raises(NotFound):
             sftp_backend.get_folder_info("nodir")
+
+    def test_get_folder_info_empty_folder(self, sftp_backend: Backend) -> None:
+        """SFTP has real directories; empty folder should return FolderInfo with file_count=0."""
+        # Create a directory by writing a file then deleting it
+        sftp_backend.write("emptydir/tmp.txt", b"x")
+        sftp_backend.delete("emptydir/tmp.txt")
+        fi = sftp_backend.get_folder_info("emptydir")
+        assert isinstance(fi, FolderInfo)
+        assert fi.file_count == 0
+        assert fi.total_size == 0
 
     def test_exists_file(self, sftp_backend: Backend) -> None:
         sftp_backend.write("e.txt", b"x")

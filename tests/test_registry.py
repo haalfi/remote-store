@@ -107,3 +107,43 @@ class TestRegistryBackendFactory:
         from remote_store._registry import _BACKEND_FACTORIES
 
         assert "local" in _BACKEND_FACTORIES
+
+    @pytest.mark.spec("REG-008")
+    def test_all_installed_backends_registered(self) -> None:
+        """All backends whose dependencies are installed should be auto-registered."""
+        from remote_store._registry import _BACKEND_FACTORIES, _register_builtin_backends
+
+        _register_builtin_backends()
+
+        # local is always available (stdlib)
+        assert "local" in _BACKEND_FACTORIES
+
+        # Optional backends: registered if importable
+        try:
+            import s3fs  # noqa: F401
+
+            assert "s3" in _BACKEND_FACTORIES
+        except ImportError:
+            pass
+
+        try:
+            import paramiko  # noqa: F401
+
+            assert "sftp" in _BACKEND_FACTORIES
+        except ImportError:
+            pass
+
+        try:
+            import pyarrow  # noqa: F401
+            import s3fs  # noqa: F401
+
+            assert "s3-pyarrow" in _BACKEND_FACTORIES
+        except ImportError:
+            pass
+
+        try:
+            import azure.storage.filedatalake  # noqa: F401
+
+            assert "azure" in _BACKEND_FACTORIES
+        except ImportError:
+            pass
