@@ -22,6 +22,7 @@ from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
     CapabilityNotSupported,
+    DirectoryNotEmpty,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
@@ -523,7 +524,7 @@ class SFTPBackend(Backend):
                 except OSError:
                     entries = []
                 if entries:
-                    raise RemoteStoreError(
+                    raise DirectoryNotEmpty(
                         f"Folder not empty: {path}",
                         path=path,
                         backend=self.name,

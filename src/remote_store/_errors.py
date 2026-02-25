@@ -87,5 +87,9 @@ class CapabilityNotSupported(RemoteStoreError):
         return f"{cls}({', '.join(args)})"
 
 
+class DirectoryNotEmpty(RemoteStoreError):
+    """Raised when a non-recursive delete targets a non-empty folder."""
+
+
 class BackendUnavailable(RemoteStoreError):
     """Raised when the backend cannot be reached or initialized."""

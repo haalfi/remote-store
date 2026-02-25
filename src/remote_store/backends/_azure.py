@@ -17,6 +17,7 @@ from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
     CapabilityNotSupported,
+    DirectoryNotEmpty,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
@@ -472,7 +473,7 @@ class AzureBackend(Backend):
                 if not recursive:
                     children = list(self._fs.get_paths(path=azure_path, recursive=False, max_results=1))
                     if children:
-                        raise RemoteStoreError(f"Folder not empty: {path}", path=path, backend=self.name)
+                        raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name)
                 dc.delete_directory()
             else:
                 # non-HNS: virtual folders via blob prefix
@@ -480,7 +481,7 @@ class AzureBackend(Backend):
                 first = list(self._cc.list_blobs(name_starts_with=prefix, results_per_page=1))
                 if first:
                     if not recursive:
-                        raise RemoteStoreError(f"Folder not empty: {path}", path=path, backend=self.name)
+                        raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name)
                     for blob in self._cc.list_blobs(name_starts_with=prefix):
                         self._cc.get_blob_client(blob.name).delete_blob()
                 elif not missing_ok:

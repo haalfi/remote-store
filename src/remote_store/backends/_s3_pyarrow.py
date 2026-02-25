@@ -14,6 +14,7 @@ from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
     CapabilityNotSupported,
+    DirectoryNotEmpty,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
@@ -331,7 +332,7 @@ class S3PyArrowBackend(Backend):
                 # Non-recursive: fail if folder has contents
                 contents = self._s3fs.ls(s3_path, detail=True)
                 if contents:
-                    raise RemoteStoreError(
+                    raise DirectoryNotEmpty(
                         f"Folder not empty: {path}",
                         path=path,
                         backend=self.name,

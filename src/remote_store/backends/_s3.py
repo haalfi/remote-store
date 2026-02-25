@@ -13,6 +13,7 @@ from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
     CapabilityNotSupported,
+    DirectoryNotEmpty,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
@@ -228,7 +229,7 @@ class S3Backend(Backend):
                 # Non-recursive: fail if folder has contents
                 contents = self._fs.ls(s3_path, detail=True)
                 if contents:
-                    raise RemoteStoreError(
+                    raise DirectoryNotEmpty(
                         f"Folder not empty: {path}",
                         path=path,
                         backend=self.name,

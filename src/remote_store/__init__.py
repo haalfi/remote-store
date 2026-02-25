@@ -7,6 +7,7 @@ from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
     CapabilityNotSupported,
+    DirectoryNotEmpty,
     InvalidPath,
     NotFound,
     PermissionDenied,
@@ -45,6 +46,7 @@ __all__ = [
     "PermissionDenied",
     "InvalidPath",
     "CapabilityNotSupported",
+    "DirectoryNotEmpty",
     "BackendUnavailable",
     # Version
     "__version__",

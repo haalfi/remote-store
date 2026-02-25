@@ -19,6 +19,7 @@ from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
 from remote_store._errors import (  # noqa: E402
     AlreadyExists,
     CapabilityNotSupported,
+    DirectoryNotEmpty,
     NotFound,
     RemoteStoreError,
 )
@@ -230,7 +231,7 @@ class TestSFTPDeleteFolder:
     @pytest.mark.spec("SFTP-017")
     def test_delete_folder_non_recursive_non_empty(self, sftp_backend: Backend) -> None:
         sftp_backend.write("nonempty/file.txt", b"x")
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(DirectoryNotEmpty):
             sftp_backend.delete_folder("nonempty", recursive=False)
 
 
