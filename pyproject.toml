@@ -142,11 +142,14 @@ examples = [
   "python examples/configuration.py",
   "python examples/error_handling.py",
 ]
-bench = "pytest benchmarks/ -v --benchmark-sort=mean -m 'not slow'"
+bench = 'pytest benchmarks/ -v --benchmark-sort=mean -m "not slow"'
 bench-full = "pytest benchmarks/ -v --benchmark-sort=mean"
-bench-save = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-autosave -m 'not slow'"
+bench-save = 'pytest benchmarks/ -v --benchmark-sort=mean --benchmark-autosave -m "not slow"'
 bench-compare = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-compare"
-bench-cloud = "pytest benchmarks/ -v --infra cloud --benchmark-sort=mean -m 'not slow'"
+bench-cloud = 'pytest benchmarks/ -v --infra cloud --benchmark-sort=mean -m "not slow"'
+bench-report = "python benchmarks/report.py"
+bench-report-compare = "python benchmarks/report.py --compare"
+bench-report-json = "python benchmarks/report.py --json"
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"

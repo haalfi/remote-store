@@ -61,25 +61,47 @@ hatch run bench-compare
 
 # Run against real cloud services
 hatch run bench-cloud
+
+# Summary report from saved results
+hatch run bench-report
+
+# Compare latest vs previous saved run
+hatch run bench-report-compare
+
+# Machine-readable JSON output
+hatch run bench-report-json
 ```
 
 ### Sample Results
 
-Results will vary by hardware and network. Here is what to expect from a
-local Docker run:
+Results will vary by hardware and network. The following numbers were
+measured on Windows 11 (Intel Core Ultra 7 265K, Python 3.13) with
+Docker Desktop (MinIO, Azurite, OpenSSH) running locally. All values are
+**mean** latency from `pytest-benchmark`.
 
 | Operation | Local | S3 (MinIO) | SFTP | Azure (Azurite) |
 |-----------|-------|------------|------|-----------------|
-| Write 1KB | ~0.2ms | ~5ms | ~10ms | ~8ms |
-| Read 1KB | ~0.05ms | ~3ms | ~8ms | ~6ms |
-| Exists (hit) | ~0.02ms | ~2ms | ~5ms | ~4ms |
-| List 50 files | ~0.7ms | ~5ms | ~15ms | ~10ms |
-| TTFB write | ~0.2ms | ~5ms | ~12ms | ~8ms |
+| Write 1KB | 0.32ms | 6.2ms | 4.1ms | 5.5ms |
+| Write 1MB | 0.50ms | 18.4ms | 24.4ms | 15.6ms |
+| Read 1KB | 0.08ms | 1.6ms | 2.8ms | 2.2ms |
+| Read 1MB | 0.39ms | 5.9ms | 12.7ms | 6.0ms |
+| Exists (hit) | 0.06ms | 1.6ms | 0.82ms | 1.7ms |
+| List 50 files | 0.67ms | 0.22ms | 2.6ms | 12.8ms |
+| List 1000 files | 10.3ms | 1.7ms | 16.6ms | 162ms |
+| Delete | 0.10ms | 3.5ms | 0.86ms | 1.6ms |
+| TTFB write | 0.38ms | 9.8ms | 6.0ms | 7.8ms |
+| TTFB read | 0.13ms | 3.4ms | 1.9ms | 2.0ms |
+
+Generate this table from your own saved results with `hatch run bench-report`.
 
 **Key observations:**
 
-- Local backend is 10-100x faster than network backends (expected).
-- SFTP has the highest TTFB due to SSH handshake overhead.
+- Local backend is 20-80x faster than network backends (expected).
+- S3 (MinIO) has the highest TTFB write (~10ms) due to multipart upload setup.
+- SFTP read latency scales steeply with file size (2.8ms at 1KB, 12.7ms at 1MB).
+- Azure listing is slowest (12.8ms for 50 files, 162ms for 1000) -- Azurite
+  emulation overhead.
+- S3 listing is faster than local for flat directories (pagination is efficient).
 - remote-store adds minimal overhead vs raw SDK for most operations.
   Run `hatch run bench` to measure the exact overhead in your environment.
 - Streaming reads keep memory constant regardless of file size.
