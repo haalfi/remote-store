@@ -72,4 +72,4 @@ markdown_extensions:
 
 validation:
   links:
-    not_found: info
+    not_found: warn
