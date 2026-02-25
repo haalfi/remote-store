@@ -5,6 +5,42 @@
 Python library providing a unified file storage abstraction across backends
 (Local, S3, SFTP, Azure). Follows Spec-Driven Development (SDD).
 
+---
+
+## Principles
+
+These apply to every change — code, docs, CI, config. No exceptions.
+
+### 1. Ship complete, not "almost done"
+
+A change is finished when **everything it touches** is consistent: code, tests,
+docs, examples, CHANGELOG, BACKLOG, navigation. If a PR adds a backend but
+skips the docs nav, the example, or the README table — it's not done. Ship it
+all in the same PR, or explicitly track what remains as `[~]` in the backlog.
+
+### 2. Verify beyond the diff
+
+After making a change, **search for what references the thing you changed.**
+The blast radius is always wider than the files you edited. Adding a backend?
+Check README, docs nav, examples, CONTRIBUTING structure, extras in
+`pyproject.toml`. Fixing an error type? Check if specs, tests, and docs mention
+the old behavior. Bumping a version? Search for the old version string.
+
+### 3. The repo describes reality — at every commit
+
+The backlog, CHANGELOG, docs, and README describe what **is**, not what was or
+what will be. If reality changed, these change in the same commit. "I'll update
+that later" means "it won't get updated." If you can't update it now, mark it
+`[~]` with a note of what remains.
+
+### 4. Specs are the source of truth
+
+If code and spec disagree, the code is wrong. If the backlog and git history
+disagree, the backlog is wrong. When you find an inconsistency, fix the less
+authoritative side — don't leave it for someone else.
+
+---
+
 ## Backlog — MANDATORY
 
 The backlog (`sdd/BACKLOG.md`) is the single source of truth for all work.
