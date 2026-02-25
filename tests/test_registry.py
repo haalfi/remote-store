@@ -87,6 +87,47 @@ class TestRegistryBackendLifecycle:
             assert len(reg._backends) == 0
 
 
+class TestRegistryCloseOnError:
+    """AF-009: close() must close all backends even when one raises."""
+
+    def test_close_continues_after_error(self) -> None:
+        """If a backend.close() raises, remaining backends are still closed."""
+        with tempfile.TemporaryDirectory() as tmp:
+            reg = Registry(_make_config(tmp))
+            reg.get_store("main")
+
+            # Patch the single backend's close() to raise
+            backend = next(iter(reg._backends.values()))
+            original_close = backend.close
+            close_calls: list[str] = []
+
+            def failing_close() -> None:
+                close_calls.append("called")
+                original_close()
+                raise RuntimeError("simulated close failure")
+
+            backend.close = failing_close  # type: ignore[assignment]
+
+            with pytest.raises(RuntimeError, match="simulated close failure"):
+                reg.close()
+
+            assert len(close_calls) == 1
+            assert len(reg._backends) == 0  # clear() ran despite error
+
+    def test_close_clears_on_error(self) -> None:
+        """_backends.clear() always runs, even when close() raises."""
+        with tempfile.TemporaryDirectory() as tmp:
+            reg = Registry(_make_config(tmp))
+            reg.get_store("main")
+
+            backend = next(iter(reg._backends.values()))
+            backend.close = lambda: (_ for _ in ()).throw(RuntimeError("boom"))  # type: ignore[assignment,return-value]
+
+            with pytest.raises(RuntimeError):
+                reg.close()
+            assert len(reg._backends) == 0
+
+
 class TestRegistryContextManager:
     """REG-007: Context manager support."""
 

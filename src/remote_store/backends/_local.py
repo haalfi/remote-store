@@ -33,6 +33,9 @@ class LocalBackend(Backend):
         self._root = Path(root).resolve()
         self._root.mkdir(parents=True, exist_ok=True)
 
+    def __repr__(self) -> str:
+        return f"LocalBackend(root={str(self._root)!r})"
+
     @property
     def name(self) -> str:
         return "local"

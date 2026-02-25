@@ -25,8 +25,6 @@ Complete reference for all public exports of `remote-store`.
 | [RemotePath](path.md) | Validated, immutable path value object |
 | [FileInfo](models.md#remote_store.FileInfo) | Metadata for a file (name, size, modified time) |
 | [FolderInfo](models.md#remote_store.FolderInfo) | Metadata for a folder |
-| [RemoteFile](models.md#remote_store.RemoteFile) | Context manager wrapping a readable binary stream |
-| [RemoteFolder](models.md#remote_store.RemoteFolder) | Iterable of files and subfolders |
 
 ## Capabilities
 

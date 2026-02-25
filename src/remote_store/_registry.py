@@ -123,10 +123,24 @@ class Registry:
         return self._backends[name]
 
     def close(self) -> None:
-        """Close all instantiated backends."""
-        for backend in self._backends.values():
-            backend.close()
-        self._backends.clear()
+        """Close all instantiated backends.
+
+        If any backend raises during ``close()``, the remaining backends are
+        still closed.  The first exception encountered is re-raised after all
+        backends have been processed.
+        """
+        first_error: Exception | None = None
+        try:
+            for backend in self._backends.values():
+                try:
+                    backend.close()
+                except Exception as exc:  # noqa: BLE001
+                    if first_error is None:
+                        first_error = exc
+        finally:
+            self._backends.clear()
+        if first_error is not None:
+            raise first_error
 
     def __enter__(self) -> Registry:
         return self

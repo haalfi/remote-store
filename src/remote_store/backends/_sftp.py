@@ -177,6 +177,13 @@ class SFTPBackend(Backend):
         self._ssh_client: Any = None
         self._sftp_client: Any = None
 
+    def __repr__(self) -> str:
+        return (
+            f"SFTPBackend(host={self._host!r}, port={self._port!r}, "
+            f"username={self._username!r}, password='***', pkey='***', "
+            f"base_path={self._base_path!r})"
+        )
+
     @property
     def name(self) -> str:
         return "sftp"

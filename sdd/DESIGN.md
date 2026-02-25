@@ -85,14 +85,6 @@ No backend-specific terminology is exposed.
 - Normalization delegated to backend
 - Provides parent / name resolution
 
-#### RemoteFile / RemoteFolder (optional public)
-
-- Immutable value objects
-- No I/O behavior
-- Used for validation, metadata, logging
-
-Users typically do **not** construct these directly.
-
 ---
 
 ### 3.3 Metadata Objects

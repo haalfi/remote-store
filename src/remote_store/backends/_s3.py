@@ -64,6 +64,14 @@ class S3Backend(Backend):
         self._client_options = client_options or {}
         self._fs_instance: Any = None
 
+    def __repr__(self) -> str:
+        return (
+            f"S3Backend(bucket={self._bucket!r}, "
+            f"endpoint_url={self._endpoint_url!r}, "
+            f"key='***', secret='***', "
+            f"region_name={self._region_name!r})"
+        )
+
     @property
     def name(self) -> str:
         return "s3"
@@ -318,8 +326,6 @@ class S3Backend(Backend):
                             modified = modified.replace(tzinfo=timezone.utc)
                         if latest_modified is None or modified > latest_modified:
                             latest_modified = modified
-            if file_count == 0:
-                raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
             return FolderInfo(
                 path=RemotePath(path),
                 file_count=file_count,
