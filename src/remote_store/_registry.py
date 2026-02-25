@@ -40,6 +40,30 @@ def _register_builtin_backends() -> None:
         except ImportError:  # pragma: no cover
             pass
 
+    if "s3" not in _BACKEND_FACTORIES:
+        try:
+            from remote_store.backends._s3 import S3Backend
+
+            register_backend("s3", S3Backend)
+        except ImportError:  # pragma: no cover
+            pass
+
+    if "sftp" not in _BACKEND_FACTORIES:
+        try:
+            from remote_store.backends._sftp import SFTPBackend
+
+            register_backend("sftp", SFTPBackend)
+        except ImportError:  # pragma: no cover
+            pass
+
+    if "s3-pyarrow" not in _BACKEND_FACTORIES:
+        try:
+            from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+            register_backend("s3-pyarrow", S3PyArrowBackend)
+        except ImportError:  # pragma: no cover
+            pass
+
 
 class Registry:
     """Manages backend lifecycle and provides access to named stores.
