@@ -8,7 +8,7 @@ lives in docs-src/ (the docs_dir).  This script handles only:
   3. Creating include-wrapper pages for each spec/ADR/RFC
   4. Rewriting links in contributing.md and design/process.md
   5. Copying assets/ into the virtual filesystem
-  6. Generating SUMMARY.md for mkdocs-literate-nav
+  6. Assembling SUMMARY.md from per-section _nav.yml files
 
 See: sdd/adrs/0006-documentation-architecture.md
 """
@@ -16,6 +16,8 @@ See: sdd/adrs/0006-documentation-architecture.md
 from __future__ import annotations
 
 from pathlib import Path
+
+import yaml
 
 import mkdocs_gen_files
 
@@ -180,62 +182,63 @@ for asset in (ROOT / "assets").iterdir():
             f.write(asset.read_bytes())
 
 # ---------------------------------------------------------------------------
-# 6. Generate SUMMARY.md for literate-nav
+# 6. Assemble SUMMARY.md from per-section _nav.yml files
+#
+#    Each directory in docs-src/ may contain a _nav.yml listing its entries.
+#    Entries ending with "/" are subsections (recurse into that directory).
+#    Sections without a _nav.yml that match a scanned directory (specs, adrs)
+#    are populated automatically from the filesystem scan.
 # ---------------------------------------------------------------------------
+
+# Scanned sections: directory prefix → list of (label, file) pairs
+_scanned_sections: dict[str, list[tuple[str, str]]] = {
+    "design/specs": [
+        (f"{num}: {title}", f"design/specs/{slug}.md")
+        for num, slug, title in spec_entries
+    ],
+    "design/adrs": [
+        (f"{num}: {title}", f"design/adrs/{slug}.md")
+        for num, slug, title in adr_entries
+    ],
+}
 
 nav = mkdocs_gen_files.Nav()
 
-nav["Home"] = "index.md"
-nav["Getting Started"] = "getting-started.md"
 
-# Examples
-nav["Examples"] = "examples/index.md"
-nav["Examples", "Quickstart"] = "examples/quickstart.md"
-nav["Examples", "File Operations"] = "examples/file-operations.md"
-nav["Examples", "Streaming I/O"] = "examples/streaming-io.md"
-nav["Examples", "Atomic Writes"] = "examples/atomic-writes.md"
-nav["Examples", "Configuration"] = "examples/configuration.md"
-nav["Examples", "Error Handling"] = "examples/error-handling.md"
+def _load_nav_section(
+    nav_file: Path,
+    section_dir: str,
+    nav_path: tuple[str, ...],
+) -> None:
+    """Read a _nav.yml and add its entries to *nav*, recursing into subsections."""
+    entries = yaml.safe_load(nav_file.read_text()) or []
+    for entry in entries:
+        for label, target in entry.items():
+            if target.endswith("/"):
+                # Subsection — resolve its directory and recurse
+                subdir_name = target.rstrip("/")
+                full_dir = f"{section_dir}/{subdir_name}" if section_dir else subdir_name
+                child_path = nav_path + (label,)
+                # Point the section itself at its index page
+                nav[child_path] = f"{full_dir}/index.md"
+                # Check for a _nav.yml in the subsection
+                child_nav = DOCS_SRC / full_dir / "_nav.yml"
+                if child_nav.exists():
+                    _load_nav_section(child_nav, full_dir, child_path)
+                elif full_dir in _scanned_sections:
+                    # Auto-populated from filesystem scan
+                    for scan_label, scan_file in _scanned_sections[full_dir]:
+                        nav[child_path + (scan_label,)] = scan_file
+            else:
+                # Leaf page
+                full_path = f"{section_dir}/{target}" if section_dir else target
+                if nav_path:
+                    nav[nav_path + (label,)] = full_path
+                else:
+                    nav[(label,)] = full_path
 
-# API Reference
-nav["API Reference"] = "api/index.md"
-nav["API Reference", "Store"] = "api/store.md"
-nav["API Reference", "Registry"] = "api/registry.md"
-nav["API Reference", "Backend"] = "api/backend.md"
-nav["API Reference", "Config"] = "api/config.md"
-nav["API Reference", "Models"] = "api/models.md"
-nav["API Reference", "RemotePath"] = "api/path.md"
-nav["API Reference", "Capabilities"] = "api/capabilities.md"
-nav["API Reference", "Errors"] = "api/errors.md"
 
-# Backends
-nav["Backends"] = "backends/index.md"
-nav["Backends", "Local"] = "backends/local.md"
-nav["Backends", "S3"] = "backends/s3.md"
-nav["Backends", "S3-PyArrow"] = "backends/s3-pyarrow.md"
-nav["Backends", "SFTP"] = "backends/sftp.md"
-nav["Backends", "Azure"] = "backends/azure.md"
-
-# Performance
-nav["Performance"] = "performance.md"
-
-# Design
-nav["Design"] = "design/index.md"
-nav["Design", "Design Document"] = "design/design-spec.md"
-nav["Design", "Process"] = "design/process.md"
-
-nav["Design", "Specs"] = "design/specs/index.md"
-for num, slug, title in spec_entries:
-    nav["Design", "Specs", f"{num}: {title}"] = f"design/specs/{slug}.md"
-
-nav["Design", "ADRs"] = "design/adrs/index.md"
-for num, slug, title in adr_entries:
-    nav["Design", "ADRs", f"{num}: {title}"] = f"design/adrs/{slug}.md"
-
-# Bottom-level pages
-nav["Contributing"] = "contributing.md"
-nav["Changelog"] = "changelog.md"
-nav["Development Story"] = "development-story.md"
+_load_nav_section(DOCS_SRC / "_nav.yml", "", ())
 
 with mkdocs_gen_files.open("SUMMARY.md", "w") as f:
     f.writelines(nav.build_literate_nav())
