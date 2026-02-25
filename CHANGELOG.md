@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor bumps may contain breaking changes.
 
+## [0.6.0] - 2026-02-25
+
+### Added
+
+- **`DirectoryNotEmpty` error type** -- new `RemoteStoreError` subclass raised when a non-recursive folder delete targets a non-empty folder. Replaces generic `NotFound` with a descriptive error (AF-005)
+- **`_ErrorMappingStream`** -- `io.RawIOBase` proxy that wraps streams returned by `Backend.read()`, catching `OSError` during lazy reads and mapping them through each backend's error classifier. Prevents native exceptions from leaking after `_errors()` context manager exits (AF-006)
+- **Auto-registration of all backends** -- `_register_builtin_backends()` now registers S3, SFTP, and S3-PyArrow backends (in addition to local and Azure) when their dependencies are installed (AF-001)
+- **SFTP `_map_exception()` method** -- single source of truth for SFTP error classification, used by both `_errors()` and `_ErrorMappingStream` (AF-006)
+- **SFTP empty folder support** -- `get_folder_info()` on an empty SFTP directory now returns `FolderInfo(file_count=0)` instead of raising `NotFound` (AF-004)
+
+### Changed
+
+- **BREAKING**: Removed `Capability.GLOB` and `Capability.RECURSIVE_LIST` enum members that had no corresponding backend methods (AF-002)
+- **S3/S3-PyArrow `close()`** -- no longer calls `clear_instance_cache()`, which was a global side-effect affecting all s3fs instances in the process (AF-003)
+- **Azure/S3-PyArrow `read()`** -- eliminated double-buffering by wrapping `_ErrorMappingStream` directly in `BufferedReader` instead of nesting two `BufferedReader` layers
+
+### Fixed
+
+- **Lazy stream error mapping** -- `OSError` raised during `stream.read()` after `Backend.read()` returns is now properly mapped to `RemoteStoreError` subtypes instead of leaking as raw exceptions (AF-006)
+- **Exception chaining** -- stream error mapping uses `from exc` to preserve original traceback for debugging
+
+---
+
 ## [0.5.0] - 2026-02-23
 
 ### Added
