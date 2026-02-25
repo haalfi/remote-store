@@ -30,21 +30,20 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    services:
-      azurite:
-        image: mcr.microsoft.com/azure-storage/azurite:3.35.0
-        ports:
-          - 10000:10000
-        options: >-
-          --health-cmd "nc -z 127.0.0.1 10000"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v6
+      - name: Start Azurite
+        run: |
+          docker run -d --name azurite -p 10000:10000 \
+            mcr.microsoft.com/azure-storage/azurite \
+            azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
+          for i in $(seq 1 30); do
+            nc -z 127.0.0.1 10000 && break || sleep 1
+          done
+          nc -z 127.0.0.1 10000 || { echo "::error::Azurite failed to start"; exit 1; }
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
