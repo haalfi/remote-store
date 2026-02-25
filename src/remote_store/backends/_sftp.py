@@ -612,8 +612,6 @@ class SFTPBackend(Backend):
 
             file_count, total_size, latest_modified = self._collect_folder_stats(sftp_path)
 
-            if file_count == 0:
-                raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
             return FolderInfo(
                 path=RemotePath(path),
                 file_count=file_count,

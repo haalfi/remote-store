@@ -535,6 +535,16 @@ class TestSFTPMetadata:
         with pytest.raises(NotFound):
             sftp_backend.get_folder_info("nodir")
 
+    def test_get_folder_info_empty_folder(self, sftp_backend: Backend) -> None:
+        """SFTP has real directories; empty folder should return FolderInfo with file_count=0."""
+        # Create a directory by writing a file then deleting it
+        sftp_backend.write("emptydir/tmp.txt", b"x")
+        sftp_backend.delete("emptydir/tmp.txt")
+        fi = sftp_backend.get_folder_info("emptydir")
+        assert isinstance(fi, FolderInfo)
+        assert fi.file_count == 0
+        assert fi.total_size == 0
+
     def test_exists_file(self, sftp_backend: Backend) -> None:
         sftp_backend.write("e.txt", b"x")
         assert sftp_backend.exists("e.txt") is True
