@@ -40,6 +40,12 @@ hatch run all               # lint + format-check + typecheck + test-cov + examp
 The `gh` CLI is installed via a SessionStart hook (`.claude/setup-gh.sh`).
 It requires a `GITHUB_TOKEN` environment variable with PR read/write scope.
 
+> **Environment note:** These restrictions exist primarily for web/iOS sessions
+> (Code on Mobile, claude.ai) where Claude operates with less interactive
+> oversight. In the VS Code extension on your local machine, every tool call
+> requires your explicit approval, so the guardrails are enforced interactively.
+> The rules below apply to **both** environments for consistency.
+
 **Allowed operations** (only when the user explicitly asks):
 
 - `gh pr view` — read PR metadata
