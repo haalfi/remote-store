@@ -1,7 +1,9 @@
 # IDEs & tools
 .venv/
 .vscode/
-.claude/
+.claude/*
+!.claude/settings.json
+!.claude/setup-gh.sh
 
 # Secrets
 .env
