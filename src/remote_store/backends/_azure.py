@@ -121,8 +121,10 @@ class AzureBackend(Backend):
         return (
             f"AzureBackend(container={self._container!r}, "
             f"account_name={self._account_name!r}, "
-            f"account_key='***', sas_token='***', "
-            f"connection_string='***', credential='***')"
+            f"account_key={'***' if self._account_key is not None else None!r}, "
+            f"sas_token={'***' if self._sas_token is not None else None!r}, "
+            f"connection_string={'***' if self._connection_string is not None else None!r}, "
+            f"credential={'***' if self._credential is not None else None!r})"
         )
 
     @property

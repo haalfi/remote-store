@@ -105,7 +105,8 @@ class S3PyArrowBackend(Backend):
         return (
             f"S3PyArrowBackend(bucket={self._bucket!r}, "
             f"endpoint_url={self._endpoint_url!r}, "
-            f"key='***', secret='***', "
+            f"key={'***' if self._key is not None else None!r}, "
+            f"secret={'***' if self._secret is not None else None!r}, "
             f"region_name={self._region_name!r})"
         )
 
@@ -407,6 +408,9 @@ class S3PyArrowBackend(Backend):
             return self._info_to_fileinfo(info, path)
 
     def get_folder_info(self, path: str) -> FolderInfo:
+        # S3 folders are virtual (prefix-based), like Azure non-HNS.  See the
+        # comment in S3Backend.get_folder_info() for rationale on why we don't
+        # raise NotFound for file_count==0 after the exists() check.
         with self._s3fs_errors(path):
             s3_path = self._s3_path(path)
             if not self._s3fs.exists(s3_path):

@@ -68,7 +68,8 @@ class S3Backend(Backend):
         return (
             f"S3Backend(bucket={self._bucket!r}, "
             f"endpoint_url={self._endpoint_url!r}, "
-            f"key='***', secret='***', "
+            f"key={'***' if self._key is not None else None!r}, "
+            f"secret={'***' if self._secret is not None else None!r}, "
             f"region_name={self._region_name!r})"
         )
 
@@ -306,6 +307,11 @@ class S3Backend(Backend):
             return self._info_to_fileinfo(info, path)
 
     def get_folder_info(self, path: str) -> FolderInfo:
+        # S3 folders are virtual (prefix-based), like Azure non-HNS.  An empty
+        # folder is simply a prefix with no objects, so exists() already
+        # returns False for truly non-existent prefixes.  Unlike Azure non-HNS
+        # we don't raise NotFound for file_count==0 after the exists() check,
+        # because s3fs.exists() verifies the prefix is valid.
         with self._errors(path):
             s3_path = self._s3_path(path)
             if not self._fs.exists(s3_path):

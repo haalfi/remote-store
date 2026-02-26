@@ -121,10 +121,59 @@ class TestRegistryCloseOnError:
             reg.get_store("main")
 
             backend = next(iter(reg._backends.values()))
-            backend.close = lambda: (_ for _ in ()).throw(RuntimeError("boom"))  # type: ignore[assignment,return-value]
+
+            def _raise_on_close() -> None:
+                raise RuntimeError("boom")
+
+            backend.close = _raise_on_close  # type: ignore[assignment]
 
             with pytest.raises(RuntimeError):
                 reg.close()
+            assert len(reg._backends) == 0
+
+    def test_close_multi_backend_continues_after_first_error(self) -> None:
+        """With multiple backends, all are closed even if the first raises."""
+        with tempfile.TemporaryDirectory() as tmp1, tempfile.TemporaryDirectory() as tmp2:
+            config = RegistryConfig(
+                backends={
+                    "local1": BackendConfig(type="local", options={"root": tmp1}),
+                    "local2": BackendConfig(type="local", options={"root": tmp2}),
+                },
+                stores={
+                    "s1": StoreProfile(backend="local1", root_path="a"),
+                    "s2": StoreProfile(backend="local2", root_path="b"),
+                },
+            )
+            reg = Registry(config)
+            reg.get_store("s1")
+            reg.get_store("s2")
+            assert len(reg._backends) == 2
+
+            close_order: list[str] = []
+            b1 = reg._backends["local1"]
+            b2 = reg._backends["local2"]
+
+            orig_close1 = b1.close
+            orig_close2 = b2.close
+
+            def failing_close1() -> None:
+                close_order.append("local1")
+                orig_close1()
+                raise RuntimeError("backend1 failed")
+
+            def tracking_close2() -> None:
+                close_order.append("local2")
+                orig_close2()
+
+            b1.close = failing_close1  # type: ignore[assignment]
+            b2.close = tracking_close2  # type: ignore[assignment]
+
+            with pytest.raises(RuntimeError, match="backend1 failed"):
+                reg.close()
+
+            # Both backends were closed, even though the first raised
+            assert "local1" in close_order
+            assert "local2" in close_order
             assert len(reg._backends) == 0
 
 
