@@ -6,6 +6,25 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **Backend `__repr__` with credential masking** -- all 5 backends now implement `__repr__()`. Secrets display as `'***'` when set and `None` when unset; identifiers (bucket, host, container) are shown in clear text (AF-008)
+
+### Changed
+
+- **S3/S3-PyArrow `get_folder_info()` on empty folders** -- no longer raises `NotFound`; the `exists()` check already gates non-existent paths. Azure non-HNS retains current behavior since virtual folders can't be empty (AF-004)
+- **`Registry.close()` error handling** -- now closes all backends even if one raises, always clears the cache, and re-raises the first error (AF-009)
+
+### Removed
+
+- **`RemoteFile` / `RemoteFolder` model classes** -- removed dead code from models, `__all__`, tests, docs, and specs (AF-011)
+
+### Fixed
+
+- **README Azure SDK name** -- corrected from wrong package name to `azure-storage-file-datalake` (AF-015)
+- **CONTRIBUTING.md** -- added spec 012 reference (AF-015)
+- **Azure configuration example** -- added to `examples/configuration.py` (AF-015)
+
 ## [0.6.0] - 2026-02-25
 
 ### Added

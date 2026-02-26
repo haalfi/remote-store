@@ -33,6 +33,13 @@ class TestBackendIdentity:
         assert isinstance(r, str)
         assert backend.name in r.lower() or backend.__class__.__name__ in r
 
+    def test_repr_masks_secrets(self, backend: Backend) -> None:
+        """AF-008: sensitive values must not appear in repr output."""
+        r = repr(backend)
+        # Known test credentials that must never leak
+        for secret in ("testing", "testpass", "Eby8vdM02xNOcqFlqUwJPLlmEtl"):
+            assert secret not in r, f"Secret {secret!r} leaked in repr: {r}"
+
 
 class TestBackendExists:
     """BE-004: exists() behavior."""

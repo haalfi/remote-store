@@ -328,6 +328,103 @@ class TestBackendRepr:
             assert "LocalBackend(root=" in r
 
 
+class TestBackendReprMasking:
+    """AF-008: Backends must mask set secrets and show None for unset ones."""
+
+    def test_s3_masks_set_secrets(self) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        backend = S3Backend(bucket="b", key="AKID", secret="SK", endpoint_url="http://x")
+        r = repr(backend)
+        assert "AKID" not in r
+        assert "SK" not in r
+        assert "key='***'" in r
+        assert "secret='***'" in r
+        # Non-secrets are visible
+        assert "bucket='b'" in r
+        assert "endpoint_url='http://x'" in r
+
+    def test_s3_shows_none_for_unset_secrets(self) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        backend = S3Backend(bucket="b")
+        r = repr(backend)
+        assert "key=None" in r
+        assert "secret=None" in r
+
+    def test_s3_pyarrow_masks_set_secrets(self) -> None:
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        backend = S3PyArrowBackend(bucket="b", key="AKID", secret="SK")
+        r = repr(backend)
+        assert "AKID" not in r
+        assert "SK" not in r
+        assert "key='***'" in r
+        assert "secret='***'" in r
+
+    def test_s3_pyarrow_shows_none_for_unset_secrets(self) -> None:
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        backend = S3PyArrowBackend(bucket="b")
+        r = repr(backend)
+        assert "key=None" in r
+        assert "secret=None" in r
+
+    def test_sftp_masks_set_secrets(self) -> None:
+        from remote_store.backends._sftp import SFTPBackend
+
+        backend = SFTPBackend(host="h", password="secret123", pkey="keydata")
+        r = repr(backend)
+        assert "secret123" not in r
+        assert "keydata" not in r
+        assert "password='***'" in r
+        assert "pkey='***'" in r
+        # Non-secrets are visible
+        assert "host='h'" in r
+
+    def test_sftp_shows_none_for_unset_secrets(self) -> None:
+        from remote_store.backends._sftp import SFTPBackend
+
+        backend = SFTPBackend(host="h")
+        r = repr(backend)
+        assert "password=None" in r
+        assert "pkey=None" in r
+
+    def test_azure_masks_set_secrets(self) -> None:
+        from remote_store.backends._azure import AzureBackend
+
+        backend = AzureBackend(
+            container="c",
+            account_name="acct",
+            account_key="mykey",
+            sas_token="mysas",
+            connection_string="conn=str",
+            credential="cred_obj",
+        )
+        r = repr(backend)
+        assert "mykey" not in r
+        assert "mysas" not in r
+        assert "conn=str" not in r
+        assert "cred_obj" not in r
+        assert "account_key='***'" in r
+        assert "sas_token='***'" in r
+        assert "connection_string='***'" in r
+        assert "credential='***'" in r
+        # Non-secrets are visible
+        assert "container='c'" in r
+        assert "account_name='acct'" in r
+
+    def test_azure_shows_none_for_unset_secrets(self) -> None:
+        from remote_store.backends._azure import AzureBackend
+
+        backend = AzureBackend(container="c", account_url="https://x.blob.core.windows.net")
+        r = repr(backend)
+        assert "account_key=None" in r
+        assert "sas_token=None" in r
+        assert "connection_string=None" in r
+        assert "credential=None" in r
+
+
 # endregion
 
 

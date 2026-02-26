@@ -180,7 +180,9 @@ class SFTPBackend(Backend):
     def __repr__(self) -> str:
         return (
             f"SFTPBackend(host={self._host!r}, port={self._port!r}, "
-            f"username={self._username!r}, password='***', pkey='***', "
+            f"username={self._username!r}, "
+            f"password={'***' if self._password is not None else None!r}, "
+            f"pkey={'***' if self._pkey is not None else None!r}, "
             f"base_path={self._base_path!r})"
         )
 

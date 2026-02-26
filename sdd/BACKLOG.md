@@ -144,8 +144,9 @@ From adversarial review of v0.5.0. Full details: `sdd/audit-001-adversarial-revi
   → Audit: M-2 (confirmed)
   Done: Added `__repr__` to all 5 backends. Sensitive fields (key, secret,
   password, pkey, account_key, sas_token, connection_string, credential)
-  display as `'***'`. Non-sensitive fields (bucket, host, container, etc.)
-  shown in clear text.
+  display as `'***'` when set and `None` when unset. Non-sensitive fields
+  (bucket, host, container, etc.) shown in clear text. Masking verified by
+  unit tests for every backend and conformance-level test for live backends.
 
 - [x] **AF-009 — Fix `Registry.close()` to close all backends on error**
   Wrap in try/finally so one failed `close()` doesn't skip the rest.
