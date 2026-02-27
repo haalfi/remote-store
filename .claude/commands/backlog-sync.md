@@ -64,8 +64,8 @@ If the work revealed new issues, bugs, or improvement ideas:
 Remind the user (or yourself) that the backlog update MUST be in the same
 commit as the code change. This is a hard rule from CLAUDE.md:
 
-> Include the backlog update in the **same commit or PR** as the code change.
-> Do not leave it for a follow-up.
+> After work: mark items `[x]` (with version) or `[~]` (with what remains).
+> **Same commit as the code change**, or mark `[~]`.
 
 ## Important
 

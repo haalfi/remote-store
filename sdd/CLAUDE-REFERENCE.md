@@ -26,6 +26,11 @@ Before committing, check whether your change has cross-file dependencies:
 | **A dependency**           | `pyproject.toml` extras + minimum pins, README install    |
 |                            | instructions, docs prerequisites                          |
 | **Store or Backend ABC**   | All backend implementations, conformance tests            |
+| **A Store method**         | README Store API table, `__init__.py` `__all__`,          |
+|                            | `examples/`, spec in `sdd/specs/`, guides, CHANGELOG      |
+| **Public API** (`__all__`) | README Store API table, `examples/`, user guides          |
+| **Docs navigation**        | Per-section `_nav.yml` files in `docs-src/`,              |
+|                            | `guides/backends/index.md`                                |
 
 ---
 
