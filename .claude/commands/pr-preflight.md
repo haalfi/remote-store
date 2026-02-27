@@ -74,6 +74,16 @@ verify cross-references are consistent. Focus especially on:
 - Error changes → all backends' error mapping
 - Version changes → all 3 version-bearing files + CITATION.cff
 
+### Check 10: Critical self-review (Principle 6)
+
+Apply principle 6 ("Be critical, not agreeable") to your own changes:
+- What edge cases are untested?
+- What could break that isn't covered by the checks above?
+- Are there assumptions that should be documented?
+- Is anything missing from the checklist that this specific change requires?
+
+Report any concerns found, even if you're not sure they're real issues.
+
 ## Output Format
 
 ```
@@ -90,6 +100,7 @@ verify cross-references are consistent. Focus especially on:
 | Examples work          | PASS/SKIP | ...                       |
 | Docs build             | PASS/SKIP | ...                       |
 | Ripple check           | PASS/WARN | ...                       |
+| Critical self-review   | PASS/WARN | ...                       |
 
 ### Action items
 - [ ] ...
@@ -100,5 +111,5 @@ verify cross-references are consistent. Focus especially on:
 - A FAIL on checks 1-3 is a hard blocker — do not submit the PR.
 - A FAIL on checks 4-5 means the PR violates project principles — fix before
   submitting unless there's an explicit reason documented.
-- WARN on checks 6-9 should be reviewed but may be acceptable with justification.
+- WARN on checks 6-10 should be reviewed but may be acceptable with justification.
 - This checklist mirrors `.github/PULL_REQUEST_TEMPLATE.md` but goes deeper.

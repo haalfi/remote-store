@@ -3,6 +3,9 @@
 You are performing a ripple check on the current working changes. This skill
 verifies that all files affected by a change are consistent.
 
+The canonical ripple-check table lives in `sdd/CLAUDE-REFERENCE.md`. If the
+table below drifts from the reference, update this skill.
+
 ## Instructions
 
 1. **Detect what changed.** Run `git diff --name-only HEAD` (unstaged + staged)
@@ -31,7 +34,7 @@ verifies that all files affected by a change are consistent.
 | **Version number**            | `pyproject.toml` version, `src/remote_store/__init__.py` `__version__`, `CITATION.cff` version + date-released, `CHANGELOG.md` new heading + `[Unreleased]` section |
 | **A spec section** (`sdd/specs/`) | Tests with `@pytest.mark.spec("ID")` for that section, `sdd/BACKLOG.md` if related item exists |
 | **A dependency**              | `pyproject.toml` extras + minimum pins (`>=X.Y`), README.md install instructions, `guides/backends/` prerequisites |
-| **Store or Backend ABC** (`_store.py`, `_backend.py`) | All 5 backend implementations, conformance tests in `tests/backends/test_conformance.py` |
+| **Store or Backend ABC** (`_store.py`, `_backend.py`) | All 6 backend implementations (Local, S3, S3-PyArrow, SFTP, Azure, Memory), conformance tests in `tests/backends/test_conformance.py` |
 | **Public API** (`__init__.py` `__all__`) | README.md Store API table, `examples/` scripts, user guides |
 | **Docs navigation** (`mkdocs.yml`) | Per-section `_nav.yml` files in `docs-src/`, `guides/backends/index.md` |
 

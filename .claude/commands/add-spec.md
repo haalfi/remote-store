@@ -7,8 +7,8 @@ document and matching test scaffolding.
 ## Arguments
 
 The user should provide:
-- **Topic** (e.g., `glob-strategy`, `memory-backend`, `async-api`)
-- **ID prefix** (e.g., `GLOB`, `MEM`, `ASYNC`) — used for section IDs
+- **Topic** (e.g., `glob-strategy`, `async-api`, `retry-policy`)
+- **ID prefix** (e.g., `GLOB`, `ASYNC`, `RTR`) — used for section IDs
 - **Brief description** of what the spec covers
 
 If not provided, ask the user for these values.
@@ -19,7 +19,8 @@ Check existing specs in `sdd/specs/` to find the next available number:
 ```
 ls sdd/specs/
 ```
-The new spec gets the next sequential NNN (e.g., if 012 exists, use 013).
+The new spec gets the next sequential NNN (e.g., 013 is memory-backend, so the
+next available is 014 or higher).
 
 ## Step 2: Create the spec document
 

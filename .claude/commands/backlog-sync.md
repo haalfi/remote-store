@@ -43,9 +43,14 @@ For each matching item, apply the correct status:
 ### Step 4: Verify format
 
 - Status markers: `[ ]` pending, `[~]` in progress, `[x]` done
-- Done notes start with `Done: vX.Y.Z — ` (version + em dash + description)
-- Items stay in their original tier (don't move between sections unless
-  graduating to Done)
+- Done notes include the version: `(vX.Y.Z)` after the title
+- The Done section is grouped by origin:
+  - **Release blockers** (BL-NNN)
+  - **Backlog items** (BK-NNN)
+  - **Audit findings** (AF-NNN)
+  - **Ideas shipped** (ID-NNN)
+  - **Other completed work** (DONE-NNN)
+  Place completed items under the correct subgroup.
 - IDs are never reused or renumbered
 
 ### Step 5: Check for new items

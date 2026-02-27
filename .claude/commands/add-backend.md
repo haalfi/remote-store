@@ -7,8 +7,8 @@ generates the necessary boilerplate.
 ## Arguments
 
 The user should provide:
-- **Backend name** (e.g., `gcs`, `ftp`, `memory`) — used for file names and registration
-- **Display name** (e.g., `Google Cloud Storage`, `FTP`, `Memory`) — used in docs
+- **Backend name** (e.g., `gcs`, `ftp`) — used for file names and registration
+- **Display name** (e.g., `Google Cloud Storage`, `FTP`) — used in docs
 - **Optional dependency** (e.g., `gcsfs>=2023.1`) — leave empty for stdlib-only backends
 
 If not provided, ask the user for these values before proceeding.
@@ -21,8 +21,9 @@ Execute all steps. The backend is not complete until every step is done.
 
 Create `sdd/specs/NNN-<name>-backend.md` where NNN is the next available number.
 
-Use existing backend specs (008-s3-backend.md, 009-sftp-backend.md,
-012-azure-backend.md) as reference for format and coverage. The spec must define:
+Use existing backend specs (013-memory-backend.md for simplest reference,
+008-s3-backend.md, 012-azure-backend.md for network backends) as reference
+for format and coverage. The spec must define:
 - Section IDs using a unique prefix (e.g., `GCS-001`, `FTP-001`, `MEM-001`)
 - Constructor parameters and their semantics
 - Connection lifecycle (lazy connect pattern)
@@ -49,13 +50,14 @@ Create `src/remote_store/backends/_<name>.py`. Use the following patterns
 - **Capability declaration**: accurate `capabilities()` property
 - **Method ordering**: class vars, `__init__`, properties, public methods, dunders, private
 
-Reference `src/remote_store/backends/_local.py` (simplest) or `_s3.py` (network backend)
-for the exact patterns.
+Reference `src/remote_store/backends/_memory.py` (simplest, zero dependencies) or
+`_s3.py` (network backend with lazy connection and error mapping) for the exact patterns.
 
 ### Step 3: Register the backend
 
 Add the backend to `src/remote_store/_registry.py` in `_register_builtin_backends()`.
 Follow the pattern used for S3/SFTP: try-import with fallback if dependency missing.
+For zero-dependency backends, follow the Memory pattern (unconditional registration).
 
 Also export from `src/remote_store/backends/__init__.py` if it should be importable.
 
@@ -83,6 +85,7 @@ Create `guides/backends/<name>.md` covering:
 ### Step 7: Update docs navigation
 
 - Add the guide to `mkdocs.yml` nav under the Backends section
+- Add entry to `docs-src/backends/_nav.yml`
 - Update `guides/backends/index.md` Supported Backends table
 
 ### Step 8: Update README
