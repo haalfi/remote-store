@@ -195,6 +195,18 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   straightforward. Consider once the project reaches Beta or if user demand
   appears. Reference: https://conda-forge.org/docs/maintainer/adding_pkgs/
 
+- [x] **ID-019 — Claude Code reusable skills**
+  Create `.claude/commands/` slash-command skills to standardize and speed up
+  recurring workflows. Based on analysis of commit history (116 commits) and
+  project conventions, the following error-prone or repetitive workflows were
+  automated: ripple-check (cross-reference validation), release (version bump
+  checklist), add-backend (11-step scaffolding), backlog-sync (backlog update
+  helper), pr-preflight (pre-submission validation), add-spec (SDD spec + test
+  scaffolding). These directly address the top systemic issues: backlog drift
+  (7/9 AF commits forgot backlog), CHANGELOG skipped (62% of code changes),
+  and version-file sync misses.
+  Done: v0.6.1 — Added 6 skills in `.claude/commands/`.
+
 ---
 
 ## Done
