@@ -18,9 +18,11 @@ pytest.importorskip("tenacity", reason="tenacity not installed")
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
 from remote_store._errors import (  # noqa: E402
     AlreadyExists,
+    BackendUnavailable,
     CapabilityNotSupported,
     DirectoryNotEmpty,
     NotFound,
+    PermissionDenied,
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderInfo  # noqa: E402
@@ -316,6 +318,80 @@ class TestSFTPErrorMapping:
     def test_delete_missing(self, sftp_backend: Backend) -> None:
         with pytest.raises(NotFound):
             sftp_backend.delete("nope.txt")
+
+    @pytest.mark.spec("SFTP-021")
+    def test_eacces_maps_to_permission_denied(self, sftp_backend: Backend) -> None:
+        """OSError with errno.EACCES maps to PermissionDenied."""
+        import errno
+        from unittest.mock import patch
+
+        assert isinstance(sftp_backend, SFTPBackend)
+        # Force connection so _sftp_client is populated
+        sftp_backend.exists("warmup.txt")
+
+        eacces = OSError(errno.EACCES, "Permission denied")
+        with (
+            patch.object(sftp_backend._sftp_client, "file", side_effect=eacces),
+            pytest.raises(PermissionDenied) as exc_info,
+        ):
+            sftp_backend.read_bytes("secret.txt")
+        assert exc_info.value.backend == "sftp"
+
+    @pytest.mark.spec("SFTP-021")
+    def test_eacces_on_remove_maps_to_permission_denied(self, sftp_backend: Backend) -> None:
+        """OSError with errno.EACCES on remove maps to PermissionDenied."""
+        import errno
+        from unittest.mock import patch
+
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("locked.txt", b"data")
+
+        eacces = OSError(errno.EACCES, "Permission denied")
+        with (
+            patch.object(sftp_backend._sftp_client, "remove", side_effect=eacces),
+            pytest.raises(PermissionDenied) as exc_info,
+        ):
+            sftp_backend.delete("locked.txt")
+        assert exc_info.value.backend == "sftp"
+        assert exc_info.value.path == "locked.txt"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_ssh_exception_maps_to_backend_unavailable(self, sftp_backend: Backend) -> None:
+        """paramiko.SSHException maps to BackendUnavailable."""
+        from unittest.mock import patch
+
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "file",
+                side_effect=paramiko.SSHException("SSH session not active"),
+            ),
+            pytest.raises(BackendUnavailable) as exc_info,
+        ):
+            sftp_backend.read_bytes("file.txt")
+        assert exc_info.value.backend == "sftp"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_ssh_exception_on_remove_maps_to_backend_unavailable(self, sftp_backend: Backend) -> None:
+        """paramiko.SSHException on remove maps to BackendUnavailable."""
+        from unittest.mock import patch
+
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("target.txt", b"data")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "remove",
+                side_effect=paramiko.SSHException("Connection lost"),
+            ),
+            pytest.raises(BackendUnavailable) as exc_info,
+        ):
+            sftp_backend.delete("target.txt")
+        assert exc_info.value.backend == "sftp"
 
     @pytest.mark.spec("SFTP-024")
     def test_no_native_exception_leaks(self, sftp_backend: Backend) -> None:
