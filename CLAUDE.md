@@ -29,6 +29,12 @@ hatch run typecheck         # mypy strict on src/
 hatch run all               # lint + format-check + typecheck + test-cov + examples
 ```
 
+## Branching
+
+- **Never commit or push directly to master.** Always create a feature branch.
+- Branch naming: `id-021-store-child`, `fix-streaming-io`, `af-008-credential-masking`, etc.
+- Push the feature branch; the user will create PRs or ask you to.
+
 ## Code conventions
 
 - Tests: `@pytest.mark.spec("ID")` for spec traceability.
