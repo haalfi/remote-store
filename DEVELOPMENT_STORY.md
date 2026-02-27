@@ -297,6 +297,10 @@ fade101  AF-007: Wire Azure guide into docs site
 309b00b  Bump version: 0.5.0 -> 0.6.0
 ```
 
+### Phase 14: Release Checklist (process improvement)
+
+Expanded the 5-item release checklist into a 6-phase process (pre-flight, content freeze, version bump, validate, ship, post-release verification). The motivation: despite thorough process documentation -- specs, CLAUDE.md principles, CONTRIBUTING.md conventions, PR templates -- past releases still had preventable errors (v0.6.1 bumped but never published, CITATION.cff dates missed, no post-publish verification). Process docs govern how to build; a release checklist governs how to ship. One doesn't replace the other.
+
 ## What Worked Well
 
 ### Specs as a shared contract
