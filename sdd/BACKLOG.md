@@ -23,10 +23,11 @@ Active work items, ordered by priority.
   Related: ID-007 (`Store.glob()` surface API).
   → Spec: TBD (extends `003-backend-adapter-contract.md`)
 
-- [ ] **AF-010 — Document TOCTOU and non-atomic move limitations**
+- [x] **AF-010 — Document TOCTOU and non-atomic move limitations** (v0.8.1)
   `overwrite=False` has inherent TOCTOU (audit M-4, downgraded from High: inherent
   limitation). S3 `move()` is copy+delete (audit L-21, per spec S3-013, not a bug).
-  Document these in guides or API docs so users know the guarantees.
+  Added `guides/concurrency.md` with full explanation, summary table, and workarounds.
+  Cross-referenced from all backend guides.
 
 - [ ] **AF-012 — Add capability gating tests (STORE-006)**
   Test that Store methods raise `CapabilityNotSupported` for backends missing

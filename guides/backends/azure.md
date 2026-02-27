@@ -105,6 +105,8 @@ The backend detects Hierarchical Namespace (HNS) status on first use and adapts 
 
 If the HNS detection call fails (e.g. insufficient permissions), the backend falls back to non-HNS behavior.
 
+Note that non-HNS `move()` (copy + delete) is not atomic and `overwrite=False` has a TOCTOU race on all account types. See the [Concurrency and Atomicity Guarantees](../concurrency.md) guide for details.
+
 ## Capabilities
 
 | Capability | Supported | Notes |
