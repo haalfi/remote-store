@@ -191,14 +191,14 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 - [ ] Guides: new/changed backend guides are accurate
 - [ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)
 
-#### Phase 2: Version bump (on a feature branch)
+#### Phase 2: Version bump (on a release branch)
 
 - [ ] Create release branch: `git checkout -b release-vX.Y.Z`
-- [ ] `bump-my-version bump patch|minor|major` (bumps `pyproject.toml`, `__init__.py`, `CITATION.cff` version)
-- [ ] Manually update `date-released` in `CITATION.cff` to today (bump-my-version does not do this)
 - [ ] CHANGELOG.md: rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, add fresh empty `[Unreleased]` above
+- [ ] Update `date-released` in `CITATION.cff` to today
 - [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
+- [ ] `bump-my-version bump --no-tag patch|minor|major` (bumps `pyproject.toml`, `__init__.py`, `CITATION.cff` version; tag is created on master in Phase 4)
 
 #### Phase 3: Validate
 
@@ -212,6 +212,7 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 - [ ] Push branch, open PR, wait for CI green
 - [ ] Request PR review — wait for approval before merging
 - [ ] Merge PR to master
+- [ ] Tag the merge commit on master: `git tag vX.Y.Z` (ensures tag is reachable from master)
 - [ ] Push the tag: `git push origin vX.Y.Z`
 - [ ] Watch `publish.yml` — confirm it completes successfully
 - [ ] *(Until AF-014 is done)*: manually verify CI was green before the tag landed
