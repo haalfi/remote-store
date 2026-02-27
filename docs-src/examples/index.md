@@ -10,6 +10,7 @@ Runnable example scripts demonstrating every feature of `remote-store`. Each exa
 | [Atomic Writes](atomic-writes.md) | Atomic writes and overwrite semantics |
 | [Configuration](configuration.md) | Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs |
 | [Error Handling](error-handling.md) | Catching `NotFound`, `AlreadyExists`, and more |
+| [Store.child()](store-child.md) | Runtime sub-scoping, chaining, close semantics |
 | [S3 Backend](s3-backend.md) | S3 / MinIO: config, two stores, virtual folders |
 | [S3-PyArrow Backend](s3-pyarrow-backend.md) | High-throughput S3 via PyArrow C++ + escape hatch |
 | [SFTP Backend](sftp-backend.md) | SSH/SFTP: config, host key policies, `unwrap()` |
