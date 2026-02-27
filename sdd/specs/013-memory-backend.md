@@ -94,6 +94,14 @@ mutable reference to the backend's buffer.
 content (overallocation headroom). Acceptable for an in-memory backend whose
 entire dataset fits in RAM by definition.
 
+**Shrink behavior:** Slice assignment (`entry.data[:] = new_content`) does not
+shrink the underlying buffer when the new content is smaller. A file written
+with 100 MB and then overwritten with 1 KB retains a ~100 MB allocation.
+This is deliberate: the amortized-reuse benefit outweighs the temporary waste
+in the typical pattern (repeated writes of similar size). If peak memory is a
+concern, callers can `delete()` + `write()` instead of overwriting — this
+creates a fresh `bytearray` sized to the new content.
+
 ### MEM-DS-004: `slots=True`
 
 Both internal dataclasses use `slots=True`. Per-instance memory drops from
@@ -112,6 +120,15 @@ def _traverse(self, path: str) -> _DirNode | _FileEntry | None:
 
 This is O(d) dict lookups where d = path depth. Each lookup is an O(1) hash
 operation on a short string (single path segment, not the full path).
+
+**Path validation:** `_traverse` assumes paths are pre-validated. When used via
+`Store`, the `RemotePath` constructor handles normalization and rejection of
+`..`, null bytes, and absolute paths. When `MemoryBackend` is used directly
+(without `Store`), the backend must perform its own validation before
+traversal: reject paths containing `..` segments or null bytes by raising
+`InvalidPath`. This mirrors `LocalBackend._resolve()` which validates before
+resolving. The validation is a simple segment check — no filesystem interaction
+is needed.
 
 ### MEM-DS-006: Folder Semantics
 
@@ -167,7 +184,12 @@ side effects.
 ```
 MemoryBackend(files=42, folders=7)
 ```
-Counts are computed from the live tree. No secrets to mask.
+No secrets to mask.
+
+**Implementation:** The backend maintains two running counters (`_file_count`,
+`_folder_count`) incremented/decremented on mutations. `__repr__` reads these
+in O(1) — no tree traversal. This avoids O(n) surprise on large trees (e.g.
+debugger tooltip triggering `repr` on a 10M-file backend).
 
 ### MEM-005: Registration
 
@@ -188,6 +210,14 @@ documents memory-specific behavior only.
 **Implementation:** Wrap content in `io.BufferedReader(io.BytesIO(data))`.
 This satisfies the streaming conformance test (SIO-001) while remaining pure
 stdlib. The returned stream is seekable and closable.
+
+**Contract note:** `io.BufferedReader` officially wraps `io.RawIOBase`, and
+`io.BytesIO` extends `io.BufferedIOBase`, not `RawIOBase`. However, CPython
+(and all known implementations) accepts `BytesIO` as a `BufferedReader`
+argument because `BytesIO` implements the required `readinto()` / `read()`
+protocol. This works on CPython 3.10–3.14 and PyPy. If a future runtime
+rejects this, the fallback is a thin `io.RawIOBase` subclass that delegates
+`readinto()` to a `memoryview` over the content bytes — trivial to implement.
 
 **Rationale:** The conformance test `test_read_returns_true_stream_not_bytesio`
 exists because `BytesIO` is a sign that a backend loaded everything into memory
@@ -236,6 +266,13 @@ per-file iteration needed — this is O(1) for the detach, O(subtree) for GC
 **Invariant:** `get_folder_info(path)` traverses the subtree rooted at the
 target node, aggregating `file_count`, `total_size`, and `modified_at`.
 
+**Aggregation semantics:**
+- `file_count`: Total `_FileEntry` nodes in the subtree.
+- `total_size`: Sum of `len(entry.data)` across all files.
+- `modified_at`: `max(entry.modified_at)` across all files, or `None` if the
+  folder contains no files. This matches `LocalBackend` which uses
+  `max(st_mtime)` across `rglob("*")` results.
+
 This is O(subtree) — same as `LocalBackend`, but without I/O. For very large
 directories, this is CPU-bound on dict iteration, not I/O-bound.
 
@@ -246,6 +283,15 @@ parent and inserts it into the destination parent. The `data` buffer is not
 copied.
 
 This is O(d_src + d_dst) — two tree traversals. File content is not touched.
+
+### MEM-016b: copy() — Deep Copy Content
+
+**Invariant:** `copy(src, dst)` traverses to the source `_FileEntry`, creates a
+new `_FileEntry` with `bytearray(entry.data)` (deep copy of content), and
+inserts it into the destination parent.
+
+This is O(d_src + d_dst + content) — two tree traversals plus a buffer copy.
+Unlike `move()`, the source entry is unchanged.
 
 ### MEM-017: to_key() — Identity
 
@@ -261,6 +307,35 @@ tree is garbage-collected when the backend object is collected.
 
 **Invariant:** `unwrap()` raises `CapabilityNotSupported`. There is no native
 handle to expose.
+
+---
+
+## Thread Safety
+
+### MEM-025: Single-Lock Serialization
+
+**Invariant:** All mutating operations (`write`, `write_atomic`, `delete`,
+`delete_folder`, `move`, `copy`) acquire a single `threading.Lock` before
+modifying the tree. Read operations (`read`, `read_bytes`, `exists`, `is_file`,
+`is_folder`, `list_files`, `list_folders`, `get_file_info`, `get_folder_info`)
+also acquire the lock for the duration of their tree traversal.
+
+**Rationale:** `Store` is documented as "safe to share across threads" (DESIGN
+§3.1). A single coarse lock is the simplest correct approach. Fine-grained
+per-node locking would improve concurrent throughput on disjoint subtrees but
+adds substantial complexity for a backend whose primary use case is testing —
+where contention is rare.
+
+**Postconditions:** The lock is never held during I/O (there is none) or during
+caller consumption of returned streams. `read()` copies data under the lock,
+wraps it in a `BufferedReader`, and releases the lock before returning. The
+caller reads from the wrapper without holding the lock.
+
+### MEM-026: Atomicity Scope
+
+**Invariant:** Individual operations are atomic with respect to concurrent
+threads. There is no multi-operation transaction support — a `read()` followed
+by `write()` is not atomic as a pair. This matches all other backends.
 
 ---
 
@@ -289,8 +364,8 @@ accessible and there are no permission checks.
 
 ### MEM-030: Conformance Suite
 
-**Invariant:** `MemoryBackend` passes the full 56-test conformance suite with
-zero skips.
+**Requirement:** `MemoryBackend` must pass the full 56-test conformance suite
+with zero skips.
 
 Unlike S3/Azure (which skip virtual-folder edge cases), the memory backend's
 explicit folder semantics match `LocalBackend` behavior exactly. This makes it
