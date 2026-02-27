@@ -195,18 +195,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   straightforward. Consider once the project reaches Beta or if user demand
   appears. Reference: https://conda-forge.org/docs/maintainer/adding_pkgs/
 
-- [x] **ID-030 — Claude Code reusable skills**
-  Create `.claude/commands/` slash-command skills to standardize and speed up
-  recurring workflows. Based on analysis of commit history (116 commits) and
-  project conventions, the following error-prone or repetitive workflows were
-  automated: ripple-check (cross-reference validation), release (version bump
-  checklist), add-backend (11-step scaffolding), backlog-sync (backlog update
-  helper), pr-preflight (pre-submission validation), add-spec (SDD spec + test
-  scaffolding). These directly address the top systemic issues: backlog drift
-  (7/9 AF commits forgot backlog), CHANGELOG skipped (62% of code changes),
-  and version-file sync misses.
-  Done: v0.6.1 — Added 6 skills in `.claude/commands/`.
-
 ---
 
 ## Done
@@ -339,6 +327,14 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
   section in CHANGELOG).
 
 ### Ideas shipped
+
+- [x] **ID-030 — Claude Code reusable skills** (v0.8.0)
+  Create `.claude/commands/` slash-command skills to standardize and speed up
+  recurring workflows: ripple-check, release, add-backend, backlog-sync,
+  pr-preflight, add-spec. Addresses top systemic issues: backlog drift
+  (7/9 AF commits forgot backlog), CHANGELOG skipped (62% of code changes),
+  and version-file sync misses.
+  Done: Added 6 skills in `.claude/commands/`.
 
 - [x] **ID-017 — Memory backend** (v0.7.0)
   Tree-indexed in-memory backend. Zero dependencies, no filesystem access.

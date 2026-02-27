@@ -1,7 +1,7 @@
 # Add Backend — Scaffold a New Backend Implementation
 
 You are scaffolding a new backend for the remote-store project. This skill
-guides you through the complete 11-step checklist from CONTRIBUTING.md and
+guides you through the complete 12-step checklist based on CONTRIBUTING.md and
 generates the necessary boilerplate.
 
 ## Arguments

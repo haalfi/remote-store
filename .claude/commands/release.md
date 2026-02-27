@@ -44,7 +44,7 @@ If not provided, ask them. Refer to CONTRIBUTING.md § Versioning for guidance:
 - [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
 - [ ] `bump-my-version bump patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff`)
-- [ ] Review and commit: `git diff` to verify, then stage the 4 files and commit as `Release vX.Y.Z`
+- [ ] Review and commit: `git diff` to verify, then stage `pyproject.toml`, `src/remote_store/__init__.py`, `CITATION.cff`, `CHANGELOG.md` and commit as `Release vX.Y.Z`
 
 **Important:** `bump-my-version` modifies files in-place without committing or
 tagging. You control the commit and tag lifecycle manually.
