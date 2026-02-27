@@ -1,0 +1,369 @@
+"""PyArrow FileSystem adapter — wraps any Store into a pyarrow.fs.PyFileSystem.
+
+Install with ``pip install "remote-store[arrow]"``.
+
+Usage::
+
+    from remote_store.ext.arrow import pyarrow_fs
+
+    fs = pyarrow_fs(store)
+    pq.write_table(table, "data.parquet", filesystem=fs)
+"""
+
+from __future__ import annotations
+
+import contextlib
+import io
+import logging
+import tempfile
+from typing import TYPE_CHECKING, Any
+
+try:
+    import pyarrow as pa  # type: ignore[import-untyped]
+    import pyarrow.fs as pafs  # type: ignore[import-untyped]
+except ImportError as _exc:  # pragma: no cover
+    raise ImportError(
+        "PyArrow is required for the arrow extension. Install it with: pip install 'remote-store[arrow]'"
+    ) from _exc
+
+from remote_store._errors import (
+    AlreadyExists,
+    CapabilityNotSupported,
+    InvalidPath,
+    NotFound,
+    PermissionDenied,
+    RemoteStoreError,
+)
+
+if TYPE_CHECKING:
+    from remote_store._store import Store
+
+logger = logging.getLogger(__name__)
+
+__all__ = ["StoreFileSystemHandler", "pyarrow_fs"]
+
+# ---------------------------------------------------------------------------
+# Error mapping
+# ---------------------------------------------------------------------------
+
+_ERROR_MAP: list[tuple[type[RemoteStoreError], type[Exception]]] = [
+    (NotFound, FileNotFoundError),
+    (AlreadyExists, FileExistsError),
+    (PermissionDenied, PermissionError),
+    (InvalidPath, ValueError),
+    (CapabilityNotSupported, NotImplementedError),
+    # DirectoryNotEmpty, BackendUnavailable, and base RemoteStoreError → OSError
+]
+
+
+@contextlib.contextmanager
+def _map_errors() -> Any:  # noqa: ANN401
+    """Translate ``RemoteStoreError`` subtypes to standard Python exceptions."""
+    try:
+        yield
+    except RemoteStoreError as exc:
+        for rs_type, py_type in _ERROR_MAP:
+            if isinstance(exc, rs_type):
+                raise py_type(str(exc)) from exc
+        raise OSError(str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# _StoreSink — writable buffer that flushes to Store on close()
+# ---------------------------------------------------------------------------
+
+
+class _StoreSink(io.RawIOBase):
+    """Writable buffer that accumulates data and writes to a Store on close.
+
+    Uses ``SpooledTemporaryFile`` for transparent in-memory-to-disk promotion.
+    """
+
+    def __init__(self, store: Store, path: str, spill_threshold: int) -> None:
+        self._store = store
+        self._path = path
+        self._buf: tempfile.SpooledTemporaryFile[bytes] = tempfile.SpooledTemporaryFile(  # noqa: SIM115
+            max_size=spill_threshold
+        )
+
+    def writable(self) -> bool:
+        return True
+
+    def readable(self) -> bool:
+        return False
+
+    def write(self, data: bytes | bytearray | memoryview) -> int:  # type: ignore[override]
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
+        return self._buf.write(data)
+
+    def tell(self) -> int:
+        return self._buf.tell()
+
+    def close(self) -> None:
+        if self.closed:
+            return
+        try:
+            self._buf.seek(0)
+            content = self._buf.read()
+            with _map_errors():
+                self._store.write(self._path, content, overwrite=True)
+        finally:
+            self._buf.close()
+            super().close()
+
+
+# ---------------------------------------------------------------------------
+# StoreFileSystemHandler
+# ---------------------------------------------------------------------------
+
+
+def _normalize(path: str) -> str:
+    """Strip leading/trailing slashes and collapse separators."""
+    # Also handle backslashes for Windows paths leaked by callers.
+    path = path.replace("\\", "/")
+    parts = [p for p in path.split("/") if p]
+    return "/".join(parts)
+
+
+class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
+    """``pyarrow.fs.FileSystemHandler`` backed by a ``Store``.
+
+    :param store: The Store to expose as a PyArrow filesystem.
+    :param materialization_threshold: Max file size (bytes) for Tier 2 full-file
+        materialization in ``open_input_file``. Default 64 MB.
+    :param write_spill_threshold: Max in-memory buffer size (bytes) for
+        ``_StoreSink`` before spilling to disk. Default 64 MB.
+    """
+
+    def __init__(
+        self,
+        store: Store,
+        materialization_threshold: int = 64 * 1024 * 1024,
+        write_spill_threshold: int = 64 * 1024 * 1024,
+    ) -> None:
+        self._store = store
+        self._materialization_threshold = materialization_threshold
+        self._write_spill_threshold = write_spill_threshold
+
+    # -- PA-003 ---------------------------------------------------------------
+
+    def get_type_name(self) -> str:
+        return "remote-store"
+
+    # -- PA-006 ---------------------------------------------------------------
+
+    @staticmethod
+    def normalize_path(path: str) -> str:
+        return _normalize(path)
+
+    # -- PA-007 ---------------------------------------------------------------
+
+    def get_file_info(self, paths: list[str]) -> list[pafs.FileInfo]:
+        results: list[pafs.FileInfo] = []
+        for raw_path in paths:
+            path = _normalize(raw_path)
+            try:
+                with _map_errors():
+                    if self._store.is_file(path):
+                        info = self._store.get_file_info(path)
+                        results.append(
+                            pafs.FileInfo(
+                                path,
+                                type=pafs.FileType.File,
+                                size=info.size,
+                                mtime=info.modified_at,
+                            )
+                        )
+                    elif self._store.is_folder(path):
+                        results.append(pafs.FileInfo(path, type=pafs.FileType.Directory))
+                    else:
+                        results.append(pafs.FileInfo(path, type=pafs.FileType.NotFound))
+            except FileNotFoundError:
+                results.append(pafs.FileInfo(path, type=pafs.FileType.NotFound))
+        return results
+
+    # -- PA-008 ---------------------------------------------------------------
+
+    def get_file_info_selector(self, selector: Any) -> list[pafs.FileInfo]:  # noqa: ANN401
+        base_dir = _normalize(selector.base_dir)
+        recursive: bool = selector.recursive
+        allow_not_found: bool = selector.allow_not_found
+
+        results: list[pafs.FileInfo] = []
+        try:
+            with _map_errors():
+                # Step 1: list files
+                for fi in self._store.list_files(base_dir, recursive=recursive):
+                    file_path = str(fi.path)
+                    results.append(
+                        pafs.FileInfo(
+                            file_path,
+                            type=pafs.FileType.File,
+                            size=fi.size,
+                            mtime=fi.modified_at,
+                        )
+                    )
+
+                if recursive:
+                    # Step 3: synthetic directory entries from file paths
+                    seen_dirs: set[str] = set()
+                    for info in results:
+                        parts = info.path.split("/")
+                        # Build all ancestor paths between base_dir and the file
+                        for i in range(1, len(parts)):
+                            prefix = "/".join(parts[:i])
+                            if prefix != base_dir and prefix not in seen_dirs:
+                                seen_dirs.add(prefix)
+                    for dir_path in sorted(seen_dirs):
+                        results.append(pafs.FileInfo(dir_path, type=pafs.FileType.Directory))
+                else:
+                    # Step 2: list immediate subfolders
+                    for name in self._store.list_folders(base_dir):
+                        folder_path = f"{base_dir}/{name}" if base_dir else name
+                        results.append(pafs.FileInfo(folder_path, type=pafs.FileType.Directory))
+
+        except FileNotFoundError:
+            if not allow_not_found:
+                raise
+            return []
+
+        # PA-008 step 4: if base_dir doesn't exist, handle allow_not_found
+        if not results and base_dir and not self._store.exists(base_dir):
+            if allow_not_found:
+                return []
+            raise FileNotFoundError(f"Directory not found: {base_dir!r}")
+
+        return results
+
+    # -- PA-009 ---------------------------------------------------------------
+
+    def open_input_stream(self, path: str) -> Any:  # noqa: ANN401
+        path = _normalize(path)
+        with _map_errors():
+            stream = self._store.read(path)
+            return pa.PythonFile(stream, mode="r")
+
+    # -- PA-010 ---------------------------------------------------------------
+
+    def open_input_file(self, path: str) -> Any:  # noqa: ANN401
+        path = _normalize(path)
+        with _map_errors():
+            # Phase 1: Tier 2 / Tier 3 only (Tier 1 deferred to Phase 2)
+            info = self._store.get_file_info(path)
+
+            if info.size <= self._materialization_threshold:
+                # Tier 2: full-file materialization → BufferReader
+                data = self._store.read_bytes(path)
+                return pa.BufferReader(pa.py_buffer(data))
+
+            # Tier 3: streaming via PythonFile for large seekable files
+            stream = self._store.read(path)
+            if hasattr(stream, "seekable") and stream.seekable():
+                return pa.PythonFile(stream, mode="r")
+
+            # Tier 2 fallback: non-seekable large file — materialize with warning
+            stream.close()
+            logger.warning(
+                "Materializing %d-byte file %r into memory because the backend "
+                "stream is not seekable. Consider using a backend with native "
+                "PyArrow support or increasing materialization_threshold.",
+                info.size,
+                path,
+            )
+            data = self._store.read_bytes(path)
+            return pa.BufferReader(pa.py_buffer(data))
+
+    # -- PA-011 ---------------------------------------------------------------
+
+    def open_output_stream(self, path: str, metadata: Any = None) -> Any:  # noqa: ANN401
+        path = _normalize(path)
+        sink = _StoreSink(self._store, path, self._write_spill_threshold)
+        return pa.PythonFile(sink, mode="w")
+
+    # -- PA-012 ---------------------------------------------------------------
+
+    def open_append_stream(self, path: str, metadata: Any = None) -> Any:  # noqa: ANN401
+        raise NotImplementedError("Append is not supported by remote-store backends")
+
+    # -- PA-013 ---------------------------------------------------------------
+
+    def delete_file(self, path: str) -> None:
+        path = _normalize(path)
+        with _map_errors():
+            self._store.delete(path, missing_ok=False)
+
+    # -- PA-014 ---------------------------------------------------------------
+
+    def create_dir(self, path: str, recursive: bool = True) -> None:
+        # No-op: directories are virtual / created implicitly on write.
+        pass
+
+    # -- PA-015 ---------------------------------------------------------------
+
+    def delete_dir(self, path: str) -> None:
+        path = _normalize(path)
+        if not path:
+            raise NotImplementedError("Deleting the root directory is not supported")
+        with _map_errors():
+            self._store.delete_folder(path, recursive=True, missing_ok=False)
+
+    def delete_dir_contents(self, path: str, *, missing_dir_ok: bool = False) -> None:
+        path = _normalize(path)
+        try:
+            with _map_errors():
+                # Check existence first — some backends return empty for non-existent dirs
+                if path and not self._store.is_folder(path):
+                    raise NotFound(f"Directory not found: {path!r}", path=path)
+                # Delete all files
+                for fi in list(self._store.list_files(path)):
+                    self._store.delete(str(fi.path), missing_ok=True)
+                # Delete subfolders recursively
+                for name in list(self._store.list_folders(path)):
+                    folder_path = f"{path}/{name}" if path else name
+                    self._store.delete_folder(folder_path, recursive=True, missing_ok=True)
+        except FileNotFoundError:
+            if not missing_dir_ok:
+                raise
+
+    def delete_root_dir_contents(self) -> None:
+        raise NotImplementedError("Deleting all root directory contents is not supported (safety guard)")
+
+    # -- PA-017 ---------------------------------------------------------------
+
+    def move(self, src: str, dest: str) -> None:
+        src, dest = _normalize(src), _normalize(dest)
+        with _map_errors():
+            self._store.move(src, dest, overwrite=True)
+
+    # -- PA-018 ---------------------------------------------------------------
+
+    def copy_file(self, src: str, dest: str) -> None:
+        src, dest = _normalize(src), _normalize(dest)
+        with _map_errors():
+            self._store.copy(src, dest, overwrite=True)
+
+
+# ---------------------------------------------------------------------------
+# Convenience factory
+# ---------------------------------------------------------------------------
+
+
+def pyarrow_fs(
+    store: Store,
+    *,
+    materialization_threshold: int = 64 * 1024 * 1024,
+    write_spill_threshold: int = 64 * 1024 * 1024,
+) -> pafs.PyFileSystem:
+    """Create a ``pyarrow.fs.PyFileSystem`` backed by *store*.
+
+    :param store: The Store to expose.
+    :param materialization_threshold: See :class:`StoreFileSystemHandler`.
+    :param write_spill_threshold: See :class:`StoreFileSystemHandler`.
+    """
+    handler = StoreFileSystemHandler(
+        store,
+        materialization_threshold=materialization_threshold,
+        write_spill_threshold=write_spill_threshold,
+    )
+    return pafs.PyFileSystem(handler)

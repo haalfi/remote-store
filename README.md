@@ -65,6 +65,7 @@ pip install "remote-store[s3]"           # Amazon S3 / MinIO
 pip install "remote-store[s3-pyarrow]"   # S3 with PyArrow (high-throughput)
 pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
+pip install "remote-store[arrow]"       # PyArrow filesystem adapter
 ```
 
 ## Quick Start
@@ -152,6 +153,7 @@ config = RegistryConfig.from_dict({
 |`child(subpath)`     |Return a child store scoped to a subfolder    |
 |`supports(capability)`|Check if the backend supports a capability   |
 |`to_key(path)`       |Convert native/absolute path to store-relative key|
+|`unwrap(type_hint)`  |Get backend's native handle (e.g., `pyarrow.fs.FileSystem`)|
 |`close()`            |Close the underlying backend                  |
 
 All write/move/copy methods accept `overwrite=True` to replace existing files.
@@ -187,6 +189,7 @@ Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/ma
 | [error_handling.py](https://github.com/haalfi/remote-store/blob/master/examples/error_handling.py) | Catching `NotFound`, `AlreadyExists`, etc. |
 | [memory_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/memory_backend.py) | In-process memory backend for testing and caching |
 | [store_child.py](https://github.com/haalfi/remote-store/blob/master/examples/store_child.py) | Runtime sub-scoping with `Store.child()` |
+| [pyarrow_adapter.py](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py) | PyArrow filesystem adapter: Parquet, datasets |
 
 **Backend** -- require a running service and credentials ([`examples/backends/`](https://github.com/haalfi/remote-store/tree/master/examples/backends)):
 

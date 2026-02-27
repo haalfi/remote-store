@@ -55,6 +55,12 @@
 **Postconditions:** The returned key is directly usable as input to any Store method.
 **See also:** [010-native-path-resolution.md](010-native-path-resolution.md) (NPR-010 through NPR-013).
 
+### STORE-013: unwrap()
+
+**Invariant:** `unwrap(type_hint)` delegates to `Backend.unwrap(type_hint)` and returns the backend's native handle if it matches the requested type.
+**Raises:** `CapabilityNotSupported` if the backend cannot provide the requested type.
+**Rationale:** Enables adapters (e.g., `StoreFileSystemHandler`) to access backend-native handles via the public Store surface without reaching into private attributes.
+
 ### STORE-012: Round-Trip Path Invariant
 
 **Invariant:** Paths returned by listing and metadata methods (`list_files`, `get_file_info`, `get_folder_info`) are store-relative — `root_path` is stripped from `FileInfo.path` and `FolderInfo.path`. The returned path is directly usable as input to other Store methods without modification.

@@ -124,10 +124,13 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   DuckDB, and Polars. Optional `pyarrow` dependency, zero impact on core.
   Aligns with ADR-0003.
   → RFC: `sdd/rfcs/rfc-0002-pyarrow-filesystem-adapter.md`
-  → Spec: `sdd/specs/014-pyarrow-filesystem-adapter.md` (drafting)
-  Status: spec drafted, CHANGELOG entry added. Remaining: implementation,
-  tests, docs, examples. Requires new public Store APIs (`unwrap()`,
-  `native_path()`) for Tier 1 fast-path reads.
+  → Spec: `sdd/specs/014-pyarrow-filesystem-adapter.md`
+  Phase 1 shipped: `StoreFileSystemHandler` with Tier 2/3 reads, `_StoreSink`
+  write buffer, `pyarrow_fs()` factory, `Store.unwrap()` delegation,
+  error mapping (PA-019/020), conditional top-level export, ~35 tests,
+  user guide, example.
+  Remaining (Phase 2): `Store.native_path()`, `Backend.native_path()`,
+  Tier 1 native fast-path reads (PA-010) for PyArrow-native backends.
 
 - [ ] **ID-019 — Update stale CAP-001 in spec 003**
   `sdd/specs/003-backend-adapter-contract.md` CAP-001 still lists `GLOB` and
