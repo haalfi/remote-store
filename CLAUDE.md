@@ -8,7 +8,7 @@ Spec-Driven Development (SDD).
 ## Principles
 
 1. **Ship complete** — a change is finished when everything it touches is consistent: code, tests, docs, CHANGELOG, BACKLOG. Track gaps as `[~]`.
-2. **Verify beyond the diff** — search for what references the thing you changed. Consult `sdd/CLAUDE-REFERENCE.md` for the ripple-check table.
+2. **Verify beyond the diff** — search for what references the thing you changed. You MUST read `sdd/CLAUDE-REFERENCE.md` for the ripple-check table before committing changes that touch backends, errors, capabilities, versions, specs, or dependencies.
 3. **Repo describes reality at every commit** — docs, backlog, and CHANGELOG reflect current state, not future intent. Same commit, or mark `[~]`.
 4. **Specs are source of truth** — code vs spec conflict: code is wrong. Backlog vs history conflict: backlog is wrong. Fix the less authoritative side.
 5. **Run it, don't just type-check it** — verify behavior, not signatures. Reproduce bugs before claiming fixes. Test what matters, not just what type-checks.
@@ -16,8 +16,8 @@ Spec-Driven Development (SDD).
 
 ## Backlog (mandatory)
 
-- Read `sdd/BACKLOG.md` before starting. Note relevant item IDs (AF-NNN, BK-NNN, etc.).
-- After work: mark items `[x]` or `[~]` with a note. Same commit as the code change.
+- Read `sdd/BACKLOG.md` before starting. Note relevant item IDs (AF-NNN, BK-NNN, BL-NNN, ID-NNN).
+- After work: mark items `[x]` (with version) or `[~]` (with what remains). Same commit as the code change.
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
 ## Dev commands
