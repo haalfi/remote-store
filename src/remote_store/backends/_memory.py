@@ -103,23 +103,6 @@ class MemoryBackend(Backend):
             node = child
         return node
 
-    def _traverse_parent(self, segments: list[str]) -> tuple[_DirNode, str]:
-        """Return (parent_node, leaf_name) for the given segments.
-
-        :raises InvalidPath: If the path is empty.
-        :raises NotFound: If any intermediate directory does not exist.
-        """
-        if not segments:
-            raise InvalidPath("Path must not be empty for file operations", path="", backend="memory")
-        parent = self._traverse(segments[:-1])
-        if parent is None or not isinstance(parent, _DirNode):
-            raise NotFound(
-                f"Parent directory not found: {'/'.join(segments[:-1])}",
-                path="/".join(segments),
-                backend="memory",
-            )
-        return parent, segments[-1]
-
     def _ensure_parents(self, segments: list[str]) -> _DirNode:
         """Create intermediate directories as needed, return the parent node."""
         node = self._root
@@ -302,29 +285,40 @@ class MemoryBackend(Backend):
             if not isinstance(node, _DirNode):
                 return
             prefix = "/".join(segments) if segments else ""
-            results = list(self._collect_files(node, prefix, recursive=recursive))
+            results = self._collect_files(node, prefix, recursive=recursive)
         yield from results
 
+    @staticmethod
     def _collect_files(
-        self,
         node: _DirNode,
         prefix: str,
         *,
         recursive: bool,
-    ) -> Iterator[FileInfo]:
-        """Collect FileInfo objects from a directory node (under lock)."""
-        for name, child in node.children.items():
-            child_path = f"{prefix}/{name}" if prefix else name
-            if isinstance(child, _FileEntry):
-                yield FileInfo(
-                    path=RemotePath(child_path),
-                    name=name,
-                    size=len(child.data),
-                    modified_at=child.modified_at,
-                    content_type=child.content_type,
-                )
-            elif recursive and isinstance(child, _DirNode):
-                yield from self._collect_files(child, child_path, recursive=True)
+    ) -> list[FileInfo]:
+        """Collect FileInfo objects from a directory node (under lock).
+
+        Uses iterative DFS for consistency with ``_count_subtree`` and
+        ``get_folder_info``, avoiding recursion-limit concerns on deep trees.
+        """
+        results: list[FileInfo] = []
+        stack: list[tuple[_DirNode, str]] = [(node, prefix)]
+        while stack:
+            current, cur_prefix = stack.pop()
+            for name, child in current.children.items():
+                child_path = f"{cur_prefix}/{name}" if cur_prefix else name
+                if isinstance(child, _FileEntry):
+                    results.append(
+                        FileInfo(
+                            path=RemotePath(child_path),
+                            name=name,
+                            size=len(child.data),
+                            modified_at=child.modified_at,
+                            content_type=child.content_type,
+                        )
+                    )
+                elif recursive and isinstance(child, _DirNode):
+                    stack.append((child, child_path))
+        return results
 
     def list_folders(self, path: str) -> Iterator[str]:
         segments = self._split_path(path)
@@ -393,6 +387,10 @@ class MemoryBackend(Backend):
             raise InvalidPath("Source path must not be empty", path=src, backend="memory")
         if not dst_segments:
             raise InvalidPath("Destination path must not be empty", path=dst, backend="memory")
+
+        # Short-circuit: moving a file to itself is a no-op
+        if src_segments == dst_segments:
+            return
 
         with self._lock:
             # Find source
