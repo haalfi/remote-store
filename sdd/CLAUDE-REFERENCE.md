@@ -1,0 +1,52 @@
+# Claude Code Reference
+
+Lookup tables and detailed procedures extracted from `CLAUDE.md`.
+Consult when needed — not required reading for every session.
+
+---
+
+## Ripple-check table
+
+Before committing, check whether your change has cross-file dependencies:
+
+| If you changed…            | Also check / update                                       |
+|----------------------------|-----------------------------------------------------------|
+| **A backend**              | README backends table, `pyproject.toml` extras,           |
+|                            | `guides/backends/`, docs nav, `examples/`,                |
+|                            | `sdd/specs/`, `CONTRIBUTING.md` repo structure,           |
+|                            | `src/remote_store/_registry.py` auto-registration         |
+| **An error type**          | `sdd/specs/005-error-model.md`, all backends' error       |
+|                            | mapping, tests for every backend                          |
+| **A capability**           | `sdd/specs/003-backend-adapter-contract.md`,              |
+|                            | every backend's `capabilities()`, Store surface API       |
+| **Version number**         | `pyproject.toml`, `src/remote_store/__init__.py`,         |
+|                            | `CITATION.cff` (version + date-released),                 |
+|                            | `CHANGELOG.md` (new heading + `[Unreleased]` section)     |
+| **A spec section**         | Tests with `@pytest.mark.spec("ID")`, BACKLOG if related  |
+| **A dependency**           | `pyproject.toml` extras + minimum pins, README install    |
+|                            | instructions, docs prerequisites                          |
+| **Store or Backend ABC**   | All backend implementations, conformance tests            |
+
+---
+
+## Quick reference — "Where do I…?"
+
+| I need to…                               | Go here                                              |
+|------------------------------------------|------------------------------------------------------|
+| Find out what work is pending            | `sdd/BACKLOG.md`                                     |
+| Understand how a feature should behave   | `sdd/specs/` (NNN-topic.md; IDs use STORE-, S3-, ERR- etc.) |
+| Learn why a design decision was made     | `sdd/adrs/`                                          |
+| Propose a significant new feature        | Write an RFC in `sdd/rfcs/` (see `rfc-template.md`)  |
+| Record a new design decision             | Add an ADR in `sdd/adrs/`                            |
+| Log a bug or improvement idea            | Append to `sdd/BACKLOG.md` (Ideas section)           |
+| Document a user-facing change            | `CHANGELOG.md` — under `[Unreleased]` or version     |
+| Share a process insight or lesson learned | `DEVELOPMENT_STORY.md`                               |
+| Check or update project conventions      | `sdd/DESIGN.md`                                      |
+| Understand the full SDD workflow         | `sdd/000-process.md`                                 |
+| Add or update a backend guide            | `guides/backends/` + docs nav                        |
+| Run a quick smoke test                   | `examples/` — pick one and run it                    |
+| Verify everything passes                 | `hatch run all`                                      |
+
+---
+
+For backlog process, repo layout, and SDD workflow details see `sdd/000-process.md`.
