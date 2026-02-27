@@ -6,7 +6,7 @@ import io
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING, BinaryIO, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -157,7 +157,7 @@ class MemoryBackend(Backend):
             if not isinstance(node, _FileEntry):
                 raise NotFound(f"File not found: {path}", path=path, backend="memory")
             snapshot = bytes(node.data)
-        return io.BufferedReader(io.BytesIO(snapshot))
+        return io.BufferedReader(cast("io.RawIOBase", io.BytesIO(snapshot)))
 
     def read_bytes(self, path: str) -> bytes:
         segments = self._split_path(path)

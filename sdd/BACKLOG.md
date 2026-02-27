@@ -202,7 +202,7 @@ All v1.0 release blockers were resolved across v0.3.0–v0.4.1.
   `from __future__ import annotations` everywhere and performs no runtime
   annotation inspection, so PEP 649 is a non-issue.
 
-### Audit findings (v0.6.0–v0.6.1)
+### Audit findings (v0.6.0–v0.7.0)
 
 From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-review.md`.
 
@@ -220,7 +220,7 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
   created duplicates instead of reusing. Removed the call from S3/S3-PyArrow
   `close()`.
 
-- [x] **AF-004 — Unify `get_folder_info` on empty folders** (v0.6.0/v0.6.1)
+- [x] **AF-004 — Unify `get_folder_info` on empty folders** (v0.6.0/v0.7.0)
   S3 and S3-PyArrow now return `FolderInfo(file_count=0)` when a folder exists
   but has no files (the `exists()` check gates non-existent folders). Azure
   non-HNS retains `NotFound` for `file_count==0` — correct because non-HNS
@@ -237,22 +237,22 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
 - [x] **AF-007 — Wire Azure backend into docs site** (v0.6.0)
   Azure guide added to docs navigation in `mkdocs.yml` and `generate_docs.py`.
 
-- [x] **AF-008 — Add credential masking to backend `__repr__`** (v0.6.1)
+- [x] **AF-008 — Add credential masking to backend `__repr__`** (v0.7.0)
   Added `__repr__` to all 5 backends. Sensitive fields (key, secret, password,
   pkey, account_key, sas_token, connection_string, credential) display as
   `'***'` when set and `None` when unset. Non-sensitive fields (bucket, host,
   container, etc.) shown in clear text.
 
-- [x] **AF-009 — Fix `Registry.close()` to close all backends on error** (v0.6.1)
+- [x] **AF-009 — Fix `Registry.close()` to close all backends on error** (v0.7.0)
   `close()` now catches exceptions from individual backends, continues closing
   the rest, always runs `_backends.clear()`, and re-raises the first error.
 
-- [x] **AF-011 — Remove dead `RemoteFile`/`RemoteFolder`** (v0.6.1)
+- [x] **AF-011 — Remove dead `RemoteFile`/`RemoteFolder`** (v0.7.0)
   Removed class definitions from `_models.py`, imports from `__init__.py` and
   `__all__`, associated tests (MOD-006), docs entries, and spec section.
   Updated MOD-007 spec to reference only `FileInfo` and `FolderInfo`.
 
-- [x] **AF-015 — Update stale v0.5.0 docs** (v0.6.1)
+- [x] **AF-015 — Update stale v0.5.0 docs** (v0.7.0)
   L-1 (README `azure-storage-file-datalake`), L-2 (SECURITY.md), L-3
   (CONTRIBUTING.md spec 012), L-4 (Azure config example), L-5 (`[Unreleased]`
   section in CHANGELOG).

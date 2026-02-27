@@ -304,7 +304,7 @@ class TestBackendRepr:
             backend = LocalBackend(root=tmp)
             r = repr(backend)
             assert "LocalBackend(" in r
-            assert tmp in r
+            assert repr(tmp) in r
 
     def test_local_repr_no_secrets(self) -> None:
         """LocalBackend has no secrets, but should still have a useful repr."""
