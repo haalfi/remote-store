@@ -219,6 +219,7 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 - [ ] Push the tag: `git push origin vX.Y.Z`
 - [ ] Create GitHub Release from the tag (currently for release notes only; ID-028 will make this the single publish trigger)
 - [ ] Watch `publish.yml` — confirm it completes successfully
+- [ ] Delete the release branch: `git push origin --delete release-vX.Y.Z`
 
 #### Phase 5: Post-release verification
 

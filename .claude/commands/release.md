@@ -67,6 +67,7 @@ tagging. You control the commit and tag lifecycle manually.
 - [ ] Push the tag: `git push origin vX.Y.Z`
 - [ ] Create GitHub Release from the tag
 - [ ] Watch `publish.yml` — confirm it completes successfully
+- [ ] Delete the release branch: `git push origin --delete release-vX.Y.Z`
 
 ## Phase 5: Post-release verification
 
