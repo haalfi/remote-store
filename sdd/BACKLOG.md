@@ -11,13 +11,11 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [ ] **ID-021 — `Store.child(subpath)` — runtime sub-scoping**
+- [x] **ID-021 — `Store.child(subpath)` — runtime sub-scoping** (v0.8.0)
   Return a new Store scoped to a subfolder without recreating backend/registry.
-  Common pattern: `store.child("reports/2026/")` for folder isolation in
-  service DI, multi-tenant routing, or hierarchical data layouts. Lightweight
-  view sharing the parent's backend — no new connections. Needs design decision
-  on lifecycle semantics (close propagation, read-only option).
-  → RFC: `sdd/rfcs/rfc-0003-store-child.md` (drafting)
+  Child shares the parent's backend (identity); `child.close()` does not close
+  the shared backend. Validated via RemotePath, chainable, equality-transparent.
+  → Spec: `sdd/specs/015-store-child.md`
 
 - [ ] **BK-002 — Glob / pattern matching strategy**
   Decide per-backend glob vs client-side abstraction. S3 has native prefix listing,

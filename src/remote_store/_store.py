@@ -31,6 +31,7 @@ class Store:
     def __init__(self, backend: Backend, root_path: str = "") -> None:
         self._backend = backend
         self._root = str(RemotePath(root_path)) if root_path else ""
+        self._owns_backend = True
 
     def __repr__(self) -> str:
         return f"Store(backend={self._backend.name!r}, root_path={self._root!r})"
@@ -44,8 +45,13 @@ class Store:
         return hash((id(self._backend), self._root))
 
     def close(self) -> None:
-        """Close the underlying backend, releasing any held resources."""
-        self._backend.close()
+        """Close the underlying backend, releasing any held resources.
+
+        Child stores created via :meth:`child` do **not** close the shared
+        backend — only the owning store does.
+        """
+        if self._owns_backend:
+            self._backend.close()
 
     def __enter__(self) -> Store:
         return self
@@ -57,6 +63,24 @@ class Store:
         exc_tb: TracebackType | None,
     ) -> None:
         self.close()
+
+    def child(self, subpath: str) -> Store:
+        """Return a new Store scoped to a subfolder of this store.
+
+        The child shares this store's backend (no new connection) and
+        composes the root path: ``{self._root}/{subpath}``.
+
+        :param subpath: Non-empty relative path validated via ``RemotePath``.
+        :returns: A child Store whose ``close()`` does **not** close the
+            shared backend.
+        :raises InvalidPath: If *subpath* is empty, contains ``..``, or
+            contains null bytes.
+        """
+        validated = str(RemotePath(subpath))
+        new_root = f"{self._root}/{validated}" if self._root else validated
+        child_store = Store(backend=self._backend, root_path=new_root)
+        child_store._owns_backend = False
+        return child_store
 
     def _full_path(self, path: str) -> str:
         """Resolve a path that may be empty (store root) or a relative subpath."""
