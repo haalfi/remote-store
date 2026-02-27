@@ -19,7 +19,7 @@ jobs:
       - run: pip install hatch
       - run: hatch run lint
       - run: hatch run typecheck
-      - run: hatch run test
+      - run: hatch run test-cov
 
   build:
     needs: ci
