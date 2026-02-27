@@ -35,12 +35,13 @@ Active work items, ordered by priority.
   backend-name propagation and gating-before-path-validation ordering.
 
 - [x] **AF-013 — Add PermissionDenied/BackendUnavailable error path tests**
-  S3-016, S3-017, SFTP-021, SFTP-023 now tested via mock injection.
+  S3-016, S3-017, SFTP-021, SFTP-022, SFTP-023 now tested via mock injection.
   S3: `_classify_error()` exercised for 403/accessdenied (PermissionDenied) and
   endpoint/connect/timeout/dns/name-or-service (BackendUnavailable).
-  SFTP: `_map_exception()` exercised for `errno.EACCES` (PermissionDenied) and
-  `paramiko.SSHException` (BackendUnavailable). `pragma: no cover` removed from
-  tested paths. LocalBackend paths covered in `test_coverage_gaps.py`.
+  SFTP: `_map_exception()` exercised for `errno.EACCES` (PermissionDenied),
+  `errno.EEXIST` (AlreadyExists), and `paramiko.SSHException` (BackendUnavailable).
+  `pragma: no cover` removed from tested paths. LocalBackend paths covered in
+  `test_coverage_gaps.py`.
 
 - [ ] **AF-014 — Add CI gate to publish workflow**
   `publish.yml` triggers on `v*` tags but does not require CI to pass first.

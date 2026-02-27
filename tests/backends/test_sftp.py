@@ -355,6 +355,24 @@ class TestSFTPErrorMapping:
         assert exc_info.value.backend == "sftp"
         assert exc_info.value.path == "locked.txt"
 
+    @pytest.mark.spec("SFTP-022")
+    def test_eexist_maps_to_already_exists(self, sftp_backend: Backend) -> None:
+        """OSError with errno.EEXIST maps to AlreadyExists."""
+        import errno
+        from unittest.mock import patch
+
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        eexist = OSError(errno.EEXIST, "File exists")
+        with (
+            patch.object(sftp_backend._sftp_client, "file", side_effect=eexist),
+            pytest.raises(AlreadyExists) as exc_info,
+        ):
+            sftp_backend.read_bytes("existing.txt")
+        assert exc_info.value.backend == "sftp"
+        assert exc_info.value.path == "existing.txt"
+
     @pytest.mark.spec("SFTP-023")
     def test_ssh_exception_maps_to_backend_unavailable(self, sftp_backend: Backend) -> None:
         """paramiko.SSHException maps to BackendUnavailable."""

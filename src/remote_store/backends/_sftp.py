@@ -425,7 +425,7 @@ class SFTPBackend(Backend):
                 return NotFound(f"Not found: {path}", path=path, backend=self.name)
             if code == errno.EACCES:
                 return PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name)
-            if code == errno.EEXIST:  # pragma: no cover
+            if code == errno.EEXIST:
                 return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
             return RemoteStoreError(str(exc), path=path, backend=self.name)
         if isinstance(exc, paramiko.SSHException):
