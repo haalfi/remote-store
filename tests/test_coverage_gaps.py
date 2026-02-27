@@ -696,3 +696,170 @@ class TestCapabilityErrorShowsSupported:
 
 
 # endregion
+
+
+# region: AF-012 — Store capability gating tests (STORE-006)
+
+
+class _RestrictedBackend:
+    """Backend wrapper that removes specific capabilities for testing.
+
+    Delegates all methods to the inner MemoryBackend but overrides the
+    ``capabilities`` property to return a restricted ``CapabilitySet``.
+    """
+
+    def __init__(self, backend: MemoryBackend, exclude: set[Capability]) -> None:
+        self._inner = backend
+        self._caps = CapabilitySet(set(Capability) - exclude)
+
+    @property
+    def capabilities(self) -> CapabilitySet:
+        return self._caps
+
+    @property
+    def name(self) -> str:
+        return self._inner.name
+
+    def __getattr__(self, item: str) -> object:
+        return getattr(self._inner, item)
+
+
+def _make_store(exclude: set[Capability]) -> Store:
+    """Create a Store whose backend lacks the given capabilities."""
+    backend = MemoryBackend()
+    backend.write("test.txt", b"hello")
+    backend.write("folder/a.txt", b"data")
+    restricted = _RestrictedBackend(backend, exclude)
+    # Store expects a Backend; we pass our duck-typed wrapper
+    return Store(backend=restricted, root_path="")  # type: ignore[arg-type]
+
+
+class TestStoreCapabilityGating:
+    """AF-012: Every Store method that requires a capability must raise
+    ``CapabilityNotSupported`` when the backend lacks that capability.
+
+    Tests cover all 12 capability-gated methods with correct exception type
+    and correct ``.capability`` attribute value.
+    """
+
+    # -- READ capability --
+
+    @pytest.mark.spec("STORE-006")
+    def test_read_requires_read_capability(self) -> None:
+        store = _make_store(exclude={Capability.READ})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            store.read("test.txt")
+        assert exc_info.value.capability == "read"
+
+    @pytest.mark.spec("STORE-006")
+    def test_read_bytes_requires_read_capability(self) -> None:
+        store = _make_store(exclude={Capability.READ})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            store.read_bytes("test.txt")
+        assert exc_info.value.capability == "read"
+
+    # -- WRITE capability --
+
+    @pytest.mark.spec("STORE-006")
+    def test_write_requires_write_capability(self) -> None:
+        store = _make_store(exclude={Capability.WRITE})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            store.write("new.txt", b"data")
+        assert exc_info.value.capability == "write"
+
+    # -- ATOMIC_WRITE capability --
+
+    @pytest.mark.spec("STORE-006")
+    def test_write_atomic_requires_atomic_write_capability(self) -> None:
+        store = _make_store(exclude={Capability.ATOMIC_WRITE})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            store.write_atomic("new.txt", b"data")
+        assert exc_info.value.capability == "atomic_write"
+
+    # -- DELETE capability --
+
+    @pytest.mark.spec("STORE-006")
+    def test_delete_requires_delete_capability(self) -> None:
+        store = _make_store(exclude={Capability.DELETE})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            store.delete("test.txt")
+        assert exc_info.value.capability == "delete"
+
+    @pytest.mark.spec("STORE-006")
+    def test_delete_folder_requires_delete_capability(self) -> None:
+        store = _make_store(exclude={Capability.DELETE})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            store.delete_folder("folder")
+        assert exc_info.value.capability == "delete"
+
+    # -- LIST capability --
+
+    @pytest.mark.spec("STORE-006")
+    def test_list_files_requires_list_capability(self) -> None:
+        store = _make_store(exclude={Capability.LIST})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            list(store.list_files(""))
+        assert exc_info.value.capability == "list"
+
+    @pytest.mark.spec("STORE-006")
+    def test_list_folders_requires_list_capability(self) -> None:
+        store = _make_store(exclude={Capability.LIST})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            list(store.list_folders(""))
+        assert exc_info.value.capability == "list"
+
+    # -- METADATA capability --
+
+    @pytest.mark.spec("STORE-006")
+    def test_get_file_info_requires_metadata_capability(self) -> None:
+        store = _make_store(exclude={Capability.METADATA})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            store.get_file_info("test.txt")
+        assert exc_info.value.capability == "metadata"
+
+    @pytest.mark.spec("STORE-006")
+    def test_get_folder_info_requires_metadata_capability(self) -> None:
+        store = _make_store(exclude={Capability.METADATA})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            store.get_folder_info("")
+        assert exc_info.value.capability == "metadata"
+
+    # -- MOVE capability --
+
+    @pytest.mark.spec("STORE-006")
+    def test_move_requires_move_capability(self) -> None:
+        store = _make_store(exclude={Capability.MOVE})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            store.move("test.txt", "moved.txt")
+        assert exc_info.value.capability == "move"
+
+    # -- COPY capability --
+
+    @pytest.mark.spec("STORE-006")
+    def test_copy_requires_copy_capability(self) -> None:
+        store = _make_store(exclude={Capability.COPY})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            store.copy("test.txt", "copied.txt")
+        assert exc_info.value.capability == "copy"
+
+    # -- Verify the backend name is included in the error --
+
+    @pytest.mark.spec("STORE-006")
+    def test_error_includes_backend_name(self) -> None:
+        store = _make_store(exclude={Capability.READ})
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            store.read("test.txt")
+        assert exc_info.value.backend == "memory"
+
+    # -- Verify gating happens before path validation --
+
+    @pytest.mark.spec("STORE-006")
+    def test_capability_check_before_path_validation(self) -> None:
+        """Capability check fires before _require_file_path validates the path,
+        so even an empty path should raise CapabilityNotSupported, not InvalidPath."""
+        store = _make_store(exclude={Capability.READ})
+        with pytest.raises(CapabilityNotSupported):
+            store.read("")
+
+
+# endregion
