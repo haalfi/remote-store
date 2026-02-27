@@ -14,7 +14,8 @@ all accept `pyarrow.fs.FileSystem` objects for I/O.
 **Module:** `src/remote_store/ext/arrow.py`
 **Dependencies:** `pyarrow >= 12.0.0` (optional extra: `pip install "remote-store[arrow]"`)
 **RFC:** `sdd/rfcs/rfc-0002-pyarrow-filesystem-adapter.md`
-**Related:** ADR-0003 (fsspec is implementation detail), spec 011 (S3-PyArrow backend)
+**Related:** ADR-0003 (fsspec is implementation detail), spec 011 (S3-PyArrow backend),
+spec 001 (Store API), spec 004 (path model), spec 005 (error model)
 
 ---
 
@@ -66,8 +67,9 @@ Third-party Azure Data Lake Gen2 adapter by Robin Kaveland
   PA-006.
 - `DatalakeGen2File` class serves as a writable buffer with `close()`-on-flush
   semantics — similar to our `_StoreSink` (PA-016).
-- Guard against flushing a 0-byte buffer on `close()` — we adopt this
-  defensive check in PA-016 (the library hit this as a real bug, issue #13).
+- Guard against flushing a 0-byte buffer on `close()` — PA-016 avoids this
+  class of bugs entirely by using a single flush on `close()` with no
+  auto-flush (the library hit this as a real bug, issue #13).
 - `delete_root_dir_contents` rejects root deletion — same safety in our PA-015.
 
 **Issues we address:**
@@ -136,16 +138,35 @@ RPCs, and PA-009 (`open_input_stream`) uses a lighter-weight approach.
 
 ### PA-001: Constructor
 
-**Invariant:** `StoreFileSystemHandler` is constructed with a single `Store`
-instance.
+**Invariant:** `StoreFileSystemHandler` is constructed with a `Store` instance
+and optional tuning parameters.
 
 ```python
-StoreFileSystemHandler(store: Store)
+StoreFileSystemHandler(
+    store: Store,
+    materialization_threshold: int = 64 * 1024 * 1024,  # PA-010
+    write_spill_threshold: int = 64 * 1024 * 1024,       # PA-011
+)
 ```
+
+**Parameters:**
+- `store` — the `Store` to expose as a PyArrow filesystem.
+- `materialization_threshold` — maximum file size (bytes) for Tier 2 full-file
+  materialization in `open_input_file`. `0` disables Tier 2 (always stream);
+  `sys.maxsize` always materializes. See PA-010.
+- `write_spill_threshold` — maximum in-memory buffer size (bytes) for
+  `_StoreSink` before spilling to disk. See PA-011 / PA-016.
 
 **Postconditions:**
 - The handler holds a reference to the Store; it does not copy or wrap it.
-- No I/O occurs during construction.
+- At construction time, the handler probes the Store for a native PyArrow
+  filesystem via `store.unwrap(pyarrow.fs.FileSystem)`. If a native FS is
+  available, the handler caches both the native FS reference and a
+  path-translation closure for Tier 1 fast-path reads (PA-010). If `unwrap()`
+  raises `TypeError` or returns a non-PyArrow type, Tier 1 is disabled.
+  This pre-capture means Tier 1 never accesses private Store internals at
+  call time.
+- No other I/O occurs during construction.
 - The Store's lifetime is managed externally — the handler does not own it.
 
 ### PA-002: Convenience Factory
@@ -243,9 +264,13 @@ selector.allow_not_found → if True, return [] for missing dir; else raise
 **Behavior:**
 1. List files via `store.list_files(base_dir, recursive=selector.recursive)`.
    Each `FileInfo` maps to a `pyarrow.fs.FileInfo` with `FileType.File`.
+   File paths are store-relative (as returned by `list_files`).
 2. If `selector.recursive` is `False`, list immediate subfolders via
-   `store.list_folders(base_dir)`. Each maps to a `pyarrow.fs.FileInfo` with
-   `FileType.Directory`.
+   `store.list_folders(base_dir)`. `list_folders` returns bare folder **names**
+   (not paths), so the handler constructs the store-relative path by joining:
+   `f"{base_dir}/{name}"` (or just `name` if `base_dir` is root `""`).
+   Each entry maps to a `pyarrow.fs.FileInfo` with `FileType.Directory`,
+   `mtime=None` (folder metadata is not available from `list_folders`).
 3. If `selector.recursive` is `True`, **extract directory entries from file
    paths** rather than walking the folder tree: collect all unique parent
    prefixes from the file paths returned in step 1 (excluding `base_dir`
@@ -307,22 +332,57 @@ backend capabilities and file size:
 
 #### Tier 1: Backend-native fast path (zero overhead)
 
-If the Store's backend exposes a native PyArrow filesystem via `unwrap()`
-(e.g., `S3PyArrowBackend`), bypass the Store abstraction for the data path:
+If the Store's backend exposes a native PyArrow filesystem via the public
+`Store.unwrap()` API (e.g., `S3PyArrowBackend`), the handler uses it for reads
+instead of going through the Store abstraction:
 
 ```python
+# At construction time (PA-001):
+try:
+    native_fs = store.unwrap(pyarrow.fs.FileSystem)
+    # Pre-build path translator: store-relative key → native FS path
+    self._native_fs = native_fs
+    self._native_path = store.native_path  # returns backend-absolute path
+except TypeError:
+    self._native_fs = None
+
+# At read time:
 def open_input_file(self, path):
-    backend = self._store._backend
-    if hasattr(backend, 'unwrap'):
-        native_fs = backend.unwrap()  # Returns pyarrow.fs.S3FileSystem
-        if isinstance(native_fs, pyarrow.fs.FileSystem):
-            return native_fs.open_input_file(backend.to_key(path))
+    if self._native_fs is not None:
+        return self._native_fs.open_input_file(self._native_path(path))
     # ... fall through to Tier 2/3
 ```
+
+**Encapsulation:** Tier 1 uses only public Store APIs — `store.unwrap()` for
+the native filesystem handle and `store.native_path()` for path translation.
+It never accesses `store._backend` or other private attributes. The
+`store.unwrap(type_hint)` method delegates to `backend.unwrap()` through the
+Store's public surface; `store.native_path(key)` converts a store-relative
+key to the full backend-native path (prepending `root_path` and any
+backend-specific prefix). Both methods are proposed additions to the Store
+public API (spec 001 amendment, tracked separately).
+
+**Path conversion:** Store-relative paths (e.g., `'file.parquet'`) cannot be
+passed directly to the native filesystem — they lack the `root_path` prefix
+and backend-specific path components (bucket, base path, etc.).
+`store.native_path(key)` reconstructs the full native path:
+- Store key: `'file.parquet'`
+- With `root_path='data'`: `'data/file.parquet'`
+- With S3 bucket `my-bucket`: `'my-bucket/data/file.parquet'`
+
+This is the inverse of `store.to_key()` (spec STORE-011).
 
 This gives the full C++ `ReadAt` → HTTP Range request → I/O coalescing
 pipeline with zero GIL overhead and zero extra memory. The `S3PyArrowBackend`
 already has `unwrap()` in this codebase.
+
+**Design trade-off:** Tier 1 intentionally bypasses the Store abstraction for
+the read hot path. This means no Store-level capability checking (Store gates
+`read()` behind `Capability.READ`), no `RemotePath` validation, and no
+Store-level logging/hooks if those are ever added. This is a conscious
+performance trade-off — all non-read operations (listing, writing, deleting)
+still go through the Store API. The capability check is redundant for Tier 1
+because `unwrap()` succeeding already proves the backend is functional.
 
 #### Tier 2: BufferReader for small files (≤ threshold)
 
@@ -368,7 +428,7 @@ the memory cost.
 
 | Condition | Strategy | Memory | GIL? | Network |
 |---|---|---|---|---|
-| Backend has `unwrap()` → PyArrow FS | **Tier 1**: native `open_input_file` | ~range size | No | Range requests |
+| `store.unwrap()` → PyArrow FS | **Tier 1**: native `open_input_file` | ~range size | No | Range requests |
 | File ≤ 64 MB | **Tier 2**: `read_bytes()` → `BufferReader` | Full file | No | Full download |
 | File > 64 MB, seekable stream | **Tier 3**: `read()` → `PythonFile` | ~range size | Yes | Streaming |
 | File > 64 MB, non-seekable stream | **Tier 2 fallback** (with warning) | Full file | No | Full download |
@@ -389,15 +449,11 @@ usage and GIL overhead:
   per file (one per column chunk per row group); that's 10–50 GIL acquires,
   which is negligible compared to network I/O.
 
-**Configuration:** The materialization threshold is exposed as a constructor
-parameter:
-
-```python
-StoreFileSystemHandler(store: Store, materialization_threshold: int = 64 * 1024 * 1024)
-```
-
-Users can set this to `0` to disable Tier 2 (always use Tier 3 for non-native
-backends) or to `float('inf')` to always materialize (original PA-010 behavior).
+**Configuration:** The materialization threshold is set via the constructor
+parameter `materialization_threshold` (see PA-001 for full signature). The
+value is an `int` (bytes). Sentinel values: `0` disables Tier 2 (always stream
+for non-native backends); `sys.maxsize` always materializes regardless of file
+size.
 
 **Error mapping:** `NotFound` → `FileNotFoundError`. Other errors per PA-019.
 
@@ -440,15 +496,8 @@ The spill-to-tempfile approach bounds memory usage for data-lake workloads
 where Parquet writes routinely reach 100+ MB, while keeping small writes
 entirely in memory for speed.
 
-**Configuration:** The spill threshold is exposed as a constructor parameter:
-
-```python
-StoreFileSystemHandler(
-    store: Store,
-    materialization_threshold: int = 64 * 1024 * 1024,
-    write_spill_threshold: int = 64 * 1024 * 1024,
-)
-```
+**Configuration:** The spill threshold is set via the constructor parameter
+`write_spill_threshold` (see PA-001 for full signature).
 
 ### PA-012: open_append_stream
 
@@ -497,7 +546,12 @@ and `GcsFileSystem`. FSSpecHandler delegates to `fs.mkdir()` and swallows
 ### PA-015: delete_dir / delete_dir_contents
 
 **Invariant:**
-- `delete_dir(path)` delegates to
+- `delete_dir(path)` — if `path` is empty or root (`""`), raises
+  `NotImplementedError` (same safety as `delete_root_dir_contents`). PyArrow
+  may call `delete_dir("")` expecting root deletion; we refuse this explicitly
+  rather than letting it fall through to `Store.delete_folder()` which raises
+  `InvalidPath` → `ValueError` (per PA-019). `NotImplementedError` is a
+  clearer signal to PyArrow callers. For non-root paths, delegates to
   `store.delete_folder(path, recursive=True, missing_ok=False)`.
 - `delete_dir_contents(path, missing_dir_ok=False)` lists and deletes all
   files in the directory, then deletes subfolders recursively. If the directory
@@ -551,10 +605,11 @@ writable Python file-like object with bounded memory usage.
    buffer transparently spills to a temporary file on disk.
 3. `write(data)` appends data to the buffer. Returns the number of bytes
    written.
-4. `close()` calls `store.write(path, buffer.read(), overwrite=True)` if
-   the buffer is non-empty, then marks the sink as closed. If the buffer is
-   empty, writes an empty `bytes` object (creating an empty file, matching
-   PyArrow's semantics).
+4. `close()` seeks the buffer to position 0, reads all content, and passes
+   it to `store.write(path, content, overwrite=True)`. This always writes,
+   even if content is empty — creating an empty file matches PyArrow's
+   `open_output_stream` + immediate `close()` semantics. Calling `close()`
+   on an already-closed sink is a no-op (per `IOBase` contract).
 5. `tell()` returns the current buffer position (bytes written so far).
 6. `writable()` returns `True`.
 7. `readable()` returns `False`.
@@ -565,12 +620,12 @@ writable Python file-like object with bounded memory usage.
     contract).
 
 **Defensive checks (learned from pyarrowfs-adlgen2 issue #13):**
-- `close()` guards against flushing when the internal buffer is in an
-  unexpected state. pyarrowfs-adlgen2 hit a bug where a large write that
-  exactly filled the buffer triggered an auto-flush, then `close()` tried
-  to flush an empty 0-byte buffer which Azure rejected. Our design avoids
-  auto-flush entirely (single flush on `close()`), but we still guard the
-  close path defensively.
+- pyarrowfs-adlgen2 hit a bug where a large write that exactly filled the
+  buffer triggered an auto-flush, then `close()` tried to flush a second
+  time against Azure which rejected the empty write. Our design avoids
+  auto-flush entirely — the single write to the Store happens on `close()`,
+  and `SpooledTemporaryFile` handles the in-memory-to-disk promotion
+  transparently without triggering flushes.
 
 ---
 
@@ -596,6 +651,14 @@ exceptions that PyArrow understands:
 `PermissionError`, etc.) and translates them into `ArrowIOError` for C++ callers.
 Using standard exceptions ensures clean interop without PyArrow-specific imports
 in the error path.
+
+**Capability gating:** The Store gates operations behind
+`capabilities.require()` — e.g., `store.copy()` raises `CapabilityNotSupported`
+if the backend lacks `Capability.COPY`. Per the mapping table above,
+`CapabilityNotSupported` → `NotImplementedError`. PyArrow callers interpret
+`NotImplementedError` as "this filesystem does not support this operation,"
+which is the correct semantic. This means capability gating works correctly
+through the error mapping without any special-case handling in the adapter.
 
 **Quality note:** This is a deliberate improvement over prior art. FSSpecHandler
 has minimal error handling — most backend exceptions propagate raw.

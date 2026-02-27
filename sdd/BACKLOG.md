@@ -110,8 +110,9 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Aligns with ADR-0003.
   → RFC: `sdd/rfcs/rfc-0002-pyarrow-filesystem-adapter.md`
   → Spec: `sdd/specs/014-pyarrow-filesystem-adapter.md` (drafting)
-  Status: spec drafted. Remaining: implementation, tests, docs, examples,
-  CHANGELOG.
+  Status: spec drafted, CHANGELOG entry added. Remaining: implementation,
+  tests, docs, examples. Requires new public Store APIs (`unwrap()`,
+  `native_path()`) for Tier 1 fast-path reads.
 
 - [ ] **ID-019 — Update stale CAP-001 in spec 003**
   `sdd/specs/003-backend-adapter-contract.md` CAP-001 still lists `GLOB` and
