@@ -28,9 +28,13 @@ def register_backend(type_name: str, cls: type[Backend]) -> None:
 def _register_builtin_backends() -> None:
     """Register the built-in backends."""
     from remote_store.backends._local import LocalBackend
+    from remote_store.backends._memory import MemoryBackend
 
     if "local" not in _BACKEND_FACTORIES:
         register_backend("local", LocalBackend)
+
+    if "memory" not in _BACKEND_FACTORIES:
+        register_backend("memory", MemoryBackend)
 
     if "azure" not in _BACKEND_FACTORIES:
         try:

@@ -102,18 +102,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   bare RTD URLs. Sweep for `readthedocs.io/` links without a version prefix
   and fix them. One-time task.
 
-- [~] **ID-017 — Memory backend**
-  Tree-indexed in-memory backend. Zero dependencies, no filesystem access.
-  Primary use cases: unit testing (no temp dir setup/teardown), interactive
-  exploration, documentation examples, CI speed, large in-process data
-  structures. Simpler than `LocalBackend` — no path resolution, no OS errors,
-  no atomicity concerns. Designed to pass the full conformance suite with
-  zero skips. Built-in (no optional extra needed).
-  → Spec: `sdd/specs/013-memory-backend.md`
-  Status: spec complete. Remaining: implementation (`_memory.py`), registry
-  registration, conformance test wiring, Store test fixture migration, docs
-  (guide + nav), examples, CHANGELOG.
-
 - [ ] **ID-016 — PyArrow FileSystemHandler adapter**
   Implement a `StoreFileSystemHandler` in `ext/arrow.py` that wraps any
   `Store` into a `pyarrow.fs.PyFileSystem` via `pyarrow.fs.FileSystemHandler`.
@@ -266,6 +254,14 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
   section in CHANGELOG).
 
 ### Ideas shipped
+
+- [x] **ID-017 — Memory backend** (v0.7.0)
+  Tree-indexed in-memory backend. Zero dependencies, no filesystem access.
+  Supports all 8 capabilities, full conformance suite with zero skips.
+  Registered as `"memory"` type unconditionally. Store test fixtures migrated
+  from `LocalBackend` + `tempfile` to `MemoryBackend`.
+  Done: implementation, registry, conformance wiring, Store fixture migration,
+  guide, docs nav, example, CHANGELOG, README.
 
 - [x] **ID-011 — Python 3.14 support** (v0.3.0) → graduated to BK-004
 

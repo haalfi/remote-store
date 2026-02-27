@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store.backends._local import LocalBackend
+from remote_store.backends._memory import MemoryBackend
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -162,7 +163,7 @@ def azurite_server() -> Iterator[str | None]:
     yield _AZURITE_CONN_STR
 
 
-@pytest.fixture(params=["local", _s3_param, _s3_pyarrow_param, _sftp_param, _azure_param])
+@pytest.fixture(params=["local", "memory", _s3_param, _s3_pyarrow_param, _sftp_param, _azure_param])
 def backend(
     request: pytest.FixtureRequest,
     moto_server: str | None,
@@ -173,6 +174,8 @@ def backend(
     if request.param == "local":
         with tempfile.TemporaryDirectory() as tmp:
             yield LocalBackend(root=tmp)
+    elif request.param == "memory":
+        yield MemoryBackend()
     elif request.param == "s3":
         import boto3
 

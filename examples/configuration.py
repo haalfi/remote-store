@@ -126,6 +126,14 @@ if __name__ == "__main__":
     )
     print(f"Azure config: {len(azure_config.stores)} store(s)")
 
+    memory_config = RegistryConfig(
+        backends={
+            "mem": BackendConfig(type="memory"),
+        },
+        stores={"scratch": StoreProfile(backend="mem", root_path="scratch")},
+    )
+    print(f"Memory config: {len(memory_config.stores)} store(s)")
+
     # --- Config validation: referencing unknown backend raises ValueError ---
     try:
         bad = RegistryConfig(

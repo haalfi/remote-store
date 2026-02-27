@@ -162,6 +162,7 @@ For full details, see the [API reference](https://remote-store.readthedocs.io/en
 |Backend              |Status    |Extra                       |
 |---------------------|----------|----------------------------|
 |Local filesystem     |Built-in  |                            |
+|Memory (in-process)  |Built-in  |                            |
 |Amazon S3 / MinIO    |Built-in  |`remote-store[s3]`          |
 |S3 (PyArrow)         |Built-in  |`remote-store[s3-pyarrow]`  |
 |SFTP / SSH           |Built-in  |`remote-store[sftp]`        |

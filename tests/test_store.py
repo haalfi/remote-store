@@ -1,23 +1,27 @@
-"""Tests for Store — derived from sdd/specs/001-store-api.md (STORE sections). Integration tests via local backend."""
+"""Tests for Store — derived from sdd/specs/001-store-api.md (STORE sections)."""
 
 from __future__ import annotations
 
 import tempfile
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, InvalidPath, NotFound
 from remote_store._models import FileInfo, FolderInfo
 from remote_store._store import Store
 from remote_store.backends._local import LocalBackend
+from remote_store.backends._memory import MemoryBackend
 
 
 @pytest.fixture
-def store() -> Store:
-    with tempfile.TemporaryDirectory() as tmp:
-        backend = LocalBackend(root=tmp)
-        yield Store(backend=backend, root_path="data")  # type: ignore[misc]
+def store() -> Iterator[Store]:
+    backend = MemoryBackend()
+    yield Store(backend=backend, root_path="data")
 
 
 class TestStoreConstruction:
@@ -25,10 +29,9 @@ class TestStoreConstruction:
 
     @pytest.mark.spec("STORE-001")
     def test_construction(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="myroot")
-            assert store is not None
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="myroot")
+        assert store is not None
 
 
 class TestStorePathValidation:

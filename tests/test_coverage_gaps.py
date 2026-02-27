@@ -25,6 +25,7 @@ from remote_store._registry import Registry
 from remote_store._store import Store
 from remote_store._types import Extras, PathLike, WritableContent
 from remote_store.backends._local import LocalBackend
+from remote_store.backends._memory import MemoryBackend
 
 NOW = datetime(2024, 1, 1, tzinfo=timezone.utc)
 
@@ -51,122 +52,107 @@ class TestStoreRepr:
     """Store.__repr__ for debugging."""
 
     def test_repr(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            r = repr(store)
-            assert "Store(" in r
-            assert "local" in r
-            assert "data" in r
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        r = repr(store)
+        assert "Store(" in r
+        assert "memory" in r
+        assert "data" in r
 
     def test_repr_no_root(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend)
-            assert "root_path=''" in repr(store)
+        backend = MemoryBackend()
+        store = Store(backend=backend)
+        assert "root_path=''" in repr(store)
 
 
 class TestStoreEmptyPathNoRoot:
     """Store with no root_path handles empty path correctly."""
 
     def test_full_path_empty_no_root(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="")
-            store.write("a.txt", b"data")
-            assert store.exists("")
-            assert store.is_folder("")
-            assert list(store.list_files("")) != []
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="")
+        store.write("a.txt", b"data")
+        assert store.exists("")
+        assert store.is_folder("")
+        assert list(store.list_files("")) != []
 
     def test_full_path_nonempty_no_root(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="")
-            store.write("sub/a.txt", b"data")
-            assert store.exists("sub/a.txt")
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="")
+        store.write("sub/a.txt", b"data")
+        assert store.exists("sub/a.txt")
 
 
 class TestStoreEmptyPathRejection:
     """File-targeted methods reject empty path."""
 
     def test_write_empty_path(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            with pytest.raises(InvalidPath):
-                store.write("", b"data")
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        with pytest.raises(InvalidPath):
+            store.write("", b"data")
 
     def test_write_atomic_empty_path(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            with pytest.raises(InvalidPath):
-                store.write_atomic("", b"data")
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        with pytest.raises(InvalidPath):
+            store.write_atomic("", b"data")
 
     def test_read_empty_path(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            with pytest.raises(InvalidPath):
-                store.read("")
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        with pytest.raises(InvalidPath):
+            store.read("")
 
     def test_read_bytes_empty_path(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            with pytest.raises(InvalidPath):
-                store.read_bytes("")
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        with pytest.raises(InvalidPath):
+            store.read_bytes("")
 
     def test_delete_empty_path(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            with pytest.raises(InvalidPath):
-                store.delete("")
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        with pytest.raises(InvalidPath):
+            store.delete("")
 
     def test_delete_folder_empty_path(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            with pytest.raises(InvalidPath):
-                store.delete_folder("")
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        with pytest.raises(InvalidPath):
+            store.delete_folder("")
 
     def test_get_file_info_empty_path(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            with pytest.raises(InvalidPath):
-                store.get_file_info("")
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        with pytest.raises(InvalidPath):
+            store.get_file_info("")
 
     def test_move_empty_src(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            with pytest.raises(InvalidPath):
-                store.move("", "dst.txt")
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        with pytest.raises(InvalidPath):
+            store.move("", "dst.txt")
 
     def test_move_empty_dst(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            store.write("src.txt", b"data")
-            with pytest.raises(InvalidPath):
-                store.move("src.txt", "")
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        store.write("src.txt", b"data")
+        with pytest.raises(InvalidPath):
+            store.move("src.txt", "")
 
     def test_copy_empty_src(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            with pytest.raises(InvalidPath):
-                store.copy("", "dst.txt")
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        with pytest.raises(InvalidPath):
+            store.copy("", "dst.txt")
 
     def test_copy_empty_dst(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            store.write("src.txt", b"data")
-            with pytest.raises(InvalidPath):
-                store.copy("src.txt", "")
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        store.write("src.txt", b"data")
+        with pytest.raises(InvalidPath):
+            store.copy("src.txt", "")
 
 
 # endregion
@@ -326,6 +312,20 @@ class TestBackendRepr:
             backend = LocalBackend(root=tmp)
             r = repr(backend)
             assert "LocalBackend(root=" in r
+
+    def test_memory_repr(self) -> None:
+        backend = MemoryBackend()
+        r = repr(backend)
+        assert "MemoryBackend(" in r
+        assert "files=0" in r
+        assert "folders=0" in r
+
+    def test_memory_repr_after_writes(self) -> None:
+        backend = MemoryBackend()
+        backend.write("a/b.txt", b"data")
+        r = repr(backend)
+        assert "files=1" in r
+        assert "folders=1" in r
 
 
 class TestBackendReprMasking:
@@ -600,68 +600,59 @@ class TestStoreContextManager:
     """Store supports close() and context manager protocol."""
 
     def test_close(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            store.close()  # should not raise
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        store.close()  # should not raise
 
     def test_context_manager(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            with Store(backend=backend, root_path="data") as store:
-                store.write("a.txt", b"data")
-                assert store.exists("a.txt")
+        backend = MemoryBackend()
+        with Store(backend=backend, root_path="data") as store:
+            store.write("a.txt", b"data")
+            assert store.exists("a.txt")
 
 
 class TestStoreRootPathValidation:
     """Store constructor validates root_path."""
 
     def test_root_path_with_dotdot_rejected(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            with pytest.raises(InvalidPath, match="\\.\\."):
-                Store(backend=backend, root_path="../escape")
+        backend = MemoryBackend()
+        with pytest.raises(InvalidPath, match="\\.\\."):
+            Store(backend=backend, root_path="../escape")
 
     def test_root_path_with_null_byte_rejected(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            with pytest.raises(InvalidPath, match="null"):
-                Store(backend=backend, root_path="bad\0path")
+        backend = MemoryBackend()
+        with pytest.raises(InvalidPath, match="null"):
+            Store(backend=backend, root_path="bad\0path")
 
     def test_root_path_normalized(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="a//b/./c")
-            assert store._root == "a/b/c"
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="a//b/./c")
+        assert store._root == "a/b/c"
 
 
 class TestStoreEquality:
     """Store __eq__ and __hash__."""
 
     def test_same_store_equal(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            a = Store(backend=backend, root_path="data")
-            b = Store(backend=backend, root_path="data")
-            assert a == b
+        backend = MemoryBackend()
+        a = Store(backend=backend, root_path="data")
+        b = Store(backend=backend, root_path="data")
+        assert a == b
 
     def test_different_root_not_equal(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            a = Store(backend=backend, root_path="data")
-            b = Store(backend=backend, root_path="other")
-            assert a != b
+        backend = MemoryBackend()
+        a = Store(backend=backend, root_path="data")
+        b = Store(backend=backend, root_path="other")
+        assert a != b
 
     def test_different_backend_not_equal(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            a = Store(backend=LocalBackend(root=tmp), root_path="data")
-            b = Store(backend=LocalBackend(root=tmp), root_path="data")
-            assert a != b  # different backend instances
+        a = Store(backend=MemoryBackend(), root_path="data")
+        b = Store(backend=MemoryBackend(), root_path="data")
+        assert a != b  # different backend instances
 
     def test_not_equal_to_non_store(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            store = Store(backend=LocalBackend(root=tmp))
-            assert store != "not a store"
+        store = Store(backend=MemoryBackend())
+        assert store != "not a store"
 
 
 class TestRegistryEquality:
