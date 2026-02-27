@@ -141,6 +141,7 @@ examples = [
   "python examples/atomic_writes.py",
   "python examples/configuration.py",
   "python examples/error_handling.py",
+  "python examples/memory_backend.py",
 ]
 bench = 'pytest benchmarks/ -v --benchmark-sort=mean -m "not slow"'
 bench-full = "pytest benchmarks/ -v --benchmark-sort=mean"

@@ -27,6 +27,7 @@ sdd/
     010-native-path-resolution.md
     011-s3-pyarrow-backend.md
     012-azure-backend.md
+    013-memory-backend.md
   adrs/                       # Architecture Decision Records (immutable)
   rfcs/                       # Proposals under discussion
 ```

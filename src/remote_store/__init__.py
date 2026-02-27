@@ -17,6 +17,7 @@ from remote_store._models import FileInfo, FolderInfo
 from remote_store._path import RemotePath
 from remote_store._registry import Registry, register_backend
 from remote_store._store import Store
+from remote_store.backends._memory import MemoryBackend
 
 __version__ = "0.6.1"
 
@@ -25,6 +26,7 @@ __all__ = [
     "Store",
     "Registry",
     "Backend",
+    "MemoryBackend",
     "register_backend",
     # Path & Models
     "RemotePath",
