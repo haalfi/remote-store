@@ -137,15 +137,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### How to bump
 
-Version is managed with [`bump-my-version`](https://github.com/callowayproject/bump-my-version). A single command bumps `pyproject.toml`, `src/remote_store/__init__.py`, and `CITATION.cff` atomically, commits, and tags:
+Version is managed with [`bump-my-version`](https://github.com/callowayproject/bump-my-version). It bumps `pyproject.toml`, `src/remote_store/__init__.py`, and `CITATION.cff` atomically. For the full release procedure (including `--no-commit --no-tag` flags, manual edits, and tag lifecycle), see **§ Release** below.
+
+Quick reference for the command syntax:
 
 ```bash
 bump-my-version bump patch   # 0.4.1 → 0.4.2
 bump-my-version bump minor   # 0.4.1 → 0.5.0
 bump-my-version bump major   # 0.4.1 → 1.0.0
 ```
-
-After bumping, move the `[Unreleased]` section in `CHANGELOG.md` under a new `[X.Y.Z] - YYYY-MM-DD` heading and add a fresh `[Unreleased]` above it.
 
 ## Consistency Checklists
 
@@ -198,7 +198,8 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 - [ ] Update `date-released` in `CITATION.cff` to today
 - [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
-- [ ] `bump-my-version bump --no-tag patch|minor|major` (bumps `pyproject.toml`, `__init__.py`, `CITATION.cff` version; tag is created on master in Phase 4)
+- [ ] `bump-my-version bump --no-commit --no-tag patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff` without committing)
+- [ ] Stage and commit all Phase 2 changes together: `git add -A && git commit -m "Release vX.Y.Z"`
 
 #### Phase 3: Validate
 
@@ -212,15 +213,11 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 - [ ] Push branch, open PR, wait for CI green
 - [ ] Request PR review — wait for approval before merging
 - [ ] Merge PR to master
-- [ ] Tag the merge commit on master: `git tag vX.Y.Z` (ensures tag is reachable from master)
+- [ ] Verify HEAD is the merge commit: `git log --oneline -1`
+- [ ] Tag the merge commit: `git tag vX.Y.Z` (or `git tag vX.Y.Z <sha>` if master advanced)
 - [ ] Push the tag: `git push origin vX.Y.Z`
-- [ ] Create GitHub Release from the tag — this triggers PyPI publish and docs deploy (see note below)
+- [ ] Create GitHub Release from the tag — for release notes; after ID-028 this becomes the single publish trigger
 - [ ] Watch `publish.yml` — confirm it completes successfully
-
-> **Note:** The GitHub Release is the single trigger for all release automation.
-> `publish.yml` and `docs.yml` should fire on `release: published`, not on tag
-> push or master push. Until ID-028 and ID-029 are implemented, the current
-> triggers still apply — verify manually that everything deployed.
 
 #### Phase 5: Post-release verification
 
