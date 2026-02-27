@@ -11,6 +11,14 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
+- [ ] **ID-021 — `Store.child(subpath)` — runtime sub-scoping**
+  Return a new Store scoped to a subfolder without recreating backend/registry.
+  Legacy app's most-used pattern: `child_store("reports/2026/")` for folder
+  isolation in service DI. Trivial API surface but needs design decision on
+  whether child shares the backend instance or gets its own lifecycle.
+  Validated by legacy app analysis (see `memory/legacy-app-analysis.md`).
+  → RFC: `sdd/rfcs/rfc-0003-store-child.md` (drafting)
+
 - [ ] **BK-002 — Glob / pattern matching strategy**
   Decide per-backend glob vs client-side abstraction. S3 has native prefix listing,
   SFTP does not. Spec the chosen approach or document why it stays per-backend.
@@ -44,6 +52,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
 - [ ] **ID-001 — Cross-store transfer**
   High-level API to move/copy data between stores (e.g. SFTP → S3).
   Could be a `Store.transfer_to(other_store, path)` method or a standalone utility.
+  Likely ships as part of `ext.transfer` alongside ID-009.
 
 - [ ] **ID-002 — YAML config support**
   Allow `RegistryConfig.from_yaml()` alongside the existing `from_dict()`.
@@ -57,6 +66,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Add optional `logging` calls at key points (connection open/close, read/write,
   retries, errors). Lets users debug in production without changing the public API.
   Consider a lightweight callback/event system for metrics collection.
+  Superseded by broader ID-024 (`ext.notify`) — merge or close when ID-024 ships.
 
 - [ ] **ID-005 — Built-in `from_toml()` config loader**
   Use `tomllib` (stdlib in 3.11+, `tomli` backport for 3.10) to add
@@ -83,7 +93,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
 - [ ] **ID-009 — `Store.upload()` / `Store.download()` convenience methods**
   Dedicated methods for the most common real-world pattern: local file path in,
   remote path out (and vice versa). Eliminates the open-file-wrap-in-BytesIO
-  dance.
+  dance. Likely ships as part of `ext.transfer` alongside ID-001.
 
 - [ ] **ID-010 — Retry policy configuration**
   SFTP has hardcoded retry logic (3 attempts, 2–10 s backoff via `tenacity`).
@@ -119,6 +129,51 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `RECURSIVE_LIST` as `Capability` enum members. These were removed in v0.6.0
   (AF-002). Update CAP-001 to list only the 8 current members. Pre-existing
   inconsistency, not introduced by ID-017.
+
+- [ ] **ID-020 — Benchmark tiered modes and single-backend filtering**
+  Current bench suite works well locally but cloud runs timeout (AWS hit this).
+  Three changes: (A) `--backend` CLI filter to restrict runs to one backend,
+  (B) tiered speed modes (quick ~2min/backend, standard ~5min, full ~20-30min)
+  replacing the binary slow/not-slow split, (C) cloud-aware round scaling and
+  per-backend timeout watchdog. Optional: named profiles (`--profile ci-quick`).
+  Details: `memory/benchmarks-id020.md`.
+
+- [ ] **ID-022 — `ext.batch` — batch operations**
+  Batch delete (S3 supports 1000/call natively), batch copy, batch existence
+  checks. Legacy app uses `delete([key1, key2, ...])` as a core pattern.
+  Backend-aware: S3 uses native DeleteObjects, others fall back to sequential.
+  API: `from remote_store.ext.batch import batch_delete, batch_exists`.
+
+- [ ] **ID-023 — `ext.transfer` — cross-store and local-path transfers**
+  Unifies ID-001 (cross-store transfer) and ID-009 (upload/download).
+  `upload(store, local_path, remote_key)`, `download(store, key, local_path)`,
+  `transfer(src_store, src_path, dst_store, dst_path)`. Chunked streaming,
+  progress callbacks (ID-006), optional resume support.
+
+- [ ] **ID-024 — `ext.notify` — hooks / middleware / instrumentation**
+  Interceptor layer wrapping Store for logging, metrics, auditing, circuit
+  breaking. `store = instrument(store, on_read=..., on_write=..., on_error=...)`.
+  Generalizes legacy app's S3LogHandler pattern. Compatible with `structlog`,
+  stdlib `logging`, or plain callbacks. Supersedes ID-004.
+
+- [ ] **ID-025 — `ext.cache` — store-level caching middleware**
+  Wraps a Store and caches reads, folder stats, existence checks with TTL.
+  `cached = CachedStore(store, ttl=300)`. Auto-invalidates on writes.
+  Generalizes legacy app's `FolderMetaPolicy.fresh(minutes=5)` pattern.
+  In-memory by default, pluggable cache backend for distributed use.
+
+- [ ] **ID-026 — Streaming atomic writes**
+  Context manager for streaming large files with atomic commit:
+  `with store.open_write_atomic(key) as out: out.write(chunk)`.
+  Legacy app uses this for Parquet snapshot exports. Current `write_atomic()`
+  only accepts `bytes`. Needs temp-path strategy per backend.
+
+- [ ] **ID-027 — Extension architecture (`ext.*` namespace)**
+  Formalize the `remote_store.ext` package as the home for opt-in higher-level
+  features. Document the contract: extensions depend on public Store/Backend
+  API only, ship inside the package but behind optional extras. Existing
+  precedent: `ext/arrow.py` (ID-016). Entry-point plugin discovery deferred
+  until third-party extensions emerge.
 
 - [ ] **ID-018 — conda-forge publishing**
   Submit a staged-recipes PR to conda-forge so users can `conda install -c
