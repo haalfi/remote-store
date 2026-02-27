@@ -277,6 +277,9 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   no atomicity concerns. Designed to pass the full conformance suite with
   zero skips. Built-in (no optional extra needed).
   → Spec: `sdd/specs/013-memory-backend.md`
+  Status: spec complete. Remaining: implementation (`_memory.py`), registry
+  registration, conformance test wiring, Store test fixture migration, docs
+  (guide + nav), examples, CHANGELOG.
 
 - [ ] **ID-016 — PyArrow FileSystemHandler adapter**
   Implement a `StoreFileSystemHandler` in `ext/arrow.py` that wraps any
@@ -285,6 +288,12 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   DuckDB, and Polars. Optional `pyarrow` dependency, zero impact on core.
   Aligns with ADR-0003.
   → RFC: `sdd/rfcs/rfc-0002-pyarrow-filesystem-adapter.md`
+
+- [ ] **ID-019 — Update stale CAP-001 in spec 003**
+  `sdd/specs/003-backend-adapter-contract.md` CAP-001 still lists `GLOB` and
+  `RECURSIVE_LIST` as `Capability` enum members. These were removed in v0.6.0
+  (AF-002). Update CAP-001 to list only the 8 current members. Pre-existing
+  inconsistency, not introduced by ID-017.
 
 - [ ] **ID-018 — conda-forge publishing**
   Submit a staged-recipes PR to conda-forge so users can `conda install -c

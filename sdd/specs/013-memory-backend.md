@@ -31,7 +31,7 @@ A `dict[str, bytes]` is the obvious starting point. It is wrong at scale.
 | `list_files(recursive=True)` | **O(n)** full scan | **O(subtree)** DFS |
 | `list_folders` | **O(n)** full scan, deduplicate | **O(k)** iterate children |
 | `get_folder_info` | **O(n)** scan + aggregate | **O(subtree)** DFS |
-| `delete_folder(recursive=True)` | **O(n)** scan + delete each | **O(1)** detach subtree |
+| `delete_folder(recursive=True)` | **O(n)** scan + delete each | **O(subtree)** walk + detach |
 
 Where **n** = total files in the backend, **k** = direct children of the target
 folder, **d** = depth of the path (typically 3–8, effectively constant).
@@ -72,8 +72,12 @@ class _FileEntry:
 
 @dataclass(slots=True)
 class _DirNode:
-    children: dict[str, _DirNode | _FileEntry]
+    children: dict[str, _DirNode | _FileEntry] = field(default_factory=dict)
 ```
+
+`_DirNode` uses `field(default_factory=dict)` so that `_DirNode()` can be
+called without arguments — this is the common case when creating intermediate
+directories during `write()`, `move()`, and `copy()`.
 
 ### MEM-DS-003: Why `bytearray` Over `bytes`
 
@@ -121,14 +125,25 @@ def _traverse(self, path: str) -> _DirNode | _FileEntry | None:
 This is O(d) dict lookups where d = path depth. Each lookup is an O(1) hash
 operation on a short string (single path segment, not the full path).
 
-**Path validation:** `_traverse` assumes paths are pre-validated. When used via
-`Store`, the `RemotePath` constructor handles normalization and rejection of
-`..`, null bytes, and absolute paths. When `MemoryBackend` is used directly
-(without `Store`), the backend must perform its own validation before
-traversal: reject paths containing `..` segments or null bytes by raising
-`InvalidPath`. This mirrors `LocalBackend._resolve()` which validates before
-resolving. The validation is a simple segment check — no filesystem interaction
-is needed.
+**Path validation:** When `MemoryBackend` is used directly (without `Store`),
+the backend validates paths before traversal. When used via `Store`, the
+`RemotePath` constructor handles normalization upstream — but the backend must
+not rely on this since direct use is a supported pattern.
+
+Validation rules (applied by splitting on `'/'` and inspecting segments):
+
+| Input | Behavior |
+|---|---|
+| `""` (empty string) | Valid for folder operations (resolves to root `_DirNode`). Rejected by file-targeted operations per existing `Store` convention. |
+| `"/"` or absolute paths | Raise `InvalidPath`. Paths are always relative. |
+| `"a/b/"` (trailing slash) | Trailing slash is stripped (normalize to `"a/b"`). |
+| `"a//b"` (double slash) | Empty segments are skipped (normalize to `"a/b"`). |
+| `"a/./b"` (dot segment) | `"."` segments are skipped (normalize to `"a/b"`). |
+| `"a/../b"` (`..` segment) | Raise `InvalidPath`. Escape attempt. |
+| `"a/b\x00c"` (null byte) | Raise `InvalidPath`. Unsafe character. |
+
+This mirrors `LocalBackend._resolve()` semantics and `RemotePath` normalization
+rules. The validation is a simple segment check — no filesystem interaction.
 
 ### MEM-DS-006: Folder Semantics
 
@@ -161,7 +176,10 @@ MemoryBackend()
 ```
 
 **Invariant:** No required parameters. The backend starts empty.
-**Postconditions:** An empty root `_DirNode` is created. No I/O, no
+**Postconditions:** An empty root `_DirNode` is created. `_file_count = 0`,
+`_folder_count = 0`. The root node is **not** counted in `_folder_count` — it
+is an implicit container, not a user-created folder. A fresh
+`MemoryBackend()` has `repr` `MemoryBackend(files=0, folders=0)`. No I/O, no
 side effects.
 
 ### MEM-002: Backend Name
@@ -207,9 +225,19 @@ documents memory-specific behavior only.
 
 **Invariant:** `read(path)` returns a `BinaryIO` that is **not** `io.BytesIO`.
 
-**Implementation:** Wrap content in `io.BufferedReader(io.BytesIO(data))`.
-This satisfies the streaming conformance test (SIO-001) while remaining pure
-stdlib. The returned stream is seekable and closable.
+**Implementation:**
+```python
+def read(self, path: str) -> BinaryIO:
+    with self._lock:
+        entry = ...  # traverse to _FileEntry, raise NotFound if missing
+        snapshot = bytes(entry.data)  # immutable copy under lock
+    return io.BufferedReader(io.BytesIO(snapshot))
+```
+The `bytes()` copy is taken under the lock so that a concurrent `write()` cannot
+mutate the `bytearray` while the snapshot is being created. The lock is released
+before the `BufferedReader` wrapper is returned — the caller reads from an
+immutable copy without holding the lock. The returned stream is seekable and
+closable.
 
 **Contract note:** `io.BufferedReader` officially wraps `io.RawIOBase`, and
 `io.BytesIO` extends `io.BufferedIOBase`, not `RawIOBase`. However, CPython
@@ -231,17 +259,29 @@ instead of streaming. For a memory backend that distinction is moot — the data
 The caller receives an immutable copy. Mutations to the returned bytes cannot
 corrupt the backend's state. This is a deliberate safety boundary.
 
-### MEM-012: write() — BinaryIO Handling
+### MEM-012: write() — Full Operation
 
-**Invariant:** When `content` is `BinaryIO`, the backend reads from the current
-stream position to EOF and stores the result.
+**Preconditions:** Path must pass validation (MEM-DS-005). If the path resolves
+to an existing `_FileEntry` and `overwrite=False`, raise `AlreadyExists`.
 
-**Implementation:**
+**Behavior:**
+1. Validate path.
+2. Traverse the tree, creating intermediate `_DirNode` entries for any missing
+   path segments (same as BE-009). Each new `_DirNode` uses
+   `_DirNode(children={})` and increments `_folder_count`.
+3. If the leaf already exists as a `_FileEntry`:
+   - If `overwrite=False`: raise `AlreadyExists`.
+   - If `overwrite=True`: update content in-place via slice assignment.
+4. If the leaf does not exist: create a new `_FileEntry`, insert into parent's
+   `children`, and increment `_file_count`.
+5. Set `modified_at` to `datetime.now(timezone.utc)`.
+
+**Content handling:**
 ```python
 if isinstance(content, bytes):
     entry.data[:] = content      # in-place slice assignment
 else:
-    entry.data[:] = content.read()
+    entry.data[:] = content.read()  # BinaryIO: read from current position
 ```
 
 ### MEM-013: write_atomic() — Identical to write()
@@ -252,14 +292,21 @@ In-memory operations are inherently atomic — no temp file, no rename, no
 partial-write window. Implementing a fake temp-file dance would add complexity
 and slow down writes for no correctness benefit.
 
-### MEM-014: delete_folder() — Subtree Detach
+### MEM-014: delete_folder() — Subtree Removal
 
-**Invariant:** `delete_folder(path, recursive=True)` removes the `_DirNode`
-from its parent's `children` dict in a single operation.
+**Invariant:** `delete_folder(path, recursive=True)` walks the subtree to
+count files and folders being removed, decrements `_file_count` and
+`_folder_count` accordingly, then detaches the `_DirNode` from its parent's
+`children` dict. Descendants become unreachable and are collected by GC.
 
-All descendants become unreachable and are collected by Python's GC. No
-per-file iteration needed — this is O(1) for the detach, O(subtree) for GC
-(which happens asynchronously and in C code).
+This is O(subtree) — the walk is required to maintain the running counters
+(MEM-004). The alternative (O(1) detach + lazy counter recomputation) was
+rejected because it makes `__repr__` either O(n) or stale, and the subtree
+walk is pure dict iteration without I/O.
+
+`delete_folder(path, recursive=False)` is O(d): traverse to the node, verify
+it has no children (else `DirectoryNotEmpty`), remove from parent, decrement
+`_folder_count` by 1.
 
 ### MEM-015: get_folder_info() — Subtree Walk
 
@@ -278,17 +325,34 @@ directories, this is CPU-bound on dict iteration, not I/O-bound.
 
 ### MEM-016: move() — Detach and Reattach
 
-**Invariant:** `move(src, dst)` detaches the `_FileEntry` from the source
-parent and inserts it into the destination parent. The `data` buffer is not
-copied.
+**Preconditions:** `src` must resolve to an existing `_FileEntry` (else
+`NotFound`). If `dst` resolves to an existing `_FileEntry` and
+`overwrite=False`, raise `AlreadyExists`.
+
+**Behavior:** Detach the `_FileEntry` from the source parent's `children` dict
+and insert it into the destination parent. Intermediate `_DirNode` entries for
+`dst` are created as needed (same as `write()`, per BE-009). The `data` buffer
+is not copied — the same `bytearray` is reattached. `modified_at` is preserved
+from the source. `_file_count` is unchanged (no net add/remove).
+`_folder_count` increments for any new intermediate directories created for
+`dst`; the source parent directory is **not** auto-pruned even if now empty
+(consistent with MEM-DS-006).
 
 This is O(d_src + d_dst) — two tree traversals. File content is not touched.
 
 ### MEM-016b: copy() — Deep Copy Content
 
-**Invariant:** `copy(src, dst)` traverses to the source `_FileEntry`, creates a
-new `_FileEntry` with `bytearray(entry.data)` (deep copy of content), and
-inserts it into the destination parent.
+**Preconditions:** `src` must resolve to an existing `_FileEntry` (else
+`NotFound`). If `dst` resolves to an existing `_FileEntry` and
+`overwrite=False`, raise `AlreadyExists`.
+
+**Behavior:** Traverse to the source `_FileEntry`, create a new `_FileEntry`
+with `bytearray(entry.data)` (deep copy of content buffer), and insert it into
+the destination parent. Intermediate `_DirNode` entries for `dst` are created
+as needed (per BE-009). `modified_at` is set to `datetime.now(timezone.utc)`
+(it is a new file, not a preservation of the source timestamp). `content_type`
+is copied from the source. `_file_count` increments by 1. `_folder_count`
+increments for any new intermediate directories.
 
 This is O(d_src + d_dst + content) — two tree traversals plus a buffer copy.
 Unlike `move()`, the source entry is unchanged.
@@ -326,10 +390,17 @@ per-node locking would improve concurrent throughput on disjoint subtrees but
 adds substantial complexity for a backend whose primary use case is testing —
 where contention is rare.
 
-**Postconditions:** The lock is never held during I/O (there is none) or during
-caller consumption of returned streams. `read()` copies data under the lock,
-wraps it in a `BufferedReader`, and releases the lock before returning. The
-caller reads from the wrapper without holding the lock.
+**Postconditions:** The lock is never held during caller consumption of returned
+data. Specifically:
+
+- `read()` snapshots `bytes(entry.data)` under the lock, wraps in
+  `BufferedReader`, releases the lock, then returns the wrapper. The caller
+  reads from the wrapper without holding the lock.
+- `list_files()` and `list_folders()` **eagerly collect** all results into a
+  list under the lock, release it, then return `iter(list)`. This avoids
+  holding the lock during caller iteration (which would deadlock if the caller
+  calls another backend method mid-iteration, since `threading.Lock` is not
+  reentrant). The trade-off is O(k) up-front memory instead of O(1) per yield.
 
 ### MEM-026: Atomicity Scope
 
@@ -401,10 +472,10 @@ to verify.
 | `write` / `write_atomic` | O(d + content) | Amortized O(1) with `bytearray` reuse |
 | `exists` / `is_file` / `is_folder` | O(d) | O(1) |
 | `delete` | O(d) | O(1) |
-| `delete_folder(recursive=True)` | O(d) detach | O(subtree) GC |
-| `list_files(recursive=False)` | O(d + k) | O(1) per yield |
-| `list_files(recursive=True)` | O(d + subtree) | O(depth) stack |
-| `list_folders` | O(d + k) | O(1) per yield |
+| `delete_folder(recursive=True)` | O(d + subtree) | O(1) after walk |
+| `list_files(recursive=False)` | O(d + k) | O(k) eager collect |
+| `list_files(recursive=True)` | O(d + subtree) | O(subtree) eager collect |
+| `list_folders` | O(d + k) | O(k) eager collect |
 | `get_file_info` | O(d) | O(1) |
 | `get_folder_info` | O(d + subtree) | O(1) |
 | `move` | O(d_src + d_dst) | O(1) — no data copy |
