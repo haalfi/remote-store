@@ -25,6 +25,7 @@ with Registry(config) as registry:
 
 ## Caveats
 
-- **`overwrite=False` has a TOCTOU race.** The exists-check and write are separate operations. Concurrent writers can both pass the check and overwrite each other. `move()` and `write_atomic()` are truly atomic on the local backend (they use `os.replace()`).
+- **`overwrite=False` has a TOCTOU race.** The exists-check and write are separate operations. Concurrent writers can both pass the check and overwrite each other.
+- **`move()` uses `shutil.move()`**, which delegates to `os.rename()` on the same filesystem (atomic) but falls back to copy+delete across filesystems. `write_atomic()` uses `os.replace()` and is truly atomic.
 
 See the [Concurrency and Atomicity Guarantees](../concurrency.md) guide for details.

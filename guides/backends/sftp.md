@@ -129,7 +129,7 @@ The SFTP backend supports all capabilities **except** `GLOB`:
 
 > **Atomic write caveat:** Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the connection drops between write and rename, the orphan temp file will remain on the server.
 
-> **Move fallback:** `move()` uses `posix_rename` when available (atomic). If the server does not support it, the backend falls back to copy + delete, which is not atomic.
+> **Move fallback:** `move()` tries `posix_rename` (atomic), then standard `rename()`, then copy + delete as a last resort. Most servers support at least `rename()`.
 
 > **TOCTOU on `overwrite=False`:** Like all backends, the exists-check and write are separate operations. Concurrent writers can both pass the check.
 

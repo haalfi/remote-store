@@ -23,7 +23,7 @@ Active work items, ordered by priority.
   Related: ID-007 (`Store.glob()` surface API).
   → Spec: TBD (extends `003-backend-adapter-contract.md`)
 
-- [x] **AF-010 — Document TOCTOU and non-atomic move limitations** (v0.8.1)
+- [x] **AF-010 — Document TOCTOU and non-atomic move limitations**
   `overwrite=False` has inherent TOCTOU (audit M-4, downgraded from High: inherent
   limitation). S3 `move()` is copy+delete (audit L-21, per spec S3-013, not a bug).
   Added `guides/concurrency.md` with full explanation, summary table, and workarounds.
