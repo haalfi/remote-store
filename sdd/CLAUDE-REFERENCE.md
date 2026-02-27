@@ -59,7 +59,8 @@ Before committing, check whether your change has cross-file dependencies:
 ```
 src/remote_store/          # Library source (backends, Store, errors, registry)
 tests/                     # pytest suite — spec-traced via @pytest.mark.spec("ID")
-examples/                  # Runnable examples per backend
+examples/                  # Core runnable examples (run locally, no credentials)
+examples/backends/         # Cloud backend examples (need services + credentials)
 sdd/                       # Specs, ADRs, RFCs, backlog, design docs
 guides/backends/           # User-facing backend configuration guides
 docs/                      # Sphinx/MkDocs documentation source
