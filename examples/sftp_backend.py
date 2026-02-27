@@ -34,7 +34,7 @@ if not HOST or not USER:
         "Set RS_SFTP_HOST and RS_SFTP_USER to run this example.\n"
         "Optional: RS_SFTP_PASS, RS_SFTP_PORT, RS_SFTP_BASE\n\n"
         "Example with a local Docker SFTP server:\n"
-        "  RS_SFTP_HOST=localhost RS_SFTP_USER=testuser RS_SFTP_PASS=testpass "
+        "  RS_SFTP_HOST=localhost RS_SFTP_USER=benchuser RS_SFTP_PASS=benchpass "
         "RS_SFTP_PORT=2222 RS_SFTP_BASE=/upload python examples/sftp_backend.py"
     )
     sys.exit(1)
