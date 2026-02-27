@@ -13,10 +13,10 @@ Active work items, ordered by priority.
 
 - [ ] **ID-021 — `Store.child(subpath)` — runtime sub-scoping**
   Return a new Store scoped to a subfolder without recreating backend/registry.
-  Legacy app's most-used pattern: `child_store("reports/2026/")` for folder
-  isolation in service DI. Trivial API surface but needs design decision on
-  whether child shares the backend instance or gets its own lifecycle.
-  Validated by legacy app analysis (see `memory/legacy-app-analysis.md`).
+  Common pattern: `store.child("reports/2026/")` for folder isolation in
+  service DI, multi-tenant routing, or hierarchical data layouts. Lightweight
+  view sharing the parent's backend — no new connections. Needs design decision
+  on lifecycle semantics (close propagation, read-only option).
   → RFC: `sdd/rfcs/rfc-0003-store-child.md` (drafting)
 
 - [ ] **BK-002 — Glob / pattern matching strategy**
@@ -136,12 +136,11 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   (B) tiered speed modes (quick ~2min/backend, standard ~5min, full ~20-30min)
   replacing the binary slow/not-slow split, (C) cloud-aware round scaling and
   per-backend timeout watchdog. Optional: named profiles (`--profile ci-quick`).
-  Details: `memory/benchmarks-id020.md`.
 
 - [ ] **ID-022 — `ext.batch` — batch operations**
-  Batch delete (S3 supports 1000/call natively), batch copy, batch existence
-  checks. Legacy app uses `delete([key1, key2, ...])` as a core pattern.
-  Backend-aware: S3 uses native DeleteObjects, others fall back to sequential.
+  Batch delete, batch copy, batch existence checks. S3 supports 1000
+  deletes/call natively; other backends fall back to sequential. Essential
+  for any cleanup, migration, or bulk-processing workflow.
   API: `from remote_store.ext.batch import batch_delete, batch_exists`.
 
 - [ ] **ID-023 — `ext.transfer` — cross-store and local-path transfers**
@@ -153,20 +152,21 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
 - [ ] **ID-024 — `ext.notify` — hooks / middleware / instrumentation**
   Interceptor layer wrapping Store for logging, metrics, auditing, circuit
   breaking. `store = instrument(store, on_read=..., on_write=..., on_error=...)`.
-  Generalizes legacy app's S3LogHandler pattern. Compatible with `structlog`,
-  stdlib `logging`, or plain callbacks. Supersedes ID-004.
+  Compatible with `structlog`, stdlib `logging`, or plain callbacks. Enables
+  observability without touching business code. Supersedes ID-004.
 
 - [ ] **ID-025 — `ext.cache` — store-level caching middleware**
   Wraps a Store and caches reads, folder stats, existence checks with TTL.
   `cached = CachedStore(store, ttl=300)`. Auto-invalidates on writes.
-  Generalizes legacy app's `FolderMetaPolicy.fresh(minutes=5)` pattern.
+  Reduces round-trips for read-heavy or metadata-heavy workloads.
   In-memory by default, pluggable cache backend for distributed use.
 
 - [ ] **ID-026 — Streaming atomic writes**
   Context manager for streaming large files with atomic commit:
   `with store.open_write_atomic(key) as out: out.write(chunk)`.
-  Legacy app uses this for Parquet snapshot exports. Current `write_atomic()`
-  only accepts `bytes`. Needs temp-path strategy per backend.
+  Current `write_atomic()` only accepts `bytes`, forcing callers to buffer
+  entire files in memory. Needed for any large-file workflow (Parquet exports,
+  log rotation, report generation). Needs temp-path strategy per backend.
 
 - [ ] **ID-027 — Extension architecture (`ext.*` namespace)**
   Formalize the `remote_store.ext` package as the home for opt-in higher-level
