@@ -55,5 +55,5 @@ try:
     from remote_store.ext.arrow import StoreFileSystemHandler, pyarrow_fs
 
     __all__ += ["StoreFileSystemHandler", "pyarrow_fs"]
-except ImportError:
+except ModuleNotFoundError:
     pass

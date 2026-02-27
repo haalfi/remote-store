@@ -16,7 +16,7 @@ import contextlib
 import io
 import logging
 import tempfile
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 try:
     import pyarrow as pa  # type: ignore[import-untyped]
@@ -36,6 +36,8 @@ from remote_store._errors import (
 )
 
 if TYPE_CHECKING:
+    from typing import BinaryIO
+
     from remote_store._store import Store
 
 logger = logging.getLogger(__name__)
@@ -105,9 +107,8 @@ class _StoreSink(io.RawIOBase):
             return
         try:
             self._buf.seek(0)
-            content = self._buf.read()
             with _map_errors():
-                self._store.write(self._path, content, overwrite=True)
+                self._store.write(self._path, cast("BinaryIO", self._buf), overwrite=True)
         finally:
             self._buf.close()
             super().close()
@@ -263,7 +264,6 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                 return pa.PythonFile(stream, mode="r")
 
             # Tier 2 fallback: non-seekable large file — materialize with warning
-            stream.close()
             logger.warning(
                 "Materializing %d-byte file %r into memory because the backend "
                 "stream is not seekable. Consider using a backend with native "
@@ -271,7 +271,8 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                 info.size,
                 path,
             )
-            data = self._store.read_bytes(path)
+            data = stream.read()
+            stream.close()
             return pa.BufferReader(pa.py_buffer(data))
 
     # -- PA-011 ---------------------------------------------------------------

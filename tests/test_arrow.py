@@ -12,7 +12,16 @@ pa = pytest.importorskip("pyarrow")
 pafs = pytest.importorskip("pyarrow.fs")
 pq = pytest.importorskip("pyarrow.parquet")
 
-from remote_store._errors import NotFound, PermissionDenied, RemoteStoreError  # noqa: E402
+from remote_store._errors import (  # noqa: E402
+    AlreadyExists,
+    BackendUnavailable,
+    CapabilityNotSupported,
+    DirectoryNotEmpty,
+    InvalidPath,
+    NotFound,
+    PermissionDenied,
+    RemoteStoreError,
+)
 from remote_store._store import Store  # noqa: E402
 from remote_store.backends._local import LocalBackend  # noqa: E402
 from remote_store.backends._memory import MemoryBackend  # noqa: E402
@@ -397,6 +406,25 @@ class TestStoreSink:
         sink.close()
         assert store.read_bytes("empty.txt") == b""
 
+    @pytest.mark.spec("PA-016")
+    def test_close_failure_maps_error_and_cleans_up(self, store: Store) -> None:
+        """If store.write() raises during close(), the error is mapped and the sink is cleaned up."""
+        sink = _StoreSink(store, "fail.txt", spill_threshold=1024)
+        sink.write(b"data")
+
+        # Monkey-patch store.write to raise NotFound (simulating backend error)
+        original_write = store.write
+        store.write = lambda *a, **kw: (_ for _ in ()).throw(  # type: ignore[assignment]
+            NotFound("backend error", path="fail.txt")
+        )
+        try:
+            with pytest.raises(FileNotFoundError):
+                sink.close()
+            # Sink should be properly closed even after error
+            assert sink.closed
+        finally:
+            store.write = original_write  # type: ignore[assignment]
+
 
 # ---------------------------------------------------------------------------
 # PA-013/014/015/017/018: Mutation operations
@@ -485,8 +513,6 @@ class TestErrorMapping:
 
     @pytest.mark.spec("PA-019")
     def test_invalid_path_maps_to_value_error(self) -> None:
-        from remote_store._errors import InvalidPath
-
         with pytest.raises(ValueError), _map_errors():
             raise InvalidPath("bad path", path="x")
 
@@ -494,6 +520,26 @@ class TestErrorMapping:
     def test_permission_denied_maps_to_permission_error(self) -> None:
         with pytest.raises(PermissionError), _map_errors():
             raise PermissionDenied("nope", path="x")
+
+    @pytest.mark.spec("PA-019")
+    def test_already_exists_maps_to_file_exists_error(self) -> None:
+        with pytest.raises(FileExistsError), _map_errors():
+            raise AlreadyExists("exists", path="x")
+
+    @pytest.mark.spec("PA-019")
+    def test_capability_not_supported_maps_to_not_implemented(self) -> None:
+        with pytest.raises(NotImplementedError), _map_errors():
+            raise CapabilityNotSupported("nope", capability="x", backend="test")
+
+    @pytest.mark.spec("PA-019")
+    def test_directory_not_empty_maps_to_os_error(self) -> None:
+        with pytest.raises(OSError), _map_errors():
+            raise DirectoryNotEmpty("not empty", path="x")
+
+    @pytest.mark.spec("PA-019")
+    def test_backend_unavailable_maps_to_os_error(self) -> None:
+        with pytest.raises(OSError), _map_errors():
+            raise BackendUnavailable("unavailable", backend="test")
 
     @pytest.mark.spec("PA-019")
     def test_base_error_maps_to_os_error(self) -> None:
@@ -606,8 +652,6 @@ class TestGetFileInfoEdgeCases:
         original_is_file = store.is_file
 
         def flaky_is_file(path: str) -> bool:
-            from remote_store._errors import NotFound
-
             raise NotFound(f"Gone: {path}", path=path)
 
         store.is_file = flaky_is_file  # type: ignore[assignment]
@@ -630,8 +674,6 @@ class TestSelectorBackendRaises:
         original_list_files = store.list_files
 
         def raising_list_files(path: str, *, recursive: bool = False):  # type: ignore[no-untyped-def]
-            from remote_store._errors import NotFound
-
             raise NotFound(f"Not found: {path}", path=path)
 
         store.list_files = raising_list_files  # type: ignore[assignment]

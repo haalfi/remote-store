@@ -17,6 +17,9 @@ with any backend -- no extra configuration needed.
 ## Quick Start
 
 ```python
+import pyarrow as pa
+import pyarrow.parquet as pq
+
 from remote_store import Store
 from remote_store.backends._memory import MemoryBackend
 from remote_store.ext.arrow import pyarrow_fs
@@ -25,8 +28,6 @@ store = Store(backend=MemoryBackend())
 fs = pyarrow_fs(store)
 
 # Now use `fs` anywhere PyArrow accepts a filesystem:
-import pyarrow.parquet as pq
-
 table = pa.table({"col": [1, 2, 3]})
 pq.write_table(table, "data.parquet", filesystem=fs)
 result = pq.read_table("data.parquet", filesystem=fs)
