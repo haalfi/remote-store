@@ -187,8 +187,8 @@ known-first-party = ["remote_store"]
 
 [tool.bumpversion]
 current_version = "0.7.0"
-commit = true
-tag = true
+commit = false
+tag = false
 tag_name = "v{new_version}"
 message = "Bump version: {current_version} → {new_version}"
 

@@ -10,6 +10,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - **`Store.child(subpath)` — runtime sub-scoping** -- returns a new Store scoped to a subfolder, sharing the parent's backend instance (no new connections). Child stores do not close the shared backend on `close()` or context manager exit. Validated via `RemotePath`, chainable (`store.child("a").child("b")`), equality-transparent with directly constructed stores. Spec: `015-store-child.md` (ID-021)
 
+### Changed
+
+- **Release checklist expanded** -- replaced the 5-item release checklist in CONTRIBUTING.md with a 6-phase process covering pre-flight, content freeze, version bump, validation, ship with PR review gate, and post-release verification. GitHub Release is the intended single trigger for PyPI publish and docs deploy (ID-028, ID-029 track the CI changes)
+
 ## [0.7.0] - 2026-02-27
 
 ### Added

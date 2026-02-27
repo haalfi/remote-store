@@ -137,15 +137,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### How to bump
 
-Version is managed with [`bump-my-version`](https://github.com/callowayproject/bump-my-version). A single command bumps `pyproject.toml`, `src/remote_store/__init__.py`, and `CITATION.cff` atomically, commits, and tags:
+Version is managed with [`bump-my-version`](https://github.com/callowayproject/bump-my-version). It modifies `pyproject.toml`, `src/remote_store/__init__.py`, and `CITATION.cff` in-place without committing or tagging (configured in `pyproject.toml`). The release checklist below handles the commit and tag lifecycle.
+
+Quick reference for the command syntax:
 
 ```bash
 bump-my-version bump patch   # 0.4.1 → 0.4.2
 bump-my-version bump minor   # 0.4.1 → 0.5.0
 bump-my-version bump major   # 0.4.1 → 1.0.0
 ```
-
-After bumping, move the `[Unreleased]` section in `CHANGELOG.md` under a new `[X.Y.Z] - YYYY-MM-DD` heading and add a fresh `[Unreleased]` above it.
 
 ## Consistency Checklists
 
@@ -173,9 +173,56 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 
 ### Release
 
-- [ ] `bump-my-version bump patch|minor|major` (bumps `pyproject.toml`, `__init__.py`, `CITATION.cff`)
-- [ ] CHANGELOG.md updated
-- [ ] `hatch run all` passes (lint, typecheck, test-cov, examples)
-- [ ] `mkdocs build --strict` passes
+#### Phase 0: Pre-flight
+
+- [ ] Master is clean: `git status` shows no uncommitted changes
+- [ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)
+- [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete (`[x]`) or defer (`[ ]`)
+- [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
+- [ ] Decide bump level (patch / minor / major) per the table above
+
+#### Phase 1: Content freeze
+
+- [ ] CHANGELOG.md `[Unreleased]` is complete — every user-facing change listed with its backlog ID
+- [ ] `sdd/BACKLOG.md`: all shipping items marked `[x]` with version (e.g. `(v0.8.0)`)
+- [ ] README.md: backends table, installation extras, API table, badges are current
+- [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
+- [ ] Examples: `hatch run examples` passes; manually review notebooks if API surface changed
+- [ ] Guides: new/changed backend guides are accurate
+- [ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)
+
+#### Phase 2: Version bump (on a release branch)
+
+- [ ] Create release branch: `git checkout -b release-vX.Y.Z`
+- [ ] CHANGELOG.md: rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, add fresh empty `[Unreleased]` above
+- [ ] Update `date-released` in `CITATION.cff` to today (bump-my-version only updates `version:`, not this field)
 - [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
+- [ ] `bump-my-version bump patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff`)
+- [ ] Review and commit: `git diff` to verify, then `git add pyproject.toml src/remote_store/__init__.py CITATION.cff CHANGELOG.md && git commit -m "Release vX.Y.Z"`
+
+#### Phase 3: Validate
+
+- [ ] `hatch run all` passes (lint + format-check + typecheck + test-cov + examples)
+- [ ] `mkdocs build --strict` passes
+- [ ] `python -m build && twine check dist/*` — package builds cleanly
+- [ ] `pip install dist/*.whl && python -c "import remote_store; print(remote_store.__version__)"` — version matches
+
+#### Phase 4: Ship
+
+- [ ] Push branch, open PR, wait for CI green
+- [ ] Request PR review — wait for approval before merging
+- [ ] Merge PR to master
+- [ ] Wait for CI to pass on the merge commit (multi-platform source of truth)
+- [ ] Verify HEAD is the merge commit: `git log --oneline -1`
+- [ ] Tag the merge commit: `git tag vX.Y.Z` (or `git tag vX.Y.Z <sha>` if master advanced)
+- [ ] Push the tag: `git push origin vX.Y.Z`
+- [ ] Create GitHub Release from the tag (currently for release notes only; ID-028 will make this the single publish trigger)
+- [ ] Watch `publish.yml` — confirm it completes successfully
+
+#### Phase 5: Post-release verification
+
+- [ ] PyPI: `pip install remote-store==X.Y.Z` in a fresh venv, verify version and README renders on pypi.org
+- [ ] GitHub Pages: check https://haalfi.github.io/remote-store/ shows correct version
+- [ ] ReadTheDocs: check https://remote-store.readthedocs.io/ shows correct version
+- [ ] Announce if applicable (tracking issues, users)
