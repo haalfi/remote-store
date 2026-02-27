@@ -35,4 +35,30 @@ hatch run all               # lint + format-check + typecheck + test-cov + examp
 - New features require a spec in `sdd/specs/`. Ops changes (CI, docs) skip specs.
 - Run `hatch run lint` before committing.
 
+## GitHub CLI (`gh`) — restricted usage
+
+The `gh` CLI is installed via a SessionStart hook (`.claude/setup-gh.sh`).
+It requires a `GITHUB_TOKEN` environment variable with PR read/write scope.
+
+> **Environment note:** These restrictions exist primarily for web/iOS sessions
+> (Code on Mobile, claude.ai) where Claude operates with less interactive
+> oversight. In the VS Code extension on your local machine, every tool call
+> requires your explicit approval, so the guardrails are enforced interactively.
+> The rules below apply to **both** environments for consistency.
+
+**Allowed operations** (only when the user explicitly asks):
+
+- `gh pr view` — read PR metadata
+- `gh pr diff` — read PR diffs
+- `gh pr review` — submit a review with comments
+- `gh api` — post review comments on specific lines
+
+**Forbidden operations** (never do these):
+
+- Creating, closing, or merging PRs
+- Pushing code or creating branches via `gh`
+- Creating, closing, or commenting on issues
+- Any `gh` operation not listed above
+- Any `gh` operation without the user explicitly requesting it
+
 For lookup tables, detailed procedures, and repo layout see `sdd/CLAUDE-REFERENCE.md`.
