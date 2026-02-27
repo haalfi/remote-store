@@ -27,26 +27,26 @@ if __name__ == "__main__":
             print("Wrote file from BytesIO stream.")
 
             # --- Read as a stream ---
-            reader = store.read("streamed.txt")
-            print(f"\nStreaming read (type: {type(reader).__name__}):")
-            newline = b"\n"
-            for line in reader:
-                print(f"  {line.rstrip(newline)}")
+            with store.read("streamed.txt") as reader:
+                print(f"\nStreaming read (type: {type(reader).__name__}):")
+                newline = b"\n"
+                for line in reader:
+                    print(f"  {line.rstrip(newline)}")
 
             # --- Chunked processing ---
             # Write a larger file
             large_data = b"X" * 10_000
             store.write("large.bin", large_data)
 
-            reader = store.read("large.bin")
-            total = 0
-            chunk_count = 0
-            while True:
-                chunk = reader.read(4096)
-                if not chunk:
-                    break
-                total += len(chunk)
-                chunk_count += 1
+            with store.read("large.bin") as reader:
+                total = 0
+                chunk_count = 0
+                while True:
+                    chunk = reader.read(4096)
+                    if not chunk:
+                        break
+                    total += len(chunk)
+                    chunk_count += 1
             print(f"\nRead large.bin in {chunk_count} chunk(s), {total} bytes total.")
 
             # --- Write bytes directly ---

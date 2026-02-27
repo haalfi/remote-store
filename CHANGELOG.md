@@ -6,13 +6,21 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-02-27
+
 ### Added
 
 - **`Store.child(subpath)` — runtime sub-scoping** -- returns a new Store scoped to a subfolder, sharing the parent's backend instance (no new connections). Child stores do not close the shared backend on `close()` or context manager exit. Validated via `RemotePath`, chainable (`store.child("a").child("b")`), equality-transparent with directly constructed stores. Spec: `015-store-child.md` (ID-021)
+- **Cloud backend examples** -- 5 new example scripts (`s3_backend.py`, `s3_pyarrow_backend.py`, `sftp_backend.py`, `azure_backend.py`, `store_child.py`) demonstrating each backend with self-contained env-var configuration and graceful failure messages. All Store API methods now have example coverage
+- **Claude Code reusable skills** -- 6 slash-command skills in `.claude/commands/` codifying recurring workflows: `/ripple-check` (cross-reference validation), `/release` (6-phase release checklist), `/add-backend` (12-step scaffolding), `/backlog-sync` (backlog update helper), `/pr-preflight` (11-check pre-submission validation), `/add-spec` (SDD spec + test scaffolding) (ID-030)
 
 ### Changed
 
 - **Release checklist expanded** -- replaced the 5-item release checklist in CONTRIBUTING.md with a 6-phase process covering pre-flight, content freeze, version bump, validation, ship with PR review gate, and post-release verification. GitHub Release is the intended single trigger for PyPI publish and docs deploy (ID-028, ID-029 track the CI changes)
+
+### Fixed
+
+- **`streaming_io.py` example leaked file handles on Windows** -- `store.read()` streams were not closed before `TemporaryDirectory` cleanup, causing `PermissionError` on Windows due to file locking. Streams are now used as context managers
 
 ## [0.7.0] - 2026-02-27
 

@@ -149,6 +149,7 @@ config = RegistryConfig.from_dict({
 
 |Method               |Description                                   |
 |---------------------|----------------------------------------------|
+|`child(subpath)`     |Return a child store scoped to a subfolder    |
 |`supports(capability)`|Check if the backend supports a capability   |
 |`to_key(path)`       |Convert native/absolute path to store-relative key|
 |`close()`            |Close the underlying backend                  |
