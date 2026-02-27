@@ -10,6 +10,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - **Concurrency and atomicity guide** -- new `guides/concurrency.md` documenting TOCTOU race on `overwrite=False` (all backends) and non-atomic `move()` (S3, S3-PyArrow, Azure non-HNS, SFTP fallback), with per-backend summary table and practical workarounds. Cross-referenced from all backend guides (AF-010)
 - **Capability gating tests** -- 14 tests verifying all 12 Store methods that require a capability raise `CapabilityNotSupported` when the backend lacks it, with correct `.capability` attribute value and backend name propagation (AF-012, STORE-006)
+- **S3 and SFTP error path tests** -- mock-based tests for `PermissionDenied` (S3-016: HTTP 403/accessdenied, SFTP-021: `errno.EACCES`), `AlreadyExists` (SFTP-022: `errno.EEXIST`), and `BackendUnavailable` (S3-017: endpoint/connect/timeout/dns errors, SFTP-023: `paramiko.SSHException`). Removed `pragma: no cover` from now-tested `_classify_error`/`_map_exception` branches (AF-013)
 
 ## [0.8.0] - 2026-02-27
 

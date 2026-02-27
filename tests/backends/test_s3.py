@@ -19,9 +19,11 @@ boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
 from remote_store._errors import (  # noqa: E402
     AlreadyExists,
+    BackendUnavailable,
     CapabilityNotSupported,
     DirectoryNotEmpty,
     NotFound,
+    PermissionDenied,
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderInfo  # noqa: E402
@@ -300,6 +302,121 @@ class TestS3ErrorMapping:
     def test_delete_missing(self, s3_backend: Backend) -> None:
         with pytest.raises(NotFound):
             s3_backend.delete("nope.txt")
+
+    @pytest.mark.spec("S3-016")
+    def test_http_403_maps_to_permission_denied(self, s3_backend: Backend) -> None:
+        """HTTP 403 / 'accessdenied' response maps to PermissionDenied."""
+        from unittest.mock import patch
+
+        from remote_store.backends._s3 import S3Backend
+
+        assert isinstance(s3_backend, S3Backend)
+        with (
+            patch.object(
+                s3_backend._fs,
+                "cat_file",
+                side_effect=Exception("An error occurred (403) AccessDenied"),
+            ),
+            pytest.raises(PermissionDenied) as exc_info,
+        ):
+            s3_backend.read_bytes("secret.txt")
+        assert exc_info.value.backend == "s3"
+
+    @pytest.mark.spec("S3-016")
+    def test_access_denied_message_maps_to_permission_denied(self, s3_backend: Backend) -> None:
+        """Exception with 'access denied' in message maps to PermissionDenied."""
+        from unittest.mock import patch
+
+        from remote_store.backends._s3 import S3Backend
+
+        assert isinstance(s3_backend, S3Backend)
+        with (
+            patch.object(
+                s3_backend._fs,
+                "cat_file",
+                side_effect=Exception("access denied for this resource"),
+            ),
+            pytest.raises(PermissionDenied) as exc_info,
+        ):
+            s3_backend.read_bytes("secret.txt")
+        assert exc_info.value.backend == "s3"
+        assert exc_info.value.path == "secret.txt"
+
+    @pytest.mark.spec("S3-017")
+    def test_endpoint_error_maps_to_backend_unavailable(self, s3_backend: Backend) -> None:
+        """Connection error with 'endpoint' keyword maps to BackendUnavailable."""
+        from unittest.mock import patch
+
+        from remote_store.backends._s3 import S3Backend
+
+        assert isinstance(s3_backend, S3Backend)
+        with (
+            patch.object(
+                s3_backend._fs,
+                "cat_file",
+                side_effect=Exception("Could not connect to the endpoint URL"),
+            ),
+            pytest.raises(BackendUnavailable) as exc_info,
+        ):
+            s3_backend.read_bytes("file.txt")
+        assert exc_info.value.backend == "s3"
+
+    @pytest.mark.spec("S3-017")
+    def test_connect_timeout_maps_to_backend_unavailable(self, s3_backend: Backend) -> None:
+        """Connection error with 'timeout' keyword maps to BackendUnavailable."""
+        from unittest.mock import patch
+
+        from remote_store.backends._s3 import S3Backend
+
+        assert isinstance(s3_backend, S3Backend)
+        with (
+            patch.object(
+                s3_backend._fs,
+                "cat_file",
+                side_effect=Exception("connect timeout reached"),
+            ),
+            pytest.raises(BackendUnavailable) as exc_info,
+        ):
+            s3_backend.read_bytes("file.txt")
+        assert exc_info.value.backend == "s3"
+
+    @pytest.mark.spec("S3-017")
+    def test_dns_error_maps_to_backend_unavailable(self, s3_backend: Backend) -> None:
+        """Connection error with 'dns' keyword maps to BackendUnavailable."""
+        from unittest.mock import patch
+
+        from remote_store.backends._s3 import S3Backend
+
+        assert isinstance(s3_backend, S3Backend)
+        with (
+            patch.object(
+                s3_backend._fs,
+                "cat_file",
+                side_effect=Exception("dns resolution failed"),
+            ),
+            pytest.raises(BackendUnavailable) as exc_info,
+        ):
+            s3_backend.read_bytes("file.txt")
+        assert exc_info.value.backend == "s3"
+
+    @pytest.mark.spec("S3-017")
+    def test_name_or_service_error_maps_to_backend_unavailable(self, s3_backend: Backend) -> None:
+        """Connection error with 'name or service' maps to BackendUnavailable."""
+        from unittest.mock import patch
+
+        from remote_store.backends._s3 import S3Backend
+
+        assert isinstance(s3_backend, S3Backend)
+        with (
+            patch.object(
+                s3_backend._fs,
+                "cat_file",
+                side_effect=Exception("name or service not known"),
+            ),
+            pytest.raises(BackendUnavailable) as exc_info,
+        ):
+            s3_backend.read_bytes("file.txt")
+        assert exc_info.value.backend == "s3"
 
     @pytest.mark.spec("S3-018")
     def test_no_native_exception_leaks(self, s3_backend: Backend) -> None:

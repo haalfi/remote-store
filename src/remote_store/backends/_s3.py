@@ -129,10 +129,10 @@ class S3Backend(Backend):
             raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
         except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-        except Exception as exc:  # pragma: no cover -- defensive; moto raises standard errors
+        except Exception as exc:
             raise self._classify_error(exc, path) from None
 
-    def _classify_error(self, exc: Exception, path: str) -> RemoteStoreError:  # pragma: no cover
+    def _classify_error(self, exc: Exception, path: str) -> RemoteStoreError:
         """Classify an unknown exception into a remote_store error type."""
         msg = str(exc).lower()
         if "404" in msg or "nosuchkey" in msg or "nosuchbucket" in msg or "not found" in msg:
