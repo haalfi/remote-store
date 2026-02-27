@@ -10,6 +10,16 @@ Runnable example scripts demonstrating every feature of `remote-store`. Each exa
 | [Atomic Writes](atomic-writes.md) | Atomic writes and overwrite semantics |
 | [Configuration](configuration.md) | Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs |
 | [Error Handling](error-handling.md) | Catching `NotFound`, `AlreadyExists`, and more |
+| [S3 Backend](s3-backend.md) | S3 / MinIO: config, two stores, virtual folders |
+| [S3-PyArrow Backend](s3-pyarrow-backend.md) | High-throughput S3 via PyArrow C++ + escape hatch |
+| [SFTP Backend](sftp-backend.md) | SSH/SFTP: config, host key policies, `unwrap()` |
+| [Azure Backend](azure-backend.md) | Azure Blob / ADLS Gen2: config, auth methods, `unwrap()` |
+
+!!! note "Cloud backend examples"
+    The cloud backend examples require a running service (AWS, MinIO, an SFTP
+    server, Azure, Azurite, etc.) and credentials supplied via environment
+    variables. Each script prints a help message when the required variables
+    are missing.
 
 Interactive Jupyter notebooks are also available in the
 [`examples/notebooks/`](https://github.com/haalfi/remote-store/tree/master/examples/notebooks)
