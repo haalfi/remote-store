@@ -274,8 +274,8 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Primary use cases: unit testing (no temp dir setup/teardown), interactive
   exploration, documentation examples, CI speed, large in-process data
   structures. Simpler than `LocalBackend` — no path resolution, no OS errors,
-  no atomicity concerns. Passes the full conformance suite with zero skips.
-  Built-in (no optional extra needed).
+  no atomicity concerns. Designed to pass the full conformance suite with
+  zero skips. Built-in (no optional extra needed).
   → Spec: `sdd/specs/013-memory-backend.md`
 
 - [ ] **ID-016 — PyArrow FileSystemHandler adapter**
