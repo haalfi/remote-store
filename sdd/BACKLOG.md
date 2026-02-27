@@ -29,9 +29,10 @@ Active work items, ordered by priority.
   Added `guides/concurrency.md` with full explanation, summary table, and workarounds.
   Cross-referenced from all backend guides.
 
-- [ ] **AF-012 — Add capability gating tests (STORE-006)**
+- [x] **AF-012 — Add capability gating tests (STORE-006)**
   Test that Store methods raise `CapabilityNotSupported` for backends missing
-  capabilities (audit M-11). No tests exist for this path yet.
+  capabilities (audit M-11). 14 tests covering all 12 gated methods plus
+  backend-name propagation and gating-before-path-validation ordering.
 
 - [~] **AF-013 — Add PermissionDenied/BackendUnavailable error path tests**
   S3-016, S3-017, SFTP-021/022/023 have zero test coverage.
