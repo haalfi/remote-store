@@ -43,9 +43,9 @@ Active work items, ordered by priority.
   `pragma: no cover` removed from tested paths. LocalBackend paths covered in
   `test_coverage_gaps.py`.
 
-- [ ] **AF-014 — Add CI gate to publish workflow**
-  `publish.yml` triggers on `v*` tags but does not require CI to pass first.
-  Add a `needs: ci` dependency or a `workflow_run` trigger.
+- [x] **AF-014 — Add CI gate to publish workflow**
+  Added inline `ci` job (lint + typecheck + test on Python 3.10 + 3.13)
+  as a prerequisite for `build`, which `publish` already depends on.
   Subsumes into ID-028 if that ships first.
 
 ---
