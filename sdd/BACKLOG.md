@@ -178,8 +178,9 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Change `publish.yml` and `docs.yml` to trigger on `release: published`
   instead of `v*` tag push / master push. The GitHub Release becomes the
   single trigger for all release automation: PyPI publish, GitHub Pages
-  deploy, and RTD build. Subsumes AF-014 (CI gate) because the release
-  event inherently requires the tag to exist on master with CI green.
+  deploy, and RTD build. Subsumes AF-014: the release-triggered workflow
+  must include an explicit CI gate (`needs: ci` or equivalent) since the
+  `release: published` event does not verify CI status on its own.
 
 - [ ] **ID-029 — Versioned documentation (mike + RTD tags)**
   Add version-aware docs so readers know which release they are viewing.

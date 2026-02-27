@@ -137,7 +137,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### How to bump
 
-Version is managed with [`bump-my-version`](https://github.com/callowayproject/bump-my-version). It bumps `pyproject.toml`, `src/remote_store/__init__.py`, and `CITATION.cff` atomically. For the full release procedure (including `--no-commit --no-tag` flags, manual edits, and tag lifecycle), see **§ Release** below.
+Version is managed with [`bump-my-version`](https://github.com/callowayproject/bump-my-version). It modifies `pyproject.toml`, `src/remote_store/__init__.py`, and `CITATION.cff` in-place without committing or tagging (configured in `pyproject.toml`). The release checklist below handles the commit and tag lifecycle.
 
 Quick reference for the command syntax:
 
@@ -198,7 +198,7 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 - [ ] Update `date-released` in `CITATION.cff` to today
 - [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
-- [ ] `bump-my-version bump --no-commit --no-tag patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff` without committing)
+- [ ] `bump-my-version bump patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff`)
 - [ ] Stage and commit all Phase 2 changes together: `git add -A && git commit -m "Release vX.Y.Z"`
 
 #### Phase 3: Validate
@@ -213,6 +213,7 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 - [ ] Push branch, open PR, wait for CI green
 - [ ] Request PR review — wait for approval before merging
 - [ ] Merge PR to master
+- [ ] Wait for CI to pass on the merge commit (multi-platform source of truth)
 - [ ] Verify HEAD is the merge commit: `git log --oneline -1`
 - [ ] Tag the merge commit: `git tag vX.Y.Z` (or `git tag vX.Y.Z <sha>` if master advanced)
 - [ ] Push the tag: `git push origin vX.Y.Z`
