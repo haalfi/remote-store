@@ -173,9 +173,53 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 
 ### Release
 
-- [ ] `bump-my-version bump patch|minor|major` (bumps `pyproject.toml`, `__init__.py`, `CITATION.cff`)
-- [ ] CHANGELOG.md updated
-- [ ] `hatch run all` passes (lint, typecheck, test-cov, examples)
-- [ ] `mkdocs build --strict` passes
+#### Phase 0: Pre-flight
+
+- [ ] Master is clean: `git status` shows no uncommitted changes
+- [ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)
+- [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete (`[x]`) or defer (`[ ]`)
+- [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
+- [ ] Decide bump level (patch / minor / major) per the table above
+
+#### Phase 1: Content freeze
+
+- [ ] CHANGELOG.md `[Unreleased]` is complete — every user-facing change listed with its backlog ID
+- [ ] `sdd/BACKLOG.md`: all shipping items marked `[x]` with version (e.g. `(v0.8.0)`)
+- [ ] README.md: backends table, installation extras, API table, badges are current
+- [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
+- [ ] Examples: `hatch run examples` passes; manually review notebooks if API surface changed
+- [ ] Guides: new/changed backend guides are accurate
+- [ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)
+
+#### Phase 2: Version bump (on a feature branch)
+
+- [ ] Create release branch: `git checkout -b release-vX.Y.Z`
+- [ ] `bump-my-version bump patch|minor|major` (bumps `pyproject.toml`, `__init__.py`, `CITATION.cff` version)
+- [ ] Manually update `date-released` in `CITATION.cff` to today (bump-my-version does not do this)
+- [ ] CHANGELOG.md: rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, add fresh empty `[Unreleased]` above
 - [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
+
+#### Phase 3: Validate
+
+- [ ] `hatch run all` passes (lint + format-check + typecheck + test-cov + examples)
+- [ ] `mkdocs build --strict` passes
+- [ ] `python -m build && twine check dist/*` — package builds cleanly
+- [ ] `pip install dist/*.whl && python -c "import remote_store; print(remote_store.__version__)"` — version matches
+
+#### Phase 4: Ship
+
+- [ ] Push branch, open PR, wait for CI green
+- [ ] Request PR review — wait for approval before merging
+- [ ] Merge PR to master
+- [ ] Push the tag: `git push origin vX.Y.Z`
+- [ ] Watch `publish.yml` — confirm it completes successfully
+- [ ] *(Until AF-014 is done)*: manually verify CI was green before the tag landed
+
+#### Phase 5: Post-release verification
+
+- [ ] PyPI: `pip install remote-store==X.Y.Z` in a fresh venv, verify version and README renders on pypi.org
+- [ ] GitHub Pages: check https://haalfi.github.io/remote-store/ updated
+- [ ] ReadTheDocs: check https://remote-store.readthedocs.io/ updated
+- [ ] GitHub Release: create via `gh release create vX.Y.Z --notes "See CHANGELOG.md"`
+- [ ] Announce if applicable (tracking issues, users)
