@@ -12,7 +12,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Changed
 
-- **Release checklist expanded** -- replaced the 5-item release checklist in CONTRIBUTING.md with a 6-phase process covering pre-flight, content freeze, version bump, validation, ship with PR review gate, and post-release verification
+- **Release checklist expanded** -- replaced the 5-item release checklist in CONTRIBUTING.md with a 6-phase process covering pre-flight, content freeze, version bump, validation, ship with PR review gate, and post-release verification. GitHub Release is the intended single trigger for PyPI publish and docs deploy (ID-028, ID-029 track the CI changes)
 
 ## [0.7.0] - 2026-02-27
 

@@ -40,6 +40,7 @@ Active work items, ordered by priority.
 - [ ] **AF-014 — Add CI gate to publish workflow**
   `publish.yml` triggers on `v*` tags but does not require CI to pass first.
   Add a `needs: ci` dependency or a `workflow_run` trigger.
+  Subsumes into ID-028 if that ships first.
 
 ---
 
@@ -172,6 +173,20 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   API only, ship inside the package but behind optional extras. Existing
   precedent: `ext/arrow.py` (ID-016). Entry-point plugin discovery deferred
   until third-party extensions emerge.
+
+- [ ] **ID-028 — Release-triggered publish and docs deploy**
+  Change `publish.yml` and `docs.yml` to trigger on `release: published`
+  instead of `v*` tag push / master push. The GitHub Release becomes the
+  single trigger for all release automation: PyPI publish, GitHub Pages
+  deploy, and RTD build. Subsumes AF-014 (CI gate) because the release
+  event inherently requires the tag to exist on master with CI green.
+
+- [ ] **ID-029 — Versioned documentation (mike + RTD tags)**
+  Add version-aware docs so readers know which release they are viewing.
+  GitHub Pages: use `mike` (MkDocs Material's versioning tool) to deploy
+  each release as a versioned subdirectory with a version switcher dropdown.
+  RTD: configure tag-based builds so each release tag gets its own version.
+  Keep a `dev` / `latest` alias tracking master for unreleased changes.
 
 - [ ] **ID-018 — conda-forge publishing**
   Submit a staged-recipes PR to conda-forge so users can `conda install -c

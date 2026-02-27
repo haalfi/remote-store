@@ -214,13 +214,17 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 - [ ] Merge PR to master
 - [ ] Tag the merge commit on master: `git tag vX.Y.Z` (ensures tag is reachable from master)
 - [ ] Push the tag: `git push origin vX.Y.Z`
+- [ ] Create GitHub Release from the tag — this triggers PyPI publish and docs deploy (see note below)
 - [ ] Watch `publish.yml` — confirm it completes successfully
-- [ ] *(Until AF-014 is done)*: manually verify CI was green before the tag landed
+
+> **Note:** The GitHub Release is the single trigger for all release automation.
+> `publish.yml` and `docs.yml` should fire on `release: published`, not on tag
+> push or master push. Until ID-028 and ID-029 are implemented, the current
+> triggers still apply — verify manually that everything deployed.
 
 #### Phase 5: Post-release verification
 
 - [ ] PyPI: `pip install remote-store==X.Y.Z` in a fresh venv, verify version and README renders on pypi.org
-- [ ] GitHub Pages: check https://haalfi.github.io/remote-store/ updated
-- [ ] ReadTheDocs: check https://remote-store.readthedocs.io/ updated
-- [ ] GitHub Release: create via `gh release create vX.Y.Z --notes "See CHANGELOG.md"`
+- [ ] GitHub Pages: check https://haalfi.github.io/remote-store/ shows correct version
+- [ ] ReadTheDocs: check https://remote-store.readthedocs.io/ shows correct version
 - [ ] Announce if applicable (tracking issues, users)
