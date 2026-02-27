@@ -1,7 +1,10 @@
 # Release — Version Bump and Release Checklist
 
 You are managing a version release for the remote-store project. This skill
-guides you through the complete release workflow and validates consistency.
+guides you through the 6-phase release process defined in CONTRIBUTING.md.
+
+The canonical release checklist lives in `CONTRIBUTING.md` § Release. If this
+skill drifts from that checklist, CONTRIBUTING.md wins — update this skill.
 
 ## Arguments
 
@@ -15,67 +18,66 @@ If not provided, ask them. Refer to CONTRIBUTING.md § Versioning for guidance:
 | Breaking API change (pre-1.0)        | **minor** |
 | CI, docs, metadata-only             | **no bump** |
 
-## Release Steps
+## Phase 0: Pre-flight
 
-Execute each step in order. Do NOT skip steps. Check off each one as you go.
+- [ ] Master is clean: `git status` shows no uncommitted changes
+- [ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)
+- [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete (`[x]`) or defer (`[ ]`)
+- [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
+- [ ] Decide bump level (patch / minor / major)
 
-### Step 1: Pre-flight checks
+## Phase 1: Content freeze
 
-- [ ] Confirm the working tree is clean (`git status`)
-- [ ] Confirm all tests pass (`hatch run all`)
-- [ ] Confirm `CHANGELOG.md` has an `[Unreleased]` section with content
-- [ ] Confirm `sdd/BACKLOG.md` has no `[~]` in-progress items for this release
+- [ ] CHANGELOG.md `[Unreleased]` is complete — every user-facing change listed with its backlog ID
+- [ ] `sdd/BACKLOG.md`: all shipping items marked `[x]` with version (e.g. `(v0.8.0)`)
+- [ ] README.md: backends table, installation extras, API table, badges are current
+- [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
+- [ ] Examples: `hatch run examples` passes; manually review notebooks if API surface changed
+- [ ] Guides: new/changed backend guides are accurate
+- [ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)
 
-### Step 2: Version bump
+## Phase 2: Version bump (on a release branch)
 
-Run `bump-my-version bump <level>`. This atomically updates:
-- `pyproject.toml` (version field)
-- `src/remote_store/__init__.py` (`__version__`)
-- `CITATION.cff` (version + date-released)
+- [ ] Create release branch: `git checkout -b release-vX.Y.Z`
+- [ ] CHANGELOG.md: rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, add fresh empty `[Unreleased]` above
+- [ ] Update `date-released` in `CITATION.cff` to today (`bump-my-version` only updates `version:`, not this field)
+- [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
+- [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
+- [ ] `bump-my-version bump patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff`)
+- [ ] Review and commit: `git diff` to verify, then stage the 4 files and commit as `Release vX.Y.Z`
 
-After the bump, verify all three files show the new version.
+**Important:** `bump-my-version` modifies files in-place without committing or
+tagging. You control the commit and tag lifecycle manually.
 
-### Step 3: CHANGELOG update
+## Phase 3: Validate
 
-- Move the `[Unreleased]` content under a new heading: `## [X.Y.Z] - YYYY-MM-DD`
-- Add a fresh empty `## [Unreleased]` section above the new version heading
-- Ensure the heading format matches existing entries
+- [ ] `hatch run all` passes (lint + format-check + typecheck + test-cov + examples)
+- [ ] `mkdocs build --strict` passes
+- [ ] `python -m build && twine check dist/*` — package builds cleanly
+- [ ] `pip install dist/*.whl && python -c "import remote_store; print(remote_store.__version__)"` — version matches
 
-### Step 4: Backlog update
+## Phase 4: Ship
 
-- Mark any completed backlog items as `[x]` with `Done: vX.Y.Z: <description>`
-- Move fully completed items to the Done section if appropriate
-- Ensure no `[~]` items claim to be done when they aren't
+- [ ] Push branch, open PR, wait for CI green
+- [ ] Request PR review — wait for approval before merging
+- [ ] Merge PR to master
+- [ ] Wait for CI to pass on the merge commit
+- [ ] Verify HEAD is the merge commit: `git log --oneline -1`
+- [ ] Tag the merge commit: `git tag vX.Y.Z`
+- [ ] Push the tag: `git push origin vX.Y.Z`
+- [ ] Create GitHub Release from the tag
+- [ ] Watch `publish.yml` — confirm it completes successfully
 
-### Step 5: Consistency checks
+## Phase 5: Post-release verification
 
-Verify these strings are consistent across files:
+- [ ] PyPI: `pip install remote-store==X.Y.Z` in a fresh venv, verify version and README renders
+- [ ] GitHub Pages: check https://haalfi.github.io/remote-store/ shows correct version
+- [ ] ReadTheDocs: check https://remote-store.readthedocs.io/ shows correct version
+- [ ] Announce if applicable
 
-**Tagline** (must match across all 5):
-- `pyproject.toml` → `description`
-- `README.md` → subtitle line
-- `docs-src/index.md` → intro paragraph
-- `mkdocs.yml` → `site_description`
-- `CITATION.cff` → `abstract`
+## Report
 
-**Keywords** (must match across both):
-- `pyproject.toml` → `keywords`
-- `CITATION.cff` → `keywords`
-
-**Version** (must match across all 3 — should be automatic from step 2):
-- `pyproject.toml` → `version`
-- `src/remote_store/__init__.py` → `__version__`
-- `CITATION.cff` → `version`
-
-### Step 6: Final validation
-
-- [ ] Run `hatch run all` (lint + typecheck + test-cov + examples)
-- [ ] Run `mkdocs build --strict` (docs build)
-- [ ] Review the git diff to confirm only expected files changed
-
-### Step 7: Report
-
-Output a summary:
+After completing all phases, output a summary:
 - New version number
 - Files modified
 - CHANGELOG entries included
@@ -83,7 +85,9 @@ Output a summary:
 
 ## Important
 
-- The v0.6.0 release missed the CHANGELOG update — that's why step 3 exists.
-- The tagline consistency check exists because PyPI, README, docs, and CITATION.cff
-  have drifted in the past. Check all five files.
-- Do NOT create the git tag manually — `bump-my-version` handles that.
+- The v0.6.0 release missed the CHANGELOG update — that's why Phase 2
+  explicitly calls it out.
+- The tagline/keywords consistency check exists because PyPI, README, docs,
+  and CITATION.cff have drifted in the past. Check all five files.
+- `bump-my-version` does NOT commit or tag. You handle that in Phase 2/4.
+- Tags go on the **merge commit on master**, not on the release branch.

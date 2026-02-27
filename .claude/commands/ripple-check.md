@@ -35,6 +35,7 @@ table below drifts from the reference, update this skill.
 | **A spec section** (`sdd/specs/`) | Tests with `@pytest.mark.spec("ID")` for that section, `sdd/BACKLOG.md` if related item exists |
 | **A dependency**              | `pyproject.toml` extras + minimum pins (`>=X.Y`), README.md install instructions, `guides/backends/` prerequisites |
 | **Store or Backend ABC** (`_store.py`, `_backend.py`) | All 6 backend implementations (Local, S3, S3-PyArrow, SFTP, Azure, Memory), conformance tests in `tests/backends/test_conformance.py` |
+| **A Store method** (`_store.py`)  | README.md Store API table, `__init__.py` `__all__`, `examples/` scripts, spec in `sdd/specs/`, user guides, CHANGELOG |
 | **Public API** (`__init__.py` `__all__`) | README.md Store API table, `examples/` scripts, user guides |
 | **Docs navigation** (`mkdocs.yml`) | Per-section `_nav.yml` files in `docs-src/`, `guides/backends/index.md` |
 

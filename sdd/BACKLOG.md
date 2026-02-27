@@ -195,7 +195,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   straightforward. Consider once the project reaches Beta or if user demand
   appears. Reference: https://conda-forge.org/docs/maintainer/adding_pkgs/
 
-- [x] **ID-020 — Claude Code reusable skills**
+- [x] **ID-030 — Claude Code reusable skills**
   Create `.claude/commands/` slash-command skills to standardize and speed up
   recurring workflows. Based on analysis of commit history (116 commits) and
   project conventions, the following error-prone or repetitive workflows were

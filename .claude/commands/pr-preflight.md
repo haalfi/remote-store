@@ -8,6 +8,9 @@ the issues that have historically slipped through.
 
 Run all checks below and report results. Do NOT skip any check.
 
+**Branching rule:** Confirm you are NOT on `master`. All changes must be on a
+feature branch (CLAUDE.md § Branching). If on master, stop and create a branch.
+
 ### Check 1: Tests pass
 
 Run `hatch run test` and confirm all tests pass. If tests fail, report the

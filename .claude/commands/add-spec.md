@@ -19,8 +19,9 @@ Check existing specs in `sdd/specs/` to find the next available number:
 ```
 ls sdd/specs/
 ```
-The new spec gets the next sequential NNN (e.g., 013 is memory-backend, so the
-next available is 014 or higher).
+The new spec gets the next sequential NNN. Current specs go up to 015
+(013 memory-backend, 014 pyarrow-filesystem-adapter, 015 store-child),
+so the next available is 016 or higher. Always verify with `ls`.
 
 ## Step 2: Create the spec document
 
