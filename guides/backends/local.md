@@ -22,3 +22,10 @@ with Registry(config) as registry:
 | Option | Type | Description |
 |--------|------|-------------|
 | `root` | `str` | Root directory for file storage (required) |
+
+## Caveats
+
+- **`overwrite=False` has a TOCTOU race.** The exists-check and write are separate operations. Concurrent writers can both pass the check and overwrite each other.
+- **`move()` uses `shutil.move()`**, which delegates to `os.rename()` on the same filesystem (atomic) but falls back to copy+delete across filesystems. `write_atomic()` uses `os.replace()` and is truly atomic.
+
+See the [Concurrency and Atomicity Guarantees](../concurrency.md) guide for details.

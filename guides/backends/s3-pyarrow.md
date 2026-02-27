@@ -73,3 +73,10 @@ pa_fs = backend.unwrap(PyArrowS3)
 # s3fs filesystem (control path)
 s3_fs = backend.unwrap(s3fs.S3FileSystem)
 ```
+
+## Caveats
+
+- **`move()` is not atomic.** Like the S3 backend, move is copy + delete. A crash between the two steps leaves duplicates.
+- **`overwrite=False` has a TOCTOU race.** The exists-check and write are separate API calls. Concurrent writers can both pass the check and overwrite each other.
+
+See the [Concurrency and Atomicity Guarantees](../concurrency.md) guide for details and workarounds.
