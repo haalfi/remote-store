@@ -195,11 +195,11 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 
 - [ ] Create release branch: `git checkout -b release-vX.Y.Z`
 - [ ] CHANGELOG.md: rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, add fresh empty `[Unreleased]` above
-- [ ] Update `date-released` in `CITATION.cff` to today
+- [ ] Update `date-released` in `CITATION.cff` to today (bump-my-version only updates `version:`, not this field)
 - [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
 - [ ] `bump-my-version bump patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff`)
-- [ ] Stage and commit all Phase 2 changes together: `git add -A && git commit -m "Release vX.Y.Z"`
+- [ ] Review and commit: `git diff` to verify, then `git add pyproject.toml src/remote_store/__init__.py CITATION.cff CHANGELOG.md && git commit -m "Release vX.Y.Z"`
 
 #### Phase 3: Validate
 
@@ -217,7 +217,7 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 - [ ] Verify HEAD is the merge commit: `git log --oneline -1`
 - [ ] Tag the merge commit: `git tag vX.Y.Z` (or `git tag vX.Y.Z <sha>` if master advanced)
 - [ ] Push the tag: `git push origin vX.Y.Z`
-- [ ] Create GitHub Release from the tag — for release notes; after ID-028 this becomes the single publish trigger
+- [ ] Create GitHub Release from the tag (currently for release notes only; ID-028 will make this the single publish trigger)
 - [ ] Watch `publish.yml` — confirm it completes successfully
 
 #### Phase 5: Post-release verification
