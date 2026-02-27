@@ -21,8 +21,8 @@ from typing import TYPE_CHECKING, Any, cast
 try:
     import pyarrow as pa  # type: ignore[import-untyped]
     import pyarrow.fs as pafs  # type: ignore[import-untyped]
-except ImportError as _exc:  # pragma: no cover
-    raise ImportError(
+except ModuleNotFoundError as _exc:  # pragma: no cover
+    raise ModuleNotFoundError(
         "PyArrow is required for the arrow extension. Install it with: pip install 'remote-store[arrow]'"
     ) from _exc
 
@@ -120,11 +120,19 @@ class _StoreSink(io.RawIOBase):
 
 
 def _normalize(path: str) -> str:
-    """Strip leading/trailing slashes and collapse separators."""
+    """Strip leading/trailing slashes, collapse separators, resolve ``.`` and ``..``."""
     # Also handle backslashes for Windows paths leaked by callers.
     path = path.replace("\\", "/")
-    parts = [p for p in path.split("/") if p]
-    return "/".join(parts)
+    resolved: list[str] = []
+    for p in path.split("/"):
+        if not p or p == ".":
+            continue
+        if p == "..":
+            if resolved:
+                resolved.pop()
+            continue
+        resolved.append(p)
+    return "/".join(resolved)
 
 
 class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
@@ -135,6 +143,13 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
         materialization in ``open_input_file``. Default 64 MB.
     :param write_spill_threshold: Max in-memory buffer size (bytes) for
         ``_StoreSink`` before spilling to disk. Default 64 MB.
+
+    **Thread safety:** The handler itself holds no shared mutable state. PyArrow's
+    C++ layer may call handler methods from background threads (with the GIL
+    acquired). Thread safety therefore depends on the backend: ``MemoryBackend``
+    uses a lock (safe), ``LocalBackend`` relies on OS file semantics (safe),
+    cloud backends use thread-safe HTTP clients (safe). If using a custom backend,
+    ensure its methods are safe under concurrent calls.
     """
 
     def __init__(
@@ -146,6 +161,16 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
         self._store = store
         self._materialization_threshold = materialization_threshold
         self._write_spill_threshold = write_spill_threshold
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, StoreFileSystemHandler):
+            return self._store == other._store
+        return NotImplemented
+
+    def __ne__(self, other: object) -> bool:
+        if isinstance(other, StoreFileSystemHandler):
+            return self._store != other._store
+        return NotImplemented
 
     # -- PA-003 ---------------------------------------------------------------
 
@@ -166,22 +191,26 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
             path = _normalize(raw_path)
             try:
                 with _map_errors():
-                    if self._store.is_file(path):
-                        info = self._store.get_file_info(path)
-                        results.append(
-                            pafs.FileInfo(
-                                path,
-                                type=pafs.FileType.File,
-                                size=info.size,
-                                mtime=info.modified_at,
-                            )
+                    # Optimistic: try get_file_info first (1 RPC for files)
+                    info = self._store.get_file_info(path)
+                    results.append(
+                        pafs.FileInfo(
+                            path,
+                            type=pafs.FileType.File,
+                            size=info.size,
+                            mtime=info.modified_at,
                         )
-                    elif self._store.is_folder(path):
-                        results.append(pafs.FileInfo(path, type=pafs.FileType.Directory))
-                    else:
-                        results.append(pafs.FileInfo(path, type=pafs.FileType.NotFound))
-            except FileNotFoundError:
-                results.append(pafs.FileInfo(path, type=pafs.FileType.NotFound))
+                    )
+            except (FileNotFoundError, ValueError):
+                # Not a file — check if it's a folder (2nd RPC only for dirs/not-found)
+                try:
+                    with _map_errors():
+                        if self._store.is_folder(path):
+                            results.append(pafs.FileInfo(path, type=pafs.FileType.Directory))
+                        else:
+                            results.append(pafs.FileInfo(path, type=pafs.FileType.NotFound))
+                except FileNotFoundError:
+                    results.append(pafs.FileInfo(path, type=pafs.FileType.NotFound))
         return results
 
     # -- PA-008 ---------------------------------------------------------------
@@ -209,12 +238,13 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                 if recursive:
                     # Step 3: synthetic directory entries from file paths
                     seen_dirs: set[str] = set()
+                    base_prefix = f"{base_dir}/" if base_dir else ""
                     for info in results:
                         parts = info.path.split("/")
-                        # Build all ancestor paths between base_dir and the file
+                        # Build ancestor paths that are strict descendants of base_dir
                         for i in range(1, len(parts)):
                             prefix = "/".join(parts[:i])
-                            if prefix != base_dir and prefix not in seen_dirs:
+                            if prefix != base_dir and prefix.startswith(base_prefix) and prefix not in seen_dirs:
                                 seen_dirs.add(prefix)
                     for dir_path in sorted(seen_dirs):
                         results.append(pafs.FileInfo(dir_path, type=pafs.FileType.Directory))
@@ -243,7 +273,11 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
         path = _normalize(path)
         with _map_errors():
             stream = self._store.read(path)
-            return pa.PythonFile(stream, mode="r")
+            try:
+                return pa.PythonFile(stream, mode="r")
+            except Exception:  # pragma: no cover
+                stream.close()
+                raise
 
     # -- PA-010 ---------------------------------------------------------------
 
@@ -261,7 +295,11 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
             # Tier 3: streaming via PythonFile for large seekable files
             stream = self._store.read(path)
             if hasattr(stream, "seekable") and stream.seekable():
-                return pa.PythonFile(stream, mode="r")
+                try:
+                    return pa.PythonFile(stream, mode="r")
+                except Exception:  # pragma: no cover
+                    stream.close()
+                    raise
 
             # Tier 2 fallback: non-seekable large file — materialize with warning
             logger.warning(

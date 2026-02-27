@@ -644,23 +644,47 @@ class TestGetFileInfoEdgeCases:
 
     @pytest.mark.spec("PA-007")
     def test_get_file_info_error_during_check(self, store: Store) -> None:
-        """If get_file_info raises NotFound during is_file check, map to NotFound."""
+        """If get_file_info raises NotFound (race condition), fall back to is_folder."""
         store.write("volatile.txt", b"data")
         handler = StoreFileSystemHandler(store)
 
-        # Monkey-patch is_file to raise NotFound (simulating race condition)
-        original_is_file = store.is_file
+        # Monkey-patch get_file_info to raise NotFound (simulating race condition)
+        original_get_file_info = store.get_file_info
 
-        def flaky_is_file(path: str) -> bool:
+        def flaky_get_file_info(path: str):  # type: ignore[no-untyped-def]
             raise NotFound(f"Gone: {path}", path=path)
 
-        store.is_file = flaky_is_file  # type: ignore[assignment]
+        store.get_file_info = flaky_get_file_info  # type: ignore[assignment]
         try:
             infos = handler.get_file_info(["volatile.txt"])
             assert len(infos) == 1
             assert infos[0].type == pafs.FileType.NotFound
         finally:
-            store.is_file = original_is_file  # type: ignore[assignment]
+            store.get_file_info = original_get_file_info  # type: ignore[assignment]
+
+    @pytest.mark.spec("PA-007")
+    def test_get_file_info_is_folder_raises(self, store: Store) -> None:
+        """If both get_file_info and is_folder raise, return NotFound."""
+        handler = StoreFileSystemHandler(store)
+
+        original_get_file_info = store.get_file_info
+        original_is_folder = store.is_folder
+
+        def raise_get_file_info(path: str):  # type: ignore[no-untyped-def]
+            raise NotFound(f"Gone: {path}", path=path)
+
+        def raise_is_folder(path: str) -> bool:
+            raise NotFound(f"Gone: {path}", path=path)
+
+        store.get_file_info = raise_get_file_info  # type: ignore[assignment]
+        store.is_folder = raise_is_folder  # type: ignore[assignment]
+        try:
+            infos = handler.get_file_info(["ghost"])
+            assert len(infos) == 1
+            assert infos[0].type == pafs.FileType.NotFound
+        finally:
+            store.get_file_info = original_get_file_info  # type: ignore[assignment]
+            store.is_folder = original_is_folder  # type: ignore[assignment]
 
 
 class TestSelectorBackendRaises:
@@ -689,3 +713,112 @@ class TestSelectorBackendRaises:
                 handler.get_file_info_selector(selector)
         finally:
             store.list_files = original_list_files  # type: ignore[assignment]
+
+
+# ---------------------------------------------------------------------------
+# Deep review: DuckDB/Polars/fsspec compatibility
+# ---------------------------------------------------------------------------
+
+
+class TestSyntheticDirMultiLevelBase:
+    """Ensure recursive selector with multi-level base_dir doesn't emit ancestors."""
+
+    @pytest.mark.spec("PA-008")
+    def test_no_ancestors_above_base_dir(self, store: Store) -> None:
+        store.write("a/b/c/d/file.txt", b"data")
+        fs = pyarrow_fs(store)
+        selector = pafs.FileSelector("a/b", recursive=True)
+        infos = fs.get_file_info(selector)
+        paths = {i.path for i in infos}
+        # "a/b/c" and "a/b/c/d" are valid synthetic dirs (descendants of base)
+        assert "a/b/c" in paths
+        assert "a/b/c/d" in paths
+        # "a" is ABOVE base_dir — must NOT appear
+        assert "a" not in paths
+
+    @pytest.mark.spec("PA-008")
+    def test_root_base_dir_no_regression(self, store: Store) -> None:
+        """Empty base_dir should still produce synthetic dirs."""
+        store.write("x/y/z.txt", b"data")
+        fs = pyarrow_fs(store)
+        selector = pafs.FileSelector("", recursive=True)
+        infos = fs.get_file_info(selector)
+        paths = {i.path for i in infos}
+        assert "x" in paths
+        assert "x/y" in paths
+
+
+class TestHandlerEquality:
+    """StoreFileSystemHandler __eq__/__ne__ for filesystem identity."""
+
+    def test_same_store_equal(self, store: Store) -> None:
+        h1 = StoreFileSystemHandler(store)
+        h2 = StoreFileSystemHandler(store)
+        assert h1 == h2
+
+    def test_same_store_ne_returns_false(self, store: Store) -> None:
+        h1 = StoreFileSystemHandler(store)
+        h2 = StoreFileSystemHandler(store)
+        assert (h1 != h2) is False
+
+    def test_different_store_not_equal(self) -> None:
+        s1 = Store(backend=MemoryBackend())
+        s2 = Store(backend=MemoryBackend())
+        h1 = StoreFileSystemHandler(s1)
+        h2 = StoreFileSystemHandler(s2)
+        assert h1 != h2
+
+    def test_different_store_eq_returns_false(self) -> None:
+        s1 = Store(backend=MemoryBackend())
+        s2 = Store(backend=MemoryBackend())
+        h1 = StoreFileSystemHandler(s1)
+        h2 = StoreFileSystemHandler(s2)
+        assert (h1 == h2) is False
+
+    def test_eq_other_type_returns_not_implemented(self, store: Store) -> None:
+        h = StoreFileSystemHandler(store)
+        assert h.__eq__("not a handler") is NotImplemented
+        assert h.__eq__(42) is NotImplemented
+
+    def test_ne_other_type_returns_not_implemented(self, store: Store) -> None:
+        h = StoreFileSystemHandler(store)
+        assert h.__ne__("not a handler") is NotImplemented
+        assert h.__ne__(42) is NotImplemented
+
+
+class TestNormalizeDotDotDot:
+    """normalize_path resolves . and .. components."""
+
+    @pytest.mark.spec("PA-006")
+    def test_single_dot_removed(self) -> None:
+        assert StoreFileSystemHandler.normalize_path("dir/./file.txt") == "dir/file.txt"
+
+    @pytest.mark.spec("PA-006")
+    def test_double_dot_resolved(self) -> None:
+        assert StoreFileSystemHandler.normalize_path("dir/../file.txt") == "file.txt"
+
+    @pytest.mark.spec("PA-006")
+    def test_double_dot_at_root_ignored(self) -> None:
+        assert StoreFileSystemHandler.normalize_path("../file.txt") == "file.txt"
+
+    @pytest.mark.spec("PA-006")
+    def test_complex_dot_resolution(self) -> None:
+        assert StoreFileSystemHandler.normalize_path("a/b/../c/./d/../e") == "a/c/e"
+
+
+class TestAllExports:
+    """PA-022: __all__ re-exports verification."""
+
+    @pytest.mark.spec("PA-022")
+    def test_arrow_module_exports(self) -> None:
+        from remote_store.ext import arrow
+
+        assert "StoreFileSystemHandler" in arrow.__all__
+        assert "pyarrow_fs" in arrow.__all__
+
+    @pytest.mark.spec("PA-022")
+    def test_top_level_reexports(self) -> None:
+        import remote_store
+
+        assert hasattr(remote_store, "StoreFileSystemHandler")
+        assert hasattr(remote_store, "pyarrow_fs")

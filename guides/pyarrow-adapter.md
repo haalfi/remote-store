@@ -102,6 +102,14 @@ fs = pyarrow_fs(
 A future Phase 2 will add **Tier 1** (backend-native fast path) for backends
 like S3-PyArrow that expose a native `pyarrow.fs.FileSystem` via `unwrap()`.
 
+## Thread Safety
+
+The handler holds no shared mutable state. PyArrow's C++ layer may call handler
+methods from background threads (with the GIL acquired). Thread safety depends
+on the backend -- all built-in backends (Memory, Local, S3, SFTP, Azure) are
+safe under concurrent calls. If using a custom backend, ensure its methods are
+thread-safe.
+
 ## Limitations
 
 - **No append support.** `open_append_stream` raises `NotImplementedError`.
