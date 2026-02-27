@@ -404,6 +404,15 @@ class TestStreamingConformance:
         assert rest == b"3456789"
         stream.close()
 
+    @pytest.mark.spec("SIO-001")
+    def test_read_stream_supports_context_manager(self, backend: Backend) -> None:
+        """read() stream supports context manager protocol for reliable cleanup."""
+        backend.write("ctx.bin", b"context manager test")
+        with backend.read("ctx.bin") as stream:
+            content = stream.read()
+        assert content == b"context manager test"
+        assert stream.closed
+
     @pytest.mark.spec("SIO-003")
     def test_write_from_binaryio_streams_content(self, backend: Backend) -> None:
         """write() with BinaryIO must not require the caller to materialize bytes."""
