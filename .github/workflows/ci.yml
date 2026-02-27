@@ -64,6 +64,8 @@ jobs:
       - run: python examples/atomic_writes.py
       - run: python examples/configuration.py
       - run: python examples/error_handling.py
+      - run: python examples/memory_backend.py
+      - run: python examples/store_child.py
 
   docs:
     runs-on: ubuntu-latest

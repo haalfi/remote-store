@@ -4,6 +4,7 @@
 - Atomic Writes: atomic-writes.md
 - Configuration: configuration.md
 - Error Handling: error-handling.md
+- Memory Backend: memory-backend.md
 - Store.child(): store-child.md
 - S3 Backend: s3-backend.md
 - S3-PyArrow Backend: s3-pyarrow-backend.md

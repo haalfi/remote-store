@@ -175,14 +175,27 @@ Detailed configuration guides for each backend are in [`guides/backends/`](https
 
 Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples):
 
-|Script                                                                                            |What it shows                                  |
-|--------------------------------------------------------------------------------------------------|-----------------------------------------------|
-|[quickstart.py](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py)       |Minimal config, write, read                    |
-|[file_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/file_operations.py)|Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key|
-|[streaming_io.py](https://github.com/haalfi/remote-store/blob/master/examples/streaming_io.py)   |Streaming writes and reads with `BytesIO`      |
-|[atomic_writes.py](https://github.com/haalfi/remote-store/blob/master/examples/atomic_writes.py) |Atomic writes and overwrite semantics          |
-|[configuration.py](https://github.com/haalfi/remote-store/blob/master/examples/configuration.py) |Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs|
-|[error_handling.py](https://github.com/haalfi/remote-store/blob/master/examples/error_handling.py)|Catching `NotFound`, `AlreadyExists`, etc.     |
+**Core** -- run locally, no external services needed:
+
+| Script | What it shows |
+|--------|---------------|
+| [quickstart.py](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py) | Minimal config, write, read |
+| [file_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/file_operations.py) | Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key |
+| [streaming_io.py](https://github.com/haalfi/remote-store/blob/master/examples/streaming_io.py) | Streaming writes and reads with `BytesIO` |
+| [atomic_writes.py](https://github.com/haalfi/remote-store/blob/master/examples/atomic_writes.py) | Atomic writes and overwrite semantics |
+| [configuration.py](https://github.com/haalfi/remote-store/blob/master/examples/configuration.py) | Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs |
+| [error_handling.py](https://github.com/haalfi/remote-store/blob/master/examples/error_handling.py) | Catching `NotFound`, `AlreadyExists`, etc. |
+| [memory_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/memory_backend.py) | In-process memory backend for testing and caching |
+| [store_child.py](https://github.com/haalfi/remote-store/blob/master/examples/store_child.py) | Runtime sub-scoping with `Store.child()` |
+
+**Backend** -- require a running service and credentials ([`examples/backends/`](https://github.com/haalfi/remote-store/tree/master/examples/backends)):
+
+| Script | What it shows |
+|--------|---------------|
+| [s3_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/backends/s3_backend.py) | S3 / MinIO: config, two stores, virtual folders |
+| [s3_pyarrow_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/backends/s3_pyarrow_backend.py) | High-throughput S3 via PyArrow C++ + escape hatch |
+| [sftp_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/backends/sftp_backend.py) | SSH/SFTP: config, host key policies, `unwrap()` |
+| [azure_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/backends/azure_backend.py) | Azure Blob / ADLS Gen2: config, auth methods, `unwrap()` |
 
 Interactive Jupyter notebooks are available in [`examples/notebooks/`](https://github.com/haalfi/remote-store/tree/master/examples/notebooks).
 
