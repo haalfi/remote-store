@@ -301,6 +301,23 @@ fade101  AF-007: Wire Azure guide into docs site
 
 Expanded the 5-item release checklist into a 6-phase process (pre-flight, content freeze, version bump, validate, ship, post-release verification). The motivation: despite thorough process documentation -- specs, CLAUDE.md principles, CONTRIBUTING.md conventions, PR templates -- past releases still had preventable errors (v0.6.1 bumped but never published, CITATION.cff dates missed, no post-publish verification). Process docs govern how to build; a release checklist governs how to ship. One doesn't replace the other.
 
+### Phase 15: Reusable Skills (collaborative process mining)
+
+After ~165 commits of human-AI pair programming, recurring friction points had become visible in the data: 7 of 9 audit-fix commits forgot to update the backlog, 62% of code changes skipped the CHANGELOG, version-file sync was missed repeatedly, and cross-reference consistency (the "ripple check") was manual and error-prone. These weren't knowledge gaps -- the rules existed in CLAUDE.md, CONTRIBUTING.md, and PR templates -- but they lived in prose that had to be re-read and re-applied every session.
+
+The fix was to extract the patterns into executable checklists: 6 slash-command skills in `.claude/commands/` that Claude Code can invoke directly. Each skill codifies a workflow that had been learned through trial and error across multiple sessions:
+
+- **`/ripple-check`** — the cross-reference table from CLAUDE-REFERENCE.md, turned into an actionable checklist
+- **`/release`** — the 6-phase release process, with every file and command spelled out
+- **`/add-backend`** — 12-step backend scaffolding (the exact sequence that tripped up AF-001)
+- **`/backlog-sync`** — enforces "same commit" backlog updates
+- **`/pr-preflight`** — 11 checks covering the historically-missed items
+- **`/add-spec`** — SDD spec + test scaffolding with the right markers
+
+The interesting insight: **the skills weren't designed top-down -- they were mined from failure patterns.** The commit history told us exactly which steps got forgotten and how often. The backlog-sync skill exists because 78% of tagged commits forgot the backlog. The CHANGELOG check in pr-preflight exists because the majority of code changes skipped it. Each skill is a scar from a past mistake, formalized so it doesn't recur.
+
+This is a natural evolution of the human-AI workflow: the human defines principles (CLAUDE.md), the pair discovers where those principles get violated in practice (PR reviews, audits), and the violations get codified into guardrails (skills) that the AI can follow without re-deriving them each session. The principles stay high-level; the skills handle the mechanical enforcement.
+
 ## What Worked Well
 
 ### Specs as a shared contract

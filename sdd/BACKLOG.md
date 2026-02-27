@@ -328,6 +328,14 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
 
 ### Ideas shipped
 
+- [x] **ID-030 — Claude Code reusable skills** (v0.8.0)
+  Create `.claude/commands/` slash-command skills to standardize and speed up
+  recurring workflows: ripple-check, release, add-backend, backlog-sync,
+  pr-preflight, add-spec. Addresses top systemic issues: backlog drift
+  (7/9 AF commits forgot backlog), CHANGELOG skipped (62% of code changes),
+  and version-file sync misses.
+  Done: Added 6 skills in `.claude/commands/`.
+
 - [x] **ID-017 — Memory backend** (v0.7.0)
   Tree-indexed in-memory backend. Zero dependencies, no filesystem access.
   Supports all 8 capabilities, full conformance suite with zero skips.

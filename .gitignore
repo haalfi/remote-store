@@ -1,7 +1,9 @@
 # IDEs & tools
 .venv/
 .vscode/
+# Claude Code — ignore user-specific files, keep shared assets
 .claude/*
+!.claude/commands/
 !.claude/settings.json
 !.claude/setup-gh.sh
 
