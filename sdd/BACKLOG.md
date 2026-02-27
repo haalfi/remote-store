@@ -356,6 +356,13 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
 
 ### Other completed work
 
+- [x] **DONE-005 — Reorganize examples into core + backends groups** (v0.8.0)
+  Moved 4 cloud backend scripts (S3, S3-PyArrow, SFTP, Azure) into
+  `examples/backends/`. README, CI, docs, and CLAUDE-REFERENCE updated
+  to reflect the grouped structure. CI examples job now covers all 8
+  core scripts (memory_backend and store_child were missing). Added
+  docs page for memory-backend example.
+
 - [x] **DONE-001 — PEP 604 type hints**
   All source uses `X | Y` with `from __future__ import annotations`. mypy
   strict mode enforced in CI. No action needed.
