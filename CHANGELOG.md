@@ -9,6 +9,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ### Added
 
 - **`MemoryBackend` — in-memory backend** -- tree-indexed, zero dependencies, no filesystem access. Supports all 8 capabilities with zero conformance test skips. Primary use cases: unit testing, interactive exploration, documentation examples, CI speed. Registered as `"memory"` backend type, always available (no optional extra). Store test fixtures migrated from `LocalBackend` + `tempfile` to `MemoryBackend` (ID-017)
+- **PyArrow FileSystemHandler adapter spec** -- drafted `sdd/specs/014-pyarrow-filesystem-adapter.md` for `StoreFileSystemHandler` wrapping any `Store` into a `pyarrow.fs.PyFileSystem`. Tiered read strategy (native fast path / BufferReader / PythonFile), spill-to-disk writes, complete error mapping (ID-016)
 
 ## [0.6.1] - 2026-02-26
 
