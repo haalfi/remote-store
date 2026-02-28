@@ -20,7 +20,7 @@ from remote_store._store import Store
 from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_exists
 from remote_store.ext.transfer import download, transfer, upload
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 
 __all__ = [
     # Core
