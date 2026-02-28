@@ -110,8 +110,10 @@ class _StoreSink(io.RawIOBase):
             with _map_errors():
                 self._store.write(self._path, cast("BinaryIO", self._buf), overwrite=True)
         finally:
-            self._buf.close()
-            super().close()
+            try:
+                self._buf.close()
+            finally:
+                super().close()
 
 
 # ---------------------------------------------------------------------------
@@ -202,6 +204,7 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                         )
                     )
             except (FileNotFoundError, ValueError):
+                # ValueError: InvalidPath mapped by _map_errors (e.g. root/empty path)
                 # Not a file — check if it's a folder (2nd RPC only for dirs/not-found)
                 try:
                     with _map_errors():
@@ -359,7 +362,7 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
             with _map_errors():
                 # Check existence first — some backends return empty for non-existent dirs
                 if not self._store.is_folder(path):
-                    raise NotFound(f"Directory not found: {path!r}", path=path)
+                    raise FileNotFoundError(f"Directory not found: {path!r}")
                 # Delete all files
                 for fi in list(self._store.list_files(path)):
                     self._store.delete(str(fi.path), missing_ok=True)

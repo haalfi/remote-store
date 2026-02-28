@@ -571,6 +571,26 @@ class TestErrorMapping:
             raise original
         assert exc_info.value.__cause__ is original
 
+    @pytest.mark.spec("PA-021")
+    def test_handler_after_store_close(self) -> None:
+        """Using a handler after the backend rejects calls produces OSError."""
+        store = Store(backend=MemoryBackend())
+        store.write("f.txt", b"data")
+        fs = pyarrow_fs(store)
+
+        # Simulate closed-state backend by making read raise RemoteStoreError
+        from remote_store._errors import BackendUnavailable
+
+        original_read = store.read
+        store.read = lambda path: (_ for _ in ()).throw(  # type: ignore[assignment]
+            BackendUnavailable("Store is closed", backend="memory")
+        )
+        try:
+            with pytest.raises(OSError):
+                fs.open_input_stream("f.txt")
+        finally:
+            store.read = original_read  # type: ignore[assignment]
+
 
 # ---------------------------------------------------------------------------
 # PA-024/025: Integration tests

@@ -127,7 +127,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   → Spec: `sdd/specs/014-pyarrow-filesystem-adapter.md`
   Phase 1 shipped: `StoreFileSystemHandler` with Tier 2/3 reads, `_StoreSink`
   write buffer, `pyarrow_fs()` factory, `Store.unwrap()` delegation,
-  error mapping (PA-019/020), conditional top-level export, 88 tests
+  error mapping (PA-019/020), conditional top-level export, 89 tests
   (`test_arrow.py`) + 2 `Store.unwrap()` tests (`test_store.py`),
   user guide, example, CI coverage.
   Remaining (Phase 2): `Store.native_path()`, `Backend.native_path()`,
