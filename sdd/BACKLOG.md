@@ -142,11 +142,12 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   replacing the binary slow/not-slow split, (C) cloud-aware round scaling and
   per-backend timeout watchdog. Optional: named profiles (`--profile ci-quick`).
 
-- [ ] **ID-022 — `ext.batch` — batch operations**
-  Batch delete, batch copy, batch existence checks. S3 supports 1000
-  deletes/call natively; other backends fall back to sequential. Essential
-  for any cleanup, migration, or bulk-processing workflow.
-  API: `from remote_store.ext.batch import batch_delete, batch_exists`.
+- [x] **ID-022 — `ext.batch` — batch operations**
+  `batch_delete`, `batch_copy`, `batch_exists` convenience functions for
+  operating on collections of paths. Sequential execution with error
+  aggregation via `BatchResult`. Pure Python, no extra dependencies,
+  unconditional top-level export.
+  → Spec: `sdd/specs/016-ext-batch.md`
 
 - [ ] **ID-023 — `ext.transfer` — cross-store and local-path transfers**
   Unifies ID-001 (cross-store transfer) and ID-009 (upload/download).

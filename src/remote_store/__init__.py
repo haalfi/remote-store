@@ -17,6 +17,7 @@ from remote_store._models import FileInfo, FolderInfo
 from remote_store._path import RemotePath
 from remote_store._registry import Registry, register_backend
 from remote_store._store import Store
+from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_exists
 
 __version__ = "0.8.0"
 
@@ -46,6 +47,11 @@ __all__ = [
     "CapabilityNotSupported",
     "DirectoryNotEmpty",
     "BackendUnavailable",
+    # Batch operations
+    "BatchResult",
+    "batch_delete",
+    "batch_copy",
+    "batch_exists",
     # Version
     "__version__",
 ]
