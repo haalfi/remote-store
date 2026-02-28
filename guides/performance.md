@@ -47,11 +47,17 @@ docker compose -f benchmarks/infra/docker-compose.yml up -d
 ### Commands
 
 ```bash
-# Quick run (excludes slow tests)
+# Quick tier (~2 min/backend)
 hatch run bench
 
-# Full run (includes 10MB, 100MB payloads and 10k listing)
+# Standard tier (~5 min/backend, adds 10MB payload + deep hierarchy)
+hatch run bench-standard
+
+# Full tier (~20-30 min/backend, adds 100MB payload + 10k listing)
 hatch run bench-full
+
+# Filter to specific backends
+hatch run bench -- --backend s3,sftp
 
 # Save results as JSON
 hatch run bench-save
@@ -64,6 +70,9 @@ hatch run bench-cloud
 
 # Summary report from saved results
 hatch run bench-report
+
+# Comparative report (remote-store vs raw SDK vs fsspec)
+hatch run bench-report-comparative
 
 # Compare latest vs previous saved run
 hatch run bench-report-compare
@@ -105,6 +114,27 @@ Generate this table from your own saved results with `hatch run bench-report`.
 - remote-store adds minimal overhead vs raw SDK for most operations.
   Run `hatch run bench` to measure the exact overhead in your environment.
 - Streaming reads keep memory constant regardless of file size.
+
+## How remote-store Compares
+
+For every comparative operation, the benchmark suite runs the same workload
+through remote-store, the raw SDK, and the fsspec equivalent. Key findings:
+
+- **vs raw SDK:** In our testing, overhead is typically under 5% for
+  data-path operations and under 10% for metadata. The abstraction cost
+  is negligible compared to network latency for all remote backends.
+- **vs fsspec:** In our testing, remote-store is consistently faster. The
+  gap is largest for S3 writes (s3fs multipart overhead) and Azure listing
+  (adlfs directory emulation). See the full comparison on the
+  [docs site](https://haalfi.github.io/remote-store/performance/).
+
+Regenerate for your hardware:
+
+```bash
+docker compose -f benchmarks/infra/docker-compose.yml up -d --wait
+hatch run bench-save
+hatch run bench-report-comparative-md
+```
 
 ## Analyzing Results
 

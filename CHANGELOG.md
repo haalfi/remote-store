@@ -12,6 +12,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Changed
 
+- **Benchmark tiered modes, backend filtering, and comparative docs** -- replaced binary `slow`/not-slow split with three tiers (quick/standard/full), added `--backend` filter for single-backend runs (deselects instead of skipping to avoid fixture setup), added `--bench-timeout` watchdog (Windows-compatible), added `--comparative` and `--markdown` modes to `report.py` for remote-store vs raw SDK vs fsspec comparison tables, updated hatch scripts, added comparative results to docs site (ID-020)
 - **Release CI: GitHub Release as single trigger** -- `publish.yml` now triggers on `release: types: [published]` instead of `push: tags: ["v*"]`. The GitHub Release becomes the single event that triggers PyPI publish (ID-028)
 - **Versioned documentation with mike** -- `docs.yml` split into two jobs: `deploy-dev` (master push deploys "dev" alias) and `deploy-release` (release published deploys versioned docs with "latest" alias). Version switcher dropdown added to docs site. Requires changing GitHub Pages source to "Deploy from a branch" (`gh-pages`) (ID-029)
 
