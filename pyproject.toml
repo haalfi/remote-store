@@ -78,6 +78,7 @@ docs = [
   "mkdocs-gen-files>=0.5",
   "mkdocs-literate-nav>=0.6",
   "mkdocs-section-index>=0.3",
+  "mike>=2.0",
   "s3fs>=2024.2.0",
 ]
 
@@ -126,6 +127,7 @@ dependencies = [
   "mkdocs-gen-files>=0.5",
   "mkdocs-literate-nav>=0.6",
   "mkdocs-section-index>=0.3",
+  "mike>=2.0",
 ]
 
 [tool.hatch.envs.default.scripts]

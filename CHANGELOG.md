@@ -6,6 +6,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Changed
+
+- **Release CI: GitHub Release as single trigger** -- `publish.yml` now triggers on `release: types: [published]` instead of `push: tags: ["v*"]`. The GitHub Release becomes the single event that triggers PyPI publish (ID-028)
+- **Versioned documentation with mike** -- `docs.yml` split into two jobs: `deploy-dev` (master push deploys "dev" alias) and `deploy-release` (release published deploys versioned docs with "latest" alias). Version switcher dropdown added to docs site. Requires changing GitHub Pages source to "Deploy from a branch" (`gh-pages`) (ID-029)
+
 ## [0.9.0] - 2026-02-28
 
 ### Added

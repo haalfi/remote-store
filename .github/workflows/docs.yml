@@ -3,31 +3,52 @@ name: Docs
 on:
   push:
     branches: [master]
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  deploy-dev:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       - run: pip install -e ".[docs]"
-      - run: mkdocs build --strict
-      - uses: actions/upload-pages-artifact@v4
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - run: mike deploy dev --push --update-aliases
+
+  deploy-release:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
         with:
-          path: site/
-      - id: deploy
-        uses: actions/deploy-pages@v4
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[docs]"
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Deploy versioned docs
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mike deploy "$VERSION" latest --push --update-aliases
+          mike set-default latest --push
