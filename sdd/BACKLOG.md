@@ -11,51 +11,17 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [x] **ID-021 — `Store.child(subpath)` — runtime sub-scoping** (v0.8.0)
-  Return a new Store scoped to a subfolder without recreating backend/registry.
-  Child shares the parent's backend (identity); `child.close()` does not close
-  the shared backend. Validated via RemotePath, chainable, equality-transparent.
-  → Spec: `sdd/specs/015-store-child.md`
-
 - [ ] **BK-002 — Glob / pattern matching strategy**
   Decide per-backend glob vs client-side abstraction. S3 has native prefix listing,
   SFTP does not. Spec the chosen approach or document why it stays per-backend.
   Related: ID-007 (`Store.glob()` surface API).
   → Spec: TBD (extends `003-backend-adapter-contract.md`)
 
-- [x] **AF-010 — Document TOCTOU and non-atomic move limitations**
-  `overwrite=False` has inherent TOCTOU (audit M-4, downgraded from High: inherent
-  limitation). S3 `move()` is copy+delete (audit L-21, per spec S3-013, not a bug).
-  Added `guides/concurrency.md` with full explanation, summary table, and workarounds.
-  Cross-referenced from all backend guides.
-
-- [x] **AF-012 — Add capability gating tests (STORE-006)**
-  Test that Store methods raise `CapabilityNotSupported` for backends missing
-  capabilities (audit M-11). 14 tests covering all 12 gated methods plus
-  backend-name propagation and gating-before-path-validation ordering.
-
-- [x] **AF-013 — Add PermissionDenied/BackendUnavailable error path tests**
-  S3-016, S3-017, SFTP-021, SFTP-022, SFTP-023 now tested via mock injection.
-  S3: `_classify_error()` exercised for 403/accessdenied (PermissionDenied) and
-  endpoint/connect/timeout/dns/name-or-service (BackendUnavailable).
-  SFTP: `_map_exception()` exercised for `errno.EACCES` (PermissionDenied),
-  `errno.EEXIST` (AlreadyExists), and `paramiko.SSHException` (BackendUnavailable).
-  `pragma: no cover` removed from tested paths. LocalBackend paths covered in
-  `test_coverage_gaps.py`.
-
-- [x] **AF-014 — Add CI gate to publish workflow**
-  Added inline `ci` job (lint + typecheck + test on Python 3.10 + 3.13)
-  as a prerequisite for `build`, which `publish` already depends on.
-  Subsumes into ID-028 if that ships first.
-
 ---
 
 ## Ideas (Unprioritized)
 
 Parking lot. Not evaluated, not committed to. Pick up when relevant.
-
-- [x] **ID-001 — Cross-store transfer** *(subsumed by ID-023 `ext.transfer`)*
-  Shipped as `transfer()` in `ext.transfer`. See spec `017-ext-transfer.md`.
 
 - [ ] **ID-002 — YAML config support**
   Allow `RegistryConfig.from_yaml()` alongside the existing `from_dict()`.
@@ -95,9 +61,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `FileInfo.checksum` consistently across backends (S3 ETag, local SHA-256).
   Gives users data-integrity guarantees with a single flag.
 
-- [x] **ID-009 — `Store.upload()` / `Store.download()` convenience methods** *(subsumed by ID-023 `ext.transfer`)*
-  Shipped as `upload()` and `download()` in `ext.transfer`. See spec `017-ext-transfer.md`.
-
 - [ ] **ID-010 — Retry policy configuration**
   SFTP has hardcoded retry logic (3 attempts, 2–10 s backoff via `tenacity`).
   Expose a `RetryPolicy` dataclass in `BackendConfig.options` so users can tune
@@ -109,49 +72,11 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   the existing `Store`. Needs design decision on whether to wrap sync backends
   with `asyncio.to_thread` or require native async backends.
 
-- [x] **ID-015 — Audit external deep links**
-  Swept all RTD, GitHub Pages, and GitHub links. All 3 RTD deep links
-  in README already have `/en/latest/` prefix. Base-URL-only references
-  (CITATION.cff, pyproject.toml, mkdocs.yml, etc.) auto-redirect and
-  need no prefix. No broken or stale links found.
-
-- [x] **ID-016 — PyArrow FileSystemHandler adapter (Phase 1)** (PR #55)
-  `StoreFileSystemHandler` in `ext/arrow.py` wraps any Store into a
-  `pyarrow.fs.PyFileSystem`. Tier 2/3 reads, `_StoreSink` write buffer,
-  `pyarrow_fs()` factory, `Store.unwrap()` delegation, error mapping
-  (PA-019/020), conditional top-level export, 89 tests (`test_arrow.py`)
-  + 2 `Store.unwrap()` tests (`test_store.py`), user guide, example, CI.
-  → RFC: `sdd/rfcs/rfc-0002-pyarrow-filesystem-adapter.md`
-  → Spec: `sdd/specs/014-pyarrow-filesystem-adapter.md`
-  Phase 2 remaining: `Store.native_path()`, `Backend.native_path()`,
-  Tier 1 native fast-path reads (PA-010), streaming error-mapping wrapper,
-  double-RPC optimization in `open_input_file`.
-
-- [x] **ID-019 — Update stale CAP-001 in spec 003**
-  Removed `GLOB` and `RECURSIVE_LIST` from capability lists in specs
-  003 (CAP-001), 008 (S3-003), 009 (SFTP-003), 011 (S3PA-003),
-  012 (AZ-003) and backend guides (SFTP, Azure). These enum members
-  were removed in v0.6.0 (AF-002) but the specs/guides were never updated.
-
-- [x] **ID-020 — Benchmark tiered modes and single-backend filtering**
-  Replaced binary slow/not-slow with three tiers (quick/standard/full).
-  `--backend` CLI filter deselects tests (avoids fixture setup). `--bench-timeout`
-  watchdog (Windows-compatible via `threading.Timer`). `report.py` gains
-  `--comparative` and `--markdown` modes for remote-store vs raw SDK vs fsspec
-  tables. Updated hatch scripts (14 bench-* commands). Comparative results
-  integrated into docs site. No spec needed (ops/tooling change).
-
-- [x] **ID-022 — `ext.batch` — batch operations**
-  `batch_delete`, `batch_copy`, `batch_exists` convenience functions for
-  operating on collections of paths. Sequential execution with error
-  aggregation via `BatchResult`. Pure Python, no extra dependencies,
-  unconditional top-level export.
-  → Spec: `sdd/specs/016-ext-batch.md`
-
-- [x] **ID-023 — `ext.transfer` — cross-store and local-path transfers**
-  `upload`, `download`, `transfer` in `ext/transfer.py`. Streaming, `on_progress`
-  callback, `overwrite` flag. Unconditional top-level export. Spec: `017-ext-transfer.md`.
-  Resume support deferred.
+- [ ] **ID-018 — conda-forge publishing**
+  Submit a staged-recipes PR to conda-forge so users can `conda install -c
+  conda-forge remote-store`. Pure-Python wheel, so the recipe should be
+  straightforward. Consider once the project reaches Beta or if user demand
+  appears. Reference: https://conda-forge.org/docs/maintainer/adding_pkgs/
 
 - [ ] **ID-024 — `ext.notify` — hooks / middleware / instrumentation**
   Interceptor layer wrapping Store for logging, metrics, auditing, circuit
@@ -172,37 +97,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   entire files in memory. Needed for any large-file workflow (Parquet exports,
   log rotation, report generation). Needs temp-path strategy per backend.
 
-- [x] **ID-027 — Extension architecture (`ext.*` namespace)**
-  Formalized the `remote_store.ext` contract: ADR-0008 (extension rules),
-  expanded CONTRIBUTING.md checklist, `ext/__init__.py` contract docstring,
-  extensions guide, CLAUDE-REFERENCE.md ripple-check row. Entry-point plugin
-  discovery deferred until third-party extensions emerge.
-
-- [x] **ID-028 — Release-triggered publish and docs deploy**
-  Change `publish.yml` and `docs.yml` to trigger on `release: published`
-  instead of `v*` tag push / master push. The GitHub Release becomes the
-  single trigger for all release automation: PyPI publish, GitHub Pages
-  deploy, and RTD build. Subsumes AF-014: the release-triggered workflow
-  must include an explicit CI gate (`needs: ci` or equivalent) since the
-  `release: published` event does not verify CI status on its own.
-
-- [x] **ID-029 — Versioned documentation (mike + RTD tags)**
-  Add version-aware docs so readers know which release they are viewing.
-  GitHub Pages: use `mike` (MkDocs Material's versioning tool) to deploy
-  each release as a versioned subdirectory with a version switcher dropdown.
-  RTD: configure tag-based builds so each release tag gets its own version.
-  Keep a `dev` / `latest` alias tracking master for unreleased changes.
-
-- [x] **ID-031 — S3-PyArrow read path optimization** *(v0.9.0+)*
-  Drop `BufferedReader` from `S3PyArrowBackend.read()`, add `read()` + chunked
-  `readline()` to `_PyArrowBinaryIO`. Eliminates double-copy per chunk on
-  streaming reads (56% peak memory overhead in benchmarks). Non-breaking,
-  S3-PyArrow only.
-  → RFC: `sdd/rfcs/rfc-0003-s3-pyarrow-read-optimization.md`
-  PR #66 (code), PR #67 (review fixes: seek guard, __next__ bypass, bytes()
-  copy removal, 9 edge-case tests, RFC status -> Implemented, RawIOBase
-  cross-backend note, BACKLOG update, chunk-boundary test).
-
 - [ ] **ID-032 — Fix listing benchmark fixture caching**
   The `bench_target` comparative fixture for `test_list_files` populates files
   then immediately lists -- some fsspec implementations (s3fs, adlfs) appear to
@@ -218,12 +112,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   tests exceeded 10 minutes. Need either: (a) a `cloud-quick` marker subset
   (~20 key tests), (b) reduce `min_rounds` for cloud mode, or (c) accept the
   longer cloud time and document it.
-
-- [ ] **ID-018 — conda-forge publishing**
-  Submit a staged-recipes PR to conda-forge so users can `conda install -c
-  conda-forge remote-store`. Pure-Python wheel, so the recipe should be
-  straightforward. Consider once the project reaches Beta or if user demand
-  appears. Reference: https://conda-forge.org/docs/maintainer/adding_pkgs/
 
 ---
 
@@ -301,7 +189,7 @@ All v1.0 release blockers were resolved across v0.3.0–v0.4.1.
   `from __future__ import annotations` everywhere and performs no runtime
   annotation inspection, so PEP 649 is a non-issue.
 
-### Audit findings (v0.6.0–v0.7.0)
+### Audit findings (v0.6.0–v0.9.0)
 
 From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-review.md`.
 
@@ -346,10 +234,35 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
   `close()` now catches exceptions from individual backends, continues closing
   the rest, always runs `_backends.clear()`, and re-raises the first error.
 
+- [x] **AF-010 — Document TOCTOU and non-atomic move limitations** (v0.9.0)
+  `overwrite=False` has inherent TOCTOU (audit M-4, downgraded from High: inherent
+  limitation). S3 `move()` is copy+delete (audit L-21, per spec S3-013, not a bug).
+  Added `guides/concurrency.md` with full explanation, summary table, and workarounds.
+  Cross-referenced from all backend guides.
+
 - [x] **AF-011 — Remove dead `RemoteFile`/`RemoteFolder`** (v0.7.0)
   Removed class definitions from `_models.py`, imports from `__init__.py` and
   `__all__`, associated tests (MOD-006), docs entries, and spec section.
   Updated MOD-007 spec to reference only `FileInfo` and `FolderInfo`.
+
+- [x] **AF-012 — Add capability gating tests (STORE-006)** (v0.9.0)
+  Test that Store methods raise `CapabilityNotSupported` for backends missing
+  capabilities (audit M-11). 14 tests covering all 12 gated methods plus
+  backend-name propagation and gating-before-path-validation ordering.
+
+- [x] **AF-013 — Add PermissionDenied/BackendUnavailable error path tests** (v0.9.0)
+  S3-016, S3-017, SFTP-021, SFTP-022, SFTP-023 now tested via mock injection.
+  S3: `_classify_error()` exercised for 403/accessdenied (PermissionDenied) and
+  endpoint/connect/timeout/dns/name-or-service (BackendUnavailable).
+  SFTP: `_map_exception()` exercised for `errno.EACCES` (PermissionDenied),
+  `errno.EEXIST` (AlreadyExists), and `paramiko.SSHException` (BackendUnavailable).
+  `pragma: no cover` removed from tested paths. LocalBackend paths covered in
+  `test_coverage_gaps.py`.
+
+- [x] **AF-014 — Add CI gate to publish workflow** (v0.9.0)
+  Added inline `ci` job (lint + typecheck + test on Python 3.10 + 3.13)
+  as a prerequisite for `build`, which `publish` already depends on.
+  Subsumes into ID-028 if that ships first.
 
 - [x] **AF-015 — Update stale v0.5.0 docs** (v0.7.0)
   L-1 (README `azure-storage-file-datalake`), L-2 (SECURITY.md), L-3
@@ -358,21 +271,11 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
 
 ### Ideas shipped
 
-- [x] **ID-030 — Claude Code reusable skills** (v0.8.0)
-  Create `.claude/commands/` slash-command skills to standardize and speed up
-  recurring workflows: ripple-check, release, add-backend, backlog-sync,
-  pr-preflight, add-spec. Addresses top systemic issues: backlog drift
-  (7/9 AF commits forgot backlog), CHANGELOG skipped (62% of code changes),
-  and version-file sync misses.
-  Done: Added 6 skills in `.claude/commands/`.
+- [x] **ID-001 — Cross-store transfer** *(subsumed by ID-023 `ext.transfer`)* (v0.9.0)
+  Shipped as `transfer()` in `ext.transfer`. See spec `017-ext-transfer.md`.
 
-- [x] **ID-017 — Memory backend** (v0.7.0)
-  Tree-indexed in-memory backend. Zero dependencies, no filesystem access.
-  Supports all 8 capabilities, full conformance suite with zero skips.
-  Registered as `"memory"` type unconditionally. Store test fixtures migrated
-  from `LocalBackend` + `tempfile` to `MemoryBackend`.
-  Done: implementation, registry, conformance wiring, Store fixture migration,
-  guide, docs nav, example, CHANGELOG, README.
+- [x] **ID-009 — `Store.upload()` / `Store.download()` convenience methods** *(subsumed by ID-023 `ext.transfer`)* (v0.9.0)
+  Shipped as `upload()` and `download()` in `ext.transfer`. See spec `017-ext-transfer.md`.
 
 - [x] **ID-011 — Python 3.14 support** (v0.3.0) → graduated to BK-004
 
@@ -383,6 +286,103 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
 - [x] **ID-014 — Streaming conformance tests** (v0.4.4)
   `TestStreamingConformance` in `test_conformance.py`: 5 tests × 4 backends.
   Spec: SIO-001, SIO-003.
+
+- [x] **ID-015 — Audit external deep links** (v0.9.0)
+  Swept all RTD, GitHub Pages, and GitHub links. All 3 RTD deep links
+  in README already have `/en/latest/` prefix. Base-URL-only references
+  (CITATION.cff, pyproject.toml, mkdocs.yml, etc.) auto-redirect and
+  need no prefix. No broken or stale links found.
+
+- [x] **ID-016 — PyArrow FileSystemHandler adapter (Phase 1)** (v0.9.0, PR #55)
+  `StoreFileSystemHandler` in `ext/arrow.py` wraps any Store into a
+  `pyarrow.fs.PyFileSystem`. Tier 2/3 reads, `_StoreSink` write buffer,
+  `pyarrow_fs()` factory, `Store.unwrap()` delegation, error mapping
+  (PA-019/020), conditional top-level export, 89 tests (`test_arrow.py`)
+  + 2 `Store.unwrap()` tests (`test_store.py`), user guide, example, CI.
+  → RFC: `sdd/rfcs/rfc-0002-pyarrow-filesystem-adapter.md`
+  → Spec: `sdd/specs/014-pyarrow-filesystem-adapter.md`
+  Phase 2 remaining: `Store.native_path()`, `Backend.native_path()`,
+  Tier 1 native fast-path reads (PA-010), streaming error-mapping wrapper,
+  double-RPC optimization in `open_input_file`.
+
+- [x] **ID-017 — Memory backend** (v0.7.0)
+  Tree-indexed in-memory backend. Zero dependencies, no filesystem access.
+  Supports all 8 capabilities, full conformance suite with zero skips.
+  Registered as `"memory"` type unconditionally. Store test fixtures migrated
+  from `LocalBackend` + `tempfile` to `MemoryBackend`.
+  Done: implementation, registry, conformance wiring, Store fixture migration,
+  guide, docs nav, example, CHANGELOG, README.
+
+- [x] **ID-019 — Update stale CAP-001 in spec 003** (v0.9.0)
+  Removed `GLOB` and `RECURSIVE_LIST` from capability lists in specs
+  003 (CAP-001), 008 (S3-003), 009 (SFTP-003), 011 (S3PA-003),
+  012 (AZ-003) and backend guides (SFTP, Azure). These enum members
+  were removed in v0.6.0 (AF-002) but the specs/guides were never updated.
+
+- [x] **ID-020 — Benchmark tiered modes and single-backend filtering** (v0.10.0)
+  Replaced binary slow/not-slow with three tiers (quick/standard/full).
+  `--backend` CLI filter deselects tests (avoids fixture setup). `--bench-timeout`
+  watchdog (Windows-compatible via `threading.Timer`). `report.py` gains
+  `--comparative` and `--markdown` modes for remote-store vs raw SDK vs fsspec
+  tables. Updated hatch scripts (14 bench-* commands). Comparative results
+  integrated into docs site. No spec needed (ops/tooling change).
+
+- [x] **ID-021 — `Store.child(subpath)` — runtime sub-scoping** (v0.8.0)
+  Return a new Store scoped to a subfolder without recreating backend/registry.
+  Child shares the parent's backend (identity); `child.close()` does not close
+  the shared backend. Validated via RemotePath, chainable, equality-transparent.
+  → Spec: `sdd/specs/015-store-child.md`
+
+- [x] **ID-022 — `ext.batch` — batch operations** (v0.9.0)
+  `batch_delete`, `batch_copy`, `batch_exists` convenience functions for
+  operating on collections of paths. Sequential execution with error
+  aggregation via `BatchResult`. Pure Python, no extra dependencies,
+  unconditional top-level export.
+  → Spec: `sdd/specs/016-ext-batch.md`
+
+- [x] **ID-023 — `ext.transfer` — cross-store and local-path transfers** (v0.9.0)
+  `upload`, `download`, `transfer` in `ext/transfer.py`. Streaming, `on_progress`
+  callback, `overwrite` flag. Unconditional top-level export. Spec: `017-ext-transfer.md`.
+  Resume support deferred.
+
+- [x] **ID-027 — Extension architecture (`ext.*` namespace)** (v0.10.0)
+  Formalized the `remote_store.ext` contract: ADR-0008 (extension rules),
+  expanded CONTRIBUTING.md checklist, `ext/__init__.py` contract docstring,
+  extensions guide, CLAUDE-REFERENCE.md ripple-check row. Entry-point plugin
+  discovery deferred until third-party extensions emerge.
+
+- [x] **ID-028 — Release-triggered publish and docs deploy** (v0.10.0)
+  Change `publish.yml` and `docs.yml` to trigger on `release: published`
+  instead of `v*` tag push / master push. The GitHub Release becomes the
+  single trigger for all release automation: PyPI publish, GitHub Pages
+  deploy, and RTD build. Subsumes AF-014: the release-triggered workflow
+  must include an explicit CI gate (`needs: ci` or equivalent) since the
+  `release: published` event does not verify CI status on its own.
+
+- [x] **ID-029 — Versioned documentation (mike + RTD tags)** (v0.10.0)
+  Add version-aware docs so readers know which release they are viewing.
+  GitHub Pages: use `mike` (MkDocs Material's versioning tool) to deploy
+  each release as a versioned subdirectory with a version switcher dropdown.
+  RTD: configure tag-based builds so each release tag gets its own version.
+  Keep a `dev` / `latest` alias tracking master for unreleased changes.
+
+- [x] **ID-030 — Claude Code reusable skills** (v0.8.0)
+  Create `.claude/commands/` slash-command skills to standardize and speed up
+  recurring workflows: ripple-check, release, add-backend, backlog-sync,
+  pr-preflight, add-spec. Addresses top systemic issues: backlog drift
+  (7/9 AF commits forgot backlog), CHANGELOG skipped (62% of code changes),
+  and version-file sync misses.
+  Done: Added 6 skills in `.claude/commands/`.
+
+- [x] **ID-031 — S3-PyArrow read path optimization** (v0.10.0)
+  Drop `BufferedReader` from `S3PyArrowBackend.read()`, add `read()` + chunked
+  `readline()` to `_PyArrowBinaryIO`. Eliminates double-copy per chunk on
+  streaming reads (56% peak memory overhead in benchmarks). Non-breaking,
+  S3-PyArrow only.
+  → RFC: `sdd/rfcs/rfc-0003-s3-pyarrow-read-optimization.md`
+  PR #66 (code), PR #67 (review fixes: seek guard, __next__ bypass, bytes()
+  copy removal, 9 edge-case tests, RFC status -> Implemented, RawIOBase
+  cross-backend note, BACKLOG update, chunk-boundary test).
 
 ### Other completed work
 
