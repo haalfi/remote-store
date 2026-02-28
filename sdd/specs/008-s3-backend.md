@@ -35,7 +35,7 @@ S3Backend(
 
 ### S3-003: Capability Declaration
 
-**Invariant:** `S3Backend` declares all capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`.
+**Invariant:** `S3Backend` declares capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`. Does not declare `GLOB` (no native pattern matching; use `list_files(pattern=…)` or `ext.glob` for client-side fallback).
 **Rationale:**
 - `ATOMIC_WRITE`: S3 PUT is inherently atomic -- readers never see partial content (see S3-010).
 - `MOVE`: Implemented via server-side copy + delete (see S3-013).

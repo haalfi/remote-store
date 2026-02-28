@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from remote_store._types import WritableContent
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability))
+_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
 
 
 # ---------------------------------------------------------------------------

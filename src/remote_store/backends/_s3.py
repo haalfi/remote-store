@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability))
+_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
 
 
 class S3Backend(Backend):

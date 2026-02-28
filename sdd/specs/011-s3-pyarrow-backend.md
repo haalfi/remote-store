@@ -35,7 +35,7 @@ S3PyArrowBackend(
 
 ### S3PA-003: Capability Declaration
 
-**Invariant:** `S3PyArrowBackend` declares all capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`.
+**Invariant:** `S3PyArrowBackend` declares capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`. Does not declare `GLOB` (no native pattern matching; use `list_files(pattern=…)` or `ext.glob` for client-side fallback).
 **Rationale:** Same as S3Backend -- S3 PUT is inherently atomic, move via copy+delete, copy via server-side copy.
 
 ### S3PA-004: Lazy Connection

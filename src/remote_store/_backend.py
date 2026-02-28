@@ -131,6 +131,21 @@ class Backend(abc.ABC):
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
 
+    def glob(self, pattern: str) -> Iterator[FileInfo]:
+        """Match files against a glob pattern.
+
+        Non-abstract — backends with native glob support override this
+        and add ``Capability.GLOB`` to their capability set.
+
+        :param pattern: Glob pattern (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
+        :raises CapabilityNotSupported: If the backend lacks ``GLOB``.
+        """
+        raise CapabilityNotSupported(
+            f"Backend '{self.name}' does not support glob. Use ext.glob.glob_files() for client-side pattern matching.",
+            capability="glob",
+            backend=self.name,
+        )
+
     def to_key(self, native_path: str) -> str:
         """Convert a backend-native path to a backend-relative key.
 

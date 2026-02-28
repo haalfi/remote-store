@@ -188,8 +188,8 @@ side effects.
 
 ### MEM-003: Capability Declaration
 
-**Invariant:** `MemoryBackend` declares all 8 capabilities: `READ`, `WRITE`,
-`DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`.
+**Invariant:** `MemoryBackend` declares capabilities: `READ`, `WRITE`,
+`DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`. Does not declare `GLOB` (use `list_files(pattern=…)` or `ext.glob` for client-side pattern matching).
 
 **Rationale:**
 - `ATOMIC_WRITE`: In-memory writes are inherently atomic from the caller's

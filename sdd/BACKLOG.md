@@ -11,11 +11,15 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [ ] **BK-002 — Glob / pattern matching strategy**
-  Decide per-backend glob vs client-side abstraction. S3 has native prefix listing,
-  SFTP does not. Spec the chosen approach or document why it stays per-backend.
-  Related: ID-007 (`Store.glob()` surface API).
-  → Spec: TBD (extends `003-backend-adapter-contract.md`)
+- [~] **BK-002 — Glob / pattern matching strategy**
+  Three-tier design chosen (ADR-0009): (1) `list_files(pattern=…)` for universal
+  fnmatch name filtering, (2) `Capability.GLOB` + `Store.glob()` for native backend
+  access (like `unwrap`), (3) `ext.glob.glob_files()` for portable full-glob
+  fallback. Local has native glob; S3/Azure prefix-optimized implementations
+  remain as future work.
+  Related: ID-007.
+  → Spec: `sdd/specs/018-glob.md` (extends `003-backend-adapter-contract.md`)
+  → ADR: `sdd/adrs/0009-glob-three-tier-design.md`
 
 ---
 
@@ -50,11 +54,13 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `on_progress` for upload/download/transfer; this item covers the lower-level
   Store API.
 
-- [ ] **ID-007 — `Store.glob()` surface API**
-  Expose a `Store.glob(pattern)` method. `Capability.GLOB` was removed in v0.6.0
-  (AF-002), so this would need a new capability or a different design. Local has
-  native glob, S3 can do prefix filtering, SFTP would need client-side filtering.
-  Ships alongside or after BK-002.
+- [~] **ID-007 — `Store.glob()` surface API**
+  Three-tier pattern matching: `list_files(pattern=…)` for universal name filtering,
+  `Store.glob(pattern)` for native backend glob (capability-gated on `GLOB`),
+  `ext.glob.glob_files()` for portable full-glob fallback. Local has native glob;
+  S3/Azure prefix-optimized implementations remain as future work.
+  → Spec: `sdd/specs/018-glob.md`
+  → ADR: `sdd/adrs/0009-glob-three-tier-design.md`
 
 - [ ] **ID-008 — Checksum verification on read/write**
   Add a `verify_checksum=True` option to `read()` / `write()`. Populate

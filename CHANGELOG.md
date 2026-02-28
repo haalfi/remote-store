@@ -6,6 +6,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **Glob pattern matching — three-tier design (ADR-0009)** — `list_files(pattern=…)` for universal fnmatch name filtering, `Store.glob()` for native backend glob (capability-gated on `GLOB`), `ext.glob.glob_files()` for portable full-glob fallback with `**` recursive patterns and `[abc]` character classes. `LocalBackend` has native glob via pathlib; other backends use client-side filtering (BK-002, ID-007)
+
 ## [0.10.0] - 2026-02-28
 
 ### Added
