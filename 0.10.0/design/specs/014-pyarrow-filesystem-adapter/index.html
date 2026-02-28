@@ -1,0 +1,4882 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="One simple API for file storage. Local, S3, SFTP, Azure. Same methods, swappable backends, zero reinvention.">
+      
+      
+      
+        <link rel="canonical" href="https://haalfi.github.io/remote-store/0.10.0/design/specs/014-pyarrow-filesystem-adapter/">
+      
+      
+        <link rel="prev" href="../013-memory-backend/">
+      
+      
+        <link rel="next" href="../015-store-child/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
+    
+    
+      
+        <title>014: PyArrow FileSystem Adapter Specification - remote-store</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pyarrow-filesystem-adapter-specification" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+      
+  <img src="../../../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            remote-store
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              014: PyArrow FileSystem Adapter Specification
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/haalfi/remote-store" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    haalfi/remote-store
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+      
+  <img src="../../../assets/logo.png" alt="logo">
+
+    </a>
+    remote-store
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/haalfi/remote-store" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    haalfi/remote-store
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../examples/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/file-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    File Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/streaming-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/atomic-writes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Atomic Writes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/error-handling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/memory-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/store-child/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store.child()
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/s3-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    S3 Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/s3-pyarrow-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    S3-PyArrow Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/sftp-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTP Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/azure-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/batch-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/transfer-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transfer Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../api/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/path/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RemotePath
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/capabilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Capabilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../backends/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backends
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Backends
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/s3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    S3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/s3-pyarrow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    S3-PyArrow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/sftp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../backends/azure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../concurrency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concurrency
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pyarrow-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PyArrow Adapter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../batch-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../transfer-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transfer Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Document
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_3" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specs
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_12_3" id="__nav_12_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_12_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_12_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Specs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../001-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    001: Store API Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../002-registry-config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    002: Registry & Configuration Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../003-backend-adapter-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    003: Backend Adapter Contract Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../004-path-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    004: Path Model Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../005-error-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    005: Error Model Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../006-streaming-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    006: Streaming I/O Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../007-atomic-writes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    007: Atomic Writes Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../008-s3-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    008: S3 Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../009-sftp-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    009: SFTP Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../010-native-path-resolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    010: Native Path Resolution Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    011: S3-PyArrow Hybrid Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../012-azure-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    012: Azure Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../013-memory-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    013: Memory Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    014: PyArrow FileSystem Adapter Specification
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    014: PyArrow FileSystem Adapter Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prior-art" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prior Art
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prior Art">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pyarrow-fsspechandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PyArrow FSSpecHandler
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyarrowfs-adlgen2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pyarrowfs-adlgen2
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-store-python-arrowfilesystemhandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        object-store-python (ArrowFileSystemHandler)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyarrow-native-filesystems-s3-gcs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PyArrow Native Filesystems (S3, GCS)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecosystem-hot-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ecosystem Hot Paths
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Construction
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Construction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-001-constructor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-001: Constructor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-002-convenience-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-002: Convenience Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-003-type-string" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-003: Type String
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#path-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Path Model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Path Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-004-path-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-004: Path Convention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-005-root-path-is-empty-string" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-005: Root Path is Empty String
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-006-normalize_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-006: normalize_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Information
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Information">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-007-get_file_info-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-007: get_file_info (paths)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-008-get_file_info_selector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-008: get_file_info_selector
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#read-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Read Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-009-open_input_stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-009: open_input_stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-010-open_input_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-010: open_input_file
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PA-010: open_input_file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tier-1-backend-native-fast-path-zero-overhead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 1: Backend-native fast path (zero overhead)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tier-2-bufferreader-for-small-files-threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 2: BufferReader for small files (≤ threshold)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tier-3-pythonfile-for-large-files-threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 3: PythonFile for large files (&gt; threshold)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#write-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Write Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-011-open_output_stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-011: open_output_stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-012-open_append_stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-012: open_append_stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutation-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutation Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mutation Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-013-delete_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-013: delete_file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-014-create_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-014: create_dir
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-015-delete_dir-delete_dir_contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-015: delete_dir / delete_dir_contents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-017-move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-017: move
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-018-copy_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-018: copy_file
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#internal-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal Helpers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Internal Helpers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-016-_storesink-buffer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-016: _StoreSink Buffer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Mapping
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Mapping">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-019-error-translation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-019: Error Translation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-020-no-remotestoreerror-leakage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-020: No RemoteStoreError Leakage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resource-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Resource Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-021-lifetime-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-021: Lifetime Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#public-api-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Public API Surface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Public API Surface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-022-exports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-022: Exports
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-023-optional-dependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-023: Optional Dependency
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Strategy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing Strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-024-unit-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-024: Unit Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-025-integration-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-025: Integration Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-026-conformance-across-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-026: Conformance Across Backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="References">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#external-implementations-studied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External implementations studied
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyarrow-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PyArrow documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relevant-pyarrow-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relevant PyArrow issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#project-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project references
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../015-store-child/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    015: Store.child() Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../016-ext-batch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    016: ext.batch — Batch Operations Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../017-ext-transfer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    017: ext.transfer — Upload, Download, Cross-Store Transfer Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../adrs/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_12_4" id="__nav_12_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_12_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADRs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001: Architecture — Store, Registry, Backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Configuration Resolution — No Merging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: fsspec Is an Implementation Detail
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Empty Path Semantics in Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005: Bidirectional Path Resolution via to_key
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Documentation Architecture — Source of Truth and Audiences
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007: Three-Tier Documentation Architecture with docs-src/ and Literate Nav
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Extension Namespace Contract (ext.*)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../rfcs/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RFCs
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_12_5" id="__nav_12_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_12_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RFCs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001: RFC-0001: Azure Backend via Direct ADLS Gen2 SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: RFC-0002: PyArrow FileSystemHandler Adapter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: RFC-0003: S3-PyArrow Read Path Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../development-story/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Story
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prior-art" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prior Art
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prior Art">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pyarrow-fsspechandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PyArrow FSSpecHandler
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyarrowfs-adlgen2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pyarrowfs-adlgen2
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-store-python-arrowfilesystemhandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        object-store-python (ArrowFileSystemHandler)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyarrow-native-filesystems-s3-gcs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PyArrow Native Filesystems (S3, GCS)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecosystem-hot-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ecosystem Hot Paths
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Construction
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Construction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-001-constructor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-001: Constructor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-002-convenience-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-002: Convenience Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-003-type-string" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-003: Type String
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#path-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Path Model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Path Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-004-path-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-004: Path Convention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-005-root-path-is-empty-string" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-005: Root Path is Empty String
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-006-normalize_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-006: normalize_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Information
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Information">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-007-get_file_info-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-007: get_file_info (paths)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-008-get_file_info_selector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-008: get_file_info_selector
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#read-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Read Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-009-open_input_stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-009: open_input_stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-010-open_input_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-010: open_input_file
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PA-010: open_input_file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tier-1-backend-native-fast-path-zero-overhead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 1: Backend-native fast path (zero overhead)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tier-2-bufferreader-for-small-files-threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 2: BufferReader for small files (≤ threshold)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tier-3-pythonfile-for-large-files-threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 3: PythonFile for large files (&gt; threshold)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#write-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Write Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-011-open_output_stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-011: open_output_stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-012-open_append_stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-012: open_append_stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutation-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutation Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mutation Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-013-delete_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-013: delete_file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-014-create_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-014: create_dir
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-015-delete_dir-delete_dir_contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-015: delete_dir / delete_dir_contents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-017-move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-017: move
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-018-copy_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-018: copy_file
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#internal-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal Helpers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Internal Helpers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-016-_storesink-buffer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-016: _StoreSink Buffer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Mapping
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Mapping">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-019-error-translation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-019: Error Translation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-020-no-remotestoreerror-leakage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-020: No RemoteStoreError Leakage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resource-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Resource Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-021-lifetime-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-021: Lifetime Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#public-api-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Public API Surface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Public API Surface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-022-exports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-022: Exports
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-023-optional-dependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-023: Optional Dependency
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Strategy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing Strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pa-024-unit-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-024: Unit Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-025-integration-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-025: Integration Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pa-026-conformance-across-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PA-026: Conformance Across Backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="References">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#external-implementations-studied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External implementations studied
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyarrow-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PyArrow documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relevant-pyarrow-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relevant PyArrow issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#project-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project references
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="pyarrow-filesystem-adapter-specification">PyArrow FileSystem Adapter Specification<a class="headerlink" href="#pyarrow-filesystem-adapter-specification" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p><code>StoreFileSystemHandler</code> is a <code>pyarrow.fs.FileSystemHandler</code> implementation
+that wraps any <code>Store</code> into a <code>pyarrow.fs.PyFileSystem</code>. This is the inverse
+of <code>unwrap()</code>: instead of reaching <em>into</em> a backend's native handle, this wraps
+any Store <em>into</em> a PyArrow filesystem.</p>
+<p>A single adapter unlocks seamless interop with the entire PyArrow-based data
+ecosystem: PyArrow datasets, Pandas, Polars, DuckDB, PyIceberg, and Delta Lake
+all accept <code>pyarrow.fs.FileSystem</code> objects for I/O.</p>
+<p><strong>Module:</strong> <code>src/remote_store/ext/arrow.py</code>
+<strong>Dependencies:</strong> <code>pyarrow &gt;= 12.0.0</code> (optional extra: <code>pip install "remote-store[arrow]"</code>)
+<strong>RFC:</strong> <code>sdd/rfcs/rfc-0002-pyarrow-filesystem-adapter.md</code>
+<strong>Related:</strong> ADR-0003 (fsspec is implementation detail), spec 011 (S3-PyArrow backend),
+spec 001 (Store API), spec 004 (path model), spec 005 (error model)</p>
+<hr />
+<h2 id="prior-art">Prior Art<a class="headerlink" href="#prior-art" title="Permanent link">&para;</a></h2>
+<p>This spec draws lessons from existing <code>FileSystemHandler</code> implementations and
+ecosystem usage patterns. We aim to match or exceed their performance while
+avoiding their known issues.</p>
+<h3 id="pyarrow-fsspechandler">PyArrow FSSpecHandler<a class="headerlink" href="#pyarrow-fsspechandler" title="Permanent link">&para;</a></h3>
+<p>PyArrow's built-in adapter from fsspec filesystems to <code>FileSystemHandler</code>
+(source: <code>python/pyarrow/fs.py</code> in <a href="https://github.com/apache/arrow">apache/arrow</a>).</p>
+<p><strong>Patterns adopted:</strong>
+- <code>PythonFile</code> wrapping for I/O bridge between Python file objects and Arrow's
+  C++ <code>NativeFile</code> types.
+- <code>metadata</code> parameter accepted but ignored on <code>open_output_stream</code> (fsspec
+  has no metadata-on-write API; neither does Store).
+- <code>create_dir</code> swallows <code>FileExistsError</code> for idempotent behavior.</p>
+<p><strong>Issues we address:</strong>
+- <code>open_input_stream</code> and <code>open_input_file</code> are <em>identical</em> — both return
+  <code>PythonFile(fs.open(path, "rb"), mode="r")</code>, which creates a
+  <code>PyReadableFile</code> (C++ <code>CRandomAccessFile</code>). Every <code>ReadAt</code> call acquires a
+  mutex <em>and</em> the GIL, then does <code>Seek</code> + <code>Read</code> through Python dispatch. This
+  serializes concurrent column-chunk reads in Parquet workloads. Our PA-010
+  uses a tiered strategy to avoid this where possible.
+- <code>get_file_info</code> makes one RPC per path (N+1 problem). We inherit this
+  limitation from the Store API but document it explicitly (PA-007).
+- <code>get_file_info_selector</code> makes two validation RPCs (<code>isdir</code> + <code>exists</code>)
+  <em>before</em> the listing call. Our PA-008 avoids these extra calls by catching
+  <code>NotFound</code> from the listing itself.
+- <code>delete_dir_contents</code> makes N+1 RPCs — lists, then calls <code>isdir()</code>/<code>isfile()</code>
+  for each entry before deleting. Our PA-015 delegates to
+  <code>store.delete_folder(recursive=True)</code> in a single call.
+- <code>normalize_path</code> is a no-op. Our PA-006 performs actual normalization
+  (leading-slash strip, separator collapse).
+- Error handling is minimal — most backend exceptions propagate raw to
+  callers. Our PA-019/PA-020 provide complete error translation.</p>
+<h3 id="pyarrowfs-adlgen2">pyarrowfs-adlgen2<a class="headerlink" href="#pyarrowfs-adlgen2" title="Permanent link">&para;</a></h3>
+<p>Third-party Azure Data Lake Gen2 adapter by Robin Kaveland
+(<a href="https://github.com/kaaveland/pyarrowfs-adlgen2">kaaveland/pyarrowfs-adlgen2</a>).</p>
+<p><strong>Patterns adopted:</strong>
+- <code>normalize_path</code> strips leading and trailing slashes — same approach in our
+  PA-006.
+- <code>DatalakeGen2File</code> class serves as a writable buffer with <code>close()</code>-on-flush
+  semantics — similar to our <code>_StoreSink</code> (PA-016).
+- Guard against flushing a 0-byte buffer on <code>close()</code> — PA-016 avoids this
+  class of bugs entirely by using a single flush on <code>close()</code> with no
+  auto-flush (the library hit this as a real bug, issue #13).
+- <code>delete_root_dir_contents</code> rejects root deletion — same safety in our PA-015.</p>
+<p><strong>Issues we address:</strong>
+- <code>open_input_file</code> is identical to <code>open_input_stream</code> — same <code>PythonFile</code>
+  wrapping, same GIL overhead. Our PA-010 uses a tiered strategy that avoids
+  <code>PythonFile</code> entirely for backends with native PyArrow support.
+- <code>get_file_info</code> lists the <em>parent directory</em> to find a single file. Our
+  PA-007 calls <code>store.is_file()</code> / <code>store.get_file_info()</code> directly.
+- No file-size caching — <code>seek(SEEK_END)</code> makes a network call every time.
+  Our tiered strategy in PA-010 avoids this for small files (materialized) and
+  for native backends (C++ handles it internally).
+- Error handling lets Azure SDK exceptions propagate raw in most paths. Our
+  PA-019/PA-020 catch all <code>RemoteStoreError</code> subtypes.
+- <code>copy_file</code> downloads then re-uploads (no server-side copy). Our PA-018
+  delegates to <code>store.copy()</code>, which uses server-side copy where available.</p>
+<h3 id="object-store-python-arrowfilesystemhandler">object-store-python (ArrowFileSystemHandler)<a class="headerlink" href="#object-store-python-arrowfilesystemhandler" title="Permanent link">&para;</a></h3>
+<p>Rust-backed <code>FileSystemHandler</code> via PyO3 by roeap
+(<a href="https://github.com/roeap/object-store-python">roeap/object-store-python</a>),
+using the same <code>object_store</code> crate that powers DataFusion, Polars, and
+InfluxDB.</p>
+<p><strong>Key insight:</strong> By implementing the handler in Rust, it avoids the <code>PythonFile</code>
+overhead entirely — I/O methods return data through native Arrow FFI without
+GIL contention. This represents the performance ceiling for FileSystemHandler
+implementations. Our PA-010 Tier 1 (backend-native fast path) achieves similar
+benefits for backends that expose a native PyArrow filesystem.</p>
+<h3 id="pyarrow-native-filesystems-s3-gcs">PyArrow Native Filesystems (S3, GCS)<a class="headerlink" href="#pyarrow-native-filesystems-s3-gcs" title="Permanent link">&para;</a></h3>
+<p>PyArrow's built-in <code>S3FileSystem</code> and <code>GcsFileSystem</code> implement
+<code>CRandomAccessFile</code> entirely in C++. Critically, <code>ReadAt(offset, length)</code>
+issues an HTTP Range request (<code>GET</code> with <code>Range: bytes=start-end</code>) and
+materializes only the <strong>requested byte range</strong> (~64 KB–1 MB), not the entire
+file. On top of this, PyArrow's Parquet reader supports <strong>I/O coalescing</strong>
+(<a href="https://github.com/apache/arrow/pull/7022">ARROW-8562</a>) via <code>pre_buffer=True</code>:
+small nearby ranges are coalesced into fewer, larger requests, yielding 4–6x
+speedups on S3 (<a href="https://github.com/apache/arrow/issues/36765">benchmarks</a>).</p>
+<p>This is the performance target for our Tier 1 fast path: backends with
+<code>unwrap()</code> access to a native PyArrow filesystem get the full C++ range-request
++ coalescing pipeline with zero overhead.</p>
+<h3 id="ecosystem-hot-paths">Ecosystem Hot Paths<a class="headerlink" href="#ecosystem-hot-paths" title="Permanent link">&para;</a></h3>
+<p>Analysis of how downstream tools call <code>FileSystem</code> methods, compiled from
+PyIceberg, DuckDB, Polars, and PyArrow dataset internals:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>When called</th>
+<th>Performance criticality</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>open_input_file</code></td>
+<td>Parquet/ORC reading (random access to row groups, column chunks)</td>
+<td><strong>Highest</strong> — every Parquet read</td>
+</tr>
+<tr>
+<td><code>get_file_info_selector</code></td>
+<td>Dataset discovery, partition walking</td>
+<td><strong>High</strong> — recursive, many RPCs</td>
+</tr>
+<tr>
+<td><code>open_output_stream</code></td>
+<td>Writing data files (Parquet, Arrow IPC)</td>
+<td>Medium — once per file</td>
+</tr>
+<tr>
+<td><code>get_file_info</code> (paths)</td>
+<td>Existence checks, metadata lookups</td>
+<td>Medium — small batches</td>
+</tr>
+<tr>
+<td><code>open_input_stream</code></td>
+<td>Sequential formats (CSV, line-delimited JSON)</td>
+<td>Low — less common</td>
+</tr>
+<tr>
+<td><code>move</code> / <code>copy_file</code></td>
+<td>Commit protocols (Delta Lake, Iceberg)</td>
+<td>Low — once per commit</td>
+</tr>
+</tbody>
+</table>
+<p>This prioritization drives our design: PA-010 (<code>open_input_file</code>) gets the most
+optimization attention, PA-008 (<code>get_file_info_selector</code>) avoids unnecessary
+RPCs, and PA-009 (<code>open_input_stream</code>) uses a lighter-weight approach.</p>
+<hr />
+<h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
+<h3 id="pa-001-constructor">PA-001: Constructor<a class="headerlink" href="#pa-001-constructor" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>StoreFileSystemHandler</code> is constructed with a <code>Store</code> instance
+and optional tuning parameters.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">StoreFileSystemHandler</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">materialization_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>  <span class="c1"># PA-010</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">write_spill_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>       <span class="c1"># PA-011</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span>
+</code></pre></div>
+<p><strong>Parameters:</strong>
+- <code>store</code> — the <code>Store</code> to expose as a PyArrow filesystem.
+- <code>materialization_threshold</code> — maximum file size (bytes) for Tier 2 full-file
+  materialization in <code>open_input_file</code>. <code>0</code> disables Tier 2 (always stream);
+  <code>sys.maxsize</code> always materializes. See PA-010.
+- <code>write_spill_threshold</code> — maximum in-memory buffer size (bytes) for
+  <code>_StoreSink</code> before spilling to disk. See PA-011 / PA-016.</p>
+<p><strong>Postconditions:</strong>
+- The handler holds a reference to the Store; it does not copy or wrap it.
+- <strong>Phase 2 (deferred):</strong> At construction time, the handler probes the Store
+  for a native PyArrow filesystem via <code>store.unwrap(pyarrow.fs.FileSystem)</code>.
+  If a native FS is available, the handler caches both the native FS reference
+  and a path-translation closure for Tier 1 fast-path reads (PA-010). If
+  <code>unwrap()</code> raises <code>TypeError</code> or returns a non-PyArrow type, Tier 1 is
+  disabled. This pre-capture means Tier 1 never accesses private Store
+  internals at call time. Phase 1 skips this probing — Tier 1 is not yet
+  implemented.
+- No I/O occurs during construction (Phase 1). Phase 2 adds the <code>unwrap()</code>
+  probe, which may trigger backend initialization.
+- The Store's lifetime is managed externally — the handler does not own it.</p>
+<h3 id="pa-002-convenience-factory">PA-002: Convenience Factory<a class="headerlink" href="#pa-002-convenience-factory" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> A module-level <code>pyarrow_fs(store)</code> factory creates a ready-to-use
+<code>PyFileSystem</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">pyarrow_fs</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">PyFileSystem</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="k">return</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">PyFileSystem</span><span class="p">(</span><span class="n">StoreFileSystemHandler</span><span class="p">(</span><span class="n">store</span><span class="p">))</span>
+</code></pre></div>
+<p><strong>Rationale:</strong> Users should not need to know about <code>FileSystemHandler</code> or
+<code>PyFileSystem</code> internals. One call, one usable filesystem.</p>
+<h3 id="pa-003-type-string">PA-003: Type String<a class="headerlink" href="#pa-003-type-string" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> The handler's <code>get_type_name()</code> returns <code>"remote-store"</code>.</p>
+<p><strong>Rationale:</strong> PyArrow uses this for serialization and display. A stable, unique
+name avoids collisions with built-in handlers.</p>
+<hr />
+<h2 id="path-model">Path Model<a class="headerlink" href="#path-model" title="Permanent link">&para;</a></h2>
+<h3 id="pa-004-path-convention">PA-004: Path Convention<a class="headerlink" href="#pa-004-path-convention" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> All paths exchanged with PyArrow use forward slashes and no
+leading slash. The handler strips any leading <code>/</code> from paths received from
+PyArrow before passing them to the Store.</p>
+<p><strong>Rationale:</strong> PyArrow normalizes paths with a leading <code>/</code> in some code paths
+(e.g. <code>get_file_info</code>). The Store's <code>RemotePath</code> rejects leading slashes, so
+the handler must strip them. Store-relative paths are already <code>/</code>-separated and
+have no leading slash, so they can be returned to PyArrow as-is.</p>
+<h3 id="pa-005-root-path-is-empty-string">PA-005: Root Path is Empty String<a class="headerlink" href="#pa-005-root-path-is-empty-string" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> The PyArrow path <code>""</code> or <code>"/"</code> maps to the Store's root
+(empty string <code>""</code>). File-targeted operations (read, write, delete) on the
+root path raise <code>FileNotFoundError</code>.</p>
+<h3 id="pa-006-normalize_path">PA-006: normalize_path<a class="headerlink" href="#pa-006-normalize_path" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>normalize_path(path)</code> strips leading and trailing <code>/</code> and
+collapses redundant separators, matching <code>RemotePath</code> normalization rules but
+returning a plain <code>str</code> (not raising on empty result — returns <code>""</code> for root).</p>
+<p><strong>Rationale:</strong> FSSpecHandler's <code>normalize_path</code> is a no-op, which causes subtle
+path-matching failures. pyarrowfs-adlgen2 strips leading/trailing slashes.
+We adopt the latter approach, extended with separator collapse.</p>
+<hr />
+<h2 id="file-information">File Information<a class="headerlink" href="#file-information" title="Permanent link">&para;</a></h2>
+<h3 id="pa-007-get_file_info-paths">PA-007: get_file_info (paths)<a class="headerlink" href="#pa-007-get_file_info-paths" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>get_file_info(paths)</code> returns a list of <code>pyarrow.fs.FileInfo</code>
+objects, one per input path.</p>
+<p><strong>Mapping per path:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th><code>pyarrow.fs.FileInfo</code> result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>store.is_file(path)</code></td>
+<td><code>FileType.File</code>, size and mtime from <code>store.get_file_info(path)</code></td>
+</tr>
+<tr>
+<td><code>store.is_folder(path)</code></td>
+<td><code>FileType.Directory</code>, size omitted</td>
+</tr>
+<tr>
+<td>Neither exists</td>
+<td><code>FileType.NotFound</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Error handling:</strong> <code>NotFound</code> from the Store is caught and mapped to
+<code>FileType.NotFound</code> (not raised). Other <code>RemoteStoreError</code> subtypes are
+translated per PA-019.</p>
+<p><strong>Performance note:</strong> This method makes at least one backend call per path.
+PyArrow's <code>dataset()</code> discovery may call this for many paths. Both FSSpecHandler
+and pyarrowfs-adlgen2 have the same per-path cost; the Store API does not offer
+batch info. This is acceptable because <code>get_file_info_selector</code> (PA-008) is the
+primary listing path for discovery, and <code>get_file_info</code> is typically called for
+a small number of known paths.</p>
+<h3 id="pa-008-get_file_info_selector">PA-008: get_file_info_selector<a class="headerlink" href="#pa-008-get_file_info_selector" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>get_file_info_selector(selector)</code> lists files and folders under
+<code>selector.base_dir</code>.</p>
+<p><strong>Mapping:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>selector.base_dir     → store path (after leading-slash strip)
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>selector.recursive    → list_files(path, recursive=True/False)
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>selector.allow_not_found → if True, return [] for missing dir; else raise
+</code></pre></div>
+<p><strong>Behavior:</strong>
+1. List files via <code>store.list_files(base_dir, recursive=selector.recursive)</code>.
+   Each <code>FileInfo</code> maps to a <code>pyarrow.fs.FileInfo</code> with <code>FileType.File</code>.
+   File paths are store-relative (as returned by <code>list_files</code>).
+2. If <code>selector.recursive</code> is <code>False</code>, list immediate subfolders via
+   <code>store.list_folders(base_dir)</code>. <code>list_folders</code> returns bare folder <strong>names</strong>
+   (not paths), so the handler constructs the store-relative path by joining:
+   <code>f"{base_dir}/{name}"</code> (or just <code>name</code> if <code>base_dir</code> is root <code>""</code>).
+   Each entry maps to a <code>pyarrow.fs.FileInfo</code> with <code>FileType.Directory</code>,
+   <code>mtime=None</code> (folder metadata is not available from <code>list_folders</code>).
+3. If <code>selector.recursive</code> is <code>True</code>, <strong>extract directory entries from file
+   paths</strong> rather than walking the folder tree: collect all unique parent
+   prefixes from the file paths returned in step 1 (excluding <code>base_dir</code>
+   itself) and emit a <code>FileType.Directory</code> entry for each. This avoids the
+   N+1 RPC problem of recursive <code>list_folders</code> calls.
+4. If the base directory does not exist and <code>selector.allow_not_found</code> is
+   <code>False</code>, raise <code>FileNotFoundError</code>. If <code>True</code>, return an empty list.</p>
+<p><strong>Rationale for step 3:</strong> Two strategies exist for recursive directory entries:
+- <strong>Tree walk</strong> — call <code>list_folders</code> at each level. O(depth × breadth) RPCs,
+  the same N+1 problem criticized in FSSpecHandler.
+- <strong>Extract from file paths</strong> — use <code>list_files(recursive=True)</code> and
+  deduplicate parent paths. O(1) listing RPCs + O(n) client-side string work.</p>
+<p>We use the second strategy. The file listing already traverses the full tree;
+extracting directory prefixes from those paths is O(n) string processing with
+no additional RPCs. The resulting directory entries are "synthetic" (derived
+from file paths, not from a directory listing call), but this matches PyArrow's
+own convention — object stores have no real directories, only key prefixes.</p>
+<p><strong>Postconditions:</strong> Paths in returned <code>FileInfo</code> objects are relative to the
+Store root (not to <code>base_dir</code>), matching PyArrow's convention.</p>
+<p><strong>Performance rationale:</strong> FSSpecHandler makes two validation RPCs (<code>isdir</code> +
+<code>exists</code>) before listing. We skip these — if the directory doesn't exist,
+<code>list_files</code> raises <code>NotFound</code>, which we catch and handle per
+<code>allow_not_found</code>. This saves two round-trips per listing call. For data-lake
+workloads (Iceberg table scans, partitioned datasets), <code>get_file_info_selector</code>
+is the hot path — every saved RPC matters.</p>
+<hr />
+<h2 id="read-operations">Read Operations<a class="headerlink" href="#read-operations" title="Permanent link">&para;</a></h2>
+<h3 id="pa-009-open_input_stream">PA-009: open_input_stream<a class="headerlink" href="#pa-009-open_input_stream" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>open_input_stream(path)</code> returns a <code>pyarrow.NativeFile</code> for
+sequential reading.</p>
+<p><strong>Implementation:</strong> Delegates to <code>store.read(path)</code>, wraps the returned
+<code>BinaryIO</code> in <code>pyarrow.PythonFile(stream, mode="r")</code>.</p>
+<p><strong>Rationale:</strong> <code>PythonFile</code> bridges a Python file object to Arrow's C++
+<code>NativeFile</code> interface. Each <code>Read()</code> call crosses the GIL boundary, but for
+sequential workloads (CSV streaming, line-delimited JSON) this is acceptable
+and avoids materializing the full file. Sequential reads make a small number
+of large <code>Read()</code> calls (buffer-sized chunks), so GIL overhead is negligible
+relative to I/O time.</p>
+<p><strong>Error mapping:</strong> <code>NotFound</code> → <code>FileNotFoundError</code>. Other errors per PA-019.</p>
+<h3 id="pa-010-open_input_file">PA-010: open_input_file<a class="headerlink" href="#pa-010-open_input_file" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>open_input_file(path)</code> returns a seekable <code>NativeFile</code> for
+random access reading.</p>
+<p><strong>Implementation:</strong> A tiered strategy that selects the best approach based on
+backend capabilities and file size:</p>
+<h4 id="tier-1-backend-native-fast-path-zero-overhead">Tier 1: Backend-native fast path (zero overhead)<a class="headerlink" href="#tier-1-backend-native-fast-path-zero-overhead" title="Permanent link">&para;</a></h4>
+<p>If the Store's backend exposes a native PyArrow filesystem via the public
+<code>Store.unwrap()</code> API (e.g., <code>S3PyArrowBackend</code>), the handler uses it for reads
+instead of going through the Store abstraction:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># At construction time (PA-001):</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">native_fs</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">FileSystem</span><span class="p">)</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="c1"># Pre-build path translator: store-relative key → native FS path</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_native_fs</span> <span class="o">=</span> <span class="n">native_fs</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_native_path</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">native_path</span>  <span class="c1"># returns backend-absolute path</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_native_fs</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># At read time:</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">open_input_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_native_fs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_native_fs</span><span class="o">.</span><span class="n">open_input_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_native_path</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="c1"># ... fall through to Tier 2/3</span>
+</code></pre></div>
+<p><strong>Encapsulation:</strong> Tier 1 uses only public Store APIs — <code>store.unwrap()</code> for
+the native filesystem handle and <code>store.native_path()</code> for path translation.
+It never accesses <code>store._backend</code> or other private attributes. The
+<code>store.unwrap(type_hint)</code> method delegates to <code>backend.unwrap()</code> through the
+Store's public surface; <code>store.native_path(key)</code> converts a store-relative
+key to the full backend-native path (prepending <code>root_path</code> and any
+backend-specific prefix). Both methods are proposed additions to the Store
+public API (spec 001 amendment, tracked separately).</p>
+<p><strong>Path conversion:</strong> Store-relative paths (e.g., <code>'file.parquet'</code>) cannot be
+passed directly to the native filesystem — they lack the <code>root_path</code> prefix
+and backend-specific path components (bucket, base path, etc.).
+<code>store.native_path(key)</code> reconstructs the full native path:
+- Store key: <code>'file.parquet'</code>
+- With <code>root_path='data'</code>: <code>'data/file.parquet'</code>
+- With S3 bucket <code>my-bucket</code>: <code>'my-bucket/data/file.parquet'</code></p>
+<p>This is the inverse of <code>store.to_key()</code> (spec STORE-011).</p>
+<p>This gives the full C++ <code>ReadAt</code> → HTTP Range request → I/O coalescing
+pipeline with zero GIL overhead and zero extra memory. The <code>S3PyArrowBackend</code>
+already has <code>unwrap()</code> in this codebase.</p>
+<p><strong>Design trade-off:</strong> Tier 1 intentionally bypasses the Store abstraction for
+the read hot path. This means no Store-level capability checking (Store gates
+<code>read()</code> behind <code>Capability.READ</code>), no <code>RemotePath</code> validation, and no
+Store-level logging/hooks if those are ever added. This is a conscious
+performance trade-off — all non-read operations (listing, writing, deleting)
+still go through the Store API. The capability check is redundant for Tier 1
+because <code>unwrap()</code> succeeding already proves the backend is functional.</p>
+<h4 id="tier-2-bufferreader-for-small-files-threshold">Tier 2: BufferReader for small files (≤ threshold)<a class="headerlink" href="#tier-2-bufferreader-for-small-files-threshold" title="Permanent link">&para;</a></h4>
+<p>For files at or below a configurable threshold (default: 64 MB), materialize
+the full file and wrap in <code>BufferReader</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">MATERIALIZATION_THRESHOLD</span> <span class="o">=</span> <span class="mi">64</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span>  <span class="c1"># 64 MB</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">get_file_info</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="k">if</span> <span class="n">info</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;=</span> <span class="n">MATERIALIZATION_THRESHOLD</span><span class="p">:</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="k">return</span> <span class="n">pa</span><span class="o">.</span><span class="n">BufferReader</span><span class="p">(</span><span class="n">pa</span><span class="o">.</span><span class="n">py_buffer</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+</code></pre></div>
+<p><code>BufferReader</code> wraps a C++ <code>Buffer</code> and implements <code>CRandomAccessFile</code> entirely
+in C++. <code>ReadAt</code> is a pointer + offset operation — no mutex, no GIL, no Python
+calls. <code>GetSize()</code> returns the buffer length directly.</p>
+<p>This is acceptable for small files because the memory cost is bounded and the
+full-file download is comparable to a few range requests.</p>
+<h4 id="tier-3-pythonfile-for-large-files-threshold">Tier 3: PythonFile for large files (&gt; threshold)<a class="headerlink" href="#tier-3-pythonfile-for-large-files-threshold" title="Permanent link">&para;</a></h4>
+<p>For files exceeding the threshold, use <code>PythonFile</code> wrapping of the Store's
+read stream:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">return</span> <span class="n">pa</span><span class="o">.</span><span class="n">PythonFile</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Seekability caveat:</strong> <code>PythonFile</code> with <code>mode="r"</code> creates a
+<code>PyReadableFile</code> which requires the underlying stream to support <code>seek()</code>.
+<code>store.read()</code> returns seekable streams for <code>LocalBackend</code> (file handles) and
+<code>S3PyArrowBackend</code> (PyArrow <code>RandomAccessFile</code>), but HTTP-based streams from
+<code>S3Backend</code> and <code>AzureBackend</code> are <strong>not seekable</strong>. For non-seekable backends
+without native PyArrow support, Tier 2 (full materialization) is used as the
+fallback regardless of file size, and a <code>logging.warning</code> is emitted noting
+the memory cost.</p>
+<p><strong>Summary:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Strategy</th>
+<th>Memory</th>
+<th>GIL?</th>
+<th>Network</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>store.unwrap()</code> → PyArrow FS</td>
+<td><strong>Tier 1</strong>: native <code>open_input_file</code></td>
+<td>~range size</td>
+<td>No</td>
+<td>Range requests</td>
+</tr>
+<tr>
+<td>File ≤ 64 MB</td>
+<td><strong>Tier 2</strong>: <code>read_bytes()</code> → <code>BufferReader</code></td>
+<td>Full file</td>
+<td>No</td>
+<td>Full download</td>
+</tr>
+<tr>
+<td>File &gt; 64 MB, seekable stream</td>
+<td><strong>Tier 3</strong>: <code>read()</code> → <code>PythonFile</code></td>
+<td>~range size</td>
+<td>Yes</td>
+<td>Streaming</td>
+</tr>
+<tr>
+<td>File &gt; 64 MB, non-seekable stream</td>
+<td><strong>Tier 2 fallback</strong> (with warning)</td>
+<td>Full file</td>
+<td>No</td>
+<td>Full download</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rationale:</strong> This tiered approach addresses the core tension between memory
+usage and GIL overhead:</p>
+<ul>
+<li><strong>Tier 1</strong> is the ideal path: zero overhead, range requests, I/O coalescing.
+  It applies to <code>S3PyArrowBackend</code> today and any future backend that exposes
+  a native PyArrow filesystem.</li>
+<li><strong>Tier 2</strong> trades memory for speed. For files under 64 MB the memory cost
+  is bounded and acceptable. <code>BufferReader</code>'s zero-GIL <code>ReadAt</code> is strictly
+  better than <code>PythonFile</code> when the file fits comfortably in memory.</li>
+<li><strong>Tier 3</strong> trades GIL overhead for bounded memory. For large files, the GIL
+  cost is bounded by the actual bytes read (not the file size) — reading 20 MB
+  of column chunks from a 2 GB file with GIL overhead is vastly better than
+  downloading 2 GB into memory. Parquet typically does ~10–50 <code>ReadAt</code> calls
+  per file (one per column chunk per row group); that's 10–50 GIL acquires,
+  which is negligible compared to network I/O.</li>
+</ul>
+<p><strong>Configuration:</strong> The materialization threshold is set via the constructor
+parameter <code>materialization_threshold</code> (see PA-001 for full signature). The
+value is an <code>int</code> (bytes). Sentinel values: <code>0</code> disables Tier 2 (always stream
+for non-native backends); <code>sys.maxsize</code> always materializes regardless of file
+size.</p>
+<p><strong>Error mapping:</strong> <code>NotFound</code> → <code>FileNotFoundError</code>. Other errors per PA-019.</p>
+<hr />
+<h2 id="write-operations">Write Operations<a class="headerlink" href="#write-operations" title="Permanent link">&para;</a></h2>
+<h3 id="pa-011-open_output_stream">PA-011: open_output_stream<a class="headerlink" href="#pa-011-open_output_stream" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>open_output_stream(path, metadata=None)</code> returns a writable
+<code>NativeFile</code> that flushes data to the Store on <code>close()</code>.</p>
+<p><strong>Implementation:</strong> Returns <code>pyarrow.PythonFile(_StoreSink(store, path), mode="w")</code>.
+The <code>_StoreSink</code> (PA-016) accumulates writes in memory up to a configurable
+threshold, then spills to a temporary file on disk if exceeded.</p>
+<p><strong>Buffering strategy:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Write size</th>
+<th>Buffer location</th>
+<th>Memory cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>≤ <code>spill_threshold</code> (default 64 MB)</td>
+<td><code>BytesIO</code> (in-memory)</td>
+<td>Exact write size</td>
+</tr>
+<tr>
+<td>&gt; <code>spill_threshold</code></td>
+<td><code>tempfile.SpooledTemporaryFile</code></td>
+<td><code>spill_threshold</code> + disk</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>_StoreSink</code> uses <code>tempfile.SpooledTemporaryFile(max_size=spill_threshold)</code>
+which transparently promotes from <code>BytesIO</code> to a disk-backed temporary file
+when the threshold is exceeded. On <code>close()</code>, the full content is passed to
+<code>store.write(path, buffer, overwrite=True)</code>.</p>
+<p><strong>Postconditions:</strong>
+- Data is not visible in the Store until <code>close()</code> is called.
+- <code>metadata</code> parameter is accepted but ignored (Store has no metadata-on-write
+  API). Both FSSpecHandler and pyarrowfs-adlgen2 also ignore or partially
+  handle this parameter.
+- Calling <code>close()</code> twice is safe (second call is a no-op).
+- If <code>close()</code> raises, partial data is not written.</p>
+<p><strong>Rationale:</strong> Store's <code>write()</code> is a single-shot operation taking content as
+input. There is no streaming-write-then-commit API, so buffering is required.
+The spill-to-tempfile approach bounds memory usage for data-lake workloads
+where Parquet writes routinely reach 100+ MB, while keeping small writes
+entirely in memory for speed.</p>
+<p><strong>Configuration:</strong> The spill threshold is set via the constructor parameter
+<code>write_spill_threshold</code> (see PA-001 for full signature).</p>
+<h3 id="pa-012-open_append_stream">PA-012: open_append_stream<a class="headerlink" href="#pa-012-open_append_stream" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>open_append_stream(path, metadata=None)</code> raises
+<code>NotImplementedError</code>.</p>
+<p><strong>Rationale:</strong> The Store API has no append operation. Backends like S3 do not
+support append semantics natively. pyarrowfs-adlgen2 can implement append
+because Azure Data Lake Gen2's HNS provides an <code>append_data</code> API — this is
+specific to ADLS, not generalizable across backends. Raising immediately is
+better than silently overwriting.</p>
+<p><strong>Ecosystem context:</strong> <code>open_append_stream</code> was deprecated on <code>FileSystem</code> in
+PyArrow 6.0 with the note <em>"several filesystems don't support this
+functionality and it will be later removed."</em> As of PyArrow 23.x it still
+exists on <code>FileSystemHandler</code> but most implementations raise
+<code>NotImplementedError</code>. Our choice aligns with the ecosystem direction.</p>
+<hr />
+<h2 id="mutation-operations">Mutation Operations<a class="headerlink" href="#mutation-operations" title="Permanent link">&para;</a></h2>
+<h3 id="pa-013-delete_file">PA-013: delete_file<a class="headerlink" href="#pa-013-delete_file" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>delete_file(path)</code> deletes a single file.</p>
+<p><strong>Implementation:</strong> <code>store.delete(path, missing_ok=False)</code>.</p>
+<p><strong>Error mapping:</strong> <code>NotFound</code> → <code>FileNotFoundError</code>.</p>
+<p><strong>Note:</strong> FSSpecHandler makes an extra <code>exists()</code> check before deleting. We
+skip this — <code>store.delete(missing_ok=False)</code> already raises <code>NotFound</code> for
+missing files. One call instead of two.</p>
+<h3 id="pa-014-create_dir">PA-014: create_dir<a class="headerlink" href="#pa-014-create_dir" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>create_dir(path, recursive)</code> is a no-op that always succeeds.</p>
+<p><strong>Rationale:</strong> Most backends (S3, Azure non-HNS) have virtual directories that
+are created implicitly when files are written. LocalBackend creates
+intermediate directories on write. There is no <code>mkdir()</code> in the Store API.
+Silently succeeding matches the behavior of PyArrow's built-in <code>S3FileSystem</code>
+and <code>GcsFileSystem</code>. FSSpecHandler delegates to <code>fs.mkdir()</code> and swallows
+<code>FileExistsError</code>, achieving the same idempotent effect with an extra call.</p>
+<h3 id="pa-015-delete_dir-delete_dir_contents">PA-015: delete_dir / delete_dir_contents<a class="headerlink" href="#pa-015-delete_dir-delete_dir_contents" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong>
+- <code>delete_dir(path)</code> — if <code>path</code> is empty or root (<code>""</code>), raises
+  <code>NotImplementedError</code> (same safety as <code>delete_root_dir_contents</code>). PyArrow
+  may call <code>delete_dir("")</code> expecting root deletion; we refuse this explicitly
+  rather than letting it fall through to <code>Store.delete_folder()</code> which raises
+  <code>InvalidPath</code> → <code>ValueError</code> (per PA-019). <code>NotImplementedError</code> is a
+  clearer signal to PyArrow callers. For non-root paths, delegates to
+  <code>store.delete_folder(path, recursive=True, missing_ok=False)</code>.
+- <code>delete_dir_contents(path, missing_dir_ok=False)</code> lists and deletes all
+  files in the directory, then deletes subfolders recursively. If the directory
+  does not exist and <code>missing_dir_ok</code> is <code>False</code>, raises <code>FileNotFoundError</code>.
+- <code>delete_root_dir_contents()</code> raises <code>NotImplementedError</code> to prevent
+  accidental destruction of the entire Store.</p>
+<p><strong>Error mapping:</strong> <code>NotFound</code> → <code>FileNotFoundError</code> (unless <code>missing_dir_ok</code>).</p>
+<p><strong>Rationale for <code>NotImplementedError</code>:</strong> This is a deliberate safety guard, not
+a permissions issue. Using <code>NotImplementedError</code> is consistent with PA-012
+(<code>open_append_stream</code>) and clearly communicates that this operation is
+intentionally unsupported, rather than misleading users into thinking they need
+different credentials.</p>
+<p><strong>Performance rationale:</strong> FSSpecHandler's <code>delete_dir_contents</code> makes N+1
+RPCs — it lists the directory, then calls <code>isdir()</code>/<code>isfile()</code> for each entry
+before deleting. Our <code>delete_dir</code> delegates to <code>store.delete_folder</code> in a
+single call, letting the backend handle bulk deletion natively.</p>
+<h3 id="pa-017-move">PA-017: move<a class="headerlink" href="#pa-017-move" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>move(src, dest)</code> delegates to
+<code>store.move(src, dest, overwrite=True)</code>.</p>
+<p><strong>Rationale:</strong> PyArrow's <code>move()</code> has overwrite-by-default semantics.</p>
+<h3 id="pa-018-copy_file">PA-018: copy_file<a class="headerlink" href="#pa-018-copy_file" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>copy_file(src, dest)</code> delegates to
+<code>store.copy(src, dest, overwrite=True)</code>.</p>
+<p><strong>Rationale:</strong> PyArrow's <code>copy_file()</code> has overwrite-by-default semantics.
+Unlike pyarrowfs-adlgen2 which downloads and re-uploads (no server-side copy),
+<code>store.copy()</code> delegates to the backend which uses server-side copy where
+available (S3 CopyObject, Azure copy-from-URL).</p>
+<hr />
+<h2 id="internal-helpers">Internal Helpers<a class="headerlink" href="#internal-helpers" title="Permanent link">&para;</a></h2>
+<h3 id="pa-016-_storesink-buffer">PA-016: _StoreSink Buffer<a class="headerlink" href="#pa-016-_storesink-buffer" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>_StoreSink</code> is an <code>io.RawIOBase</code> subclass that implements a
+writable Python file-like object with bounded memory usage.</p>
+<p><strong>Behavior:</strong>
+1. Constructed with a Store reference, a target path, and a spill threshold.
+2. Internal buffer is a <code>tempfile.SpooledTemporaryFile(max_size=spill_threshold)</code>.
+   Writes up to <code>spill_threshold</code> bytes stay in memory; beyond that, the
+   buffer transparently spills to a temporary file on disk.
+3. <code>write(data)</code> appends data to the buffer. Returns the number of bytes
+   written.
+4. <code>close()</code> seeks the buffer to position 0, reads all content, and passes
+   it to <code>store.write(path, content, overwrite=True)</code>. This always writes,
+   even if content is empty — creating an empty file matches PyArrow's
+   <code>open_output_stream</code> + immediate <code>close()</code> semantics. Calling <code>close()</code>
+   on an already-closed sink is a no-op (per <code>IOBase</code> contract).
+5. <code>tell()</code> returns the current buffer position (bytes written so far).
+6. <code>writable()</code> returns <code>True</code>.
+7. <code>readable()</code> returns <code>False</code>.
+8. Writing to a closed sink raises <code>ValueError</code>.
+9. The <code>closed</code> property (inherited from <code>IOBase</code>) returns <code>True</code> after
+   <code>close()</code>.
+10. Calling <code>close()</code> twice is safe (second call is a no-op, per <code>IOBase</code>
+    contract).</p>
+<p><strong>Defensive checks (learned from pyarrowfs-adlgen2 issue #13):</strong>
+- pyarrowfs-adlgen2 hit a bug where a large write that exactly filled the
+  buffer triggered an auto-flush, then <code>close()</code> tried to flush a second
+  time against Azure which rejected the empty write. Our design avoids
+  auto-flush entirely — the single write to the Store happens on <code>close()</code>,
+  and <code>SpooledTemporaryFile</code> handles the in-memory-to-disk promotion
+  transparently without triggering flushes.</p>
+<hr />
+<h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
+<h3 id="pa-019-error-translation">PA-019: Error Translation<a class="headerlink" href="#pa-019-error-translation" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> All <code>RemoteStoreError</code> subtypes are translated to standard Python
+exceptions that PyArrow understands:</p>
+<table>
+<thead>
+<tr>
+<th><code>RemoteStoreError</code> subtype</th>
+<th>Python exception</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NotFound</code></td>
+<td><code>FileNotFoundError</code></td>
+</tr>
+<tr>
+<td><code>AlreadyExists</code></td>
+<td><code>FileExistsError</code></td>
+</tr>
+<tr>
+<td><code>PermissionDenied</code></td>
+<td><code>PermissionError</code></td>
+</tr>
+<tr>
+<td><code>InvalidPath</code></td>
+<td><code>ValueError</code></td>
+</tr>
+<tr>
+<td><code>CapabilityNotSupported</code></td>
+<td><code>NotImplementedError</code></td>
+</tr>
+<tr>
+<td><code>DirectoryNotEmpty</code></td>
+<td><code>OSError</code></td>
+</tr>
+<tr>
+<td><code>BackendUnavailable</code></td>
+<td><code>OSError</code></td>
+</tr>
+<tr>
+<td><code>RemoteStoreError</code> (base)</td>
+<td><code>OSError</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rationale:</strong> PyArrow catches <code>OSError</code> and its subclasses (<code>FileNotFoundError</code>,
+<code>PermissionError</code>, etc.) and translates them into <code>ArrowIOError</code> for C++ callers.
+Using standard exceptions ensures clean interop without PyArrow-specific imports
+in the error path.</p>
+<p><strong>Capability gating:</strong> The Store gates operations behind
+<code>capabilities.require()</code> — e.g., <code>store.copy()</code> raises <code>CapabilityNotSupported</code>
+if the backend lacks <code>Capability.COPY</code>. Per the mapping table above,
+<code>CapabilityNotSupported</code> → <code>NotImplementedError</code>. PyArrow callers interpret
+<code>NotImplementedError</code> as "this filesystem does not support this operation,"
+which is the correct semantic. This means capability gating works correctly
+through the error mapping without any special-case handling in the adapter.</p>
+<p><strong>Quality note:</strong> This is a deliberate improvement over prior art. FSSpecHandler
+has minimal error handling — most backend exceptions propagate raw.
+pyarrowfs-adlgen2 only catches HTTP 404 in a few paths; other Azure SDK
+exceptions (403, 409, 429, 500) propagate unwrapped. Our handler catches <em>all</em>
+<code>RemoteStoreError</code> subtypes at every method boundary, ensuring callers always
+see standard Python exceptions.</p>
+<h3 id="pa-020-no-remotestoreerror-leakage">PA-020: No RemoteStoreError Leakage<a class="headerlink" href="#pa-020-no-remotestoreerror-leakage" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> No <code>RemoteStoreError</code> propagates to PyArrow callers. All Store
+exceptions are caught and re-raised as standard Python exceptions per PA-019.
+The original exception is chained with <code>from</code> for debuggability.</p>
+<p><strong>Implementation:</strong> Every handler method wraps its Store calls in a
+<code>try/except RemoteStoreError</code> block. This is implemented as a shared context
+manager or decorator to avoid repeating the mapping table in every method.</p>
+<hr />
+<h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
+<h3 id="pa-021-lifetime-model">PA-021: Lifetime Model<a class="headerlink" href="#pa-021-lifetime-model" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> The handler does not own the Store. Callers are responsible for
+closing the Store independently. Using the handler after the Store is closed
+produces <code>OSError</code> (from the backend's own closed-state behavior, translated
+per PA-019).</p>
+<p><strong>Rationale:</strong> PyArrow filesystems do not have a <code>close()</code> lifecycle. Tying
+Store closure to garbage collection would be unreliable. Explicit external
+management is clearer and consistent with how the Store context manager works.</p>
+<hr />
+<h2 id="public-api-surface">Public API Surface<a class="headerlink" href="#public-api-surface" title="Permanent link">&para;</a></h2>
+<h3 id="pa-022-exports">PA-022: Exports<a class="headerlink" href="#pa-022-exports" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> The <code>ext.arrow</code> module exports exactly two names:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;StoreFileSystemHandler&quot;</span><span class="p">,</span> <span class="s2">&quot;pyarrow_fs&quot;</span><span class="p">]</span>
+</code></pre></div>
+<p>Both are also importable from the top-level <code>remote_store</code> package when PyArrow
+is installed. When PyArrow is not installed, importing <code>ext.arrow</code> raises
+<code>ImportError</code> with a helpful message.</p>
+<h3 id="pa-023-optional-dependency">PA-023: Optional Dependency<a class="headerlink" href="#pa-023-optional-dependency" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> PyArrow is declared as an optional extra in <code>pyproject.toml</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">[project.optional-dependencies]</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">arrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;pyarrow&gt;=12.0.0&quot;</span><span class="p">]</span>
+</code></pre></div>
+<p><strong>Minimum version:</strong> 12.0.0. <code>FileSystemHandler</code> was introduced in PyArrow
+2.0.0. However, PyArrow 5.0 changed the <code>open_output_stream</code> signature to add
+the <code>metadata</code> parameter (this broke pyarrowfs-adlgen2, issue #11). PyArrow
+12.0 is the minimum actively supported release that includes all <code>metadata</code>
+parameter signatures, stable <code>FileSystemHandler</code> semantics, and <code>PythonFile</code>
+behavior we depend on.</p>
+<hr />
+<h2 id="testing-strategy">Testing Strategy<a class="headerlink" href="#testing-strategy" title="Permanent link">&para;</a></h2>
+<h3 id="pa-024-unit-tests">PA-024: Unit Tests<a class="headerlink" href="#pa-024-unit-tests" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Unit tests exercise every <code>FileSystemHandler</code> method through a
+<code>PyFileSystem</code> backed by a <code>LocalBackend</code> Store. Tests verify:</p>
+<ul>
+<li>Round-trip: write via PyArrow, read via Store (and vice versa)</li>
+<li>File info: type, size, mtime mapping</li>
+<li>Selector: recursive/non-recursive, allow_not_found</li>
+<li>Error paths: missing file, missing directory, closed sink double-write</li>
+<li><code>_StoreSink</code>: write, tell, close, double-close, write-after-close, spill
+  to tempfile above threshold</li>
+<li>Path normalization: leading slashes, redundant separators, root path</li>
+<li>Tiered read strategy: verify Tier 1 dispatch for native backends, Tier 2
+  for small files, Tier 3 for large seekable files</li>
+</ul>
+<h3 id="pa-025-integration-tests">PA-025: Integration Tests<a class="headerlink" href="#pa-025-integration-tests" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Integration tests verify end-to-end interop with downstream
+libraries:</p>
+<ul>
+<li><code>pyarrow.parquet.write_table()</code> / <code>read_table()</code> round-trip</li>
+<li><code>pyarrow.dataset.dataset()</code> discovery of partitioned data</li>
+<li><code>pandas.read_parquet()</code> / <code>to_parquet()</code> with <code>filesystem=</code> parameter</li>
+</ul>
+<p>These tests use <code>LocalBackend</code> to avoid infrastructure dependencies.</p>
+<h3 id="pa-026-conformance-across-backends">PA-026: Conformance Across Backends<a class="headerlink" href="#pa-026-conformance-across-backends" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> The adapter works with any backend that passes the Store
+conformance suite. No backend-specific code paths exist in the handler
+<strong>except</strong> the Tier 1 <code>unwrap()</code> check in PA-010, which is opt-in and
+gracefully falls through to Tier 2/3 for backends without native PyArrow
+support.</p>
+<p><strong>Rationale:</strong> The handler delegates entirely to the Store API, which is
+backend-agnostic by design. Backend-specific behavior (virtual directories,
+atomic writes, etc.) is already handled by each backend's implementation.</p>
+<hr />
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<h3 id="external-implementations-studied">External implementations studied<a class="headerlink" href="#external-implementations-studied" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>PyArrow FSSpecHandler</strong> — <code>python/pyarrow/fs.py</code> in
+  <a href="https://github.com/apache/arrow">apache/arrow</a>. Canonical reference for
+  <code>FileSystemHandler</code> implementation patterns. Studied for I/O wrapping
+  (<code>PythonFile</code>), error handling, and listing strategies.</li>
+<li><strong>pyarrowfs-adlgen2</strong> — <a href="https://github.com/kaaveland/pyarrowfs-adlgen2">kaaveland/pyarrowfs-adlgen2</a>.
+  Real-world Azure Data Lake Gen2 adapter; source of defensive checks and
+  lessons on write buffering (issues #11, #13, #25).</li>
+<li><strong>object-store-python</strong> — <a href="https://github.com/roeap/object-store-python">roeap/object-store-python</a>.
+  Rust-backed <code>FileSystemHandler</code> via PyO3; demonstrates the performance
+  ceiling when GIL/PythonFile overhead is eliminated.</li>
+</ul>
+<h3 id="pyarrow-documentation">PyArrow documentation<a class="headerlink" href="#pyarrow-documentation" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://arrow.apache.org/docs/python/generated/pyarrow.fs.FileSystemHandler.html">FileSystemHandler API</a></li>
+<li><a href="https://arrow.apache.org/docs/python/generated/pyarrow.fs.FSSpecHandler.html">FSSpecHandler API</a></li>
+<li><a href="https://arrow.apache.org/docs/python/filesystems.html">Filesystem interface guide</a></li>
+<li><a href="https://arrow.apache.org/docs/python/memory.html">Memory and IO — NativeFile vs PythonFile</a></li>
+</ul>
+<h3 id="relevant-pyarrow-issues">Relevant PyArrow issues<a class="headerlink" href="#relevant-pyarrow-issues" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://github.com/apache/arrow/issues/36983">#36983</a> — <code>get_file_info</code>
+  behavior difference between native S3 and FSSpecHandler</li>
+<li><a href="https://github.com/apache/arrow/issues/41357">#41357</a> — proposed
+  <code>use_cache</code> for <code>get_file_info</code> (15 min on 3k SAMBA files)</li>
+<li><a href="https://github.com/apache/arrow/issues/33618">#33618</a> — <code>FileSelector</code>
+  10x slower than <code>std::filesystem</code> due to per-entry <code>stat()</code></li>
+<li><a href="https://github.com/apache/arrow/issues/47559">#47559</a> —
+  <code>FSSpecHandler.delete_root_dir_contents</code> missing argument bug</li>
+<li><a href="https://github.com/apache/arrow/pull/7022">ARROW-8562</a> — I/O coalescing
+  using S3 bandwidth-delay product metrics</li>
+<li><a href="https://github.com/apache/arrow/issues/36765">#36765</a> — <code>pre_buffer=True</code>
+  benchmarks (4–6x speedups on S3)</li>
+</ul>
+<h3 id="project-references">Project references<a class="headerlink" href="#project-references" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>ADR-0003</strong> — <code>sdd/adrs/0003-fsspec-is-implementation-detail.md</code>. Establishes
+  that fsspec is an implementation detail; this adapter provides a <em>new</em> public
+  extension point without exposing fsspec.</li>
+<li><strong>RFC-0002</strong> — <code>sdd/rfcs/rfc-0002-pyarrow-filesystem-adapter.md</code>. Original
+  proposal and motivation.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.instant", "navigation.sections", "navigation.expand", "navigation.top", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
