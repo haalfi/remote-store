@@ -278,6 +278,10 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
         path = _normalize(path)
         with _map_errors():
             stream = self._store.read(path)
+            # TODO(Phase 2): Subsequent reads from PythonFile bypass _map_errors(),
+            # so mid-read RemoteStoreError from cloud streams would leak unmapped.
+            # Inert in Phase 1 (cloud backends always materialize via Tier 2), but
+            # Phase 2 / seekable cloud streams will need an error-mapping wrapper.
             try:
                 return pa.PythonFile(stream, mode="r")
             except Exception:  # pragma: no cover
@@ -368,7 +372,7 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                     self._store.delete(str(fi.path), missing_ok=True)
                 # Delete subfolders recursively
                 for name in list(self._store.list_folders(path)):
-                    folder_path = f"{path}/{name}" if path else name
+                    folder_path = f"{path}/{name}"
                     self._store.delete_folder(folder_path, recursive=True, missing_ok=True)
         except FileNotFoundError:
             if not missing_dir_ok:
