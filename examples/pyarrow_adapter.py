@@ -18,7 +18,7 @@ except ImportError as _exc:
     raise SystemExit(1) from _exc
 
 from remote_store import Store
-from remote_store.backends._memory import MemoryBackend
+from remote_store.backends import MemoryBackend
 from remote_store.ext.arrow import pyarrow_fs
 
 

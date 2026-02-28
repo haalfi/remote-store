@@ -477,6 +477,18 @@ class TestMutationOps:
         assert not store.exists("cleanup/sub/b.txt")
 
     @pytest.mark.spec("PA-015")
+    def test_delete_dir_contents_root_raises(self, handler: StoreFileSystemHandler) -> None:
+        """delete_dir_contents('') must refuse to wipe the entire store."""
+        with pytest.raises(NotImplementedError):
+            handler.delete_dir_contents("")
+
+    @pytest.mark.spec("PA-015")
+    def test_delete_dir_contents_root_leading_slash_raises(self, handler: StoreFileSystemHandler) -> None:
+        """delete_dir_contents('/') normalizes to '' and refuses."""
+        with pytest.raises(NotImplementedError):
+            handler.delete_dir_contents("/")
+
+    @pytest.mark.spec("PA-015")
     def test_delete_dir_contents_missing_dir_ok(self, handler: StoreFileSystemHandler) -> None:
         handler.delete_dir_contents("nonexistent", missing_dir_ok=True)
 
@@ -619,8 +631,10 @@ class TestNonSeekableFallback:
     """Cover Tier 2 fallback for non-seekable large streams (lines 266-275)."""
 
     @pytest.mark.spec("PA-010")
-    def test_non_seekable_large_file_materializes(self, store: Store) -> None:
+    def test_non_seekable_large_file_materializes(self, store: Store, caplog: pytest.LogCaptureFixture) -> None:
         """Non-seekable stream above threshold falls back to Tier 2 with warning."""
+        import logging
+
         content = b"x" * 100
         store.write("big.txt", content)
 
@@ -633,10 +647,16 @@ class TestNonSeekableFallback:
             return stream
 
         store.read = non_seekable_read  # type: ignore[assignment]
-
-        fs = pyarrow_fs(store, materialization_threshold=10)
-        with fs.open_input_file("big.txt") as f:
-            assert f.read() == content
+        try:
+            fs = pyarrow_fs(store, materialization_threshold=10)
+            with (
+                caplog.at_level(logging.WARNING, logger="remote_store.ext.arrow"),
+                fs.open_input_file("big.txt") as f,
+            ):
+                assert f.read() == content
+            assert "not seekable" in caplog.text
+        finally:
+            store.read = original_read  # type: ignore[assignment]
 
 
 class TestGetFileInfoEdgeCases:

@@ -65,7 +65,7 @@ pip install "remote-store[s3]"           # Amazon S3 / MinIO
 pip install "remote-store[s3-pyarrow]"   # S3 with PyArrow (high-throughput)
 pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
-pip install "remote-store[arrow]"       # PyArrow filesystem adapter
+pip install "remote-store[arrow]"        # PyArrow filesystem adapter
 ```
 
 ## Quick Start

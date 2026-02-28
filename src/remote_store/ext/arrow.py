@@ -260,10 +260,12 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
             return []
 
         # PA-008 step 4: if base_dir doesn't exist, handle allow_not_found
-        if not results and base_dir and not self._store.exists(base_dir):
-            if allow_not_found:
-                return []
-            raise FileNotFoundError(f"Directory not found: {base_dir!r}")
+        if not results and base_dir:
+            with _map_errors():
+                if not self._store.exists(base_dir):
+                    if allow_not_found:
+                        return []
+                    raise FileNotFoundError(f"Directory not found: {base_dir!r}")
 
         return results
 
@@ -309,8 +311,10 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                 info.size,
                 path,
             )
-            data = stream.read()
-            stream.close()
+            try:
+                data = stream.read()
+            finally:
+                stream.close()
             return pa.BufferReader(pa.py_buffer(data))
 
     # -- PA-011 ---------------------------------------------------------------
@@ -349,10 +353,12 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
 
     def delete_dir_contents(self, path: str, *, missing_dir_ok: bool = False) -> None:
         path = _normalize(path)
+        if not path:
+            raise NotImplementedError("Deleting all root directory contents is not supported (safety guard)")
         try:
             with _map_errors():
                 # Check existence first — some backends return empty for non-existent dirs
-                if path and not self._store.is_folder(path):
+                if not self._store.is_folder(path):
                     raise NotFound(f"Directory not found: {path!r}", path=path)
                 # Delete all files
                 for fi in list(self._store.list_files(path)):

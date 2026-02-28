@@ -66,6 +66,7 @@ jobs:
       - run: python examples/error_handling.py
       - run: python examples/memory_backend.py
       - run: python examples/store_child.py
+      - run: pip install -e ".[arrow]" && python examples/pyarrow_adapter.py
 
   docs:
     runs-on: ubuntu-latest

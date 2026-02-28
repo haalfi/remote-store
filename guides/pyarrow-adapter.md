@@ -21,7 +21,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from remote_store import Store
-from remote_store.backends._memory import MemoryBackend
+from remote_store.backends import MemoryBackend
 from remote_store.ext.arrow import pyarrow_fs
 
 store = Store(backend=MemoryBackend())
@@ -114,8 +114,8 @@ thread-safe.
 
 - **No append support.** `open_append_stream` raises `NotImplementedError`.
   Most backends (S3, Azure) lack native append semantics.
-- **Root deletion blocked.** `delete_dir("")` and `delete_root_dir_contents()`
-  raise `NotImplementedError` as a safety guard.
+- **Root deletion blocked.** `delete_dir("")`, `delete_dir_contents("")`, and
+  `delete_root_dir_contents()` raise `NotImplementedError` as a safety guard.
 - **Write buffering.** Writes are buffered until `close()` -- data is not
   visible in the Store during the write. This is inherent to the Store's
   single-shot `write()` API.
