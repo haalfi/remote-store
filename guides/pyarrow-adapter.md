@@ -121,6 +121,10 @@ thread-safe.
   single-shot `write()` API.
 - **No Tier 1 fast path yet.** Phase 1 uses Tier 2/3 for all backends.
   Phase 2 will add Tier 1 for backends with native PyArrow support.
+- **Process exit on Linux.** PyArrow's C++ atexit handlers can deadlock
+  during interpreter shutdown when a `PyFileSystem` is still alive. If your
+  script hangs after completing, explicitly `del` the PyArrow filesystem and
+  dataset objects before exit, or call `os._exit(0)` after cleanup.
 
 ## Error Mapping
 

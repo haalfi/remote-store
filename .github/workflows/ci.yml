@@ -67,9 +67,12 @@ jobs:
       - run: python examples/memory_backend.py
       - run: python examples/store_child.py
       # PyArrow's C++ atexit handlers can deadlock on Linux during interpreter
-      # shutdown. The script itself completes (prints "Done!"), but process exit
-      # hangs. timeout kills it; exit 124 (timeout) is accepted as success.
-      - run: timeout 30 python examples/pyarrow_adapter.py || test $? -eq 124
+      # shutdown. The script completes but process exit hangs. Use timeout with
+      # SIGKILL fallback; accept exit 124 (timeout) as success.
+      - run: |
+          timeout --kill-after=5 30 python examples/pyarrow_adapter.py
+          rc=$?
+          if [ $rc -ne 0 ] && [ $rc -ne 124 ]; then exit $rc; fi
 
   docs:
     runs-on: ubuntu-latest

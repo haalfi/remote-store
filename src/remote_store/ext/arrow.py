@@ -110,10 +110,9 @@ class _StoreSink(io.RawIOBase):
             with _map_errors():
                 self._store.write(self._path, cast("BinaryIO", self._buf), overwrite=True)
         finally:
-            try:
+            with contextlib.suppress(Exception):
                 self._buf.close()
-            finally:
-                super().close()
+            super().close()
 
 
 # ---------------------------------------------------------------------------
@@ -239,7 +238,7 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                     )
 
                 if recursive:
-                    # Step 3: synthetic directory entries from file paths
+                    # Recursive: synthetic directory entries from file paths
                     seen_dirs: set[str] = set()
                     base_prefix = f"{base_dir}/" if base_dir else ""
                     for info in results:
@@ -252,7 +251,7 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                     for dir_path in sorted(seen_dirs):
                         results.append(pafs.FileInfo(dir_path, type=pafs.FileType.Directory))
                 else:
-                    # Step 2: list immediate subfolders
+                    # Non-recursive: list immediate subfolders
                     for name in self._store.list_folders(base_dir):
                         folder_path = f"{base_dir}/{name}" if base_dir else name
                         results.append(pafs.FileInfo(folder_path, type=pafs.FileType.Directory))
@@ -280,8 +279,10 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
             stream = self._store.read(path)
             # TODO(Phase 2): Subsequent reads from PythonFile bypass _map_errors(),
             # so mid-read RemoteStoreError from cloud streams would leak unmapped.
-            # Inert in Phase 1 (cloud backends always materialize via Tier 2), but
-            # Phase 2 / seekable cloud streams will need an error-mapping wrapper.
+            # Also affects Tier 3 in open_input_file (PythonFile for large seekable
+            # files). Inert in Phase 1: cloud backends always materialize via Tier 2,
+            # and LocalBackend raises OSError directly (not RemoteStoreError). Phase 2
+            # seekable cloud streams will need an error-mapping stream wrapper.
             try:
                 return pa.PythonFile(stream, mode="r")
             except Exception:  # pragma: no cover
@@ -294,6 +295,8 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
         path = _normalize(path)
         with _map_errors():
             # Phase 1: Tier 2 / Tier 3 only (Tier 1 deferred to Phase 2)
+            # NOTE: get_file_info + read_bytes = 2 RPCs per call. Phase 2 could
+            # optimize via optimistic read, file-info caching, or known-sizes.
             info = self._store.get_file_info(path)
 
             if info.size <= self._materialization_threshold:
