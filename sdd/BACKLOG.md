@@ -193,16 +193,15 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   RTD: configure tag-based builds so each release tag gets its own version.
   Keep a `dev` / `latest` alias tracking master for unreleased changes.
 
-- [~] **ID-031 — S3-PyArrow read path optimization**
+- [x] **ID-031 — S3-PyArrow read path optimization** *(v0.9.0+)*
   Drop `BufferedReader` from `S3PyArrowBackend.read()`, add `read()` + chunked
   `readline()` to `_PyArrowBinaryIO`. Eliminates double-copy per chunk on
   streaming reads (56% peak memory overhead in benchmarks). Non-breaking,
-  S3-PyArrow only. Depends on ID-020 for proper before/after measurement.
+  S3-PyArrow only.
   → RFC: `sdd/rfcs/rfc-0003-s3-pyarrow-read-optimization.md`
-  Done: code change, spec update, structural + readline regression tests,
-  post-merge review fixes (seek guard, __next__ bypass, bytes() copy removal,
-  8 edge-case tests, RFC status -> Implemented, RawIOBase cross-backend note).
-  Remaining: before/after benchmark with cloud infra.
+  PR #66 (code), PR #67 (review fixes: seek guard, __next__ bypass, bytes()
+  copy removal, 9 edge-case tests, RFC status -> Implemented, RawIOBase
+  cross-backend note, BACKLOG update, chunk-boundary test).
 
 - [ ] **ID-018 — conda-forge publishing**
   Submit a staged-recipes PR to conda-forge so users can `conda install -c
