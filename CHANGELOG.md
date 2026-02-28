@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-02-28
+
 ### Added
 
 - **Transfer operations (`ext.transfer`)** -- `upload`, `download`, and `transfer` functions for moving data between local files and Stores or between two Stores. All streaming (never loads full file into memory), with optional `on_progress` callback per chunk. `upload` streams a local file to a Store, `download` reads in 1 MiB chunks to a local file, `transfer` pipes between any two Stores. Supports `overwrite` flag. Pure Python, no extra dependencies, unconditional top-level export (ID-023, unifies ID-001 + ID-009)

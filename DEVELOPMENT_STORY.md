@@ -318,6 +318,18 @@ The interesting insight: **the skills weren't designed top-down -- they were min
 
 This is a natural evolution of the human-AI workflow: the human defines principles (CLAUDE.md), the pair discovers where those principles get violated in practice (PR reviews, audits), and the violations get codified into guardrails (skills) that the AI can follow without re-deriving them each session. The principles stay high-level; the skills handle the mechanical enforcement.
 
+### Phase 16: Extensions and Ecosystem (v0.9.0)
+
+Three new capabilities shipped in a single minor release, all following the `ext.*` pattern established by the PyArrow adapter:
+
+- **`ext.batch`** (ID-022) — `batch_delete`, `batch_copy`, `batch_exists` with error aggregation via `BatchResult`. The pattern of "call Store methods one-by-one, collect errors into a result" proved clean enough to template future extensions.
+- **`ext.transfer`** (ID-023) — `upload`, `download`, `transfer` for local-file-to-store and cross-store data movement. Unified two long-standing backlog items (ID-001 cross-store transfer, ID-009 upload/download) into three streaming functions with progress callbacks. The `_ProgressReader` wrapper reuses the `cast("BinaryIO", ...)` + `__getattr__` delegation pattern from the PyArrow adapter.
+- **PyArrow FileSystem adapter Phase 1** (ID-016) — `StoreFileSystemHandler` wraps any Store into a `pyarrow.fs.PyFileSystem`, enabling interop with Parquet, Pandas, Polars, DuckDB, and dataset discovery. The tiered read strategy (BufferReader for small files, PythonFile for large seekable files) and `_StoreSink` spill-to-disk write buffer were the most architecturally complex additions since the backends themselves.
+
+Supporting work included a concurrency guide (AF-010), capability gating tests (AF-012), error path tests for S3/SFTP (AF-013), a CI gate on the publish workflow (AF-014), and cleanup of stale capability declarations (ID-019).
+
+The `ext.*` namespace is proving to be a good layering decision: extensions compose on the public Store API without backend coupling, so they work with `Store.child()`, capability gating, and any future backend. Each extension is pure Python (except PyArrow which requires its optional dep), independently testable, and unconditionally exported from the top-level package.
+
 ## What Worked Well
 
 ### Specs as a shared contract
