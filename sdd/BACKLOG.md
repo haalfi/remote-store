@@ -80,7 +80,9 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
 - [ ] **ID-006 — Progress callbacks for large transfers**
   Add an optional `callback: Callable[[int], None]` parameter to `read()` and
   `write()` reporting bytes transferred. Enables progress bars (e.g. `tqdm`)
-  without adding dependencies.
+  without adding dependencies. Note: `ext.transfer` (ID-023) provides
+  `on_progress` for upload/download/transfer; this item covers the lower-level
+  Store API.
 
 - [ ] **ID-007 — `Store.glob()` surface API**
   Expose a `Store.glob(pattern)` method. `Capability.GLOB` was removed in v0.6.0

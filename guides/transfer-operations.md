@@ -109,6 +109,10 @@ upload(store, "big_file.bin", "big_file.bin", on_progress=track)
 - **Remote errors** use `RemoteStoreError` subtypes (`NotFound`,
   `AlreadyExists`, `CapabilityNotSupported`, etc.).
 - `CapabilityNotSupported` always propagates immediately.
+- **Partial files on failed download:** if `download` fails mid-transfer
+  (e.g., network error), a partial local file may remain. Callers that need
+  atomic semantics should download to a temporary path and rename on success.
+  When retrying, pass `overwrite=True` to replace the partial file.
 
 ## Works with Store.child()
 
