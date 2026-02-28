@@ -129,11 +129,11 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Tier 1 native fast-path reads (PA-010), streaming error-mapping wrapper,
   double-RPC optimization in `open_input_file`.
 
-- [ ] **ID-019 — Update stale CAP-001 in spec 003**
-  `sdd/specs/003-backend-adapter-contract.md` CAP-001 still lists `GLOB` and
-  `RECURSIVE_LIST` as `Capability` enum members. These were removed in v0.6.0
-  (AF-002). Update CAP-001 to list only the 8 current members. Pre-existing
-  inconsistency, not introduced by ID-017.
+- [x] **ID-019 — Update stale CAP-001 in spec 003**
+  Removed `GLOB` and `RECURSIVE_LIST` from capability lists in specs
+  003 (CAP-001), 008 (S3-003), 009 (SFTP-003), 011 (S3PA-003),
+  012 (AZ-003) and backend guides (SFTP, Azure). These enum members
+  were removed in v0.6.0 (AF-002) but the specs/guides were never updated.
 
 - [ ] **ID-020 — Benchmark tiered modes and single-backend filtering**
   Current bench suite works well locally but cloud runs timeout (AWS hit this).

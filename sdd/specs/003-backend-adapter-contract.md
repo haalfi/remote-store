@@ -10,7 +10,7 @@ The `Backend` ABC defines the contract all storage backends must implement. It i
 
 ### CAP-001: Capability Enum Members
 
-**Invariant:** `Capability` is an enum with members: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `GLOB`, `RECURSIVE_LIST`, `METADATA`.
+**Invariant:** `Capability` is an enum with members: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`.
 
 ### CAP-002: CapabilitySet Construction
 

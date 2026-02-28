@@ -115,12 +115,10 @@ Note that non-HNS `move()` (copy + delete) is not atomic and `overwrite=False` h
 | `WRITE` | Yes | |
 | `DELETE` | Yes | |
 | `LIST` | Yes | |
-| `RECURSIVE_LIST` | Yes | |
 | `MOVE` | Yes | Atomic on HNS, copy+delete on non-HNS |
 | `COPY` | Yes | Server-side copy |
 | `ATOMIC_WRITE` | Yes | Temp file + rename (HNS) or direct PUT (non-HNS) |
 | `METADATA` | Yes | |
-| `GLOB` | Yes | Server-side prefix + client-side `fnmatch` |
 
 ## Streaming
 

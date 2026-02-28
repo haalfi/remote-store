@@ -38,12 +38,11 @@ AzureBackend(
 
 ### AZ-003: Capability Declaration
 
-**Invariant:** `AzureBackend` declares all capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `GLOB`, `RECURSIVE_LIST`, `METADATA`.
+**Invariant:** `AzureBackend` declares all capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`.
 **Rationale:**
 - `ATOMIC_WRITE`: HNS accounts use temp file + atomic rename; non-HNS accounts use direct upload (Azure PUT is atomic, same as S3). See AZ-006 and AZ-014.
 - `MOVE`: HNS accounts use native atomic rename; non-HNS accounts use copy + delete. See AZ-006 and AZ-017.
 - `COPY`: Implemented via server-side copy (`start_copy_from_url`). See AZ-018.
-- `GLOB`: Implemented via server-side prefix filtering. See AZ-019.
 
 ### AZ-004: Lazy Connection
 
