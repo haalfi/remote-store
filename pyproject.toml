@@ -71,7 +71,7 @@ bench = [
 ]
 
 docs = [
-  "mkdocs>=1.6",
+  "mkdocs>=1.6,<2",
   "mkdocs-material>=9.5",
   "mkdocstrings[python]>=0.27",
   "mkdocs-include-markdown-plugin>=7.0",
@@ -120,7 +120,7 @@ dependencies = [
   "adlfs>=2024.2.0",
   "sshfs>=2023.1.0",
   "pre-commit",
-  "mkdocs>=1.6",
+  "mkdocs>=1.6,<2",
   "mkdocs-material>=9.5",
   "mkdocstrings[python]>=0.27",
   "mkdocs-include-markdown-plugin>=7.0",
