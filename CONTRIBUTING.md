@@ -85,7 +85,9 @@ Extensions live in `src/remote_store/ext/` and follow the contract in [ADR-0008]
 from remote_store.ext.<name> import Foo, bar
 ```
 
-**Optional dependency** — guard the import at the top of the extension module and do NOT re-export from `__init__`:
+**Optional dependency** — two guards are needed:
+
+1. In the extension module, raise a helpful error if the dependency is missing:
 
 ```python
 # In ext/<name>.py:
@@ -98,6 +100,16 @@ except ModuleNotFoundError as _exc:
     ) from _exc
 ```
 
+2. In `remote_store/__init__.py`, conditionally re-export with a silent guard:
+
+```python
+try:
+    from remote_store.ext.<name> import Foo, bar
+    __all__ += ["Foo", "bar"]
+except ImportError:
+    pass
+```
+
 Add the optional dependency as an extra in `pyproject.toml [project.optional-dependencies]`.
 
 ## Third-Party Extensions
@@ -107,7 +119,7 @@ External packages should use the naming convention `remote-store-<name>` and:
 - Use only the public `Store` / `Backend` API
 - Use `register_backend()` for backend registration (if applicable)
 - Use `unwrap()` for native handle access
-- Reuse the conformance test suite by importing and parameterizing it
+- For backend extensions: reuse the conformance test suite by importing and parameterizing it
 
 ## Development Setup
 

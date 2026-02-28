@@ -37,13 +37,16 @@ from remote_store.ext.transfer import upload
 pip install "remote-store[arrow]"
 ```
 
-Then import from the extension module:
+Then import from the top-level package or the extension module directly:
 
 ```python
+from remote_store import pyarrow_fs
+# or
 from remote_store.ext.arrow import pyarrow_fs
 ```
 
-If PyArrow is not installed, importing `ext.arrow` raises a
+If PyArrow is not installed, the top-level import silently omits the
+symbols, and importing `ext.arrow` directly raises a
 `ModuleNotFoundError` with installation instructions.
 
 ## Extension Guarantees
@@ -56,8 +59,6 @@ All extensions follow the same contract (ADR-0008):
   caller owns the Store's lifecycle.
 - **CapabilityNotSupported propagates** -- if a backend lacks a required
   capability, the error reaches the caller immediately.
-- **Streaming** -- transfer and arrow extensions stream data; they never
-  load entire files into memory.
 
 ## Individual Guides
 

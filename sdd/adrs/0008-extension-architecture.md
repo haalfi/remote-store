@@ -1,4 +1,4 @@
-# ADR-0008: Extension Architecture (`ext.*` Namespace)
+# ADR-0008: Extension Namespace Contract (`ext.*`)
 
 ## Status
 
@@ -22,6 +22,14 @@ Future extensions (`ext.notify`, `ext.cache`, streaming atomic writes) and
 potential third-party extensions need these rules written down.  Without a
 documented contract, contributors would have to reverse-engineer the
 conventions from existing code.
+
+### Scope
+
+This ADR covers the **namespace convention and module contract** for
+stateless utility extensions — functions that accept a Store and operate
+on it.  It does not define an extension framework with interfaces,
+hooks, lifecycle management, or plugin discovery.  Those patterns will
+be designed when needed (see "Future patterns" below).
 
 ## Decision
 
@@ -64,10 +72,11 @@ Two patterns, determined by dependency requirements:
    `from remote_store import <name>`.
 
 2. **Optional dependency (requires an extra).**
-   Import guarded by `try/except ModuleNotFoundError` at module level.
-   The error message tells users how to install the extra:
+   The extension module guards its dependency import at the top level
+   with a `try/except ModuleNotFoundError` that raises a helpful error:
 
    ```python
+   # In ext/<name>.py:
    try:
        import pyarrow as pa
    except ModuleNotFoundError as _exc:
@@ -77,9 +86,19 @@ Two patterns, determined by dependency requirements:
        ) from _exc
    ```
 
-   These extensions are NOT re-exported from `remote_store.__init__` to
-   avoid import-time errors for users who don't have the optional
-   dependency installed.
+   `remote_store.__init__` conditionally re-exports these symbols with
+   a silent `try/except ImportError` guard so that `from remote_store
+   import pyarrow_fs` works when the dependency is installed, but core
+   package import never fails:
+
+   ```python
+   # In remote_store/__init__.py:
+   try:
+       from remote_store.ext.arrow import StoreFileSystemHandler, pyarrow_fs
+       __all__ += ["StoreFileSystemHandler", "pyarrow_fs"]
+   except ImportError:
+       pass
+   ```
 
 ### Dependency rules
 
@@ -111,12 +130,32 @@ External packages should use the naming convention
 - Use only the public Store/Backend API.
 - Use `register_backend()` for backend registration (if applicable).
 - Use `Store.unwrap()` for native handle access.
-- Reuse the conformance test suite by importing and parameterizing it
-  (for backend extensions).
+- For backend extensions: reuse the conformance test suite by importing
+  and parameterizing it.
 
 Entry-point based plugin discovery is deferred until third-party
 extensions emerge and the discovery mechanism can be designed with
 real use cases.
+
+### Future patterns (not yet designed)
+
+The current convention covers **stateless utility extensions** —
+standalone functions that accept a Store and return results.  Planned
+extensions will require additional patterns:
+
+- **`ext.notify`** (ID-024) needs a hook/interceptor mechanism to wrap
+  Store operations.  Likely a decorator or proxy Store pattern:
+  `store = instrument(store, on_read=..., on_error=...)`.
+- **`ext.cache`** (ID-025) needs a wrapping/proxy pattern that sits
+  between the caller and the Store, intercepting reads and caching
+  results.
+- **Streaming atomic writes** (ID-026) needs a context manager protocol
+  integrated with the Store.
+
+These patterns will be designed as separate ADRs when the extensions
+are implemented.  This ADR's rules (public API only, `__all__`,
+dependency management, test location) apply to all extension types;
+the additional patterns will layer on top.
 
 ## Consequences
 

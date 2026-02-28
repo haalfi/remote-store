@@ -12,12 +12,8 @@ contract (see ADR-0008):
 - **``__all__``** -- every extension module defines ``__all__``.
 - **Export rules** -- pure-Python extensions are re-exported from
   ``remote_store.__init__`` unconditionally.  Optional-dependency
-  extensions guard their import with ``try/except ModuleNotFoundError``
-  and are imported directly from their module.
+  extensions are conditionally re-exported (silent ``try/except
+  ImportError``) and can also be imported from their module directly.
 
-Available extensions:
-
-- ``ext.batch``    -- bulk delete, copy, exists (pure Python)
-- ``ext.transfer`` -- upload, download, cross-store transfer (pure Python)
-- ``ext.arrow``    -- PyArrow FileSystem adapter (requires ``pyarrow``)
+See ``guides/extensions.md`` for the list of available extensions.
 """
