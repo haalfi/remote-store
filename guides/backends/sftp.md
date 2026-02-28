@@ -112,7 +112,7 @@ backend = SFTPBackend(
 
 ## Capabilities
 
-The SFTP backend supports all capabilities **except** `GLOB`:
+The SFTP backend supports all 8 capabilities:
 
 | Capability | Supported | Notes |
 |------------|-----------|-------|
@@ -120,12 +120,10 @@ The SFTP backend supports all capabilities **except** `GLOB`:
 | `WRITE` | Yes | Creates intermediate directories automatically |
 | `DELETE` | Yes | |
 | `LIST` | Yes | |
-| `RECURSIVE_LIST` | Yes | |
 | `MOVE` | Yes | Uses `posix_rename` with fallback |
 | `COPY` | Yes | Read + write (no server-side copy in SFTP) |
 | `ATOMIC_WRITE` | Yes | Temp file + rename (see caveat below) |
 | `METADATA` | Yes | |
-| `GLOB` | No | No server-side glob; not offered to avoid misleading perf |
 
 > **Atomic write caveat:** Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the connection drops between write and rename, the orphan temp file will remain on the server.
 

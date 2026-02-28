@@ -48,13 +48,11 @@ construction (see SFTP-004).
 
 ### SFTP-003: Capability Declaration
 
-**Invariant:** `SFTPBackend` declares all capabilities **except** `GLOB`:
-`READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `RECURSIVE_LIST`, `METADATA`.
+**Invariant:** `SFTPBackend` declares all capabilities:
+`READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`.
 **Rationale:**
 - `ATOMIC_WRITE`: Simulated via temp file + rename (see SFTP-014). Orphan temp
   files are possible on connection failure -- documented caveat.
-- `GLOB`: Not supported. SFTP has no server-side glob; client-side glob over
-  `listdir` would be inefficient and misleading.
 - `MOVE`: Implemented via `posix_rename` with fallback (see SFTP-018).
 - `COPY`: Implemented via read + write (no server-side copy in SFTP, see SFTP-019).
 
