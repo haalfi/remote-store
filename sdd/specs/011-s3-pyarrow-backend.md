@@ -101,7 +101,7 @@ S3PyArrowBackend(
 
 **Invariant:** `read()` uses `open_input_file()` (seekable `RandomAccessFile`) and returns the stream wrapped in `_ErrorMappingStream` without `BufferedReader`. `read_bytes()` uses `open_input_stream()` and reads all bytes directly. `readline()` uses a chunked scan (`_READLINE_CHUNK`-sized reads) with seek-back for over-read bytes, requiring a seekable stream from `open_input_file`.
 **Rationale:** PyArrow's C++ I/O path provides higher throughput than s3fs for large files. Removing the `BufferedReader` eliminates a double-copy per chunk on the streaming read path (RFC-0003). The chunked `readline()` avoids the pathological byte-at-a-time fallback from `RawIOBase`.
-**Note:** Unlike other backends which return `io.BufferedReader`, S3-PyArrow returns a raw `_ErrorMappingStream(RawIOBase)`. This means `io.TextIOWrapper(stream)` requires wrapping in `io.BufferedReader` first. The spec (SIO-001) only requires `BinaryIO`, so this is valid, but callers should not assume `BufferedIOBase`.
+**Note:** Unlike other backends which return `io.BufferedReader`, S3-PyArrow returns a raw `_ErrorMappingStream(RawIOBase)`. This means `io.TextIOWrapper(stream)` requires wrapping in `io.BufferedReader` first. The spec (SIO-001 in 008-streaming-io.md) only requires `BinaryIO`, so this is valid, but callers should not assume `BufferedIOBase`.
 
 ### S3PA-013: Write Via PyArrow
 

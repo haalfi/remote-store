@@ -244,6 +244,16 @@ class TestS3PyArrowReadPath:
         stream.close()
 
     @pytest.mark.spec("S3PA-012")
+    def test_readline_newline_at_chunk_boundary(self, s3pa_backend: Backend) -> None:
+        """Newline at exactly _READLINE_CHUNK (8192) exercises the seek guard."""
+        line = b"x" * 8191 + b"\n"  # newline is last byte of first chunk
+        s3pa_backend.write("boundary.txt", line + b"next\n")
+        stream = s3pa_backend.read("boundary.txt")
+        assert stream.readline() == line
+        assert stream.readline() == b"next\n"
+        stream.close()
+
+    @pytest.mark.spec("S3PA-012")
     def test_read_stream_iteration(self, s3pa_backend: Backend) -> None:
         """for line in stream collects all lines via __next__."""
         s3pa_backend.write("iter.txt", b"a\nb\nc\n")

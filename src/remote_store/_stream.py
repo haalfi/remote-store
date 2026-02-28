@@ -98,5 +98,5 @@ class _ErrorMappingStream(io.RawIOBase):
             return line
         except StopIteration:
             raise
-        except OSError as exc:
+        except OSError as exc:  # defensive: unreachable if self.readline() maps all OSErrors
             raise self._mapper(exc, self._path) from exc
