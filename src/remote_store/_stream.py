@@ -92,10 +92,10 @@ class _ErrorMappingStream(io.RawIOBase):
 
     def __next__(self) -> bytes:
         try:
-            line = self._inner.readline()
+            line = self.readline()
             if not line:
                 raise StopIteration
-            return line  # type: ignore[no-any-return]
+            return line
         except StopIteration:
             raise
         except OSError as exc:
