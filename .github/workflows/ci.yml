@@ -67,6 +67,7 @@ jobs:
       - run: python examples/memory_backend.py
       - run: python examples/store_child.py
       - run: python examples/batch_operations.py
+      - run: python examples/transfer_operations.py
       # PyArrow's C++ atexit handlers can deadlock on Linux during interpreter
       # shutdown. The script completes but process exit hangs. Use timeout with
       # SIGKILL fallback; accept exit 124 (timeout) as success.
