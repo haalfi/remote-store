@@ -8,15 +8,19 @@ Draft
 
 Remove the `io.BufferedReader` wrapper from `S3PyArrowBackend.read()` and add a
 direct `read()` method to `_PyArrowBinaryIO`, eliminating two unnecessary memory
-copies per chunk on the streaming read path. This brings `read()`/`read_bytes()`
+copies per chunk on the streaming read path. This brings streaming `read()`
 performance in line with the legacy S3Store that uses PyArrow C++ directly.
+
+Note: `read_bytes()` is unaffected -- it already uses `open_input_stream` +
+`bytes(stream.read())` directly, bypassing `BufferedReader` entirely.
 
 ## Motivation
 
 Benchmark data (`legacy/benchmark_s3.py` against MinIO) shows remote-store's
-S3-PyArrow `read_bytes()` is 15-25% slower than the legacy implementation,
-despite both using PyArrow C++ underneath. The overhead comes from Python wrapper
-layers in the streaming read path.
+S3-PyArrow streaming `read()` path has measurable overhead from Python wrapper
+layers. The `streaming_read` benchmark (which exercises `Store.read()` with
+chunked reads) shows the overhead, while `read_bytes()` -- which uses
+`open_input_stream` directly -- is unaffected.
 
 ### Current chain (2 extra copies per chunk)
 
@@ -38,12 +42,12 @@ caller.
 ```
 _ErrorMappingStream.read(n)
   -> _PyArrowBinaryIO.read(n)
-    -> bytes(self._pa.read(n))            # single copy: C++ -> Python bytes
+    -> self._pa.read(n)                   # returns bytes directly from C++
 ```
 
 By adding `read()` to `_PyArrowBinaryIO` and removing the `BufferedReader`
-wrapper, reads go straight from PyArrow C++ to the caller with a single
-unavoidable copy (C++ buffer -> Python bytes object).
+wrapper, reads go straight from PyArrow C++ to the caller. PyArrow's
+`NativeFile.read()` already returns `bytes`, so no additional copy is needed.
 
 ## Proposal
 
@@ -53,9 +57,10 @@ unavoidable copy (C++ buffer -> Python bytes object).
 # src/remote_store/backends/_s3_pyarrow.py, class _PyArrowBinaryIO
 
 def read(self, size: int = -1) -> bytes:
+    # NativeFile.read() returns bytes; no wrapper needed.
     if size is None or size < 0:
-        return bytes(self._pa.read())
-    return bytes(self._pa.read(size))
+        return self._pa.read()
+    return self._pa.read(size)
 ```
 
 Keep `readinto()` for compatibility -- anyone wrapping our stream in their own
@@ -95,9 +100,13 @@ def read(self, path: str) -> BinaryIO:
 
 ### What changes
 
-- `readline()` falls back to `RawIOBase` default (byte-by-byte). Acceptable:
-  S3 binary streams are not used line-by-line. Users needing lines should wrap
-  in `io.TextIOWrapper`.
+- **`readline()` regression (known).** Without `BufferedReader`, `readline()`
+  falls back to `RawIOBase` default, which calls `readinto(1)` in a tight loop
+  -- one call per byte until `\n`. This is pathologically slow for lines of any
+  length. Mitigation: add a chunked `readline()` to `_PyArrowBinaryIO` that
+  reads in blocks (e.g. 8 KB) and scans for `\n`. Current callers don't use
+  line-oriented reads on S3 binary streams, but the regression should not be
+  left as a trap.
 - No `BufferedReader` means callers get exactly the bytes they asked for in a
   single `read()` call, without 8 KB chunking overhead.
 
@@ -124,21 +133,31 @@ def read(self, path: str) -> BinaryIO:
   Callers using `.read()`, `.seek()`, `.tell()`, `.close()` are unaffected.
   Callers relying on `isinstance(stream, io.BufferedReader)` would break, but
   that's not part of the contract (spec SIO-001 only requires `BinaryIO`).
-- **Performance:** Expected 15-25% improvement on `read_bytes()` and streaming
-  reads for the S3-PyArrow backend, bringing it to parity with legacy.
-- **Testing:** No new tests needed. Existing tests cover:
+- **Performance:** Improvement applies to streaming `read()` calls only (the
+  `streaming_read` benchmark path). `read_bytes()` is unaffected -- it already
+  bypasses `BufferedReader`. Expect reduced per-chunk overhead and lower peak
+  memory for chunked streaming reads.
+- **Testing:** Existing tests cover correctness:
   - `tests/test_stream.py` -- `_ErrorMappingStream` read/readinto paths
   - `tests/backends/test_conformance.py` -- chunked reads, position tracking
   - `tests/backends/test_s3_pyarrow.py` -- S3-PyArrow specific tests
   - `tests/test_transfer.py` -- streaming transfers
+
+  Additionally, add a structural assertion that `S3PyArrowBackend.read()`
+  returns a stream that is NOT wrapped in `BufferedReader`, to prevent
+  regression.
 - **Scope:** Only `S3PyArrowBackend`. Other backends (S3, SFTP, Azure, Local,
   Memory) are untouched.
 
 ## Open Questions
 
 1. **Should other backends also drop `BufferedReader`?** The SFTP backend also
-   wraps in `BufferedReader`. If the same pattern applies, it could benefit too.
-   Out of scope for this RFC -- profile first.
+   wraps in `BufferedReader`, but the situation is different: SFTP's underlying
+   stream is Paramiko's `SFTPFile`, which has its own `prefetch()` mechanism and
+   internal buffering. `BufferedReader` may serve a useful purpose there by
+   smoothing bursty network reads. Removing it could interact with Paramiko's
+   chunking behavior differently than removing it from PyArrow's in-memory
+   `NativeFile.read()`. Out of scope -- requires separate profiling and analysis.
 
 ## References
 
