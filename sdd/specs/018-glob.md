@@ -73,8 +73,7 @@ yielded lazily via iterator.
 ### GLOB-005: LocalBackend Native Glob
 
 **Invariant:** `LocalBackend` overrides `glob()` using `pathlib.Path.glob()`.
-`LocalBackend` declares `Capability.GLOB` in its capability set (via
-`set(Capability)` which includes all members).
+`LocalBackend` declares `Capability.GLOB` in its capability set.
 **Postconditions:** Leverages the OS filesystem's native pattern matching.
 `FileInfo` paths are converted via `to_key()` (same as `list_files`).
 

@@ -141,7 +141,9 @@ class Backend(abc.ABC):
         :raises CapabilityNotSupported: If the backend lacks ``GLOB``.
         """
         raise CapabilityNotSupported(
-            f"Backend '{self.name}' does not support glob. Use ext.glob.glob_files() for client-side pattern matching.",
+            f"Backend '{self.name}' does not support glob."
+            " Use list_files(pattern=...) for name filtering"
+            " or ext.glob.glob_files() for full glob.",
             capability="glob",
             backend=self.name,
         )

@@ -6,6 +6,7 @@ import tempfile
 
 import pytest
 
+from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath
 from remote_store.backends._local import LocalBackend
 
@@ -40,3 +41,11 @@ class TestLocalBackendIdentity:
     @pytest.mark.spec("BE-002")
     def test_name(self, local_backend: LocalBackend) -> None:
         assert local_backend.name == "local"
+
+
+class TestLocalBackendCapabilities:
+    """Local backend supports all capabilities."""
+
+    def test_supports_all_capabilities(self, local_backend: LocalBackend) -> None:
+        caps = local_backend.capabilities
+        assert len(caps) == len(Capability)
