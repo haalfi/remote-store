@@ -29,6 +29,10 @@ Before committing, check whether your change has cross-file dependencies:
 | **A Store method**         | README Store API table, `__init__.py` `__all__`,          |
 |                            | `examples/`, spec in `sdd/specs/`, guides, CHANGELOG      |
 | **Public API** (`__all__`) | README Store API table, `examples/`, user guides          |
+| **An extension**           | `__init__.py` exports (if pure Python),                   |
+|                            | `pyproject.toml` extras (if optional dep),                |
+|                            | `guides/`, `docs-src/` + `_nav.yml`, `examples/`,         |
+|                            | CHANGELOG, BACKLOG                                        |
 | **Docs navigation**        | Per-section `_nav.yml` files in `docs-src/`,              |
 |                            | `guides/backends/index.md`                                |
 

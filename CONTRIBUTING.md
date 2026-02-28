@@ -62,17 +62,50 @@ Prefixes: `STORE`, `MOD` (models), `CFG` (config), `REG` (registry), `BE` (backe
 
 ## Adding an Extension
 
-1. Write an RFC in `sdd/rfcs/`, get it accepted as a spec
-2. Implement in `src/remote_store/ext/<name>.py`
-3. Add tests in `tests/ext/test_<name>.py`
-4. Use `unwrap()` for native backend access when needed
+Extensions live in `src/remote_store/ext/` and follow the contract in [ADR-0008](sdd/adrs/0008-extension-architecture.md). Full checklist:
+
+1. Write an RFC in `sdd/rfcs/`, get it accepted as a spec in `sdd/specs/`
+2. Implement in `src/remote_store/ext/<name>.py` — define `__all__`
+3. Use only the public `Store` / `Backend` API (never `_backend`). Use `unwrap()` for native access
+4. Do not own Store lifecycle — never call `store.close()` or use `with store:`
+5. Let `CapabilityNotSupported` propagate — do not catch and suppress it
+6. Add tests in `tests/test_<name>.py` with `@pytest.mark.spec("ID")`
+7. Write a user guide in `guides/<name>.md`
+8. Add an `include-markdown` wrapper in `docs-src/<name>.md`
+9. Add the page to `docs-src/_nav.yml`
+10. Add a runnable example in `examples/`
+11. Update `CHANGELOG.md` and `sdd/BACKLOG.md` in the same commit
+
+### Export patterns
+
+**Pure Python (no extra dependencies)** — export unconditionally from `remote_store.__init__`:
+
+```python
+# In remote_store/__init__.py:
+from remote_store.ext.<name> import Foo, bar
+```
+
+**Optional dependency** — guard the import at the top of the extension module and do NOT re-export from `__init__`:
+
+```python
+# In ext/<name>.py:
+try:
+    import some_lib
+except ModuleNotFoundError as _exc:
+    raise ModuleNotFoundError(
+        "some_lib is required for the <name> extension. "
+        "Install it with: pip install 'remote-store[<name>]'"
+    ) from _exc
+```
+
+Add the optional dependency as an extra in `pyproject.toml [project.optional-dependencies]`.
 
 ## Third-Party Extensions
 
-External packages should:
+External packages should use the naming convention `remote-store-<name>` and:
 
-- Use naming convention: `remote-store-<name>`
-- Use `register_backend()` for backend registration
+- Use only the public `Store` / `Backend` API
+- Use `register_backend()` for backend registration (if applicable)
 - Use `unwrap()` for native handle access
 - Reuse the conformance test suite by importing and parameterizing it
 

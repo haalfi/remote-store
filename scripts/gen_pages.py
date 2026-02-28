@@ -17,9 +17,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import yaml
-
 import mkdocs_gen_files
+import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS_SRC = ROOT / "docs-src"
@@ -82,41 +81,27 @@ rfc_entries = _scan_entries(
 # ---------------------------------------------------------------------------
 
 # --- design/adrs/index.md ---
-adr_rows = "\n".join(
-    f"| {num} | [{title}]({slug}.md) | Accepted |"
-    for num, slug, title in adr_entries
-)
+adr_rows = "\n".join(f"| {num} | [{title}]({slug}.md) | Accepted |" for num, slug, title in adr_entries)
 tmpl = (DOCS_SRC / "design" / "adrs" / "_index.tmpl").read_text()
 with mkdocs_gen_files.open("design/adrs/index.md", "w") as f:
     f.write(tmpl.replace("{{ adr_rows }}", adr_rows))
 
 # --- design/specs/index.md ---
-spec_rows = "\n".join(
-    f"| {num} | [{title}]({slug}.md) |" for num, slug, title in spec_entries
-)
+spec_rows = "\n".join(f"| {num} | [{title}]({slug}.md) |" for num, slug, title in spec_entries)
 tmpl = (DOCS_SRC / "design" / "specs" / "_index.tmpl").read_text()
 with mkdocs_gen_files.open("design/specs/index.md", "w") as f:
     f.write(tmpl.replace("{{ spec_rows }}", spec_rows))
 
 # --- design/rfcs/index.md ---
-rfc_rows = "\n".join(
-    f"| {num} | [{title}]({slug}.md) | Proposed |"
-    for num, slug, title in rfc_entries
-)
+rfc_rows = "\n".join(f"| {num} | [{title}]({slug}.md) | Proposed |" for num, slug, title in rfc_entries)
 tmpl = (DOCS_SRC / "design" / "rfcs" / "_index.tmpl").read_text()
 with mkdocs_gen_files.open("design/rfcs/index.md", "w") as f:
     f.write(tmpl.replace("{{ rfc_rows }}", rfc_rows))
 
 # --- design/index.md ---
-spec_links = "\n".join(
-    f"- [{num}: {title}](specs/{slug}.md)" for num, slug, title in spec_entries
-)
-adr_links = "\n".join(
-    f"- [{num}: {title}](adrs/{slug}.md)" for num, slug, title in adr_entries
-)
-rfc_links = "\n".join(
-    f"- [{num}: {title}](rfcs/{slug}.md)" for num, slug, title in rfc_entries
-)
+spec_links = "\n".join(f"- [{num}: {title}](specs/{slug}.md)" for num, slug, title in spec_entries)
+adr_links = "\n".join(f"- [{num}: {title}](adrs/{slug}.md)" for num, slug, title in adr_entries)
+rfc_links = "\n".join(f"- [{num}: {title}](rfcs/{slug}.md)" for num, slug, title in rfc_entries)
 tmpl = (DOCS_SRC / "design" / "_index.tmpl").read_text()
 with mkdocs_gen_files.open("design/index.md", "w") as f:
     f.write(
@@ -173,6 +158,7 @@ contributing_text = _rewrite_links(
         "](sdd/000-process.md)": "](design/process.md)",
         "](sdd/rfcs/rfc-template.md)": "](design/rfcs/rfc-template.md)",
         "](sdd/DESIGN.md#11-code-style)": "](design/design-spec.md#11-code-style)",
+        "](sdd/adrs/0008-extension-architecture.md)": "](design/adrs/0008-extension-architecture.md)",
     },
 )
 with mkdocs_gen_files.open("contributing.md", "w") as f:
@@ -208,18 +194,9 @@ for asset in (ROOT / "assets").iterdir():
 
 # Scanned sections: directory prefix → list of (label, file) pairs
 _scanned_sections: dict[str, list[tuple[str, str]]] = {
-    "design/specs": [
-        (f"{num}: {title}", f"design/specs/{slug}.md")
-        for num, slug, title in spec_entries
-    ],
-    "design/adrs": [
-        (f"{num}: {title}", f"design/adrs/{slug}.md")
-        for num, slug, title in adr_entries
-    ],
-    "design/rfcs": [
-        (f"{num}: {title}", f"design/rfcs/{slug}.md")
-        for num, slug, title in rfc_entries
-    ],
+    "design/specs": [(f"{num}: {title}", f"design/specs/{slug}.md") for num, slug, title in spec_entries],
+    "design/adrs": [(f"{num}: {title}", f"design/adrs/{slug}.md") for num, slug, title in adr_entries],
+    "design/rfcs": [(f"{num}: {title}", f"design/rfcs/{slug}.md") for num, slug, title in rfc_entries],
 }
 
 nav = mkdocs_gen_files.Nav()
