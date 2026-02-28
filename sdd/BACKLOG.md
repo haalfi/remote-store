@@ -199,7 +199,9 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   streaming reads (56% peak memory overhead in benchmarks). Non-breaking,
   S3-PyArrow only. Depends on ID-020 for proper before/after measurement.
   → RFC: `sdd/rfcs/rfc-0003-s3-pyarrow-read-optimization.md`
-  Done: code change, spec update, structural + readline regression tests.
+  Done: code change, spec update, structural + readline regression tests,
+  post-merge review fixes (seek guard, __next__ bypass, bytes() copy removal,
+  8 edge-case tests, RFC status -> Implemented, RawIOBase cross-backend note).
   Remaining: before/after benchmark with cloud infra.
 
 - [ ] **ID-018 — conda-forge publishing**

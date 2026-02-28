@@ -47,12 +47,20 @@ class _PyArrowBinaryIO(io.RawIOBase):
 
     def read(self, size: int = -1) -> bytes:
         if size is None or size < 0:
-            return bytes(self._pa.read())
-        return bytes(self._pa.read(size))
+            return self._pa.read()  # type: ignore[no-any-return]
+        return self._pa.read(size)  # type: ignore[no-any-return]
 
     _READLINE_CHUNK = 8192
 
     def readline(self, size: int | None = -1) -> bytes:
+        """Read a single line, scanning in _READLINE_CHUNK-sized blocks.
+
+        Requires a seekable underlying stream (open_input_file) because
+        over-read bytes are rewound via seek().  Less efficient than
+        BufferedReader for line-heavy workloads (separate read+seek per
+        line vs batched internal buffer), but avoids the double-copy on
+        the dominant chunk-read path.  See RFC-0003.
+        """
         buf = bytearray()
         while size is None or size < 0 or len(buf) < size:
             remaining = size - len(buf) if size is not None and size >= 0 else self._READLINE_CHUNK
@@ -62,7 +70,9 @@ class _PyArrowBinaryIO(io.RawIOBase):
             idx = chunk.find(b"\n")
             if idx >= 0:
                 buf.extend(chunk[: idx + 1])
-                self._pa.seek(-(len(chunk) - idx - 1), 1)
+                over_read = len(chunk) - idx - 1
+                if over_read > 0:
+                    self._pa.seek(-over_read, 1)
                 break
             buf.extend(chunk)
         return bytes(buf)

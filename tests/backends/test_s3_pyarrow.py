@@ -186,6 +186,82 @@ class TestS3PyArrowReadPath:
         assert stream.readline() == b""
         stream.close()
 
+    @pytest.mark.spec("S3PA-012")
+    def test_read_stream_chunked_read(self, s3pa_backend: Backend) -> None:
+        """read(n) returns exactly n bytes (or fewer at EOF) without BufferedReader."""
+        s3pa_backend.write("chunk.bin", b"abcdefghij")
+        stream = s3pa_backend.read("chunk.bin")
+        assert stream.read(4) == b"abcd"
+        assert stream.read(4) == b"efgh"
+        assert stream.read(4) == b"ij"
+        assert stream.read(4) == b""
+        stream.close()
+
+    @pytest.mark.spec("S3PA-012")
+    def test_readline_no_trailing_newline(self, s3pa_backend: Backend) -> None:
+        """Last line without trailing newline returns content then empty."""
+        s3pa_backend.write("notrail.txt", b"line1\nline2")
+        stream = s3pa_backend.read("notrail.txt")
+        assert stream.readline() == b"line1\n"
+        assert stream.readline() == b"line2"
+        assert stream.readline() == b""
+        stream.close()
+
+    @pytest.mark.spec("S3PA-012")
+    def test_readline_empty_file(self, s3pa_backend: Backend) -> None:
+        """readline() on empty file returns empty bytes immediately."""
+        s3pa_backend.write("empty.txt", b"")
+        stream = s3pa_backend.read("empty.txt")
+        assert stream.readline() == b""
+        stream.close()
+
+    @pytest.mark.spec("S3PA-012")
+    def test_readline_with_size_limit(self, s3pa_backend: Backend) -> None:
+        """readline(size) limits the number of bytes returned."""
+        s3pa_backend.write("sized.txt", b"hello\nworld\n")
+        stream = s3pa_backend.read("sized.txt")
+        assert stream.readline(3) == b"hel"
+        stream.close()
+
+    @pytest.mark.spec("S3PA-012")
+    def test_readline_interleaved_with_read(self, s3pa_backend: Backend) -> None:
+        """read() then readline() continues from mid-stream position."""
+        s3pa_backend.write("interleave.txt", b"abcdefghij\nrest\n")
+        stream = s3pa_backend.read("interleave.txt")
+        assert stream.read(6) == b"abcdef"
+        assert stream.readline() == b"ghij\n"
+        assert stream.readline() == b"rest\n"
+        stream.close()
+
+    @pytest.mark.spec("S3PA-012")
+    def test_readline_long_line(self, s3pa_backend: Backend) -> None:
+        """Line longer than _READLINE_CHUNK exercises multi-chunk path."""
+        long_line = b"x" * 10000 + b"\nshort\n"
+        s3pa_backend.write("longline.txt", long_line)
+        stream = s3pa_backend.read("longline.txt")
+        assert stream.readline() == b"x" * 10000 + b"\n"
+        assert stream.readline() == b"short\n"
+        stream.close()
+
+    @pytest.mark.spec("S3PA-012")
+    def test_readline_newline_at_chunk_boundary(self, s3pa_backend: Backend) -> None:
+        """Newline at exactly _READLINE_CHUNK (8192) exercises the seek guard."""
+        line = b"x" * 8191 + b"\n"  # newline is last byte of first chunk
+        s3pa_backend.write("boundary.txt", line + b"next\n")
+        stream = s3pa_backend.read("boundary.txt")
+        assert stream.readline() == line
+        assert stream.readline() == b"next\n"
+        stream.close()
+
+    @pytest.mark.spec("S3PA-012")
+    def test_read_stream_iteration(self, s3pa_backend: Backend) -> None:
+        """for line in stream collects all lines via __next__."""
+        s3pa_backend.write("iter.txt", b"a\nb\nc\n")
+        stream = s3pa_backend.read("iter.txt")
+        lines = list(stream)
+        assert lines == [b"a\n", b"b\n", b"c\n"]
+        stream.close()
+
 
 # endregion
 
