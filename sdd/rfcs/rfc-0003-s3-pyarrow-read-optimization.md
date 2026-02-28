@@ -16,11 +16,19 @@ Note: `read_bytes()` is unaffected -- it already uses `open_input_stream` +
 
 ## Motivation
 
-Benchmark data (`legacy/benchmark_s3.py` against MinIO) shows remote-store's
-S3-PyArrow streaming `read()` path has measurable overhead from Python wrapper
-layers. The `streaming_read` benchmark (which exercises `Store.read()` with
-chunked reads) shows the overhead, while `read_bytes()` -- which uses
-`open_input_stream` directly -- is unaffected.
+Benchmark data (`legacy/benchmark_s3.py`, 15 iterations, 3 warmup, MinIO on
+localhost) shows overhead on the streaming `read()` path:
+
+| Benchmark        | Legacy (ms) | Remote (ms) | Ratio | Peak Mem        |
+|------------------|-------------|-------------|-------|-----------------|
+| `streaming_read` | 23.9        | 22.8        | 1.05x | 129 KB / 201 KB |
+| `read_large`     | 8.9         | 10.9        | 0.82x | 978 KB / 1954 KB|
+
+`streaming_read` exercises `Store.read()` with 64 KB chunked reads -- the code
+path this RFC targets. The 1.05x ratio looks close to parity, but the 56% higher
+peak memory (201 KB vs 129 KB) reveals the double-copy overhead. The
+`read_large` row uses `read_bytes()` which bypasses `BufferedReader` entirely, so
+its 0.82x ratio reflects a different bottleneck (not addressed here).
 
 ### Current chain (2 extra copies per chunk)
 
@@ -98,17 +106,46 @@ def read(self, path: str) -> BinaryIO:
 - `readinto()` still works for callers that need it
 - `_ErrorMappingStream.read()` already exists and delegates to inner `.read()`
 
+### 3. Add chunked `readline()` to `_PyArrowBinaryIO`
+
+Without `BufferedReader`, `readline()` falls back to `RawIOBase` default, which
+calls `readinto(1)` in a tight loop -- one call per byte until `\n`. This is
+pathologically slow for lines of any length.
+
+Add a `readline()` that reads in blocks (e.g. 8 KB) and scans for `\n`:
+
+```python
+# src/remote_store/backends/_s3_pyarrow.py, class _PyArrowBinaryIO
+
+_READLINE_CHUNK = 8192
+
+def readline(self, size: int = -1) -> bytes:
+    buf = bytearray()
+    while size is None or size < 0 or len(buf) < size:
+        remaining = size - len(buf) if size is not None and size >= 0 else self._READLINE_CHUNK
+        chunk = self._pa.read(min(remaining, self._READLINE_CHUNK))
+        if not chunk:
+            break
+        idx = chunk.find(b"\n")
+        if idx >= 0:
+            buf.extend(chunk[: idx + 1])
+            # seek back past the unused portion
+            self._pa.seek(-(len(chunk) - idx - 1), 1)
+            break
+        buf.extend(chunk)
+    return bytes(buf)
+```
+
+Current callers don't use line-oriented reads on S3 binary streams, but removing
+`BufferedReader` without this would leave a pathological performance trap for
+anyone wrapping the stream in `io.TextIOWrapper`.
+
 ### What changes
 
-- **`readline()` regression (known).** Without `BufferedReader`, `readline()`
-  falls back to `RawIOBase` default, which calls `readinto(1)` in a tight loop
-  -- one call per byte until `\n`. This is pathologically slow for lines of any
-  length. Mitigation: add a chunked `readline()` to `_PyArrowBinaryIO` that
-  reads in blocks (e.g. 8 KB) and scans for `\n`. Current callers don't use
-  line-oriented reads on S3 binary streams, but the regression should not be
-  left as a trap.
 - No `BufferedReader` means callers get exactly the bytes they asked for in a
   single `read()` call, without 8 KB chunking overhead.
+- `readline()` uses a new chunked implementation instead of `BufferedReader`'s
+  internal buffer.
 
 ## Alternatives Considered
 
