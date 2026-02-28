@@ -138,7 +138,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `--backend` CLI filter deselects tests (avoids fixture setup). `--bench-timeout`
   watchdog (Windows-compatible via `threading.Timer`). `report.py` gains
   `--comparative` and `--markdown` modes for remote-store vs raw SDK vs fsspec
-  tables. Updated hatch scripts (12 bench-* commands). Comparative results
+  tables. Updated hatch scripts (14 bench-* commands). Comparative results
   integrated into docs site. No spec needed (ops/tooling change).
 
 - [x] **ID-022 — `ext.batch` — batch operations**

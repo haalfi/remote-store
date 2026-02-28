@@ -120,12 +120,12 @@ Generate this table from your own saved results with `hatch run bench-report`.
 For every comparative operation, the benchmark suite runs the same workload
 through remote-store, the raw SDK, and the fsspec equivalent. Key findings:
 
-- **vs raw SDK:** Overhead is typically under 5% for data-path operations
-  and under 10% for metadata. The abstraction cost is negligible vs network
-  latency for all remote backends.
-- **vs fsspec:** remote-store is consistently faster. The gap is largest for
-  S3 writes (s3fs multipart overhead) and Azure listing (adlfs directory
-  emulation). See the full comparison on the
+- **vs raw SDK:** In our testing, overhead is typically under 5% for
+  data-path operations and under 10% for metadata. The abstraction cost
+  is negligible compared to network latency for all remote backends.
+- **vs fsspec:** In our testing, remote-store is consistently faster. The
+  gap is largest for S3 writes (s3fs multipart overhead) and Azure listing
+  (adlfs directory emulation). See the full comparison on the
   [docs site](https://haalfi.github.io/remote-store/performance/).
 
 Regenerate for your hardware:

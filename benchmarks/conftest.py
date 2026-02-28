@@ -113,6 +113,8 @@ def _bench_timeout(request: pytest.FixtureRequest) -> Any:
     timer.start()
     try:
         yield
+    except KeyboardInterrupt:
+        pytest.fail(f"Benchmark timed out after {timeout}s")
     finally:
         timer.cancel()
 

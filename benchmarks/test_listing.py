@@ -59,7 +59,7 @@ class TestListPerformanceLarge:
 
 
 # ---------------------------------------------------------------------------
-# Remote-store only: 10k listing (slow)
+# Remote-store only: 10k listing (full tier)
 # ---------------------------------------------------------------------------
 
 

@@ -314,7 +314,7 @@ def _print_comparative_text(
             print(line)
 
 
-def _print_comparative_markdown(
+def _render_comparative_markdown(
     table: dict[str, dict[str, dict[str, float]]],
     machine_info: dict[str, Any] | None = None,
 ) -> str:
@@ -416,7 +416,7 @@ def main() -> None:
     if args.comparative:
         comp_table = _build_comparative_table(latest["benchmarks"])
         if args.markdown:
-            md = _print_comparative_markdown(comp_table, latest.get("machine_info"))
+            md = _render_comparative_markdown(comp_table, latest.get("machine_info"))
             if args.output:
                 args.output.parent.mkdir(parents=True, exist_ok=True)
                 args.output.write_text(md, encoding="utf-8")
