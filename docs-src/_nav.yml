@@ -3,6 +3,7 @@
 - Examples: examples/
 - API Reference: api/
 - Backends: backends/
+- Extensions: extensions.md
 - Performance: performance.md
 - Concurrency: concurrency.md
 - PyArrow Adapter: pyarrow-adapter.md

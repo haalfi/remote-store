@@ -171,12 +171,11 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   entire files in memory. Needed for any large-file workflow (Parquet exports,
   log rotation, report generation). Needs temp-path strategy per backend.
 
-- [ ] **ID-027 — Extension architecture (`ext.*` namespace)**
-  Formalize the `remote_store.ext` package as the home for opt-in higher-level
-  features. Document the contract: extensions depend on public Store/Backend
-  API only, ship inside the package but behind optional extras. Existing
-  precedent: `ext/arrow.py` (ID-016). Entry-point plugin discovery deferred
-  until third-party extensions emerge.
+- [x] **ID-027 — Extension architecture (`ext.*` namespace)**
+  Formalized the `remote_store.ext` contract: ADR-0008 (extension rules),
+  expanded CONTRIBUTING.md checklist, `ext/__init__.py` contract docstring,
+  extensions guide, CLAUDE-REFERENCE.md ripple-check row. Entry-point plugin
+  discovery deferred until third-party extensions emerge.
 
 - [x] **ID-028 — Release-triggered publish and docs deploy**
   Change `publish.yml` and `docs.yml` to trigger on `release: published`

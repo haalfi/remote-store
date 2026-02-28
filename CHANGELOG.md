@@ -6,6 +6,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **Extension namespace contract (ADR-0008)** -- formalized the `ext.*` namespace contract: public API only, no lifecycle ownership, `CapabilityNotSupported` propagation, export rules for pure-Python vs optional-dependency extensions, development lifecycle, and third-party naming convention. Added extensions guide, expanded CONTRIBUTING.md checklist, contract enforcement tests, updated CLAUDE-REFERENCE.md ripple-check table (ID-027)
+
 ### Changed
 
 - **Release CI: GitHub Release as single trigger** -- `publish.yml` now triggers on `release: types: [published]` instead of `push: tags: ["v*"]`. The GitHub Release becomes the single event that triggers PyPI publish (ID-028)
