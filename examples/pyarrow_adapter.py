@@ -58,7 +58,10 @@ def main() -> None:
     all_data = dataset.to_table()
     print(f"Dataset: {all_data.num_rows} total rows from {len(dataset.files)} files")
 
-    # Clean up
+    # Clean up — explicitly release PyArrow objects that reference the handler
+    # before closing. Without this, PyArrow's C++ destructors may deadlock
+    # during interpreter shutdown on Linux (GIL re-acquisition from C++ thread).
+    del dataset, all_data, result, fs
     store.close()
     print("\nDone!")
 
