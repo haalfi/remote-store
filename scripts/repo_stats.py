@@ -56,11 +56,19 @@ _BACKOFF_BASE = 2  # seconds
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _get_json(url: str, *, token: str | None = None) -> dict[str, Any] | None:
+
+def _get_json(
+    url: str,
+    *,
+    token: str | None = None,
+    extra_headers: dict[str, str] | None = None,
+) -> dict[str, Any] | None:
     """Fetch JSON from *url* with retry on 429, returning ``None`` on failure."""
     headers = {"Accept": "application/json", "User-Agent": "remote-store-stats/1.0"}
     if token:
         headers["Authorization"] = f"token {token}"
+    if extra_headers:
+        headers.update(extra_headers)
     req = urllib.request.Request(url, headers=headers)
     for attempt in range(_MAX_RETRIES + 1):
         try:
@@ -105,6 +113,7 @@ def _size_human(nbytes: int) -> str:
 # ---------------------------------------------------------------------------
 # Data containers
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class GitHubStats:
@@ -161,6 +170,13 @@ class DownloadStats:
     # pypistats per-version breakdown
     by_version: dict[str, int] = field(default_factory=dict)
     source: str = "—"
+    # Trend data (from pepy.tech daily breakdowns)
+    trend_7d: int | None = None
+    trend_7d_prev: int | None = None
+    trend_30d: int | None = None
+    trend_30d_prev: int | None = None
+    daily_last_14: list[tuple[str, int]] = field(default_factory=list)
+    top_versions_30d: list[tuple[str, int]] = field(default_factory=list)
 
 
 @dataclass
@@ -181,6 +197,7 @@ class RTDStats:
 # ---------------------------------------------------------------------------
 # Fetchers
 # ---------------------------------------------------------------------------
+
 
 def fetch_github(token: str | None = None) -> GitHubStats:
     stats = GitHubStats()
@@ -227,8 +244,7 @@ def fetch_github(token: str | None = None) -> GitHubStats:
     paths = _get_json(f"{GITHUB_API}/traffic/popular/paths", token=token)
     if isinstance(paths, list):
         stats.popular_paths = [
-            {"path": p.get("path", "?"), "count": p.get("count", 0), "uniques": p.get("uniques", 0)}
-            for p in paths[:10]
+            {"path": p.get("path", "?"), "count": p.get("count", 0), "uniques": p.get("uniques", 0)} for p in paths[:10]
         ]
 
     return stats
@@ -266,12 +282,14 @@ def fetch_pypi() -> PyPIStats:
             continue
         upload_time = files[0].get("upload_time_iso_8601") or files[0].get("upload_time", "")
         size = sum(f.get("size", 0) for f in files)
-        stats.releases.append({
-            "version": version,
-            "date": _iso(upload_time),
-            "size": _size_human(size),
-            "files": len(files),
-        })
+        stats.releases.append(
+            {
+                "version": version,
+                "date": _iso(upload_time),
+                "size": _size_human(size),
+                "files": len(files),
+            }
+        )
 
     # Latest wheel size
     latest_files = releases_raw.get(stats.version, [])
@@ -282,7 +300,7 @@ def fetch_pypi() -> PyPIStats:
     return stats
 
 
-def fetch_downloads() -> DownloadStats:
+def fetch_downloads(pepy_token: str | None = None) -> DownloadStats:
     stats = DownloadStats()
 
     # --- pypistats.org  (recent totals) ---
@@ -312,13 +330,54 @@ def fetch_downloads() -> DownloadStats:
             agg2[cat] = agg2.get(cat, 0) + row.get("downloads", 0)
         stats.by_system = dict(sorted(agg2.items(), key=lambda kv: -kv[1]))
 
-    # --- pepy.tech  (total + per-version totals, fallback) ---
-    pepy = _get_json(PEPY_API)
+    # --- pepy.tech  (total + per-version totals + daily trends) ---
+    # API v2 response: {versions: [str], downloads: {date: {version: count}}}
+    pepy_headers = {"X-Api-Key": pepy_token} if pepy_token else None
+    pepy = _get_json(PEPY_API, extra_headers=pepy_headers)
     if pepy:
         stats.pepy_total = pepy.get("total_downloads")
-        versions = pepy.get("versions", {})
-        if isinstance(versions, dict):
-            stats.pepy_versions = {v: sum(d.values()) if isinstance(d, dict) else 0 for v, d in versions.items()}
+        downloads = pepy.get("downloads", {})
+        if isinstance(downloads, dict):
+            # Per-version all-time totals
+            ver_all: dict[str, int] = {}
+            # Per-version last-30d totals
+            ver_30d: dict[str, int] = {}
+            today = datetime.now(timezone.utc).date()
+
+            for date_str, ver_counts in downloads.items():
+                if not isinstance(ver_counts, dict):
+                    continue
+                day_total = sum(ver_counts.values())
+                try:
+                    d = datetime.strptime(date_str, "%Y-%m-%d").date()
+                    age = (today - d).days
+                except ValueError:
+                    age = -1  # skip trend buckets for unparseable dates
+
+                # Accumulate per-version totals
+                for ver, count in ver_counts.items():
+                    ver_all[ver] = ver_all.get(ver, 0) + count
+                    if 0 <= age < 30:
+                        ver_30d[ver] = ver_30d.get(ver, 0) + count
+
+                if age < 0:
+                    continue
+
+                # Trend windows
+                if age < 7:
+                    stats.trend_7d = (stats.trend_7d or 0) + day_total
+                elif age < 14:
+                    stats.trend_7d_prev = (stats.trend_7d_prev or 0) + day_total
+                if age < 30:
+                    stats.trend_30d = (stats.trend_30d or 0) + day_total
+                elif age < 60:
+                    stats.trend_30d_prev = (stats.trend_30d_prev or 0) + day_total
+                if age < 14:
+                    stats.daily_last_14.append((date_str, day_total))
+
+            stats.pepy_versions = ver_all
+            stats.daily_last_14.sort()
+            stats.top_versions_30d = sorted(ver_30d.items(), key=lambda kv: -kv[1])
         if stats.source == "—":
             stats.source = "pepy.tech"
 
@@ -361,6 +420,7 @@ def fetch_rtd(token: str | None = None) -> RTDStats:
 # Display
 # ---------------------------------------------------------------------------
 
+
 def _sep(title: str) -> str:
     return f"\n{'=' * 60}\n  {title}\n{'=' * 60}"
 
@@ -399,11 +459,11 @@ def print_report(
         print(f"  Page views       : {gh.views_14d:,}  ({gh.unique_visitors_14d:,} unique visitors)")
         print(f"  Git clones       : {gh.clones_14d:,}  ({gh.unique_cloners_14d:,} unique cloners)")
         if gh.referrers:
-            print(f"  Top referrers    :")
+            print("  Top referrers    :")
             for r in gh.referrers:
                 print(f"    {r['source']:<25s}  {r['count']:>5,} views  ({r['uniques']:,} unique)")
         if gh.popular_paths:
-            print(f"  Popular pages    :")
+            print("  Popular pages    :")
             for p in gh.popular_paths:
                 print(f"    {p['path']:<45s}  {p['count']:>5,} views  ({p['uniques']:,} unique)")
     else:
@@ -421,7 +481,7 @@ def print_report(
     print(f"  Wheel size       : {pypi.package_size}")
     print(f"  Total releases   : {pypi.total_releases}")
     if pypi.releases:
-        print(f"  Release history  :")
+        print("  Release history  :")
         for r in pypi.releases:
             print(f"    {r['version']:>8s}  {r['date']}  ({r['size']}, {r['files']} file(s))")
     if pypi.keywords:
@@ -436,18 +496,43 @@ def print_report(
     if dl.pepy_total is not None:
         print(f"  Total (all time) : {dl.pepy_total:,}  (via pepy.tech)")
     if dl.by_system:
-        print(f"  By operating system :")
+        print("  By operating system :")
         for os_name, count in dl.by_system.items():
             print(f"    {os_name or 'null':<20s}  {count:>8,}")
     if dl.by_version:
-        print(f"  By Python version   :")
+        print("  By Python version   :")
         for ver, count in dl.by_version.items():
             print(f"    {ver or 'null':<20s}  {count:>8,}")
     if dl.pepy_versions:
-        print(f"  By package version  :")
+        print("  By package version  :")
         for ver, count in sorted(dl.pepy_versions.items()):
             if count > 0:
                 print(f"    {ver:<20s}  {count:>8,}")
+    if dl.trend_7d is not None:
+        print("\n  Download trend      :")
+        pct_7d = ""
+        if dl.trend_7d_prev:
+            change = (dl.trend_7d - dl.trend_7d_prev) / dl.trend_7d_prev * 100
+            sign = "+" if change >= 0 else ""
+            pct_7d = f"  ({sign}{change:.0f}% vs prior 7d)"
+        print(f"    Last 7 days        {dl.trend_7d:>8,}{pct_7d}")
+        if dl.trend_30d is not None:
+            pct_30d = ""
+            if dl.trend_30d_prev:
+                change = (dl.trend_30d - dl.trend_30d_prev) / dl.trend_30d_prev * 100
+                sign = "+" if change >= 0 else ""
+                pct_30d = f"  ({sign}{change:.0f}% vs prior 30d)"
+            print(f"    Last 30 days       {dl.trend_30d:>8,}{pct_30d}")
+    if dl.daily_last_14:
+        print("\n  Daily downloads (14d):")
+        for date, count in dl.daily_last_14:
+            print(f"    {date}             {count:>8,}")
+    if dl.top_versions_30d:
+        total_30d = sum(c for _, c in dl.top_versions_30d)
+        print("\n  Version adoption (30d):")
+        for ver, count in dl.top_versions_30d[:8]:
+            pct = count / total_30d * 100 if total_30d else 0
+            print(f"    {ver:<20s}  {count:>8,}  ({pct:.0f}%)")
     if dl.last_day is None and dl.pepy_total is None:
         print("  (download stats unavailable — try again later or visit")
         print("   https://pypistats.org/packages/remote-store")
@@ -527,6 +612,14 @@ def to_dict(
             "by_system": dl.by_system,
             "by_python_version": dl.by_version,
             "by_package_version": dl.pepy_versions,
+            "trend": {
+                "last_7d": dl.trend_7d,
+                "prev_7d": dl.trend_7d_prev,
+                "last_30d": dl.trend_30d,
+                "prev_30d": dl.trend_30d_prev,
+                "daily_last_14": [{"date": d, "downloads": c} for d, c in dl.daily_last_14],
+                "top_versions_30d": [{"version": v, "downloads": c} for v, c in dl.top_versions_30d],
+            },
         },
         "readthedocs": {
             "url": rtd.url,
@@ -548,13 +641,19 @@ def to_dict(
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Gather remote-store project statistics.")
     parser.add_argument("--json", action="store_true", help="Output as JSON instead of a table.")
     parser.add_argument(
         "--github-token",
         default=os.getenv("GITHUB_TOKEN"),
-        help="GitHub personal access token (raises rate limit from 60 to 5 000 req/h). Falls back to GITHUB_TOKEN env var.",
+        help="GitHub personal access token (raises rate limit). Falls back to GITHUB_TOKEN env var.",
+    )
+    parser.add_argument(
+        "--pepy-token",
+        default=os.getenv("PEPY_TOKEN"),
+        help="pepy.tech API key (enables daily trend data). Falls back to PEPY_TOKEN env var.",
     )
     parser.add_argument(
         "--rtd-token",
@@ -567,7 +666,7 @@ def main() -> None:
 
     gh = fetch_github(token=args.github_token)
     pypi = fetch_pypi()
-    dl = fetch_downloads()
+    dl = fetch_downloads(pepy_token=args.pepy_token)
     rtd = fetch_rtd(token=args.rtd_token)
 
     if args.json:
