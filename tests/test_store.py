@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 from remote_store._capabilities import Capability
-from remote_store._errors import AlreadyExists, InvalidPath, NotFound
+from remote_store._errors import AlreadyExists, CapabilityNotSupported, InvalidPath, NotFound
 from remote_store._models import FileInfo, FolderInfo
 from remote_store._store import Store
 from remote_store.backends._local import LocalBackend
@@ -259,3 +259,22 @@ class TestStoreToKey:
             store = Store(backend=backend, root_path="data")
             with pytest.raises(InvalidPath):
                 store.to_key(f"{tmp}/other/file.txt")
+
+
+class TestStoreUnwrap:
+    """STORE-013: Store.unwrap() delegation."""
+
+    @pytest.mark.spec("STORE-013")
+    def test_unwrap_delegates_to_backend(self) -> None:
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        with pytest.raises(CapabilityNotSupported):
+            store.unwrap(dict)
+
+    @pytest.mark.spec("STORE-013")
+    def test_unwrap_child_delegates(self) -> None:
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        child = store.child("sub")
+        with pytest.raises(CapabilityNotSupported):
+            child.unwrap(dict)

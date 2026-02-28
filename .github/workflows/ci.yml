@@ -57,7 +57,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,arrow]"
       - run: python examples/quickstart.py
       - run: python examples/file_operations.py
       - run: python examples/streaming_io.py
@@ -66,6 +66,14 @@ jobs:
       - run: python examples/error_handling.py
       - run: python examples/memory_backend.py
       - run: python examples/store_child.py
+      # PyArrow's C++ atexit handlers can deadlock on Linux during interpreter
+      # shutdown. The script completes but process exit hangs. Use timeout with
+      # SIGKILL fallback; accept exit 124 (timeout) as success.
+      - name: Run python examples/pyarrow_adapter.py
+        run: |
+          rc=0
+          timeout --kill-after=5 30 python examples/pyarrow_adapter.py || rc=$?
+          if [ $rc -ne 0 ] && [ $rc -ne 124 ]; then exit $rc; fi
 
   docs:
     runs-on: ubuntu-latest

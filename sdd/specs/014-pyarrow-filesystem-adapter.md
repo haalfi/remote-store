@@ -159,14 +159,16 @@ StoreFileSystemHandler(
 
 **Postconditions:**
 - The handler holds a reference to the Store; it does not copy or wrap it.
-- At construction time, the handler probes the Store for a native PyArrow
-  filesystem via `store.unwrap(pyarrow.fs.FileSystem)`. If a native FS is
-  available, the handler caches both the native FS reference and a
-  path-translation closure for Tier 1 fast-path reads (PA-010). If `unwrap()`
-  raises `TypeError` or returns a non-PyArrow type, Tier 1 is disabled.
-  This pre-capture means Tier 1 never accesses private Store internals at
-  call time.
-- No other I/O occurs during construction.
+- **Phase 2 (deferred):** At construction time, the handler probes the Store
+  for a native PyArrow filesystem via `store.unwrap(pyarrow.fs.FileSystem)`.
+  If a native FS is available, the handler caches both the native FS reference
+  and a path-translation closure for Tier 1 fast-path reads (PA-010). If
+  `unwrap()` raises `TypeError` or returns a non-PyArrow type, Tier 1 is
+  disabled. This pre-capture means Tier 1 never accesses private Store
+  internals at call time. Phase 1 skips this probing — Tier 1 is not yet
+  implemented.
+- No I/O occurs during construction (Phase 1). Phase 2 adds the `unwrap()`
+  probe, which may trigger backend initialization.
 - The Store's lifetime is managed externally — the handler does not own it.
 
 ### PA-002: Convenience Factory

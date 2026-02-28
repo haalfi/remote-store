@@ -49,3 +49,12 @@ __all__ = [
     # Version
     "__version__",
 ]
+
+# Optional PyArrow extension (available when pyarrow is installed)
+try:
+    from remote_store.ext.arrow import StoreFileSystemHandler, pyarrow_fs
+
+    __all__ += ["StoreFileSystemHandler", "pyarrow_fs"]
+except ImportError:
+    # PyArrow not installed or broken — don't crash the core package.
+    pass

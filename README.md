@@ -47,6 +47,7 @@ reinvent file I/O. It just gives every backend the same simple front door.
 - **Swappable via config:** switch backends without touching application code
 - **Streaming by default:** reads and writes handle large files without blowing up memory
 - **Atomic writes** where the backend supports it
+- **PyArrow ecosystem interop:** use any Store as a `pyarrow.fs.FileSystem` -- works with Parquet, Pandas, Polars, DuckDB, and dataset discovery out of the box
 - **Zero runtime dependencies:** the core package installs nothing; backend extras pull in only what they need
 - **Typed & tested:** strict mypy, spec-driven test suite
 
@@ -65,6 +66,7 @@ pip install "remote-store[s3]"           # Amazon S3 / MinIO
 pip install "remote-store[s3-pyarrow]"   # S3 with PyArrow (high-throughput)
 pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
+pip install "remote-store[arrow]"        # PyArrow filesystem adapter
 ```
 
 ## Quick Start
@@ -152,6 +154,7 @@ config = RegistryConfig.from_dict({
 |`child(subpath)`     |Return a child store scoped to a subfolder    |
 |`supports(capability)`|Check if the backend supports a capability   |
 |`to_key(path)`       |Convert native/absolute path to store-relative key|
+|`unwrap(type_hint)`  |Get backend's native handle (e.g., `pyarrow.fs.FileSystem`)|
 |`close()`            |Close the underlying backend                  |
 
 All write/move/copy methods accept `overwrite=True` to replace existing files.
@@ -171,6 +174,12 @@ For full details, see the [API reference](https://remote-store.readthedocs.io/en
 
 Detailed configuration guides for each backend are in [`guides/backends/`](https://remote-store.readthedocs.io/en/latest/backends/).
 
+### Extensions
+
+|Extension            |Extra                       |Description                 |
+|---------------------|----------------------------|----------------------------|
+|PyArrow adapter      |`remote-store[arrow]`       |Use any Store as a `pyarrow.fs.FileSystem` for Parquet, datasets, Pandas, Polars, DuckDB ([guide](https://remote-store.readthedocs.io/en/latest/pyarrow-adapter/)) |
+
 ## Examples
 
 Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples):
@@ -187,6 +196,7 @@ Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/ma
 | [error_handling.py](https://github.com/haalfi/remote-store/blob/master/examples/error_handling.py) | Catching `NotFound`, `AlreadyExists`, etc. |
 | [memory_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/memory_backend.py) | In-process memory backend for testing and caching |
 | [store_child.py](https://github.com/haalfi/remote-store/blob/master/examples/store_child.py) | Runtime sub-scoping with `Store.child()` |
+| [pyarrow_adapter.py](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py) | PyArrow filesystem adapter: Parquet, datasets |
 
 **Backend** -- require a running service and credentials ([`examples/backends/`](https://github.com/haalfi/remote-store/tree/master/examples/backends)):
 

@@ -38,7 +38,7 @@
 
 ### STORE-008: Full API Surface
 
-**Invariant:** Store exposes: `read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`, `to_key`, `child`.
+**Invariant:** Store exposes: `read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`, `to_key`, `unwrap`, `child`.
 
 ### STORE-009: Resource Management
 
@@ -59,6 +59,12 @@
 
 **Invariant:** Paths returned by listing and metadata methods (`list_files`, `get_file_info`, `get_folder_info`) are store-relative — `root_path` is stripped from `FileInfo.path` and `FolderInfo.path`. The returned path is directly usable as input to other Store methods without modification.
 **See also:** [010-native-path-resolution.md](010-native-path-resolution.md) (NPR-001, NPR-014 through NPR-016).
+
+### STORE-013: unwrap()
+
+**Invariant:** `unwrap(type_hint)` delegates to `Backend.unwrap(type_hint)` and returns the backend's native handle if it matches the requested type.
+**Raises:** `CapabilityNotSupported` if the backend cannot provide the requested type.
+**Rationale:** Enables adapters (e.g., `StoreFileSystemHandler`) to access backend-native handles via the public Store surface without reaching into private attributes.
 
 ---
 

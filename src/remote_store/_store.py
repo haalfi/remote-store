@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath
 from remote_store._path import RemotePath
+
+T = TypeVar("T")
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -143,6 +145,16 @@ class Store:
         """
         backend_rel = self._backend.to_key(path)
         return self._strip_root(backend_rel)
+
+    def unwrap(self, type_hint: type[T]) -> T:
+        """Return the backend's native handle if it matches the requested type.
+
+        Delegates to :meth:`Backend.unwrap`.
+
+        :param type_hint: The expected type (e.g., ``pyarrow.fs.FileSystem``).
+        :raises CapabilityNotSupported: If the backend cannot provide the requested type.
+        """
+        return self._backend.unwrap(type_hint)
 
     def supports(self, capability: Capability) -> bool:
         """Check whether the backend supports a capability."""
