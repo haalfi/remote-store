@@ -57,7 +57,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,arrow]"
       - run: python examples/quickstart.py
       - run: python examples/file_operations.py
       - run: python examples/streaming_io.py
@@ -66,7 +66,7 @@ jobs:
       - run: python examples/error_handling.py
       - run: python examples/memory_backend.py
       - run: python examples/store_child.py
-      - run: pip install -e ".[arrow]" && python examples/pyarrow_adapter.py
+      - run: python examples/pyarrow_adapter.py
 
   docs:
     runs-on: ubuntu-latest
