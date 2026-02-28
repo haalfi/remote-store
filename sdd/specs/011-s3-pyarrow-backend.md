@@ -99,8 +99,8 @@ S3PyArrowBackend(
 
 ### S3PA-012: Read Via PyArrow
 
-**Invariant:** `read()` and `read_bytes()` use `pyarrow.fs.S3FileSystem.open_input_stream()` for data transfer.
-**Rationale:** PyArrow's C++ I/O path provides higher throughput than s3fs for large files.
+**Invariant:** `read()` uses `open_input_file()` (seekable `RandomAccessFile`) and returns the stream wrapped in `_ErrorMappingStream` without `BufferedReader`. `read_bytes()` uses `open_input_stream()` and reads all bytes directly.
+**Rationale:** PyArrow's C++ I/O path provides higher throughput than s3fs for large files. Removing the `BufferedReader` eliminates a double-copy per chunk on the streaming read path (RFC-0003).
 
 ### S3PA-013: Write Via PyArrow
 
