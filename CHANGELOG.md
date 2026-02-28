@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-02-28
+
 ### Added
 
 - **Extension namespace contract (ADR-0008)** -- formalized the `ext.*` namespace contract: public API only, no lifecycle ownership, `CapabilityNotSupported` propagation, export rules for pure-Python vs optional-dependency extensions, development lifecycle, and third-party naming convention. Added extensions guide, expanded CONTRIBUTING.md checklist, contract enforcement tests, updated CLAUDE-REFERENCE.md ripple-check table (ID-027)
