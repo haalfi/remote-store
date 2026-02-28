@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://haalfi.github.io/remote-store/dev/design/specs/005-error-model/">
+        <link rel="canonical" href="https://haalfi.github.io/remote-store/dev/design/rfcs/rfc-0003-s3-pyarrow-read-optimization/">
       
       
-        <link rel="prev" href="../004-path-model/">
+        <link rel="prev" href="../rfc-0002-pyarrow-filesystem-adapter/">
       
       
-        <link rel="next" href="../006-streaming-io/">
+        <link rel="next" href="../../../contributing/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>005: Error Model Specification - remote-store</title>
+        <title>0003: RFC-0003: S3-PyArrow Read Path Optimization - remote-store</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#error-model-specification" class="md-skip">
+        <a href="#rfc-0003-s3-pyarrow-read-path-optimization" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              005: Error Model Specification
+              0003: RFC-0003: S3-PyArrow Read Path Optimization
             
           </span>
         </div>
@@ -1582,8 +1582,6 @@
                 
   
   
-    
-  
   
   
     
@@ -1593,15 +1591,17 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_3" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12_3" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -1625,7 +1625,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_12_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_12_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_12_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1643,7 +1643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -1671,7 +1671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -1699,7 +1699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -1727,7 +1727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -1752,37 +1752,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    005: Error Model Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -1798,136 +1771,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-001-base-error" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-001: Base Error
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-002-notfound" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-002: NotFound
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-003-alreadyexists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-003: AlreadyExists
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-004-permissiondenied" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-004: PermissionDenied
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-005-invalidpath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-005: InvalidPath
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-006-capabilitynotsupported" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-006: CapabilityNotSupported
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-007-backendunavailable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-007: BackendUnavailable
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-008-flat-hierarchy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-008: Flat Hierarchy
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-009-meaningful-string-representations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-009: Meaningful String Representations
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1940,7 +1783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -1968,7 +1811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -1996,7 +1839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../008-s3-backend/" class="md-nav__link">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -2024,7 +1867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -2052,7 +1895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -2080,7 +1923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -2108,7 +1951,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../012-azure-backend/" class="md-nav__link">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -2136,7 +1979,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -2164,7 +2007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -2192,7 +2035,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -2220,7 +2063,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -2248,7 +2091,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -2571,6 +2414,8 @@
                 
   
   
+    
+  
   
   
     
@@ -2580,17 +2425,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_5" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../rfcs/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -2614,7 +2457,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_12_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_12_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_12_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2632,7 +2475,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -2660,7 +2503,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -2685,10 +2528,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: RFC-0003: S3-PyArrow Read Path Optimization
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2704,6 +2574,203 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#motivation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Motivation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Motivation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#current-chain-2-extra-copies-per-chunk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current chain (2 extra copies per chunk)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#target-chain-1-copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Target chain (1 copy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proposal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Proposal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-add-read-to-_pyarrowbinaryio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Add read() to _PyArrowBinaryIO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-remove-bufferedreader-from-s3pyarrowbackendread" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Remove BufferedReader from S3PyArrowBackend.read()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#whats-preserved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's preserved
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-add-chunked-readline-to-_pyarrowbinaryio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Add chunked readline() to _PyArrowBinaryIO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternatives Considered
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Impact
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open Questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2832,10 +2899,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Status
       
     </span>
   </a>
@@ -2843,10 +2910,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#err-001-base-error" class="md-nav__link">
+  <a href="#summary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ERR-001: Base Error
+        Summary
       
     </span>
   </a>
@@ -2854,10 +2921,121 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#err-002-notfound" class="md-nav__link">
+  <a href="#motivation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ERR-002: NotFound
+        Motivation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Motivation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#current-chain-2-extra-copies-per-chunk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current chain (2 extra copies per chunk)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#target-chain-1-copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Target chain (1 copy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proposal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Proposal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-add-read-to-_pyarrowbinaryio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Add read() to _PyArrowBinaryIO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-remove-bufferedreader-from-s3pyarrowbackendread" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Remove BufferedReader from S3PyArrowBackend.read()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#whats-preserved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's preserved
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-add-chunked-readline-to-_pyarrowbinaryio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Add chunked readline() to _PyArrowBinaryIO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternatives Considered
       
     </span>
   </a>
@@ -2865,10 +3043,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#err-003-alreadyexists" class="md-nav__link">
+  <a href="#impact" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ERR-003: AlreadyExists
+        Impact
       
     </span>
   </a>
@@ -2876,10 +3054,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#err-004-permissiondenied" class="md-nav__link">
+  <a href="#open-questions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ERR-004: PermissionDenied
+        Open Questions
       
     </span>
   </a>
@@ -2887,54 +3065,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#err-005-invalidpath" class="md-nav__link">
+  <a href="#references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ERR-005: InvalidPath
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-006-capabilitynotsupported" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-006: CapabilityNotSupported
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-007-backendunavailable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-007: BackendUnavailable
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-008-flat-hierarchy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-008: Flat Hierarchy
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#err-009-meaningful-string-representations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ERR-009: Meaningful String Representations
+        References
       
     </span>
   </a>
@@ -2958,67 +3092,202 @@
 
 
 
-<h1 id="error-model-specification">Error Model Specification<a class="headerlink" href="#error-model-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>All errors raised by <code>remote_store</code> inherit from a single base class <code>RemoteStoreError</code>. Errors carry structured context attributes for programmatic handling. Backend-native exceptions are never exposed to callers.</p>
-<h2 id="err-001-base-error">ERR-001: Base Error<a class="headerlink" href="#err-001-base-error" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> <code>RemoteStoreError</code> is the root of the error hierarchy.
-<strong>Postconditions:</strong> Carries optional <code>path: str | None</code> and <code>backend: str | None</code> attributes.
-<strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;missing.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">except</span> <span class="n">RemoteStoreError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">backend</span><span class="p">)</span>
-</code></pre></div></p>
-<h2 id="err-002-notfound">ERR-002: NotFound<a class="headerlink" href="#err-002-notfound" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> Raised when a file or folder does not exist at the given path.
-<strong>Preconditions:</strong> Caller requests an operation on a non-existent resource.
-<strong>Postconditions:</strong> <code>path</code> attribute is set to the requested path.
-<strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">NotFound</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc_info</span><span class="p">:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;nonexistent.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">assert</span> <span class="n">exc_info</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s2">&quot;nonexistent.txt&quot;</span>
-</code></pre></div></p>
-<h2 id="err-003-alreadyexists">ERR-003: AlreadyExists<a class="headerlink" href="#err-003-alreadyexists" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> Raised when a target already exists and overwrite is not allowed.
-<strong>Preconditions:</strong> Caller writes to an existing path with <code>overwrite=False</code>.
-<strong>Postconditions:</strong> <code>path</code> attribute is set to the conflicting path.
-<strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">AlreadyExists</span><span class="p">):</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;new&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</code></pre></div></p>
-<h2 id="err-004-permissiondenied">ERR-004: PermissionDenied<a class="headerlink" href="#err-004-permissiondenied" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> Raised when access is denied by the storage backend.
-<strong>Postconditions:</strong> <code>path</code> and <code>backend</code> attributes are set.</p>
-<h2 id="err-005-invalidpath">ERR-005: InvalidPath<a class="headerlink" href="#err-005-invalidpath" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> Raised for malformed, unsafe, or out-of-scope paths.
-<strong>Preconditions:</strong> Caller provides a path containing <code>..</code>, null bytes, or that normalizes to empty.
-<strong>Postconditions:</strong> <code>path</code> attribute is set to the offending input.
-<strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">InvalidPath</span><span class="p">):</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;foo/../bar&quot;</span><span class="p">)</span>
-</code></pre></div></p>
-<h2 id="err-006-capabilitynotsupported">ERR-006: CapabilityNotSupported<a class="headerlink" href="#err-006-capabilitynotsupported" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> Raised when an operation requires a capability the backend does not support.
-<strong>Postconditions:</strong> Carries additional <code>capability: str</code> attribute.
-<strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">CapabilityNotSupported</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc_info</span><span class="p">:</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">write_atomic</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">assert</span> <span class="n">exc_info</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">capability</span> <span class="o">==</span> <span class="s2">&quot;atomic_write&quot;</span>
-</code></pre></div></p>
-<h2 id="err-007-backendunavailable">ERR-007: BackendUnavailable<a class="headerlink" href="#err-007-backendunavailable" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> Raised when the backend cannot be reached or initialized.
-<strong>Postconditions:</strong> <code>backend</code> attribute is set.</p>
-<h2 id="err-008-flat-hierarchy">ERR-008: Flat Hierarchy<a class="headerlink" href="#err-008-flat-hierarchy" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> All concrete errors inherit directly from <code>RemoteStoreError</code>, never from each other.</p>
-<h2 id="err-009-meaningful-string-representations">ERR-009: Meaningful String Representations<a class="headerlink" href="#err-009-meaningful-string-representations" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> <code>str()</code> and <code>repr()</code> produce meaningful messages including all non-None context attributes.
-<strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">e</span> <span class="o">=</span> <span class="n">NotFound</span><span class="p">(</span><span class="s2">&quot;File not found&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s2">&quot;data/file.txt&quot;</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">assert</span> <span class="s2">&quot;data/file.txt&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">assert</span> <span class="s2">&quot;NotFound&quot;</span> <span class="ow">in</span> <span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-</code></pre></div></p>
+<h1 id="rfc-0003-s3-pyarrow-read-path-optimization">RFC-0003: S3-PyArrow Read Path Optimization<a class="headerlink" href="#rfc-0003-s3-pyarrow-read-path-optimization" title="Permanent link">&para;</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
+<p>Draft</p>
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>Remove the <code>io.BufferedReader</code> wrapper from <code>S3PyArrowBackend.read()</code> and add a
+direct <code>read()</code> method to <code>_PyArrowBinaryIO</code>, eliminating two unnecessary memory
+copies per chunk on the streaming read path. This brings streaming <code>read()</code>
+performance in line with the legacy S3Store that uses PyArrow C++ directly.</p>
+<p>Note: <code>read_bytes()</code> is unaffected -- it already uses <code>open_input_stream</code> +
+<code>bytes(stream.read())</code> directly, bypassing <code>BufferedReader</code> entirely.</p>
+<h2 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h2>
+<p>Benchmark data (<code>legacy/benchmark_s3.py</code>, 15 iterations, 3 warmup, MinIO on
+localhost) shows overhead on the streaming <code>read()</code> path:</p>
+<table>
+<thead>
+<tr>
+<th>Benchmark</th>
+<th>Legacy (ms)</th>
+<th>Remote (ms)</th>
+<th>Ratio</th>
+<th>Peak Mem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>streaming_read</code></td>
+<td>23.9</td>
+<td>22.8</td>
+<td>1.05x</td>
+<td>129 KB / 201 KB</td>
+</tr>
+<tr>
+<td><code>read_large</code></td>
+<td>8.9</td>
+<td>10.9</td>
+<td>0.82x</td>
+<td>978 KB / 1954 KB</td>
+</tr>
+</tbody>
+</table>
+<p><code>streaming_read</code> exercises <code>Store.read()</code> with 64 KB chunked reads -- the code
+path this RFC targets. The 1.05x ratio looks close to parity, but the 56% higher
+peak memory (201 KB vs 129 KB) reveals the double-copy overhead. The
+<code>read_large</code> row uses <code>read_bytes()</code> which bypasses <code>BufferedReader</code> entirely, so
+its 0.82x ratio reflects a different bottleneck (not addressed here).</p>
+<h3 id="current-chain-2-extra-copies-per-chunk">Current chain (2 extra copies per chunk)<a class="headerlink" href="#current-chain-2-extra-copies-per-chunk" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>BufferedReader.read(n)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  -&gt; readinto(8 KB internal buffer)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    -&gt; _ErrorMappingStream.readinto(b)
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>      -&gt; _PyArrowBinaryIO.readinto(b)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        -&gt; data = self._pa.read(len(b))   # copy 1: C++ -&gt; Python bytes
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        -&gt; b[:n] = data                   # copy 2: bytes -&gt; BufferedReader buffer
+</code></pre></div>
+<p><code>BufferedReader</code> calls <code>readinto()</code> in 8 KB chunks regardless of the requested
+read size. Each chunk goes through two Python-level copies before reaching the
+caller.</p>
+<h3 id="target-chain-1-copy">Target chain (1 copy)<a class="headerlink" href="#target-chain-1-copy" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>_ErrorMappingStream.read(n)
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  -&gt; _PyArrowBinaryIO.read(n)
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    -&gt; self._pa.read(n)                   # returns bytes directly from C++
+</code></pre></div>
+<p>By adding <code>read()</code> to <code>_PyArrowBinaryIO</code> and removing the <code>BufferedReader</code>
+wrapper, reads go straight from PyArrow C++ to the caller. PyArrow's
+<code>NativeFile.read()</code> already returns <code>bytes</code>, so no additional copy is needed.</p>
+<h2 id="proposal">Proposal<a class="headerlink" href="#proposal" title="Permanent link">&para;</a></h2>
+<h3 id="1-add-read-to-_pyarrowbinaryio">1. Add <code>read()</code> to <code>_PyArrowBinaryIO</code><a class="headerlink" href="#1-add-read-to-_pyarrowbinaryio" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># src/remote_store/backends/_s3_pyarrow.py, class _PyArrowBinaryIO</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="c1"># NativeFile.read() returns bytes; no wrapper needed.</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">size</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pa</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pa</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+</code></pre></div>
+<p>Keep <code>readinto()</code> for compatibility -- anyone wrapping our stream in their own
+<code>BufferedReader</code> still works.</p>
+<h3 id="2-remove-bufferedreader-from-s3pyarrowbackendread">2. Remove <code>BufferedReader</code> from <code>S3PyArrowBackend.read()</code><a class="headerlink" href="#2-remove-bufferedreader-from-s3pyarrowbackendread" title="Permanent link">&para;</a></h3>
+<p>Before:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pyarrow_errors</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        <span class="n">pa_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pa_fs</span><span class="o">.</span><span class="n">open_input_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pa_path</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        <span class="n">raw</span> <span class="o">=</span> <span class="n">_PyArrowBinaryIO</span><span class="p">(</span><span class="n">pa_file</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="k">return</span> <span class="n">io</span><span class="o">.</span><span class="n">BufferedReader</span><span class="p">(</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>            <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;io.RawIOBase&quot;</span><span class="p">,</span> <span class="n">_ErrorMappingStream</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classify_error</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>        <span class="p">)</span>
+</code></pre></div>
+<p>After:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pyarrow_errors</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>        <span class="n">pa_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pa_fs</span><span class="o">.</span><span class="n">open_input_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pa_path</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        <span class="n">raw</span> <span class="o">=</span> <span class="n">_PyArrowBinaryIO</span><span class="p">(</span><span class="n">pa_file</span><span class="p">)</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;BinaryIO&quot;</span><span class="p">,</span> <span class="n">_ErrorMappingStream</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classify_error</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
+</code></pre></div>
+<h3 id="whats-preserved">What's preserved<a class="headerlink" href="#whats-preserved" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Error mapping via <code>_ErrorMappingStream</code> (OSError -&gt; RemoteStoreError)</li>
+<li>Seekability (PyArrow RandomAccessFile)</li>
+<li>Context manager / <code>close()</code> lifecycle</li>
+<li><code>readinto()</code> still works for callers that need it</li>
+<li><code>_ErrorMappingStream.read()</code> already exists and delegates to inner <code>.read()</code></li>
+</ul>
+<h3 id="3-add-chunked-readline-to-_pyarrowbinaryio">3. Add chunked <code>readline()</code> to <code>_PyArrowBinaryIO</code><a class="headerlink" href="#3-add-chunked-readline-to-_pyarrowbinaryio" title="Permanent link">&para;</a></h3>
+<p>Without <code>BufferedReader</code>, <code>readline()</code> falls back to <code>RawIOBase</code> default, which
+calls <code>readinto(1)</code> in a tight loop -- one call per byte until <code>\n</code>. This is
+pathologically slow for lines of any length.</p>
+<p>Add a <code>readline()</code> that reads in blocks (e.g. 8 KB) and scans for <code>\n</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># src/remote_store/backends/_s3_pyarrow.py, class _PyArrowBinaryIO</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">_READLINE_CHUNK</span> <span class="o">=</span> <span class="mi">8192</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">readline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">buf</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">()</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="k">while</span> <span class="n">size</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">size</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">size</span><span class="p">:</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        <span class="n">remaining</span> <span class="o">=</span> <span class="n">size</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span> <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">size</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_READLINE_CHUNK</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>        <span class="n">chunk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pa</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">remaining</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_READLINE_CHUNK</span><span class="p">))</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">chunk</span><span class="p">:</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>            <span class="k">break</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>        <span class="n">idx</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>        <span class="k">if</span> <span class="n">idx</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>            <span class="n">buf</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">chunk</span><span class="p">[:</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>            <span class="c1"># seek back past the unused portion</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_pa</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">-</span> <span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>            <span class="k">break</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>        <span class="n">buf</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>    <span class="k">return</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+</code></pre></div>
+<p>Current callers don't use line-oriented reads on S3 binary streams, but removing
+<code>BufferedReader</code> without this would leave a pathological performance trap for
+anyone wrapping the stream in <code>io.TextIOWrapper</code>.</p>
+<h3 id="what-changes">What changes<a class="headerlink" href="#what-changes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>No <code>BufferedReader</code> means callers get exactly the bytes they asked for in a
+  single <code>read()</code> call, without 8 KB chunking overhead.</li>
+<li><code>readline()</code> uses a new chunked implementation instead of <code>BufferedReader</code>'s
+  internal buffer.</li>
+</ul>
+<h2 id="alternatives-considered">Alternatives Considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p><strong>Increase <code>BufferedReader</code> buffer size.</strong> Setting a larger buffer (e.g.
+   64 KB) reduces per-call overhead but still has two copies per chunk.
+   Rejected: doesn't eliminate the fundamental issue.</p>
+</li>
+<li>
+<p><strong>Override <code>readinto()</code> to avoid the intermediate bytes object.</strong> PyArrow's
+   <code>read_buffer()</code> returns a <code>pyarrow.Buffer</code> which supports the buffer protocol,
+   but <code>NativeFile.read()</code> already returns <code>bytes</code>. We'd need <code>read_buffer()</code> +
+   memoryview copy, which is roughly equivalent. Rejected: more complexity for
+   the same result.</p>
+</li>
+<li>
+<p><strong>Use <code>open_input_stream</code> instead of <code>open_input_file</code>.</strong> Loses seekability.
+   Rejected: <code>read()</code> contract requires seekable streams (position tracking,
+   <code>seek()</code>/<code>tell()</code>).</p>
+</li>
+</ol>
+<h2 id="impact">Impact<a class="headerlink" href="#impact" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Public API:</strong> No changes to <code>__all__</code> or Store interface.</li>
+<li><strong>Backwards compatibility:</strong> Non-breaking. The return type is still <code>BinaryIO</code>.
+  Callers using <code>.read()</code>, <code>.seek()</code>, <code>.tell()</code>, <code>.close()</code> are unaffected.
+  Callers relying on <code>isinstance(stream, io.BufferedReader)</code> would break, but
+  that's not part of the contract (spec SIO-001 only requires <code>BinaryIO</code>).</li>
+<li><strong>Performance:</strong> Improvement applies to streaming <code>read()</code> calls only (the
+  <code>streaming_read</code> benchmark path). <code>read_bytes()</code> is unaffected -- it already
+  bypasses <code>BufferedReader</code>. Expect reduced per-chunk overhead and lower peak
+  memory for chunked streaming reads.</li>
+<li><strong>Testing:</strong> Existing tests cover correctness:</li>
+<li><code>tests/test_stream.py</code> -- <code>_ErrorMappingStream</code> read/readinto paths</li>
+<li><code>tests/backends/test_conformance.py</code> -- chunked reads, position tracking</li>
+<li><code>tests/backends/test_s3_pyarrow.py</code> -- S3-PyArrow specific tests</li>
+<li><code>tests/test_transfer.py</code> -- streaming transfers</li>
+</ul>
+<p>Additionally, add a structural assertion that <code>S3PyArrowBackend.read()</code>
+  returns a stream that is NOT wrapped in <code>BufferedReader</code>, to prevent
+  regression.
+- <strong>Scope:</strong> Only <code>S3PyArrowBackend</code>. Other backends (S3, SFTP, Azure, Local,
+  Memory) are untouched.</p>
+<h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Should other backends also drop <code>BufferedReader</code>?</strong> The SFTP backend also
+   wraps in <code>BufferedReader</code>, but the situation is different: SFTP's underlying
+   stream is Paramiko's <code>SFTPFile</code>, which has its own <code>prefetch()</code> mechanism and
+   internal buffering. <code>BufferedReader</code> may serve a useful purpose there by
+   smoothing bursty network reads. Removing it could interact with Paramiko's
+   chunking behavior differently than removing it from PyArrow's in-memory
+   <code>NativeFile.read()</code>. Out of scope -- requires separate profiling and analysis.</li>
+</ol>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Benchmark: <code>legacy/benchmark_s3.py</code> (CPU/memory instrumentation added)</li>
+<li>Source: <code>src/remote_store/backends/_s3_pyarrow.py</code> (lines 36-64, 289-293)</li>
+<li>Error mapping stream: <code>src/remote_store/_stream.py</code></li>
+<li>Related spec: <code>sdd/specs/011-s3-pyarrow-backend.md</code></li>
+<li>Related backlog: ID-020 (benchmark improvements)</li>
+</ul>
 
 
 
