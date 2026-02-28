@@ -111,11 +111,11 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   the existing `Store`. Needs design decision on whether to wrap sync backends
   with `asyncio.to_thread` or require native async backends.
 
-- [ ] **ID-015 — Audit external deep links**
-  v0.4.3 fixed a broken ReadTheDocs link in the README (missing `/en/latest/`
-  prefix). Other docs, docstrings, or example files may contain similar
-  bare RTD URLs. Sweep for `readthedocs.io/` links without a version prefix
-  and fix them. One-time task.
+- [x] **ID-015 — Audit external deep links**
+  Swept all RTD, GitHub Pages, and GitHub links. All 3 RTD deep links
+  in README already have `/en/latest/` prefix. Base-URL-only references
+  (CITATION.cff, pyproject.toml, mkdocs.yml, etc.) auto-redirect and
+  need no prefix. No broken or stale links found.
 
 - [x] **ID-016 — PyArrow FileSystemHandler adapter (Phase 1)** (PR #55)
   `StoreFileSystemHandler` in `ext/arrow.py` wraps any Store into a
