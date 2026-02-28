@@ -3,6 +3,9 @@
 <!-- NOTE: Some listing numbers are anomalous -- s3fs (67us) and adlfs (83us) -->
 <!-- for 50 files likely reflect client-side caching in the test harness, not -->
 <!-- real-world performance. See ID-032 in BACKLOG.md. -->
+<!-- NOTE: S3 raw boto3 listing (4.4ms) uses the paginator API without caching, -->
+<!-- while remote-store (239us) benefits from s3fs's cached ls(). Related to -->
+<!-- ID-032. -->
 
 ### Local
 

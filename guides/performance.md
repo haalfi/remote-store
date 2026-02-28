@@ -91,7 +91,7 @@ Docker Desktop (MinIO, Azurite, OpenSSH) running locally. All values are
 | Operation | Local | S3 (MinIO) | S3-PyArrow | SFTP | Azure (Azurite) |
 |-----------|-------|------------|------------|------|-----------------|
 | Write 1KB | 0.26ms | 5.3ms | 36.2ms | 3.8ms | 5.0ms |
-| Write 64KB | 0.26ms | 6.2ms | 66.5ms | 4.9ms | 22.6ms |
+| Write 64KB | 0.26ms | 6.2ms | 66.5ms* | 4.9ms | 22.6ms* |
 | Write 1MB | 0.48ms | 20.1ms | 31.6ms | 24.7ms | 13.7ms |
 | Read 1KB | 0.09ms | 1.5ms | 1.7ms | 3.0ms | 2.0ms |
 | Read 64KB | 0.09ms | 1.8ms | 2.2ms | 3.3ms | 2.3ms |
@@ -105,13 +105,19 @@ Docker Desktop (MinIO, Azurite, OpenSSH) running locally. All values are
 | TTFB read | 0.11ms | 3.1ms | 1.9ms | 2.5ms | 2.2ms |
 | TTFB exists | 0.06ms | 1.4ms | 1.4ms | 1.1ms | 1.8ms |
 
+*\* 64KB write values for S3-PyArrow and Azure are outlier-skewed (high variance,
+stddev > mean). The medians are monotonic (17ms and 6ms respectively). The raw
+SDK shows the same pattern -- this is a Dockerized-service cold-start artifact,
+not real non-monotonic performance.*
+
 Generate this table from your own saved results with `hatch run bench-report`.
 
 **Key observations:**
 
 - Local backend is 20-100x faster than network backends (expected).
 - S3-PyArrow writes are slow at small sizes (36ms for 1KB) due to PyArrow's
-  single-part upload overhead. At 1MB the gap narrows (31.6ms vs 20.1ms for S3).
+  single-part upload overhead. At 1MB the gap narrows from ~7x to ~1.6x
+  (31.6ms vs 20.1ms for S3).
 - S3-PyArrow reads are competitive with S3 (1.7ms vs 1.5ms at 1KB, 11.4ms vs
   5.9ms at 1MB) -- the RFC-0003 `BufferedReader` removal keeps overhead modest.
 - SFTP read latency scales steeply with file size (3.0ms at 1KB, 13.5ms at 1MB).
@@ -130,8 +136,9 @@ from Docker benchmarks (MinIO, Azurite, OpenSSH):
   within measurement noise for writes, reads, and exists. adlfs is 1.9x slower
   for reads and 2.2x slower for deletes.
 - **S3: competitive or faster for writes** -- Write 1MB is 1.5x faster than raw
-  boto3 (20ms vs 30ms, likely due to s3fs connection pooling). Read overhead is
-  ~15% (5.9ms vs 5.1ms). Exists within noise (1.4ms vs 1.3ms).
+  boto3 (20ms vs 30ms, likely due to S3Backend's persistent client session via
+  s3fs). Read overhead is ~15% (5.9ms vs 5.1ms). Exists within noise
+  (1.4ms vs 1.3ms).
 - **SFTP: moderate overhead** -- ~5% for writes and ~8% for reads vs raw
   paramiko. Metadata ops show ~2x overhead from error-mapping stat calls
   (exists 859us vs 413us, delete 988us vs 422us).
@@ -141,8 +148,11 @@ from Docker benchmarks (MinIO, Azurite, OpenSSH):
 - **Caveats:** listing anomalies exist in the comparative data -- some fsspec
   implementations (s3fs at 67us, adlfs at 83us for 50 files) show sub-100us
   listing times that likely reflect client-side caching in the test harness,
-  not real-world performance (see ID-032). Delete overhead is 2-3x vs raw SDK
-  across all backends, likely from error-mapping overhead on the delete path.
+  not real-world performance (see ID-032). Similarly, raw boto3 listing at
+  4.4ms (18.4x slower than remote-store) uses the paginator API without
+  caching, while remote-store benefits from s3fs's cached `ls()`. Delete
+  overhead is 2-3x vs raw SDK across all backends -- this is expected
+  abstraction cost from the error-mapping layer and not an optimization target.
 
 Regenerate for your hardware:
 

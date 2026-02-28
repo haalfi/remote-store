@@ -212,11 +212,12 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   tests to `bench_backend`-only (non-comparative).
 
 - [ ] **ID-033 — Cloud benchmark quick tier timing budget**
-  The quick tier runs 62 tests per backend. With Docker (~1ms/op) this fits in
-  ~2 min. With real cloud S3 (~50-100ms/op + expensive fixture setup like
-  creating 50/1000 files), 62 tests exceeded 10 minutes. Need either: (a) a
-  `cloud-quick` marker subset (~20 key tests), (b) reduce `min_rounds` for
-  cloud mode, or (c) accept the longer cloud time and document it.
+  The quick tier runs 82 tests per backend (`pytest benchmarks/ --collect-only
+  -- --backend s3`). With Docker (~1ms/op) this fits in ~2 min. With real cloud
+  S3 (~50-100ms/op + expensive fixture setup like creating 50/1000 files), 82
+  tests exceeded 10 minutes. Need either: (a) a `cloud-quick` marker subset
+  (~20 key tests), (b) reduce `min_rounds` for cloud mode, or (c) accept the
+  longer cloud time and document it.
 
 - [ ] **ID-018 — conda-forge publishing**
   Submit a staged-recipes PR to conda-forge so users can `conda install -c
