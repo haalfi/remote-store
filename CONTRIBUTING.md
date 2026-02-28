@@ -217,13 +217,13 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 - [ ] Verify HEAD is the merge commit: `git log --oneline -1`
 - [ ] Tag the merge commit: `git tag vX.Y.Z` (or `git tag vX.Y.Z <sha>` if master advanced)
 - [ ] Push the tag: `git push origin vX.Y.Z`
-- [ ] Create GitHub Release from the tag (currently for release notes only; ID-028 will make this the single publish trigger)
+- [ ] Create GitHub Release from the tag — this triggers both `publish.yml` (PyPI) and versioned docs deploy
 - [ ] Watch `publish.yml` — confirm it completes successfully
 - [ ] Delete the release branch: `git push origin --delete release-vX.Y.Z`
 
 #### Phase 5: Post-release verification
 
 - [ ] PyPI: `pip install remote-store==X.Y.Z` in a fresh venv, verify version and README renders on pypi.org
-- [ ] GitHub Pages: check https://haalfi.github.io/remote-store/ shows correct version
-- [ ] ReadTheDocs: check https://remote-store.readthedocs.io/ shows correct version
+- [ ] GitHub Pages: check version switcher shows new version as "latest"
+- [ ] ReadTheDocs: check https://remote-store.readthedocs.io/ shows correct version (requires RTD automation rule for tag-based builds)
 - [ ] Announce if applicable (tracking issues, users)

@@ -1,5 +1,5 @@
 site_name: remote-store
-site_url: https://remote-store.readthedocs.io/
+site_url: https://haalfi.github.io/remote-store/
 site_description: One simple API for file storage. Local, S3, SFTP, Azure. Same methods, swappable backends, zero reinvention.
 repo_url: https://github.com/haalfi/remote-store
 repo_name: haalfi/remote-store
@@ -35,6 +35,8 @@ theme:
 
 plugins:
   - search
+  - mike:
+      version_selector: true
   - gen-files:
       scripts:
         - scripts/gen_pages.py
@@ -69,6 +71,10 @@ markdown_extensions:
       permalink: true
   - attr_list
   - md_in_html
+
+extra:
+  version:
+    provider: mike
 
 validation:
   links:

@@ -178,7 +178,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   precedent: `ext/arrow.py` (ID-016). Entry-point plugin discovery deferred
   until third-party extensions emerge.
 
-- [ ] **ID-028 — Release-triggered publish and docs deploy**
+- [x] **ID-028 — Release-triggered publish and docs deploy**
   Change `publish.yml` and `docs.yml` to trigger on `release: published`
   instead of `v*` tag push / master push. The GitHub Release becomes the
   single trigger for all release automation: PyPI publish, GitHub Pages
@@ -186,7 +186,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   must include an explicit CI gate (`needs: ci` or equivalent) since the
   `release: published` event does not verify CI status on its own.
 
-- [ ] **ID-029 — Versioned documentation (mike + RTD tags)**
+- [x] **ID-029 — Versioned documentation (mike + RTD tags)**
   Add version-aware docs so readers know which release they are viewing.
   GitHub Pages: use `mike` (MkDocs Material's versioning tool) to deploy
   each release as a versioned subdirectory with a version switcher dropdown.
