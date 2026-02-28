@@ -7,6 +7,7 @@
 - Concurrency: concurrency.md
 - PyArrow Adapter: pyarrow-adapter.md
 - Batch Operations: batch-operations.md
+- Transfer Operations: transfer-operations.md
 - Design: design/
 - Contributing: contributing.md
 - Changelog: changelog.md

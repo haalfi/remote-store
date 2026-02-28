@@ -18,6 +18,7 @@ from remote_store._path import RemotePath
 from remote_store._registry import Registry, register_backend
 from remote_store._store import Store
 from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_exists
+from remote_store.ext.transfer import download, transfer, upload
 
 __version__ = "0.8.0"
 
@@ -52,6 +53,10 @@ __all__ = [
     "batch_delete",
     "batch_copy",
     "batch_exists",
+    # Transfer operations
+    "upload",
+    "download",
+    "transfer",
     # Version
     "__version__",
 ]

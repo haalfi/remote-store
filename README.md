@@ -180,6 +180,7 @@ Detailed configuration guides for each backend are in [`guides/backends/`](https
 |---------------------|----------------------------|----------------------------|
 |PyArrow adapter      |`remote-store[arrow]`       |Use any Store as a `pyarrow.fs.FileSystem` for Parquet, datasets, Pandas, Polars, DuckDB ([guide](https://remote-store.readthedocs.io/en/latest/pyarrow-adapter/)) |
 |Batch operations     |*(none)*                    |Bulk delete, copy, and exists with error aggregation ([guide](https://remote-store.readthedocs.io/en/latest/batch-operations/)) |
+|Transfer operations  |*(none)*                    |Upload, download, and cross-store transfer with streaming and progress ([guide](https://remote-store.readthedocs.io/en/latest/transfer-operations/)) |
 
 ## Examples
 
@@ -199,6 +200,7 @@ Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/ma
 | [store_child.py](https://github.com/haalfi/remote-store/blob/master/examples/store_child.py) | Runtime sub-scoping with `Store.child()` |
 | [pyarrow_adapter.py](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py) | PyArrow filesystem adapter: Parquet, datasets |
 | [batch_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py) | Bulk delete, copy, exists with error aggregation |
+| [transfer_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py) | Upload, download, cross-store transfer with progress |
 
 **Backend** -- require a running service and credentials ([`examples/backends/`](https://github.com/haalfi/remote-store/tree/master/examples/backends)):
 

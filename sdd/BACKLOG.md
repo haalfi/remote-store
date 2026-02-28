@@ -54,10 +54,8 @@ Active work items, ordered by priority.
 
 Parking lot. Not evaluated, not committed to. Pick up when relevant.
 
-- [ ] **ID-001 — Cross-store transfer**
-  High-level API to move/copy data between stores (e.g. SFTP → S3).
-  Could be a `Store.transfer_to(other_store, path)` method or a standalone utility.
-  Likely ships as part of `ext.transfer` alongside ID-009.
+- [x] **ID-001 — Cross-store transfer** *(subsumed by ID-023 `ext.transfer`)*
+  Shipped as `transfer()` in `ext.transfer`. See spec `017-ext-transfer.md`.
 
 - [ ] **ID-002 — YAML config support**
   Allow `RegistryConfig.from_yaml()` alongside the existing `from_dict()`.
@@ -95,10 +93,8 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `FileInfo.checksum` consistently across backends (S3 ETag, local SHA-256).
   Gives users data-integrity guarantees with a single flag.
 
-- [ ] **ID-009 — `Store.upload()` / `Store.download()` convenience methods**
-  Dedicated methods for the most common real-world pattern: local file path in,
-  remote path out (and vice versa). Eliminates the open-file-wrap-in-BytesIO
-  dance. Likely ships as part of `ext.transfer` alongside ID-001.
+- [x] **ID-009 — `Store.upload()` / `Store.download()` convenience methods** *(subsumed by ID-023 `ext.transfer`)*
+  Shipped as `upload()` and `download()` in `ext.transfer`. See spec `017-ext-transfer.md`.
 
 - [ ] **ID-010 — Retry policy configuration**
   SFTP has hardcoded retry logic (3 attempts, 2–10 s backoff via `tenacity`).
@@ -149,11 +145,10 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   unconditional top-level export.
   → Spec: `sdd/specs/016-ext-batch.md`
 
-- [ ] **ID-023 — `ext.transfer` — cross-store and local-path transfers**
-  Unifies ID-001 (cross-store transfer) and ID-009 (upload/download).
-  `upload(store, local_path, remote_key)`, `download(store, key, local_path)`,
-  `transfer(src_store, src_path, dst_store, dst_path)`. Chunked streaming,
-  progress callbacks (ID-006), optional resume support.
+- [x] **ID-023 — `ext.transfer` — cross-store and local-path transfers**
+  `upload`, `download`, `transfer` in `ext/transfer.py`. Streaming, `on_progress`
+  callback, `overwrite` flag. Unconditional top-level export. Spec: `017-ext-transfer.md`.
+  Resume support deferred.
 
 - [ ] **ID-024 — `ext.notify` — hooks / middleware / instrumentation**
   Interceptor layer wrapping Store for logging, metrics, auditing, circuit
