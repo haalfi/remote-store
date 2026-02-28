@@ -47,6 +47,7 @@ reinvent file I/O. It just gives every backend the same simple front door.
 - **Swappable via config:** switch backends without touching application code
 - **Streaming by default:** reads and writes handle large files without blowing up memory
 - **Atomic writes** where the backend supports it
+- **PyArrow ecosystem interop:** use any Store as a `pyarrow.fs.FileSystem` -- works with Parquet, Pandas, Polars, DuckDB, and dataset discovery out of the box
 - **Zero runtime dependencies:** the core package installs nothing; backend extras pull in only what they need
 - **Typed & tested:** strict mypy, spec-driven test suite
 
@@ -172,6 +173,12 @@ For full details, see the [API reference](https://remote-store.readthedocs.io/en
 |Azure Blob / ADLS    |Built-in  |`remote-store[azure]`       |
 
 Detailed configuration guides for each backend are in [`guides/backends/`](https://remote-store.readthedocs.io/en/latest/backends/).
+
+### Extensions
+
+|Extension            |Extra                       |Description                 |
+|---------------------|----------------------------|----------------------------|
+|PyArrow adapter      |`remote-store[arrow]`       |Use any Store as a `pyarrow.fs.FileSystem` for Parquet, datasets, Pandas, Polars, DuckDB ([guide](https://remote-store.readthedocs.io/en/latest/pyarrow-adapter/)) |
 
 ## Examples
 
