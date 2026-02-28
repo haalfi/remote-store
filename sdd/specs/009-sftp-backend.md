@@ -48,8 +48,8 @@ construction (see SFTP-004).
 
 ### SFTP-003: Capability Declaration
 
-**Invariant:** `SFTPBackend` declares all capabilities:
-`READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`.
+**Invariant:** `SFTPBackend` declares capabilities:
+`READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`. Does not declare `GLOB` (no native pattern matching; use `ext.glob` for client-side fallback).
 **Rationale:**
 - `ATOMIC_WRITE`: Simulated via temp file + rename (see SFTP-014). Orphan temp
   files are possible on connection failure -- documented caveat.

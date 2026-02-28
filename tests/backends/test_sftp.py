@@ -74,7 +74,10 @@ class TestSFTPConstruction:
         caps = sftp_backend.capabilities
         assert isinstance(caps, CapabilitySet)
         for cap in Capability:
-            assert caps.supports(cap), f"Missing capability: {cap.value}"
+            if cap is Capability.GLOB:
+                assert not caps.supports(cap), "SFTP should not declare GLOB"
+            else:
+                assert caps.supports(cap), f"Missing capability: {cap.value}"
 
     @pytest.mark.spec("SFTP-004")
     def test_lazy_connection(self) -> None:

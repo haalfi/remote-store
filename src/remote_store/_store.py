@@ -240,6 +240,21 @@ class Store:
         for info in self._backend.list_files(self._full_path(path), recursive=recursive):
             yield self._rebase_file_info(info)
 
+    def glob(self, pattern: str) -> Iterator[FileInfo]:
+        """Match files against a glob pattern.
+
+        Returned ``FileInfo.path`` values are store-relative keys
+        (``root_path`` is stripped), like ``list_files``.
+
+        :param pattern: Glob pattern relative to the store root
+            (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
+        :raises CapabilityNotSupported: If the backend lacks ``GLOB``.
+        """
+        self._backend.capabilities.require(Capability.GLOB, backend=self._backend.name)
+        full_pattern = f"{self._root}/{pattern}" if self._root else pattern
+        for info in self._backend.glob(full_pattern):
+            yield self._rebase_file_info(info)
+
     def list_folders(self, path: str) -> Iterator[str]:
         """List immediate subfolder names."""
         self._backend.capabilities.require(Capability.LIST, backend=self._backend.name)
