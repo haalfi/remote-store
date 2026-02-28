@@ -2,15 +2,19 @@
 
 Usage::
 
-    hatch run bench-report              # latest run
-    hatch run bench-report --compare    # latest vs previous run
-    hatch run bench-report --json       # machine-readable output
+    hatch run bench-report                  # latest run
+    hatch run bench-report --compare        # latest vs previous run
+    hatch run bench-report --json           # machine-readable output
+    hatch run bench-report-comparative      # remote-store vs raw SDK vs fsspec
+    hatch run bench-report-comparative-md   # same, as Markdown to file
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
+import platform
 import sys
 from pathlib import Path
 from typing import Any
@@ -45,6 +49,27 @@ BACKEND_LABELS = {
     "s3-pyarrow": "S3-PyArrow",
     "sftp": "SFTP",
     "azure": "Azure",
+}
+
+# ---- Comparative configuration: key ops across all three targets ----------
+
+# (test_name, param_filter, display_label) -- subset of SUMMARY_ROWS for
+# the comparative view (remote-store vs raw SDK vs fsspec).
+COMPARATIVE_ROWS: list[tuple[str, dict[str, Any], str]] = [
+    ("test_write_bytes", {"payload": 1048576}, "Write 1MB"),
+    ("test_read_bytes", {"payload": 1048576}, "Read 1MB"),
+    ("test_exists_hit", {}, "Exists (hit)"),
+    ("test_list_files", {}, "List 50 files"),
+    ("test_delete", {}, "Delete"),
+]
+
+# Map target_kind in bench_target params to display column headers.
+TARGET_LABELS: dict[str, dict[str, str]] = {
+    "local": {"remote_store": "remote-store", "pathlib_raw": "pathlib", "fsspec_local": "fsspec"},
+    "s3": {"remote_store": "remote-store", "boto3_raw": "boto3", "s3fs": "s3fs"},
+    "s3-pyarrow": {"remote_store": "remote-store"},
+    "sftp": {"remote_store": "remote-store", "paramiko_raw": "paramiko", "sshfs": "sshfs"},
+    "azure": {"remote_store": "remote-store", "azure_blob_raw": "azure-blob", "adlfs": "adlfs"},
 }
 
 # ---------------------------------------------------------------------------
@@ -204,6 +229,144 @@ def _print_json(
     print()
 
 
+def _parse_backend_and_target(bm: dict[str, Any]) -> tuple[str, str] | None:
+    """Extract (backend_type, target_kind) from a bench_target benchmark."""
+    params = bm.get("params", {})
+    if "bench_target" not in params:
+        return None
+    target = params["bench_target"]
+    if isinstance(target, list) and len(target) == 2:
+        return (target[0], target[1])
+    return None
+
+
+def _build_comparative_table(
+    benchmarks: list[dict[str, Any]],
+) -> dict[str, dict[str, dict[str, float]]]:
+    """Build {label: {backend: {target_kind: mean}}} for comparative view."""
+    table: dict[str, dict[str, dict[str, float]]] = {}
+    for test_prefix, param_filter, label in COMPARATIVE_ROWS:
+        per_backend: dict[str, dict[str, float]] = {}
+        for bm in benchmarks:
+            if _test_name(bm) != test_prefix:
+                continue
+            if not _matches_filter(bm, param_filter):
+                continue
+            bt = _parse_backend_and_target(bm)
+            if bt is None:
+                continue
+            backend_type, target_kind = bt
+            per_backend.setdefault(backend_type, {})[target_kind] = bm["stats"]["mean"]
+        if per_backend:
+            table[label] = per_backend
+    return table
+
+
+def _format_relative(value: float, baseline: float) -> str:
+    """Format value relative to baseline (e.g., '1.2x slower')."""
+    if baseline == 0:
+        return ""
+    ratio = value / baseline
+    if ratio > 1.05:
+        return f" ({ratio:.1f}x slower)"
+    if ratio < 0.95:
+        return f" ({1 / ratio:.1f}x faster)"
+    return ""
+
+
+def _print_comparative_text(
+    table: dict[str, dict[str, dict[str, float]]],
+) -> None:
+    """Print comparative table as formatted text."""
+    for backend in BACKEND_ORDER:
+        labels = TARGET_LABELS.get(backend, {})
+        if len(labels) < 2:
+            continue
+        has_data = any(backend in row for row in table.values())
+        if not has_data:
+            continue
+
+        target_order = list(labels.keys())
+        print(f"\n### {BACKEND_LABELS.get(backend, backend)}\n")
+
+        label_w = max((len(lab) for lab in table), default=15)
+        col_w = 16
+        header = f"{'Operation':<{label_w}}"
+        for tk in target_order:
+            header += f"  {labels[tk]:>{col_w}}"
+        print(header)
+        print("-" * len(header))
+
+        for label, per_backend in table.items():
+            if backend not in per_backend:
+                continue
+            targets = per_backend[backend]
+            baseline = targets.get("remote_store", 0)
+            line = f"{label:<{label_w}}"
+            for tk in target_order:
+                if tk in targets:
+                    cell = _format_time(targets[tk])
+                    if tk != "remote_store" and baseline > 0:
+                        cell += _format_relative(targets[tk], baseline)
+                    line += f"  {cell:>{col_w}}"
+                else:
+                    line += f"  {'--':>{col_w}}"
+            print(line)
+
+
+def _print_comparative_markdown(
+    table: dict[str, dict[str, dict[str, float]]],
+    machine_info: dict[str, Any] | None = None,
+) -> str:
+    """Render comparative results as Markdown. Returns the full string."""
+    lines: list[str] = []
+    lines.append(f"<!-- Generated {datetime.datetime.now(tz=datetime.timezone.utc):%Y-%m-%d %H:%M} UTC -->")
+    if machine_info:
+        cpu = machine_info.get("cpu", {}).get("brand_raw", "unknown")
+        py = machine_info.get("python_version", "?")
+        lines.append(f"<!-- Hardware: {cpu}, Python {py}, {platform.system()} -->")
+    lines.append("")
+
+    for backend in BACKEND_ORDER:
+        labels = TARGET_LABELS.get(backend, {})
+        if len(labels) < 2:
+            continue
+        has_data = any(backend in row for row in table.values())
+        if not has_data:
+            continue
+
+        target_order = list(labels.keys())
+        lines.append(f"### {BACKEND_LABELS.get(backend, backend)}")
+        lines.append("")
+
+        header = "| Operation |"
+        separator = "|-----------|"
+        for tk in target_order:
+            header += f" {labels[tk]} |"
+            separator += "-------:|"
+        lines.append(header)
+        lines.append(separator)
+
+        for label, per_backend in table.items():
+            if backend not in per_backend:
+                continue
+            targets = per_backend[backend]
+            baseline = targets.get("remote_store", 0)
+            row = f"| {label} |"
+            for tk in target_order:
+                if tk in targets:
+                    cell = _format_time(targets[tk])
+                    if tk != "remote_store" and baseline > 0:
+                        cell += _format_relative(targets[tk], baseline)
+                    row += f" {cell} |"
+                else:
+                    row += " -- |"
+            lines.append(row)
+        lines.append("")
+
+    return "\n".join(lines)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Benchmark summary report")
     parser.add_argument(
@@ -216,6 +379,22 @@ def main() -> None:
         action="store_true",
         dest="json_output",
         help="Output machine-readable JSON",
+    )
+    parser.add_argument(
+        "--comparative",
+        action="store_true",
+        help="Show remote-store vs raw SDK vs fsspec per backend",
+    )
+    parser.add_argument(
+        "--markdown",
+        action="store_true",
+        help="Output as Markdown tables (use with --comparative)",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="Write output to file instead of stdout",
     )
     parser.add_argument(
         "--dir",
@@ -232,6 +411,28 @@ def main() -> None:
 
     # Load latest
     latest = json.loads(files[-1].read_text())
+
+    # --- Comparative mode ---
+    if args.comparative:
+        comp_table = _build_comparative_table(latest["benchmarks"])
+        if args.markdown:
+            md = _print_comparative_markdown(comp_table, latest.get("machine_info"))
+            if args.output:
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(md, encoding="utf-8")
+                print(f"Wrote comparative report to {args.output}")
+            else:
+                print(md)
+        else:
+            machine = latest.get("machine_info", {})
+            cpu = machine.get("cpu", {}).get("brand_raw", "unknown")
+            py = machine.get("python_version", "?")
+            print(f"Comparative report -- {cpu}, Python {py}")
+            print()
+            _print_comparative_text(comp_table)
+        return
+
+    # --- Standard summary mode ---
     table = _build_table(latest["benchmarks"])
 
     # Load previous if comparing

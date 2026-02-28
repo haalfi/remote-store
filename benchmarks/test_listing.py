@@ -72,7 +72,7 @@ class TestListPerformance10k:
         for i in range(10_000):
             bench_backend.write(f"{self._dir}/file_{i:06d}.txt", b"x")
 
-    @pytest.mark.slow
+    @pytest.mark.full
     def test_list_10k_files(self, bench_backend: Backend, benchmark: Any) -> None:
         """List 10,000 files recursively."""
 
@@ -109,7 +109,7 @@ class TestDeepHierarchyPerformance:
         for d in range(breadth):
             self._build_tree(backend, f"{prefix}/d{d}", depth - 1, breadth)
 
-    @pytest.mark.slow
+    @pytest.mark.standard
     def test_list_deep_recursive(self, bench_backend: Backend, benchmark: Any) -> None:
         """Recursively list all files in the deep hierarchy."""
 

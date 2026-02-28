@@ -8,10 +8,12 @@ Use ``--infra cloud`` to run against real cloud services instead of Docker.
 
 from __future__ import annotations
 
+import _thread
 import os
 import socket
 import sys
 import tempfile
+import threading
 import uuid
 from typing import TYPE_CHECKING, Any
 
@@ -37,6 +39,17 @@ def pytest_addoption(parser: Any) -> None:
         choices=["docker", "cloud"],
         help="Infrastructure mode: 'docker' (default) uses local containers, 'cloud' uses real services.",
     )
+    parser.addoption(
+        "--backend",
+        default=None,
+        help="Comma-separated backend filter (e.g., --backend s3,sftp).",
+    )
+    parser.addoption(
+        "--bench-timeout",
+        default=None,
+        type=int,
+        help="Per-test timeout in seconds (default: 120 cloud, 60 docker).",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -55,6 +68,53 @@ def _is_cloud_mode() -> bool:
 
 
 _CLOUD_MODE = _is_cloud_mode()
+
+
+# ---------------------------------------------------------------------------
+# Backend filter (deselect, not skip -- avoids fixture setup)
+# ---------------------------------------------------------------------------
+
+
+def pytest_collection_modifyitems(config: Any, items: list[Any]) -> None:
+    backend_filter = config.getoption("--backend")
+    if not backend_filter:
+        return
+    allowed = {b.strip() for b in backend_filter.split(",")}
+    selected, deselected = [], []
+    for item in items:
+        params = getattr(item, "callspec", None)
+        if params is None:
+            selected.append(item)
+            continue
+        p = params.params
+        if "bench_backend" in p:
+            (selected if p["bench_backend"] in allowed else deselected).append(item)
+        elif "bench_target" in p:
+            (selected if p["bench_target"][0] in allowed else deselected).append(item)
+        else:
+            selected.append(item)
+    if deselected:
+        config.hook.pytest_deselected(items=deselected)
+        items[:] = selected
+
+
+# ---------------------------------------------------------------------------
+# Per-test timeout watchdog (Windows-compatible, no signal.alarm)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _bench_timeout(request: pytest.FixtureRequest) -> Any:
+    timeout = request.config.getoption("--bench-timeout")
+    if timeout is None:
+        timeout = 120 if request.config.getoption("--infra") == "cloud" else 60
+    timer = threading.Timer(float(timeout), _thread.interrupt_main)
+    timer.daemon = True
+    timer.start()
+    try:
+        yield
+    finally:
+        timer.cancel()
 
 
 # ---------------------------------------------------------------------------
@@ -705,8 +765,8 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
         pytest.param(1_024, id="1KB"),
         pytest.param(65_536, id="64KB"),
         pytest.param(1_048_576, id="1MB"),
-        pytest.param(10_485_760, id="10MB", marks=pytest.mark.slow),
-        pytest.param(104_857_600, id="100MB", marks=pytest.mark.slow),
+        pytest.param(10_485_760, id="10MB", marks=pytest.mark.standard),
+        pytest.param(104_857_600, id="100MB", marks=pytest.mark.full),
     ],
 )
 def payload(request: pytest.FixtureRequest) -> bytes:

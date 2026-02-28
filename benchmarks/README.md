@@ -14,14 +14,20 @@ raw SDK calls, and fsspec implementations.
 # Start Docker services and wait for health checks to pass
 docker compose -f benchmarks/infra/docker-compose.yml up -d --wait
 
-# Run benchmarks (excludes slow tests)
+# Run quick-tier benchmarks (~2 min/backend)
 hatch run bench
+
+# Run only a specific backend
+hatch run bench -- --backend local
 
 # Save results for later comparison
 hatch run bench-save
 
 # Compare against previous run
 hatch run bench-compare
+
+# Generate comparative report (remote-store vs raw SDK vs fsspec)
+hatch run bench-report-comparative
 ```
 
 ## Backend Matrix
@@ -93,18 +99,64 @@ export BENCH_SFTP_KEY_FILE=~/.ssh/id_rsa
 hatch run bench-cloud
 ```
 
-## Fast vs Full Runs
+## Speed Tiers
+
+| Tier | Marker | What's included | Time/backend |
+|------|--------|-----------------|--------------|
+| **quick** | (default) | 1KB, 64KB, 1MB payloads; 50-file list; basic ops | ~2 min |
+| **standard** | `@pytest.mark.standard` | + 10MB payload; 1000-file list, deep hierarchy, per-folder stats | ~5 min |
+| **full** | `@pytest.mark.full` | + 100MB payload; 10k-file list | ~20-30 min |
+
+Selection expressions:
+
+- Quick: `-m "not standard and not full"` (default for `hatch run bench`)
+- Standard: `-m "not full"` (`hatch run bench-standard`)
+- Full: no filter (`hatch run bench-full`)
+
+## Backend Filtering
+
+Use `--backend` to restrict benchmarks to specific backends. This **deselects**
+tests (no fixture setup or connection attempts for excluded backends).
+
+```bash
+# Only run local backend benchmarks
+hatch run bench -- --backend local
+
+# Run S3 and SFTP only
+hatch run bench -- --backend s3,sftp
+
+# Combine with standard tier
+hatch run bench-standard -- --backend s3,s3-pyarrow
+```
+
+## Timeout Watchdog
+
+Each test has a timeout watchdog (default: 60s docker, 120s cloud). Override
+with `--bench-timeout`:
+
+```bash
+hatch run bench -- --bench-timeout 30
+hatch run bench-cloud -- --bench-timeout 300
+```
+
+## Commands
 
 | Command | What runs | Use case |
 |---------|-----------|----------|
-| `hatch run bench` | All non-slow tests | Quick feedback |
-| `hatch run bench-full` | All tests including slow | Pre-release, CI |
-| `hatch run bench-save` | Non-slow + save JSON | Track regressions |
+| `hatch run bench` | Quick tier (default) | Fast feedback |
+| `hatch run bench-standard` | Quick + standard tier | Moderate testing |
+| `hatch run bench-full` | All tiers | Pre-release, CI |
+| `hatch run bench-save` | Quick + save JSON | Track regressions |
+| `hatch run bench-save-standard` | Standard + save JSON | Wider regression check |
+| `hatch run bench-save-full` | Full + save JSON | Complete data |
 | `hatch run bench-compare` | Compare saved runs | Before/after |
-| `hatch run bench-cloud` | Non-slow on real infra | Cloud perf testing |
+| `hatch run bench-cloud` | Quick on real infra | Cloud perf testing |
+| `hatch run bench-cloud-standard` | Standard on real infra | Cloud deep testing |
 | `hatch run bench-report` | Summary table from saved JSON | Quick overview |
 | `hatch run bench-report-compare` | Latest vs previous saved run | Spot regressions |
 | `hatch run bench-report-json` | Machine-readable JSON | CI / scripting |
+| `hatch run bench-report-comparative` | remote-store vs SDK vs fsspec | Overhead analysis |
+| `hatch run bench-report-comparative-md` | Same, as Markdown to file | Docs generation |
 
 ## Environment Variables
 
@@ -166,6 +218,8 @@ benchmarks/
   test_destructive.py             # comparative (delete) + RS-only (copy, move)
   test_large_file.py              # remote-store only (memory tracking)
   report.py                        # summary table generator (bench-report)
+  results/
+    comparative.md               # generated comparative data (checked in)
   infra/
     docker-compose.yml
   README.md

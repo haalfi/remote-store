@@ -133,12 +133,13 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   012 (AZ-003) and backend guides (SFTP, Azure). These enum members
   were removed in v0.6.0 (AF-002) but the specs/guides were never updated.
 
-- [ ] **ID-020 — Benchmark tiered modes and single-backend filtering**
-  Current bench suite works well locally but cloud runs timeout (AWS hit this).
-  Three changes: (A) `--backend` CLI filter to restrict runs to one backend,
-  (B) tiered speed modes (quick ~2min/backend, standard ~5min, full ~20-30min)
-  replacing the binary slow/not-slow split, (C) cloud-aware round scaling and
-  per-backend timeout watchdog. Optional: named profiles (`--profile ci-quick`).
+- [x] **ID-020 — Benchmark tiered modes and single-backend filtering**
+  Replaced binary slow/not-slow with three tiers (quick/standard/full).
+  `--backend` CLI filter deselects tests (avoids fixture setup). `--bench-timeout`
+  watchdog (Windows-compatible via `threading.Timer`). `report.py` gains
+  `--comparative` and `--markdown` modes for remote-store vs raw SDK vs fsspec
+  tables. Updated hatch scripts (12 bench-* commands). Comparative results
+  integrated into docs site. No spec needed (ops/tooling change).
 
 - [x] **ID-022 — `ext.batch` — batch operations**
   `batch_delete`, `batch_copy`, `batch_exists` convenience functions for
@@ -191,6 +192,13 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   each release as a versioned subdirectory with a version switcher dropdown.
   RTD: configure tag-based builds so each release tag gets its own version.
   Keep a `dev` / `latest` alias tracking master for unreleased changes.
+
+- [ ] **ID-031 — S3-PyArrow read path optimization**
+  Drop `BufferedReader` from `S3PyArrowBackend.read()`, add `read()` + chunked
+  `readline()` to `_PyArrowBinaryIO`. Eliminates double-copy per chunk on
+  streaming reads (56% peak memory overhead in benchmarks). Non-breaking,
+  S3-PyArrow only. Depends on ID-020 for proper before/after measurement.
+  → RFC: `sdd/rfcs/rfc-0003-s3-pyarrow-read-optimization.md`
 
 - [ ] **ID-018 — conda-forge publishing**
   Submit a staged-recipes PR to conda-forge so users can `conda install -c
