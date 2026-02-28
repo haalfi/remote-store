@@ -3887,6 +3887,7 @@
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>Benchmark tiered modes, backend filtering, and comparative docs</strong> -- replaced binary <code>slow</code>/not-slow split with three tiers (quick/standard/full), added <code>--backend</code> filter for single-backend runs (deselects instead of skipping to avoid fixture setup), added <code>--bench-timeout</code> watchdog (Windows-compatible), added <code>--comparative</code> and <code>--markdown</code> modes to <code>report.py</code> for remote-store vs raw SDK vs fsspec comparison tables, updated hatch scripts, added comparative results to docs site (ID-020)</li>
 <li><strong>Release CI: GitHub Release as single trigger</strong> -- <code>publish.yml</code> now triggers on <code>release: types: [published]</code> instead of <code>push: tags: ["v*"]</code>. The GitHub Release becomes the single event that triggers PyPI publish (ID-028)</li>
 <li><strong>Versioned documentation with mike</strong> -- <code>docs.yml</code> split into two jobs: <code>deploy-dev</code> (master push deploys "dev" alias) and <code>deploy-release</code> (release published deploys versioned docs with "latest" alias). Version switcher dropdown added to docs site. Requires changing GitHub Pages source to "Deploy from a branch" (<code>gh-pages</code>) (ID-029)</li>
 </ul>

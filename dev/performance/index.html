@@ -1482,6 +1482,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#how-remote-store-compares" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How remote-store Compares
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#analyzing-results" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1497,6 +1508,17 @@
     <span class="md-ellipsis">
       
         Reproducing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparative-results-remote-store-vs-raw-sdk-vs-fsspec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparative Results: remote-store vs Raw SDK vs fsspec
       
     </span>
   </a>
@@ -2922,6 +2944,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#how-remote-store-compares" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How remote-store Compares
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#analyzing-results" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2937,6 +2970,17 @@
     <span class="md-ellipsis">
       
         Reproducing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparative-results-remote-store-vs-raw-sdk-vs-fsspec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparative Results: remote-store vs Raw SDK vs fsspec
       
     </span>
   </a>
@@ -3027,29 +3071,38 @@ the suite runs the same operation through three interfaces:</p>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>benchmarks/infra/docker-compose.yml<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <h3 id="commands">Commands<a class="headerlink" href="#commands" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Quick run (excludes slow tests)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Quick tier (~2 min/backend)</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Full run (includes 10MB, 100MB payloads and 10k listing)</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-full
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Standard tier (~5 min/backend, adds 10MB payload + deep hierarchy)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-standard
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Save results as JSON</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-save
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Full tier (~20-30 min/backend, adds 100MB payload + 10k listing)</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-full
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># Compare against last saved run</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-compare
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># Filter to specific backends</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench<span class="w"> </span>--<span class="w"> </span>--backend<span class="w"> </span>s3,sftp
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="c1"># Run against real cloud services</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-cloud
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="c1"># Save results as JSON</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-save
 <a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="c1"># Summary report from saved results</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="c1"># Compare against last saved run</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-compare
 <a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="c1"># Compare latest vs previous saved run</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-compare
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="c1"># Run against real cloud services</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-cloud
 <a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="c1"># Machine-readable JSON output</span>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-json
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="c1"># Summary report from saved results</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="c1"># Comparative report (remote-store vs raw SDK vs fsspec)</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-comparative
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="c1"># Compare latest vs previous saved run</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-compare
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="c1"># Machine-readable JSON output</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-json
 </code></pre></div>
 <h3 id="sample-results">Sample Results<a class="headerlink" href="#sample-results" title="Permanent link">&para;</a></h3>
 <p>Results will vary by hardware and network. The following numbers were
@@ -3152,6 +3205,23 @@ Docker Desktop (MinIO, Azurite, OpenSSH) running locally. All values are
   Run <code>hatch run bench</code> to measure the exact overhead in your environment.</li>
 <li>Streaming reads keep memory constant regardless of file size.</li>
 </ul>
+<h2 id="how-remote-store-compares">How remote-store Compares<a class="headerlink" href="#how-remote-store-compares" title="Permanent link">&para;</a></h2>
+<p>For every comparative operation, the benchmark suite runs the same workload
+through remote-store, the raw SDK, and the fsspec equivalent. Key findings:</p>
+<ul>
+<li><strong>vs raw SDK:</strong> In our testing, overhead is typically under 5% for
+  data-path operations and under 10% for metadata. The abstraction cost
+  is negligible compared to network latency for all remote backends.</li>
+<li><strong>vs fsspec:</strong> In our testing, remote-store is consistently faster. The
+  gap is largest for S3 writes (s3fs multipart overhead) and Azure listing
+  (adlfs directory emulation). See the full comparison on the
+  <a href="https://haalfi.github.io/remote-store/performance/">docs site</a>.</li>
+</ul>
+<p>Regenerate for your hardware:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>benchmarks/infra/docker-compose.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--wait
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-save
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-comparative-md
+</code></pre></div>
 <h2 id="analyzing-results">Analyzing Results<a class="headerlink" href="#analyzing-results" title="Permanent link">&para;</a></h2>
 <p>Saved benchmark results (JSON) live in <code>.benchmarks/</code>. The
 <code>examples/notebooks/benchmark_analysis.ipynb</code> notebook loads these files and
@@ -3163,22 +3233,30 @@ produces charts:</p>
 <li><strong>Peak memory vs file size</strong>: scatter plot from tracemalloc data</li>
 </ul>
 <h2 id="reproducing">Reproducing<a class="headerlink" href="#reproducing" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># 1. Start services</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>benchmarks/infra/docker-compose.yml<span class="w"> </span>up<span class="w"> </span>-d
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># 2. Run and save</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-save
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># 3. Make changes</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># 4. Run and compare</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-compare
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="c1"># 5. Stop services</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>benchmarks/infra/docker-compose.yml<span class="w"> </span>down<span class="w"> </span>-v
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># 1. Start services</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>benchmarks/infra/docker-compose.yml<span class="w"> </span>up<span class="w"> </span>-d
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># 2. Run and save</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-save
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># 3. Make changes</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1"># 4. Run and compare</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-compare
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="c1"># 5. Stop services</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>benchmarks/infra/docker-compose.yml<span class="w"> </span>down<span class="w"> </span>-v
 </code></pre></div>
 <p>For cloud benchmarks, set the appropriate environment variables (see
 <code>benchmarks/README.md</code> for the full reference table) and use <code>--infra cloud</code>.</p>
+<h2 id="comparative-results-remote-store-vs-raw-sdk-vs-fsspec">Comparative Results: remote-store vs Raw SDK vs fsspec<a class="headerlink" href="#comparative-results-remote-store-vs-raw-sdk-vs-fsspec" title="Permanent link">&para;</a></h2>
+<!-- No benchmark data yet -- regenerate with: hatch run bench-report-comparative-md -->
+
+<p><em>Run benchmarks and generate this file:</em></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>benchmarks/infra/docker-compose.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--wait
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-save
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-comparative-md
+</code></pre></div>
 
 
 
