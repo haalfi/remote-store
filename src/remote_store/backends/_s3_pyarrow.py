@@ -45,6 +45,28 @@ class _PyArrowBinaryIO(io.RawIOBase):
     def seekable(self) -> bool:
         return bool(self._pa.seekable())
 
+    def read(self, size: int = -1) -> bytes:
+        if size is None or size < 0:
+            return bytes(self._pa.read())
+        return bytes(self._pa.read(size))
+
+    _READLINE_CHUNK = 8192
+
+    def readline(self, size: int | None = -1) -> bytes:
+        buf = bytearray()
+        while size is None or size < 0 or len(buf) < size:
+            remaining = size - len(buf) if size is not None and size >= 0 else self._READLINE_CHUNK
+            chunk = self._pa.read(min(remaining, self._READLINE_CHUNK))
+            if not chunk:
+                break
+            idx = chunk.find(b"\n")
+            if idx >= 0:
+                buf.extend(chunk[: idx + 1])
+                self._pa.seek(-(len(chunk) - idx - 1), 1)
+                break
+            buf.extend(chunk)
+        return bytes(buf)
+
     def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
         data = self._pa.read(len(b))
         n = len(data)
@@ -290,7 +312,7 @@ class S3PyArrowBackend(Backend):
         with self._pyarrow_errors(path):
             pa_file = self._pa_fs.open_input_file(self._pa_path(path))
             raw = _PyArrowBinaryIO(pa_file)
-            return io.BufferedReader(cast("io.RawIOBase", _ErrorMappingStream(raw, self._classify_error, path)))
+            return cast("BinaryIO", _ErrorMappingStream(raw, self._classify_error, path))
 
     def read_bytes(self, path: str) -> bytes:
         with self._pyarrow_errors(path):

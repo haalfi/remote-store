@@ -6,6 +6,7 @@ All tests are skipped if dependencies are not installed.
 
 from __future__ import annotations
 
+import io
 import uuid
 from typing import TYPE_CHECKING
 
@@ -157,6 +158,33 @@ class TestS3PyArrowFolderSemantics:
         s3pa_backend.write("keep/b.txt", b"b")
         s3pa_backend.delete("keep/a.txt")
         assert s3pa_backend.is_folder("keep") is True
+
+
+# endregion
+
+
+# region: Read path (S3PA-012, RFC-0003)
+class TestS3PyArrowReadPath:
+    """S3PA-012: read path optimization -- no BufferedReader wrapping."""
+
+    @pytest.mark.spec("S3PA-012")
+    def test_read_not_wrapped_in_buffered_reader(self, s3pa_backend: Backend) -> None:
+        """read() returns stream without BufferedReader (RFC-0003)."""
+        s3pa_backend.write("buf.bin", b"data")
+        stream = s3pa_backend.read("buf.bin")
+        assert not isinstance(stream, io.BufferedReader)
+        stream.close()
+
+    @pytest.mark.spec("S3PA-012")
+    def test_read_stream_readline(self, s3pa_backend: Backend) -> None:
+        """read() stream supports readline() without BufferedReader."""
+        s3pa_backend.write("lines.txt", b"line1\nline2\nline3\n")
+        stream = s3pa_backend.read("lines.txt")
+        assert stream.readline() == b"line1\n"
+        assert stream.readline() == b"line2\n"
+        assert stream.readline() == b"line3\n"
+        assert stream.readline() == b""
+        stream.close()
 
 
 # endregion
