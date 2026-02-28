@@ -1523,6 +1523,56 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Comparative Results: remote-store vs Raw SDK vs fsspec">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3-minio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3 (MinIO)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sftp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SFTP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#azure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Azure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -2985,6 +3035,56 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Comparative Results: remote-store vs Raw SDK vs fsspec">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3-minio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3 (MinIO)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sftp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SFTP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#azure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Azure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -3115,6 +3215,7 @@ Docker Desktop (MinIO, Azurite, OpenSSH) running locally. All values are
 <th>Operation</th>
 <th>Local</th>
 <th>S3 (MinIO)</th>
+<th>S3-PyArrow</th>
 <th>SFTP</th>
 <th>Azure (Azurite)</th>
 </tr>
@@ -3122,100 +3223,163 @@ Docker Desktop (MinIO, Azurite, OpenSSH) running locally. All values are
 <tbody>
 <tr>
 <td>Write 1KB</td>
-<td>0.32ms</td>
+<td>0.26ms</td>
+<td>5.3ms</td>
+<td>36.2ms</td>
+<td>3.8ms</td>
+<td>5.0ms</td>
+</tr>
+<tr>
+<td>Write 64KB</td>
+<td>0.26ms</td>
 <td>6.2ms</td>
-<td>4.1ms</td>
-<td>5.5ms</td>
+<td>66.5ms*</td>
+<td>4.9ms</td>
+<td>22.6ms*</td>
 </tr>
 <tr>
 <td>Write 1MB</td>
-<td>0.50ms</td>
-<td>18.4ms</td>
-<td>24.4ms</td>
-<td>15.6ms</td>
+<td>0.48ms</td>
+<td>20.1ms</td>
+<td>31.6ms</td>
+<td>24.7ms</td>
+<td>13.7ms</td>
 </tr>
 <tr>
 <td>Read 1KB</td>
-<td>0.08ms</td>
-<td>1.6ms</td>
-<td>2.8ms</td>
+<td>0.09ms</td>
+<td>1.5ms</td>
+<td>1.7ms</td>
+<td>3.0ms</td>
+<td>2.0ms</td>
+</tr>
+<tr>
+<td>Read 64KB</td>
+<td>0.09ms</td>
+<td>1.8ms</td>
 <td>2.2ms</td>
+<td>3.3ms</td>
+<td>2.3ms</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td>0.39ms</td>
+<td>0.32ms</td>
 <td>5.9ms</td>
-<td>12.7ms</td>
-<td>6.0ms</td>
+<td>11.4ms</td>
+<td>13.5ms</td>
+<td>5.8ms</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
 <td>0.06ms</td>
-<td>1.6ms</td>
-<td>0.82ms</td>
+<td>1.4ms</td>
+<td>1.5ms</td>
+<td>0.86ms</td>
 <td>1.7ms</td>
+</tr>
+<tr>
+<td>Exists (miss)</td>
+<td>0.07ms</td>
+<td>2.5ms</td>
+<td>2.9ms</td>
+<td>1.1ms</td>
+<td>3.5ms</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td>0.67ms</td>
-<td>0.22ms</td>
-<td>2.6ms</td>
-<td>12.8ms</td>
+<td>0.70ms</td>
+<td>0.24ms</td>
+<td>0.32ms</td>
+<td>2.8ms</td>
+<td>11.4ms</td>
 </tr>
 <tr>
 <td>List 1000 files</td>
-<td>10.3ms</td>
-<td>1.7ms</td>
-<td>16.6ms</td>
-<td>162ms</td>
+<td>10.2ms</td>
+<td>1.5ms</td>
+<td>1.3ms</td>
+<td>16.2ms</td>
+<td>145ms</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td>0.10ms</td>
-<td>3.5ms</td>
-<td>0.86ms</td>
-<td>1.6ms</td>
+<td>0.11ms</td>
+<td>3.4ms</td>
+<td>4.7ms</td>
+<td>0.99ms</td>
+<td>1.8ms</td>
 </tr>
 <tr>
 <td>TTFB write</td>
-<td>0.38ms</td>
-<td>9.8ms</td>
-<td>6.0ms</td>
-<td>7.8ms</td>
+<td>0.26ms</td>
+<td>8.4ms</td>
+<td>19.7ms</td>
+<td>7.2ms</td>
+<td>7.6ms</td>
 </tr>
 <tr>
 <td>TTFB read</td>
-<td>0.13ms</td>
-<td>3.4ms</td>
+<td>0.11ms</td>
+<td>3.1ms</td>
 <td>1.9ms</td>
-<td>2.0ms</td>
+<td>2.5ms</td>
+<td>2.2ms</td>
+</tr>
+<tr>
+<td>TTFB exists</td>
+<td>0.06ms</td>
+<td>1.4ms</td>
+<td>1.4ms</td>
+<td>1.1ms</td>
+<td>1.8ms</td>
 </tr>
 </tbody>
 </table>
+<p><em>* 64KB write values for S3-PyArrow and Azure are outlier-skewed (high variance,
+stddev &gt; mean). The medians are monotonic (17ms and 6ms respectively). The raw
+SDK shows the same pattern -- this is a Dockerized-service cold-start artifact,
+not real non-monotonic performance.</em></p>
 <p>Generate this table from your own saved results with <code>hatch run bench-report</code>.</p>
 <p><strong>Key observations:</strong></p>
 <ul>
-<li>Local backend is 20-80x faster than network backends (expected).</li>
-<li>S3 (MinIO) has the highest TTFB write (~10ms) due to multipart upload setup.</li>
-<li>SFTP read latency scales steeply with file size (2.8ms at 1KB, 12.7ms at 1MB).</li>
-<li>Azure listing is slowest (12.8ms for 50 files, 162ms for 1000) -- Azurite
+<li>Local backend is 20-100x faster than network backends (expected).</li>
+<li>S3-PyArrow writes are slow at small sizes (36ms for 1KB) due to PyArrow's
+  single-part upload overhead. At 1MB the gap narrows from ~7x to ~1.6x
+  (31.6ms vs 20.1ms for S3).</li>
+<li>S3-PyArrow reads are competitive with S3 (1.7ms vs 1.5ms at 1KB, 11.4ms vs
+  5.9ms at 1MB) -- the RFC-0003 <code>BufferedReader</code> removal keeps overhead modest.</li>
+<li>SFTP read latency scales steeply with file size (3.0ms at 1KB, 13.5ms at 1MB).</li>
+<li>Azure listing is slowest (11.4ms for 50 files, 145ms for 1000) -- Azurite
   emulation overhead.</li>
 <li>S3 listing is faster than local for flat directories (pagination is efficient).</li>
-<li>remote-store adds minimal overhead vs raw SDK for most operations.
-  Run <code>hatch run bench</code> to measure the exact overhead in your environment.</li>
 <li>Streaming reads keep memory constant regardless of file size.</li>
 </ul>
 <h2 id="how-remote-store-compares">How remote-store Compares<a class="headerlink" href="#how-remote-store-compares" title="Permanent link">&para;</a></h2>
 <p>For every comparative operation, the benchmark suite runs the same workload
-through remote-store, the raw SDK, and the fsspec equivalent. Key findings:</p>
+through remote-store, the raw SDK, and the fsspec equivalent. Measured findings
+from Docker benchmarks (MinIO, Azurite, OpenSSH):</p>
 <ul>
-<li><strong>vs raw SDK:</strong> In our testing, overhead is typically under 5% for
-  data-path operations and under 10% for metadata. The abstraction cost
-  is negligible compared to network latency for all remote backends.</li>
-<li><strong>vs fsspec:</strong> In our testing, remote-store is consistently faster. The
-  gap is largest for S3 writes (s3fs multipart overhead) and Azure listing
-  (adlfs directory emulation). See the full comparison on the
-  <a href="https://haalfi.github.io/remote-store/performance/">docs site</a>.</li>
+<li><strong>Azure: near-zero overhead</strong> -- remote-store matches the raw azure-blob SDK
+  within measurement noise for writes, reads, and exists. adlfs is 1.9x slower
+  for reads and 2.2x slower for deletes.</li>
+<li><strong>S3: competitive or faster for writes</strong> -- Write 1MB is 1.5x faster than raw
+  boto3 (20ms vs 30ms, likely due to S3Backend's persistent client session via
+  s3fs). Read overhead is ~15% (5.9ms vs 5.1ms). Exists within noise
+  (1.4ms vs 1.3ms).</li>
+<li><strong>SFTP: moderate overhead</strong> -- ~5% for writes and ~8% for reads vs raw
+  paramiko. Metadata ops show ~2x overhead from error-mapping stat calls
+  (exists 859us vs 413us, delete 988us vs 422us).</li>
+<li><strong>Local: expected abstraction cost</strong> -- ~20% I/O overhead vs bare pathlib
+  (484us vs 404us for Write 1MB). Metadata ops show higher relative overhead
+  (exists 55us vs 5us), but absolute latencies are sub-millisecond.</li>
+<li><strong>Caveats:</strong> listing anomalies exist in the comparative data -- some fsspec
+  implementations (s3fs at 67us, adlfs at 83us for 50 files) show sub-100us
+  listing times that likely reflect client-side caching in the test harness,
+  not real-world performance (see ID-032). Similarly, raw boto3 listing at
+  4.4ms (18.4x slower than remote-store) uses the paginator API without
+  caching, while remote-store benefits from s3fs's cached <code>ls()</code>. Delete
+  overhead is 2-3x vs raw SDK across all backends -- this is expected
+  abstraction cost from the error-mapping layer and not an optimization target.</li>
 </ul>
 <p>Regenerate for your hardware:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>benchmarks/infra/docker-compose.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--wait
@@ -3250,13 +3414,194 @@ produces charts:</p>
 <p>For cloud benchmarks, set the appropriate environment variables (see
 <code>benchmarks/README.md</code> for the full reference table) and use <code>--infra cloud</code>.</p>
 <h2 id="comparative-results-remote-store-vs-raw-sdk-vs-fsspec">Comparative Results: remote-store vs Raw SDK vs fsspec<a class="headerlink" href="#comparative-results-remote-store-vs-raw-sdk-vs-fsspec" title="Permanent link">&para;</a></h2>
-<!-- No benchmark data yet -- regenerate with: hatch run bench-report-comparative-md -->
+<!-- Generated 2026-02-28 from Docker benchmarks (MinIO, Azurite, OpenSSH) -->
+<!-- Hardware: Intel(R) Core(TM) Ultra 7 265K, Python 3.13.11, Windows -->
+<!-- NOTE: Some listing numbers are anomalous -- s3fs (67us) and adlfs (83us) -->
+<!-- for 50 files likely reflect client-side caching in the test harness, not -->
+<!-- real-world performance. See ID-032 in BACKLOG.md. -->
+<!-- NOTE: S3 raw boto3 listing (4.4ms) uses the paginator API without caching, -->
+<!-- while remote-store (239us) benefits from s3fs's cached ls(). Related to -->
+<!-- ID-032. -->
 
-<p><em>Run benchmarks and generate this file:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>benchmarks/infra/docker-compose.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--wait
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-save
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-comparative-md
-</code></pre></div>
+<h3 id="local">Local<a class="headerlink" href="#local" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th style="text-align: right;">remote-store</th>
+<th style="text-align: right;">pathlib</th>
+<th style="text-align: right;">fsspec</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Write 1MB</td>
+<td style="text-align: right;">484us</td>
+<td style="text-align: right;">404us (1.2x faster)</td>
+<td style="text-align: right;">764us (1.6x slower)</td>
+</tr>
+<tr>
+<td>Read 1MB</td>
+<td style="text-align: right;">321us</td>
+<td style="text-align: right;">259us (1.2x faster)</td>
+<td style="text-align: right;">253us (1.3x faster)</td>
+</tr>
+<tr>
+<td>Exists (hit)</td>
+<td style="text-align: right;">55us</td>
+<td style="text-align: right;">5us (10.2x faster)</td>
+<td style="text-align: right;">4us (14.1x faster)</td>
+</tr>
+<tr>
+<td>List 50 files</td>
+<td style="text-align: right;">702us</td>
+<td style="text-align: right;">702us</td>
+<td style="text-align: right;">155us (4.5x faster)</td>
+</tr>
+<tr>
+<td>Delete</td>
+<td style="text-align: right;">106us</td>
+<td style="text-align: right;">49us (2.2x faster)</td>
+<td style="text-align: right;">49us (2.2x faster)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="s3-minio">S3 (MinIO)<a class="headerlink" href="#s3-minio" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th style="text-align: right;">remote-store</th>
+<th style="text-align: right;">boto3</th>
+<th style="text-align: right;">s3fs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Write 1MB</td>
+<td style="text-align: right;">20.1ms</td>
+<td style="text-align: right;">30.4ms (1.5x slower)</td>
+<td style="text-align: right;">21.2ms (1.1x slower)</td>
+</tr>
+<tr>
+<td>Read 1MB</td>
+<td style="text-align: right;">5.9ms</td>
+<td style="text-align: right;">5.1ms (1.2x faster)</td>
+<td style="text-align: right;">7.0ms (1.2x slower)</td>
+</tr>
+<tr>
+<td>Exists (hit)</td>
+<td style="text-align: right;">1.4ms</td>
+<td style="text-align: right;">1.3ms</td>
+<td style="text-align: right;">1.3ms</td>
+</tr>
+<tr>
+<td>List 50 files</td>
+<td style="text-align: right;">239us</td>
+<td style="text-align: right;">4.4ms (18.4x slower)*</td>
+<td style="text-align: right;">67us (3.5x faster)**</td>
+</tr>
+<tr>
+<td>Delete</td>
+<td style="text-align: right;">3.4ms</td>
+<td style="text-align: right;">1.5ms (2.2x faster)</td>
+<td style="text-align: right;">1.6ms (2.1x faster)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sftp">SFTP<a class="headerlink" href="#sftp" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th style="text-align: right;">remote-store</th>
+<th style="text-align: right;">paramiko</th>
+<th style="text-align: right;">sshfs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Write 1MB</td>
+<td style="text-align: right;">24.7ms</td>
+<td style="text-align: right;">23.6ms</td>
+<td style="text-align: right;">15.2ms (1.6x faster)</td>
+</tr>
+<tr>
+<td>Read 1MB</td>
+<td style="text-align: right;">13.5ms</td>
+<td style="text-align: right;">12.5ms (1.1x faster)</td>
+<td style="text-align: right;">7.5ms (1.8x faster)</td>
+</tr>
+<tr>
+<td>Exists (hit)</td>
+<td style="text-align: right;">859us</td>
+<td style="text-align: right;">413us (2.1x faster)</td>
+<td style="text-align: right;">699us (1.2x faster)</td>
+</tr>
+<tr>
+<td>List 50 files</td>
+<td style="text-align: right;">2.8ms</td>
+<td style="text-align: right;">2.2ms (1.3x faster)</td>
+<td style="text-align: right;">3.1ms (1.1x slower)</td>
+</tr>
+<tr>
+<td>Delete</td>
+<td style="text-align: right;">988us</td>
+<td style="text-align: right;">422us (2.3x faster)</td>
+<td style="text-align: right;">1.2ms (1.2x slower)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="azure">Azure<a class="headerlink" href="#azure" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th style="text-align: right;">remote-store</th>
+<th style="text-align: right;">azure-blob</th>
+<th style="text-align: right;">adlfs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Write 1MB</td>
+<td style="text-align: right;">13.7ms</td>
+<td style="text-align: right;">13.7ms</td>
+<td style="text-align: right;">16.9ms (1.2x slower)</td>
+</tr>
+<tr>
+<td>Read 1MB</td>
+<td style="text-align: right;">5.8ms</td>
+<td style="text-align: right;">5.9ms</td>
+<td style="text-align: right;">10.8ms (1.9x slower)</td>
+</tr>
+<tr>
+<td>Exists (hit)</td>
+<td style="text-align: right;">1.7ms</td>
+<td style="text-align: right;">1.7ms</td>
+<td style="text-align: right;">1.9ms (1.2x slower)</td>
+</tr>
+<tr>
+<td>List 50 files</td>
+<td style="text-align: right;">11.4ms</td>
+<td style="text-align: right;">9.5ms (1.2x faster)</td>
+<td style="text-align: right;">83us (137.8x faster)**</td>
+</tr>
+<tr>
+<td>Delete</td>
+<td style="text-align: right;">1.8ms</td>
+<td style="text-align: right;">1.8ms</td>
+<td style="text-align: right;">4.0ms (2.2x slower)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>* boto3 listing uses the paginator API without caching, while remote-store
+benefits from s3fs's cached <code>ls()</code>. The 18.4x gap reflects caching differences
+in the test harness, not real overhead.</em></p>
+<p><em>** fsspec listing times (s3fs 67us, adlfs 83us) likely reflect client-side
+directory caching from the fixture's file-population phase, not real-world
+listing performance. See ID-032 in BACKLOG.md.</em></p>
 
 
 
