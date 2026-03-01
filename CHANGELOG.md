@@ -6,6 +6,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **S3, S3-PyArrow, and Azure native glob** (BK-002, ID-007, GLOB-018/019/020)
+  All cloud backends now override `Backend.glob()` with prefix-optimized listing
+  and client-side regex filtering. Local, S3, S3-PyArrow, and Azure backends
+  now declare `Capability.GLOB`.
+  Shared glob helpers extracted to internal `_glob.py` module.
+
 ## [0.11.0] - 2026-03-01
 
 ### Added

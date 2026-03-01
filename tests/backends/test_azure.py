@@ -176,10 +176,7 @@ class TestAzureConstruction:
         caps = backend.capabilities
         assert isinstance(caps, CapabilitySet)
         for cap in Capability:
-            if cap is Capability.GLOB:
-                assert not caps.supports(cap), "Azure should not declare GLOB"
-            else:
-                assert caps.supports(cap), f"Missing capability: {cap.value}"
+            assert caps.supports(cap), f"Missing capability: {cap.value}"
 
     @pytest.mark.spec("AZ-004")
     def test_lazy_connection(self) -> None:
@@ -824,3 +821,63 @@ class TestAzureIntegration:
 
         fs = azure_backend.unwrap(FileSystemClient)
         assert isinstance(fs, FileSystemClient)
+
+
+# region: Glob (GLOB-020)
+class TestAzureGlob:
+    """GLOB-020: AzureBackend native glob via prefix-optimized listing."""
+
+    def _populate(self, backend: Backend) -> None:
+        backend.write("report.csv", b"r1")
+        backend.write("report.txt", b"r2")
+        backend.write("data/sales.csv", b"d1")
+        backend.write("data/sub/deep.csv", b"d2")
+        backend.write("logs/app.log", b"l1")
+        backend.write("logs/archive/old.log", b"l2")
+        backend.write("file1.txt", b"f1")
+        backend.write("file2.txt", b"f2")
+
+    @_needs_azurite
+    @pytest.mark.spec("GLOB-020")
+    def test_glob_star_csv(self, azure_backend: Backend) -> None:
+        self._populate(azure_backend)
+        results = sorted(str(f.path) for f in azure_backend.glob("*.csv"))
+        assert results == ["report.csv"]
+
+    @_needs_azurite
+    @pytest.mark.spec("GLOB-020")
+    def test_glob_recursive(self, azure_backend: Backend) -> None:
+        self._populate(azure_backend)
+        results = sorted(str(f.path) for f in azure_backend.glob("**/*.log"))
+        assert results == ["logs/app.log", "logs/archive/old.log"]
+
+    @_needs_azurite
+    @pytest.mark.spec("GLOB-020")
+    def test_glob_subdirectory(self, azure_backend: Backend) -> None:
+        self._populate(azure_backend)
+        results = sorted(str(f.path) for f in azure_backend.glob("data/*.csv"))
+        assert results == ["data/sales.csv"]
+
+    @_needs_azurite
+    @pytest.mark.spec("GLOB-020")
+    def test_glob_no_matches(self, azure_backend: Backend) -> None:
+        self._populate(azure_backend)
+        results = list(azure_backend.glob("*.xyz"))
+        assert results == []
+
+    @_needs_azurite
+    @pytest.mark.spec("GLOB-020")
+    def test_glob_files_only(self, azure_backend: Backend) -> None:
+        self._populate(azure_backend)
+        for info in azure_backend.glob("**/*"):
+            assert isinstance(info, FileInfo)
+
+    @_needs_azurite
+    @pytest.mark.spec("GLOB-020")
+    def test_glob_question_mark(self, azure_backend: Backend) -> None:
+        self._populate(azure_backend)
+        results = sorted(str(f.path) for f in azure_backend.glob("file?.txt"))
+        assert results == ["file1.txt", "file2.txt"]
+
+
+# endregion

@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
+_ALL_CAPABILITIES = CapabilitySet(set(Capability))
 
 
 class S3Backend(Backend):
@@ -295,6 +295,16 @@ class S3Backend(Backend):
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
         except Exception as exc:  # pragma: no cover -- defensive
             raise self._classify_error(exc, path) from None
+
+    def glob(self, pattern: str) -> Iterator[FileInfo]:
+        from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
+
+        prefix = extract_prefix(pattern)
+        recursive = needs_recursive(pattern)
+        compiled = pattern_to_regex(pattern)
+        for info in self.list_files(prefix, recursive=recursive):
+            if compiled.match(str(info.path)):
+                yield info
 
     # endregion
 
