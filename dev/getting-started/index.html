@@ -420,6 +420,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known Limitations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -2946,6 +2963,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known Limitations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -3298,6 +3332,12 @@
 </tbody>
 </table>
 <p>Interactive Jupyter notebooks are available in <a href="https://github.com/haalfi/remote-store/tree/master/examples/notebooks"><code>examples/notebooks/</code></a>.</p>
+<h3 id="known-limitations">Known Limitations<a class="headerlink" href="#known-limitations" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Sync only</strong> -- all operations are synchronous. For async frameworks, wrap calls with <code>asyncio.to_thread()</code>.</li>
+<li><strong>Glob</strong> -- <code>list_files(pattern=)</code> and <code>ext.glob.glob_files()</code> work on all backends. Native <code>Store.glob()</code> is Local-only; S3/Azure native glob is planned.</li>
+<li><strong>PyArrow adapter</strong> -- Phase 1 (Tier 2/3 reads, writes) is complete. Phase 2 native fast-path reads are deferred. See the <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">backlog</a> for details.</li>
+</ul>
 
 
 

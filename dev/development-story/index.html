@@ -2989,6 +2989,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-17-instrumentation-and-optimization-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 17: Instrumentation and Optimization (v0.10.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-18-beta-and-glob-v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 18: Beta and Glob (v0.11.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3481,6 +3503,28 @@
     <span class="md-ellipsis">
       
         Phase 16: Extensions and Ecosystem (v0.9.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-17-instrumentation-and-optimization-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 17: Instrumentation and Optimization (v0.10.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-18-beta-and-glob-v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 18: Beta and Glob (v0.11.0)
       
     </span>
   </a>
@@ -4086,6 +4130,11 @@
 </ul>
 <p>Supporting work included a concurrency guide (AF-010), capability gating tests (AF-012), error path tests for S3/SFTP (AF-013), a CI gate on the publish workflow (AF-014), and cleanup of stale capability declarations (ID-019).</p>
 <p>The <code>ext.*</code> namespace is proving to be a good layering decision: extensions compose on the public Store API without backend coupling, so they work with <code>Store.child()</code>, capability gating, and any future backend. Each extension is pure Python (except PyArrow which requires its optional dep), independently testable, and unconditionally exported from the top-level package.</p>
+<h3 id="phase-17-instrumentation-and-optimization-v0100">Phase 17: Instrumentation and Optimization (v0.10.0)<a class="headerlink" href="#phase-17-instrumentation-and-optimization-v0100" title="Permanent link">&para;</a></h3>
+<p>Four infrastructure improvements shipped together: the extension namespace contract (ADR-0008) formalized <code>ext.*</code> rules that had been implicit, the S3-PyArrow read path optimization (RFC-0003) eliminated double-buffering in streaming reads, benchmark tiered modes replaced the binary slow/not-slow split with three tiers (quick/standard/full) plus comparative reporting, and the release/docs CI was unified around GitHub Releases as the single trigger.</p>
+<h3 id="phase-18-beta-and-glob-v0110">Phase 18: Beta and Glob (v0.11.0)<a class="headerlink" href="#phase-18-beta-and-glob-v0110" title="Permanent link">&para;</a></h3>
+<p>Two milestones in one release. The glob feature (ADR-0009) introduced a three-tier design: universal <code>fnmatch</code> filtering via <code>list_files(pattern=)</code>, capability-gated native <code>Store.glob()</code> (Local-only initially), and a portable <code>ext.glob.glob_files()</code> fallback with recursive <code>**</code> patterns. S3/Azure native glob remains planned.</p>
+<p>The project also graduated from Alpha to Beta. After 18 specs, 9 ADRs, 1040+ tests, and 4 extensions, the core API surface (<code>Store</code>, <code>Registry</code>, <code>Backend</code>, models, errors) was declared stable. A stability tiers table was added to CONTRIBUTING.md to formalize the contract: Beta means breaking changes are documented and avoided where possible, while extensions may evolve more freely.</p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>

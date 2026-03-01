@@ -2867,6 +2867,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#stability-tiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stability tiers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#how-to-bump" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3243,6 +3254,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#stability-tiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stability tiers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#how-to-bump" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3423,8 +3445,13 @@
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    011-s3-pyarrow-backend.md
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    012-azure-backend.md
 <a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    013-memory-backend.md
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>  adrs/                       # Architecture Decision Records (immutable)
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>  rfcs/                       # Proposals under discussion
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    014-pyarrow-filesystem-adapter.md
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    015-store-child.md
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    016-ext-batch.md
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    017-ext-transfer.md
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    018-glob.md
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>  adrs/                       # Architecture Decision Records (9 ADRs)
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>  rfcs/                       # Proposals under discussion (3 RFCs)
 </code></pre></div>
 <h2 id="spec-format">Spec Format<a class="headerlink" href="#spec-format" title="Permanent link">&para;</a></h2>
 <p>Each spec uses numbered section IDs with a module prefix:</p>
@@ -3573,6 +3600,29 @@
 <td>CI, docs, metadata-only</td>
 <td><strong>no bump</strong></td>
 <td>Add classifier, update README</td>
+</tr>
+</tbody>
+</table>
+<h3 id="stability-tiers">Stability tiers<a class="headerlink" href="#stability-tiers" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Alpha</strong> (pre-0.11)</td>
+<td>API may change freely between releases</td>
+</tr>
+<tr>
+<td><strong>Beta</strong> (0.11+)</td>
+<td>Core API (<code>Store</code>, <code>Registry</code>, <code>Backend</code>, models, errors) is stable. Breaking changes are documented in CHANGELOG and avoid gratuitous churn. Extensions (<code>ext.*</code>) may evolve more freely.</td>
+</tr>
+<tr>
+<td><strong>Stable</strong> (1.0+)</td>
+<td>Full SemVer: breaking changes require a major bump</td>
 </tr>
 </tbody>
 </table>
