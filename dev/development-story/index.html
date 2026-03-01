@@ -3011,6 +3011,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-19-cloud-glob-and-conda-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 19: Cloud Glob and Conda (v0.12.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3531,6 +3542,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-19-cloud-glob-and-conda-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 19: Cloud Glob and Conda (v0.12.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3807,23 +3829,23 @@
 <tbody>
 <tr>
 <td>Source code</td>
-<td>~3,700 lines (5 backends)</td>
+<td>~5,300 lines (6 backends)</td>
 </tr>
 <tr>
 <td>Tests</td>
-<td>556 tests, ~3,800 lines</td>
+<td>1,165 tests, ~8,650 lines</td>
 </tr>
 <tr>
 <td>Specs &amp; docs</td>
-<td>12 specs, 7 ADRs, ~1,800 lines</td>
+<td>18 specs, 9 ADRs, 3 RFCs</td>
 </tr>
 <tr>
 <td>Examples</td>
-<td>~350 lines (6 scripts, 3 notebooks)</td>
+<td>12 core + 4 cloud + 3 notebooks</td>
 </tr>
 <tr>
 <td>Documentation site</td>
-<td>MkDocs Material</td>
+<td>MkDocs Material (versioned via mike)</td>
 </tr>
 <tr>
 <td>Coverage</td>
@@ -3831,11 +3853,11 @@
 </tr>
 <tr>
 <td>Calendar time</td>
-<td>~4 weeks of sessions</td>
+<td>~8 weeks of sessions</td>
 </tr>
 <tr>
 <td>Commits</td>
-<td>165</td>
+<td>253</td>
 </tr>
 </tbody>
 </table>
@@ -4135,6 +4157,10 @@
 <h3 id="phase-18-beta-and-glob-v0110">Phase 18: Beta and Glob (v0.11.0)<a class="headerlink" href="#phase-18-beta-and-glob-v0110" title="Permanent link">&para;</a></h3>
 <p>Two milestones in one release. The glob feature (ADR-0009) introduced a three-tier design: universal <code>fnmatch</code> filtering via <code>list_files(pattern=)</code>, capability-gated native <code>Store.glob()</code> (Local-only initially), and a portable <code>ext.glob.glob_files()</code> fallback with recursive <code>**</code> patterns. S3/Azure native glob remains planned.</p>
 <p>The project also graduated from Alpha to Beta. After 18 specs, 9 ADRs, 1040+ tests, and 4 extensions, the core API surface (<code>Store</code>, <code>Registry</code>, <code>Backend</code>, models, errors) was declared stable. A stability tiers table was added to CONTRIBUTING.md to formalize the contract: Beta means breaking changes are documented and avoided where possible, while extensions may evolve more freely.</p>
+<h3 id="phase-19-cloud-glob-and-conda-v0120">Phase 19: Cloud Glob and Conda (v0.12.0)<a class="headerlink" href="#phase-19-cloud-glob-and-conda-v0120" title="Permanent link">&para;</a></h3>
+<p>The glob story completed. v0.11.0 shipped with native glob only for LocalBackend; now S3, S3-PyArrow, and Azure all override <code>Backend.glob()</code> with prefix-optimized listing and client-side regex filtering (GLOB-018/019/020). Shared helpers were extracted to an internal <code>_glob.py</code> module to avoid duplicating prefix extraction and regex compilation across backends. All four file-capable backends now declare <code>Capability.GLOB</code>.</p>
+<p>On the infrastructure side, a conda-forge recipe was added (<code>packaging/conda-forge/recipe.yaml</code>, v1 CEP-13 format) with CI validation via <code>rattler-build --render-only</code>. The release checklist gained conda-specific steps: version bump in Phase 2, version match check in Phase 3, and sha256 update in Phase 5. Benchmark fixtures were fixed to invalidate fsspec listing caches (ID-032), and the 1000-file listing test was moved from quick to standard tier (ID-033).</p>
+<p>This release also demonstrated iterative self-review: the <code>/review-pr</code> skill (added in PR #76) was used to review its own PR and subsequent conda PRs, catching real consistency gaps each time -- including a non-existent GitHub Action, a premature version bump, and a missing staging step in the release checklist.</p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
