@@ -16,8 +16,8 @@
   <a href="https://github.com/haalfi/remote-store/blob/master/LICENSE"><img src="https://img.shields.io/pypi/l/remote-store" alt="License"></a>
 </p>
 
-> **Alpha software.** The API may change between minor versions. Not recommended
-> for production use yet. See the [changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
+> **Beta software.** The core API is stable, but minor versions may still
+> contain breaking changes before 1.0. See the [changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
 > for what's new, and [open an issue](https://github.com/haalfi/remote-store/issues) if something breaks.
 
 `remote-store` gives you one simple API to read, write, list, and delete files.
@@ -213,6 +213,12 @@ Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/ma
 | [azure_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/backends/azure_backend.py) | Azure Blob / ADLS Gen2: config, auth methods, `unwrap()` |
 
 Interactive Jupyter notebooks are available in [`examples/notebooks/`](https://github.com/haalfi/remote-store/tree/master/examples/notebooks).
+
+### Known Limitations
+
+- **Sync only** -- all operations are synchronous. For async frameworks, wrap calls with `asyncio.to_thread()`.
+- **Glob** -- `list_files(pattern=)` and `ext.glob.glob_files()` work on all backends. Native `Store.glob()` is Local-only; S3/Azure native glob is planned.
+- **PyArrow adapter** -- Phase 1 (Tier 2/3 reads, writes) is complete. Phase 2 native fast-path reads are deferred. See the [backlog](https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md) for details.
 
 ## Contributing
 

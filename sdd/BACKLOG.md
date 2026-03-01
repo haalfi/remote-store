@@ -11,7 +11,7 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [~] **BK-002 — Glob / pattern matching strategy**
+- [~] **BK-002 — Glob / pattern matching strategy** (v0.11.0, S3/Azure native remaining)
   Three-tier design chosen (ADR-0009): (1) `list_files(pattern=…)` for universal
   fnmatch name filtering, (2) `Capability.GLOB` + `Store.glob()` for native backend
   access (like `unwrap`), (3) `ext.glob.glob_files()` for portable full-glob
@@ -54,7 +54,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `on_progress` for upload/download/transfer; this item covers the lower-level
   Store API.
 
-- [~] **ID-007 — `Store.glob()` surface API**
+- [~] **ID-007 — `Store.glob()` surface API** (v0.11.0, S3/Azure native remaining)
   Three-tier pattern matching: `list_files(pattern=…)` for universal name filtering,
   `Store.glob(pattern)` for native backend glob (capability-gated on `GLOB`),
   `ext.glob.glob_files()` for portable full-glob fallback. Local has native glob.

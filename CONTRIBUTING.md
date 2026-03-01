@@ -28,8 +28,13 @@ sdd/
     011-s3-pyarrow-backend.md
     012-azure-backend.md
     013-memory-backend.md
-  adrs/                       # Architecture Decision Records (immutable)
-  rfcs/                       # Proposals under discussion
+    014-pyarrow-filesystem-adapter.md
+    015-store-child.md
+    016-ext-batch.md
+    017-ext-transfer.md
+    018-glob.md
+  adrs/                       # Architecture Decision Records (9 ADRs)
+  rfcs/                       # Proposals under discussion (3 RFCs)
 ```
 
 ## Spec Format
@@ -179,6 +184,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 | Breaking API change (pre-1.0) | **minor** (`0.X.0`) | Remove method, rename parameter |
 | Breaking API change (post-1.0) | **major** (`X.0.0`) | — |
 | CI, docs, metadata-only | **no bump** | Add classifier, update README |
+
+### Stability tiers
+
+| Label | Meaning |
+|-------|---------|
+| **Alpha** (pre-0.11) | API may change freely between releases |
+| **Beta** (0.11+) | Core API (`Store`, `Registry`, `Backend`, models, errors) is stable. Breaking changes are documented in CHANGELOG and avoid gratuitous churn. Extensions (`ext.*`) may evolve more freely. |
+| **Stable** (1.0+) | Full SemVer: breaking changes require a major bump |
 
 ### How to bump
 
