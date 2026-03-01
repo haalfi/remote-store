@@ -38,5 +38,13 @@ class BenchTarget(abc.ABC):
     def list_files(self, prefix: str) -> list[str]:
         """List file paths under ``prefix``."""
 
+    def invalidate_cache(self) -> None:  # noqa: B027
+        """Invalidate any client-side directory cache.
+
+        Called after fixture setup and before benchmark measurement to ensure
+        listing benchmarks reflect real I/O, not cached results from the
+        population phase.  Default is a no-op.
+        """
+
     def close(self) -> None:  # noqa: B027
         """Release resources. Default is a no-op."""

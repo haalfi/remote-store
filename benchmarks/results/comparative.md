@@ -1,11 +1,7 @@
 <!-- Generated 2026-02-28 from Docker benchmarks (MinIO, Azurite, OpenSSH) -->
 <!-- Hardware: Intel(R) Core(TM) Ultra 7 265K, Python 3.13.11, Windows -->
-<!-- NOTE: Some listing numbers are anomalous -- s3fs (67us) and adlfs (83us) -->
-<!-- for 50 files likely reflect client-side caching in the test harness, not -->
-<!-- real-world performance. See ID-032 in BACKLOG.md. -->
-<!-- NOTE: S3 raw boto3 listing (4.4ms) uses the paginator API without caching, -->
-<!-- while remote-store (239us) benefits from s3fs's cached ls(). Related to -->
-<!-- ID-032. -->
+<!-- NOTE: Listing numbers below pre-date the ID-032 cache-invalidation fix. -->
+<!-- Re-run benchmarks to get updated numbers without fsspec caching bias. -->
 
 ### Local
 
@@ -24,7 +20,7 @@
 | Write 1MB | 20.1ms | 30.4ms (1.5x slower) | 21.2ms (1.1x slower) |
 | Read 1MB | 5.9ms | 5.1ms (1.2x faster) | 7.0ms (1.2x slower) |
 | Exists (hit) | 1.4ms | 1.3ms | 1.3ms |
-| List 50 files | 239us | 4.4ms (18.4x slower)* | 67us (3.5x faster)** |
+| List 50 files | 239us | 4.4ms (18.4x slower) | 67us (3.5x faster) |
 | Delete | 3.4ms | 1.5ms (2.2x faster) | 1.6ms (2.1x faster) |
 
 ### SFTP
@@ -44,15 +40,10 @@
 | Write 1MB | 13.7ms | 13.7ms | 16.9ms (1.2x slower) |
 | Read 1MB | 5.8ms | 5.9ms | 10.8ms (1.9x slower) |
 | Exists (hit) | 1.7ms | 1.7ms | 1.9ms (1.2x slower) |
-| List 50 files | 11.4ms | 9.5ms (1.2x faster) | 83us (137.8x faster)** |
+| List 50 files | 11.4ms | 9.5ms (1.2x faster) | 83us (137.8x faster) |
 | Delete | 1.8ms | 1.8ms | 4.0ms (2.2x slower) |
 
 ---
 
-*\* boto3 listing uses the paginator API without caching, while remote-store
-benefits from s3fs's cached `ls()`. The 18.4x gap reflects caching differences
-in the test harness, not real overhead.*
-
-*\*\* fsspec listing times (s3fs 67us, adlfs 83us) likely reflect client-side
-directory caching from the fixture's file-population phase, not real-world
-listing performance. See ID-032 in BACKLOG.md.*
+*Listing numbers above pre-date the ID-032 cache-invalidation fix.
+Re-run benchmarks to get updated numbers without fsspec caching bias.*

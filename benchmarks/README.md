@@ -101,11 +101,11 @@ hatch run bench-cloud
 
 ## Speed Tiers
 
-| Tier | Marker | What's included | Time/backend |
-|------|--------|-----------------|--------------|
-| **quick** | (default) | 1KB, 64KB, 1MB payloads; 50-file list; basic ops | ~2 min |
-| **standard** | `@pytest.mark.standard` | + 10MB payload; 1000-file list, deep hierarchy, per-folder stats | ~5 min |
-| **full** | `@pytest.mark.full` | + 100MB payload; 10k-file list | ~20-30 min |
+| Tier | Marker | What's included | Time/backend (Docker) | Time/backend (Cloud) |
+|------|--------|-----------------|----------------------|---------------------|
+| **quick** | (default) | 1KB, 64KB, 1MB payloads; 50-file list; basic ops | ~2 min | ~5 min |
+| **standard** | `@pytest.mark.standard` | + 10MB payload; 1000-file list, deep hierarchy, per-folder stats | ~5 min | ~15 min |
+| **full** | `@pytest.mark.full` | + 100MB payload; 10k-file list | ~20-30 min | ~60+ min |
 
 Selection expressions:
 

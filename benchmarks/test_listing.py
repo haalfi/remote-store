@@ -29,6 +29,7 @@ class TestListPerformance:
         self._dir = f"listbench/{uuid.uuid4().hex[:8]}"
         for i in range(50):
             bench_target.write(f"{self._dir}/file_{i:04d}.txt", b"x")
+        bench_target.invalidate_cache()
 
     def test_list_files(self, bench_target: BenchTarget, benchmark: Any) -> None:
         def _list() -> None:
@@ -50,7 +51,9 @@ class TestListPerformanceLarge:
         self._dir = f"listlarge/{uuid.uuid4().hex[:8]}"
         for i in range(1000):
             bench_target.write(f"{self._dir}/file_{i:06d}.txt", b"x")
+        bench_target.invalidate_cache()
 
+    @pytest.mark.standard
     def test_list_1000_files(self, bench_target: BenchTarget, benchmark: Any) -> None:
         def _list() -> None:
             bench_target.list_files(self._dir)
