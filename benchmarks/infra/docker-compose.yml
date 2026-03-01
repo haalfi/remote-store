@@ -12,7 +12,9 @@
 services:
   minio:
     # Chainguard image — MinIO stopped publishing to Docker Hub Oct 2025.
-    image: cgr.dev/chainguard/minio:latest
+    # -dev variant includes busybox (sh, wget) needed for CMD-SHELL healthcheck.
+    # Free tier has no versioned tags; pin by digest when reproducibility matters.
+    image: cgr.dev/chainguard/minio:latest-dev
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
@@ -40,12 +42,13 @@ services:
 
   sftp:
     # alpine-3.7 reached EOL ~Nov 2019; use latest Alpine for security patches.
+    # atmoz/sftp only publishes `alpine` (floating); no per-version Alpine tags.
     image: atmoz/sftp:alpine
     ports:
       - "2222:22"
     command: benchuser:benchpass:::upload
     healthcheck:
-      test: ["CMD-SHELL", "ssh-keyscan -p 22 127.0.0.1 >/dev/null 2>&1"]
+      test: ["CMD", "nc", "-z", "127.0.0.1", "22"]
       interval: 5s
       timeout: 5s
       retries: 5
