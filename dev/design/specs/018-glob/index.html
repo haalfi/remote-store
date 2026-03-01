@@ -2301,6 +2301,39 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#glob-018-s3backend-native-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-018: S3Backend Native Glob
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-019-s3pyarrowbackend-native-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-019: S3PyArrowBackend Native Glob
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-020-azurebackend-native-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-020: AzureBackend Native Glob
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#glob-006-storeglob-signature" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3149,6 +3182,39 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#glob-018-s3backend-native-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-018: S3Backend Native Glob
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-019-s3pyarrowbackend-native-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-019: S3PyArrowBackend Native Glob
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-020-azurebackend-native-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-020: AzureBackend Native Glob
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#glob-006-storeglob-signature" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3379,6 +3445,24 @@ yielded lazily via iterator.</p>
 <code>LocalBackend</code> declares <code>Capability.GLOB</code> in its capability set.
 <strong>Postconditions:</strong> Leverages the OS filesystem's native pattern matching.
 <code>FileInfo</code> paths are converted via <code>to_key()</code> (same as <code>list_files</code>).</p>
+<h3 id="glob-018-s3backend-native-glob">GLOB-018: S3Backend Native Glob<a class="headerlink" href="#glob-018-s3backend-native-glob" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>S3Backend</code> overrides <code>glob()</code> using prefix-optimized listing
+via s3fs. <code>S3Backend</code> declares <code>Capability.GLOB</code> in its capability set.
+<strong>Algorithm:</strong> Extracts the longest non-wildcard prefix from the pattern,
+lists files under that prefix (recursive or non-recursive as determined by
+the pattern), and filters client-side with a compiled regex.
+<strong>Postconditions:</strong> Same contract as GLOB-004 (files only, backend-relative
+paths, lazy iterator). Error handling is delegated to <code>list_files()</code>.</p>
+<h3 id="glob-019-s3pyarrowbackend-native-glob">GLOB-019: S3PyArrowBackend Native Glob<a class="headerlink" href="#glob-019-s3pyarrowbackend-native-glob" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>S3PyArrowBackend</code> overrides <code>glob()</code> using the same
+prefix-optimized algorithm as GLOB-018, delegating to its own <code>list_files()</code>
+(which uses s3fs for listing). <code>S3PyArrowBackend</code> declares <code>Capability.GLOB</code>.</p>
+<h3 id="glob-020-azurebackend-native-glob">GLOB-020: AzureBackend Native Glob<a class="headerlink" href="#glob-020-azurebackend-native-glob" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>AzureBackend</code> overrides <code>glob()</code> using prefix-optimized
+listing via the Blob SDK. <code>AzureBackend</code> declares <code>Capability.GLOB</code>.
+<strong>Postconditions:</strong> Works with both HNS and non-HNS accounts because it
+delegates to <code>self.list_files()</code> which handles both modes. Same contract
+as GLOB-004.</p>
 <hr />
 <h3 id="glob-006-storeglob-signature">GLOB-006: Store.glob() Signature<a class="headerlink" href="#glob-006-storeglob-signature" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>Store.glob(pattern) -&gt; Iterator[FileInfo]</code>.

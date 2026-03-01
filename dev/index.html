@@ -3515,7 +3515,7 @@ reinvent file I/O. It just gives every backend the same simple front door.</p>
 <h3 id="known-limitations">Known Limitations<a class="headerlink" href="#known-limitations" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Sync only</strong> -- all operations are synchronous. For async frameworks, wrap calls with <code>asyncio.to_thread()</code>.</li>
-<li><strong>Glob</strong> -- <code>list_files(pattern=)</code> and <code>ext.glob.glob_files()</code> work on all backends. Native <code>Store.glob()</code> is Local-only; S3/Azure native glob is planned.</li>
+<li><strong>Glob</strong> -- <code>list_files(pattern=)</code> and <code>ext.glob.glob_files()</code> work on all backends. Native <code>Store.glob()</code> is supported by Local, S3, S3-PyArrow, and Azure backends.</li>
 <li><strong>PyArrow adapter</strong> -- Phase 1 (Tier 2/3 reads, writes) is complete. Phase 2 native fast-path reads are deferred. See the <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">backlog</a> for details.</li>
 </ul>
 <h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h2>

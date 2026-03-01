@@ -3038,9 +3038,9 @@ it is an opt-in feature for users who know their backend:</p>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;**/*.csv&quot;</span><span class="p">):</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div>
-<p>Currently only <code>LocalBackend</code> implements native glob (via
-<code>pathlib.Path.glob()</code>). Calling <code>store.glob()</code> on other backends raises
-<code>CapabilityNotSupported</code>.</p>
+<p><code>LocalBackend</code>, <code>S3Backend</code>, <code>S3PyArrowBackend</code>, and <code>AzureBackend</code> implement
+native glob. <code>LocalBackend</code> uses <code>pathlib.Path.glob()</code>; the cloud backends use
+prefix-optimized listing with client-side regex filtering.</p>
 <h2 id="tier-3-glob_files-portable-full-glob">Tier 3: glob_files() -- portable full glob<a class="headerlink" href="#tier-3-glob_files-portable-full-glob" title="Permanent link">&para;</a></h2>
 <p><code>glob_files()</code> is the recommended API when <code>list_files(pattern=)</code> isn't
 enough and you want code that works across all backends:</p>
@@ -3131,7 +3131,7 @@ Patterns like <code>**error</code> where <code>**</code> is embedded within a se
 <td><code>glob_files(store, "**/*.csv")</code></td>
 </tr>
 <tr>
-<td>Native OS glob (Local only)</td>
+<td>Native backend glob (Local, S3, S3-PyArrow, Azure)</td>
 <td><code>store.glob("**/*.csv")</code></td>
 </tr>
 <tr>
