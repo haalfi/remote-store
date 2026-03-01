@@ -6,14 +6,14 @@ This document chronicles how `remote-store` was built as a collaboration between
 
 | Metric | Value |
 |--------|-------|
-| Source code | ~3,700 lines (5 backends) |
-| Tests | 556 tests, ~3,800 lines |
-| Specs & docs | 12 specs, 7 ADRs, ~1,800 lines |
-| Examples | ~350 lines (6 scripts, 3 notebooks) |
-| Documentation site | MkDocs Material |
+| Source code | ~5,300 lines (6 backends) |
+| Tests | 1,165 tests, ~8,650 lines |
+| Specs & docs | 18 specs, 9 ADRs, 3 RFCs |
+| Examples | 12 core + 4 cloud + 3 notebooks |
+| Documentation site | MkDocs Material (versioned via mike) |
 | Coverage | 95% |
-| Calendar time | ~4 weeks of sessions |
-| Commits | 165 |
+| Calendar time | ~8 weeks of sessions |
+| Commits | 253 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
@@ -339,6 +339,14 @@ Four infrastructure improvements shipped together: the extension namespace contr
 Two milestones in one release. The glob feature (ADR-0009) introduced a three-tier design: universal `fnmatch` filtering via `list_files(pattern=)`, capability-gated native `Store.glob()` (Local-only initially), and a portable `ext.glob.glob_files()` fallback with recursive `**` patterns. S3/Azure native glob remains planned.
 
 The project also graduated from Alpha to Beta. After 18 specs, 9 ADRs, 1040+ tests, and 4 extensions, the core API surface (`Store`, `Registry`, `Backend`, models, errors) was declared stable. A stability tiers table was added to CONTRIBUTING.md to formalize the contract: Beta means breaking changes are documented and avoided where possible, while extensions may evolve more freely.
+
+### Phase 19: Cloud Glob and Conda (v0.12.0)
+
+The glob story completed. v0.11.0 shipped with native glob only for LocalBackend; now S3, S3-PyArrow, and Azure all override `Backend.glob()` with prefix-optimized listing and client-side regex filtering (GLOB-018/019/020). Shared helpers were extracted to an internal `_glob.py` module to avoid duplicating prefix extraction and regex compilation across backends. All four file-capable backends now declare `Capability.GLOB`.
+
+On the infrastructure side, a conda-forge recipe was added (`packaging/conda-forge/recipe.yaml`, v1 CEP-13 format) with CI validation via `rattler-build --render-only`. The release checklist gained conda-specific steps: version bump in Phase 2, version match check in Phase 3, and sha256 update in Phase 5. Benchmark fixtures were fixed to invalidate fsspec listing caches (ID-032), and the 1000-file listing test was moved from quick to standard tier (ID-033).
+
+This release also demonstrated iterative self-review: the `/review-pr` skill (added in PR #76) was used to review its own PR and subsequent conda PRs, catching real consistency gaps each time -- including a non-existent GitHub Action, a premature version bump, and a missing staging step in the release checklist.
 
 ## What Worked Well
 

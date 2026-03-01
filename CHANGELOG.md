@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-03-01
+
 ### Added
 
 - **S3, S3-PyArrow, and Azure native glob** (BK-002, ID-007, GLOB-018/019/020)
