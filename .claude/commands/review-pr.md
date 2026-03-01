@@ -83,8 +83,14 @@ Rules for posting:
 - **Event must be `COMMENT`** — never `APPROVE` or `REQUEST_CHANGES` (the
   token belongs to the repo owner; `APPROVE` fails with "Can not approve your
   own pull request").
-- **Use `line` (not `position`)** — `line` is the line number in the file as
-  shown in the diff's `+` side. `position` is deprecated/confusing.
+- **Use `line` (not `position`)** — `line` is the line number in the
+  head-commit version of the file. `position` is deprecated/confusing.
+  **Constraint:** only lines visible in the diff can receive comments. If a
+  finding relates to unchanged code outside the diff hunks, attach the comment
+  to the nearest changed line and reference the actual location in the body.
+- **Deleted lines** need `"side": "LEFT"` and the line number from the
+  base-branch version of the file. Without `side`, the API defaults to
+  `"RIGHT"` (new code). Use `LEFT` when commenting on removed code.
 - **Each comment must reference a specific line** — no general "file-level"
   comments unless absolutely necessary.
 - **Comment body format**: Start with a category tag, then the issue.
