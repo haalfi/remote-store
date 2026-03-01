@@ -123,10 +123,7 @@ def _pattern_to_regex(pattern: str) -> re.Pattern[str]:
                 # ** at end of pattern
                 parts.append(".*")
             else:
-                msg = (
-                    f"'**' must be a complete path segment, "
-                    f"got '**{pattern[i]}' in pattern {pattern!r}"
-                )
+                msg = f"'**' must be a complete path segment, got '**{pattern[i]}' in pattern {pattern!r}"
                 raise ValueError(msg)
         elif c == "*":
             parts.append("[^/]*")
