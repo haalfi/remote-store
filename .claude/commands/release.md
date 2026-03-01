@@ -43,8 +43,9 @@ If not provided, ask them. Refer to CONTRIBUTING.md § Versioning for guidance:
 - [ ] Update `date-released` in `CITATION.cff` to today (`bump-my-version` only updates `version:`, not this field)
 - [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
+- [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z
 - [ ] `bump-my-version bump patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff`)
-- [ ] Review and commit: `git diff` to verify, then stage `pyproject.toml`, `src/remote_store/__init__.py`, `CITATION.cff`, `CHANGELOG.md` and commit as `Release vX.Y.Z`
+- [ ] Review and commit: `git diff` to verify, then stage `pyproject.toml`, `src/remote_store/__init__.py`, `CITATION.cff`, `CHANGELOG.md`, `packaging/conda-forge/recipe.yaml` and commit as `Release vX.Y.Z`
 
 **Important:** `bump-my-version` modifies files in-place without committing or
 tagging. You control the commit and tag lifecycle manually.
@@ -55,6 +56,7 @@ tagging. You control the commit and tag lifecycle manually.
 - [ ] `mkdocs build --strict` passes
 - [ ] `python -m build && twine check dist/*` — package builds cleanly
 - [ ] `pip install dist/*.whl && python -c "import remote_store; print(remote_store.__version__)"` — version matches
+- [ ] Conda recipe: version in `packaging/conda-forge/recipe.yaml` matches release version
 
 ## Phase 4: Ship
 
@@ -74,6 +76,9 @@ tagging. You control the commit and tag lifecycle manually.
 - [ ] PyPI: `pip install remote-store==X.Y.Z` in a fresh venv, verify version and README renders
 - [ ] GitHub Pages: check version switcher shows new version as "latest"
 - [ ] ReadTheDocs: check https://remote-store.readthedocs.io/ shows correct version (requires RTD automation rule for tag-based builds)
+- [ ] Conda recipe: fetch sha256 from PyPI (`curl -s https://pypi.org/pypi/remote-store/X.Y.Z/json | python -c "import sys,json; d=json.load(sys.stdin); print([f['digests']['sha256'] for f in d['urls'] if f['filename'].endswith('.tar.gz')][0])"`) and update `source.sha256` in `packaging/conda-forge/recipe.yaml`
+- [ ] Commit recipe sha256 update via a branch and PR (branch protection requires PRs even for metadata-only changes)
+- [ ] Conda-forge: if feedstock exists, verify bot opened a version-bump PR
 - [ ] Announce if applicable
 
 ## Report

@@ -1,0 +1,20 @@
+name: Conda Recipe
+
+on:
+  push:
+    branches: [master]
+    paths: ['packaging/conda-forge/**']
+  pull_request:
+    branches: [master]
+    paths: ['packaging/conda-forge/**']
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: prefix-dev/rattler-build-action@v0.2.34
+        with:
+          recipe-path: packaging/conda-forge/recipe.yaml
+          build-args: --render-only
+          upload-artifact: false
