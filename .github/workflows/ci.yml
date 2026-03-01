@@ -38,7 +38,7 @@ jobs:
       - name: Start Azurite
         run: |
           docker run -d --name azurite -p 10000:10000 \
-            mcr.microsoft.com/azure-storage/azurite \
+            mcr.microsoft.com/azure-storage/azurite:3.35.0 \
             azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
           for i in $(seq 1 30); do
             nc -z 127.0.0.1 10000 && break || sleep 1
