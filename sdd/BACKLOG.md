@@ -119,6 +119,34 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   (~20 key tests), (b) reduce `min_rounds` for cloud mode, or (c) accept the
   longer cloud time and document it.
 
+- [ ] **ID-034 — Parquet lake guide (Bronze / Silver / Gold patterns)**
+  User-facing guide showing how to use `Store.child()` + `ext.arrow` +
+  `ext.transfer` to build a multi-layer Parquet lake on any backend.
+  Patterns: Bronze (raw ingestion), Silver (cleaned/typed), Gold (aggregated).
+  Example with Pandas/Polars reading and writing Parquet via `pyarrow_fs()`.
+  No new code needed — purely documents existing capabilities.
+
+- [ ] **ID-035 — Parallel batch operations**
+  Add `concurrent=True` (or `max_workers=N`) option to `ext.batch` functions
+  (`batch_delete`, `batch_copy`, `batch_exists`). Cloud backends benefit
+  significantly from concurrent I/O — sequential execution over hundreds of
+  partition files is a bottleneck. Use `concurrent.futures.ThreadPoolExecutor`
+  (stdlib). Needs spec update to `016-ext-batch.md`. Related: ID-013 (async).
+
+- [ ] **ID-036 — Hive-style partition path helpers**
+  Thin utility for building and parsing Hive partition paths
+  (e.g., `year=2026/month=03/day=01/data.parquet`). Could live in `ext/` or
+  as a helper on `Store`. Scope: `partition_path(key, **parts) -> str` and
+  `parse_partition(path) -> dict`. Useful for Parquet lake workloads alongside
+  PyArrow datasets. No external dependencies.
+
+- [ ] **ID-037 — PyArrow adapter Phase 2 — Tier 1 native fast-path reads**
+  Complete the deferred Phase 2 work from ID-016: `Store.native_path()`,
+  `Backend.native_path()`, Tier 1 native fast-path reads (PA-010) bypassing
+  Python I/O for data-path operations. Critical for large Parquet workloads
+  where GIL contention in `PythonFile` limits throughput. See spec
+  `014-pyarrow-filesystem-adapter.md` Phase 2 sections.
+
 ---
 
 ## Done
