@@ -8,6 +8,7 @@ on top of the core Store API.
 | Module | Extra | Description |
 |--------|-------|-------------|
 | `ext.batch` | -- | Bulk delete, copy, and exists operations |
+| `ext.glob` | -- | Portable glob pattern matching for file listing |
 | `ext.transfer` | -- | Upload, download, and cross-store transfer |
 | `ext.arrow` | `arrow` | PyArrow FileSystem adapter |
 
@@ -15,17 +16,18 @@ on top of the core Store API.
 
 ### Always-available extensions (pure Python)
 
-`ext.batch` and `ext.transfer` have no extra dependencies.  They are
-re-exported from the top-level package:
+`ext.batch`, `ext.glob`, and `ext.transfer` have no extra dependencies.
+They are re-exported from the top-level package:
 
 ```python
-from remote_store import batch_delete, upload, download
+from remote_store import batch_delete, glob_files, upload, download
 ```
 
 Or import from the extension module directly:
 
 ```python
 from remote_store.ext.batch import batch_delete
+from remote_store.ext.glob import glob_files
 from remote_store.ext.transfer import upload
 ```
 
@@ -64,6 +66,7 @@ All extensions follow the same contract (ADR-0008):
 
 - [PyArrow Adapter](pyarrow-adapter.md)
 - [Batch Operations](batch-operations.md)
+- [Glob Pattern Matching](glob-pattern-matching.md)
 - [Transfer Operations](transfer-operations.md)
 
 ## Writing Your Own Extension

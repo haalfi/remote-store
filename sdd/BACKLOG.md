@@ -15,8 +15,8 @@ Active work items, ordered by priority.
   Three-tier design chosen (ADR-0009): (1) `list_files(pattern=…)` for universal
   fnmatch name filtering, (2) `Capability.GLOB` + `Store.glob()` for native backend
   access (like `unwrap`), (3) `ext.glob.glob_files()` for portable full-glob
-  fallback. Local has native glob; S3/Azure prefix-optimized implementations
-  remain as future work.
+  fallback. Local has native glob. Remaining: S3/Azure prefix-optimized native
+  glob implementations.
   Related: ID-007.
   → Spec: `sdd/specs/018-glob.md` (extends `003-backend-adapter-contract.md`)
   → ADR: `sdd/adrs/0009-glob-three-tier-design.md`
@@ -57,8 +57,8 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
 - [~] **ID-007 — `Store.glob()` surface API**
   Three-tier pattern matching: `list_files(pattern=…)` for universal name filtering,
   `Store.glob(pattern)` for native backend glob (capability-gated on `GLOB`),
-  `ext.glob.glob_files()` for portable full-glob fallback. Local has native glob;
-  S3/Azure prefix-optimized implementations remain as future work.
+  `ext.glob.glob_files()` for portable full-glob fallback. Local has native glob.
+  Remaining: S3/Azure prefix-optimized native glob implementations.
   → Spec: `sdd/specs/018-glob.md`
   → ADR: `sdd/adrs/0009-glob-three-tier-design.md`
 

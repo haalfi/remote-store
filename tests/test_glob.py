@@ -9,7 +9,7 @@ Covers spec 018-glob.md.
 
 from __future__ import annotations
 
-import tempfile
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -20,21 +20,19 @@ from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
 from remote_store.ext.glob import _extract_prefix, _needs_recursive, _pattern_to_regex, glob_files
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 # ---------------------------------------------------------------------------
-# Helpers
+# Fixtures
 # ---------------------------------------------------------------------------
 
 
-def _local_store() -> tuple[Store, tempfile.TemporaryDirectory[str]]:
-    """Return a LocalBackend-based Store (has GLOB) and temp dir handle.
-
-    The caller does **not** need to clean up — the ``TemporaryDirectory``
-    object removes itself when garbage-collected.
-    """
-    td = tempfile.TemporaryDirectory()
-    backend = LocalBackend(root=td.name)
-    store = Store(backend=backend, root_path="data")
-    return store, td
+@pytest.fixture()
+def local_store(tmp_path: Path) -> Store:
+    """Return a LocalBackend-based Store (has GLOB) backed by tmp_path."""
+    backend = LocalBackend(root=str(tmp_path))
+    return Store(backend=backend, root_path="data")
 
 
 def _memory_store() -> Store:
@@ -124,8 +122,8 @@ class TestListFilesPattern:
         assert results == []
 
     @pytest.mark.spec("GLOB-001")
-    def test_pattern_works_with_local_backend(self) -> None:
-        store, _ = _local_store()
+    def test_pattern_works_with_local_backend(self, local_store: Store) -> None:
+        store = local_store
         _populate(store)
         results = sorted(str(f.path) for f in store.list_files("", pattern="*.csv"))
         assert results == ["report.csv"]
@@ -142,8 +140,8 @@ class TestGlobCapability:
         assert Capability.GLOB.value == "glob"
 
     @pytest.mark.spec("GLOB-002")
-    def test_local_backend_has_glob(self) -> None:
-        store, _ = _local_store()
+    def test_local_backend_has_glob(self, local_store: Store) -> None:
+        store = local_store
         assert store.supports(Capability.GLOB)
 
     @pytest.mark.spec("GLOB-002")
@@ -162,37 +160,37 @@ class TestBackendGlobDefault:
 
 class TestLocalBackendGlob:
     @pytest.mark.spec("GLOB-005")
-    def test_glob_star_csv(self) -> None:
-        store, _ = _local_store()
+    def test_glob_star_csv(self, local_store: Store) -> None:
+        store = local_store
         _populate(store)
         results = sorted(str(f.path) for f in store.glob("*.csv"))
         assert results == ["report.csv"]
 
     @pytest.mark.spec("GLOB-005")
-    def test_glob_recursive(self) -> None:
-        store, _ = _local_store()
+    def test_glob_recursive(self, local_store: Store) -> None:
+        store = local_store
         _populate(store)
         results = sorted(str(f.path) for f in store.glob("**/*.log"))
         assert results == ["logs/app.log", "logs/archive/old.log", "logs/error.log"]
 
     @pytest.mark.spec("GLOB-005")
-    def test_glob_subdirectory(self) -> None:
-        store, _ = _local_store()
+    def test_glob_subdirectory(self, local_store: Store) -> None:
+        store = local_store
         _populate(store)
         results = sorted(str(f.path) for f in store.glob("docs/*.md"))
         assert results == ["docs/guide.md", "docs/readme.md"]
 
     @pytest.mark.spec("GLOB-005")
-    def test_glob_no_matches(self) -> None:
-        store, _ = _local_store()
+    def test_glob_no_matches(self, local_store: Store) -> None:
+        store = local_store
         _populate(store)
         results = list(store.glob("*.xyz"))
         assert results == []
 
     @pytest.mark.spec("GLOB-004")
-    def test_glob_files_only(self) -> None:
+    def test_glob_files_only(self, local_store: Store) -> None:
         """glob() must return only files, not folders."""
-        store, _ = _local_store()
+        store = local_store
         _populate(store)
         for info in store.glob("**/*"):
             assert store.is_file(str(info.path))
@@ -200,25 +198,25 @@ class TestLocalBackendGlob:
 
 class TestStoreGlob:
     @pytest.mark.spec("GLOB-006")
-    def test_store_glob_returns_iterator(self) -> None:
-        store, _ = _local_store()
+    def test_store_glob_returns_iterator(self, local_store: Store) -> None:
+        store = local_store
         _populate(store)
         result = store.glob("*.csv")
         assert hasattr(result, "__iter__")
         assert hasattr(result, "__next__")
 
     @pytest.mark.spec("GLOB-007")
-    def test_store_glob_returns_store_relative_paths(self) -> None:
+    def test_store_glob_returns_store_relative_paths(self, local_store: Store) -> None:
         """Paths in results are store-relative, not backend-relative."""
-        store, _ = _local_store()
+        store = local_store
         _populate(store)
         for info in store.glob("**/*"):
             assert not str(info.path).startswith("data/")
 
     @pytest.mark.spec("GLOB-007")
-    def test_store_glob_round_trip(self) -> None:
+    def test_store_glob_round_trip(self, local_store: Store) -> None:
         """Glob results can be fed back to Store methods."""
-        store, _ = _local_store()
+        store = local_store
         _populate(store)
         for info in store.glob("**/*.csv"):
             data = store.read_bytes(str(info.path))
@@ -242,15 +240,15 @@ class TestGlobFilesNative:
     """glob_files() with GLOB-capable backend (LocalBackend)."""
 
     @pytest.mark.spec("GLOB-010")
-    def test_delegates_to_native(self) -> None:
-        store, _ = _local_store()
+    def test_delegates_to_native(self, local_store: Store) -> None:
+        store = local_store
         _populate(store)
         results = sorted(str(f.path) for f in glob_files(store, "*.csv"))
         assert results == ["report.csv"]
 
     @pytest.mark.spec("GLOB-010")
-    def test_recursive_native(self) -> None:
-        store, _ = _local_store()
+    def test_recursive_native(self, local_store: Store) -> None:
+        store = local_store
         _populate(store)
         results = sorted(str(f.path) for f in glob_files(store, "**/*.md"))
         assert results == ["docs/guide.md", "docs/readme.md"]
@@ -492,3 +490,11 @@ class TestGlobFilesContract:
         child = store.child("logs")
         results = sorted(str(f.path) for f in glob_files(child, "**/*.log"))
         assert results == ["app.log", "archive/old.log", "error.log"]
+
+    @pytest.mark.spec("GLOB-011")
+    def test_bare_double_star_matches_all(self) -> None:
+        """glob_files(store, '**') matches every file recursively."""
+        store = _memory_store()
+        _populate(store)
+        results = list(glob_files(store, "**"))
+        assert len(results) == 8
