@@ -47,5 +47,5 @@ class TestLocalBackendCapabilities:
     """Local backend supports all capabilities."""
 
     def test_supports_all_capabilities(self, local_backend: LocalBackend) -> None:
-        caps = local_backend.capabilities
-        assert len(caps) == len(Capability)
+        for cap in Capability:
+            assert local_backend.capabilities.supports(cap), f"Missing: {cap.name}"

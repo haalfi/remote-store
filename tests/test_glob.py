@@ -25,12 +25,16 @@ from remote_store.ext.glob import _extract_prefix, _needs_recursive, _pattern_to
 # ---------------------------------------------------------------------------
 
 
-def _local_store() -> tuple[Store, str]:
-    """Return a LocalBackend-based Store (has GLOB) and temp dir path."""
-    tmp = tempfile.mkdtemp()
-    backend = LocalBackend(root=tmp)
+def _local_store() -> tuple[Store, tempfile.TemporaryDirectory[str]]:
+    """Return a LocalBackend-based Store (has GLOB) and temp dir handle.
+
+    The caller does **not** need to clean up — the ``TemporaryDirectory``
+    object removes itself when garbage-collected.
+    """
+    td = tempfile.TemporaryDirectory()
+    backend = LocalBackend(root=td.name)
     store = Store(backend=backend, root_path="data")
-    return store, tmp
+    return store, td
 
 
 def _memory_store() -> Store:
@@ -436,6 +440,21 @@ class TestPatternToRegex:
         assert r.match("[abc.txt")
         assert not r.match("a.txt")
 
+    @pytest.mark.spec("GLOB-014")
+    def test_double_star_non_segment_raises(self) -> None:
+        """** must be a complete path segment."""
+        with pytest.raises(ValueError, match="must be a complete path segment"):
+            _pattern_to_regex("logs/**error.log")
+
+    @pytest.mark.spec("GLOB-014")
+    def test_double_star_valid_segments(self) -> None:
+        """** as standalone segment is accepted."""
+        # These should not raise
+        _pattern_to_regex("**/error.log")
+        _pattern_to_regex("logs/**")
+        _pattern_to_regex("a/**/b.txt")
+        _pattern_to_regex("**")
+
 
 # ===========================================================================
 # GLOB-015, GLOB-016: No backend coupling, capability propagation
@@ -455,3 +474,21 @@ class TestGlobFilesContract:
         store = Store(backend=_NoListBackend())
         with pytest.raises(CapabilityNotSupported):
             list(glob_files(store, "*.txt"))
+
+    @pytest.mark.spec("GLOB-007")
+    def test_glob_files_with_child_store(self) -> None:
+        """glob_files composes correctly through child() path scoping."""
+        store = _memory_store()
+        _populate(store)
+        child = store.child("docs")
+        results = sorted(str(f.path) for f in glob_files(child, "*.md"))
+        assert results == ["guide.md", "readme.md"]
+
+    @pytest.mark.spec("GLOB-007")
+    def test_glob_files_with_child_store_recursive(self) -> None:
+        """glob_files recursive pattern works through child()."""
+        store = _memory_store()
+        _populate(store)
+        child = store.child("logs")
+        results = sorted(str(f.path) for f in glob_files(child, "**/*.log"))
+        assert results == ["app.log", "archive/old.log", "error.log"]

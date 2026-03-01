@@ -237,8 +237,11 @@ class Store:
 
         :param recursive: Include files in all subdirectories.
         :param pattern: Optional ``fnmatch`` pattern matched against each file's
-            name (e.g., ``"*.csv"``, ``"report.*"``).  Filtering is applied
-            at the Store level so it works with every backend.
+            **name** (basename only, e.g., ``"*.csv"``, ``"report.*"``).
+            Path-based patterns like ``"subdir/*.csv"`` will not match — use
+            ``ext.glob.glob_files()`` for full path-based pattern matching.
+            Filtering is applied at the Store level so it works with every
+            backend.
         """
         self._backend.capabilities.require(Capability.LIST, backend=self._backend.name)
         for info in self._backend.list_files(self._full_path(path), recursive=recursive):

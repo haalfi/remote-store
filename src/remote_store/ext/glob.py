@@ -104,6 +104,10 @@ def _pattern_to_regex(pattern: str) -> re.Pattern[str]:
     - ``?``    → ``[^/]`` (single non-separator char)
     - ``[…]``  → character class (passed through)
     - ``[!…]`` → negated character class (``[!abc]`` → ``[^abc]``)
+
+    ``**`` must be a complete path segment (``**/``, ``/**``, or the
+    entire pattern). Patterns like ``**error`` are not supported and
+    raise ``ValueError``.
     """
     parts: list[str] = []
     i = 0
@@ -115,9 +119,15 @@ def _pattern_to_regex(pattern: str) -> re.Pattern[str]:
             if i < n and pattern[i] == "/":
                 i += 1  # consume trailing slash
                 parts.append("(?:.+/)?")
-            else:
+            elif i >= n:
                 # ** at end of pattern
                 parts.append(".*")
+            else:
+                msg = (
+                    f"'**' must be a complete path segment, "
+                    f"got '**{pattern[i]}' in pattern {pattern!r}"
+                )
+                raise ValueError(msg)
         elif c == "*":
             parts.append("[^/]*")
             i += 1

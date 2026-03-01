@@ -38,7 +38,7 @@ capabilities, new methods, or extensions.
 
 ---
 
-## Tier 2: Native Glob Capability
+## Tier 2: Native Glob Capability and Store API
 
 ### GLOB-002: Capability.GLOB Enum Member
 
@@ -78,8 +78,6 @@ yielded lazily via iterator.
 `FileInfo` paths are converted via `to_key()` (same as `list_files`).
 
 ---
-
-## Tier 2: Store API
 
 ### GLOB-006: Store.glob() Signature
 
@@ -148,6 +146,10 @@ directory levels.
 - `[abc]` → `[abc]` (character class, passed through)
 - `[!abc]` → `[^abc]` (negated character class)
 - All other characters are regex-escaped.
+
+`**` must be a complete path segment (`**/`, `/**`, or the entire pattern).
+Patterns like `**error` where `**` is embedded within a segment raise
+`ValueError`.
 
 The regex is anchored (`^...$`) and matched against the full store-relative
 path of each `FileInfo`.
