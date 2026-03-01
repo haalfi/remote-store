@@ -11,7 +11,8 @@
 
 services:
   minio:
-    image: minio/minio:RELEASE.2025-01-20T14-49-07Z
+    # Chainguard image — MinIO stopped publishing to Docker Hub Oct 2025.
+    image: cgr.dev/chainguard/minio:latest
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
@@ -20,13 +21,14 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      # Chainguard image has no `mc` binary; use HTTP liveness endpoint.
+      test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:9000/minio/health/live 2>&1 || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
     command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
     ports:
       - "10000:10000"
@@ -37,7 +39,8 @@ services:
       retries: 5
 
   sftp:
-    image: atmoz/sftp:alpine-3.7
+    # alpine-3.7 reached EOL ~Nov 2019; use latest Alpine for security patches.
+    image: atmoz/sftp:alpine
     ports:
       - "2222:22"
     command: benchuser:benchpass:::upload
