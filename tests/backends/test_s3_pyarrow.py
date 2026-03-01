@@ -80,10 +80,7 @@ class TestS3PyArrowConstruction:
         caps = s3pa_backend.capabilities
         assert isinstance(caps, CapabilitySet)
         for cap in Capability:
-            if cap is Capability.GLOB:
-                assert not caps.supports(cap), "S3-PyArrow should not declare GLOB"
-            else:
-                assert caps.supports(cap), f"Missing capability: {cap.value}"
+            assert caps.supports(cap), f"Missing capability: {cap.value}"
 
     @pytest.mark.spec("S3PA-004")
     def test_lazy_connection(self) -> None:
@@ -616,6 +613,60 @@ class TestS3PyArrowDelete:
     def test_delete_missing_raises(self, s3pa_backend: Backend) -> None:
         with pytest.raises(NotFound):
             s3pa_backend.delete("nope.txt")
+
+
+# endregion
+
+
+# region: Glob (GLOB-019)
+class TestS3PyArrowGlob:
+    """GLOB-019: S3PyArrowBackend native glob via prefix-optimized listing."""
+
+    def _populate(self, backend: Backend) -> None:
+        backend.write("report.csv", b"r1")
+        backend.write("report.txt", b"r2")
+        backend.write("data/sales.csv", b"d1")
+        backend.write("data/sub/deep.csv", b"d2")
+        backend.write("logs/app.log", b"l1")
+        backend.write("logs/archive/old.log", b"l2")
+        backend.write("file1.txt", b"f1")
+        backend.write("file2.txt", b"f2")
+
+    @pytest.mark.spec("GLOB-019")
+    def test_glob_star_csv(self, s3pa_backend: Backend) -> None:
+        self._populate(s3pa_backend)
+        results = sorted(str(f.path) for f in s3pa_backend.glob("*.csv"))
+        assert results == ["report.csv"]
+
+    @pytest.mark.spec("GLOB-019")
+    def test_glob_recursive(self, s3pa_backend: Backend) -> None:
+        self._populate(s3pa_backend)
+        results = sorted(str(f.path) for f in s3pa_backend.glob("**/*.log"))
+        assert results == ["logs/app.log", "logs/archive/old.log"]
+
+    @pytest.mark.spec("GLOB-019")
+    def test_glob_subdirectory(self, s3pa_backend: Backend) -> None:
+        self._populate(s3pa_backend)
+        results = sorted(str(f.path) for f in s3pa_backend.glob("data/*.csv"))
+        assert results == ["data/sales.csv"]
+
+    @pytest.mark.spec("GLOB-019")
+    def test_glob_no_matches(self, s3pa_backend: Backend) -> None:
+        self._populate(s3pa_backend)
+        results = list(s3pa_backend.glob("*.xyz"))
+        assert results == []
+
+    @pytest.mark.spec("GLOB-019")
+    def test_glob_files_only(self, s3pa_backend: Backend) -> None:
+        self._populate(s3pa_backend)
+        for info in s3pa_backend.glob("**/*"):
+            assert isinstance(info, FileInfo)
+
+    @pytest.mark.spec("GLOB-019")
+    def test_glob_question_mark(self, s3pa_backend: Backend) -> None:
+        self._populate(s3pa_backend)
+        results = sorted(str(f.path) for f in s3pa_backend.glob("file?.txt"))
+        assert results == ["file1.txt", "file2.txt"]
 
 
 # endregion

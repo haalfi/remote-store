@@ -77,6 +77,30 @@ yielded lazily via iterator.
 **Postconditions:** Leverages the OS filesystem's native pattern matching.
 `FileInfo` paths are converted via `to_key()` (same as `list_files`).
 
+### GLOB-018: S3Backend Native Glob
+
+**Invariant:** `S3Backend` overrides `glob()` using prefix-optimized listing
+via s3fs. `S3Backend` declares `Capability.GLOB` in its capability set.
+**Algorithm:** Extracts the longest non-wildcard prefix from the pattern,
+lists files under that prefix (recursive or non-recursive as determined by
+the pattern), and filters client-side with a compiled regex.
+**Postconditions:** Same contract as GLOB-004 (files only, backend-relative
+paths, lazy iterator). Error handling is delegated to `list_files()`.
+
+### GLOB-019: S3PyArrowBackend Native Glob
+
+**Invariant:** `S3PyArrowBackend` overrides `glob()` using the same
+prefix-optimized algorithm as GLOB-018, delegating to its own `list_files()`
+(which uses s3fs for listing). `S3PyArrowBackend` declares `Capability.GLOB`.
+
+### GLOB-020: AzureBackend Native Glob
+
+**Invariant:** `AzureBackend` overrides `glob()` using prefix-optimized
+listing via the Blob SDK. `AzureBackend` declares `Capability.GLOB`.
+**Postconditions:** Works with both HNS and non-HNS accounts because it
+delegates to `self.list_files()` which handles both modes. Same contract
+as GLOB-004.
+
 ---
 
 ### GLOB-006: Store.glob() Signature

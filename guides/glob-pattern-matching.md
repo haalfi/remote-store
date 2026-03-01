@@ -74,9 +74,9 @@ if store.supports(Capability.GLOB):
         print(info.path)
 ```
 
-Currently only `LocalBackend` implements native glob (via
-`pathlib.Path.glob()`). Calling `store.glob()` on other backends raises
-`CapabilityNotSupported`.
+`LocalBackend`, `S3Backend`, `S3PyArrowBackend`, and `AzureBackend` implement
+native glob. `LocalBackend` uses `pathlib.Path.glob()`; the cloud backends use
+prefix-optimized listing with client-side regex filtering.
 
 ## Tier 3: glob_files() -- portable full glob
 
@@ -145,5 +145,5 @@ list(glob_files(reports, "**/*.csv"))
 |------|-----|
 | Filter files in one folder by name | `list_files(pattern="*.csv")` |
 | Recursive search across directories | `glob_files(store, "**/*.csv")` |
-| Native OS glob (Local only) | `store.glob("**/*.csv")` |
+| Native backend glob (Local, S3, S3-PyArrow, Azure) | `store.glob("**/*.csv")` |
 | Works with every backend | `list_files(pattern=)` or `glob_files()` |

@@ -11,14 +11,14 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [~] **BK-002 — Glob / pattern matching strategy** (v0.11.0, S3/Azure native remaining)
+- [x] **BK-002 — Glob / pattern matching strategy** (v0.12.0)
   Three-tier design chosen (ADR-0009): (1) `list_files(pattern=…)` for universal
   fnmatch name filtering, (2) `Capability.GLOB` + `Store.glob()` for native backend
   access (like `unwrap`), (3) `ext.glob.glob_files()` for portable full-glob
-  fallback. Local has native glob. Remaining: S3/Azure prefix-optimized native
-  glob implementations.
+  fallback. All backends (Local, S3, S3-PyArrow, Azure) now implement native glob
+  with prefix-optimized listing.
   Related: ID-007.
-  → Spec: `sdd/specs/018-glob.md` (extends `003-backend-adapter-contract.md`)
+  → Spec: `sdd/specs/018-glob.md` (GLOB-018, GLOB-019, GLOB-020)
   → ADR: `sdd/adrs/0009-glob-three-tier-design.md`
 
 ---
@@ -54,12 +54,12 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `on_progress` for upload/download/transfer; this item covers the lower-level
   Store API.
 
-- [~] **ID-007 — `Store.glob()` surface API** (v0.11.0, S3/Azure native remaining)
+- [x] **ID-007 — `Store.glob()` surface API** (v0.12.0)
   Three-tier pattern matching: `list_files(pattern=…)` for universal name filtering,
   `Store.glob(pattern)` for native backend glob (capability-gated on `GLOB`),
-  `ext.glob.glob_files()` for portable full-glob fallback. Local has native glob.
-  Remaining: S3/Azure prefix-optimized native glob implementations.
-  → Spec: `sdd/specs/018-glob.md`
+  `ext.glob.glob_files()` for portable full-glob fallback. All backends (Local, S3,
+  S3-PyArrow, Azure) now implement native glob with prefix-optimized listing.
+  → Spec: `sdd/specs/018-glob.md` (GLOB-018, GLOB-019, GLOB-020)
   → ADR: `sdd/adrs/0009-glob-three-tier-design.md`
 
 - [ ] **ID-008 — Checksum verification on read/write**

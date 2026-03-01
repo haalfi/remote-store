@@ -429,6 +429,29 @@ class TestStreamingConformance:
         assert backend.read_bytes("partial_pos.bin") == b"PAYLOAD"
 
 
+class TestBackendGlob:
+    """GLOB-018/019/020: glob conformance across backends."""
+
+    @pytest.mark.spec("GLOB-018")
+    def test_glob_basic(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.GLOB):
+            pytest.skip("Backend does not support GLOB")
+        backend.write("g/a.txt", b"a")
+        backend.write("g/b.csv", b"b")
+        results = sorted(str(f.path) for f in backend.glob("g/*.txt"))
+        assert results == ["g/a.txt"]
+
+    @pytest.mark.spec("GLOB-018")
+    def test_glob_recursive_conformance(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.GLOB):
+            pytest.skip("Backend does not support GLOB")
+        backend.write("gr/a.txt", b"a")
+        backend.write("gr/sub/b.txt", b"b")
+        backend.write("gr/sub/c.csv", b"c")
+        results = sorted(str(f.path) for f in backend.glob("gr/**/*.txt"))
+        assert results == ["gr/a.txt", "gr/sub/b.txt"]
+
+
 class TestBackendUnwrap:
     """BE-022: unwrap raises by default."""
 

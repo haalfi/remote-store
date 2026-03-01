@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
+_ALL_CAPABILITIES = CapabilitySet(set(Capability))
 
 _log = logging.getLogger(__name__)
 
@@ -551,6 +551,16 @@ class AzureBackend(Backend):
                     if getattr(item, "prefix", None):
                         folder_name = item.prefix.rstrip("/").rsplit("/", 1)[-1]
                         yield folder_name
+
+    def glob(self, pattern: str) -> Iterator[FileInfo]:
+        from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
+
+        prefix = extract_prefix(pattern)
+        recursive = needs_recursive(pattern)
+        compiled = pattern_to_regex(pattern)
+        for info in self.list_files(prefix, recursive=recursive):
+            if compiled.match(str(info.path)):
+                yield info
 
     # endregion
 
