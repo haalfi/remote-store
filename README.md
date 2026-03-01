@@ -131,8 +131,9 @@ config = RegistryConfig.from_dict({
 
 |Method                             |Description                     |
 |-----------------------------------|--------------------------------|
-|`list_files(path)`                 |Iterate `FileInfo` objects      |
+|`list_files(path, pattern=…)`      |Iterate `FileInfo`, optional name filter|
 |`list_folders(path)`               |Iterate subfolder names         |
+|`glob(pattern)`                    |Native glob (capability-gated)  |
 |`exists(path)`                     |Check if a file or folder exists|
 |`is_file(path)` / `is_folder(path)`|Type checks                     |
 |`get_file_info(path)`              |File metadata (`FileInfo`)      |

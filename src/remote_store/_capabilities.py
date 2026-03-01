@@ -22,6 +22,7 @@ class Capability(enum.Enum):
     COPY = "copy"
     ATOMIC_WRITE = "atomic_write"
     METADATA = "metadata"
+    GLOB = "glob"
 
 
 class CapabilitySet:

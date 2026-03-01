@@ -190,6 +190,19 @@ class LocalBackend(Backend):
 
     # endregion
 
+    # region: GLOB-004: native glob
+    def glob(self, pattern: str) -> Iterator[FileInfo]:
+        for item in self._root.glob(pattern):
+            if item.is_file():
+                try:
+                    item.resolve().relative_to(self._root)
+                except ValueError:
+                    continue  # skip paths that escape root
+                rel = self.to_key(str(item))
+                yield self._stat_to_fileinfo(rel, item)
+
+    # endregion
+
     # region: BE-014 through BE-017: listing and metadata
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         full = self._resolve(path)

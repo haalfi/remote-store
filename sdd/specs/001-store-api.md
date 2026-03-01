@@ -38,7 +38,7 @@
 
 ### STORE-008: Full API Surface
 
-**Invariant:** Store exposes: `read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`, `to_key`, `unwrap`, `child`.
+**Invariant:** Store exposes: `read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`, `to_key`, `unwrap`, `child`.
 
 ### STORE-009: Resource Management
 
@@ -65,6 +65,19 @@
 **Invariant:** `unwrap(type_hint)` delegates to `Backend.unwrap(type_hint)` and returns the backend's native handle if it matches the requested type.
 **Raises:** `CapabilityNotSupported` if the backend cannot provide the requested type.
 **Rationale:** Enables adapters (e.g., `StoreFileSystemHandler`) to access backend-native handles via the public Store surface without reaching into private attributes.
+
+### STORE-014: list_files(pattern=…)
+
+**Invariant:** `list_files(path, *, recursive=False, pattern=None)` accepts an optional `pattern` keyword. When set, files whose name does not match the pattern (via `fnmatch.fnmatch`) are excluded from results. Filtering is applied at the Store level after path rebasing.
+**Rationale:** Covers the common "give me the CSVs" use case without new capabilities or extensions.
+**See also:** [018-glob.md](018-glob.md) (GLOB-001).
+
+### STORE-015: glob()
+
+**Invariant:** `glob(pattern)` matches files against a glob pattern. Capability-gated on `Capability.GLOB`. Pattern is relative to the store root; Store prepends `root_path` before delegating to `Backend.glob()`. Returned `FileInfo.path` values are store-relative (same rebasing as `list_files`).
+**Raises:** `CapabilityNotSupported` if the backend lacks `GLOB`.
+**Rationale:** Like `unwrap()`, gives opt-in direct access to native backend capabilities. For portable pattern matching, use `list_files(pattern=…)` or `ext.glob.glob_files()`.
+**See also:** [018-glob.md](018-glob.md) (GLOB-006 through GLOB-008), [ADR-0009](../adrs/0009-glob-three-tier-design.md).
 
 ---
 

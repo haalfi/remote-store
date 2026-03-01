@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import fnmatch
 from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._capabilities import Capability
@@ -228,16 +229,45 @@ class Store:
         self._backend.capabilities.require(Capability.DELETE, backend=self._backend.name)
         self._backend.delete_folder(self._full_path(path), recursive=recursive, missing_ok=missing_ok)
 
-    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
-        """List files under path.
+    def list_files(self, path: str, *, recursive: bool = False, pattern: str | None = None) -> Iterator[FileInfo]:
+        """List files under path, optionally filtering by name pattern.
 
         Returned ``FileInfo.path`` values are store-relative keys (``root_path``
         is stripped), so they can be fed directly back into other Store methods.
 
         :param recursive: Include files in all subdirectories.
+        :param pattern: Optional ``fnmatch`` pattern matched against each file's
+            **name** (basename only, e.g., ``"*.csv"``, ``"report.*"``).
+            Path-based patterns like ``"subdir/*.csv"`` will not match — use
+            ``ext.glob.glob_files()`` for full path-based pattern matching.
+            Filtering is applied at the Store level so it works with every
+            backend.
         """
         self._backend.capabilities.require(Capability.LIST, backend=self._backend.name)
         for info in self._backend.list_files(self._full_path(path), recursive=recursive):
+            rebased = self._rebase_file_info(info)
+            if pattern is not None and not fnmatch.fnmatch(rebased.name, pattern):
+                continue
+            yield rebased
+
+    def glob(self, pattern: str) -> Iterator[FileInfo]:
+        """Match files against a glob pattern using native backend support.
+
+        Like :meth:`unwrap`, this gives direct access to a backend-specific
+        capability.  For portable pattern matching that works on every
+        backend, use ``list_files(pattern=...)`` for simple name filters
+        or ``ext.glob.glob_files()`` for full recursive glob patterns.
+
+        Returned ``FileInfo.path`` values are store-relative keys
+        (``root_path`` is stripped), like ``list_files``.
+
+        :param pattern: Glob pattern relative to the store root
+            (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
+        :raises CapabilityNotSupported: If the backend lacks ``GLOB``.
+        """
+        self._backend.capabilities.require(Capability.GLOB, backend=self._backend.name)
+        full_pattern = f"{self._root}/{pattern}" if self._root else pattern
+        for info in self._backend.glob(full_pattern):
             yield self._rebase_file_info(info)
 
     def list_folders(self, path: str) -> Iterator[str]:
