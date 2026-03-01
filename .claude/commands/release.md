@@ -45,7 +45,7 @@ If not provided, ask them. Refer to CONTRIBUTING.md § Versioning for guidance:
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
 - [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z
 - [ ] `bump-my-version bump patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff`)
-- [ ] Review and commit: `git diff` to verify, then stage `pyproject.toml`, `src/remote_store/__init__.py`, `CITATION.cff`, `CHANGELOG.md` and commit as `Release vX.Y.Z`
+- [ ] Review and commit: `git diff` to verify, then stage `pyproject.toml`, `src/remote_store/__init__.py`, `CITATION.cff`, `CHANGELOG.md`, `packaging/conda-forge/recipe.yaml` and commit as `Release vX.Y.Z`
 
 **Important:** `bump-my-version` modifies files in-place without committing or
 tagging. You control the commit and tag lifecycle manually.

@@ -12,7 +12,9 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: prefix-dev/setup-rattler-build@v0.2
-      - name: Validate recipe
-        run: rattler-build build --recipe packaging/conda-forge/recipe.yaml --render-only
+      - uses: actions/checkout@v6
+      - uses: prefix-dev/rattler-build-action@v0.2.34
+        with:
+          recipe-path: packaging/conda-forge/recipe.yaml
+          build-args: --render-only
+          upload-artifact: false
