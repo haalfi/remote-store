@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://haalfi.github.io/remote-store/dev/design/specs/009-sftp-backend/">
+        <link rel="canonical" href="https://haalfi.github.io/remote-store/dev/design/specs/018-glob/">
       
       
-        <link rel="prev" href="../008-s3-backend/">
+        <link rel="prev" href="../017-ext-transfer/">
       
       
-        <link rel="next" href="../010-native-path-resolution/">
+        <link rel="next" href="../../adrs/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>009: SFTP Backend Specification - remote-store</title>
+        <title>018: Glob — Pattern Matching Specification - remote-store</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#sftp-backend-specification" class="md-skip">
+        <a href="#glob-pattern-matching-specification" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              009: SFTP Backend Specification
+              018: Glob — Pattern Matching Specification
             
           </span>
         </div>
@@ -1891,37 +1891,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    009: SFTP Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -1937,436 +1910,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Construction
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Construction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-001-constructor-parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-001: Constructor Parameters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-002-backend-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-004-lazy-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-005: Construction Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Connection
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Connection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-006-hostkeypolicy-enum" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-006: HostKeyPolicy Enum
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-007-host-key-resolution-chain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-007: Host Key Resolution Chain
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-008-pem-key-sanitization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-008: PEM Key Sanitization
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-009-tenacity-retry-on-connect" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-009: Tenacity Retry on Connect
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-010-staleness-detection-and-reconnect" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-010: Staleness Detection and Reconnect
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#filesystem-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Filesystem Model
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Filesystem Model">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-011-real-directories" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-011: Real Directories
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-012-write-creates-intermediate-directories" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-012: Write Creates Intermediate Directories
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-013-empty-folders-persist" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-013: Empty Folders Persist
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-014-atomic-write-simulated" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-014: Atomic Write (Simulated)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-015-atomic-write-overwrite-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-015: Atomic Write Overwrite Semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-016-delete_folder-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-016: delete_folder Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-017-delete_folder-non-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-017: delete_folder Non-Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-018-move-via-posix_rename" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-018: Move Via posix_rename
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-019-copy-via-read-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-019: Copy Via Read + Write
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-020-notfound-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-020: NotFound Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-021-permissiondenied-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-021: PermissionDenied Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-022-alreadyexists-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-022: AlreadyExists Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-023-backendunavailable-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-023: BackendUnavailable Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-024-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-024: No Native Exception Leakage
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resource Management
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Resource Management">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-025-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-025: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-026-unwrapsftpclient" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-026: unwrap(SFTPClient)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-027-idempotent-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-027: Idempotent Close
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2600,10 +2143,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../018-glob/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    018: Glob — Pattern Matching Specification
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2619,6 +2189,275 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tier-1-list_filespattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 1: list_files(pattern=…)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tier 1: list_files(pattern=…)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#glob-001-list_files-pattern-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-001: list_files pattern Parameter
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tier-2-native-glob-capability-and-store-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 2: Native Glob Capability and Store API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tier 2: Native Glob Capability and Store API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#glob-002-capabilityglob-enum-member" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-002: Capability.GLOB Enum Member
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-003-backendglob-default-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-003: Backend.glob() Default Method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-004-backendglob-postconditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-004: Backend.glob() Postconditions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-005-localbackend-native-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-005: LocalBackend Native Glob
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-006-storeglob-signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-006: Store.glob() Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-007-storeglob-path-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-007: Store.glob() Path Scoping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-008-storeglob-capability-gating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-008: Store.glob() Capability Gating
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tier-3-extension-extglob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 3: Extension — ext.glob
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tier 3: Extension — ext.glob">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#glob-009-glob_files-signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-009: glob_files Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-010-native-delegation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-010: Native Delegation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-011-client-side-fallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-011: Client-Side Fallback
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-012-prefix-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-012: Prefix Extraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-013-recursive-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-013: Recursive Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-014-pattern-matching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-014: Pattern Matching
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-015-no-backend-coupling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-015: No Backend Coupling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-016-capability-gating-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-016: Capability Gating Propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-017-empty-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-017: Empty Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -3226,66 +3065,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
+  <a href="#tier-1-list_filespattern" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Construction
+        Tier 1: list_files(pattern=…)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Construction">
+    <nav class="md-nav" aria-label="Tier 1: list_files(pattern=…)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sftp-001-constructor-parameters" class="md-nav__link">
+  <a href="#glob-001-list_files-pattern-parameter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-001: Constructor Parameters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-002-backend-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-004-lazy-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-005: Construction Validation
+        GLOB-001: list_files pattern Parameter
       
     </span>
   </a>
@@ -3298,22 +3093,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#connection" class="md-nav__link">
+  <a href="#tier-2-native-glob-capability-and-store-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Connection
+        Tier 2: Native Glob Capability and Store API
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Connection">
+    <nav class="md-nav" aria-label="Tier 2: Native Glob Capability and Store API">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sftp-006-hostkeypolicy-enum" class="md-nav__link">
+  <a href="#glob-002-capabilityglob-enum-member" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-006: HostKeyPolicy Enum
+        GLOB-002: Capability.GLOB Enum Member
       
     </span>
   </a>
@@ -3321,10 +3116,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-007-host-key-resolution-chain" class="md-nav__link">
+  <a href="#glob-003-backendglob-default-method" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-007: Host Key Resolution Chain
+        GLOB-003: Backend.glob() Default Method
       
     </span>
   </a>
@@ -3332,10 +3127,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-008-pem-key-sanitization" class="md-nav__link">
+  <a href="#glob-004-backendglob-postconditions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-008: PEM Key Sanitization
+        GLOB-004: Backend.glob() Postconditions
       
     </span>
   </a>
@@ -3343,10 +3138,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-009-tenacity-retry-on-connect" class="md-nav__link">
+  <a href="#glob-005-localbackend-native-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-009: Tenacity Retry on Connect
+        GLOB-005: LocalBackend Native Glob
       
     </span>
   </a>
@@ -3354,10 +3149,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-010-staleness-detection-and-reconnect" class="md-nav__link">
+  <a href="#glob-006-storeglob-signature" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-010: Staleness Detection and Reconnect
+        GLOB-006: Store.glob() Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-007-storeglob-path-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-007: Store.glob() Path Scoping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glob-008-storeglob-capability-gating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLOB-008: Store.glob() Capability Gating
       
     </span>
   </a>
@@ -3370,22 +3187,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#filesystem-model" class="md-nav__link">
+  <a href="#tier-3-extension-extglob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Filesystem Model
+        Tier 3: Extension — ext.glob
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Filesystem Model">
+    <nav class="md-nav" aria-label="Tier 3: Extension — ext.glob">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sftp-011-real-directories" class="md-nav__link">
+  <a href="#glob-009-glob_files-signature" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-011: Real Directories
+        GLOB-009: glob_files Signature
       
     </span>
   </a>
@@ -3393,10 +3210,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-012-write-creates-intermediate-directories" class="md-nav__link">
+  <a href="#glob-010-native-delegation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-012: Write Creates Intermediate Directories
+        GLOB-010: Native Delegation
       
     </span>
   </a>
@@ -3404,38 +3221,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-013-empty-folders-persist" class="md-nav__link">
+  <a href="#glob-011-client-side-fallback" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-013: Empty Folders Persist
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-014-atomic-write-simulated" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-014: Atomic Write (Simulated)
+        GLOB-011: Client-Side Fallback
       
     </span>
   </a>
@@ -3443,10 +3232,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-015-atomic-write-overwrite-semantics" class="md-nav__link">
+  <a href="#glob-012-prefix-extraction" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-015: Atomic Write Overwrite Semantics
+        GLOB-012: Prefix Extraction
       
     </span>
   </a>
@@ -3454,10 +3243,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-016-delete_folder-recursive" class="md-nav__link">
+  <a href="#glob-013-recursive-detection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-016: delete_folder Recursive
+        GLOB-013: Recursive Detection
       
     </span>
   </a>
@@ -3465,10 +3254,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-017-delete_folder-non-recursive" class="md-nav__link">
+  <a href="#glob-014-pattern-matching" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-017: delete_folder Non-Recursive
+        GLOB-014: Pattern Matching
       
     </span>
   </a>
@@ -3476,10 +3265,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-018-move-via-posix_rename" class="md-nav__link">
+  <a href="#glob-015-no-backend-coupling" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-018: Move Via posix_rename
+        GLOB-015: No Backend Coupling
       
     </span>
   </a>
@@ -3487,38 +3276,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-019-copy-via-read-write" class="md-nav__link">
+  <a href="#glob-016-capability-gating-propagation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-019: Copy Via Read + Write
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-020-notfound-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-020: NotFound Mapping
+        GLOB-016: Capability Gating Propagation
       
     </span>
   </a>
@@ -3526,93 +3287,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-021-permissiondenied-mapping" class="md-nav__link">
+  <a href="#glob-017-empty-results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-021: PermissionDenied Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-022-alreadyexists-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-022: AlreadyExists Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-023-backendunavailable-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-023: BackendUnavailable Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-024-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-024: No Native Exception Leakage
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resource Management
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Resource Management">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-025-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-025: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-026-unwrapsftpclient" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-026: unwrap(SFTPClient)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-027-idempotent-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-027: Idempotent Close
+        GLOB-017: Empty Results
       
     </span>
   </a>
@@ -3641,167 +3319,131 @@
 
 
 
-<h1 id="sftp-backend-specification">SFTP Backend Specification<a class="headerlink" href="#sftp-backend-specification" title="Permanent link">&para;</a></h1>
+<h1 id="glob-pattern-matching-specification">Glob — Pattern Matching Specification<a class="headerlink" href="#glob-pattern-matching-specification" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>SFTPBackend</code> implements the <code>Backend</code> ABC for SSH File Transfer Protocol (SFTP) servers
-using <strong>pure paramiko</strong> internally. It maps the Backend contract onto a real remote
-filesystem accessed over SSH/SFTP.</p>
-<p>Unlike fsspec's <code>SFTPFileSystem</code> (which hardcodes <code>AutoAddPolicy</code>), this backend
-provides explicit host key policy control via a <code>HostKeyPolicy</code> enum, PEM key
-sanitization for Azure Key Vault compatibility, and tenacity-based retry for
-transient SSH errors.</p>
-<p><strong>Dependencies:</strong> <code>paramiko</code>, <code>tenacity</code> (optional extra: <code>pip install "remote-store[sftp]"</code>)</p>
+<p>Three-tier pattern matching for remote-store (ADR-0009):</p>
+<ol>
+<li><strong><code>list_files(pattern=…)</code></strong>: <code>fnmatch</code> name filtering on <code>Store.list_files()</code>.
+   Works with every backend (needs <code>LIST</code> only).</li>
+<li><strong><code>Store.glob(pattern)</code></strong>: native backend glob, capability-gated on
+   <code>Capability.GLOB</code>. Like <code>unwrap()</code> — opt-in native access.</li>
+<li><strong><code>ext.glob.glob_files()</code></strong>: portable full glob. Delegates to <code>Store.glob()</code>
+   when available, otherwise <code>list_files()</code> + client-side regex.</li>
+</ol>
+<p>Patterns follow Unix glob conventions: <code>*</code> matches any non-separator characters,
+<code>**</code> matches zero or more path segments (recursive), <code>?</code> matches a single
+non-separator character, <code>[abc]</code> matches a character class, <code>[!abc]</code> matches
+a negated character class.</p>
+<p><strong>Module (extension):</strong> <code>src/remote_store/ext/glob.py</code>
+<strong>Dependencies:</strong> None (pure Python, always available)
+<strong>Related:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a>
+(CAP-001, BE-024), <a href="../001-store-api/">001-store-api.md</a> (STORE-014, STORE-015),
+BK-002, ID-007, <a href="../../adrs/0009-glob-three-tier-design/">ADR-0009</a>.</p>
 <hr />
-<h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
-<h3 id="sftp-001-constructor-parameters">SFTP-001: Constructor Parameters<a class="headerlink" href="#sftp-001-constructor-parameters" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>SFTPBackend</code> is constructed with a required <code>host</code> and optional
-connection/authentication parameters.
+<h2 id="tier-1-list_filespattern">Tier 1: list_files(pattern=…)<a class="headerlink" href="#tier-1-list_filespattern" title="Permanent link">&para;</a></h2>
+<h3 id="glob-001-list_files-pattern-parameter">GLOB-001: list_files pattern Parameter<a class="headerlink" href="#glob-001-list_files-pattern-parameter" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>Store.list_files(path, *, recursive=False, pattern=None)</code>.
+When <code>pattern</code> is not <code>None</code>, only files whose <strong>name</strong> matches the pattern
+(via <code>fnmatch.fnmatch</code>) are yielded.
+<strong>Postconditions:</strong> Filtering is applied at the Store level after
+rebasing paths. Backend <code>list_files</code> signature is unchanged.
+<strong>Rationale:</strong> Covers the common case ("give me the CSVs") without new
+capabilities, new methods, or extensions.</p>
+<hr />
+<h2 id="tier-2-native-glob-capability-and-store-api">Tier 2: Native Glob Capability and Store API<a class="headerlink" href="#tier-2-native-glob-capability-and-store-api" title="Permanent link">&para;</a></h2>
+<h3 id="glob-002-capabilityglob-enum-member">GLOB-002: Capability.GLOB Enum Member<a class="headerlink" href="#glob-002-capabilityglob-enum-member" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>Capability.GLOB</code> is a member of the <code>Capability</code> enum with
+value <code>"glob"</code>.
+<strong>Rationale:</strong> Backends that implement native pattern matching declare this
+capability. Backends without native glob omit it — Tier 1 and Tier 3
+provide universal alternatives.</p>
+<h3 id="glob-003-backendglob-default-method">GLOB-003: Backend.glob() Default Method<a class="headerlink" href="#glob-003-backendglob-default-method" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>Backend.glob(pattern)</code> is a non-abstract method with a default
+implementation that raises <code>CapabilityNotSupported</code>.
 <strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">SFTPBackend</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">22</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">pkey</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>                   <span class="c1"># paramiko.PKey, lazy-typed</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>               <span class="c1"># root on remote server</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">host_key_policy</span><span class="p">:</span> <span class="n">HostKeyPolicy</span> <span class="o">=</span> <span class="n">HostKeyPolicy</span><span class="o">.</span><span class="n">STRICT</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">known_host_keys</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">host_keys_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># defaults to ~/.ssh/known_hosts</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>         <span class="c1"># may contain &quot;known_host_keys&quot;</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">connect_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="c1"># extra SSHClient.connect() kwargs</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">]:</span>
 </code></pre></div>
-<strong>Postconditions:</strong> The backend stores configuration but does not connect during
-construction (see SFTP-004).</p>
-<h3 id="sftp-002-backend-name">SFTP-002: Backend Name<a class="headerlink" href="#sftp-002-backend-name" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>name</code> property returns <code>"sftp"</code>.</p>
-<h3 id="sftp-003-capability-declaration">SFTP-003: Capability Declaration<a class="headerlink" href="#sftp-003-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>SFTPBackend</code> declares capabilities:
-<code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>. Does not declare <code>GLOB</code> (no native pattern matching; use <code>list_files(pattern=…)</code> or <code>ext.glob</code> for client-side fallback).
-<strong>Rationale:</strong>
-- <code>ATOMIC_WRITE</code>: Simulated via temp file + rename (see SFTP-014). Orphan temp
-  files are possible on connection failure -- documented caveat.
-- <code>MOVE</code>: Implemented via <code>posix_rename</code> with fallback (see SFTP-018).
-- <code>COPY</code>: Implemented via read + write (no server-side copy in SFTP, see SFTP-019).</p>
-<h3 id="sftp-004-lazy-connection">SFTP-004: Lazy Connection<a class="headerlink" href="#sftp-004-lazy-connection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. The SSH/SFTP connection is
-established lazily on first operation.
-<strong>Rationale:</strong> Fail-fast at construction is undesirable -- the backend may be created
-during application wiring before the network is available. Automatic reconnection
-on staleness is also supported (see SFTP-010).</p>
-<h3 id="sftp-005-construction-validation">SFTP-005: Construction Validation<a class="headerlink" href="#sftp-005-construction-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>host</code> must be a non-empty string. Passing an empty or whitespace-only
-host raises <code>ValueError</code> at construction time.
-<strong>Postconditions:</strong> No network validation of host reachability at construction time.</p>
+<strong>Parameters:</strong> <code>pattern</code> is a glob pattern relative to the backend root.
+Supports <code>*</code>, <code>**</code>, <code>?</code>, <code>[abc]</code>, and <code>[!abc]</code>.
+<strong>Raises:</strong> <code>CapabilityNotSupported</code> if the backend does not declare
+<code>Capability.GLOB</code>.
+<strong>Rationale:</strong> Non-abstract so existing backends compile without changes.
+Backends that add native glob override this method and add <code>GLOB</code> to their
+capability set.</p>
+<h3 id="glob-004-backendglob-postconditions">GLOB-004: Backend.glob() Postconditions<a class="headerlink" href="#glob-004-backendglob-postconditions" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Returns only files (not folders). Paths in returned <code>FileInfo</code>
+objects are backend-relative (same convention as <code>list_files</code>). Results are
+yielded lazily via iterator.</p>
+<h3 id="glob-005-localbackend-native-glob">GLOB-005: LocalBackend Native Glob<a class="headerlink" href="#glob-005-localbackend-native-glob" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>LocalBackend</code> overrides <code>glob()</code> using <code>pathlib.Path.glob()</code>.
+<code>LocalBackend</code> declares <code>Capability.GLOB</code> in its capability set.
+<strong>Postconditions:</strong> Leverages the OS filesystem's native pattern matching.
+<code>FileInfo</code> paths are converted via <code>to_key()</code> (same as <code>list_files</code>).</p>
 <hr />
-<h2 id="connection">Connection<a class="headerlink" href="#connection" title="Permanent link">&para;</a></h2>
-<h3 id="sftp-006-hostkeypolicy-enum">SFTP-006: HostKeyPolicy Enum<a class="headerlink" href="#sftp-006-hostkeypolicy-enum" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>HostKeyPolicy</code> controls how unknown remote host keys are handled:
-- <code>STRICT</code> (default): Reject unknown hosts. Requires host key in known_hosts.
-- <code>TRUST_ON_FIRST_USE</code>: Accept and save on first connect, verify on subsequent connects.
-- <code>AUTO_ADD</code>: Accept any key. <strong>Development/testing only -- not safe for production.</strong></p>
-<h3 id="sftp-007-host-key-resolution-chain">SFTP-007: Host Key Resolution Chain<a class="headerlink" href="#sftp-007-host-key-resolution-chain" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Known host keys are resolved with first-match precedence:
-1. <code>known_host_keys</code> constructor parameter (code-level override)
-2. <code>config["known_host_keys"]</code> dict value
-3. <code>SFTP_KNOWN_HOST_KEYS</code> environment variable
-4. <code>host_keys_path</code> file on disk (default: <code>~/.ssh/known_hosts</code>)</p>
-<p><strong>Postconditions:</strong> If none of the above yield keys and the policy is <code>STRICT</code>,
-connection will fail with a host key verification error.</p>
-<h3 id="sftp-008-pem-key-sanitization">SFTP-008: PEM Key Sanitization<a class="headerlink" href="#sftp-008-pem-key-sanitization" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>_sanitize_pem()</code> normalizes PEM line separators, handling the Azure
-Key Vault quirk where newlines may be replaced with spaces or other characters.
-<strong>Postconditions:</strong> The sanitized PEM string has standard <code>\n</code> line separators within
-the Base64 payload. Invalid PEM structures (not 5 parts) raise <code>ValueError</code>.</p>
-<h3 id="sftp-009-tenacity-retry-on-connect">SFTP-009: Tenacity Retry on Connect<a class="headerlink" href="#sftp-009-tenacity-retry-on-connect" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>_connect()</code> method retries on transient SSH errors using tenacity:
-3 attempts, exponential backoff (2s min, 10s max).
-<strong>Retried exceptions:</strong> <code>paramiko.SSHException</code>, <code>OSError</code>, <code>EOFError</code>.
-<strong>Postconditions:</strong> After all retries are exhausted, the original exception is reraised.</p>
-<h3 id="sftp-010-staleness-detection-and-reconnect">SFTP-010: Staleness Detection and Reconnect<a class="headerlink" href="#sftp-010-staleness-detection-and-reconnect" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The lazy <code>_sftp</code> property checks connection liveness by calling
-<code>stat('.')</code>. If the connection is stale (e.g. server dropped it), the backend
-reconnects transparently.
-<strong>Postconditions:</strong> Callers do not need to handle connection drops explicitly.</p>
+<h3 id="glob-006-storeglob-signature">GLOB-006: Store.glob() Signature<a class="headerlink" href="#glob-006-storeglob-signature" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>Store.glob(pattern) -&gt; Iterator[FileInfo]</code>.
+<strong>Parameters:</strong> <code>pattern</code> is a glob pattern relative to the store root.
+<strong>Raises:</strong> <code>CapabilityNotSupported</code> if the backend lacks <code>Capability.GLOB</code>.</p>
+<h3 id="glob-007-storeglob-path-scoping">GLOB-007: Store.glob() Path Scoping<a class="headerlink" href="#glob-007-storeglob-path-scoping" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Store prepends <code>root_path</code> to the pattern before delegating to
+<code>Backend.glob()</code>. Returned <code>FileInfo.path</code> values are rebased to store-relative
+(same as <code>list_files</code>).</p>
+<h3 id="glob-008-storeglob-capability-gating">GLOB-008: Store.glob() Capability Gating<a class="headerlink" href="#glob-008-storeglob-capability-gating" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>Store.glob()</code> calls <code>capabilities.require(Capability.GLOB)</code>
+before delegating. If the backend lacks GLOB, the caller should use
+<code>list_files(pattern=...)</code> or <code>ext.glob.glob_files()</code> instead.</p>
 <hr />
-<h2 id="filesystem-model">Filesystem Model<a class="headerlink" href="#filesystem-model" title="Permanent link">&para;</a></h2>
-<h3 id="sftp-011-real-directories">SFTP-011: Real Directories<a class="headerlink" href="#sftp-011-real-directories" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> SFTP operates on a real remote filesystem with actual directories,
-unlike S3's virtual prefix-based folders. <code>is_folder()</code> uses <code>stat()</code> + <code>S_ISDIR</code>.
-<strong>Postconditions:</strong> Folders exist independently of their contents.</p>
-<h3 id="sftp-012-write-creates-intermediate-directories">SFTP-012: Write Creates Intermediate Directories<a class="headerlink" href="#sftp-012-write-creates-intermediate-directories" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write("a/b/c.txt", content)</code> creates intermediate directories <code>a/</code>
-and <code>a/b/</code> if they do not exist.
-<strong>Rationale:</strong> SFTP servers reject writes to non-existent directories. Creating them
-automatically matches the convenience of local and S3 backends.</p>
-<h3 id="sftp-013-empty-folders-persist">SFTP-013: Empty Folders Persist<a class="headerlink" href="#sftp-013-empty-folders-persist" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Unlike S3 (where folders vanish when empty), empty directories on an
-SFTP server persist after their contents are deleted.
-<strong>Postconditions:</strong> <code>is_folder("dir")</code> returns <code>True</code> even after all files under
-<code>dir/</code> are deleted.</p>
-<hr />
-<h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
-<h3 id="sftp-014-atomic-write-simulated">SFTP-014: Atomic Write (Simulated)<a class="headerlink" href="#sftp-014-atomic-write-simulated" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write_atomic</code> writes to a temporary file <code>.~tmp.&lt;name&gt;.&lt;uuid8&gt;</code> in
-the same directory as the target, then renames to the target via <code>posix_rename</code>.
-<strong>Caveat:</strong> If the connection drops between write and rename, the orphan temp file
-remains. This is <strong>simulated</strong> atomicity, not true atomicity -- the capability is
-declared to enable the write-then-rename pattern, but the caveat must be documented.
-<strong>Postconditions:</strong> On success, the temp file is gone and the target contains the
-new content. On failure, the backend attempts to clean up the temp file.</p>
-<h3 id="sftp-015-atomic-write-overwrite-semantics">SFTP-015: Atomic Write Overwrite Semantics<a class="headerlink" href="#sftp-015-atomic-write-overwrite-semantics" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write_atomic(path, content, overwrite=False)</code> raises <code>AlreadyExists</code>
-if the target already exists. With <code>overwrite=True</code>, the existing file is replaced.</p>
-<h3 id="sftp-016-delete_folder-recursive">SFTP-016: delete_folder Recursive<a class="headerlink" href="#sftp-016-delete_folder-recursive" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>delete_folder(path, recursive=True)</code> walks the directory tree
-bottom-up, deleting files then directories.
-<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist and <code>missing_ok=False</code>.</p>
-<h3 id="sftp-017-delete_folder-non-recursive">SFTP-017: delete_folder Non-Recursive<a class="headerlink" href="#sftp-017-delete_folder-non-recursive" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>delete_folder(path, recursive=False)</code> succeeds only if the directory
-is empty.
-<strong>Raises:</strong> <code>NotFound</code> if missing. <code>RemoteStoreError</code> if the directory is not empty.</p>
-<h3 id="sftp-018-move-via-posix_rename">SFTP-018: Move Via posix_rename<a class="headerlink" href="#sftp-018-move-via-posix_rename" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>move(src, dst)</code> attempts <code>posix_rename</code> (atomic overwrite), falls back
-to <code>rename</code>, and falls back to copy + delete if rename fails entirely.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and
-<code>overwrite=False</code>.</p>
-<h3 id="sftp-019-copy-via-read-write">SFTP-019: Copy Via Read + Write<a class="headerlink" href="#sftp-019-copy-via-read-write" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>copy(src, dst)</code> reads the source file and writes it to the destination.
-There is no server-side copy operation in SFTP -- data passes through the client.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and
-<code>overwrite=False</code>.</p>
-<hr />
-<h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<h3 id="sftp-020-notfound-mapping">SFTP-020: NotFound Mapping<a class="headerlink" href="#sftp-020-notfound-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>IOError</code> with <code>errno.ENOENT</code> (errno 2) and <code>FileNotFoundError</code> are
-mapped to <code>NotFound</code>.
-<strong>Postconditions:</strong> <code>path</code> and <code>backend</code> attributes are set on the error.</p>
-<h3 id="sftp-021-permissiondenied-mapping">SFTP-021: PermissionDenied Mapping<a class="headerlink" href="#sftp-021-permissiondenied-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>IOError</code> with <code>errno.EACCES</code> (errno 13) is mapped to <code>PermissionDenied</code>.</p>
-<h3 id="sftp-022-alreadyexists-mapping">SFTP-022: AlreadyExists Mapping<a class="headerlink" href="#sftp-022-alreadyexists-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>IOError</code> with <code>errno.EEXIST</code> (errno 17) is mapped to <code>AlreadyExists</code>.</p>
-<h3 id="sftp-023-backendunavailable-mapping">SFTP-023: BackendUnavailable Mapping<a class="headerlink" href="#sftp-023-backendunavailable-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>paramiko.SSHException</code> and its subclasses (authentication failures,
-channel errors, etc.) are mapped to <code>BackendUnavailable</code>.</p>
-<h3 id="sftp-024-no-native-exception-leakage">SFTP-024: No Native Exception Leakage<a class="headerlink" href="#sftp-024-no-native-exception-leakage" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No paramiko, socket, or OS exceptions propagate to callers. All are
-mapped to <code>remote_store</code> error types per BE-021.
-<strong>Postconditions:</strong> <code>backend</code> attribute is set to <code>"sftp"</code> on all mapped errors.</p>
-<hr />
-<h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
-<h3 id="sftp-025-close">SFTP-025: close()<a class="headerlink" href="#sftp-025-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>close()</code> closes both the SFTP client and the underlying SSH transport.
-<strong>Postconditions:</strong> Safe to call multiple times (idempotent). After close, further
-operations will trigger a new connection via lazy init.</p>
-<h3 id="sftp-026-unwrapsftpclient">SFTP-026: unwrap(SFTPClient)<a class="headerlink" href="#sftp-026-unwrapsftpclient" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>unwrap(paramiko.SFTPClient)</code> returns the underlying SFTP client.
-<strong>Raises:</strong> <code>CapabilityNotSupported</code> for any other type hint.
-<strong>Rationale:</strong> Escape hatch for users who need paramiko-specific features (per ADR-0003).</p>
-<h3 id="sftp-027-idempotent-close">SFTP-027: Idempotent Close<a class="headerlink" href="#sftp-027-idempotent-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Calling <code>close()</code> multiple times must not raise. Internal state is
-set to <code>None</code> after close, and the next operation will reconnect lazily.</p>
+<h2 id="tier-3-extension-extglob">Tier 3: Extension — ext.glob<a class="headerlink" href="#tier-3-extension-extglob" title="Permanent link">&para;</a></h2>
+<h3 id="glob-009-glob_files-signature">GLOB-009: glob_files Signature<a class="headerlink" href="#glob-009-glob_files-signature" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>glob_files(store, pattern) -&gt; Iterator[FileInfo]</code>.
+<strong>Parameters:</strong> <code>store</code> is a <code>Store</code> instance. <code>pattern</code> is a glob pattern
+relative to the store root.</p>
+<h3 id="glob-010-native-delegation">GLOB-010: Native Delegation<a class="headerlink" href="#glob-010-native-delegation" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> When <code>store.supports(Capability.GLOB)</code> is <code>True</code>,
+<code>glob_files</code> delegates entirely to <code>store.glob(pattern)</code>.</p>
+<h3 id="glob-011-client-side-fallback">GLOB-011: Client-Side Fallback<a class="headerlink" href="#glob-011-client-side-fallback" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> When <code>store.supports(Capability.GLOB)</code> is <code>False</code>,
+<code>glob_files</code> extracts the longest non-wildcard directory prefix from the
+pattern, calls <code>store.list_files(prefix, recursive=...)</code>, and filters
+results client-side against the compiled pattern.</p>
+<h3 id="glob-012-prefix-extraction">GLOB-012: Prefix Extraction<a class="headerlink" href="#glob-012-prefix-extraction" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> The prefix is the longest sequence of leading path segments
+that contain no wildcard characters (<code>*</code>, <code>?</code>, <code>[</code>). For <code>data/2024/*.csv</code>
+the prefix is <code>"data/2024"</code>. For <code>**/*.csv</code> the prefix is <code>""</code>.
+<strong>Rationale:</strong> Minimizes the listing scope — the backend only returns files
+under the prefix directory, reducing network traffic and memory usage.</p>
+<h3 id="glob-013-recursive-detection">GLOB-013: Recursive Detection<a class="headerlink" href="#glob-013-recursive-detection" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> The fallback uses <code>recursive=True</code> if the pattern contains
+<code>**</code> or if any non-final path segment contains wildcards. Otherwise uses
+<code>recursive=False</code>.
+<strong>Rationale:</strong> <code>**</code> explicitly requests recursive descent. Wildcards in
+non-final segments (e.g., <code>*/sub/*.csv</code>) require traversing multiple
+directory levels.</p>
+<h3 id="glob-014-pattern-matching">GLOB-014: Pattern Matching<a class="headerlink" href="#glob-014-pattern-matching" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Client-side filtering converts the glob pattern to a regex:
+- <code>*</code> → <code>[^/]*</code> (any characters except separator)
+- <code>**/</code> → <code>(?:.+/)?</code> (zero or more path segments)
+- <code>**</code> (at end) → <code>.*</code> (match everything)
+- <code>?</code> → <code>[^/]</code> (single non-separator character)
+- <code>[abc]</code> → <code>[abc]</code> (character class, passed through)
+- <code>[!abc]</code> → <code>[^abc]</code> (negated character class)
+- All other characters are regex-escaped.</p>
+<p><code>**</code> must be a complete path segment (<code>**/</code>, <code>/**</code>, or the entire pattern).
+Patterns like <code>**error</code> where <code>**</code> is embedded within a segment raise
+<code>ValueError</code>.</p>
+<p>The regex is anchored (<code>^...$</code>) and matched against the full store-relative
+path of each <code>FileInfo</code>.</p>
+<h3 id="glob-015-no-backend-coupling">GLOB-015: No Backend Coupling<a class="headerlink" href="#glob-015-no-backend-coupling" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>glob_files</code> operates exclusively through the public <code>Store</code>
+API (<code>supports</code>, <code>glob</code>, <code>list_files</code>). It never accesses <code>store._backend</code>
+or any backend internals.</p>
+<h3 id="glob-016-capability-gating-propagation">GLOB-016: Capability Gating Propagation<a class="headerlink" href="#glob-016-capability-gating-propagation" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>CapabilityNotSupported</code> raised by <code>Store.glob()</code> or
+<code>Store.list_files()</code> propagates immediately. <code>glob_files</code> does not catch
+or wrap these errors.</p>
+<h3 id="glob-017-empty-results">GLOB-017: Empty Results<a class="headerlink" href="#glob-017-empty-results" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> When no files match the pattern, both <code>list_files(pattern=...)</code>
+and <code>glob_files</code> yield nothing (empty iterator). This is not an error.</p>
 
 
 

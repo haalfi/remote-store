@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://haalfi.github.io/remote-store/dev/design/">
+        <link rel="canonical" href="https://haalfi.github.io/remote-store/dev/glob-pattern-matching/">
       
       
-        <link rel="prev" href="../transfer-operations/">
+        <link rel="prev" href="../batch-operations/">
       
       
-        <link rel="next" href="design-spec/">
+        <link rel="next" href="../transfer-operations/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Design - remote-store</title>
+        <title>Glob Pattern Matching - remote-store</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#design" class="md-skip">
+        <a href="#glob-pattern-matching" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Design
+              Glob Pattern Matching
             
           </span>
         </div>
@@ -1438,10 +1438,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../glob-pattern-matching/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glob Pattern Matching
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1457,6 +1484,103 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tier-1-list_filespattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 1: list_files(pattern=...)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tier-2-storeglob-native-backend-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 2: Store.glob() -- native backend glob
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tier-3-glob_files-portable-full-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 3: glob_files() -- portable full glob
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pattern-syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern Syntax
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#works-with-storechild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Works with Store.child()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-the-right-tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing the Right Tier
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1492,8 +1616,6 @@
       
   
   
-    
-  
   
   
     
@@ -1506,15 +1628,17 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../design/" class="md-nav__link ">
               
   
   
@@ -1532,13 +1656,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_13" id="__nav_13_label" tabindex="">
+              <label class="md-nav__link " for="__nav_13" id="__nav_13_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1556,7 +1680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design-spec/" class="md-nav__link">
+      <a href="../design/design-spec/" class="md-nav__link">
         
   
   
@@ -1584,7 +1708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="process/" class="md-nav__link">
+      <a href="../design/process/" class="md-nav__link">
         
   
   
@@ -1628,7 +1752,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="specs/" class="md-nav__link ">
+            <a href="../design/specs/" class="md-nav__link ">
               
   
   
@@ -1670,7 +1794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/001-store-api/" class="md-nav__link">
+      <a href="../design/specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -1698,7 +1822,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/002-registry-config/" class="md-nav__link">
+      <a href="../design/specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -1726,7 +1850,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../design/specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -1754,7 +1878,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/004-path-model/" class="md-nav__link">
+      <a href="../design/specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -1782,7 +1906,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/005-error-model/" class="md-nav__link">
+      <a href="../design/specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -1810,7 +1934,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/006-streaming-io/" class="md-nav__link">
+      <a href="../design/specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -1838,7 +1962,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/007-atomic-writes/" class="md-nav__link">
+      <a href="../design/specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -1866,7 +1990,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/008-s3-backend/" class="md-nav__link">
+      <a href="../design/specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -1894,7 +2018,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/009-sftp-backend/" class="md-nav__link">
+      <a href="../design/specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -1922,7 +2046,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/010-native-path-resolution/" class="md-nav__link">
+      <a href="../design/specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -1950,7 +2074,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -1978,7 +2102,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/012-azure-backend/" class="md-nav__link">
+      <a href="../design/specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -2006,7 +2130,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/013-memory-backend/" class="md-nav__link">
+      <a href="../design/specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -2034,7 +2158,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -2062,7 +2186,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/015-store-child/" class="md-nav__link">
+      <a href="../design/specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -2090,7 +2214,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/016-ext-batch/" class="md-nav__link">
+      <a href="../design/specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -2118,7 +2242,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/017-ext-transfer/" class="md-nav__link">
+      <a href="../design/specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -2146,7 +2270,7 @@
   
   
     <li class="md-nav__item">
-      <a href="specs/018-glob/" class="md-nav__link">
+      <a href="../design/specs/018-glob/" class="md-nav__link">
         
   
   
@@ -2198,7 +2322,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="adrs/" class="md-nav__link ">
+            <a href="../design/adrs/" class="md-nav__link ">
               
   
   
@@ -2240,7 +2364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -2268,7 +2392,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -2296,7 +2420,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -2324,7 +2448,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../design/adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -2352,7 +2476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../design/adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -2380,7 +2504,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../design/adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -2408,7 +2532,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -2436,7 +2560,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../design/adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -2464,7 +2588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -2516,7 +2640,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="rfcs/" class="md-nav__link ">
+            <a href="../design/rfcs/" class="md-nav__link ">
               
   
   
@@ -2558,7 +2682,7 @@
   
   
     <li class="md-nav__item">
-      <a href="rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -2586,7 +2710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -2614,7 +2738,7 @@
   
   
     <li class="md-nav__item">
-      <a href="rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -2758,10 +2882,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#documents" class="md-nav__link">
+  <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Documents
+        Quick Start
       
     </span>
   </a>
@@ -2769,10 +2893,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#specifications" class="md-nav__link">
+  <a href="#tier-1-list_filespattern" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Specifications
+        Tier 1: list_files(pattern=...)
       
     </span>
   </a>
@@ -2780,10 +2904,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#architecture-decision-records" class="md-nav__link">
+  <a href="#tier-2-storeglob-native-backend-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Architecture Decision Records
+        Tier 2: Store.glob() -- native backend glob
       
     </span>
   </a>
@@ -2791,10 +2915,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#requests-for-comments" class="md-nav__link">
+  <a href="#tier-3-glob_files-portable-full-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Requests for Comments
+        Tier 3: glob_files() -- portable full glob
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pattern-syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern Syntax
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#works-with-storechild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Works with Store.child()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-the-right-tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing the Right Tier
       
     </span>
   </a>
@@ -2817,53 +2974,172 @@
                   
 
 
+  
+  
 
-<h1 id="design">Design<a class="headerlink" href="#design" title="Permanent link">&para;</a></h1>
-<p><code>remote-store</code> follows <strong>Spec-Driven Development (SDD)</strong>: every feature starts as a specification before any code is written. Architecture decisions are recorded as ADRs.</p>
-<h2 id="documents">Documents<a class="headerlink" href="#documents" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="design-spec/">Design Document</a> -- the overall design and conventions</li>
-<li><a href="process/">Process</a> -- the SDD methodology</li>
-</ul>
-<h2 id="specifications">Specifications<a class="headerlink" href="#specifications" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="specs/001-store-api/">001: Store API Specification</a></li>
-<li><a href="specs/002-registry-config/">002: Registry &amp; Configuration Specification</a></li>
-<li><a href="specs/003-backend-adapter-contract/">003: Backend Adapter Contract Specification</a></li>
-<li><a href="specs/004-path-model/">004: Path Model Specification</a></li>
-<li><a href="specs/005-error-model/">005: Error Model Specification</a></li>
-<li><a href="specs/006-streaming-io/">006: Streaming I/O Specification</a></li>
-<li><a href="specs/007-atomic-writes/">007: Atomic Writes Specification</a></li>
-<li><a href="specs/008-s3-backend/">008: S3 Backend Specification</a></li>
-<li><a href="specs/009-sftp-backend/">009: SFTP Backend Specification</a></li>
-<li><a href="specs/010-native-path-resolution/">010: Native Path Resolution Specification</a></li>
-<li><a href="specs/011-s3-pyarrow-backend/">011: S3-PyArrow Hybrid Backend Specification</a></li>
-<li><a href="specs/012-azure-backend/">012: Azure Backend Specification</a></li>
-<li><a href="specs/013-memory-backend/">013: Memory Backend Specification</a></li>
-<li><a href="specs/014-pyarrow-filesystem-adapter/">014: PyArrow FileSystem Adapter Specification</a></li>
-<li><a href="specs/015-store-child/">015: Store.child() Specification</a></li>
-<li><a href="specs/016-ext-batch/">016: ext.batch — Batch Operations Specification</a></li>
-<li><a href="specs/017-ext-transfer/">017: ext.transfer — Upload, Download, Cross-Store Transfer Specification</a></li>
-<li><a href="specs/018-glob/">018: Glob — Pattern Matching Specification</a></li>
-</ul>
-<h2 id="architecture-decision-records">Architecture Decision Records<a class="headerlink" href="#architecture-decision-records" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="adrs/0001-architecture-store-registry-backends/">0001: Architecture — Store, Registry, Backends</a></li>
-<li><a href="adrs/0002-config-resolution-no-merge/">0002: Configuration Resolution — No Merging</a></li>
-<li><a href="adrs/0003-fsspec-is-implementation-detail/">0003: fsspec Is an Implementation Detail</a></li>
-<li><a href="adrs/0004-empty-path-semantics/">0004: Empty Path Semantics in Store</a></li>
-<li><a href="adrs/0005-native-path-resolution/">0005: Bidirectional Path Resolution via <code>to_key</code></a></li>
-<li><a href="adrs/0006-documentation-architecture/">0006: Documentation Architecture — Source of Truth and Audiences</a></li>
-<li><a href="adrs/0007-docs-src-literate-nav/">0007: Three-Tier Documentation Architecture with docs-src/ and Literate Nav</a></li>
-<li><a href="adrs/0008-extension-architecture/">0008: Extension Namespace Contract (<code>ext.*</code>)</a></li>
-<li><a href="adrs/0009-glob-three-tier-design/">0009: Glob — Three-Tier Design</a></li>
-</ul>
-<h2 id="requests-for-comments">Requests for Comments<a class="headerlink" href="#requests-for-comments" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="rfcs/rfc-0001-azure-backend/">0001: RFC-0001: Azure Backend via Direct ADLS Gen2 SDK</a></li>
-<li><a href="rfcs/rfc-0002-pyarrow-filesystem-adapter/">0002: RFC-0002: PyArrow FileSystemHandler Adapter</a></li>
-<li><a href="rfcs/rfc-0003-s3-pyarrow-read-optimization/">0003: RFC-0003: S3-PyArrow Read Path Optimization</a></li>
-</ul>
+
+<h1 id="glob-pattern-matching">Glob Pattern Matching<a class="headerlink" href="#glob-pattern-matching" title="Permanent link">&para;</a></h1>
+<p>The <code>ext.glob</code> module provides portable pattern matching for file listing
+across all backends. For simple name-based filtering, use
+<code>Store.list_files(pattern=...)</code> directly -- it works with every backend.</p>
+<p>Three tiers of pattern matching are available (ADR-0009):</p>
+<ol>
+<li><strong><code>list_files(pattern=...)</code></strong> -- <code>fnmatch</code> name filtering at the Store level</li>
+<li><strong><code>Store.glob(pattern)</code></strong> -- native backend glob, capability-gated</li>
+<li><strong><code>ext.glob.glob_files()</code></strong> -- portable full glob with recursive patterns</li>
+</ol>
+<p>No extra dependencies are required -- the module is pure Python and always
+available.</p>
+<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span><span class="p">,</span> <span class="n">glob_files</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryBackend</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">MemoryBackend</span><span class="p">())</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;data/report.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;r1&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;data/summary.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;r2&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;data/readme.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;r3&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;logs/app.log&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;l1&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Tier 1: simple name filtering (works with every backend)</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">csvs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;*.csv&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># [FileInfo(&quot;data/report.csv&quot;, ...), FileInfo(&quot;data/summary.csv&quot;, ...)]</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1"># Tier 3: full recursive glob (works with every backend)</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="n">all_csvs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">glob_files</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;**/*.csv&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1"># [FileInfo(&quot;data/report.csv&quot;, ...), FileInfo(&quot;data/summary.csv&quot;, ...)]</span>
+</code></pre></div>
+<h2 id="tier-1-list_filespattern">Tier 1: list_files(pattern=...)<a class="headerlink" href="#tier-1-list_filespattern" title="Permanent link">&para;</a></h2>
+<p>The simplest and most common option. The <code>pattern</code> parameter on
+<code>list_files</code> filters results by <strong>file name</strong> using <code>fnmatch</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># All CSVs in the data folder</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;*.csv&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># All files starting with &quot;report&quot;</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;report.*&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Single-character wildcard</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;file?.txt&quot;</span><span class="p">)</span>  <span class="c1"># file1.txt, fileA.txt</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># Character class</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;*.[ct]sv&quot;</span><span class="p">)</span>  <span class="c1"># matches .csv and .tsv</span>
+</code></pre></div>
+<p>This works with every backend (needs only <code>LIST</code> capability). The
+filtering is applied at the Store level after path rebasing.</p>
+<p><strong>Limitation:</strong> <code>pattern</code> matches against the file's <strong>name</strong> (basename),
+not the full path. For path-based patterns like <code>data/**/*.csv</code>, use
+<code>glob_files()</code> (Tier 3).</p>
+<h2 id="tier-2-storeglob-native-backend-glob">Tier 2: Store.glob() -- native backend glob<a class="headerlink" href="#tier-2-storeglob-native-backend-glob" title="Permanent link">&para;</a></h2>
+<p>For backends with native pattern matching, <code>Store.glob()</code> provides direct
+access. It is capability-gated on <code>Capability.GLOB</code> -- like <code>Store.unwrap()</code>,
+it is an opt-in feature for users who know their backend:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span><span class="p">):</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;**/*.csv&quot;</span><span class="p">):</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div>
+<p>Currently only <code>LocalBackend</code> implements native glob (via
+<code>pathlib.Path.glob()</code>). Calling <code>store.glob()</code> on other backends raises
+<code>CapabilityNotSupported</code>.</p>
+<h2 id="tier-3-glob_files-portable-full-glob">Tier 3: glob_files() -- portable full glob<a class="headerlink" href="#tier-3-glob_files-portable-full-glob" title="Permanent link">&para;</a></h2>
+<p><code>glob_files()</code> is the recommended API when <code>list_files(pattern=)</code> isn't
+enough and you want code that works across all backends:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.glob</span><span class="w"> </span><span class="kn">import</span> <span class="n">glob_files</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Recursive: find all logs at any depth</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">glob_files</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;**/*.log&quot;</span><span class="p">):</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">info</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Subdirectory wildcard</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">glob_files</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;data/2024/*.csv&quot;</span><span class="p">):</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="c1"># Match everything</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">glob_files</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;**/*&quot;</span><span class="p">):</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div>
+<p>When the backend supports <code>Capability.GLOB</code>, <code>glob_files</code> delegates to
+the native <code>store.glob()</code>. Otherwise it extracts the longest non-wildcard
+prefix, calls <code>store.list_files()</code> with that prefix, and filters
+client-side using a regex compiled from the pattern.</p>
+<h2 id="pattern-syntax">Pattern Syntax<a class="headerlink" href="#pattern-syntax" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Matches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>*</code></td>
+<td>Any characters except <code>/</code></td>
+</tr>
+<tr>
+<td><code>**</code></td>
+<td>Zero or more path segments (recursive)</td>
+</tr>
+<tr>
+<td><code>?</code></td>
+<td>Single non-separator character</td>
+</tr>
+<tr>
+<td><code>[abc]</code></td>
+<td>Character class</td>
+</tr>
+<tr>
+<td><code>[!abc]</code></td>
+<td>Negated character class</td>
+</tr>
+</tbody>
+</table>
+<p><code>**</code> must be a complete path segment (<code>**/</code>, <code>/**</code>, or the entire pattern).
+Patterns like <code>**error</code> where <code>**</code> is embedded within a segment raise
+<code>ValueError</code>.</p>
+<h2 id="works-with-storechild">Works with Store.child()<a class="headerlink" href="#works-with-storechild" title="Permanent link">&para;</a></h2>
+<p>All glob operations work correctly through <code>Store.child()</code> path scoping:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">MemoryBackend</span><span class="p">())</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;reports/q1.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;reports/q2.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;reports/archive/old.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">reports</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;reports&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="c1"># Tier 1: name filter within child scope</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nb">list</span><span class="p">(</span><span class="n">reports</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;*.csv&quot;</span><span class="p">))</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># [FileInfo(&quot;q1.csv&quot;), FileInfo(&quot;q2.csv&quot;)]</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="c1"># Tier 3: recursive glob within child scope</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="nb">list</span><span class="p">(</span><span class="n">glob_files</span><span class="p">(</span><span class="n">reports</span><span class="p">,</span> <span class="s2">&quot;**/*.csv&quot;</span><span class="p">))</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="c1"># [FileInfo(&quot;q1.csv&quot;), FileInfo(&quot;q2.csv&quot;), FileInfo(&quot;archive/old.csv&quot;)]</span>
+</code></pre></div>
+<h2 id="choosing-the-right-tier">Choosing the Right Tier<a class="headerlink" href="#choosing-the-right-tier" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Filter files in one folder by name</td>
+<td><code>list_files(pattern="*.csv")</code></td>
+</tr>
+<tr>
+<td>Recursive search across directories</td>
+<td><code>glob_files(store, "**/*.csv")</code></td>
+</tr>
+<tr>
+<td>Native OS glob (Local only)</td>
+<td><code>store.glob("**/*.csv")</code></td>
+</tr>
+<tr>
+<td>Works with every backend</td>
+<td><code>list_files(pattern=)</code> or <code>glob_files()</code></td>
+</tr>
+</tbody>
+</table>
 
 
 
