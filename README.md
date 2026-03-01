@@ -216,9 +216,9 @@ Interactive Jupyter notebooks are available in [`examples/notebooks/`](https://g
 
 ### Known Limitations
 
-- **Sync only** -- all operations are synchronous. For async frameworks, wrap calls with `asyncio.to_thread()`. See ID-013 in the backlog.
+- **Sync only** -- all operations are synchronous. For async frameworks, wrap calls with `asyncio.to_thread()`.
 - **Glob** -- `list_files(pattern=)` and `ext.glob.glob_files()` work on all backends. Native `Store.glob()` is Local-only; S3/Azure native glob is planned.
-- **PyArrow adapter** -- Phase 1 (Tier 2/3 reads, writes) is complete. Phase 2 native fast-path reads are deferred (ID-037).
+- **PyArrow adapter** -- Phase 1 (Tier 2/3 reads, writes) is complete. Phase 2 native fast-path reads are deferred. See the [backlog](https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md) for details.
 
 ## Contributing
 

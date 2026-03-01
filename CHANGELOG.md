@@ -14,8 +14,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   - **Tier 1:** `list_files(pattern=…)` — universal `fnmatch` name filtering, works with every backend (needs only `LIST`)
   - **Tier 2:** `Store.glob()` / `Capability.GLOB` — native backend glob, capability-gated (like `unwrap()`). `LocalBackend` implements via `pathlib`
   - **Tier 3:** `ext.glob.glob_files()` — portable full-glob fallback with `**` recursive patterns and `[abc]`/`[!abc]` character classes; delegates to native glob when available, otherwise `list_files` + client-side regex
-- **Parquet lake ideas** added to backlog (ID-034 through ID-037)
-
 ### Changed
 
 - **Beta status.** Project classifier changed from Alpha to Beta. Core API
