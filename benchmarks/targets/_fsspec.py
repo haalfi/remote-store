@@ -178,3 +178,6 @@ class LocalFsspecTarget(BenchTarget):
 
     def list_files(self, prefix: str) -> list[str]:
         return self._fs.ls(self._full(prefix), detail=False)
+
+    def invalidate_cache(self) -> None:
+        self._fs.invalidate_cache()
