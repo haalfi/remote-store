@@ -78,11 +78,11 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   the existing `Store`. Needs design decision on whether to wrap sync backends
   with `asyncio.to_thread` or require native async backends.
 
-- [ ] **ID-018 — conda-forge publishing**
-  Submit a staged-recipes PR to conda-forge so users can `conda install -c
-  conda-forge remote-store`. Pure-Python wheel, so the recipe should be
-  straightforward. Consider once the project reaches Beta or if user demand
-  appears. Reference: https://conda-forge.org/docs/maintainer/adding_pkgs/
+- [~] **ID-018 — conda-forge publishing**
+  Recipe created in `packaging/conda-forge/recipe.yaml` (v1 format,
+  `noarch: python`, zero core deps, `run_constraints` for optional backends).
+  Remaining: fork `conda-forge/staged-recipes`, submit PR with the recipe,
+  wait for review and merge.
 
 - [ ] **ID-024 — `ext.notify` — hooks / middleware / instrumentation**
   Interceptor layer wrapping Store for logging, metrics, auditing, circuit
