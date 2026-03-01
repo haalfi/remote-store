@@ -3499,12 +3499,8 @@ produces charts:</p>
 <h2 id="comparative-results-remote-store-vs-raw-sdk-vs-fsspec">Comparative Results: remote-store vs Raw SDK vs fsspec<a class="headerlink" href="#comparative-results-remote-store-vs-raw-sdk-vs-fsspec" title="Permanent link">&para;</a></h2>
 <!-- Generated 2026-02-28 from Docker benchmarks (MinIO, Azurite, OpenSSH) -->
 <!-- Hardware: Intel(R) Core(TM) Ultra 7 265K, Python 3.13.11, Windows -->
-<!-- NOTE: Some listing numbers are anomalous -- s3fs (67us) and adlfs (83us) -->
-<!-- for 50 files likely reflect client-side caching in the test harness, not -->
-<!-- real-world performance. See ID-032 in BACKLOG.md. -->
-<!-- NOTE: S3 raw boto3 listing (4.4ms) uses the paginator API without caching, -->
-<!-- while remote-store (239us) benefits from s3fs's cached ls(). Related to -->
-<!-- ID-032. -->
+<!-- NOTE: Listing numbers below pre-date the ID-032 cache-invalidation fix. -->
+<!-- Re-run benchmarks to get updated numbers without fsspec caching bias. -->
 
 <h3 id="local">Local<a class="headerlink" href="#local" title="Permanent link">&para;</a></h3>
 <table>
@@ -3581,8 +3577,8 @@ produces charts:</p>
 <tr>
 <td>List 50 files</td>
 <td style="text-align: right;">239us</td>
-<td style="text-align: right;">4.4ms (18.4x slower)*</td>
-<td style="text-align: right;">67us (3.5x faster)**</td>
+<td style="text-align: right;">4.4ms (18.4x slower)</td>
+<td style="text-align: right;">67us (3.5x faster)</td>
 </tr>
 <tr>
 <td>Delete</td>
@@ -3668,7 +3664,7 @@ produces charts:</p>
 <td>List 50 files</td>
 <td style="text-align: right;">11.4ms</td>
 <td style="text-align: right;">9.5ms (1.2x faster)</td>
-<td style="text-align: right;">83us (137.8x faster)**</td>
+<td style="text-align: right;">83us (137.8x faster)</td>
 </tr>
 <tr>
 <td>Delete</td>
@@ -3679,12 +3675,8 @@ produces charts:</p>
 </tbody>
 </table>
 <hr />
-<p><em>* boto3 listing uses the paginator API without caching, while remote-store
-benefits from s3fs's cached <code>ls()</code>. The 18.4x gap reflects caching differences
-in the test harness, not real overhead.</em></p>
-<p><em>** fsspec listing times (s3fs 67us, adlfs 83us) likely reflect client-side
-directory caching from the fixture's file-population phase, not real-world
-listing performance. See ID-032 in BACKLOG.md.</em></p>
+<p><em>Listing numbers above pre-date the ID-032 cache-invalidation fix.
+Re-run benchmarks to get updated numbers without fsspec caching bias.</em></p>
 
 
 
