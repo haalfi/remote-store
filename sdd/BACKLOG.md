@@ -81,8 +81,9 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
 - [~] **ID-018 — conda-forge publishing**
   Recipe created in `packaging/conda-forge/recipe.yaml` (v1 format,
   `noarch: python`, zero core deps, `run_constraints` for optional backends).
-  Remaining: fork `conda-forge/staged-recipes`, submit PR with the recipe,
-  wait for review and merge.
+  CI validation via `conda-recipe.yml` workflow (rattler-build `--render-only`).
+  Release checklist updated with conda version/sha256 steps (Phase 2, 3, 5).
+  Remaining: fork `conda-forge/staged-recipes`, submit PR externally.
 
 - [ ] **ID-024 — `ext.notify` — hooks / middleware / instrumentation**
   Interceptor layer wrapping Store for logging, metrics, auditing, circuit

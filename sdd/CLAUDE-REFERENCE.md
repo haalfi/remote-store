@@ -21,7 +21,8 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | every backend's `capabilities()`, Store surface API       |
 | **Version number**         | `pyproject.toml`, `src/remote_store/__init__.py`,         |
 |                            | `CITATION.cff` (version + date-released),                 |
-|                            | `CHANGELOG.md` (new heading + `[Unreleased]` section)     |
+|                            | `CHANGELOG.md` (new heading + `[Unreleased]` section),    |
+|                            | `packaging/conda-forge/recipe.yaml` (version + sha256)    |
 | **A spec section**         | Tests with `@pytest.mark.spec("ID")`, BACKLOG if related  |
 | **A dependency**           | `pyproject.toml` extras + minimum pins, README install    |
 |                            | instructions, docs prerequisites                          |
