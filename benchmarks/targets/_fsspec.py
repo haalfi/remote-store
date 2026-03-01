@@ -52,6 +52,9 @@ class S3fsTarget(BenchTarget):
     def list_files(self, prefix: str) -> list[str]:
         return self._fs.ls(self._full(prefix), detail=False)
 
+    def invalidate_cache(self) -> None:
+        self._fs.invalidate_cache()
+
     def close(self) -> None:
         self._fs.clear_instance_cache()
 
@@ -88,6 +91,9 @@ class AdlfsTarget(BenchTarget):
 
     def list_files(self, prefix: str) -> list[str]:
         return self._fs.ls(self._full(prefix), detail=False)
+
+    def invalidate_cache(self) -> None:
+        self._fs.invalidate_cache()
 
     def close(self) -> None:
         self._fs.clear_instance_cache()
@@ -128,6 +134,9 @@ class SshfsTarget(BenchTarget):
 
     def list_files(self, prefix: str) -> list[str]:
         return self._fs.ls(self._full(prefix), detail=False)
+
+    def invalidate_cache(self) -> None:
+        self._fs.invalidate_cache()
 
     def close(self) -> None:
         self._fs.clear_instance_cache()

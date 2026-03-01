@@ -103,21 +103,16 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   entire files in memory. Needed for any large-file workflow (Parquet exports,
   log rotation, report generation). Needs temp-path strategy per backend.
 
-- [ ] **ID-032 — Fix listing benchmark fixture caching**
-  The `bench_target` comparative fixture for `test_list_files` populates files
-  then immediately lists -- some fsspec implementations (s3fs, adlfs) appear to
-  cache the directory state from the write phase, producing sub-100us listing
-  times that don't reflect real-world performance. Needs investigation: either
-  add a cache-clearing step between populate and benchmark, or switch listing
-  tests to `bench_backend`-only (non-comparative).
+- [x] **ID-032 — Fix listing benchmark fixture caching** (v0.12.0)
+  Added `invalidate_cache()` to `BenchTarget` protocol and all fsspec targets
+  (S3fsTarget, AdlfsTarget, SshfsTarget) + `RemoteStoreTarget`. Called after
+  fixture population in listing tests so benchmarks measure real I/O, not
+  cached results from the write phase.
 
-- [ ] **ID-033 — Cloud benchmark quick tier timing budget**
-  The quick tier runs 82 tests per backend (`pytest benchmarks/ --collect-only
-  -- --backend s3`). With Docker (~1ms/op) this fits in ~2 min. With real cloud
-  S3 (~50-100ms/op + expensive fixture setup like creating 50/1000 files), 82
-  tests exceeded 10 minutes. Need either: (a) a `cloud-quick` marker subset
-  (~20 key tests), (b) reduce `min_rounds` for cloud mode, or (c) accept the
-  longer cloud time and document it.
+- [x] **ID-033 — Cloud benchmark quick tier timing budget** (v0.12.0)
+  Moved 1000-file listing test (`TestListPerformanceLarge`) from quick to
+  `@pytest.mark.standard` tier. Updated README with per-tier cloud timing
+  estimates (~5 min quick, ~15 min standard, ~60+ min full).
 
 - [ ] **ID-034 — Parquet lake guide (Bronze / Silver / Gold patterns)**
   User-facing guide showing how to use `Store.child()` + `ext.arrow` +

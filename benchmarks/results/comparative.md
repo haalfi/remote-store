@@ -1,11 +1,7 @@
 <!-- Generated 2026-02-28 from Docker benchmarks (MinIO, Azurite, OpenSSH) -->
 <!-- Hardware: Intel(R) Core(TM) Ultra 7 265K, Python 3.13.11, Windows -->
-<!-- NOTE: Some listing numbers are anomalous -- s3fs (67us) and adlfs (83us) -->
-<!-- for 50 files likely reflect client-side caching in the test harness, not -->
-<!-- real-world performance. See ID-032 in BACKLOG.md. -->
-<!-- NOTE: S3 raw boto3 listing (4.4ms) uses the paginator API without caching, -->
-<!-- while remote-store (239us) benefits from s3fs's cached ls(). Related to -->
-<!-- ID-032. -->
+<!-- NOTE: Listing numbers below pre-date the ID-032 cache-invalidation fix. -->
+<!-- Re-run benchmarks to get updated numbers without fsspec caching bias. -->
 
 ### Local
 
@@ -49,10 +45,5 @@
 
 ---
 
-*\* boto3 listing uses the paginator API without caching, while remote-store
-benefits from s3fs's cached `ls()`. The 18.4x gap reflects caching differences
-in the test harness, not real overhead.*
-
-*\*\* fsspec listing times (s3fs 67us, adlfs 83us) likely reflect client-side
-directory caching from the fixture's file-population phase, not real-world
-listing performance. See ID-032 in BACKLOG.md.*
+*Listing numbers above pre-date the ID-032 cache-invalidation fix.
+Re-run benchmarks to get updated numbers without fsspec caching bias.*
