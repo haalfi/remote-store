@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "remote-store"
-version = "0.10.0"
+version = "0.11.0"
 description = "One simple API for file storage. Local, S3, SFTP, Azure. Same methods, swappable backends, zero reinvention."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -26,7 +26,7 @@ keywords = [
   "fsspec",
 ]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3 :: Only",
@@ -200,7 +200,7 @@ known-first-party = ["remote_store"]
 # Bumps version in all three locations atomically.
 
 [tool.bumpversion]
-current_version = "0.10.0"
+current_version = "0.11.0"
 commit = false
 tag = false
 tag_name = "v{new_version}"

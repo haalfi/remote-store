@@ -330,6 +330,16 @@ Supporting work included a concurrency guide (AF-010), capability gating tests (
 
 The `ext.*` namespace is proving to be a good layering decision: extensions compose on the public Store API without backend coupling, so they work with `Store.child()`, capability gating, and any future backend. Each extension is pure Python (except PyArrow which requires its optional dep), independently testable, and unconditionally exported from the top-level package.
 
+### Phase 17: Instrumentation and Optimization (v0.10.0)
+
+Four infrastructure improvements shipped together: the extension namespace contract (ADR-0008) formalized `ext.*` rules that had been implicit, the S3-PyArrow read path optimization (RFC-0003) eliminated double-buffering in streaming reads, benchmark tiered modes replaced the binary slow/not-slow split with three tiers (quick/standard/full) plus comparative reporting, and the release/docs CI was unified around GitHub Releases as the single trigger.
+
+### Phase 18: Beta and Glob (v0.11.0)
+
+Two milestones in one release. The glob feature (ADR-0009) introduced a three-tier design: universal `fnmatch` filtering via `list_files(pattern=)`, capability-gated native `Store.glob()` (Local-only initially), and a portable `ext.glob.glob_files()` fallback with recursive `**` patterns. S3/Azure native glob remains planned.
+
+The project also graduated from Alpha to Beta. After 18 specs, 9 ADRs, 1040+ tests, and 4 extensions, the core API surface (`Store`, `Registry`, `Backend`, models, errors) was declared stable. A stability tiers table was added to CONTRIBUTING.md to formalize the contract: Beta means breaking changes are documented and avoided where possible, while extensions may evolve more freely.
+
 ## What Worked Well
 
 ### Specs as a shared contract

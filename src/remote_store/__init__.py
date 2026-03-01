@@ -21,7 +21,7 @@ from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_
 from remote_store.ext.glob import glob_files
 from remote_store.ext.transfer import download, transfer, upload
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 __all__ = [
     # Core
