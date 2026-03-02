@@ -548,12 +548,117 @@ These should be resolved during RFC/spec work:
 
 ---
 
-## 10. Additional Design Precedents (from extended research)
+## 10. Style Decisions
+
+Resolved style choices for intrinsic logging (Layer 1). These apply to
+all modules under `src/remote_store/`.
+
+### 10.1 Logger variable name: `log`
+
+```python
+import logging
+
+log = logging.getLogger(__name__)
+```
+
+**Rationale:** Reads naturally at call sites (`log.info(...)` is terse and
+functional). No PEP prescribes `logger` vs `log`; consistency within the
+project is what matters. `log` is used by paramiko and many production
+codebases.
+
+**Rule:** Every module uses `log = logging.getLogger(__name__)`. No other
+names (`logger`, `LOG`, `_log`).
+
+### 10.2 Message formatting: `%`-style everywhere
+
+```python
+log.info("write complete: %s (%d bytes)", path, size)
+log.debug("retry attempt %d/%d for %s", attempt, max_retries, path)
+```
+
+**Rationale:**
+- **Lazy interpolation.** The `%` formatting is deferred until the message
+  is actually emitted. With f-strings, the string is always built, even
+  when the log level would suppress it. For a library where the application
+  controls log levels, this is the correct default.
+- **Lint compliance.** ruff rule `G004` (`logging-fstring-interpolation`)
+  flags f-strings in log calls. Using `%`-style avoids needing to disable
+  or ignore the rule.
+- **Ecosystem convention.** The stdlib logging docs, Django, requests, and
+  boto3 all use `%`-style. Following the convention reduces surprise for
+  contributors and consumers.
+
+**Rules:**
+1. Always use `%`-style: `log.info("msg %s", arg)`, never `log.info(f"msg {arg}")`.
+2. Keep the message string human-readable — it's what a developer sees
+   in `tail -f` or a terminal.
+3. Never put sensitive data (credentials, tokens, connection strings) in
+   the message or in `extra`.
+
+### 10.3 Structured context: `extra={}` for machine-parseable fields
+
+```python
+log.info(
+    "write complete: %s (%d bytes)", path, size,
+    extra={"backend": "s3", "path": path, "size": size, "op": "write"},
+)
+```
+
+**Rationale:**
+- The `extra` dict populates `LogRecord` attributes that structured
+  logging tools (Splunk, Datadog, ELK, structlog `ProcessorFormatter`)
+  can index and query.
+- The message string is for humans; `extra` is for monitoring. Both are
+  present in every log call, serving different audiences from the same
+  line of code.
+- When an application configures structlog to wrap stdlib, `extra` fields
+  automatically appear in structured output. When using plain formatters,
+  they are still accessible on the `LogRecord` but do not clutter the
+  default output.
+
+**Rules:**
+1. All log calls at INFO or above that relate to store operations SHOULD
+   include `extra={}` with at minimum `backend` and `op`.
+2. DEBUG-level calls MAY include `extra` when the structured data is
+   useful for diagnostics.
+3. The `extra` keys use a flat namespace: `backend`, `op`, `path`, `size`,
+   `duration_s`, `error`, `attempt`, `max_retries`. No nesting.
+4. Numeric values use native types (`int`, `float`), not stringified forms.
+
+### 10.4 Log levels
+
+| Level     | Use for                                                      | Example                                        |
+|-----------|--------------------------------------------------------------|-------------------------------------------------|
+| `DEBUG`   | Operation details useful during development/troubleshooting  | `"opening SFTP channel to %s:%d"`               |
+| `INFO`    | Successful operations at the public API boundary             | `"write complete: %s (%d bytes)"`               |
+| `WARNING` | Recoverable issues: retries, fallbacks, deprecations         | `"retry attempt %d/%d for %s"`                  |
+| `ERROR`   | Failures that propagate as exceptions                        | `"write failed: %s — %s"`                       |
+
+**Rules:**
+1. Never use `CRITICAL` — a library should not declare anything critical.
+2. One INFO per public API call (entry or exit, not both) to avoid noise.
+3. Retries log each attempt at WARNING, not just the final failure.
+4. Stack traces via `log.exception()` or `exc_info=True` only at ERROR.
+
+### 10.5 Summary table
+
+| Concern                | Decision            | Enforced by         |
+|------------------------|---------------------|---------------------|
+| Variable name          | `log`               | Code review         |
+| Format style           | `%`-style           | ruff `G004`         |
+| Structured context     | `extra={}`          | Code review         |
+| Sensitive data         | Never logged        | AF-008 + review     |
+| NullHandler            | Top-level `__init__` | Test (Layer 1 impl) |
+| Logger per module      | `__name__`          | Code review         |
+
+---
+
+## 11. Additional Design Precedents (from extended research)
 
 The following patterns from our dependencies and the broader ecosystem
 are especially relevant to `ext.notify` design.
 
-### 10.1 Azure SDK's `@distributed_trace` decorator
+### 11.1 Azure SDK's `@distributed_trace` decorator
 
 Azure SDK applies a `@distributed_trace` decorator to every public client
 method. This is the most comprehensive approach found in any studied library:
@@ -580,7 +685,7 @@ in `ext.notify` could wrap Store methods consistently. The proxy pattern
 (our preferred approach) achieves the same effect without requiring
 decorators on the core Store class.
 
-### 10.2 Botocore event system
+### 11.2 Botocore event system
 
 Botocore (the engine behind boto3) has a rich event system with events like:
 - `before-send` — fired before each HTTP request
@@ -598,7 +703,7 @@ with hooks work well at scale. However, botocore events are registered
 on a Session (mutable global state), while our proxy pattern is per-Store
 (safer, more explicit).
 
-### 10.3 httpx event hooks
+### 11.3 httpx event hooks
 
 httpx offers two levels of hooks:
 - **Client-wide** `event_hooks={"request": [...], "response": [...]}` on
@@ -612,7 +717,7 @@ considering for `ext.notify`. The proxy approach naturally gives per-Store
 hooks. Per-operation hooks (e.g., `store.read("file.csv", hooks=...)`)
 would add complexity — defer unless a real use case emerges.
 
-### 10.4 Context propagation via `contextvars`
+### 11.4 Context propagation via `contextvars`
 
 Python's `contextvars` module (stdlib, 3.7+) is the standard for
 propagating context (request IDs, correlation IDs) across async boundaries.
@@ -624,7 +729,7 @@ The OpenTelemetry API handles this automatically via `Context`, but
 callback-only users may want access to a correlation ID. Consider adding
 an optional `context` field to `StoreEvent` (§5, Layer 2).
 
-### 10.5 Using `extra={}` for structured log context
+### 11.5 Using `extra={}` for structured log context
 
 Libraries can pass structured context via stdlib logging's `extra` parameter:
 
@@ -643,7 +748,7 @@ logging users rich context for free.
 
 ---
 
-## 11. References
+## 12. References
 
 ### Python logging
 - [Logging HOWTO — Python 3.14 docs](https://docs.python.org/3/howto/logging.html)
