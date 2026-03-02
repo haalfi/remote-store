@@ -466,8 +466,7 @@ def read_bytes(self, path: str) -> bytes:
 # endregion
 ```
 
-No empty lines between the region marker and the first item. One empty line
-before `# region:` and after `# endregion`.
+One empty line before `# region:` and after `# endregion`.
 
 **Headlines** (box dividers) — introduce a new section at module level.
 Single marker (not paired) before a top-level definition or group of
