@@ -439,9 +439,22 @@ def write(self, path: str, content: WritableContent, *, overwrite: bool = False)
     """
 ```
 
-### 11.5 Region Comments
+### 11.5 Code Organisation Comments
 
-Use `# region:` / `# endregion` for **conceptual grouping only** — not around things already collapsible in IDEs (classes, functions). Useful in large classes like `LocalBackend`:
+Two styles for structuring large files, each with a distinct purpose.
+
+|               | Regions                              | Headlines                        |
+|---------------|--------------------------------------|----------------------------------|
+| Purpose       | Group related items by concern       | Introduce a new section          |
+| Markers       | Paired (`# region:` ... `# endregion`) | Single (box divider)           |
+| IDE behaviour | Foldable                             | None (purely visual)             |
+| Scope         | Inside classes                       | Module level                     |
+
+**Regions** (`# region:` / `# endregion`) — group related items by concern.
+Paired markers that IDEs can fold. Use for items that are not individually
+collapsible as a group (e.g. several methods that together form "read
+operations"). **Never** wrap a single class or function — those are already
+collapsible on their own.
 
 ```python
 # region: BE-006 through BE-007: read operations
@@ -453,7 +466,25 @@ def read_bytes(self, path: str) -> bytes:
 # endregion
 ```
 
-No empty lines between the region marker and the first item. One empty line before `# region:` and after `# endregion`.
+No empty lines between the region marker and the first item. One empty line
+before `# region:` and after `# endregion`.
+
+**Headlines** (box dividers) — introduce a new section at module level.
+Single marker (not paired) before a top-level definition or group of
+definitions. Purely visual; no IDE folding behaviour.
+
+```python
+# ---------------------------------------------------------------------------
+# Convenience factory
+# ---------------------------------------------------------------------------
+
+def pyarrow_fs(store: Store, ...) -> pafs.PyFileSystem:
+    ...
+```
+
+Use headlines in modules with multiple top-level classes or logical sections
+(extensions, tests, benchmarks, scripts). Do not use inside classes — use
+regions there instead.
 
 ### 11.6 Method Ordering
 

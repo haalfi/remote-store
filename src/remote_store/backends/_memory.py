@@ -70,9 +70,7 @@ class MemoryBackend(Backend):
     def capabilities(self) -> CapabilitySet:
         return _ALL_CAPABILITIES
 
-    # ------------------------------------------------------------------
-    # Path helpers (MEM-DS-005)
-    # ------------------------------------------------------------------
+    # region: path helpers (MEM-DS-005)
 
     @staticmethod
     def _split_path(path: str) -> list[str]:
@@ -124,9 +122,9 @@ class MemoryBackend(Backend):
             node = child
         return node
 
-    # ------------------------------------------------------------------
-    # Existence checks (BE-004, BE-005)
-    # ------------------------------------------------------------------
+    # endregion
+
+    # region: existence checks (BE-004, BE-005)
 
     def exists(self, path: str) -> bool:
         segments = self._split_path(path)
@@ -149,9 +147,9 @@ class MemoryBackend(Backend):
                 return True  # root is a folder
             return isinstance(self._traverse(segments), _DirNode)
 
-    # ------------------------------------------------------------------
-    # Read operations (MEM-010, MEM-011)
-    # ------------------------------------------------------------------
+    # endregion
+
+    # region: read operations (MEM-010, MEM-011)
 
     def read(self, path: str) -> BinaryIO:
         segments = self._split_path(path)
@@ -170,9 +168,9 @@ class MemoryBackend(Backend):
                 raise NotFound(f"File not found: {path}", path=path, backend="memory")
             return bytes(node.data)
 
-    # ------------------------------------------------------------------
-    # Write operations (MEM-012, MEM-013)
-    # ------------------------------------------------------------------
+    # endregion
+
+    # region: write operations (MEM-012, MEM-013)
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         segments = self._split_path(path)
@@ -207,9 +205,9 @@ class MemoryBackend(Backend):
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         self.write(path, content, overwrite=overwrite)
 
-    # ------------------------------------------------------------------
-    # Delete operations (BE-012, MEM-014)
-    # ------------------------------------------------------------------
+    # endregion
+
+    # region: delete operations (BE-012, MEM-014)
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         segments = self._split_path(path)
@@ -277,9 +275,9 @@ class MemoryBackend(Backend):
                     stack.append(child)
         return files, folders
 
-    # ------------------------------------------------------------------
-    # Listing (BE-014, BE-015)
-    # ------------------------------------------------------------------
+    # endregion
+
+    # region: listing (BE-014, BE-015)
 
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         segments = self._split_path(path)
@@ -332,9 +330,9 @@ class MemoryBackend(Backend):
             results = [name for name, child in node.children.items() if isinstance(child, _DirNode)]
         yield from results
 
-    # ------------------------------------------------------------------
-    # Metadata (BE-016, BE-017, MEM-015)
-    # ------------------------------------------------------------------
+    # endregion
+
+    # region: metadata (BE-016, BE-017, MEM-015)
 
     def get_file_info(self, path: str) -> FileInfo:
         segments = self._split_path(path)
@@ -379,9 +377,9 @@ class MemoryBackend(Backend):
                 modified_at=latest,
             )
 
-    # ------------------------------------------------------------------
-    # Move and copy (MEM-016, MEM-016b)
-    # ------------------------------------------------------------------
+    # endregion
+
+    # region: move and copy (MEM-016, MEM-016b)
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         src_segments = self._split_path(src)
@@ -465,3 +463,5 @@ class MemoryBackend(Backend):
                 self._file_count += 1
 
             dst_parent.children[dst_leaf] = new_entry
+
+    # endregion

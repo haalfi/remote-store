@@ -97,6 +97,12 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `parse_partition(path) -> dict`. Useful for Parquet lake workloads alongside
   PyArrow datasets. No external dependencies.
 
+- [ ] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix**
+  Listing numbers in `benchmarks/results/comparative.md` pre-date the ID-032
+  cache-invalidation fix (`invalidate_cache()` on `BenchTarget`). Re-run all
+  benchmark tiers with Docker backends to produce accurate baseline data.
+  64KB write values for S3-PyArrow and Azure are also outlier-skewed.
+
 - [ ] **ID-037 — PyArrow adapter Phase 2 — Tier 1 native fast-path reads**
   Complete the deferred Phase 2 work from ID-016: `Store.native_path()`,
   `Backend.native_path()`, Tier 1 native fast-path reads (PA-010) bypassing
