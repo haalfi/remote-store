@@ -236,3 +236,93 @@ its own resources that need cleanup — it has no independent lifecycle.
 **Rationale:** Consistent with the extension contract (ADR-0008): extensions
 never close the Store. The `ObservedStore` follows the same principle as
 `Store.child()` — the outermost owner manages the lifecycle.
+
+---
+
+## OpenTelemetry Bridge
+
+### OBS-011: otel_hooks Factory
+
+**Invariant:** `otel_hooks()` returns a `dict` suitable for unpacking into
+`observe()`:
+
+```python
+def otel_hooks(
+    *,
+    tracer_name: str = "remote_store",
+    meter_name: str = "remote_store",
+    tracer: Tracer | None = None,
+    meter: Meter | None = None,
+) -> dict[str, Any]: ...
+```
+
+The returned dict contains:
+- `"around"`: a context-manager factory that creates OTel spans.
+- `"on_any"`: a callback that records metrics (counters and histogram).
+
+When `tracer` or `meter` are provided, they are used directly (bypassing
+the global providers). When ``None`` (default), the tracer/meter are
+obtained from the global `TracerProvider`/`MeterProvider` via the
+corresponding `*_name` parameter.
+
+**Postconditions:**
+- `observe(store, **otel_hooks())` produces an `ObservedStore` with OTel
+  tracing and metrics enabled.
+- When `opentelemetry-api` is not installed, importing `ext.otel` raises
+  `ImportError`.
+
+### OBS-012: Span Conventions
+
+**Invariant:** Each span emitted by the `around` hook follows these
+conventions:
+
+- **Span name:** `store.{operation}` (e.g., `store.read`, `store.write`).
+- **Span kind:** `SpanKind.CLIENT`.
+- **Attributes:**
+  - `remote_store.operation` (str): operation name.
+  - `remote_store.backend` (str): backend name.
+  - `remote_store.path` (str): store-relative key.
+- **On error:**
+  - `span.set_status(StatusCode.ERROR, str(exc))`.
+  - `span.record_exception(exc)`.
+  - `error.type` attribute set to the exception class's qualified name.
+
+### OBS-013: Metric Instruments
+
+**Invariant:** The `on_any` hook records the following metrics:
+
+| Type | Name | Unit | Attributes |
+|------|------|------|------------|
+| Counter | `remote_store.operations` | `1` | `operation`, `backend`, `status` (`"ok"` or `"error"`) |
+| Counter | `remote_store.errors` | `1` | `operation`, `backend`, `error.type` |
+| Histogram | `remote_store.operation.duration` | `s` | `operation`, `backend`; plus `error.type` on error |
+
+**Postconditions:**
+- `path` is **not** included in metric attributes (high-cardinality risk).
+- Duration is recorded in **seconds** (OTel convention), converted from
+  `StoreEvent.duration_ms`.
+
+### OBS-014: Import Gating
+
+**Invariant:** `ext.otel` requires `opentelemetry-api>=1.28.0`. The module
+performs a top-level `import opentelemetry` and raises `ImportError` if the
+package is missing.
+
+The top-level `remote_store.__init__` conditionally re-exports `otel_hooks`
+and `otel_observe` using `try/except ImportError`, consistent with the
+`ext.arrow` pattern.
+
+**Convenience wrapper:**
+
+```python
+def otel_observe(
+    store: Store,
+    *,
+    tracer_name: str = "remote_store",
+    meter_name: str = "remote_store",
+    tracer: Tracer | None = None,
+    meter: Meter | None = None,
+) -> ObservedStore: ...
+```
+
+Equivalent to `observe(store, **otel_hooks(tracer_name=..., meter_name=..., tracer=..., meter=...))`.

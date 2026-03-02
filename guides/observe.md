@@ -200,3 +200,82 @@ batch_delete(observed, ["a.txt", "b.txt", "c.txt"])
 
 The `ext.transfer` `on_progress` callback remains separate (different
 concern: UI progress vs telemetry).
+
+## Layer 3: OpenTelemetry Bridge
+
+The `ext.otel` module provides pre-built hooks that emit
+[OpenTelemetry](https://opentelemetry.io/) spans and metrics. Install
+the optional dependency:
+
+```bash
+pip install "remote-store[otel]"
+```
+
+This depends only on `opentelemetry-api` (not the SDK). If no SDK is
+configured at runtime, all OTel calls become zero-cost no-ops.
+
+### Quick start
+
+```python
+from remote_store.ext.otel import otel_observe
+
+observed = otel_observe(store)
+observed.write("data/report.csv", csv_bytes)
+# -> OTel span "store.write" + metrics recorded automatically
+```
+
+Or compose with other hooks using `otel_hooks()`:
+
+```python
+from remote_store import observe
+from remote_store.ext.otel import otel_hooks
+
+observed = observe(
+    store,
+    **otel_hooks(),
+    on_error=my_error_alerter,
+)
+```
+
+### Spans
+
+Each operation creates a span with:
+
+- **Name:** `store.{operation}` (e.g. `store.read`, `store.write`)
+- **Kind:** `SpanKind.CLIENT` (outbound call to storage)
+- **Attributes:** `remote_store.operation`, `remote_store.backend`,
+  `remote_store.path`
+- **On error:** Status set to ERROR, exception recorded, `error.type`
+  attribute added
+
+### Metrics
+
+Three instruments are created:
+
+| Type | Name | Unit | Attributes |
+|------|------|------|------------|
+| Counter | `remote_store.operations` | `1` | `operation`, `backend`, `status` |
+| Counter | `remote_store.errors` | `1` | `operation`, `backend`, `error.type` |
+| Histogram | `remote_store.operation.duration` | `s` | `operation`, `backend` |
+
+Note: `path` is intentionally excluded from metric attributes to
+avoid high-cardinality issues with metric backends like Prometheus.
+
+### Configuring the SDK
+
+The bridge works with any OpenTelemetry SDK configuration. A typical
+production setup exports to an OTLP-compatible collector:
+
+```python
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
+trace.set_tracer_provider(TracerProvider())
+trace.get_tracer_provider().add_span_processor(
+    BatchSpanProcessor(OTLPSpanExporter())
+)
+
+# Now otel_observe() spans flow to your collector
+observed = otel_observe(store)
+```

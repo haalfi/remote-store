@@ -84,12 +84,12 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Release checklist updated with conda version/sha256 steps (Phase 2, 3, 5).
   Remaining: fork `conda-forge/staged-recipes`, submit PR externally.
 
-- [~] **ID-024 — `ext.observe` — hooks / middleware / instrumentation**
-  Layer 1 (intrinsic logging) and Layer 2 (`ext.observe` callback hooks) shipped.
-  `observe(store, on_read=..., on_write=..., on_error=...)` wraps Store in a
-  proxy that fires callbacks. `BufferedObserver` for batched async delivery.
-  ADR-0010, spec `019-ext-observe.md`. Supersedes ID-004.
-  Remaining: Layer 3 — OTel bridge (`ext.observe.otel_bridge`) as optional extra.
+- [x] **ID-024 — `ext.observe` — hooks / middleware / instrumentation** (unreleased)
+  All three layers shipped: Layer 1 (intrinsic logging), Layer 2 (`ext.observe`
+  callback hooks), Layer 3 (`ext.otel` OpenTelemetry bridge). `otel_observe()`
+  wraps Store with OTel spans and metrics. Optional extra `otel` depends on
+  `opentelemetry-api>=1.28.0`. ADR-0010, spec `019-ext-observe.md` (OBS-001
+  through OBS-014). Supersedes ID-004.
 
 - [ ] **ID-025 — `ext.cache` — store-level caching middleware**
   Wraps a Store and caches reads, folder stats, existence checks with TTL.

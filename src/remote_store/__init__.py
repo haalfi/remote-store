@@ -89,3 +89,12 @@ try:
 except ImportError:
     # PyArrow not installed or broken — don't crash the core package.
     pass
+
+# Optional OpenTelemetry extension (available when opentelemetry-api is installed)
+try:
+    from remote_store.ext.otel import otel_hooks, otel_observe
+
+    __all__ += ["otel_hooks", "otel_observe"]
+except ImportError:
+    # opentelemetry-api not installed — don't crash the core package.
+    pass
