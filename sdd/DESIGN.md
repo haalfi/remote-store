@@ -448,7 +448,7 @@ Two styles for structuring large files, each with a distinct purpose.
 | Purpose       | Group related items by concern       | Introduce a new section          |
 | Markers       | Paired (`# region:` ... `# endregion`) | Single (box divider)           |
 | IDE behaviour | Foldable                             | None (purely visual)             |
-| Scope         | Inside classes                       | Module level                     |
+| Scope         | Anywhere (class or module level)     | Module level                     |
 
 **Regions** (`# region:` / `# endregion`) — group related items by concern.
 Paired markers that IDEs can fold. Use for items that are not individually
