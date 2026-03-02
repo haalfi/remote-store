@@ -381,9 +381,12 @@ a test that asserts `InstrumentedStore` overrides every public method of
 `Store`. This catches drift at CI time:
 ```python
 def test_instrumented_store_covers_all_public_methods():
-    store_methods = {m for m in dir(Store) if not m.startswith("_") and callable(getattr(Store, m))}
-    instrumented_methods = {m for m in dir(InstrumentedStore) if not m.startswith("_") and callable(getattr(InstrumentedStore, m))}
-    missing = store_methods - instrumented_methods
+    store_methods = {
+        m for m in vars(Store)
+        if not m.startswith("_") and callable(getattr(Store, m))
+    }
+    overridden = set(vars(InstrumentedStore)) & store_methods
+    missing = store_methods - overridden
     assert not missing, f"InstrumentedStore missing overrides: {missing}"
 ```
 The RFC should specify this test as a required safeguard for Option A.
