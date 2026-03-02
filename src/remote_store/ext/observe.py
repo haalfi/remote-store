@@ -275,18 +275,21 @@ class ObservedStore(Store):
         recursive: bool = False,
         pattern: str | None = None,
     ) -> Iterator[FileInfo]:
-        # Generators need special handling -- we can't yield inside _observe_op
-        # because the generator body executes lazily. Materialize results.
+        # Materialize: inner list_files() is a generator whose body runs lazily.
+        # Collecting into a list ensures timing and error capture cover actual
+        # I/O, not just generator creation.
         with self._observe_op("list_files", path, {"recursive": recursive, "pattern": pattern}):
-            return self._inner.list_files(path, recursive=recursive, pattern=pattern)
+            return iter(list(self._inner.list_files(path, recursive=recursive, pattern=pattern)))
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
+        # Materialize: see list_files comment.
         with self._observe_op("glob", pattern, {"pattern": pattern}):
-            return self._inner.glob(pattern)
+            return iter(list(self._inner.glob(pattern)))
 
     def list_folders(self, path: str) -> Iterator[str]:
+        # Materialize: see list_files comment.
         with self._observe_op("list_folders", path, {}):
-            return self._inner.list_folders(path)
+            return iter(list(self._inner.list_folders(path)))
 
     def get_file_info(self, path: str) -> FileInfo:
         with self._observe_op("get_file_info", path, {}):

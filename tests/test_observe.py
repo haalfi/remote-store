@@ -530,6 +530,25 @@ class TestErrorPropagation:
         assert len(errors) == 1
         assert isinstance(errors[0].error, NotFound)
 
+    @pytest.mark.spec("OBS-009")
+    def test_per_operation_hook_fires_on_error(self) -> None:
+        """Per-op hook and on_error both fire when an operation fails."""
+        from remote_store._errors import NotFound
+
+        store = _make_store()
+        read_events: list[StoreEvent] = []
+        error_events: list[StoreEvent] = []
+        observed = observe(store, on_read=read_events.append, on_error=error_events.append)
+        with pytest.raises(NotFound):
+            observed.read("nonexistent.txt")
+        # on_read fires with error set
+        assert len(read_events) == 1
+        assert read_events[0].error is not None
+        assert read_events[0].operation == "read"
+        # on_error also fires
+        assert len(error_events) == 1
+        assert error_events[0].error is not None
+
 
 # ---------------------------------------------------------------------------
 # OBS-010: No lifecycle ownership
@@ -637,6 +656,19 @@ class TestProxyCoverage:
         observed = observe(store, **kwargs)
         observed.get_folder_info("sub")
         assert any(e.operation == "get_folder_info" for e in events)
+
+    def test_glob(self, tmp_path: Any) -> None:
+        from remote_store.backends._local import LocalBackend
+
+        store = Store(backend=LocalBackend(root=str(tmp_path)))
+        store.write("a.txt", b"data")
+        store.write("b.csv", b"data")
+        events, kwargs = _collect_events()
+        observed = observe(store, **kwargs)
+        results = list(observed.glob("*.txt"))
+        assert len(results) == 1
+        assert results[0].name == "a.txt"
+        assert any(e.operation == "glob" for e in events)
 
     def test_repr(self) -> None:
         store = _make_store()
