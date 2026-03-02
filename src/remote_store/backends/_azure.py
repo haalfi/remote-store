@@ -35,7 +35,7 @@ T = TypeVar("T")
 
 _ALL_CAPABILITIES = CapabilitySet(set(Capability))
 
-_log = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class _AzureBinaryIO(io.RawIOBase):
@@ -229,7 +229,7 @@ class AzureBackend(Backend):
                 info = self._blob_service.get_account_information()
                 self._hns_enabled = bool(info.get("is_hns_enabled", False))
             except Exception:
-                _log.warning(
+                log.warning(
                     "Failed to detect HNS status, falling back to non-HNS behavior",
                     exc_info=True,
                 )

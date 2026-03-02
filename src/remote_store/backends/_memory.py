@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import logging
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -20,6 +21,8 @@ if TYPE_CHECKING:
     from remote_store._types import WritableContent
 
 _ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
+
+log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------

@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
     from remote_store._store import Store
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 __all__ = ["StoreFileSystemHandler", "pyarrow_fs"]
 
@@ -314,12 +314,13 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                     raise
 
             # Tier 2 fallback: non-seekable large file — materialize with warning
-            logger.warning(
+            log.warning(
                 "Materializing %d-byte file %r into memory because the backend "
                 "stream is not seekable. Consider using a backend with native "
                 "PyArrow support or increasing materialization_threshold.",
                 info.size,
                 path,
+                extra={"op": "open_input_file", "path": path},
             )
             try:
                 data = stream.read()

@@ -15,9 +15,12 @@ Usage::
 from __future__ import annotations
 
 import dataclasses
+import logging
 from typing import TYPE_CHECKING
 
 from remote_store._errors import CapabilityNotSupported, RemoteStoreError
+
+log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -77,7 +80,14 @@ def batch_delete(
                 break
         else:
             succeeded.append(path)
-    return BatchResult(succeeded=tuple(succeeded), failed=failed)
+    result = BatchResult(succeeded=tuple(succeeded), failed=failed)
+    log.info(
+        "batch_delete complete: %d succeeded, %d failed",
+        len(result.succeeded),
+        len(result.failed),
+        extra={"op": "batch_delete"},
+    )
+    return result
 
 
 def batch_copy(
@@ -108,7 +118,14 @@ def batch_copy(
                 break
         else:
             succeeded.append(src)
-    return BatchResult(succeeded=tuple(succeeded), failed=failed)
+    result = BatchResult(succeeded=tuple(succeeded), failed=failed)
+    log.info(
+        "batch_copy complete: %d succeeded, %d failed",
+        len(result.succeeded),
+        len(result.failed),
+        extra={"op": "batch_copy"},
+    )
+    return result
 
 
 def batch_exists(store: Store, paths: Iterable[str]) -> dict[str, bool]:

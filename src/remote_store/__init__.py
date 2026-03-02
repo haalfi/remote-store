@@ -1,5 +1,7 @@
 """Backend-agnostic remote storage abstraction."""
 
+import logging
+
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import BackendConfig, RegistryConfig, StoreProfile
@@ -19,9 +21,18 @@ from remote_store._registry import Registry, register_backend
 from remote_store._store import Store
 from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_exists
 from remote_store.ext.glob import glob_files
+from remote_store.ext.observe import (
+    BufferedObserver,
+    ObservedStore,
+    StoreEvent,
+    observe,
+    set_correlation_id,
+)
 from remote_store.ext.transfer import download, transfer, upload
 
 __version__ = "0.12.0"
+
+logging.getLogger("remote_store").addHandler(logging.NullHandler())
 
 __all__ = [
     # Core
@@ -56,6 +67,12 @@ __all__ = [
     "batch_exists",
     # Glob operations
     "glob_files",
+    # Observe operations
+    "BufferedObserver",
+    "ObservedStore",
+    "StoreEvent",
+    "observe",
+    "set_correlation_id",
     # Transfer operations
     "upload",
     "download",
