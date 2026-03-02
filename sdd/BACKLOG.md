@@ -35,7 +35,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Let users define backend config via Pydantic `BaseSettings` for env-var binding,
   `.env` file loading, and validation. Optional `pydantic` dependency.
 
-- [x] **ID-004 — Structured logging & metrics hooks** (v0.13.0)
+- [x] **ID-004 — Structured logging & metrics hooks** (unreleased)
   Superseded by ID-024 (`ext.observe`). Intrinsic stdlib logging added to all
   modules: `NullHandler`, `log = logging.getLogger(__name__)`, `%`-style with
   `extra={}`. DEBUG for method entry, INFO for write/delete/move/copy completion.

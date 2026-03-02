@@ -210,6 +210,20 @@ class TestObservedStoreProxy:
         assert events[1].operation == "read_bytes"
 
     @pytest.mark.spec("OBS-003")
+    def test_on_any_receives_error_events(self) -> None:
+        """on_any must receive events with error set when operations fail."""
+        from remote_store._errors import NotFound
+
+        store = _make_store()
+        any_events: list[StoreEvent] = []
+        observed = observe(store, on_any=any_events.append)
+        with pytest.raises(NotFound):
+            observed.read("nonexistent.txt")
+        assert len(any_events) == 1
+        assert any_events[0].error is not None
+        assert any_events[0].operation == "read"
+
+    @pytest.mark.spec("OBS-003")
     def test_proxy_does_not_modify_results(self) -> None:
         store = _populated_store("a.txt")
         observed = observe(store, on_any=lambda e: None)
