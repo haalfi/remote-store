@@ -105,20 +105,56 @@ Parameters:
 
 ## Intrinsic Logging
 
-The library also provides built-in stdlib logging. Enable it in your
-application:
+The library ships with built-in stdlib logging. Every module uses
+`logging.getLogger(__name__)`, so all loggers live under the
+`remote_store` namespace (e.g. `remote_store._store`,
+`remote_store.backends._local`, `remote_store.ext.observe`).
+A `NullHandler` is attached to the root `"remote_store"` logger so
+the library is silent by default.
+
+### Showing only warnings
+
+Set the level on the `"remote_store"` logger -- this applies to all
+child loggers in the hierarchy:
 
 ```python
 import logging
-logging.basicConfig(level=logging.DEBUG)
 
-# All remote_store operations now log to stderr:
+logging.basicConfig()  # ensure at least one handler on root
+logging.getLogger("remote_store").setLevel(logging.WARNING)
+```
+
+### Verbose debug output
+
+```python
+import logging
+
+logging.basicConfig(level=logging.WARNING)  # keep other libs quiet
+logging.getLogger("remote_store").setLevel(logging.DEBUG)
+
 # DEBUG remote_store._store: read path='data/file.csv'
 # INFO  remote_store._store: write complete path='output.csv'
 ```
 
-Log records include structured `extra` fields (`op`, `path`, `backend`)
-accessible via custom formatters or structlog processors.
+### Logging levels used
+
+| Level | When |
+|-------|------|
+| `DEBUG` | Method entry (every Store operation) |
+| `INFO` | Mutating-operation completion (write, delete, move, copy) |
+| `WARNING` | Suppressed hook exceptions, fallback behaviour |
+| `ERROR` | Before re-raising backend errors |
+
+### Structured `extra` fields
+
+Log records include structured `extra` fields accessible via custom
+formatters or structlog processors:
+
+| Field | Description |
+|-------|-------------|
+| `op` | Operation name (`"read"`, `"write"`, ...) |
+| `path` | Store-relative key |
+| `backend` | Backend name (`"local"`, `"s3"`, ...) |
 
 ## Error Handling
 
