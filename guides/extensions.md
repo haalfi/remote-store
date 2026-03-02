@@ -11,6 +11,7 @@ on top of the core Store API.
 | `ext.glob` | -- | Portable glob pattern matching for file listing |
 | `ext.observe` | -- | Callback-based observability hooks for Store operations |
 | `ext.transfer` | -- | Upload, download, and cross-store transfer |
+| `ext.otel` | `otel` | OpenTelemetry tracing and metrics bridge |
 | `ext.arrow` | `arrow` | PyArrow FileSystem adapter |
 
 ## Using Extensions
@@ -35,23 +36,27 @@ from remote_store.ext.transfer import upload
 
 ### Optional-dependency extensions
 
-`ext.arrow` requires PyArrow.  Install the extra first:
+`ext.arrow` requires PyArrow, and `ext.otel` requires the OpenTelemetry
+API.  Install the relevant extra first:
 
 ```bash
-pip install "remote-store[arrow]"
+pip install "remote-store[arrow]"   # PyArrow filesystem adapter
+pip install "remote-store[otel]"    # OpenTelemetry tracing and metrics
 ```
 
 Then import from the top-level package or the extension module directly:
 
 ```python
-from remote_store import pyarrow_fs
+from remote_store import pyarrow_fs       # ext.arrow
+from remote_store import otel_hooks       # ext.otel
 # or
 from remote_store.ext.arrow import pyarrow_fs
+from remote_store.ext.otel import otel_hooks
 ```
 
-If PyArrow is not installed, the top-level import silently omits the
-symbols, and importing `ext.arrow` directly raises a
-`ModuleNotFoundError` with installation instructions.
+If the required dependency is not installed, the top-level import
+silently omits the symbols, and importing the extension module directly
+raises a `ModuleNotFoundError` with installation instructions.
 
 ## Extension Guarantees
 
@@ -70,7 +75,7 @@ All extensions follow the same contract (ADR-0008):
 - [Batch Operations](batch-operations.md)
 - [Glob Pattern Matching](glob-pattern-matching.md)
 - [Transfer Operations](transfer-operations.md)
-- [Observability Hooks](observe.md)
+- [Observability Hooks](observe.md) (includes Layer 3 OTel bridge)
 
 ## Writing Your Own Extension
 
