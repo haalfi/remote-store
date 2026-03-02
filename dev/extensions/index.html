@@ -3107,6 +3107,11 @@ on top of the core Store API.</p>
 <td>Upload, download, and cross-store transfer</td>
 </tr>
 <tr>
+<td><code>ext.otel</code></td>
+<td><code>otel</code></td>
+<td>OpenTelemetry tracing and metrics bridge</td>
+</tr>
+<tr>
 <td><code>ext.arrow</code></td>
 <td><code>arrow</code></td>
 <td>PyArrow FileSystem adapter</td>
@@ -3126,17 +3131,21 @@ dependencies. They are re-exported from the top-level package:</p>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.transfer</span><span class="w"> </span><span class="kn">import</span> <span class="n">upload</span>
 </code></pre></div>
 <h3 id="optional-dependency-extensions">Optional-dependency extensions<a class="headerlink" href="#optional-dependency-extensions" title="Permanent link">&para;</a></h3>
-<p><code>ext.arrow</code> requires PyArrow.  Install the extra first:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[arrow]&quot;</span>
+<p><code>ext.arrow</code> requires PyArrow, and <code>ext.otel</code> requires the OpenTelemetry
+API.  Install the relevant extra first:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[arrow]&quot;</span><span class="w">   </span><span class="c1"># PyArrow filesystem adapter</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[otel]&quot;</span><span class="w">    </span><span class="c1"># OpenTelemetry tracing and metrics</span>
 </code></pre></div>
 <p>Then import from the top-level package or the extension module directly:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># or</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>       <span class="c1"># ext.arrow</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>       <span class="c1"># ext.otel</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># or</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>
 </code></pre></div>
-<p>If PyArrow is not installed, the top-level import silently omits the
-symbols, and importing <code>ext.arrow</code> directly raises a
-<code>ModuleNotFoundError</code> with installation instructions.</p>
+<p>If the required dependency is not installed, the top-level import
+silently omits the symbols, and importing the extension module directly
+raises a <code>ModuleNotFoundError</code> with installation instructions.</p>
 <h2 id="extension-guarantees">Extension Guarantees<a class="headerlink" href="#extension-guarantees" title="Permanent link">&para;</a></h2>
 <p>All extensions follow the same contract (ADR-0008):</p>
 <ul>
@@ -3153,7 +3162,7 @@ symbols, and importing <code>ext.arrow</code> directly raises a
 <li><a href="../batch-operations/">Batch Operations</a></li>
 <li><a href="../glob-pattern-matching/">Glob Pattern Matching</a></li>
 <li><a href="../transfer-operations/">Transfer Operations</a></li>
-<li><a href="../observe/">Observability Hooks</a></li>
+<li><a href="../observe/">Observability Hooks</a> (includes Layer 3 OTel bridge)</li>
 </ul>
 <h2 id="writing-your-own-extension">Writing Your Own Extension<a class="headerlink" href="#writing-your-own-extension" title="Permanent link">&para;</a></h2>
 <p>See the "Adding an Extension" checklist in CONTRIBUTING.md.</p>

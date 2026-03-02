@@ -2545,6 +2545,67 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#opentelemetry-bridge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenTelemetry Bridge
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OpenTelemetry Bridge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#obs-011-otel_hooks-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OBS-011: otel_hooks Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#obs-012-span-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OBS-012: Span Conventions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#obs-013-metric-instruments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OBS-013: Metric Instruments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#obs-014-import-gating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OBS-014: Import Gating
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3457,6 +3518,67 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#opentelemetry-bridge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenTelemetry Bridge
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OpenTelemetry Bridge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#obs-011-otel_hooks-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OBS-011: otel_hooks Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#obs-012-span-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OBS-012: Span Conventions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#obs-013-metric-instruments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OBS-013: Metric Instruments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#obs-014-import-gating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OBS-014: Import Gating
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3682,6 +3804,100 @@ its own resources that need cleanup — it has no independent lifecycle.</p>
 <p><strong>Rationale:</strong> Consistent with the extension contract (ADR-0008): extensions
 never close the Store. The <code>ObservedStore</code> follows the same principle as
 <code>Store.child()</code> — the outermost owner manages the lifecycle.</p>
+<hr />
+<h2 id="opentelemetry-bridge">OpenTelemetry Bridge<a class="headerlink" href="#opentelemetry-bridge" title="Permanent link">&para;</a></h2>
+<h3 id="obs-011-otel_hooks-factory">OBS-011: otel_hooks Factory<a class="headerlink" href="#obs-011-otel_hooks-factory" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>otel_hooks()</code> returns a <code>dict</code> suitable for unpacking into
+<code>observe()</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">otel_hooks</span><span class="p">(</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">tracer_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;remote_store&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">meter_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;remote_store&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">tracer</span><span class="p">:</span> <span class="n">Tracer</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">meter</span><span class="p">:</span> <span class="n">Meter</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span> <span class="o">...</span>
+</code></pre></div>
+<p>The returned dict contains:
+- <code>"around"</code>: a context-manager factory that creates OTel spans.
+- <code>"on_any"</code>: a callback that records metrics (counters and histogram).</p>
+<p>When <code>tracer</code> or <code>meter</code> are provided, they are used directly (bypassing
+the global providers). When <code>None</code> (default), the tracer/meter are
+obtained from the global <code>TracerProvider</code>/<code>MeterProvider</code> via the
+corresponding <code>*_name</code> parameter.</p>
+<p><strong>Postconditions:</strong>
+- <code>observe(store, **otel_hooks())</code> produces an <code>ObservedStore</code> with OTel
+  tracing and metrics enabled.
+- When <code>opentelemetry-api</code> is not installed, importing <code>ext.otel</code> raises
+  <code>ImportError</code>.</p>
+<h3 id="obs-012-span-conventions">OBS-012: Span Conventions<a class="headerlink" href="#obs-012-span-conventions" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Each span emitted by the <code>around</code> hook follows these
+conventions:</p>
+<ul>
+<li><strong>Span name:</strong> <code>store.{operation}</code> (e.g., <code>store.read</code>, <code>store.write</code>).</li>
+<li><strong>Span kind:</strong> <code>SpanKind.CLIENT</code>.</li>
+<li><strong>Attributes:</strong></li>
+<li><code>remote_store.operation</code> (str): operation name.</li>
+<li><code>remote_store.backend</code> (str): backend name.</li>
+<li><code>remote_store.path</code> (str): store-relative key.</li>
+<li><strong>On error:</strong></li>
+<li><code>span.set_status(StatusCode.ERROR, str(exc))</code>.</li>
+<li><code>span.record_exception(exc)</code>.</li>
+<li><code>error.type</code> attribute set to the exception class's qualified name.</li>
+</ul>
+<h3 id="obs-013-metric-instruments">OBS-013: Metric Instruments<a class="headerlink" href="#obs-013-metric-instruments" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> The <code>on_any</code> hook records the following metrics:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Name</th>
+<th>Unit</th>
+<th>Attributes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Counter</td>
+<td><code>remote_store.operations</code></td>
+<td><code>1</code></td>
+<td><code>operation</code>, <code>backend</code>, <code>status</code> (<code>"ok"</code> or <code>"error"</code>)</td>
+</tr>
+<tr>
+<td>Counter</td>
+<td><code>remote_store.errors</code></td>
+<td><code>1</code></td>
+<td><code>operation</code>, <code>backend</code>, <code>error.type</code></td>
+</tr>
+<tr>
+<td>Histogram</td>
+<td><code>remote_store.operation.duration</code></td>
+<td><code>s</code></td>
+<td><code>operation</code>, <code>backend</code>; plus <code>error.type</code> on error</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Postconditions:</strong>
+- <code>path</code> is <strong>not</strong> included in metric attributes (high-cardinality risk).
+- Duration is recorded in <strong>seconds</strong> (OTel convention), converted from
+  <code>StoreEvent.duration_ms</code>.</p>
+<h3 id="obs-014-import-gating">OBS-014: Import Gating<a class="headerlink" href="#obs-014-import-gating" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>ext.otel</code> requires <code>opentelemetry-api&gt;=1.28.0</code>. The module
+performs a top-level <code>import opentelemetry</code> and raises <code>ImportError</code> if the
+package is missing.</p>
+<p>The top-level <code>remote_store.__init__</code> conditionally re-exports <code>otel_hooks</code>
+and <code>otel_observe</code> using <code>try/except ImportError</code>, consistent with the
+<code>ext.arrow</code> pattern.</p>
+<p><strong>Convenience wrapper:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">otel_observe</span><span class="p">(</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">,</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">tracer_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;remote_store&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">meter_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;remote_store&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">tracer</span><span class="p">:</span> <span class="n">Tracer</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">meter</span><span class="p">:</span> <span class="n">Meter</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ObservedStore</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<p>Equivalent to <code>observe(store, **otel_hooks(tracer_name=..., meter_name=..., tracer=..., meter=...))</code>.</p>
 
 
 

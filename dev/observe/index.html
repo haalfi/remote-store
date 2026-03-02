@@ -1726,6 +1726,67 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#layer-3-opentelemetry-bridge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 3: OpenTelemetry Bridge
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Layer 3: OpenTelemetry Bridge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quick-start_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spans" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spans
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-the-sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring the SDK
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3231,6 +3292,67 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#layer-3-opentelemetry-bridge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 3: OpenTelemetry Bridge
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Layer 3: OpenTelemetry Bridge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quick-start_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spans" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spans
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-the-sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring the SDK
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3476,6 +3598,90 @@ other extensions:</p>
 </code></pre></div>
 <p>The <code>ext.transfer</code> <code>on_progress</code> callback remains separate (different
 concern: UI progress vs telemetry).</p>
+<h2 id="layer-3-opentelemetry-bridge">Layer 3: OpenTelemetry Bridge<a class="headerlink" href="#layer-3-opentelemetry-bridge" title="Permanent link">&para;</a></h2>
+<p>The <code>ext.otel</code> module provides pre-built hooks that emit
+<a href="https://opentelemetry.io/">OpenTelemetry</a> spans and metrics. Install
+the optional dependency:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[otel]&quot;</span>
+</code></pre></div>
+<p>This depends only on <code>opentelemetry-api</code> (not the SDK). If no SDK is
+configured at runtime, all OTel calls become zero-cost no-ops.</p>
+<h3 id="quick-start_1">Quick start<a class="headerlink" href="#quick-start_1" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_observe</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">otel_observe</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">observed</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;data/report.csv&quot;</span><span class="p">,</span> <span class="n">csv_bytes</span><span class="p">)</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># -&gt; OTel span &quot;store.write&quot; + metrics recorded automatically</span>
+</code></pre></div>
+<p>Or compose with other hooks using <code>otel_hooks()</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">observe</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">store</span><span class="p">,</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="o">**</span><span class="n">otel_hooks</span><span class="p">(),</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="n">on_error</span><span class="o">=</span><span class="n">my_error_alerter</span><span class="p">,</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="p">)</span>
+</code></pre></div>
+<h3 id="spans">Spans<a class="headerlink" href="#spans" title="Permanent link">&para;</a></h3>
+<p>Each operation creates a span with:</p>
+<ul>
+<li><strong>Name:</strong> <code>store.{operation}</code> (e.g. <code>store.read</code>, <code>store.write</code>)</li>
+<li><strong>Kind:</strong> <code>SpanKind.CLIENT</code> (outbound call to storage)</li>
+<li><strong>Attributes:</strong> <code>remote_store.operation</code>, <code>remote_store.backend</code>,
+  <code>remote_store.path</code></li>
+<li><strong>On error:</strong> Status set to ERROR, exception recorded, <code>error.type</code>
+  attribute added</li>
+</ul>
+<h3 id="metrics">Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h3>
+<p>Three instruments are created:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Name</th>
+<th>Unit</th>
+<th>Attributes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Counter</td>
+<td><code>remote_store.operations</code></td>
+<td><code>1</code></td>
+<td><code>operation</code>, <code>backend</code>, <code>status</code></td>
+</tr>
+<tr>
+<td>Counter</td>
+<td><code>remote_store.errors</code></td>
+<td><code>1</code></td>
+<td><code>operation</code>, <code>backend</code>, <code>error.type</code></td>
+</tr>
+<tr>
+<td>Histogram</td>
+<td><code>remote_store.operation.duration</code></td>
+<td><code>s</code></td>
+<td><code>operation</code>, <code>backend</code>; plus <code>error.type</code> on error</td>
+</tr>
+</tbody>
+</table>
+<p>Note: <code>path</code> is intentionally excluded from metric attributes to
+avoid high-cardinality issues with metric backends like Prometheus.</p>
+<h3 id="configuring-the-sdk">Configuring the SDK<a class="headerlink" href="#configuring-the-sdk" title="Permanent link">&para;</a></h3>
+<p>The bridge works with any OpenTelemetry SDK configuration. A typical
+production setup exports to an OTLP-compatible collector:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.trace</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerProvider</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.trace.export</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchSpanProcessor</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.exporter.otlp.proto.grpc.trace_exporter</span><span class="w"> </span><span class="kn">import</span> <span class="n">OTLPSpanExporter</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">trace</span><span class="o">.</span><span class="n">set_tracer_provider</span><span class="p">(</span><span class="n">TracerProvider</span><span class="p">())</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="n">trace</span><span class="o">.</span><span class="n">get_tracer_provider</span><span class="p">()</span><span class="o">.</span><span class="n">add_span_processor</span><span class="p">(</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="n">BatchSpanProcessor</span><span class="p">(</span><span class="n">OTLPSpanExporter</span><span class="p">())</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="p">)</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="c1"># Now otel_observe() spans flow to your collector</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">otel_observe</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
+</code></pre></div>
 
 
 
