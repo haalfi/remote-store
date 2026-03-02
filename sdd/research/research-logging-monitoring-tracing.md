@@ -546,6 +546,22 @@ These should be resolved during RFC/spec work:
    The backlog says `ext.notify`. Consider whether this name adequately
    conveys the purpose.
 
+8. **Thread safety of `ext.notify` callbacks.**
+   If a callback is slow (HTTP POST to a metrics endpoint, file I/O),
+   it blocks the Store operation. Options: (a) document "callbacks must
+   be fast", (b) offer an async/threaded callback adapter, (c) fire
+   callbacks in a background thread. Recommendation: document (a) for
+   v1, revisit if real users hit it.
+
+9. **Correlation across related operations.**
+   A `transfer()` does `store.read()` + `store.write()` — two unrelated
+   log lines at Layer 1. Layer 2 (`ext.notify`) can wrap the transfer as
+   a single `StoreEvent`, but Layer 1 has no built-in correlation. Options:
+   (a) accept it — correlation is the app's job via `contextvars`, (b) add
+   an optional `correlation_id` to `extra`, (c) use a `contextvars.ContextVar`
+   set by `ext.transfer`. Recommendation: (a) for Layer 1, (c) for Layer 2
+   when `ext.notify` ships.
+
 ---
 
 ## 10. Style Decisions
@@ -640,7 +656,161 @@ log.info(
 3. Retries log each attempt at WARNING, not just the final failure.
 4. Stack traces via `log.exception()` or `exc_info=True` only at ERROR.
 
-### 10.5 Summary table
+### 10.5 Exception logging patterns
+
+```python
+# Pattern: log in the except block, before re-raising
+try:
+    result = self._client.get_object(Bucket=bucket, Key=key)
+except ClientError as exc:
+    log.error(
+        "read failed: %s — %s", path, exc,
+        extra={"backend": "s3", "op": "read", "path": path,
+               "error": type(exc).__name__},
+    )
+    raise self._classify_error(exc, path) from exc
+```
+
+**Rules:**
+1. Log at ERROR in the `except` block, **before** re-raising the mapped
+   exception. This ensures every failure appears in logs even if the
+   caller swallows the mapped exception.
+2. Use `log.error(...)` with `extra={"error": type(exc).__name__}` for
+   machine-parseable error classification. Do **not** put the full
+   traceback in `extra` — it belongs in the message via `exc_info=True`
+   only when the traceback adds diagnostic value (e.g., unexpected
+   internal errors, not routine `NotFound`).
+3. Use `log.exception(...)` (which implies `exc_info=True`) only for
+   truly unexpected errors where the full stack trace aids diagnosis.
+   For expected/classified errors (`NotFound`, `AlreadyExists`), plain
+   `log.error(...)` is sufficient — the exception class name in `extra`
+   is enough.
+4. Never log and swallow — if you catch it and log it, always re-raise
+   (or let the caller know). Silent failures are worse than no logging.
+
+### 10.6 Performance: what NOT to log
+
+```python
+# BAD — inside a tight read loop, creates dict per chunk
+for chunk in stream:
+    log.debug("chunk %d bytes", len(chunk),
+              extra={"backend": "s3", "op": "read_chunk", "size": len(chunk)})
+
+# GOOD — log once at entry/exit, not per-chunk
+log.debug("read started: %s", path, extra={"backend": "s3", "op": "read"})
+stream = self._client.get_object(...)
+# ... return stream, log completion in the caller or wrapper
+```
+
+**Rules:**
+1. **Never log inside tight loops** (per-chunk streaming, retry inner
+   loops). One log line per public API call, not per iteration.
+2. **`extra={}` is cheap but not free.** Dict creation + attribute
+   setting on `LogRecord` costs ~0.5µs per call. At DEBUG level this is
+   noise; at 10,000 calls/s in a streaming pipeline it adds up. Restrict
+   `extra` to INFO+ on hot paths.
+3. **Guard expensive argument computation:**
+   ```python
+   if log.isEnabledFor(logging.DEBUG):
+       log.debug("list returned %d files", len(files),
+                 extra={"backend": "s3", "op": "list_files", "count": len(files)})
+   ```
+   The `isEnabledFor` check costs ~30ns vs building the `extra` dict.
+   Use this guard only when the arguments themselves are expensive
+   (e.g., `len()` on a large list, `repr()` on a complex object).
+   For simple string/int arguments, `%`-style lazy formatting is
+   sufficient — no guard needed.
+
+### 10.7 `extra` key namespacing
+
+Our `extra` keys (`backend`, `op`, `path`, `size`, etc.) are
+intentionally **un-namespaced** — they populate `LogRecord` attributes
+directly.
+
+**Risk:** If an application configures a logging `Filter` or structlog
+processor that also sets `backend` or `path`, the values collide on the
+`LogRecord`. This is a known stdlib limitation (there is no `extra`
+isolation).
+
+**Decision: accept the risk, document it.** Rationale:
+- Namespaced keys (`rs_backend`, `remote_store.backend`) are ugly at
+  every call site and in every Splunk/Datadog query.
+- Collision requires the application to deliberately use the same key
+  names in their own `extra` dicts, which is unlikely and easy to fix.
+- The Layer 2 `ext.notify` event model (`StoreEvent.backend`) is fully
+  isolated — it's a dataclass, not a shared dict.
+- Document in the user guide: "remote-store uses these `extra` keys:
+  `backend`, `op`, `path`, `size`, `duration_s`, `error`, `attempt`,
+  `max_retries`. Avoid reusing these names in your own log `extra`."
+
+### 10.8 Deprecation warnings
+
+Deprecations use `warnings.warn()`, **not** `log.warning()`:
+
+```python
+import warnings
+
+warnings.warn(
+    "Store.old_method() is deprecated, use Store.new_method() instead",
+    DeprecationWarning,
+    stacklevel=2,
+)
+```
+
+**Rationale:**
+- PEP 565 standardizes `DeprecationWarning` for libraries. Python's
+  warning system integrates with `-W` flags, `pytest -W error`, and
+  `PYTHONWARNINGS` — none of which work with `log.warning()`.
+- Deprecations are code-health signals for **developers reading code
+  or running tests**, not operational signals for **operators reading
+  logs**. Different audience, different channel.
+
+**Rule:** `log.warning()` is for runtime anomalies (retries, fallbacks).
+`warnings.warn(..., DeprecationWarning, stacklevel=2)` is for API
+deprecations. Never mix them.
+
+### 10.9 Testing strategy
+
+All logging assertions use pytest's `caplog` fixture:
+
+```python
+def test_write_logs_completion(caplog, store):
+    with caplog.at_level(logging.INFO, logger="remote_store"):
+        store.write("test.txt", b"data")
+    assert "write complete" in caplog.text
+    # Verify structured extra fields
+    record = caplog.records[-1]
+    assert record.op == "write"
+    assert record.backend == "memory"
+```
+
+**Rules:**
+1. Phase 1 spec should include test IDs for logging behavior — at
+   minimum: NullHandler registered, INFO on write, WARNING on retry,
+   ERROR on failure, no logging above WARNING during normal operations.
+2. Test the `extra` fields by accessing `LogRecord` attributes directly
+   (`record.backend`, `record.op`), not by parsing the message string.
+3. Use `caplog.at_level(level, logger="remote_store")` to scope
+   assertions to our logger hierarchy. Never assert against the root
+   logger.
+4. Do **not** test exact message strings (they're for humans and may
+   change). Test for key substrings and structured `extra` values.
+
+### 10.10 Migration of existing logging
+
+Three modules currently use logging with inconsistent conventions:
+
+| Module | Current variable | Current style | Action |
+|--------|-----------------|---------------|--------|
+| `backends/_sftp.py` | `log` | `%`-style, no `extra` | Add `extra` to existing calls |
+| `backends/_azure.py` | `_log` | `exc_info=True`, no `extra` | Rename to `log`, add `extra` |
+| `ext/arrow.py` | `logger` | `%`-style, no `extra` | Rename to `log`, add `extra` |
+
+**Rule:** Migration happens as part of Phase 1 (ID-004), same PR as the
+NullHandler addition and new logging calls. This is not a separate task —
+consistency must be established in a single commit.
+
+### 10.11 Summary table
 
 | Concern                | Decision            | Enforced by         |
 |------------------------|---------------------|---------------------|
@@ -650,6 +820,12 @@ log.info(
 | Sensitive data         | Never logged        | AF-008 + review     |
 | NullHandler            | Top-level `__init__` | Test (Layer 1 impl) |
 | Logger per module      | `__name__`          | Code review         |
+| Exception logging      | `except` block, before re-raise | Code review |
+| Tight-loop logging     | Never               | Code review         |
+| `extra` namespacing    | Un-namespaced, documented | User guide    |
+| Deprecations           | `warnings.warn()`   | Code review         |
+| Testing                | `caplog` + `extra` attrs | Spec tests    |
+| Migration              | Phase 1, single PR  | PR checklist        |
 
 ---
 
