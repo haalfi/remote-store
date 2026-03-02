@@ -2104,10 +2104,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#115-region-comments" class="md-nav__link">
+  <a href="#115-code-organisation-comments" class="md-nav__link">
     <span class="md-ellipsis">
       
-        11.5 Region Comments
+        11.5 Code Organisation Comments
       
     </span>
   </a>
@@ -3892,10 +3892,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#115-region-comments" class="md-nav__link">
+  <a href="#115-code-organisation-comments" class="md-nav__link">
     <span class="md-ellipsis">
       
-        11.5 Region Comments
+        11.5 Code Organisation Comments
       
     </span>
   </a>
@@ -4346,8 +4346,44 @@ invariant). No implicit path rewriting occurs in the core.</p>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="sd">    :raises AlreadyExists: If file exists and ``overwrite`` is ``False``.</span>
 <a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="sd">    &quot;&quot;&quot;</span>
 </code></pre></div>
-<h3 id="115-region-comments">11.5 Region Comments<a class="headerlink" href="#115-region-comments" title="Permanent link">&para;</a></h3>
-<p>Use <code># region:</code> / <code># endregion</code> for <strong>conceptual grouping only</strong> — not around things already collapsible in IDEs (classes, functions). Useful in large classes like <code>LocalBackend</code>:</p>
+<h3 id="115-code-organisation-comments">11.5 Code Organisation Comments<a class="headerlink" href="#115-code-organisation-comments" title="Permanent link">&para;</a></h3>
+<p>Two styles for structuring large files, each with a distinct purpose.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Regions</th>
+<th>Headlines</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Purpose</td>
+<td>Group related items by concern</td>
+<td>Introduce a new section</td>
+</tr>
+<tr>
+<td>Markers</td>
+<td>Paired (<code># region:</code> ... <code># endregion</code>)</td>
+<td>Single (box divider)</td>
+</tr>
+<tr>
+<td>IDE behaviour</td>
+<td>Foldable</td>
+<td>None (purely visual)</td>
+</tr>
+<tr>
+<td>Scope</td>
+<td>Anywhere (class or module level)</td>
+<td>Module level</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Regions</strong> (<code># region:</code> / <code># endregion</code>) — group related items by concern.
+Paired markers that IDEs can fold. Use for items that are not individually
+collapsible as a group (e.g. several methods that together form "read
+operations"). <strong>Never</strong> wrap a single class or function — those are already
+collapsible on their own.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># region: BE-006 through BE-007: read operations</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="o">...</span>
@@ -4356,7 +4392,20 @@ invariant). No implicit path rewriting occurs in the core.</p>
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="o">...</span>
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># endregion</span>
 </code></pre></div>
-<p>No empty lines between the region marker and the first item. One empty line before <code># region:</code> and after <code># endregion</code>.</p>
+<p>One empty line before <code># region:</code> and after <code># endregion</code>.</p>
+<p><strong>Headlines</strong> (box dividers) — introduce a new section at module level.
+Single marker (not paired) before a top-level definition or group of
+definitions. Purely visual; no IDE folding behaviour.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># ---------------------------------------------------------------------------</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># Convenience factory</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># ---------------------------------------------------------------------------</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">pyarrow_fs</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pafs</span><span class="o">.</span><span class="n">PyFileSystem</span><span class="p">:</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="o">...</span>
+</code></pre></div>
+<p>Use headlines in modules with multiple top-level classes or logical sections
+(extensions, tests, benchmarks, scripts). Do not use inside classes — use
+regions there instead.</p>
 <h3 id="116-method-ordering">11.6 Method Ordering<a class="headerlink" href="#116-method-ordering" title="Permanent link">&para;</a></h3>
 <p>Within a class, methods are ordered by logical grouping:</p>
 <ol>
@@ -4378,20 +4427,20 @@ invariant). No implicit path rewriting occurs in the core.</p>
 <p>Declared only in public-facing <code>__init__.py</code> modules. Internal modules (<code>_errors.py</code>, etc.) do not need <code>__all__</code> — the underscore prefix signals "internal".</p>
 <h3 id="1110-error-messages">11.10 Error Messages<a class="headerlink" href="#1110-error-messages" title="Permanent link">&para;</a></h3>
 <p>f-strings with context for human-readable tracebacks. Structured attributes (<code>.path</code>, <code>.backend</code>, <code>.capability</code>) for programmatic access:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="1111-test-style">11.11 Test Style<a class="headerlink" href="#1111-test-style" title="Permanent link">&para;</a></h3>
 <p>Tests are grouped into classes by spec aspect. The class docstring references the spec IDs covered:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestRemotePathNormalization</span><span class="p">:</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;PATH-002 through PATH-006: normalization rules.&quot;&quot;&quot;</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">&quot;PATH-002&quot;</span><span class="p">)</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_backslash_to_forward_slash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a</span><span class="se">\\</span><span class="s2">b</span><span class="se">\\</span><span class="s2">c&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b/c&quot;</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">&quot;PATH-005&quot;</span><span class="p">)</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_collapse_consecutive_slashes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a///b&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestRemotePathNormalization</span><span class="p">:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;PATH-002 through PATH-006: normalization rules.&quot;&quot;&quot;</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">&quot;PATH-002&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_backslash_to_forward_slash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a</span><span class="se">\\</span><span class="s2">b</span><span class="se">\\</span><span class="s2">c&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b/c&quot;</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">&quot;PATH-005&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_collapse_consecutive_slashes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a///b&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b&quot;</span>
 </code></pre></div>
 <p>Each test method carries a <code>@pytest.mark.spec("ID")</code> marker for traceability.</p>
 <hr />
