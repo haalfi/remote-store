@@ -256,7 +256,7 @@ Three instruments are created:
 |------|------|------|------------|
 | Counter | `remote_store.operations` | `1` | `operation`, `backend`, `status` |
 | Counter | `remote_store.errors` | `1` | `operation`, `backend`, `error.type` |
-| Histogram | `remote_store.operation.duration` | `s` | `operation`, `backend` |
+| Histogram | `remote_store.operation.duration` | `s` | `operation`, `backend`; plus `error.type` on error |
 
 Note: `path` is intentionally excluded from metric attributes to
 avoid high-cardinality issues with metric backends like Prometheus.

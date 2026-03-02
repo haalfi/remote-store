@@ -25,8 +25,13 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING, Any
 
-from opentelemetry import metrics, trace
-from opentelemetry.trace import SpanKind, StatusCode
+try:
+    from opentelemetry import metrics, trace
+    from opentelemetry.trace import SpanKind, StatusCode
+except ModuleNotFoundError as _exc:
+    raise ModuleNotFoundError(
+        "OpenTelemetry API is required for the otel extension. Install it with: pip install 'remote-store[otel]'"
+    ) from _exc
 
 from remote_store.ext.observe import ObservedStore, StoreEvent, observe
 
