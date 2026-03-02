@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import logging
 import shutil
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 _ALL_CAPABILITIES = CapabilitySet(set(Capability))
+
+log = logging.getLogger(__name__)
 
 
 class S3Backend(Backend):

@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import dataclasses
 import fnmatch
+import logging
 from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath
 from remote_store._path import RemotePath
+
+log = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -163,14 +166,17 @@ class Store:
 
     def exists(self, path: str) -> bool:
         """Check if a file or folder exists."""
+        log.debug("exists path=%r", path, extra={"op": "exists", "path": path, "backend": self._backend.name})
         return self._backend.exists(self._full_path(path))
 
     def is_file(self, path: str) -> bool:
         """Check if path is an existing file."""
+        log.debug("is_file path=%r", path, extra={"op": "is_file", "path": path, "backend": self._backend.name})
         return self._backend.is_file(self._full_path(path))
 
     def is_folder(self, path: str) -> bool:
         """Check if path is an existing folder."""
+        log.debug("is_folder path=%r", path, extra={"op": "is_folder", "path": path, "backend": self._backend.name})
         return self._backend.is_folder(self._full_path(path))
 
     def read(self, path: str) -> BinaryIO:
@@ -178,6 +184,7 @@ class Store:
 
         :raises NotFound: If the file does not exist.
         """
+        log.debug("read path=%r", path, extra={"op": "read", "path": path, "backend": self._backend.name})
         self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
         return self._backend.read(self._require_file_path(path))
 
@@ -187,6 +194,7 @@ class Store:
         :raises NotFound: If the file does not exist.
         :raises InvalidPath: If ``path`` is empty.
         """
+        log.debug("read_bytes path=%r", path, extra={"op": "read_bytes", "path": path, "backend": self._backend.name})
         self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
         return self._backend.read_bytes(self._require_file_path(path))
 
@@ -196,8 +204,11 @@ class Store:
         :raises AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         :raises InvalidPath: If ``path`` is empty.
         """
-        self._backend.capabilities.require(Capability.WRITE, backend=self._backend.name)
+        _bk = self._backend.name
+        log.debug("write path=%r overwrite=%r", path, overwrite, extra={"op": "write", "path": path, "backend": _bk})
+        self._backend.capabilities.require(Capability.WRITE, backend=_bk)
         self._backend.write(self._require_file_path(path), content, overwrite=overwrite)
+        log.info("write complete path=%r", path, extra={"op": "write", "path": path, "backend": _bk})
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         """Write content atomically.
@@ -206,8 +217,16 @@ class Store:
         :raises AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         :raises InvalidPath: If ``path`` is empty.
         """
-        self._backend.capabilities.require(Capability.ATOMIC_WRITE, backend=self._backend.name)
+        _bk = self._backend.name
+        log.debug(
+            "write_atomic path=%r overwrite=%r",
+            path,
+            overwrite,
+            extra={"op": "write_atomic", "path": path, "backend": _bk},
+        )
+        self._backend.capabilities.require(Capability.ATOMIC_WRITE, backend=_bk)
         self._backend.write_atomic(self._require_file_path(path), content, overwrite=overwrite)
+        log.info("write_atomic complete path=%r", path, extra={"op": "write_atomic", "path": path, "backend": _bk})
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file.
@@ -215,8 +234,13 @@ class Store:
         :raises NotFound: If the file is missing and ``missing_ok`` is ``False``.
         :raises InvalidPath: If ``path`` is empty.
         """
-        self._backend.capabilities.require(Capability.DELETE, backend=self._backend.name)
+        _bk = self._backend.name
+        log.debug(
+            "delete path=%r missing_ok=%r", path, missing_ok, extra={"op": "delete", "path": path, "backend": _bk}
+        )
+        self._backend.capabilities.require(Capability.DELETE, backend=_bk)
         self._backend.delete(self._require_file_path(path), missing_ok=missing_ok)
+        log.info("delete complete path=%r", path, extra={"op": "delete", "path": path, "backend": _bk})
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         """Delete a folder.
@@ -224,10 +248,18 @@ class Store:
         :raises NotFound: If the folder is missing and ``missing_ok`` is ``False``.
         :raises InvalidPath: If ``path`` is empty (cannot delete the store root).
         """
+        _bk = self._backend.name
+        log.debug(
+            "delete_folder path=%r recursive=%r",
+            path,
+            recursive,
+            extra={"op": "delete_folder", "path": path, "backend": _bk},
+        )
         if not path:
             raise InvalidPath("Cannot delete the store root", path=path)
-        self._backend.capabilities.require(Capability.DELETE, backend=self._backend.name)
+        self._backend.capabilities.require(Capability.DELETE, backend=_bk)
         self._backend.delete_folder(self._full_path(path), recursive=recursive, missing_ok=missing_ok)
+        log.info("delete_folder complete path=%r", path, extra={"op": "delete_folder", "path": path, "backend": _bk})
 
     def list_files(self, path: str, *, recursive: bool = False, pattern: str | None = None) -> Iterator[FileInfo]:
         """List files under path, optionally filtering by name pattern.
@@ -243,7 +275,15 @@ class Store:
             Filtering is applied at the Store level so it works with every
             backend.
         """
-        self._backend.capabilities.require(Capability.LIST, backend=self._backend.name)
+        _bk = self._backend.name
+        log.debug(
+            "list_files path=%r recursive=%r pattern=%r",
+            path,
+            recursive,
+            pattern,
+            extra={"op": "list_files", "path": path, "backend": _bk},
+        )
+        self._backend.capabilities.require(Capability.LIST, backend=_bk)
         for info in self._backend.list_files(self._full_path(path), recursive=recursive):
             rebased = self._rebase_file_info(info)
             if pattern is not None and not fnmatch.fnmatch(rebased.name, pattern):
@@ -265,6 +305,7 @@ class Store:
             (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
         :raises CapabilityNotSupported: If the backend lacks ``GLOB``.
         """
+        log.debug("glob pattern=%r", pattern, extra={"op": "glob", "path": pattern, "backend": self._backend.name})
         self._backend.capabilities.require(Capability.GLOB, backend=self._backend.name)
         full_pattern = f"{self._root}/{pattern}" if self._root else pattern
         for info in self._backend.glob(full_pattern):
@@ -272,7 +313,9 @@ class Store:
 
     def list_folders(self, path: str) -> Iterator[str]:
         """List immediate subfolder names."""
-        self._backend.capabilities.require(Capability.LIST, backend=self._backend.name)
+        _bk = self._backend.name
+        log.debug("list_folders path=%r", path, extra={"op": "list_folders", "path": path, "backend": _bk})
+        self._backend.capabilities.require(Capability.LIST, backend=_bk)
         return self._backend.list_folders(self._full_path(path))
 
     def get_file_info(self, path: str) -> FileInfo:
@@ -281,7 +324,9 @@ class Store:
         :raises NotFound: If the file does not exist.
         :raises InvalidPath: If ``path`` is empty.
         """
-        self._backend.capabilities.require(Capability.METADATA, backend=self._backend.name)
+        _bk = self._backend.name
+        log.debug("get_file_info path=%r", path, extra={"op": "get_file_info", "path": path, "backend": _bk})
+        self._backend.capabilities.require(Capability.METADATA, backend=_bk)
         info = self._backend.get_file_info(self._require_file_path(path))
         return self._rebase_file_info(info)
 
@@ -290,7 +335,9 @@ class Store:
 
         :raises NotFound: If the folder does not exist.
         """
-        self._backend.capabilities.require(Capability.METADATA, backend=self._backend.name)
+        _bk = self._backend.name
+        log.debug("get_folder_info path=%r", path, extra={"op": "get_folder_info", "path": path, "backend": _bk})
+        self._backend.capabilities.require(Capability.METADATA, backend=_bk)
         info = self._backend.get_folder_info(self._full_path(path))
         return self._rebase_folder_info(info)
 
@@ -301,8 +348,13 @@ class Store:
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         :raises InvalidPath: If ``src`` or ``dst`` is empty.
         """
-        self._backend.capabilities.require(Capability.MOVE, backend=self._backend.name)
+        _bk = self._backend.name
+        log.debug(
+            "move src=%r dst=%r overwrite=%r", src, dst, overwrite, extra={"op": "move", "path": src, "backend": _bk}
+        )
+        self._backend.capabilities.require(Capability.MOVE, backend=_bk)
         self._backend.move(self._require_file_path(src), self._require_file_path(dst), overwrite=overwrite)
+        log.info("move complete src=%r dst=%r", src, dst, extra={"op": "move", "path": src, "backend": _bk})
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Copy a file.
@@ -311,5 +363,10 @@ class Store:
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         :raises InvalidPath: If ``src`` or ``dst`` is empty.
         """
-        self._backend.capabilities.require(Capability.COPY, backend=self._backend.name)
+        _bk = self._backend.name
+        log.debug(
+            "copy src=%r dst=%r overwrite=%r", src, dst, overwrite, extra={"op": "copy", "path": src, "backend": _bk}
+        )
+        self._backend.capabilities.require(Capability.COPY, backend=_bk)
         self._backend.copy(self._require_file_path(src), self._require_file_path(dst), overwrite=overwrite)
+        log.info("copy complete src=%r dst=%r", src, dst, extra={"op": "copy", "path": src, "backend": _bk})

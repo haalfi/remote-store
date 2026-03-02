@@ -227,7 +227,13 @@ class SFTPBackend(Backend):
             reraise=True,
         )
         def _do_connect() -> None:
-            log.info("Connecting to %s:%d as %s", self._host, self._port, self._username)
+            log.info(
+                "Connecting to %s:%d as %s",
+                self._host,
+                self._port,
+                self._username,
+                extra={"op": "connect", "backend": "sftp"},
+            )
             ssh.connect(
                 hostname=self._host,
                 port=self._port,
@@ -244,7 +250,7 @@ class SFTPBackend(Backend):
         _do_connect()
         self._ssh_client = ssh
         self._sftp_client = ssh.open_sftp()
-        log.info("SFTP connection established.")
+        log.info("SFTP connection established.", extra={"op": "connect", "backend": "sftp"})
 
     def _create_ssh_client(self) -> Any:
         """Create and configure an SSHClient with host key policy."""
@@ -266,7 +272,10 @@ class SFTPBackend(Backend):
         if self._host_key_policy == HostKeyPolicy.TRUST_ON_FIRST_USE:  # pragma: no cover
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         elif self._host_key_policy == HostKeyPolicy.AUTO_ADD:
-            log.warning("AUTO_ADD host key policy -- NOT safe for production.")
+            log.warning(
+                "AUTO_ADD host key policy -- NOT safe for production.",
+                extra={"op": "connect", "backend": "sftp"},
+            )
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         return ssh

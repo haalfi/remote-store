@@ -6,6 +6,23 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **Intrinsic stdlib logging** (ID-004, OBS-008)
+  All modules now use `log = logging.getLogger(__name__)` with `NullHandler`
+  on the `"remote_store"` root logger. DEBUG for method entry, INFO for
+  write/delete/move/copy completion. Structured `extra={}` with `op`, `path`,
+  `backend` keys. Existing logger names standardised (`_log` -> `log`,
+  `logger` -> `log`).
+
+- **`ext.observe` -- observability hooks** (ID-024, ADR-0010, OBS-001 through OBS-010)
+  `observe(store, on_read=..., on_write=..., on_any=..., around=...)` wraps a
+  Store in an `ObservedStore` proxy that fires callbacks after each operation.
+  `StoreEvent` frozen dataclass carries operation, path, backend, timing, error,
+  and metadata. `BufferedObserver` queues events for batched delivery on a
+  background thread. Drift-protection test ensures new Store methods cannot
+  silently bypass observation. Spec: `sdd/specs/019-ext-observe.md`.
+
 ## [0.12.0] - 2026-03-01
 
 ### Added

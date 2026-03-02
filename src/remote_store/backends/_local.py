@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import tempfile
@@ -21,6 +22,8 @@ if TYPE_CHECKING:
     from remote_store._types import WritableContent
 
 _ALL_CAPABILITIES = CapabilitySet(set(Capability))
+
+log = logging.getLogger(__name__)
 
 
 class LocalBackend(Backend):

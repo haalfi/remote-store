@@ -35,12 +35,10 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Let users define backend config via Pydantic `BaseSettings` for env-var binding,
   `.env` file loading, and validation. Optional `pydantic` dependency.
 
-- [~] **ID-004 — Structured logging & metrics hooks**
-  Add optional `logging` calls at key points (connection open/close, read/write,
-  retries, errors). Lets users debug in production without changing the public API.
-  Consider a lightweight callback/event system for metrics collection.
-  Superseded by broader ID-024 (`ext.notify`) — merge or close when ID-024 ships.
-  Research complete (`sdd/research/research-logging-monitoring-tracing.md`). RFC/spec work remains.
+- [x] **ID-004 — Structured logging & metrics hooks** (v0.13.0)
+  Superseded by ID-024 (`ext.observe`). Intrinsic stdlib logging added to all
+  modules: `NullHandler`, `log = logging.getLogger(__name__)`, `%`-style with
+  `extra={}`. DEBUG for method entry, INFO for write/delete/move/copy completion.
 
 - [ ] **ID-005 — Built-in `from_toml()` config loader**
   Use `tomllib` (stdlib in 3.11+, `tomli` backport for 3.10) to add
@@ -86,12 +84,12 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Release checklist updated with conda version/sha256 steps (Phase 2, 3, 5).
   Remaining: fork `conda-forge/staged-recipes`, submit PR externally.
 
-- [~] **ID-024 — `ext.notify` — hooks / middleware / instrumentation**
-  Interceptor layer wrapping Store for logging, metrics, auditing, circuit
-  breaking. `store = instrument(store, on_read=..., on_write=..., on_error=...)`.
-  Compatible with `structlog`, stdlib `logging`, or plain callbacks. Enables
-  observability without touching business code. Supersedes ID-004.
-  Research complete (`sdd/research/research-logging-monitoring-tracing.md`). RFC/spec work remains.
+- [~] **ID-024 — `ext.observe` — hooks / middleware / instrumentation**
+  Layer 1 (intrinsic logging) and Layer 2 (`ext.observe` callback hooks) shipped.
+  `observe(store, on_read=..., on_write=..., on_error=...)` wraps Store in a
+  proxy that fires callbacks. `BufferedObserver` for batched async delivery.
+  ADR-0010, spec `019-ext-observe.md`. Supersedes ID-004.
+  Remaining: Layer 3 — OTel bridge (`ext.observe.otel_bridge`) as optional extra.
 
 - [ ] **ID-025 — `ext.cache` — store-level caching middleware**
   Wraps a Store and caches reads, folder stats, existence checks with TTL.
