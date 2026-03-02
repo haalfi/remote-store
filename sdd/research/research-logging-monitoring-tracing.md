@@ -331,6 +331,9 @@ of `ext.notify`.
 
 ### Layer 2: Callback hooks (`ext.notify`, zero-dep core)
 
+> **Naming note:** Q7 in §9 proposes renaming to `ext.observe`. Sketches
+> below still use `ext.notify` pending RFC acceptance.
+
 **Scope:** `ext.notify` provides a Store-wrapping mechanism that fires
 user-defined callbacks before/after each Store operation.
 
@@ -511,56 +514,277 @@ hook implementations using the OTel API.
 
 ---
 
-## 9. Open Questions for RFC
+## 9. Open Questions — Proposals
 
-These should be resolved during RFC/spec work:
+These should be resolved during RFC/spec work. Each includes a concrete
+proposal with rationale.
 
-1. **Should `ext.notify` be a single `instrument()` function or a class
-   (`InstrumentedStore`)?** Function is simpler; class allows
-   `isinstance()` checks and `.unwrap()`.
+### Q1. `instrument()` function vs `InstrumentedStore` class?
 
-2. **Should hooks be synchronous-only or support async?** For now sync
-   is sufficient (no async Store yet — see ID-013). But the event model
-   should not preclude async hooks in the future.
+**Proposal: Class (`InstrumentedStore`) with `instrument()` factory.**
 
-3. **Should events be emitted before + after, or only after?** Before
-   enables circuit-breaking / rate-limiting (but adds complexity). After
-   is simpler and sufficient for logging/metrics/tracing.
-   Tracing needs "before" (to start the span) and "after" (to end it) —
-   so a context-manager style hook may be needed for tracing.
+```python
+# User-facing API (factory function)
+store = instrument(store, on_read=on_read, on_write=on_write)
 
-4. **Should `ext.notify` handle `ext.transfer` operations?** Transfer
-   uses Store.read() + Store.write() internally, so those would already
-   be captured. But the "transfer as a whole" event (src→dst) is a
-   higher-level concern.
+# Under the hood
+class InstrumentedStore(Store):
+    """Proxy that delegates to an inner Store and fires hooks."""
+    def unwrap(self) -> Store: ...
+```
 
-5. **Should we adopt fsspec's `Callback` pattern for transfer progress
-   alongside `ext.notify`?** The existing `on_progress` in `ext.transfer`
-   is simpler. But fsspec's `branch()` pattern is more powerful for
-   multi-file operations (future: `batch_copy` with `concurrent=True`).
+**Rationale:**
+- `instrument()` is the simple entry point (matches §5 sketch).
+- The class is the implementation — users don't construct it directly.
+- `isinstance(store, InstrumentedStore)` lets code detect instrumentation
+  (useful for "don't double-wrap" guards).
+- `.unwrap()` is consistent with `Store.unwrap()` for PyArrow
+  (precedent: ID-016). It lets middleware layers peel back instrumentation
+  when they need the raw Store (e.g., for native-path passthrough).
+- Type-checkers see `InstrumentedStore` as a `Store` — no protocol tricks.
 
-6. **Should `opentelemetry-api` be a core dependency or optional extra?**
-   Research strongly suggests optional extra. Core stays zero-dep.
+### Q2. Sync-only or async hooks?
 
-7. **Naming: `ext.notify` vs `ext.observe` vs `ext.instrument`?**
-   The backlog says `ext.notify`. Consider whether this name adequately
-   conveys the purpose.
+**Proposal: Sync-only for v1. Async-ready event model.**
 
-8. **Thread safety of `ext.notify` callbacks.**
-   If a callback is slow (HTTP POST to a metrics endpoint, file I/O),
-   it blocks the Store operation. Options: (a) document "callbacks must
-   be fast", (b) offer an async/threaded callback adapter, (c) fire
-   callbacks in a background thread. Recommendation: document (a) for
-   v1, revisit if real users hit it.
+```python
+# v1: sync hooks only
+def on_read(event: StoreEvent) -> None: ...
 
-9. **Correlation across related operations.**
-   A `transfer()` does `store.read()` + `store.write()` — two unrelated
-   log lines at Layer 1. Layer 2 (`ext.notify`) can wrap the transfer as
-   a single `StoreEvent`, but Layer 1 has no built-in correlation. Options:
-   (a) accept it — correlation is the app's job via `contextvars`, (b) add
-   an optional `correlation_id` to `extra`, (c) use a `contextvars.ContextVar`
-   set by `ext.transfer`. Recommendation: (a) for Layer 1, (c) for Layer 2
-   when `ext.notify` ships.
+# Future v2 (when async Store ships via ID-013):
+async def on_read_async(event: StoreEvent) -> None: ...
+```
+
+**Rationale:**
+- No async Store exists yet (ID-013 is unprioritized).
+- Designing async hooks now means specifying event-loop behavior
+  (which loop? `asyncio.run`? fire-and-forget?) with zero users to
+  validate against.
+- The `StoreEvent` dataclass is async-agnostic — adding `async` hooks
+  later requires only a new hook signature, not a new event model.
+- Precedent: `httpx` started sync-only hooks and added async later.
+
+### Q3. Before + after events, or after-only?
+
+**Proposal: Context-manager-style hooks (covers both).**
+
+```python
+from contextlib import contextmanager
+
+@contextmanager
+def tracing_hook(operation: str, path: str, backend: str):
+    """Before/after via context manager."""
+    span = tracer.start_span(f"store.{operation}")
+    try:
+        yield span          # "before" — span is open
+    except Exception as exc:
+        span.record_exception(exc)
+        raise
+    finally:
+        span.end()          # "after" — span is closed
+
+store = instrument(store, around=tracing_hook)
+```
+
+But **also** keep the simple after-only hooks for the common case:
+
+```python
+# Simple after-only (logging, metrics — 90% of use cases)
+store = instrument(store, on_read=lambda e: print(e))
+
+# Context-manager (tracing, circuit-breaking — 10% of use cases)
+store = instrument(store, around=tracing_hook)
+```
+
+**Rationale:**
+- After-only is simpler and covers logging + metrics (the majority).
+- Tracing fundamentally needs before+after (span lifecycle).
+- A context-manager is the Pythonic way to express "around" advice —
+  no need to invent `on_before_read` / `on_after_read` pairs.
+- Two hook types (`on_<op>` for after, `around` for context-manager)
+  is a clean split. The `around` hook runs first, the `on_<op>` hooks
+  run inside it (after the operation completes).
+- Precedent: Django middleware uses `__call__` as a context-manager-like
+  pattern; pytest fixtures use `yield`-based setup/teardown.
+
+### Q4. Should `ext.notify` capture `ext.transfer` operations?
+
+**Proposal: Yes, but at both levels.**
+
+```
+transfer(src_store, dst_store, key)
+  └─ src_store.read(key)    → StoreEvent(op="read", ...)
+  └─ dst_store.write(key, data) → StoreEvent(op="write", ...)
+  └─ (implicit)             → StoreEvent(op="transfer", ...)
+```
+
+**Design:**
+- Individual `read`/`write` events fire automatically (the instrumented
+  stores see every call — no special handling needed).
+- `ext.transfer` emits a **composite** `transfer` event via a top-level
+  `around` hook or explicit `StoreEvent(op="transfer", metadata={"src": ..., "dst": ...})`.
+- The composite event carries `metadata.src_backend`, `metadata.dst_backend`,
+  `metadata.src_path`, `metadata.dst_path`, total `duration_ms`.
+
+**Rationale:**
+- Users want both: "how long did the read take?" (per-op) and "how long
+  did the transfer take end-to-end?" (composite).
+- Not capturing the composite event makes `ext.transfer` invisible to
+  monitoring — users would only see disconnected read+write pairs.
+- Implementation: `ext.transfer` calls a package-internal helper to emit
+  the composite event. If the store is not instrumented, it's a no-op.
+
+### Q5. Adopt fsspec's `Callback` pattern?
+
+**Proposal: No. Keep `on_progress` in `ext.transfer`, separate from `ext.notify`.**
+
+**Rationale:**
+- `on_progress` (bytes transferred) and `ext.notify` (operation events)
+  serve different audiences: progress bars vs monitoring.
+- fsspec's `Callback` class is heavyweight (6 methods, branching for
+  sub-operations). Our `on_progress: Callable[[int], None]` is simpler
+  and already shipped (v0.9.0).
+- If `batch_copy` with `concurrent=True` (ID-035) needs per-file
+  progress, we can add `on_file_progress` to `ext.batch` — still a
+  simple callback, not a `Callback` class hierarchy.
+- Merging progress into `ext.notify` conflates "UI feedback" with
+  "operational telemetry." Keep them separate.
+
+### Q6. `opentelemetry-api` as core or optional dependency?
+
+**Proposal: Optional extra, gated at import time.**
+
+```toml
+# pyproject.toml
+[project.optional-dependencies]
+otel = ["opentelemetry-api>=1.20"]
+```
+
+```python
+# ext/notify/otel.py — top of file
+try:
+    from opentelemetry import trace, metrics
+except ImportError as exc:
+    raise ImportError(
+        "Install remote-store[otel] for OpenTelemetry support"
+    ) from exc
+```
+
+**Rationale:**
+- Core stays zero-dep (project principle).
+- `opentelemetry-api` alone is ~200KB, pulls in `deprecated` and
+  `importlib-metadata`. Acceptable as an optional extra, not as a core
+  tax on every user.
+- The OTel API is already designed to no-op when no SDK is installed,
+  but requiring the import means we don't need no-op shims in our code.
+- Precedent: every peer library (boto3, requests, httpx) uses external
+  OTel instrumentation packages, not bundled OTel.
+
+### Q7. Naming: `ext.notify` vs `ext.observe` vs `ext.instrument`?
+
+**Proposal: `ext.observe`.**
+
+| Name | Pros | Cons |
+|------|------|------|
+| `ext.notify` | Backlog uses it; clear "events are sent" | Implies push-based pub/sub; sounds like notifications/alerts |
+| `ext.observe` | Aligns with "observability"; verb form reads well: `observe(store)` | Slightly generic |
+| `ext.instrument` | OTel term of art; familiar to ops folk | `instrument(store)` is the function, `ext.instrument` is the module — name collision reads odd |
+
+**`ext.observe` wins because:**
+- The module name is `ext.observe`, the factory function is `observe()`:
+  `from remote_store.ext.observe import observe` — clean, no stutter.
+- "Observe" is the verb form of "observability" — the exact concept
+  this feature delivers. It covers logging, metrics, and tracing
+  without implying only one of them.
+- `ext.notify` sounds like it sends notifications (email, Slack, webhook).
+  That's a potential user confusion.
+- `ext.instrument` has the module/function name collision problem.
+  `from remote_store.ext.instrument import instrument` stutters.
+
+**Migration:** Update ID-024 description in BACKLOG.md from `ext.notify`
+to `ext.observe` when the RFC ships. The backlog name was a placeholder.
+
+### Q8. Thread safety of callbacks
+
+**Proposal: Document "callbacks must be fast" + provide a `BufferedObserver` adapter.**
+
+```python
+# User guide: "Callbacks run synchronously on the calling thread.
+# They block the Store operation until they return. Keep callbacks
+# fast — log a line, increment a counter, append to a list."
+
+# For slow callbacks (HTTP POST, database write), use the adapter:
+from remote_store.ext.observe import observe, BufferedObserver
+
+slow_hook = BufferedObserver(
+    on_read=post_to_metrics_endpoint,
+    max_queue=1000,
+    flush_interval=5.0,  # seconds
+)
+store = observe(store, on_read=slow_hook.on_read)
+
+# BufferedObserver appends events to a queue and flushes in a
+# background thread. Drops events if queue is full (backpressure).
+```
+
+**Rationale:**
+- "Callbacks must be fast" is the right default — simple, predictable,
+  no hidden threads.
+- But we know people will want to POST metrics to an HTTP endpoint.
+  Without an adapter, they'll write their own buggy queue. Better to
+  provide one.
+- `BufferedObserver` is a separate class, not built into the core
+  `observe()` machinery. It's optional, explicit, and testable.
+- Ship `BufferedObserver` in Phase 2 (same PR as `ext.observe`), not
+  Phase 1. It's a convenience, not a prerequisite.
+
+### Q9. Correlation across related operations
+
+**Proposal: Layer 1 stays uncorrelated. Layer 2 uses `contextvars`.**
+
+```python
+import contextvars
+
+# In ext/observe.py
+_correlation_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "rs_correlation_id", default=None
+)
+
+# The around hook sets it for composite operations:
+@contextmanager
+def _transfer_span(operation, path, backend):
+    token = _correlation_id.set(uuid4().hex[:8])
+    try:
+        yield
+    finally:
+        _correlation_id.reset(token)
+
+# StoreEvent includes it when set:
+@dataclasses.dataclass(frozen=True)
+class StoreEvent:
+    operation: str
+    path: str
+    backend: str
+    duration_ms: float
+    error: Exception | None
+    metadata: dict
+    correlation_id: str | None  # from contextvars, None if not in a composite op
+```
+
+**Rationale:**
+- Layer 1 (stdlib logging) is intentionally simple — adding
+  `correlation_id` to every `extra={}` dict complicates every log call
+  for a feature most users won't use.
+- Layer 2 (`ext.observe`) already wraps Store calls — it's the natural
+  place to manage correlation context.
+- `contextvars` is stdlib, thread-safe, and async-compatible. It's the
+  standard mechanism for request-scoped context in Python.
+- The `correlation_id` propagates automatically to inner `read`/`write`
+  events during a `transfer()`, letting users see that the read and
+  write belong to the same transfer.
+- Users who want correlation in Layer 1 can add a stdlib `logging.Filter`
+  that reads `_correlation_id.get()` — documented as an advanced pattern
+  in the user guide.
 
 ---
 
