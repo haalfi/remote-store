@@ -13,7 +13,7 @@ of observability — **logging**, **monitoring (metrics)**, and **tracing** — 
 a Python *library* (not an application). The key distinction matters: libraries
 emit signals, applications decide what to do with them.
 
-Our dependencies (boto3/botocore, paramiko, azure-storage-blob, s3fs, fsspec)
+Our dependencies (boto3/botocore, paramiko, azure-storage-file-datalake, s3fs, fsspec)
 all follow the same core pattern: stdlib `logging` with `NullHandler`, plus
 optional hooks/callbacks for transfer progress. The Python ecosystem has
 converged on OpenTelemetry as the vendor-neutral standard for metrics and
@@ -39,7 +39,7 @@ Three locations currently use `logging`:
 |--------|-------------|---------------|-------|
 | `backends/_sftp.py:42` | `remote_store.backends._sftp` | Connection lifecycle, auto-add warning, tenacity retry sleep | INFO, WARNING |
 | `backends/_azure.py:38` | `remote_store.backends._azure` | HNS detection fallback | WARNING |
-| `ext/arrow.py` | `remote_store.ext.arrow` | Large file materialization | WARNING |
+| `ext/arrow.py:43` | `remote_store.ext.arrow` | Large file materialization | WARNING |
 
 **What's missing:** No logging for read/write/delete/copy/move operations,
 no logging in the Store layer, no logging in S3/S3-PyArrow/Local/Memory
@@ -51,8 +51,8 @@ The library does **not** add a `NullHandler` to the `"remote_store"` top-level
 logger. This means applications that don't configure logging see Python's
 `lastResort` handler (stderr, WARNING+). This is the correct accidental
 behavior for WARNING-only messages, but violates the explicit best practice
-and will cause `"No handlers could be found"` warnings in older Python if
-we add DEBUG/INFO logging.
+and without `NullHandler`, WARNING+ messages leak to stderr via `lastResort`
+(Python 3.2+), which is not under application control.
 
 ### 2.3 Existing callback pattern
 
@@ -1186,6 +1186,6 @@ logging users rich context for free.
 - [Understanding Metrics and Monitoring with Python](https://opensource.com/article/18/4/metrics-monitoring-and-python)
 
 ### remote-store internal
-- Backlog: `sdd/BACKLOG.md` (ID-004, ID-024, ID-025)
+- Backlog: `sdd/BACKLOG.md` (ID-004, ID-024, ID-006, ID-013)
 - Extension architecture: `sdd/adrs/0008-extension-architecture.md`
-- Existing logging: `backends/_sftp.py:42`, `backends/_azure.py:38`, `ext/arrow.py`
+- Existing logging: `backends/_sftp.py:42`, `backends/_azure.py:38`, `ext/arrow.py:43`
