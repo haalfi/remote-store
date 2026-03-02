@@ -17,8 +17,8 @@ from remote_store.ext.observe import (
     BufferedObserver,
     ObservedStore,
     StoreEvent,
-    _correlation_id,
     observe,
+    set_correlation_id,
 )
 
 # ---------------------------------------------------------------------------
@@ -605,11 +605,11 @@ class TestCorrelationId:
         store = _make_store()
         events: list[StoreEvent] = []
         observed = observe(store, on_any=events.append)
-        token = _correlation_id.set("test-corr-123")
+        set_correlation_id("test-corr-123")
         try:
             observed.write("a.txt", b"data")
         finally:
-            _correlation_id.reset(token)
+            set_correlation_id(None)
         assert events[0].correlation_id == "test-corr-123"
 
     def test_no_correlation_id_by_default(self) -> None:
@@ -683,6 +683,18 @@ class TestProxyCoverage:
         assert len(results) == 1
         assert results[0].name == "a.txt"
         assert any(e.operation == "glob" for e in events)
+
+    def test_unwrap(self) -> None:
+        from remote_store._errors import CapabilityNotSupported
+
+        store = _make_store()
+        events, kwargs = _collect_events()
+        observed = observe(store, **kwargs)
+        # MemoryBackend doesn't implement unwrap, so it raises
+        with pytest.raises(CapabilityNotSupported):
+            observed.unwrap(MemoryBackend)
+        assert any(e.operation == "unwrap" for e in events)
+        assert events[-1].error is not None
 
     def test_repr(self) -> None:
         store = _make_store()

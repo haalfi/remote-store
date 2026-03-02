@@ -72,7 +72,7 @@ def upload(
     :raises FileNotFoundError: If *local_path* does not exist.
     """
     path = os.fspath(local_path)
-    log.info("upload %r -> %r", path, remote_path, extra={"op": "upload", "path": remote_path})
+    log.debug("upload %r -> %r", path, remote_path, extra={"op": "upload", "path": remote_path})
     with open(path, "rb") as fh:
         source: BinaryIO = fh
         if on_progress is not None:
@@ -103,7 +103,7 @@ def download(
     :raises FileExistsError: If *local_path* exists and *overwrite* is False.
     """
     dest = os.fspath(local_path)
-    log.info("download %r -> %r", remote_path, dest, extra={"op": "download", "path": remote_path})
+    log.debug("download %r -> %r", remote_path, dest, extra={"op": "download", "path": remote_path})
     if not overwrite and os.path.exists(dest):
         raise FileExistsError(f"Local file already exists: {dest}")
 
@@ -142,7 +142,7 @@ def transfer(
     :param overwrite: Forwarded to ``dst_store.write()``.
     :param on_progress: Called per read with the byte count (not cumulative).
     """
-    log.info("transfer %r -> %r", src_path, dst_path, extra={"op": "transfer", "path": src_path})
+    log.debug("transfer %r -> %r", src_path, dst_path, extra={"op": "transfer", "path": src_path})
     stream = src_store.read(src_path)
     try:
         source: BinaryIO = stream

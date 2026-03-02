@@ -72,8 +72,27 @@ class StoreEvent:
     duration_ms: float       # elapsed milliseconds
     error: Exception | None  # None on success
     metadata: dict[str, Any] # op-specific: overwrite, dst, recursive, ...
-    correlation_id: str | None  # from contextvars, None if not set
+    correlation_id: str | None  # from set_correlation_id(), None if not set
 ```
+
+### Correlation IDs
+
+Use `set_correlation_id()` to tag all events within a scope with
+a shared identifier (e.g., a request ID):
+
+```python
+from remote_store import observe, set_correlation_id
+
+observed = observe(store, on_any=lambda e: print(e.correlation_id))
+
+token = set_correlation_id("req-abc-123")
+observed.read_bytes("data.csv")   # correlation_id="req-abc-123"
+observed.write("out.csv", b"...")  # correlation_id="req-abc-123"
+set_correlation_id(None)  # or: from contextvars import Token; _correlation_id.reset(token)
+```
+
+The correlation ID is stored in a `contextvars.ContextVar`, so it
+works correctly with threading and async tasks.
 
 ## BufferedObserver
 

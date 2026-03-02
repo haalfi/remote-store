@@ -23,7 +23,7 @@ import logging
 import queue
 import threading
 import time
-from contextvars import ContextVar
+from contextvars import ContextVar, Token
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
 
 from remote_store._store import Store
@@ -40,13 +40,35 @@ T = TypeVar("T")
 
 log = logging.getLogger(__name__)
 
-__all__ = ["BufferedObserver", "ObservedStore", "StoreEvent", "observe"]
+__all__ = [
+    "BufferedObserver",
+    "ObservedStore",
+    "StoreEvent",
+    "observe",
+    "set_correlation_id",
+]
 
 # ---------------------------------------------------------------------------
 # Context variable for correlation IDs
 # ---------------------------------------------------------------------------
 
 _correlation_id: ContextVar[str | None] = ContextVar("_correlation_id", default=None)
+
+
+def set_correlation_id(cid: str | None) -> Token[str | None]:
+    """Set the correlation ID for the current context.
+
+    Returns a token that can be used to reset the value::
+
+        token = set_correlation_id("req-123")
+        # ... operations here will have correlation_id="req-123" ...
+        _correlation_id.reset(token)
+
+    :param cid: Correlation ID string, or ``None`` to clear.
+    :returns: A ``Token`` for resetting the value.
+    """
+    return _correlation_id.set(cid)
+
 
 # ---------------------------------------------------------------------------
 # Hook type aliases (runtime-compatible, no TYPE_CHECKING guard)
@@ -379,6 +401,7 @@ class BufferedObserver:
         self._queue: queue.Queue[StoreEvent] = queue.Queue(maxsize=max_queue)
         self._flush_interval = flush_interval
         self._closed = False
+        self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
 
@@ -409,11 +432,12 @@ class BufferedObserver:
     def close(self) -> None:
         """Stop the background thread and perform a final flush."""
         self._closed = True
-        self._thread.join(timeout=self._flush_interval + 1.0)
+        self._stop.set()
+        self._thread.join(timeout=2.0)
         self.flush()
 
     def _run(self) -> None:
         """Background loop: flush periodically until closed."""
         while not self._closed:
-            time.sleep(self._flush_interval)
+            self._stop.wait(timeout=self._flush_interval)
             self.flush()

@@ -21,7 +21,13 @@ from remote_store._registry import Registry, register_backend
 from remote_store._store import Store
 from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_exists
 from remote_store.ext.glob import glob_files
-from remote_store.ext.observe import BufferedObserver, ObservedStore, StoreEvent, observe
+from remote_store.ext.observe import (
+    BufferedObserver,
+    ObservedStore,
+    StoreEvent,
+    observe,
+    set_correlation_id,
+)
 from remote_store.ext.transfer import download, transfer, upload
 
 __version__ = "0.12.0"
@@ -66,6 +72,7 @@ __all__ = [
     "ObservedStore",
     "StoreEvent",
     "observe",
+    "set_correlation_id",
     # Transfer operations
     "upload",
     "download",

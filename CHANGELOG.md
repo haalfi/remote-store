@@ -9,7 +9,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ### Added
 
 - **Intrinsic stdlib logging** (ID-004, OBS-008)
-  All modules now use `log = logging.getLogger(__name__)` with `NullHandler`
+  Core modules and extensions now use `log = logging.getLogger(__name__)` with `NullHandler`
   on the `"remote_store"` root logger. DEBUG for method entry, INFO for
   write/delete/move/copy completion. Structured `extra={}` with `op`, `path`,
   `backend` keys. Existing logger names standardised (`_log` -> `log`,
