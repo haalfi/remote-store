@@ -1,8 +1,15 @@
 # Research: Logging, Monitoring & Tracing for remote-store
 
 **Date:** 2026-03-02
-**Backlog items:** ID-004 (Structured logging & metrics hooks), ID-024 (`ext.notify`)
-**Status:** Research complete — ready to inform RFC/spec work
+**Backlog items:** ID-004 (Structured logging & metrics hooks), ID-024 (`ext.observe` / `ext.otel`)
+**Status:** Implementation complete
+
+> **Note:** All three observability layers are now shipped. See spec
+> `019-ext-observe.md` and modules `ext/observe.py` (Layer 2) and
+> `ext/otel.py` (Layer 3). The `ext.notify` naming used throughout this
+> document was renamed to `ext.observe` during implementation (per Q7
+> resolution below). Layer 3 lives in a separate `ext.otel` module
+> rather than the nested path sketched in §5.
 
 ---
 

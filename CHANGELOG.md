@@ -23,6 +23,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   background thread. Drift-protection test ensures new Store methods cannot
   silently bypass observation. Spec: `sdd/specs/019-ext-observe.md`.
 
+- **`ext.otel` -- OpenTelemetry bridge** (ID-024, OBS-011 through OBS-014)
+  Pre-built hooks that emit OpenTelemetry spans and metrics. `otel_observe(store)`
+  wraps a Store with distributed tracing (`store.{op}` spans with `CLIENT` kind)
+  and three metric instruments (operations counter, errors counter, duration
+  histogram). Depends only on `opentelemetry-api` (zero-cost no-ops without SDK).
+  New optional extra: `pip install "remote-store[otel]"`.
+  Spec: `sdd/specs/019-ext-observe.md` (OBS-011--OBS-014).
+
 ## [0.12.0] - 2026-03-01
 
 ### Added

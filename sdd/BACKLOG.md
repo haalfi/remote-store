@@ -11,15 +11,7 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [x] **BK-002 — Glob / pattern matching strategy** (v0.12.0)
-  Three-tier design chosen (ADR-0009): (1) `list_files(pattern=…)` for universal
-  fnmatch name filtering, (2) `Capability.GLOB` + `Store.glob()` for native backend
-  access (like `unwrap`), (3) `ext.glob.glob_files()` for portable full-glob
-  fallback. All backends (Local, S3, S3-PyArrow, Azure) now implement native glob
-  with prefix-optimized listing.
-  Related: ID-007.
-  → Spec: `sdd/specs/018-glob.md` (GLOB-018, GLOB-019, GLOB-020)
-  → ADR: `sdd/adrs/0009-glob-three-tier-design.md`
+*(Empty — no active prioritized work items.)*
 
 ---
 
@@ -35,11 +27,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Let users define backend config via Pydantic `BaseSettings` for env-var binding,
   `.env` file loading, and validation. Optional `pydantic` dependency.
 
-- [x] **ID-004 — Structured logging & metrics hooks** (unreleased)
-  Superseded by ID-024 (`ext.observe`). Intrinsic stdlib logging added to all
-  modules: `NullHandler`, `log = logging.getLogger(__name__)`, `%`-style with
-  `extra={}`. DEBUG for method entry, INFO for write/delete/move/copy completion.
-
 - [ ] **ID-005 — Built-in `from_toml()` config loader**
   Use `tomllib` (stdlib in 3.11+, `tomli` backport for 3.10) to add
   `RegistryConfig.from_toml(path)` alongside the existing `from_dict()`.
@@ -52,14 +39,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   without adding dependencies. Note: `ext.transfer` (ID-023) provides
   `on_progress` for upload/download/transfer; this item covers the lower-level
   Store API.
-
-- [x] **ID-007 — `Store.glob()` surface API** (v0.12.0)
-  Three-tier pattern matching: `list_files(pattern=…)` for universal name filtering,
-  `Store.glob(pattern)` for native backend glob (capability-gated on `GLOB`),
-  `ext.glob.glob_files()` for portable full-glob fallback. All backends (Local, S3,
-  S3-PyArrow, Azure) now implement native glob with prefix-optimized listing.
-  → Spec: `sdd/specs/018-glob.md` (GLOB-018, GLOB-019, GLOB-020)
-  → ADR: `sdd/adrs/0009-glob-three-tier-design.md`
 
 - [ ] **ID-008 — Checksum verification on read/write**
   Add a `verify_checksum=True` option to `read()` / `write()`. Populate
@@ -84,13 +63,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Release checklist updated with conda version/sha256 steps (Phase 2, 3, 5).
   Remaining: fork `conda-forge/staged-recipes`, submit PR externally.
 
-- [~] **ID-024 — `ext.observe` — hooks / middleware / instrumentation**
-  Layer 1 (intrinsic logging) and Layer 2 (`ext.observe` callback hooks) shipped.
-  `observe(store, on_read=..., on_write=..., on_error=...)` wraps Store in a
-  proxy that fires callbacks. `BufferedObserver` for batched async delivery.
-  ADR-0010, spec `019-ext-observe.md`. Supersedes ID-004.
-  Remaining: Layer 3 — OTel bridge (`ext.observe.otel_bridge`) as optional extra.
-
 - [ ] **ID-025 — `ext.cache` — store-level caching middleware**
   Wraps a Store and caches reads, folder stats, existence checks with TTL.
   `cached = CachedStore(store, ttl=300)`. Auto-invalidates on writes.
@@ -103,17 +75,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Current `write_atomic()` only accepts `bytes`, forcing callers to buffer
   entire files in memory. Needed for any large-file workflow (Parquet exports,
   log rotation, report generation). Needs temp-path strategy per backend.
-
-- [x] **ID-032 — Fix listing benchmark fixture caching** (v0.12.0)
-  Added `invalidate_cache()` to `BenchTarget` protocol and all fsspec targets
-  (S3fsTarget, AdlfsTarget, SshfsTarget) + `RemoteStoreTarget`. Called after
-  fixture population in listing tests so benchmarks measure real I/O, not
-  cached results from the write phase.
-
-- [x] **ID-033 — Cloud benchmark quick tier timing budget** (v0.12.0)
-  Moved 1000-file listing test (`TestListPerformanceLarge`) from quick to
-  `@pytest.mark.standard` tier. Updated README with per-tier cloud timing
-  estimates (~5 min quick, ~15 min standard, ~60+ min full).
 
 - [ ] **ID-034 — Parquet lake guide (Bronze / Silver / Gold patterns)**
   User-facing guide showing how to use `Store.child()` + `ext.arrow` +
@@ -205,6 +166,16 @@ All v1.0 release blockers were resolved across v0.3.0–v0.4.1.
   directly (not `adlfs`).
   → RFC: `sdd/rfcs/rfc-0001-azure-backend.md` (accepted)
   → Spec: `sdd/specs/012-azure-backend.md`
+
+- [x] **BK-002 — Glob / pattern matching strategy** (v0.12.0)
+  Three-tier design chosen (ADR-0009): (1) `list_files(pattern=…)` for universal
+  fnmatch name filtering, (2) `Capability.GLOB` + `Store.glob()` for native backend
+  access (like `unwrap`), (3) `ext.glob.glob_files()` for portable full-glob
+  fallback. All backends (Local, S3, S3-PyArrow, Azure) now implement native glob
+  with prefix-optimized listing.
+  Related: ID-007.
+  → Spec: `sdd/specs/018-glob.md` (GLOB-018, GLOB-019, GLOB-020)
+  → ADR: `sdd/adrs/0009-glob-three-tier-design.md`
 
 - [x] **BK-003 — Native path resolution (`to_key`)** (v0.3.0)
   Fixed the Store round-trip bug (listing returned backend-relative paths that
@@ -304,6 +275,19 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
 - [x] **ID-001 — Cross-store transfer** *(subsumed by ID-023 `ext.transfer`)* (v0.9.0)
   Shipped as `transfer()` in `ext.transfer`. See spec `017-ext-transfer.md`.
 
+- [x] **ID-004 — Structured logging & metrics hooks** (unreleased)
+  Superseded by ID-024 (`ext.observe`). Intrinsic stdlib logging added to all
+  modules: `NullHandler`, `log = logging.getLogger(__name__)`, `%`-style with
+  `extra={}`. DEBUG for method entry, INFO for write/delete/move/copy completion.
+
+- [x] **ID-007 — `Store.glob()` surface API** (v0.12.0)
+  Three-tier pattern matching: `list_files(pattern=…)` for universal name filtering,
+  `Store.glob(pattern)` for native backend glob (capability-gated on `GLOB`),
+  `ext.glob.glob_files()` for portable full-glob fallback. All backends (Local, S3,
+  S3-PyArrow, Azure) now implement native glob with prefix-optimized listing.
+  → Spec: `sdd/specs/018-glob.md` (GLOB-018, GLOB-019, GLOB-020)
+  → ADR: `sdd/adrs/0009-glob-three-tier-design.md`
+
 - [x] **ID-009 — `Store.upload()` / `Store.download()` convenience methods** *(subsumed by ID-023 `ext.transfer`)* (v0.9.0)
   Shipped as `upload()` and `download()` in `ext.transfer`. See spec `017-ext-transfer.md`.
 
@@ -375,6 +359,13 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
   callback, `overwrite` flag. Unconditional top-level export. Spec: `017-ext-transfer.md`.
   Resume support deferred.
 
+- [x] **ID-024 — `ext.observe` — hooks / middleware / instrumentation** (unreleased)
+  All three layers shipped: Layer 1 (intrinsic logging), Layer 2 (`ext.observe`
+  callback hooks), Layer 3 (`ext.otel` OpenTelemetry bridge). `otel_observe()`
+  wraps Store with OTel spans and metrics. Optional extra `otel` depends on
+  `opentelemetry-api>=1.28.0`. ADR-0010, spec `019-ext-observe.md` (OBS-001
+  through OBS-014). Supersedes ID-004.
+
 - [x] **ID-027 — Extension architecture (`ext.*` namespace)** (v0.10.0)
   Formalized the `remote_store.ext` contract: ADR-0008 (extension rules),
   expanded CONTRIBUTING.md checklist, `ext/__init__.py` contract docstring,
@@ -413,6 +404,17 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
   PR #66 (code), PR #67 (review fixes: seek guard, __next__ bypass, bytes()
   copy removal, 9 edge-case tests, RFC status -> Implemented, RawIOBase
   cross-backend note, BACKLOG update, chunk-boundary test).
+
+- [x] **ID-032 — Fix listing benchmark fixture caching** (v0.12.0)
+  Added `invalidate_cache()` to `BenchTarget` protocol and all fsspec targets
+  (S3fsTarget, AdlfsTarget, SshfsTarget) + `RemoteStoreTarget`. Called after
+  fixture population in listing tests so benchmarks measure real I/O, not
+  cached results from the write phase.
+
+- [x] **ID-033 — Cloud benchmark quick tier timing budget** (v0.12.0)
+  Moved 1000-file listing test (`TestListPerformanceLarge`) from quick to
+  `@pytest.mark.standard` tier. Updated README with per-tier cloud timing
+  estimates (~5 min quick, ~15 min standard, ~60+ min full).
 
 ### Other completed work
 

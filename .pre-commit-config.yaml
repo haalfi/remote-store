@@ -9,6 +9,6 @@ repos:
     rev: v1.15.0
     hooks:
       - id: mypy
-        additional_dependencies: [s3fs, paramiko, tenacity, types-paramiko, pyarrow, azure-storage-file-datalake, azure-identity]
+        additional_dependencies: [s3fs, paramiko, tenacity, types-paramiko, pyarrow, azure-storage-file-datalake, azure-identity, opentelemetry-api]
         args: [--config-file=pyproject.toml]
         files: ^src/

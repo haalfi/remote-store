@@ -67,6 +67,7 @@ pip install "remote-store[s3-pyarrow]"   # S3 with PyArrow (high-throughput)
 pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
 pip install "remote-store[arrow]"        # PyArrow filesystem adapter
+pip install "remote-store[otel]"         # OpenTelemetry tracing and metrics
 ```
 
 ## Quick Start
@@ -183,6 +184,7 @@ Detailed configuration guides for each backend are in [`guides/backends/`](https
 |Batch operations     |*(none)*                    |Bulk delete, copy, and exists with error aggregation ([guide](https://remote-store.readthedocs.io/en/latest/batch-operations/)) |
 |Transfer operations  |*(none)*                    |Upload, download, and cross-store transfer with streaming and progress ([guide](https://remote-store.readthedocs.io/en/latest/transfer-operations/)) |
 |Observability hooks  |*(none)*                    |Callback-based instrumentation for logging, metrics, and tracing ([guide](https://remote-store.readthedocs.io/en/latest/observe/)) |
+|OpenTelemetry bridge |`remote-store[otel]`        |Pre-built OTel spans and metrics for Store operations ([guide](https://remote-store.readthedocs.io/en/latest/observe/)) |
 
 ## Examples
 
@@ -204,6 +206,7 @@ Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/ma
 | [batch_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py) | Bulk delete, copy, exists with error aggregation |
 | [transfer_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py) | Upload, download, cross-store transfer with progress |
 | [observe_hooks.py](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py) | Callback hooks, around spans, buffered observer |
+| [otel_tracing.py](https://github.com/haalfi/remote-store/blob/master/examples/otel_tracing.py) | OpenTelemetry tracing and metrics bridge |
 
 **Backend** -- require a running service and credentials ([`examples/backends/`](https://github.com/haalfi/remote-store/tree/master/examples/backends)):
 
