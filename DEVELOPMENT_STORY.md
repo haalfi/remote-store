@@ -6,14 +6,14 @@ This document chronicles how `remote-store` was built as a collaboration between
 
 | Metric | Value |
 |--------|-------|
-| Source code | ~5,300 lines (6 backends) |
-| Tests | 1,165 tests, ~8,650 lines |
-| Specs & docs | 18 specs, 9 ADRs, 3 RFCs |
-| Examples | 12 core + 4 cloud + 3 notebooks |
+| Source code | ~6,000 lines (6 backends) |
+| Tests | 1,239 tests, ~9,700 lines |
+| Specs & docs | 19 specs, 10 ADRs, 3 RFCs |
+| Examples | 14 core + 4 cloud + 4 notebooks |
 | Documentation site | MkDocs Material (versioned via mike) |
 | Coverage | 95% |
 | Calendar time | ~8 weeks of sessions |
-| Commits | 253 |
+| Commits | 262 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 

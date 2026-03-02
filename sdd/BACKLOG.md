@@ -104,6 +104,12 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   where GIL contention in `PythonFile` limits throughput. See spec
   `014-pyarrow-filesystem-adapter.md` Phase 2 sections.
 
+- [ ] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix**
+  Listing numbers in `benchmarks/results/comparative.md` pre-date the ID-032
+  cache-invalidation fix (`invalidate_cache()` on `BenchTarget`). Re-run all
+  benchmark tiers with Docker backends to produce accurate baseline data.
+  64KB write values for S3-PyArrow and Azure are also outlier-skewed.
+
 ---
 
 ## Done

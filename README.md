@@ -200,6 +200,7 @@ Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/ma
 | [atomic_writes.py](https://github.com/haalfi/remote-store/blob/master/examples/atomic_writes.py) | Atomic writes and overwrite semantics |
 | [configuration.py](https://github.com/haalfi/remote-store/blob/master/examples/configuration.py) | Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs |
 | [error_handling.py](https://github.com/haalfi/remote-store/blob/master/examples/error_handling.py) | Catching `NotFound`, `AlreadyExists`, etc. |
+| [glob_pattern_matching.py](https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py) | Three-tier glob: name filter, native glob, portable fallback |
 | [memory_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/memory_backend.py) | In-process memory backend for testing and caching |
 | [store_child.py](https://github.com/haalfi/remote-store/blob/master/examples/store_child.py) | Runtime sub-scoping with `Store.child()` |
 | [pyarrow_adapter.py](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py) | PyArrow filesystem adapter: Parquet, datasets |
