@@ -41,6 +41,10 @@
          <lastmod>2026-03-02</lastmod>
     </url>
     <url>
+         <loc>https://haalfi.github.io/remote-store/dev/observe/</loc>
+         <lastmod>2026-03-02</lastmod>
+    </url>
+    <url>
          <loc>https://haalfi.github.io/remote-store/dev/performance/</loc>
          <lastmod>2026-03-02</lastmod>
     </url>
@@ -169,6 +173,10 @@
          <lastmod>2026-03-02</lastmod>
     </url>
     <url>
+         <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0010-observe-proxy-pattern/</loc>
+         <lastmod>2026-03-02</lastmod>
+    </url>
+    <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/rfcs/</loc>
          <lastmod>2026-03-02</lastmod>
     </url>
@@ -262,6 +270,10 @@
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/018-glob/</loc>
+         <lastmod>2026-03-02</lastmod>
+    </url>
+    <url>
+         <loc>https://haalfi.github.io/remote-store/dev/design/specs/019-ext-observe/</loc>
          <lastmod>2026-03-02</lastmod>
     </url>
     <url>
