@@ -156,8 +156,7 @@ class ObservedStore(Store):
     def __repr__(self) -> str:
         return f"ObservedStore(inner={self._inner!r})"
 
-    # -- Helper to fire hooks ------------------------------------------
-
+    # region: helpers
     def _fire(
         self,
         operation: str,
@@ -230,8 +229,9 @@ class ObservedStore(Store):
             elapsed = (time.monotonic() - started_at) * 1000.0
             self._fire(operation, path, metadata, started_at, elapsed, error)
 
-    # -- Public method overrides ---------------------------------------
+    # endregion
 
+    # region: public method overrides
     def close(self) -> None:  # noqa: D401
         """Delegate close to inner store."""
         with self._observe_op("close", "", {}):
@@ -328,6 +328,8 @@ class ObservedStore(Store):
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         with self._observe_op("copy", src, {"dst": dst, "overwrite": overwrite}):
             self._inner.copy(src, dst, overwrite=overwrite)
+
+    # endregion
 
 
 # ---------------------------------------------------------------------------
