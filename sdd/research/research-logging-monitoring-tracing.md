@@ -548,7 +548,102 @@ These should be resolved during RFC/spec work:
 
 ---
 
-## 10. References
+## 10. Additional Design Precedents (from extended research)
+
+The following patterns from our dependencies and the broader ecosystem
+are especially relevant to `ext.notify` design.
+
+### 10.1 Azure SDK's `@distributed_trace` decorator
+
+Azure SDK applies a `@distributed_trace` decorator to every public client
+method. This is the most comprehensive approach found in any studied library:
+
+```python
+# Azure SDK internal pattern (simplified)
+from azure.core.tracing.decorator import distributed_trace
+
+class BlobClient:
+    @distributed_trace
+    def upload_blob(self, data, **kwargs):
+        # Span is automatically created, named "BlobClient.upload_blob"
+        ...
+```
+
+The decorator:
+- Creates a span wrapping the entire method call.
+- Names the span `<ClassName>.<method_name>`.
+- Propagates W3C Trace Context in outgoing HTTP requests.
+- Can be opted out per-call via `TracingOptions`.
+
+**Relevance to remote-store:** A similar decorator or proxy method pattern
+in `ext.notify` could wrap Store methods consistently. The proxy pattern
+(our preferred approach) achieves the same effect without requiring
+decorators on the core Store class.
+
+### 10.2 Botocore event system
+
+Botocore (the engine behind boto3) has a rich event system with events like:
+- `before-send` — fired before each HTTP request
+- `after-call` — fired after a successful API call
+- `after-call-error` — fired after a failed API call
+- `needs-retry` — fired when the retry handler evaluates a response
+
+This event system is how `opentelemetry-instrumentation-botocore` attaches
+without modifying botocore source code. It supports `request_hook` and
+`response_hook` callbacks for custom span enrichment.
+
+**Relevance to remote-store:** Our `ext.notify` event model (§5, Layer 2)
+is analogous. The botocore approach validates that before/after events
+with hooks work well at scale. However, botocore events are registered
+on a Session (mutable global state), while our proxy pattern is per-Store
+(safer, more explicit).
+
+### 10.3 httpx event hooks
+
+httpx offers two levels of hooks:
+- **Client-wide** `event_hooks={"request": [...], "response": [...]}` on
+  the client constructor.
+- **Per-request** `extensions={"trace": callback}` for fine-grained
+  transport-level event monitoring (connection attempts, TLS handshakes,
+  response headers, etc.).
+
+**Relevance:** The two-level pattern (global + per-operation) is worth
+considering for `ext.notify`. The proxy approach naturally gives per-Store
+hooks. Per-operation hooks (e.g., `store.read("file.csv", hooks=...)`)
+would add complexity — defer unless a real use case emerges.
+
+### 10.4 Context propagation via `contextvars`
+
+Python's `contextvars` module (stdlib, 3.7+) is the standard for
+propagating context (request IDs, correlation IDs) across async boundaries.
+structlog integrates with it for bound-logger context.
+
+**Relevance:** `ext.notify` events should carry the current `contextvars`
+context so that tracing bridges can attach spans to the correct parent.
+The OpenTelemetry API handles this automatically via `Context`, but
+callback-only users may want access to a correlation ID. Consider adding
+an optional `context` field to `StoreEvent` (§5, Layer 2).
+
+### 10.5 Using `extra={}` for structured log context
+
+Libraries can pass structured context via stdlib logging's `extra` parameter:
+
+```python
+logger.info("write complete", extra={"backend": "s3", "path": key, "size": 4096})
+```
+
+When the application uses structlog's `ProcessorFormatter` on stdlib handlers,
+these `extra` fields are automatically included in structured output. When
+using plain formatters, the `extra` fields are available on the `LogRecord`
+but not printed unless the format string references them.
+
+**Relevance:** Our intrinsic logging (Layer 1) should use `extra={}` for
+backend name, path, operation, and byte counts. This gives structured
+logging users rich context for free.
+
+---
+
+## 11. References
 
 ### Python logging
 - [Logging HOWTO — Python 3.14 docs](https://docs.python.org/3/howto/logging.html)
@@ -559,20 +654,31 @@ These should be resolved during RFC/spec work:
 
 ### structlog
 - [structlog documentation](https://www.structlog.org/en/stable/standard-library.html)
+- [structlog Issue #179 — How to use structlog in a library](https://github.com/hynek/structlog/issues/179)
 - [Comprehensive Guide to structlog — Better Stack](https://betterstack.com/community/guides/logging/structlog/)
 
 ### OpenTelemetry
 - [OTel Python Instrumentation](https://opentelemetry.io/docs/languages/python/instrumentation/)
 - [OTel Libraries instrumentation guide](https://opentelemetry.io/docs/languages/python/libraries/)
+- [OTel Library Design Principles (Specification)](https://opentelemetry.io/docs/specs/otel/library-guidelines/)
 - [OTel API vs SDK — SigNoz](https://signoz.io/comparisons/opentelemetry-api-vs-sdk/)
 - [OTel API vs SDK — Last9](https://last9.io/blog/opentelemetry-api-vs-sdk/)
+- [OTel Python Contrib (GitHub)](https://github.com/open-telemetry/opentelemetry-python-contrib)
+- [OTel Botocore Instrumentation](https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/botocore/botocore.html)
 
 ### Dependency observability
 - [Boto3 logging reference](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/boto3.html)
+- [Botocore event system](https://botocore.amazonaws.com/v1/documentation/api/latest/topics/events.html)
 - [Azure Core Tracing OpenTelemetry](https://github.com/Azure/azure-sdk-for-python/blob/main/sdk/core/azure-core-tracing-opentelemetry/README.md)
 - [Azure Core Tracing — Microsoft Learn](https://learn.microsoft.com/en-us/python/api/overview/azure/core-tracing-opentelemetry-readme?view=azure-python-preview)
+- [Azure SDK distributed tracing blog post](https://devblogs.microsoft.com/azure-sdk/enabling-distributed-tracing-with-the-azure-sdk-for-python/)
 - [Paramiko SFTP docs](https://docs.paramiko.org/en/stable/api/sftp.html)
 - [fsspec features — callbacks](https://filesystem-spec.readthedocs.io/en/latest/features.html)
+- [httpx event hooks](https://www.python-httpx.org/advanced/event-hooks/)
+
+### Metrics patterns
+- [Prometheus — Writing Client Libraries](https://prometheus.io/docs/instrumenting/writing_clientlibs/)
+- [Understanding Metrics and Monitoring with Python](https://opensource.com/article/18/4/metrics-monitoring-and-python)
 
 ### remote-store internal
 - Backlog: `sdd/BACKLOG.md` (ID-004, ID-024, ID-025)
