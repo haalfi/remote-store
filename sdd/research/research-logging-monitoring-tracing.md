@@ -103,7 +103,7 @@ instruments all AWS API calls with spans.
 instrumentation points. Our SFTP backend already uses tenacity's
 `before_sleep_log` which logs retries via paramiko's logger pattern.
 
-### 3.3 azure-storage-blob / azure-core (Azure SDK for Python)
+### 3.3 azure-storage-file-datalake / azure-core (Azure SDK for Python)
 
 **Logging:**
 - Uses stdlib `logging` with hierarchical loggers:
@@ -368,7 +368,25 @@ all calls and emitting events. Two possible implementations:
 - **B) `__getattr__` proxy** that intercepts calls dynamically.
 
 Option A is safer (explicit, type-checked, IDE-friendly). Option B is
-terser but loses type safety. **Recommend A.**
+terser but loses type safety. **Recommend A**, with the following caveat:
+
+**Maintenance hazard of Option A:** `Store` has 20+ public methods today.
+When a new method is added, `InstrumentedStore` silently inherits the
+un-instrumented base version — calls bypass hooks with no warning. Option B
+(`__getattr__`) catches new methods automatically, but loses type safety
+and IDE support.
+
+**Mitigation — hybrid approach:** Use Option A (explicit overrides) plus
+a test that asserts `InstrumentedStore` overrides every public method of
+`Store`. This catches drift at CI time:
+```python
+def test_instrumented_store_covers_all_public_methods():
+    store_methods = {m for m in dir(Store) if not m.startswith("_") and callable(getattr(Store, m))}
+    instrumented_methods = {m for m in dir(InstrumentedStore) if not m.startswith("_") and callable(getattr(InstrumentedStore, m))}
+    missing = store_methods - instrumented_methods
+    assert not missing, f"InstrumentedStore missing overrides: {missing}"
+```
+The RFC should specify this test as a required safeguard for Option A.
 
 **Dependency impact:** Zero (pure Python, stdlib `dataclasses` + `time`).
 
@@ -450,7 +468,7 @@ otel = ["opentelemetry-api>=1.20"]
 |---------|---------|---------|---------|-----------|
 | **boto3/botocore** | stdlib + NullHandler | None | Via `otel-instrumentation-botocore` | None |
 | **paramiko** | stdlib throughout | None | None | None |
-| **azure-storage-blob** | stdlib + pipeline | Azure Monitor | Built-in OTel plugin (`azure-core-tracing-opentelemetry`) | None |
+| **azure-storage-file-datalake** | stdlib + pipeline | Azure Monitor | Built-in OTel plugin (`azure-core-tracing-opentelemetry`) | None |
 | **fsspec** | stdlib hierarchical | None | None | `Callback` class for transfers |
 | **s3fs** | stdlib (inherits fsspec) | None | None | Inherits fsspec `Callback` |
 | **smart_open** | stdlib | None | None | `on_progress` callback |
