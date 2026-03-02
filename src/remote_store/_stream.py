@@ -39,8 +39,7 @@ class _ErrorMappingStream(io.RawIOBase):
         self._mapper = mapper
         self._path = path
 
-    # -- RawIOBase required --
-
+    # region: RawIOBase required
     def readable(self) -> bool:
         return True
 
@@ -50,8 +49,9 @@ class _ErrorMappingStream(io.RawIOBase):
         except OSError as exc:
             raise self._mapper(exc, self._path) from exc
 
-    # -- Optional but expected --
+    # endregion
 
+    # region: optional but expected
     def read(self, size: int = -1) -> bytes | None:
         try:
             data = self._inner.read(size)
@@ -100,3 +100,5 @@ class _ErrorMappingStream(io.RawIOBase):
             raise
         except OSError as exc:  # defensive: unreachable if self.readline() maps all OSErrors
             raise self._mapper(exc, self._path) from exc
+
+    # endregion

@@ -173,19 +173,17 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
             return self._store != other._store
         return NotImplemented
 
-    # -- PA-003 ---------------------------------------------------------------
-
+    # region: identity (PA-003, PA-006)
     def get_type_name(self) -> str:
         return "remote-store"
-
-    # -- PA-006 ---------------------------------------------------------------
 
     @staticmethod
     def normalize_path(path: str) -> str:
         return _normalize(path)
 
-    # -- PA-007 ---------------------------------------------------------------
+    # endregion
 
+    # region: file info (PA-007, PA-008)
     def get_file_info(self, paths: list[str]) -> list[pafs.FileInfo]:
         results: list[pafs.FileInfo] = []
         for raw_path in paths:
@@ -214,8 +212,6 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                 except FileNotFoundError:
                     results.append(pafs.FileInfo(path, type=pafs.FileType.NotFound))
         return results
-
-    # -- PA-008 ---------------------------------------------------------------
 
     def get_file_info_selector(self, selector: Any) -> list[pafs.FileInfo]:  # noqa: ANN401
         base_dir = _normalize(selector.base_dir)
@@ -271,8 +267,9 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
 
         return results
 
-    # -- PA-009 ---------------------------------------------------------------
+    # endregion
 
+    # region: read operations (PA-009, PA-010)
     def open_input_stream(self, path: str) -> Any:  # noqa: ANN401
         path = _normalize(path)
         with _map_errors():
@@ -288,8 +285,6 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
             except Exception:  # pragma: no cover
                 stream.close()
                 raise
-
-    # -- PA-010 ---------------------------------------------------------------
 
     def open_input_file(self, path: str) -> Any:  # noqa: ANN401
         path = _normalize(path)
@@ -328,32 +323,28 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                 stream.close()
             return pa.BufferReader(pa.py_buffer(data))
 
-    # -- PA-011 ---------------------------------------------------------------
+    # endregion
 
+    # region: write operations (PA-011, PA-012)
     def open_output_stream(self, path: str, metadata: Any = None) -> Any:  # noqa: ANN401
         path = _normalize(path)
         sink = _StoreSink(self._store, path, self._write_spill_threshold)
         return pa.PythonFile(sink, mode="w")
 
-    # -- PA-012 ---------------------------------------------------------------
-
     def open_append_stream(self, path: str, metadata: Any = None) -> Any:  # noqa: ANN401
         raise NotImplementedError("Append is not supported by remote-store backends")
 
-    # -- PA-013 ---------------------------------------------------------------
+    # endregion
 
+    # region: delete and directory operations (PA-013 through PA-015)
     def delete_file(self, path: str) -> None:
         path = _normalize(path)
         with _map_errors():
             self._store.delete(path, missing_ok=False)
 
-    # -- PA-014 ---------------------------------------------------------------
-
     def create_dir(self, path: str, recursive: bool = True) -> None:
         # No-op: directories are virtual / created implicitly on write.
         pass
-
-    # -- PA-015 ---------------------------------------------------------------
 
     def delete_dir(self, path: str) -> None:
         path = _normalize(path)
@@ -385,19 +376,20 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
     def delete_root_dir_contents(self) -> None:
         raise NotImplementedError("Deleting all root directory contents is not supported (safety guard)")
 
-    # -- PA-017 ---------------------------------------------------------------
+    # endregion
 
+    # region: move and copy (PA-017, PA-018)
     def move(self, src: str, dest: str) -> None:
         src, dest = _normalize(src), _normalize(dest)
         with _map_errors():
             self._store.move(src, dest, overwrite=True)
 
-    # -- PA-018 ---------------------------------------------------------------
-
     def copy_file(self, src: str, dest: str) -> None:
         src, dest = _normalize(src), _normalize(dest)
         with _map_errors():
             self._store.copy(src, dest, overwrite=True)
+
+    # endregion
 
 
 # ---------------------------------------------------------------------------
