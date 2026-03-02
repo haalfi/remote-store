@@ -552,6 +552,9 @@ def print_report(
         print(f"  Total builds     : {rtd.total_builds}")
     print(f"  Last build status: {rtd.last_build_status}")
     print(f"  Last build date  : {rtd.last_build_date}")
+    print("  Analytics (no API -- visit dashboard):")
+    print(f"    Traffic  : https://app.readthedocs.org/dashboard/{RTD_PROJECT}/traffic-analytics/")
+    print(f"    Search   : https://app.readthedocs.org/dashboard/{RTD_PROJECT}/search-analytics/")
 
     print("\n" + "=" * 60)
 
@@ -633,6 +636,8 @@ def to_dict(
             "total_builds": rtd.total_builds,
             "last_build_status": rtd.last_build_status,
             "last_build_date": rtd.last_build_date,
+            "traffic_analytics_url": f"https://app.readthedocs.org/dashboard/{RTD_PROJECT}/traffic-analytics/",
+            "search_analytics_url": f"https://app.readthedocs.org/dashboard/{RTD_PROJECT}/search-analytics/",
         },
     }
 
