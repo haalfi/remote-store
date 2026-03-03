@@ -347,7 +347,7 @@ class S3Backend(Backend):
                         if latest_modified is None or modified > latest_modified:
                             latest_modified = modified
             return FolderInfo(
-                path=RemotePath(path) if path else RemotePath.ROOT,
+                path=RemotePath.from_backend_path(path),
                 file_count=file_count,
                 total_size=total_size,
                 modified_at=latest_modified,

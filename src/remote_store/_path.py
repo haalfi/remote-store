@@ -96,6 +96,15 @@ class RemotePath:
     def __delattr__(self, name: str) -> None:
         raise AttributeError(f"RemotePath is immutable: cannot delete '{name}'")
 
+    @classmethod
+    def from_backend_path(cls, path: str) -> RemotePath:
+        """Create a RemotePath, using ROOT for empty paths.
+
+        Backends use this in ``get_folder_info`` to avoid duplicating
+        the ``RemotePath(path) if path else RemotePath.ROOT`` pattern.
+        """
+        return cls(path) if path else cls.ROOT
+
 
 # Class-level root sentinel (bypasses __init__ validation).
 _root = object.__new__(RemotePath)

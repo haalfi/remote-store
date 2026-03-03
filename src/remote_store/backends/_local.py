@@ -252,7 +252,7 @@ class LocalBackend(Backend):
                     latest_mtime = st.st_mtime
         modified_at = datetime.fromtimestamp(latest_mtime, tz=timezone.utc) if latest_mtime is not None else None
         return FolderInfo(
-            path=RemotePath(path) if path else RemotePath.ROOT,
+            path=RemotePath.from_backend_path(path),
             file_count=file_count,
             total_size=total_size,
             modified_at=modified_at,

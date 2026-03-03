@@ -139,7 +139,7 @@ class Store:
         rel = self._strip_root(str(info.path))
         if rel == str(info.path):
             return info
-        new_path = RemotePath(rel) if rel else RemotePath.ROOT
+        new_path = RemotePath.from_backend_path(rel)
         return dataclasses.replace(info, path=new_path)
 
     def to_key(self, path: str) -> str:

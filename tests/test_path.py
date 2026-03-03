@@ -219,6 +219,16 @@ class TestRemotePathRoot:
         with pytest.raises(AttributeError, match="immutable"):
             del RemotePath.ROOT._path  # type: ignore[misc]
 
+    @pytest.mark.spec("PATH-015")
+    def test_from_backend_path_empty(self) -> None:
+        """from_backend_path('') returns ROOT."""
+        assert RemotePath.from_backend_path("") is RemotePath.ROOT
+
+    @pytest.mark.spec("PATH-015")
+    def test_from_backend_path_nonempty(self) -> None:
+        """from_backend_path('a/b') returns RemotePath('a/b')."""
+        assert RemotePath.from_backend_path("a/b") == RemotePath("a/b")
+
     @pytest.mark.spec("PATH-008")
     def test_empty_string_still_rejected(self) -> None:
         """PATH-008 must still reject empty string — ROOT is a separate sentinel."""
