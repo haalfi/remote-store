@@ -7,7 +7,7 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Metric | Value |
 |--------|-------|
 | Source code | ~6,200 lines (6 backends) |
-| Tests | 1,301 tests, ~10,300 lines |
+| Tests | 1,302 tests, ~10,300 lines |
 | Specs & docs | 20 specs, 10 ADRs, 3 RFCs |
 | Examples | 14 core + 4 cloud + 4 notebooks |
 | Documentation site | MkDocs Material (versioned via mike) |

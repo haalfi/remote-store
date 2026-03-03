@@ -260,7 +260,7 @@ class Store:
             recursive,
             extra={"op": "delete_folder", "path": path, "backend": _bk},
         )
-        if not path:
+        if not path or path == ".":
             raise InvalidPath("Cannot delete the store root", path=path)
         self._backend.capabilities.require(Capability.DELETE, backend=_bk)
         self._backend.delete_folder(self._full_path(path), recursive=recursive, missing_ok=missing_ok)

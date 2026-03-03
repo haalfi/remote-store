@@ -122,6 +122,13 @@ class TestStoreEmptyPathRejection:
         with pytest.raises(InvalidPath):
             store.delete_folder("")
 
+    def test_delete_folder_dot_path(self) -> None:
+        """'.' is a root alias — delete_folder must reject it like empty string."""
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        with pytest.raises(InvalidPath):
+            store.delete_folder(".")
+
     def test_get_file_info_empty_path(self) -> None:
         backend = MemoryBackend()
         store = Store(backend=backend, root_path="data")
