@@ -17,7 +17,7 @@ Active work items, ordered by priority.
 
 ## Known Bugs
 
-- [x] **BUG-001 — `get_folder_info("")` fails for empty-root stores**
+- [x] **BUG-001 — `get_folder_info("")` fails for empty-root stores** (v0.13.0)
   Fixed via `RemotePath.ROOT` sentinel (bypasses `__init__` validation,
   `str(ROOT) == "."`). All 6 backends + `_rebase_folder_info` updated.
   19 new tests (15 ROOT unit tests + 4 regression tests now passing).
@@ -141,15 +141,19 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   benchmark tiers with Docker backends to produce accurate baseline data.
   64KB write values for S3-PyArrow and Azure are also outlier-skewed.
 
-- [~] **ID-039 — Credential hygiene: `Secret` wrapper and central redaction** (unreleased)
+- [x] **ID-039 — Credential hygiene: `Secret` wrapper and central redaction** (v0.13.0)
   `Secret` type in `_config.py`: wraps sensitive strings, `__repr__`/`__str__`
   → `'***'`, `.reveal()` → actual value. `from_dict()` wraps `_SENSITIVE_KEYS`.
   Backends accept `str | Secret` via `_reveal()`. SFTP enum coercion for
   `host_key_policy`. `SecretRedactionFilter` logging filter. Regression tests.
-  Remaining: README configuration section and `examples/configuration.py`
-  showing `Secret` usage (ripple: public API exports). Credential provider
-  preference docs deferred to config loaders follow-up.
   → Spec: `sdd/specs/020-credential-hygiene.md` (SEC-001 through SEC-008)
+
+- [ ] **ID-042 — Document Secret usage in README and examples**
+  Add a "Credential hygiene" section to the README configuration area and
+  update `examples/configuration.py` to demonstrate `Secret` wrapping,
+  `from_dict()` auto-wrapping, and `.reveal()` usage. Credential provider
+  preference docs deferred to config loaders follow-up.
+  Related: ID-039.
 
 ---
 
@@ -322,7 +326,7 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
 - [x] **ID-001 — Cross-store transfer** *(subsumed by ID-023 `ext.transfer`)* (v0.9.0)
   Shipped as `transfer()` in `ext.transfer`. See spec `017-ext-transfer.md`.
 
-- [x] **ID-004 — Structured logging & metrics hooks** (unreleased)
+- [x] **ID-004 — Structured logging & metrics hooks** (v0.13.0)
   Superseded by ID-024 (`ext.observe`). Intrinsic stdlib logging added to all
   modules: `NullHandler`, `log = logging.getLogger(__name__)`, `%`-style with
   `extra={}`. DEBUG for method entry, INFO for write/delete/move/copy completion.
@@ -406,7 +410,7 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
   callback, `overwrite` flag. Unconditional top-level export. Spec: `017-ext-transfer.md`.
   Resume support deferred.
 
-- [x] **ID-024 — `ext.observe` — hooks / middleware / instrumentation** (unreleased)
+- [x] **ID-024 — `ext.observe` — hooks / middleware / instrumentation** (v0.13.0)
   All three layers shipped: Layer 1 (intrinsic logging), Layer 2 (`ext.observe`
   callback hooks), Layer 3 (`ext.otel` OpenTelemetry bridge). `otel_observe()`
   wraps Store with OTel spans and metrics. Optional extra `otel` depends on
