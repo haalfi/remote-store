@@ -15,6 +15,15 @@ Active work items, ordered by priority.
 
 ---
 
+## Known Bugs
+
+- [x] **BUG-001 — `get_folder_info("")` fails for empty-root stores**
+  Fixed via `RemotePath.ROOT` sentinel (bypasses `__init__` validation,
+  `str(ROOT) == "."`). All 6 backends + `_rebase_folder_info` updated.
+  19 new tests (15 ROOT unit tests + 4 regression tests now passing).
+
+---
+
 ## Ideas (Unprioritized)
 
 Parking lot. Not evaluated, not committed to. Pick up when relevant.

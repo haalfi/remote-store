@@ -647,7 +647,7 @@ class SFTPBackend(Backend):
             file_count, total_size, latest_modified = self._collect_folder_stats(sftp_path)
 
             return FolderInfo(
-                path=RemotePath(path),
+                path=RemotePath(path) if path else RemotePath.ROOT,
                 file_count=file_count,
                 total_size=total_size,
                 modified_at=latest_modified,

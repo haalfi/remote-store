@@ -135,7 +135,8 @@ class Store:
         rel = self._strip_root(str(info.path))
         if rel == str(info.path):
             return info
-        return dataclasses.replace(info, path=RemotePath(rel))
+        new_path = RemotePath(rel) if rel else RemotePath.ROOT
+        return dataclasses.replace(info, path=new_path)
 
     def to_key(self, path: str) -> str:
         """Convert an absolute or backend-native path to a store-relative key.

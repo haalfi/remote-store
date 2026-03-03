@@ -371,7 +371,7 @@ class MemoryBackend(Backend):
                     elif isinstance(child, _DirNode):
                         stack.append(child)
             return FolderInfo(
-                path=RemotePath(path) if path else RemotePath("."),
+                path=RemotePath(path) if path else RemotePath.ROOT,
                 file_count=file_count,
                 total_size=total_size,
                 modified_at=latest,
