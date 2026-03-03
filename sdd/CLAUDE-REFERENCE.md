@@ -36,6 +36,7 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | CHANGELOG, BACKLOG                                        |
 | **Docs navigation**        | Per-section `_nav.yml` files in `docs-src/`,              |
 |                            | `guides/backends/index.md`                                |
+| **Source/test/spec counts**| `DEVELOPMENT_STORY.md` "The Numbers" table                |
 
 ---
 
