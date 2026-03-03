@@ -724,7 +724,7 @@ User → Store → Backend (ABC) → [unchanged, existing code]
 | `AsyncBackend` | `_async_backend.py` | Abstract base class with `async def` methods |
 | `AsyncStore` | `_async_store.py` | User-facing async Store, delegates to `AsyncBackend` |
 | `SyncBackendAdapter` | `_async_backend.py` | Wraps any sync `Backend` → `AsyncBackend` |
-| `AsyncRegistry` | `_async_registry.py` | Optional async-aware registry with `aclose()` |
+| `AsyncRegistry` | `_async_registry.py` | Optional async-aware registry with `aclose()` (Phase 3 — deferred until async extensions need coordinated lifecycle) |
 
 ### 5.3 Method mapping (Backend → AsyncBackend)
 
@@ -811,7 +811,8 @@ async def read(self, path: str) -> AsyncIterator[bytes]:
 **Phase 1 — Core async surface (minimum viable):**
 - `AsyncBackend` ABC
 - `SyncBackendAdapter`
-- `AsyncStore` with `__aenter__`/`__aexit__`
+- `AsyncStore` with `__aenter__`/`__aexit__` and `child()` (returns `AsyncStore`;
+  inherits `_owns_backend=False` → `aclose()` no-op semantics from spec 015)
 - `AsyncMemoryBackend` (for testing, zero deps)
 - Spec, ADR, tests
 
@@ -860,6 +861,8 @@ async def main():
 - All error types — `RemoteStoreError` hierarchy
 - `to_key()` — string manipulation
 - `unwrap()` — returns cached native handle
+- `child()` — returns new `AsyncStore` scoped to subfolder (no I/O, but must
+  return `AsyncStore` not `Store`; `_owns_backend=False` carries over to `aclose()`)
 - `name` / `capabilities` — properties
 
 ---
