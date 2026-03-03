@@ -1,0 +1,22 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  status:
+    project:
+      default:
+        target: 95%
+        threshold: 1%    # allow 1% drop before failing
+    patch:
+      default:
+        target: 90%
+
+ignore:
+  - "benchmarks/**"
+  - "examples/**"
+  - "docs-src/**"
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true   # only comment when coverage changes
