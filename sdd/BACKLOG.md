@@ -11,6 +11,16 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
+- [~] **ID-005 — Built-in `from_toml()` config loader**
+  Spec complete (`sdd/specs/021-config-loaders.md`, CFG-008/CFG-009).
+  Implementation: `RegistryConfig.from_toml(path, *, table=())` classmethod
+  in `_config.py`. Zero-dep on 3.11+ (`tomllib`), optional `tomli` on 3.10.
+
+- [~] **ID-002 — YAML config support: `from_yaml()`**
+  Spec complete (`sdd/specs/021-config-loaders.md`, CFG-010/CFG-011).
+  Implementation: `RegistryConfig.from_yaml(path)` classmethod in `_config.py`.
+  Accepts `pyyaml` (primary) or `ruamel.yaml` (fallback).
+
 - [x] **BK-005 — SFTP backend test coverage gaps**
   Coverage improved from 90% (44 uncovered) to 100% (0 uncovered) on `_sftp.py`.
   35 new tests covering: `to_key()` all branches, string-to-enum coercion,
@@ -49,7 +59,8 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
 - [~] **ID-002 — YAML config support**
   Allow `RegistryConfig.from_yaml()` alongside the existing `from_dict()`.
   Optional dependency on `pyyaml` or `ruamel.yaml`.
-  Research complete (`sdd/research/research-store-config.md`). Implementation pending.
+  Research complete. Spec: `sdd/specs/021-config-loaders.md` (CFG-010/CFG-011).
+  Promoted to Backlog (Prioritized).
 
 - [~] **ID-003 — Pydantic BaseSettings integration**
   Let users define backend config via Pydantic `BaseSettings` for env-var binding,
@@ -61,7 +72,8 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `RegistryConfig.from_toml(path)` alongside the existing `from_dict()`.
   Eliminates boilerplate for every user who keeps config in `pyproject.toml` or a
   standalone `.toml` file.
-  Research complete (`sdd/research/research-store-config.md`). Implementation pending.
+  Research complete. Spec: `sdd/specs/021-config-loaders.md` (CFG-008/CFG-009).
+  Promoted to Backlog (Prioritized).
 
 - [ ] **ID-006 — Progress callbacks for large transfers**
   Add an optional `callback: Callable[[int], None]` parameter to `read()` and
