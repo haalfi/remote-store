@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pytest
 
 from remote_store._capabilities import Capability, CapabilitySet
-from remote_store._config import RegistryConfig
+from remote_store._config import RegistryConfig, Secret
 from remote_store._errors import (
     CapabilityNotSupported,
     DirectoryNotEmpty,
@@ -423,6 +423,48 @@ class TestBackendReprMasking:
         assert "sas_token=None" in r
         assert "connection_string=None" in r
         assert "credential=None" in r
+
+
+class TestBackendSecretConstruction:
+    """SEC-004: Backends accept str | Secret for credential params via _reveal()."""
+
+    @pytest.mark.spec("SEC-004")
+    def test_s3_accepts_secret(self) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        backend = S3Backend(bucket="b", key=Secret("AKID"), secret=Secret("SK"))
+        assert backend._key == "AKID"
+        assert backend._secret == "SK"
+
+    @pytest.mark.spec("SEC-004")
+    def test_s3_pyarrow_accepts_secret(self) -> None:
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        backend = S3PyArrowBackend(bucket="b", key=Secret("AKID"), secret=Secret("SK"))
+        assert backend._key == "AKID"
+        assert backend._secret == "SK"
+
+    @pytest.mark.spec("SEC-004")
+    def test_sftp_accepts_secret(self) -> None:
+        from remote_store.backends._sftp import SFTPBackend
+
+        backend = SFTPBackend(host="h", password=Secret("pass123"))
+        assert backend._password == "pass123"
+
+    @pytest.mark.spec("SEC-004")
+    def test_azure_accepts_secret(self) -> None:
+        from remote_store.backends._azure import AzureBackend
+
+        backend = AzureBackend(
+            container="c",
+            account_name="acct",
+            account_key=Secret("mykey"),
+            sas_token=Secret("tok"),
+            connection_string=Secret("conn=str"),
+        )
+        assert backend._account_key == "mykey"
+        assert backend._sas_token == "tok"
+        assert backend._connection_string == "conn=str"
 
 
 # endregion

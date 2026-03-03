@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
+from remote_store._config import Secret, _reveal
 from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
@@ -150,10 +151,10 @@ class SFTPBackend(Backend):
         *,
         port: int = 22,
         username: str | None = None,
-        password: str | None = None,
+        password: str | Secret | None = None,
         pkey: Any = None,
         base_path: str = "/",
-        host_key_policy: HostKeyPolicy = HostKeyPolicy.STRICT,
+        host_key_policy: HostKeyPolicy | str = HostKeyPolicy.STRICT,
         known_host_keys: str | None = None,
         host_keys_path: str | None = None,
         config: dict[str, Any] | None = None,
@@ -162,10 +163,12 @@ class SFTPBackend(Backend):
     ) -> None:
         if not host or not host.strip():
             raise ValueError("host must be a non-empty string")
+        if isinstance(host_key_policy, str):
+            host_key_policy = HostKeyPolicy(host_key_policy)
         self._host = host
         self._port = port
         self._username = username
-        self._password = password
+        self._password = _reveal(password)
         self._pkey = pkey
         self._base_path = base_path.rstrip("/") or "/"
         self._host_key_policy = host_key_policy

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
+from remote_store._config import Secret, _reveal
 from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
@@ -92,9 +93,9 @@ class AzureBackend(Backend):
         *,
         account_name: str | None = None,
         account_url: str | None = None,
-        account_key: str | None = None,
-        sas_token: str | None = None,
-        connection_string: str | None = None,
+        account_key: str | Secret | None = None,
+        sas_token: str | Secret | None = None,
+        connection_string: str | Secret | None = None,
         credential: Any | None = None,
         client_options: dict[str, Any] | None = None,
     ) -> None:
@@ -105,9 +106,9 @@ class AzureBackend(Backend):
         self._container = container
         self._account_name = account_name
         self._account_url = account_url
-        self._account_key = account_key
-        self._sas_token = sas_token
-        self._connection_string = connection_string
+        self._account_key = _reveal(account_key)
+        self._sas_token = _reveal(sas_token)
+        self._connection_string = _reveal(connection_string)
         self._credential = credential
         self._client_options = client_options or {}
         # Lazy instances

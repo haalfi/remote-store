@@ -113,36 +113,15 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   benchmark tiers with Docker backends to produce accurate baseline data.
   64KB write values for S3-PyArrow and Azure are also outlier-skewed.
 
-- [ ] **ID-039 — Credential hygiene: `Secret` wrapper and central redaction**
-  Harden credential handling across the entire `src/` surface. Current state:
-  AF-008 added `__repr__` masking per-backend, but credentials are still stored
-  as plain strings on long-lived objects, and there is no central mechanism to
-  prevent accidental exposure in logs, exceptions, or config dumps.
-  Scope:
-  1. **`Secret` type** in `_config.py` (zero-dep): wraps sensitive strings,
-     `__repr__`/`__str__` → `'***'`, `.reveal()` → actual value. Keep core
-     zero-dependency; Pydantic `SecretStr` interop goes in `ext/pydantic.py`.
-  2. **`from_dict()` awareness**: wrap known-sensitive option keys (`key`,
-     `secret`, `password`, `account_key`, `sas_token`, `connection_string`)
-     in `Secret()` during config parsing.
-  3. **Backend `__init__` coercion**: accept both `str` and `Secret`, call
-     `.reveal()` only in narrow scope when constructing SDK clients (e.g.
-     inside `_fs`, `_blob_service`, `_create_ssh_client` properties).
-  4. **Enum coercion in `from_dict()` pipeline**: SFTP `host_key_policy` is a
-     `HostKeyPolicy` Enum — passing a raw string from TOML/YAML silently
-     breaks all Enum comparisons in `_create_ssh_client()`. Add
-     `isinstance` + `HostKeyPolicy(value)` coercion in `__init__`, or add a
-     type-aware coercion layer in `from_dict()`.
-  5. **Central logging filter**: add a filter or convention that prevents
-     secret values from appearing in log records, raised exceptions, or
-     `repr()` of config objects. Add regression tests asserting no leakage.
-  6. **Credential provider preference**: document that IAM roles, AAD managed
-     identity, SSH keys, and env-based chains are preferred over raw credential
-     strings in config — credentials should be absent from config files whenever
-     the deployment environment supports a provider chain.
-  Related: AF-008 (existing `__repr__` masking), ID-002/ID-003/ID-005 (config
-  loaders that will surface this gap), ADR-0002 (config resolution).
-  Needs spec.
+- [~] **ID-039 — Credential hygiene: `Secret` wrapper and central redaction** (unreleased)
+  `Secret` type in `_config.py`: wraps sensitive strings, `__repr__`/`__str__`
+  → `'***'`, `.reveal()` → actual value. `from_dict()` wraps `_SENSITIVE_KEYS`.
+  Backends accept `str | Secret` via `_reveal()`. SFTP enum coercion for
+  `host_key_policy`. `SecretRedactionFilter` logging filter. Regression tests.
+  Remaining: README configuration section and `examples/configuration.py`
+  showing `Secret` usage (ripple: public API exports). Credential provider
+  preference docs deferred to config loaders follow-up.
+  → Spec: `sdd/specs/020-credential-hygiene.md` (SEC-001 through SEC-008)
 
 ---
 

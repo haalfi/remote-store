@@ -81,6 +81,11 @@ host raises `ValueError` at construction time.
 - `TRUST_ON_FIRST_USE`: Accept and save on first connect, verify on subsequent connects.
 - `AUTO_ADD`: Accept any key. **Development/testing only -- not safe for production.**
 
+String values (`"strict"`, `"tofu"`, `"auto"`) passed from TOML/YAML config are
+coerced to the enum in `__init__` via `HostKeyPolicy(value)`. Invalid strings
+raise `ValueError`. See [020-credential-hygiene.md](020-credential-hygiene.md)
+SEC-005.
+
 ### SFTP-007: Host Key Resolution Chain
 
 **Invariant:** Known host keys are resolved with first-match precedence:

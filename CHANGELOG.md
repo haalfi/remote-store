@@ -8,6 +8,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`Secret` wrapper and credential hygiene** (ID-039, SEC-001 through SEC-008)
+  `Secret` type in `_config.py` wraps sensitive credential strings: `repr()`
+  and `str()` return `'***'`, `.reveal()` returns the plain value.
+  `RegistryConfig.from_dict()` auto-wraps known sensitive keys (`key`, `secret`,
+  `password`, `account_key`, `sas_token`, `connection_string`). All backends
+  accept `str | Secret` for credential params via `_reveal()`. SFTP coerces
+  `host_key_policy` strings to `HostKeyPolicy` enum. `SecretRedactionFilter`
+  logging filter scrubs `Secret` instances from log record args.
+  Spec: `sdd/specs/020-credential-hygiene.md`.
+
 - **Intrinsic stdlib logging** (ID-004, OBS-008)
   Core modules and extensions now use `log = logging.getLogger(__name__)` with `NullHandler`
   on the `"remote_store"` root logger. DEBUG for method entry, INFO for
