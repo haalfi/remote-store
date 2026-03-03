@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../assets/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
     
     
       
@@ -3155,6 +3155,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-21-observability-and-credential-hygiene-v0130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 21: Observability and Credential Hygiene (v0.13.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3708,6 +3719,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-21-observability-and-credential-hygiene-v0130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 21: Observability and Credential Hygiene (v0.13.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3999,6 +4021,10 @@
 <td>14 core + 4 cloud + 4 notebooks</td>
 </tr>
 <tr>
+<td>Extensions</td>
+<td>6 (<code>ext.arrow</code>, <code>ext.batch</code>, <code>ext.glob</code>, <code>ext.transfer</code>, <code>ext.observe</code>, <code>ext.otel</code>)</td>
+</tr>
+<tr>
 <td>Documentation site</td>
 <td>MkDocs Material (versioned via mike)</td>
 </tr>
@@ -4008,11 +4034,11 @@
 </tr>
 <tr>
 <td>Calendar time</td>
-<td>~8 weeks of sessions</td>
+<td>~9 weeks of sessions</td>
 </tr>
 <tr>
 <td>Commits</td>
-<td>262</td>
+<td>269</td>
 </tr>
 </tbody>
 </table>
@@ -4355,6 +4381,15 @@
 <p>The fix was a class-level sentinel: <code>RemotePath.ROOT</code>, created via <code>object.__new__</code> to bypass <code>__init__</code> validation, with an internal path of <code>"."</code>. The constructor still rejects <code>""</code> and <code>"."</code> -- <code>ROOT</code> is the only way to get a root-folder path, and it's a singleton.</p>
 <p><strong>The interesting part was the bug's discovery path.</strong> It wasn't found by tests, type checking, or code review. It was found by an external code analysis tool scanning for edge cases in <code>RemotePath</code> construction across all backends. The four regression tests were written <em>before</em> the fix -- a pattern that made the fix trivially verifiable. Write the failing test first, then make it pass.</p>
 <p>The fix also surfaced two related consistency issues (now tracked as ID-040 and ID-041): <code>move(src, dst)</code> behaves inconsistently when <code>src == dst</code> across backends, and <code>Registry.get_store()</code> returns stores that can accidentally close a shared backend. Neither crashes today, but both are foot-guns waiting for the right trigger. <strong>Edge-case audits don't just find the bug you're looking for -- they find the bugs next to it.</strong></p>
+<h3 id="phase-21-observability-and-credential-hygiene-v0130">Phase 21: Observability and Credential Hygiene (v0.13.0)<a class="headerlink" href="#phase-21-observability-and-credential-hygiene-v0130" title="Permanent link">&para;</a></h3>
+<p>This release shipped two new extensions and a security hardening layer, all following the established <code>ext.*</code> pattern:</p>
+<ul>
+<li><strong><code>ext.observe</code></strong> (ID-024) -- callback-based observability hooks. <code>observe(store, on_read=..., on_write=..., on_any=..., around=...)</code> wraps a Store in an <code>ObservedStore</code> proxy that fires <code>StoreEvent</code> callbacks after each operation. A <code>BufferedObserver</code> queues events for batched delivery on a background thread. A drift-protection test ensures new Store methods cannot silently bypass observation.</li>
+<li><strong><code>ext.otel</code></strong> (ID-024) -- pre-built OpenTelemetry bridge. <code>otel_observe(store)</code> wraps a Store with distributed tracing spans and three metric instruments (operations counter, errors counter, duration histogram). Depends only on <code>opentelemetry-api</code> for zero-cost no-ops without an SDK configured. New optional extra: <code>pip install "remote-store[otel]"</code>.</li>
+<li><strong><code>Secret</code> wrapper</strong> (ID-039) -- credential hygiene layer in <code>_config.py</code>. <code>Secret</code> wraps sensitive strings so that <code>repr()</code> and <code>str()</code> return <code>'***'</code> while <code>.reveal()</code> returns the plain value. <code>RegistryConfig.from_dict()</code> auto-wraps known sensitive keys. All backends accept <code>str | Secret</code> via <code>_reveal()</code>. A <code>SecretRedactionFilter</code> logging filter scrubs secrets from log output.</li>
+</ul>
+<p>The <code>Secret</code> wrapper emerged from the config loaders research (Phase 20). While mapping out how TOML/YAML config values flow into backend constructors, the research identified that credential strings were stored and logged in plain text throughout the library. Rather than waiting for config loaders to ship, the credential hygiene layer was extracted as a standalone improvement -- a case of research producing immediate value before its primary deliverable.</p>
+<p>The release also fixed BUG-001 (<code>get_folder_info("")</code> crashing for root folders) and added intrinsic stdlib logging to all modules (ID-004), completing the three-layer observability stack: Layer 1 (stdlib logging), Layer 2 (<code>ext.observe</code> callbacks), Layer 3 (<code>ext.otel</code> OpenTelemetry).</p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
