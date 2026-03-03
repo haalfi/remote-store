@@ -348,6 +348,28 @@ On the infrastructure side, a conda-forge recipe was added (`packaging/conda-for
 
 This release also demonstrated iterative self-review: the `/review-pr` skill (added in PR #76) was used to review its own PR and subsequent conda PRs, catching real consistency gaps each time -- including a non-existent GitHub Action, a premature version bump, and a missing staging step in the release checklist.
 
+### Phase 20: Research Before Implementation (post-v0.12.0)
+
+Three backlog items (ID-002 YAML config, ID-003 Pydantic adapter, ID-005 TOML config) had been sitting in the Ideas tier for months. Rather than jumping to implementation, the approach was to write a research document first: `sdd/research/research-store-config.md`. The document mapped the design space -- config formats, library choices, API surface, ecosystem compatibility -- before committing to any implementation decisions.
+
+**The research went through four review rounds, and each round found real problems:**
+
+| Round | Approach | Findings |
+|-------|----------|----------|
+| 1 | Substantive review (fresh session) | 10 gaps: no fsspec analysis, no credential chain patterns, no Airflow/Hydra/dynaconf evaluation, secrets management hand-waved |
+| 2-3 | Inline review comments | Factual errors: `boto3` attribution wrong (S3Backend uses `s3fs` -> `aiobotocore` -> `botocore`), `endpoint_url` placement incorrect, `HostKeyPolicy` Enum case wrong |
+| 4 | Challenge review (adversarial session) | 7 gaps: `from_dict()` silently ignores unknown keys, YAML import precedence undermines YAML 1.2 intent, `SecretStr` + `model_dump()` negates secret protection, config discovery and schema versioning unaddressed |
+
+**The most valuable discovery was a real pre-existing bug.** The research process -- not a test, not a linter, not a code review -- found that `SFTPBackend.__init__` stores `host_key_policy` as a raw string without Enum coercion. When config loaders pass `"strict"` (a string from TOML/YAML), the Enum comparisons in `_create_ssh_client()` silently fail because `"strict" != HostKeyPolicy.STRICT` in Python. The result: host key verification silently degrades to the least secure mode. This bug existed since v0.2.0 and was invisible to every test, type checker, and code review because no test exercised the string-to-Enum path -- they all used the Enum directly.
+
+**The lesson has two parts:**
+
+First, **research documents catch design-level bugs that code-level tools miss.** The Enum coercion bug was invisible to mypy (both types are valid kwargs), invisible to tests (tests use Enum values, not strings), and invisible to code review (the constructor looks correct in isolation). Only by thinking through "what happens when a TOML parser sends a string here?" did the failure path become apparent. Thinking through integration scenarios on paper is cheaper than debugging them in production.
+
+Second, **research quality improves dramatically under adversarial review.** The first draft was described as "an implementation plan wearing a research hat" -- it proposed solutions before demonstrating that alternatives were studied. Four rounds of review transformed it into a genuine landscape analysis with explicit decisions, documented trade-offs, and scoped-out concerns. Each round found issues the previous round missed because each reviewer brought a different framing: the first focused on external landscape completeness, the second on factual accuracy, the third on internal consistency, the fourth on edge cases and missing explicit decisions.
+
+The final document (1,250 lines) covers 8+ ecosystem tools, maps all 6 backends' config surfaces, provides implementation sketches, resolves ADR-0002 tension with Pydantic, and captures 9 open design questions with reasoned recommendations. All of this exists before a single line of implementation code is written -- and the implementation spec can now cite specific decisions with ecosystem evidence rather than asserting them without context.
+
 ## What Worked Well
 
 ### Specs as a shared contract
@@ -468,6 +490,8 @@ prioritization scheme each session.
 11. **Review in a separate session from authoring.** A single AI session reviewing its own output suffers from the same blind spot a human developer has proofreading their own code — the author's mental model fills in gaps the artifact doesn't. A fresh session reads the output cold and catches what the authoring session "knew" but didn't write down. This is especially valuable for design documents (specs, RFCs) where correctness means completeness and internal consistency, not just "does it compile."
 
 12. **Run adversarial audits after major releases.** PR reviews catch local issues; adversarial audits catch systemic ones. Cross-backend semantic inconsistencies, capability declarations with no implementation, and docs-to-code drift are invisible at the PR level because each PR is internally consistent. Asking a fresh session to "prove this package wrong" with parallel specialized agents (security, tests, design, CI) surfaces the cross-cutting concerns that no single review would find. The cost is one session; the yield is a prioritized list of real problems ranked by severity.
+
+13. **Write research documents before implementation specs, and review them like code.** When a feature touches multiple design dimensions (formats, libraries, ecosystem compatibility, security), a research document that maps the full design space before committing to any solution prevents expensive mid-implementation pivots. But the document itself must be reviewed rigorously -- the first draft tends to be "an implementation plan wearing a research hat," proposing solutions before proving alternatives were studied. Multiple review rounds from fresh sessions, each with a different angle (landscape completeness, factual accuracy, internal consistency, adversarial challenge), transform shallow research into genuine analysis. The investment is front-loaded but pays compound interest: every downstream artifact -- spec, implementation, docs, tests -- can cite explicit decisions with ecosystem evidence instead of asserting them without context. Research also catches design-level bugs that no amount of code review, testing, or type-checking will find, because those tools operate on code that exists, not on integration scenarios that haven't been built yet.
 
 ## Reproducing This Workflow
 
