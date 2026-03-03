@@ -3144,6 +3144,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#bug-001-when-your-value-object-has-no-word-for-here-post-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BUG-001: When Your Value Object Has No Word for "Here" (post-v0.12.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3686,6 +3697,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#bug-001-when-your-value-object-has-no-word-for-here-post-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BUG-001: When Your Value Object Has No Word for "Here" (post-v0.12.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3962,15 +3984,15 @@
 <tbody>
 <tr>
 <td>Source code</td>
-<td>~6,000 lines (6 backends)</td>
+<td>~6,200 lines (6 backends)</td>
 </tr>
 <tr>
 <td>Tests</td>
-<td>1,239 tests, ~9,700 lines</td>
+<td>1,305 tests, ~10,300 lines</td>
 </tr>
 <tr>
 <td>Specs &amp; docs</td>
-<td>19 specs, 10 ADRs, 3 RFCs</td>
+<td>20 specs, 10 ADRs, 3 RFCs</td>
 </tr>
 <tr>
 <td>Examples</td>
@@ -4328,6 +4350,11 @@
 <p>First, <strong>research documents catch design-level bugs that code-level tools miss.</strong> The Enum coercion bug was invisible to mypy (both types are valid kwargs), invisible to tests (tests use Enum values, not strings), and invisible to code review (the constructor looks correct in isolation). Only by thinking through "what happens when a TOML parser sends a string here?" did the failure path become apparent. Thinking through integration scenarios on paper is cheaper than debugging them in production.</p>
 <p>Second, <strong>research quality improves dramatically under adversarial review.</strong> The first draft was described as "an implementation plan wearing a research hat" -- it proposed solutions before demonstrating that alternatives were studied. Four rounds of review transformed it into a genuine landscape analysis with explicit decisions, documented trade-offs, and scoped-out concerns. Each round found issues the previous round missed because each reviewer brought a different framing: the first focused on external landscape completeness, the second on factual accuracy, the third on internal consistency, the fourth on edge cases and missing explicit decisions.</p>
 <p>The final document (1,250 lines) covers 8+ ecosystem tools, maps all 6 backends' config surfaces, provides implementation sketches, resolves ADR-0002 tension with Pydantic, and captures 9 open design questions with reasoned recommendations. All of this exists before a single line of implementation code is written -- and the implementation spec can now cite specific decisions with ecosystem evidence rather than asserting them without context.</p>
+<h3 id="bug-001-when-your-value-object-has-no-word-for-here-post-v0120">BUG-001: When Your Value Object Has No Word for "Here" (post-v0.12.0)<a class="headerlink" href="#bug-001-when-your-value-object-has-no-word-for-here-post-v0120" title="Permanent link">&para;</a></h3>
+<p><code>RemotePath</code> -- the immutable path value object at the heart of every Store operation -- could represent any path <em>except</em> the root folder. Both <code>RemotePath("")</code> and <code>RemotePath(".")</code> raised <code>InvalidPath</code> by design (PATH-008). This was fine until <code>get_folder_info("")</code> needed to return metadata about the root folder itself. All six backends tried to construct <code>FolderInfo(path=RemotePath(""))</code> and crashed.</p>
+<p>The fix was a class-level sentinel: <code>RemotePath.ROOT</code>, created via <code>object.__new__</code> to bypass <code>__init__</code> validation, with an internal path of <code>"."</code>. The constructor still rejects <code>""</code> and <code>"."</code> -- <code>ROOT</code> is the only way to get a root-folder path, and it's a singleton.</p>
+<p><strong>The interesting part was the bug's discovery path.</strong> It wasn't found by tests, type checking, or code review. It was found by an external code analysis tool scanning for edge cases in <code>RemotePath</code> construction across all backends. The four regression tests were written <em>before</em> the fix -- a pattern that made the fix trivially verifiable. Write the failing test first, then make it pass.</p>
+<p>The fix also surfaced two related consistency issues (now tracked as ID-040 and ID-041): <code>move(src, dst)</code> behaves inconsistently when <code>src == dst</code> across backends, and <code>Registry.get_store()</code> returns stores that can accidentally close a shared backend. Neither crashes today, but both are foot-guns waiting for the right trigger. <strong>Edge-case audits don't just find the bug you're looking for -- they find the bugs next to it.</strong></p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
