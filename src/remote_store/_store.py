@@ -8,7 +8,7 @@ import logging
 from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._capabilities import Capability
-from remote_store._errors import InvalidPath
+from remote_store._errors import InvalidPath, NotFound
 from remote_store._path import RemotePath
 
 log = logging.getLogger(__name__)
@@ -361,6 +361,8 @@ class Store:
         src_path = self._require_file_path(src)
         dst_path = self._require_file_path(dst)
         if src_path == dst_path:
+            if not self._backend.exists(src_path):
+                raise NotFound(f"Source not found: {src}", path=src, backend=_bk)
             return
         self._backend.move(src_path, dst_path, overwrite=overwrite)
         log.info("move complete src=%r dst=%r", src, dst, extra={"op": "move", "path": src, "backend": _bk})

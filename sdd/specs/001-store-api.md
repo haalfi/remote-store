@@ -40,6 +40,10 @@
 
 **Invariant:** Store exposes: `read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`, `to_key`, `unwrap`, `child`.
 
+### STORE-008a: Same-Path Move
+
+**Invariant:** `move(src, dst)` where `src` and `dst` resolve to the same path is a no-op (the file is not modified, copied, or deleted). The source file must exist; otherwise `NotFound` is raised even for same-path calls.
+
 ### STORE-009: Resource Management
 
 **Invariant:** Store supports the context manager protocol (`__enter__`/`__exit__`). Exiting the context calls `close()`, which delegates to `Backend.close()`. Store may also be used without a context manager; in that case, `close()` should be called explicitly when the store is no longer needed.

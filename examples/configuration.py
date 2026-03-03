@@ -75,8 +75,8 @@ if __name__ == "__main__":
                 "type": "s3",
                 "options": {
                     "bucket": "my-bucket",
-                    "key": "AKIAIOSFODNN7EXAMPLE",
-                    "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                    "key": "your-access-key-id",
+                    "secret": "your-secret-access-key",
                 },
             },
         },
@@ -98,8 +98,8 @@ if __name__ == "__main__":
                 type="s3",
                 options={
                     "bucket": "my-bucket",
-                    "key": "AKIAIOSFODNN7EXAMPLE",
-                    "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                    "key": "your-access-key-id",
+                    "secret": "your-secret-access-key",
                     "region_name": "eu-central-1",
                 },
             ),
