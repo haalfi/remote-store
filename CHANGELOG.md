@@ -6,6 +6,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+*(No changes yet.)*
+
+## [0.13.0] - 2026-03-03
+
 ### Added
 
 - **`Secret` wrapper and credential hygiene** (ID-039, SEC-001 through SEC-008)

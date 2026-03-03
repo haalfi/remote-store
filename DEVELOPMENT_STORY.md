@@ -10,10 +10,11 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Tests | 1,305 tests, ~10,300 lines |
 | Specs & docs | 20 specs, 10 ADRs, 3 RFCs |
 | Examples | 14 core + 4 cloud + 4 notebooks |
+| Extensions | 6 (`ext.arrow`, `ext.batch`, `ext.glob`, `ext.transfer`, `ext.observe`, `ext.otel`) |
 | Documentation site | MkDocs Material (versioned via mike) |
 | Coverage | 95% |
-| Calendar time | ~8 weeks of sessions |
-| Commits | 262 |
+| Calendar time | ~9 weeks of sessions |
+| Commits | 269 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
@@ -379,6 +380,18 @@ The fix was a class-level sentinel: `RemotePath.ROOT`, created via `object.__new
 **The interesting part was the bug's discovery path.** It wasn't found by tests, type checking, or code review. It was found by an external code analysis tool scanning for edge cases in `RemotePath` construction across all backends. The four regression tests were written *before* the fix -- a pattern that made the fix trivially verifiable. Write the failing test first, then make it pass.
 
 The fix also surfaced two related consistency issues (now tracked as ID-040 and ID-041): `move(src, dst)` behaves inconsistently when `src == dst` across backends, and `Registry.get_store()` returns stores that can accidentally close a shared backend. Neither crashes today, but both are foot-guns waiting for the right trigger. **Edge-case audits don't just find the bug you're looking for -- they find the bugs next to it.**
+
+### Phase 21: Observability and Credential Hygiene (v0.13.0)
+
+This release shipped two new extensions and a security hardening layer, all following the established `ext.*` pattern:
+
+- **`ext.observe`** (ID-024) -- callback-based observability hooks. `observe(store, on_read=..., on_write=..., on_any=..., around=...)` wraps a Store in an `ObservedStore` proxy that fires `StoreEvent` callbacks after each operation. A `BufferedObserver` queues events for batched delivery on a background thread. A drift-protection test ensures new Store methods cannot silently bypass observation.
+- **`ext.otel`** (ID-024) -- pre-built OpenTelemetry bridge. `otel_observe(store)` wraps a Store with distributed tracing spans and three metric instruments (operations counter, errors counter, duration histogram). Depends only on `opentelemetry-api` for zero-cost no-ops without an SDK configured. New optional extra: `pip install "remote-store[otel]"`.
+- **`Secret` wrapper** (ID-039) -- credential hygiene layer in `_config.py`. `Secret` wraps sensitive strings so that `repr()` and `str()` return `'***'` while `.reveal()` returns the plain value. `RegistryConfig.from_dict()` auto-wraps known sensitive keys. All backends accept `str | Secret` via `_reveal()`. A `SecretRedactionFilter` logging filter scrubs secrets from log output.
+
+The `Secret` wrapper emerged from the config loaders research (Phase 20). While mapping out how TOML/YAML config values flow into backend constructors, the research identified that credential strings were stored and logged in plain text throughout the library. Rather than waiting for config loaders to ship, the credential hygiene layer was extracted as a standalone improvement -- a case of research producing immediate value before its primary deliverable.
+
+The release also fixed BUG-001 (`get_folder_info("")` crashing for root folders) and added intrinsic stdlib logging to all modules (ID-004), completing the three-layer observability stack: Layer 1 (stdlib logging), Layer 2 (`ext.observe` callbacks), Layer 3 (`ext.otel` OpenTelemetry).
 
 ## What Worked Well
 
