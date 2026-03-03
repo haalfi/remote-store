@@ -2679,6 +2679,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../020-credential-hygiene/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: Credential Hygiene Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3785,6 +3813,10 @@ host raises <code>ValueError</code> at construction time.
 - <code>STRICT</code> (default): Reject unknown hosts. Requires host key in known_hosts.
 - <code>TRUST_ON_FIRST_USE</code>: Accept and save on first connect, verify on subsequent connects.
 - <code>AUTO_ADD</code>: Accept any key. <strong>Development/testing only -- not safe for production.</strong></p>
+<p>String values (<code>"strict"</code>, <code>"tofu"</code>, <code>"auto"</code>) passed from TOML/YAML config are
+coerced to the enum in <code>__init__</code> via <code>HostKeyPolicy(value)</code>. Invalid strings
+raise <code>ValueError</code>. See <a href="../020-credential-hygiene/">020-credential-hygiene.md</a>
+SEC-005.</p>
 <h3 id="sftp-007-host-key-resolution-chain">SFTP-007: Host Key Resolution Chain<a class="headerlink" href="#sftp-007-host-key-resolution-chain" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Known host keys are resolved with first-match precedence:
 1. <code>known_host_keys</code> constructor parameter (code-level override)

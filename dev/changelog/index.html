@@ -2222,6 +2222,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/020-credential-hygiene/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: Credential Hygiene Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4239,6 +4267,17 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong><code>Secret</code> wrapper and credential hygiene</strong> (ID-039, SEC-001 through SEC-008)
+  <code>Secret</code> type in <code>_config.py</code> wraps sensitive credential strings: <code>repr()</code>
+  and <code>str()</code> return <code>'***'</code>, <code>.reveal()</code> returns the plain value.
+  <code>RegistryConfig.from_dict()</code> auto-wraps known sensitive keys (<code>key</code>, <code>secret</code>,
+  <code>password</code>, <code>account_key</code>, <code>sas_token</code>, <code>connection_string</code>). All backends
+  accept <code>str | Secret</code> for credential params via <code>_reveal()</code>. SFTP coerces
+  <code>host_key_policy</code> strings to <code>HostKeyPolicy</code> enum. <code>SecretRedactionFilter</code>
+  logging filter scrubs <code>Secret</code> instances from log record args.
+  Spec: <code>sdd/specs/020-credential-hygiene.md</code>.</p>
+</li>
 <li>
 <p><strong>Intrinsic stdlib logging</strong> (ID-004, OBS-008)
   Core modules and extensions now use <code>log = logging.getLogger(__name__)</code> with <code>NullHandler</code>

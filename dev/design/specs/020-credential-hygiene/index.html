@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://haalfi.github.io/remote-store/dev/concurrency/">
+        <link rel="canonical" href="https://haalfi.github.io/remote-store/dev/design/specs/020-credential-hygiene/">
       
       
-        <link rel="prev" href="../performance/">
+        <link rel="prev" href="../019-ext-observe/">
       
       
-        <link rel="next" href="../pyarrow-adapter/">
+        <link rel="next" href="../../adrs/">
       
       
         
       
       
-      <link rel="icon" href="../assets/logo.png">
+      <link rel="icon" href="../../../assets/logo.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
     
     
       
-        <title>Concurrency - remote-store</title>
+        <title>020: Credential Hygiene Specification - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,9 +53,9 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#concurrency-and-atomicity-guarantees" class="md-skip">
+        <a href="#credential-hygiene-specification" class="md-skip">
           Skip to content
         </a>
       
@@ -100,9 +100,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../assets/logo.png" alt="logo">
+  <img src="../../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Concurrency
+              020: Credential Hygiene Specification
             
           </span>
         </div>
@@ -235,9 +235,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../assets/logo.png" alt="logo">
+  <img src="../../../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -264,7 +264,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -291,7 +291,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/" class="md-nav__link">
+      <a href="../../../getting-started/" class="md-nav__link">
         
   
   
@@ -337,7 +337,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../examples/" class="md-nav__link ">
+            <a href="../../../examples/" class="md-nav__link ">
               
   
   
@@ -379,7 +379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/quickstart/" class="md-nav__link">
+      <a href="../../../examples/quickstart/" class="md-nav__link">
         
   
   
@@ -407,7 +407,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/file-operations/" class="md-nav__link">
+      <a href="../../../examples/file-operations/" class="md-nav__link">
         
   
   
@@ -435,7 +435,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/streaming-io/" class="md-nav__link">
+      <a href="../../../examples/streaming-io/" class="md-nav__link">
         
   
   
@@ -463,7 +463,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/atomic-writes/" class="md-nav__link">
+      <a href="../../../examples/atomic-writes/" class="md-nav__link">
         
   
   
@@ -491,7 +491,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/configuration/" class="md-nav__link">
+      <a href="../../../examples/configuration/" class="md-nav__link">
         
   
   
@@ -519,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/error-handling/" class="md-nav__link">
+      <a href="../../../examples/error-handling/" class="md-nav__link">
         
   
   
@@ -547,7 +547,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/memory-backend/" class="md-nav__link">
+      <a href="../../../examples/memory-backend/" class="md-nav__link">
         
   
   
@@ -575,7 +575,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/store-child/" class="md-nav__link">
+      <a href="../../../examples/store-child/" class="md-nav__link">
         
   
   
@@ -603,7 +603,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/s3-backend/" class="md-nav__link">
+      <a href="../../../examples/s3-backend/" class="md-nav__link">
         
   
   
@@ -631,7 +631,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../../examples/s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -659,7 +659,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/sftp-backend/" class="md-nav__link">
+      <a href="../../../examples/sftp-backend/" class="md-nav__link">
         
   
   
@@ -687,7 +687,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/azure-backend/" class="md-nav__link">
+      <a href="../../../examples/azure-backend/" class="md-nav__link">
         
   
   
@@ -715,7 +715,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/batch-operations/" class="md-nav__link">
+      <a href="../../../examples/batch-operations/" class="md-nav__link">
         
   
   
@@ -743,7 +743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/transfer-operations/" class="md-nav__link">
+      <a href="../../../examples/transfer-operations/" class="md-nav__link">
         
   
   
@@ -797,7 +797,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../api/" class="md-nav__link ">
+            <a href="../../../api/" class="md-nav__link ">
               
   
   
@@ -839,7 +839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/store/" class="md-nav__link">
+      <a href="../../../api/store/" class="md-nav__link">
         
   
   
@@ -867,7 +867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/registry/" class="md-nav__link">
+      <a href="../../../api/registry/" class="md-nav__link">
         
   
   
@@ -895,7 +895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backend/" class="md-nav__link">
+      <a href="../../../api/backend/" class="md-nav__link">
         
   
   
@@ -923,7 +923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/config/" class="md-nav__link">
+      <a href="../../../api/config/" class="md-nav__link">
         
   
   
@@ -951,7 +951,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/models/" class="md-nav__link">
+      <a href="../../../api/models/" class="md-nav__link">
         
   
   
@@ -979,7 +979,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/path/" class="md-nav__link">
+      <a href="../../../api/path/" class="md-nav__link">
         
   
   
@@ -1007,7 +1007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/capabilities/" class="md-nav__link">
+      <a href="../../../api/capabilities/" class="md-nav__link">
         
   
   
@@ -1035,7 +1035,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/errors/" class="md-nav__link">
+      <a href="../../../api/errors/" class="md-nav__link">
         
   
   
@@ -1089,7 +1089,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../backends/" class="md-nav__link ">
+            <a href="../../../backends/" class="md-nav__link ">
               
   
   
@@ -1131,7 +1131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/local/" class="md-nav__link">
+      <a href="../../../backends/local/" class="md-nav__link">
         
   
   
@@ -1159,7 +1159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/memory/" class="md-nav__link">
+      <a href="../../../backends/memory/" class="md-nav__link">
         
   
   
@@ -1187,7 +1187,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/s3/" class="md-nav__link">
+      <a href="../../../backends/s3/" class="md-nav__link">
         
   
   
@@ -1215,7 +1215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -1243,7 +1243,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/sftp/" class="md-nav__link">
+      <a href="../../../backends/sftp/" class="md-nav__link">
         
   
   
@@ -1271,7 +1271,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/azure/" class="md-nav__link">
+      <a href="../../../backends/azure/" class="md-nav__link">
         
   
   
@@ -1306,7 +1306,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../extensions/" class="md-nav__link">
+      <a href="../../../extensions/" class="md-nav__link">
         
   
   
@@ -1333,7 +1333,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../performance/" class="md-nav__link">
+      <a href="../../../performance/" class="md-nav__link">
         
   
   
@@ -1357,37 +1357,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Concurrency
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../concurrency/" class="md-nav__link">
         
   
   
@@ -1403,93 +1376,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overwritefalse-and-toctou" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        overwrite=False and TOCTOU
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="overwrite=False and TOCTOU">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#mitigations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mitigations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#non-atomic-move" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Non-atomic move()
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Non-atomic move()">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#mitigations_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mitigations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#summary-table" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Summary table
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1501,7 +1387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1528,7 +1414,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../batch-operations/" class="md-nav__link">
+      <a href="../../../batch-operations/" class="md-nav__link">
         
   
   
@@ -1555,7 +1441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1582,7 +1468,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../transfer-operations/" class="md-nav__link">
+      <a href="../../../transfer-operations/" class="md-nav__link">
         
   
   
@@ -1609,7 +1495,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observe/" class="md-nav__link">
+      <a href="../../../observe/" class="md-nav__link">
         
   
   
@@ -1633,8 +1519,10 @@
       
   
   
+    
   
   
+  
     
     
     
@@ -1645,17 +1533,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -1679,7 +1565,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_14">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1697,7 +1583,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/design-spec/" class="md-nav__link">
+      <a href="../../design-spec/" class="md-nav__link">
         
   
   
@@ -1725,7 +1611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/process/" class="md-nav__link">
+      <a href="../../process/" class="md-nav__link">
         
   
   
@@ -1750,6 +1636,8 @@
                 
   
   
+    
+  
   
   
     
@@ -1759,17 +1647,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_14_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14_3" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/specs/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -1793,7 +1679,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_14_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_14_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_14_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1811,7 +1697,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/001-store-api/" class="md-nav__link">
+      <a href="../001-store-api/" class="md-nav__link">
         
   
   
@@ -1839,7 +1725,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/002-registry-config/" class="md-nav__link">
+      <a href="../002-registry-config/" class="md-nav__link">
         
   
   
@@ -1867,7 +1753,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -1895,7 +1781,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/004-path-model/" class="md-nav__link">
+      <a href="../004-path-model/" class="md-nav__link">
         
   
   
@@ -1923,7 +1809,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/005-error-model/" class="md-nav__link">
+      <a href="../005-error-model/" class="md-nav__link">
         
   
   
@@ -1951,7 +1837,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/006-streaming-io/" class="md-nav__link">
+      <a href="../006-streaming-io/" class="md-nav__link">
         
   
   
@@ -1979,7 +1865,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/007-atomic-writes/" class="md-nav__link">
+      <a href="../007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -2007,7 +1893,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/008-s3-backend/" class="md-nav__link">
+      <a href="../008-s3-backend/" class="md-nav__link">
         
   
   
@@ -2035,7 +1921,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/009-sftp-backend/" class="md-nav__link">
+      <a href="../009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -2063,7 +1949,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/010-native-path-resolution/" class="md-nav__link">
+      <a href="../010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -2091,7 +1977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -2119,7 +2005,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/012-azure-backend/" class="md-nav__link">
+      <a href="../012-azure-backend/" class="md-nav__link">
         
   
   
@@ -2147,7 +2033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/013-memory-backend/" class="md-nav__link">
+      <a href="../013-memory-backend/" class="md-nav__link">
         
   
   
@@ -2175,7 +2061,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -2203,7 +2089,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/015-store-child/" class="md-nav__link">
+      <a href="../015-store-child/" class="md-nav__link">
         
   
   
@@ -2231,7 +2117,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/016-ext-batch/" class="md-nav__link">
+      <a href="../016-ext-batch/" class="md-nav__link">
         
   
   
@@ -2259,7 +2145,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/017-ext-transfer/" class="md-nav__link">
+      <a href="../017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -2287,7 +2173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/018-glob/" class="md-nav__link">
+      <a href="../018-glob/" class="md-nav__link">
         
   
   
@@ -2315,7 +2201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/019-ext-observe/" class="md-nav__link">
+      <a href="../019-ext-observe/" class="md-nav__link">
         
   
   
@@ -2340,10 +2226,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../design/specs/020-credential-hygiene/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: Credential Hygiene Specification
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2359,6 +2272,193 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secret-wrapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret Wrapper
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Secret Wrapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sec-001-secret-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-001: Secret Class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sec-002-secret-immutability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-002: Secret Immutability
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#config-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Config Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sec-003-from_dict-secret-wrapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-003: from_dict() Secret Wrapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sec-004-backend-secret-acceptance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-004: Backend Secret Acceptance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sec-005-sftp-host-key-policy-enum-coercion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-005: SFTP Host Key Policy Enum Coercion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sec-006-config-repr-safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-006: Config Repr Safety
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logging
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Logging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sec-007-secretredactionfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-007: SecretRedactionFilter
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#regression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regression
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Regression">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sec-008-no-leak-regression-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-008: No-Leak Regression Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2395,7 +2495,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/adrs/" class="md-nav__link ">
+            <a href="../../adrs/" class="md-nav__link ">
               
   
   
@@ -2437,7 +2537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -2465,7 +2565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -2493,7 +2593,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -2521,7 +2621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -2549,7 +2649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -2577,7 +2677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -2605,7 +2705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -2633,7 +2733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -2661,7 +2761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -2689,7 +2789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -2741,7 +2841,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/rfcs/" class="md-nav__link ">
+            <a href="../../rfcs/" class="md-nav__link ">
               
   
   
@@ -2783,7 +2883,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -2811,7 +2911,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -2839,7 +2939,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -2882,7 +2982,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/" class="md-nav__link">
+      <a href="../../../contributing/" class="md-nav__link">
         
   
   
@@ -2909,7 +3009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../changelog/" class="md-nav__link">
+      <a href="../../../changelog/" class="md-nav__link">
         
   
   
@@ -2936,7 +3036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../development-story/" class="md-nav__link">
+      <a href="../../../development-story/" class="md-nav__link">
         
   
   
@@ -2983,22 +3083,44 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overwritefalse-and-toctou" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        overwrite=False and TOCTOU
+        Overview
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="overwrite=False and TOCTOU">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secret-wrapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret Wrapper
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Secret Wrapper">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mitigations" class="md-nav__link">
+  <a href="#sec-001-secret-class" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mitigations
+        SEC-001: Secret Class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sec-002-secret-immutability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-002: Secret Immutability
       
     </span>
   </a>
@@ -3011,22 +3133,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#non-atomic-move" class="md-nav__link">
+  <a href="#config-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Non-atomic move()
+        Config Integration
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Non-atomic move()">
+    <nav class="md-nav" aria-label="Config Integration">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mitigations_1" class="md-nav__link">
+  <a href="#sec-003-from_dict-secret-wrapping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mitigations
+        SEC-003: from_dict() Secret Wrapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sec-004-backend-secret-acceptance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-004: Backend Secret Acceptance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sec-005-sftp-host-key-policy-enum-coercion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-005: SFTP Host Key Policy Enum Coercion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sec-006-config-repr-safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-006: Config Repr Safety
       
     </span>
   </a>
@@ -3039,13 +3194,58 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#summary-table" class="md-nav__link">
+  <a href="#logging" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Summary table
+        Logging
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Logging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sec-007-secretredactionfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-007: SecretRedactionFilter
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#regression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regression
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Regression">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sec-008-no-leak-regression-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEC-008: No-Leak Regression Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3065,137 +3265,92 @@
                   
 
 
-  
-  
 
-
-<h1 id="concurrency-and-atomicity-guarantees">Concurrency and Atomicity Guarantees<a class="headerlink" href="#concurrency-and-atomicity-guarantees" title="Permanent link">&para;</a></h1>
-<p>remote-store wraps multiple storage backends behind a single API, but each backend inherits the concurrency and atomicity characteristics of its underlying platform. This guide documents two inherent limitations that affect all (or most) backends, and suggests practical workarounds.</p>
-<h2 id="overwritefalse-and-toctou"><code>overwrite=False</code> and TOCTOU<a class="headerlink" href="#overwritefalse-and-toctou" title="Permanent link">&para;</a></h2>
-<p>When you call <code>store.write(path, data, overwrite=False)</code>, the backend checks whether the file exists and then writes it. These are two separate operations -- a classic <strong>Time-Of-Check-to-Time-Of-Use (TOCTOU)</strong> race window:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Thread A: exists(&quot;report.csv&quot;) -&gt; False
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Thread B: exists(&quot;report.csv&quot;) -&gt; False    # concurrent check
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Thread A: write(&quot;report.csv&quot;, data_a)      # succeeds
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Thread B: write(&quot;report.csv&quot;, data_b)      # also succeeds -- overwrites A&#39;s file
-</code></pre></div>
-<p>This affects <strong>all backends</strong>. The check-then-act pattern cannot be made race-free without an external coordination mechanism. <code>overwrite=False</code> is a convenience guard against accidental overwrites in single-writer scenarios -- it is <strong>not</strong> a mutual exclusion mechanism.</p>
-<h3 id="mitigations">Mitigations<a class="headerlink" href="#mitigations" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>External locking.</strong> Use a distributed lock (e.g., DynamoDB lock table for S3, blob lease for Azure, advisory locks for SFTP/local) to serialize writers.</li>
-<li><strong>Idempotent writes.</strong> Design file names to be unique (e.g., include UUIDs or content hashes) so concurrent writers never target the same path.</li>
-<li><strong>Backend-native conditional writes.</strong> Some platforms offer conditional put (e.g., S3 <code>If-None-Match</code>, Azure <code>If-None-Match</code> ETag conditions). These are not exposed through remote-store's API, but you can use <code>backend.unwrap()</code> to access the native client.</li>
-</ul>
-<h2 id="non-atomic-move">Non-atomic <code>move()</code><a class="headerlink" href="#non-atomic-move" title="Permanent link">&para;</a></h2>
-<p>Several backends implement <code>move(src, dst)</code> as a <strong>copy followed by a delete</strong>. If the process crashes between the two steps, both the source and destination will exist (data duplication, not data loss).</p>
+<h1 id="credential-hygiene-specification">Credential Hygiene Specification<a class="headerlink" href="#credential-hygiene-specification" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Adds a <code>Secret</code> wrapper type that makes credential leakage structurally
+impossible at the config layer, plus SFTP enum coercion and a logging
+redaction filter.</p>
+<p><strong>Module:</strong> <code>src/remote_store/_config.py</code>
+<strong>Dependencies:</strong> None (pure Python, always available)
+<strong>Related:</strong> <a href="../002-registry-config/">002-registry-config.md</a> (CFG sections),
+<a href="../009-sftp-backend/">009-sftp-backend.md</a> (SFTP-001), AF-008 (backend repr
+masking), ID-039.</p>
+<hr />
+<h2 id="secret-wrapper">Secret Wrapper<a class="headerlink" href="#secret-wrapper" title="Permanent link">&para;</a></h2>
+<h3 id="sec-001-secret-class">SEC-001: Secret Class<a class="headerlink" href="#sec-001-secret-class" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>Secret(value)</code> wraps a string credential. <code>__repr__</code> returns
+<code>"Secret('***')"</code>, <code>__str__</code> returns <code>"***"</code>, <code>.reveal()</code> returns the
+plain-text value. <code>__eq__</code> and <code>__hash__</code> compare/hash the underlying value.
+<code>__bool__</code> delegates to the underlying string. <code>Secret</code> does not implement
+<code>__iter__</code>, <code>__getitem__</code>, or <code>__len__</code> to prevent accidental unpacking.
+<strong>Raises:</strong> <code>TypeError</code> if <em>value</em> is not a <code>str</code>.</p>
+<h3 id="sec-002-secret-immutability">SEC-002: Secret Immutability<a class="headerlink" href="#sec-002-secret-immutability" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>Secret.__setattr__</code> and <code>__delattr__</code> raise <code>AttributeError</code>
+after construction. The class uses <code>__slots__ = ("_value",)</code> and bypasses the
+override in <code>__init__</code> via <code>object.__setattr__</code>. <code>__reduce__</code> is implemented
+so that <code>pickle</code> and <code>copy.deepcopy</code> reconstruct via the public constructor
+instead of hitting the <code>__setattr__</code> override.</p>
+<hr />
+<h2 id="config-integration">Config Integration<a class="headerlink" href="#config-integration" title="Permanent link">&para;</a></h2>
+<h3 id="sec-003-from_dict-secret-wrapping">SEC-003: from_dict() Secret Wrapping<a class="headerlink" href="#sec-003-from_dict-secret-wrapping" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>RegistryConfig.from_dict()</code> wraps string values for keys in
+<code>_SENSITIVE_KEYS</code> (<code>key</code>, <code>secret</code>, <code>password</code>, <code>account_key</code>, <code>sas_token</code>,
+<code>connection_string</code>) inside <code>Secret()</code>. Non-string values (e.g., <code>None</code>,
+credential objects) are left unchanged.</p>
+<h3 id="sec-004-backend-secret-acceptance">SEC-004: Backend Secret Acceptance<a class="headerlink" href="#sec-004-backend-secret-acceptance" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Backend <code>__init__</code> methods accept <code>str | Secret | None</code> for
+credential parameters and call <code>_reveal()</code> to unwrap them. Backends store
+revealed plain strings internally — they already have AF-008 <code>__repr__</code>
+masking, and SDK clients need plain strings.</p>
 <table>
 <thead>
 <tr>
 <th>Backend</th>
-<th><code>move()</code> implementation</th>
-<th>Atomic?</th>
+<th>Parameters</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Local</td>
-<td><code>shutil.move()</code> (<code>os.rename()</code> on same filesystem, copy+delete across)</td>
-<td>Yes*</td>
-</tr>
-<tr>
 <td>S3</td>
-<td>Copy object + delete object</td>
-<td>No</td>
+<td><code>key</code>, <code>secret</code></td>
 </tr>
 <tr>
 <td>S3-PyArrow</td>
-<td>Copy object + delete object</td>
-<td>No</td>
-</tr>
-<tr>
-<td>Azure (HNS)</td>
-<td><code>rename_file()</code></td>
-<td>Yes</td>
-</tr>
-<tr>
-<td>Azure (non-HNS)</td>
-<td>Copy blob + delete blob</td>
-<td>No</td>
-</tr>
-<tr>
-<td>SFTP (<code>posix_rename</code>)</td>
-<td><code>posix_rename</code></td>
-<td>Yes</td>
-</tr>
-<tr>
-<td>SFTP (<code>rename</code>)</td>
-<td><code>rename()</code></td>
-<td>Yes (but not guaranteed atomic on all servers)</td>
-</tr>
-<tr>
-<td>SFTP (final fallback)</td>
-<td>Read + write + delete</td>
-<td>No</td>
-</tr>
-</tbody>
-</table>
-<p>SFTP tries three strategies in order: <code>posix_rename</code> (atomic), standard <code>rename()</code>, and finally copy+delete. Most OpenSSH servers support <code>posix_rename</code>. Servers that lack it usually still support <code>rename()</code>, which is atomic on most POSIX filesystems.</p>
-<h3 id="mitigations_1">Mitigations<a class="headerlink" href="#mitigations_1" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Verify after move.</strong> After <code>move()</code>, check that the source no longer exists. If it does, delete it or alert.</li>
-<li><strong>Write + delete instead of move.</strong> If atomicity matters, write the data to the destination first, verify, then delete the source. This gives you explicit control over each step.</li>
-<li><strong>Use <code>write_atomic()</code> for the write step.</strong> <code>write_atomic()</code> uses temp-file-and-rename on backends that support it, ensuring the destination is written atomically even if <code>move()</code> is not.</li>
-</ul>
-<h2 id="summary-table">Summary table<a class="headerlink" href="#summary-table" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Backend</th>
-<th><code>move()</code> atomic?</th>
-<th><code>write_atomic()</code> truly atomic?</th>
-<th><code>overwrite=False</code> race-free?</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Local</td>
-<td>Yes*</td>
-<td>Yes (temp file + <code>os.replace()</code>)</td>
-<td>No (TOCTOU)</td>
-</tr>
-<tr>
-<td>S3</td>
-<td>No (copy + delete)</td>
-<td>Yes (PUT is inherently atomic)</td>
-<td>No (TOCTOU)</td>
-</tr>
-<tr>
-<td>S3-PyArrow</td>
-<td>No (copy + delete)</td>
-<td>Yes (PUT is inherently atomic)</td>
-<td>No (TOCTOU)</td>
-</tr>
-<tr>
-<td>Azure (HNS)</td>
-<td>Yes (<code>rename_file</code>)</td>
-<td>Yes (temp file + rename)</td>
-<td>No (TOCTOU)</td>
-</tr>
-<tr>
-<td>Azure (non-HNS)</td>
-<td>No (copy + delete)</td>
-<td>Yes (direct PUT is atomic)</td>
-<td>No (TOCTOU)</td>
+<td><code>key</code>, <code>secret</code></td>
 </tr>
 <tr>
 <td>SFTP</td>
-<td>Yes**</td>
-<td>Yes** (temp file + rename)</td>
-<td>No (TOCTOU)</td>
+<td><code>password</code></td>
+</tr>
+<tr>
+<td>Azure</td>
+<td><code>account_key</code>, <code>sas_token</code>, <code>connection_string</code></td>
 </tr>
 </tbody>
 </table>
-<p>* Local <code>move()</code> uses <code>shutil.move()</code>, which delegates to <code>os.rename()</code> on the same filesystem (atomic) but falls back to copy+delete across filesystems. Only <code>write_atomic()</code> uses <code>os.replace()</code>.</p>
-<p>** SFTP <code>move()</code> is atomic when <code>posix_rename</code> or <code>rename()</code> succeeds; falls back to copy+delete as a last resort. <code>write_atomic()</code> has an orphan-file risk if the connection drops between write and rename (see the <a href="../backends/sftp/">SFTP backend guide</a>).</p>
+<h3 id="sec-005-sftp-host-key-policy-enum-coercion">SEC-005: SFTP Host Key Policy Enum Coercion<a class="headerlink" href="#sec-005-sftp-host-key-policy-enum-coercion" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>SFTPBackend.__init__</code> accepts <code>host_key_policy</code> as either a
+<code>HostKeyPolicy</code> enum member or a string value (<code>"strict"</code>, <code>"tofu"</code>,
+<code>"auto"</code>). String values are coerced to the enum via <code>HostKeyPolicy(value)</code>.
+Invalid strings raise <code>ValueError</code>.</p>
+<h3 id="sec-006-config-repr-safety">SEC-006: Config Repr Safety<a class="headerlink" href="#sec-006-config-repr-safety" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>repr(BackendConfig)</code> never leaks secret values. This is
+structurally guaranteed by <code>Secret.__repr__</code> returning <code>"Secret('***')"</code> for
+any wrapped credential in the <code>options</code> dict.</p>
+<hr />
+<h2 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h2>
+<h3 id="sec-007-secretredactionfilter">SEC-007: SecretRedactionFilter<a class="headerlink" href="#sec-007-secretredactionfilter" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>SecretRedactionFilter</code> is a <code>logging.Filter</code> subclass that
+replaces <code>Secret</code> instances in <code>record.args</code> (tuple or dict) with <code>"***"</code>
+before the log message is formatted. Always returns <code>True</code> (does not suppress
+records).</p>
+<hr />
+<h2 id="regression">Regression<a class="headerlink" href="#regression" title="Permanent link">&para;</a></h2>
+<h3 id="sec-008-no-leak-regression-tests">SEC-008: No-Leak Regression Tests<a class="headerlink" href="#sec-008-no-leak-regression-tests" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Test suite includes assertions that known test secrets (e.g.,
+<code>"AKID_TEST"</code>, <code>"SK_TEST"</code>) never appear in the <code>repr()</code> of config objects
+constructed via <code>from_dict()</code>.</p>
 
 
 
@@ -3251,10 +3406,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.instant", "navigation.sections", "navigation.expand", "navigation.top", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.instant", "navigation.sections", "navigation.expand", "navigation.top", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

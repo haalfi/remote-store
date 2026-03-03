@@ -2479,6 +2479,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../020-credential-hygiene/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: Credential Hygiene Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3343,6 +3371,8 @@
 <strong>Raises:</strong> <code>ValueError</code> if any store references a non-existent backend.</p>
 <h3 id="cfg-005-from_dict">CFG-005: from_dict()<a class="headerlink" href="#cfg-005-from_dict" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>from_dict(data)</code> constructs a <code>RegistryConfig</code> from a dict.
+String values for sensitive keys are wrapped in <code>Secret()</code> — see
+<a href="../020-credential-hygiene/">020-credential-hygiene.md</a> SEC-003.
 <strong>Example:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="s2">&quot;backends&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;local&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="s2">&quot;/tmp&quot;</span><span class="p">}}},</span>
