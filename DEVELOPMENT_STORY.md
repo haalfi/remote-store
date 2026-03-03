@@ -7,8 +7,8 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Metric | Value |
 |--------|-------|
 | Source code | ~6,000 lines (6 backends) |
-| Tests | 1,239 tests, ~9,700 lines |
-| Specs & docs | 19 specs, 10 ADRs, 3 RFCs |
+| Tests | 1,297 tests, ~9,900 lines |
+| Specs & docs | 20 specs, 10 ADRs, 3 RFCs |
 | Examples | 14 core + 4 cloud + 4 notebooks |
 | Documentation site | MkDocs Material (versioned via mike) |
 | Coverage | 95% |
@@ -369,6 +369,16 @@ First, **research documents catch design-level bugs that code-level tools miss.*
 Second, **research quality improves dramatically under adversarial review.** The first draft was described as "an implementation plan wearing a research hat" -- it proposed solutions before demonstrating that alternatives were studied. Four rounds of review transformed it into a genuine landscape analysis with explicit decisions, documented trade-offs, and scoped-out concerns. Each round found issues the previous round missed because each reviewer brought a different framing: the first focused on external landscape completeness, the second on factual accuracy, the third on internal consistency, the fourth on edge cases and missing explicit decisions.
 
 The final document (1,250 lines) covers 8+ ecosystem tools, maps all 6 backends' config surfaces, provides implementation sketches, resolves ADR-0002 tension with Pydantic, and captures 9 open design questions with reasoned recommendations. All of this exists before a single line of implementation code is written -- and the implementation spec can now cite specific decisions with ecosystem evidence rather than asserting them without context.
+
+### BUG-001: When Your Value Object Has No Word for "Here" (post-v0.12.0)
+
+`RemotePath` -- the immutable path value object at the heart of every Store operation -- could represent any path *except* the root folder. Both `RemotePath("")` and `RemotePath(".")` raised `InvalidPath` by design (PATH-008). This was fine until `get_folder_info("")` needed to return metadata about the root folder itself. All six backends tried to construct `FolderInfo(path=RemotePath(""))` and crashed.
+
+The fix was a class-level sentinel: `RemotePath.ROOT`, created via `object.__new__` to bypass `__init__` validation, with an internal path of `"."`. The constructor still rejects `""` and `"."` -- `ROOT` is the only way to get a root-folder path, and it's a singleton.
+
+**The interesting part was the bug's discovery path.** It wasn't found by tests, type checking, or code review. It was found by an external code analysis tool scanning for edge cases in `RemotePath` construction across all backends. The four regression tests were written *before* the fix -- a pattern that made the fix trivially verifiable. Write the failing test first, then make it pass.
+
+The fix also surfaced two related consistency issues (now tracked as ID-040 and ID-041): `move(src, dst)` behaves inconsistently when `src == dst` across backends, and `Registry.get_store()` returns stores that can accidentally close a shared backend. Neither crashes today, but both are foot-guns waiting for the right trigger. **Edge-case audits don't just find the bug you're looking for -- they find the bugs next to it.**
 
 ## What Worked Well
 
