@@ -11,15 +11,15 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [~] **ID-005 — Built-in `from_toml()` config loader**
-  Spec complete (`sdd/specs/021-config-loaders.md`, CFG-008/CFG-009).
-  Implementation: `RegistryConfig.from_toml(path, *, table=())` classmethod
-  in `_config.py`. Zero-dep on 3.11+ (`tomllib`), optional `tomli` on 3.10.
+- [x] **ID-005 — Built-in `from_toml()` config loader** (v0.14.0)
+  `RegistryConfig.from_toml(path, *, table=())` classmethod in `_config.py`.
+  Zero-dep on 3.11+ (`tomllib`), optional `tomli` on 3.10. Includes
+  unknown-key warning (CFG-012). Spec: `sdd/specs/021-config-loaders.md`.
 
-- [~] **ID-002 — YAML config support: `from_yaml()`**
-  Spec complete (`sdd/specs/021-config-loaders.md`, CFG-010/CFG-011).
-  Implementation: `RegistryConfig.from_yaml(path)` classmethod in `_config.py`.
+- [x] **ID-002 — YAML config support: `from_yaml()`** (v0.14.0)
+  `RegistryConfig.from_yaml(path)` classmethod in `_config.py`.
   Accepts `pyyaml` (primary) or `ruamel.yaml` (fallback).
+  Spec: `sdd/specs/021-config-loaders.md`.
 
 - [x] **BK-005 — SFTP backend test coverage gaps**
   Coverage improved from 90% (44 uncovered) to 100% (0 uncovered) on `_sftp.py`.
@@ -56,24 +56,18 @@ Active work items, ordered by priority.
 
 Parking lot. Not evaluated, not committed to. Pick up when relevant.
 
-- [~] **ID-002 — YAML config support**
-  Allow `RegistryConfig.from_yaml()` alongside the existing `from_dict()`.
-  Optional dependency on `pyyaml` or `ruamel.yaml`.
-  Research complete. Spec: `sdd/specs/021-config-loaders.md` (CFG-010/CFG-011).
-  Promoted to Backlog (Prioritized).
+- [x] **ID-002 — YAML config support** (v0.14.0)
+  `RegistryConfig.from_yaml(path)` — optional `pyyaml` or `ruamel.yaml`.
+  Spec: `sdd/specs/021-config-loaders.md` (CFG-010/CFG-011).
 
 - [~] **ID-003 — Pydantic BaseSettings integration**
   Let users define backend config via Pydantic `BaseSettings` for env-var binding,
   `.env` file loading, and validation. Optional `pydantic` dependency.
   Research complete (`sdd/research/research-store-config.md`). Implementation pending.
 
-- [~] **ID-005 — Built-in `from_toml()` config loader**
-  Use `tomllib` (stdlib in 3.11+, `tomli` backport for 3.10) to add
-  `RegistryConfig.from_toml(path)` alongside the existing `from_dict()`.
-  Eliminates boilerplate for every user who keeps config in `pyproject.toml` or a
-  standalone `.toml` file.
-  Research complete. Spec: `sdd/specs/021-config-loaders.md` (CFG-008/CFG-009).
-  Promoted to Backlog (Prioritized).
+- [x] **ID-005 — Built-in `from_toml()` config loader** (v0.14.0)
+  `RegistryConfig.from_toml(path, table=())` — zero-dep on 3.11+, `tomli` on 3.10.
+  Spec: `sdd/specs/021-config-loaders.md` (CFG-008/CFG-009).
 
 - [ ] **ID-006 — Progress callbacks for large transfers**
   Add an optional `callback: Callable[[int], None]` parameter to `read()` and

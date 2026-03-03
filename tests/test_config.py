@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from remote_store._config import (
     BackendConfig,
@@ -476,6 +480,216 @@ class TestSecretRedactionFilter:
             exc_info=None,
         )
         assert filt.filter(record) is True
+
+
+# endregion
+
+
+# region: Config loaders (CFG-008 through CFG-014)
+
+
+class TestFromToml:
+    """CFG-008, CFG-009: from_toml() loads config from TOML files."""
+
+    @pytest.mark.spec("CFG-008")
+    def test_from_toml_standalone(self, tmp_path: Path) -> None:
+        toml_file = tmp_path / "config.toml"
+        toml_file.write_text(
+            '[backends.local]\ntype = "local"\n\n'
+            "[backends.local.options]\n"
+            'root = "/data"\n\n'
+            "[stores.main]\n"
+            'backend = "local"\n'
+            'root_path = "data"\n'
+        )
+        rc = RegistryConfig.from_toml(toml_file)
+        assert rc.backends["local"].type == "local"
+        assert rc.backends["local"].options["root"] == "/data"
+        assert rc.stores["main"].backend == "local"
+        assert rc.stores["main"].root_path == "data"
+
+    @pytest.mark.spec("CFG-008")
+    def test_from_toml_with_table(self, tmp_path: Path) -> None:
+        toml_file = tmp_path / "pyproject.toml"
+        toml_file.write_text(
+            "[tool.remote-store.backends.mem]\n"
+            'type = "memory"\n\n'
+            "[tool.remote-store.stores.scratch]\n"
+            'backend = "mem"\n'
+            'root_path = "tmp"\n'
+        )
+        rc = RegistryConfig.from_toml(toml_file, table=("tool", "remote-store"))
+        assert rc.backends["mem"].type == "memory"
+        assert rc.stores["scratch"].root_path == "tmp"
+
+    @pytest.mark.spec("CFG-008")
+    def test_from_toml_table_key_not_found(self, tmp_path: Path) -> None:
+        toml_file = tmp_path / "empty.toml"
+        toml_file.write_text("[other]\nfoo = 1\n")
+        with pytest.raises(KeyError, match="tool"):
+            RegistryConfig.from_toml(toml_file, table=("tool", "remote-store"))
+
+    @pytest.mark.spec("CFG-008")
+    def test_from_toml_file_not_found(self) -> None:
+        with pytest.raises(FileNotFoundError):
+            RegistryConfig.from_toml("/nonexistent/config.toml")
+
+    @pytest.mark.spec("CFG-008")
+    def test_from_toml_secret_wrapping(self, tmp_path: Path) -> None:
+        """Secrets in TOML are auto-wrapped via from_dict() delegation."""
+        toml_file = tmp_path / "creds.toml"
+        toml_file.write_text(
+            '[backends.s3]\ntype = "s3"\n\n'
+            "[backends.s3.options]\n"
+            'bucket = "b"\n'
+            'key = "AKID"\n'
+            'secret = "SK"\n'
+        )
+        rc = RegistryConfig.from_toml(toml_file)
+        opts = rc.backends["s3"].options
+        assert isinstance(opts["key"], Secret)
+        assert isinstance(opts["secret"], Secret)
+        assert not isinstance(opts["bucket"], Secret)
+
+    @pytest.mark.spec("CFG-013")
+    def test_from_toml_equivalence_with_from_dict(self, tmp_path: Path) -> None:
+        """from_toml() produces identical config to from_dict() for same data."""
+        toml_file = tmp_path / "eq.toml"
+        toml_file.write_text(
+            '[backends.local]\ntype = "local"\n\n'
+            "[backends.local.options]\n"
+            'root = "/tmp"\n\n'
+            "[stores.data]\n"
+            'backend = "local"\n'
+            'root_path = "d"\n'
+        )
+        from_toml = RegistryConfig.from_toml(toml_file)
+        from_dict = RegistryConfig.from_dict(
+            {
+                "backends": {"local": {"type": "local", "options": {"root": "/tmp"}}},
+                "stores": {"data": {"backend": "local", "root_path": "d"}},
+            }
+        )
+        assert from_toml.backends["local"].type == from_dict.backends["local"].type
+        assert from_toml.stores["data"].root_path == from_dict.stores["data"].root_path
+
+    @pytest.mark.spec("CFG-008")
+    def test_from_toml_accepts_path_object(self, tmp_path: Path) -> None:
+        toml_file = tmp_path / "p.toml"
+        toml_file.write_text('[backends.m]\ntype = "memory"\n\n[stores]\n')
+        rc = RegistryConfig.from_toml(toml_file)
+        assert rc.backends["m"].type == "memory"
+
+    @pytest.mark.spec("CFG-008")
+    def test_from_toml_accepts_str_path(self, tmp_path: Path) -> None:
+        toml_file = tmp_path / "s.toml"
+        toml_file.write_text('[backends.m]\ntype = "memory"\n\n[stores]\n')
+        rc = RegistryConfig.from_toml(str(toml_file))
+        assert rc.backends["m"].type == "memory"
+
+
+class TestFromYaml:
+    """CFG-010, CFG-011: from_yaml() loads config from YAML files."""
+
+    @pytest.mark.spec("CFG-010")
+    def test_from_yaml_basic(self, tmp_path: Path) -> None:
+        yaml_file = tmp_path / "config.yaml"
+        yaml_file.write_text(
+            "backends:\n"
+            "  local:\n"
+            '    type: "local"\n'
+            "    options:\n"
+            '      root: "/data"\n'
+            "stores:\n"
+            "  main:\n"
+            '    backend: "local"\n'
+            '    root_path: "data"\n'
+        )
+        rc = RegistryConfig.from_yaml(yaml_file)
+        assert rc.backends["local"].type == "local"
+        assert rc.backends["local"].options["root"] == "/data"
+        assert rc.stores["main"].backend == "local"
+
+    @pytest.mark.spec("CFG-010")
+    def test_from_yaml_file_not_found(self) -> None:
+        with pytest.raises(FileNotFoundError):
+            RegistryConfig.from_yaml("/nonexistent/config.yaml")
+
+    @pytest.mark.spec("CFG-010")
+    def test_from_yaml_not_a_mapping(self, tmp_path: Path) -> None:
+        yaml_file = tmp_path / "list.yaml"
+        yaml_file.write_text("- item1\n- item2\n")
+        with pytest.raises(TypeError, match="mapping"):
+            RegistryConfig.from_yaml(yaml_file)
+
+    @pytest.mark.spec("CFG-010")
+    def test_from_yaml_secret_wrapping(self, tmp_path: Path) -> None:
+        yaml_file = tmp_path / "creds.yaml"
+        yaml_file.write_text(
+            "backends:\n"
+            "  s3:\n"
+            "    type: s3\n"
+            "    options:\n"
+            "      bucket: b\n"
+            "      key: AKID\n"
+            "      secret: SK\n"
+            "stores: {}\n"
+        )
+        rc = RegistryConfig.from_yaml(yaml_file)
+        opts = rc.backends["s3"].options
+        assert isinstance(opts["key"], Secret)
+        assert isinstance(opts["secret"], Secret)
+
+    @pytest.mark.spec("CFG-013")
+    def test_from_yaml_equivalence_with_from_dict(self, tmp_path: Path) -> None:
+        yaml_file = tmp_path / "eq.yaml"
+        yaml_file.write_text(
+            "backends:\n"
+            "  local:\n"
+            "    type: local\n"
+            "    options:\n"
+            "      root: /tmp\n"
+            "stores:\n"
+            "  data:\n"
+            "    backend: local\n"
+            "    root_path: d\n"
+        )
+        from_yaml = RegistryConfig.from_yaml(yaml_file)
+        from_dict = RegistryConfig.from_dict(
+            {
+                "backends": {"local": {"type": "local", "options": {"root": "/tmp"}}},
+                "stores": {"data": {"backend": "local", "root_path": "d"}},
+            }
+        )
+        assert from_yaml.backends["local"].type == from_dict.backends["local"].type
+        assert from_yaml.stores["data"].root_path == from_dict.stores["data"].root_path
+
+
+class TestUnknownKeyWarning:
+    """CFG-012: from_dict() warns on unknown top-level keys."""
+
+    @pytest.mark.spec("CFG-012")
+    def test_unknown_key_warns(self) -> None:
+        with pytest.warns(UserWarning, match="Unknown top-level config keys"):
+            RegistryConfig.from_dict(
+                {"backends": {}, "stores": {}, "backend": {"typo": True}}
+            )
+
+    @pytest.mark.spec("CFG-012")
+    def test_known_keys_no_warning(self) -> None:
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            RegistryConfig.from_dict({"backends": {}, "stores": {}})
+
+    @pytest.mark.spec("CFG-012")
+    def test_empty_dict_no_warning(self) -> None:
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            RegistryConfig.from_dict({})
 
 
 # endregion

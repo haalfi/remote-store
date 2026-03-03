@@ -57,6 +57,8 @@ sftp = ["paramiko>=2.2", "tenacity>=4.0"]
 azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
 arrow = ["pyarrow>=12.0.0"]
 otel = ["opentelemetry-api>=1.28.0"]
+toml = ["tomli>=1.1.0; python_version < '3.11'"]
+yaml = ["pyyaml>=5.1"]
 
 bench = [
   "pytest-benchmark>=4.0",

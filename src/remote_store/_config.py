@@ -4,6 +4,12 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import warnings
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 # region: Secret wrapper
 
@@ -155,6 +161,16 @@ class RegistryConfig:
 
         :param data: Dict with ``backends`` and ``stores`` keys.
         """
+        _KNOWN_KEYS = {"backends", "stores"}
+        unknown = set(data.keys()) - _KNOWN_KEYS
+        if unknown:
+            warnings.warn(
+                f"Unknown top-level config keys ignored: {sorted(unknown)}. "
+                f"Expected keys: {sorted(_KNOWN_KEYS)}",
+                UserWarning,
+                stacklevel=2,
+            )
+
         raw_backends = data.get("backends", {})
         raw_stores = data.get("stores", {})
         if not isinstance(raw_backends, dict) or not isinstance(raw_stores, dict):
@@ -187,3 +203,86 @@ class RegistryConfig:
             )
 
         return cls(backends=backends, stores=stores)
+
+    @classmethod
+    def from_toml(
+        cls,
+        path: str | Path,
+        *,
+        table: tuple[str, ...] = (),
+    ) -> RegistryConfig:
+        """Load config from a TOML file.
+
+        :param path: Path to the TOML file.
+        :param table: Dotted table path to extract config from.
+            For ``pyproject.toml`` use ``table=("tool", "remote-store")``.
+        :raises ModuleNotFoundError: If ``tomllib`` is unavailable and
+            ``tomli`` is not installed.
+        :raises KeyError: If a *table* key is not found.
+        """
+        try:
+            import tomllib
+        except ModuleNotFoundError:
+            try:
+                import tomli as tomllib  # type: ignore[no-redef,import-not-found]
+            except ModuleNotFoundError:
+                raise ModuleNotFoundError(
+                    "TOML support requires tomli on Python < 3.11. "
+                    "Install it with: pip install 'remote-store[toml]'"
+                ) from None
+
+        with open(path, "rb") as f:
+            data: dict[str, object] = tomllib.load(f)
+
+        for key in table:
+            if not isinstance(data, dict) or key not in data:
+                raise KeyError(f"Table key {key!r} not found in {path}")
+            data = data[key]  # type: ignore[assignment]
+
+        if not isinstance(data, dict):
+            msg = f"Expected a TOML table, got {type(data).__name__}"
+            raise TypeError(msg)
+
+        return cls.from_dict(data)
+
+    @classmethod
+    def from_yaml(cls, path: str | Path) -> RegistryConfig:
+        """Load config from a YAML file.
+
+        Accepts either ``pyyaml`` or ``ruamel.yaml`` as the parser.
+
+        :param path: Path to the YAML file.
+        :raises ModuleNotFoundError: If neither ``pyyaml`` nor ``ruamel.yaml``
+            is installed.
+        """
+        safe_load = _get_yaml_loader()
+
+        with open(path) as f:
+            data = safe_load(f)
+
+        if not isinstance(data, dict):
+            msg = f"Expected YAML mapping at top level, got {type(data).__name__}"
+            raise TypeError(msg)
+
+        return cls.from_dict(data)
+
+
+def _get_yaml_loader() -> Callable[..., Any]:
+    """Return a safe YAML load function, preferring pyyaml over ruamel.yaml."""
+    try:
+        from yaml import safe_load  # type: ignore[import-untyped]
+
+        return safe_load  # type: ignore[no-any-return]
+    except ImportError:
+        pass
+    try:
+        from ruamel.yaml import YAML  # type: ignore[import-not-found]
+
+        _yaml = YAML(typ="safe")
+        return _yaml.load  # type: ignore[no-any-return]
+    except ImportError:
+        pass
+    raise ModuleNotFoundError(
+        "YAML support requires pyyaml or ruamel.yaml. "
+        "Install with: pip install 'remote-store[yaml]'"
+    )

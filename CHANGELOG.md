@@ -24,6 +24,19 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Added "Credential hygiene" section to README and updated `examples/configuration.py`
   with `Secret` wrapping, `from_dict()` auto-wrapping, and `.reveal()` usage.
 
+- **`RegistryConfig.from_toml()` — TOML config loader** (ID-005)
+  Load config from a standalone `.toml` file or from `pyproject.toml` via
+  `table=("tool", "remote-store")`. Zero dependencies on Python 3.11+;
+  optional `tomli` backport for 3.10. Spec: CFG-008, CFG-009.
+
+- **`RegistryConfig.from_yaml()` — YAML config loader** (ID-002)
+  Load config from a YAML file. Accepts `pyyaml` (primary) or `ruamel.yaml`
+  (fallback). Spec: CFG-010, CFG-011.
+
+- **Unknown top-level key warning in `from_dict()`** (CFG-012)
+  `from_dict()` now emits `UserWarning` for unrecognized keys like `"backend"`
+  (typo for `"backends"`), preventing silently empty configs.
+
 ## [0.13.0] - 2026-03-03
 
 ### Added

@@ -102,11 +102,21 @@ config = RegistryConfig(
 
 ## Configuration
 
-Configuration is declarative and immutable. Build it from Python objects or parse it from a dict (e.g. loaded from TOML/JSON):
+Configuration is declarative and immutable. Load from TOML, YAML, a dict, or build with Python objects:
 
 ```python
 from remote_store import RegistryConfig
 
+# From a TOML file (zero dependencies on Python 3.11+):
+config = RegistryConfig.from_toml("remote-store.toml")
+
+# From pyproject.toml:
+config = RegistryConfig.from_toml("pyproject.toml", table=("tool", "remote-store"))
+
+# From YAML (requires pyyaml or ruamel.yaml):
+config = RegistryConfig.from_yaml("remote-store.yaml")
+
+# From a dict (e.g. loaded from JSON):
 config = RegistryConfig.from_dict({
     "backends": {
         "local": {"type": "local", "options": {"root": "/data"}},
