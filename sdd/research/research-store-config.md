@@ -376,7 +376,10 @@ resolves credentials automatically via IAM roles, managed identity, or
 workload identity. This is the ideal state.
 
 remote-store already supports this: if `key`/`secret` are omitted from S3
-options, boto3 falls back to its credential chain. If `credential` is omitted
+options, the underlying credential chain resolves automatically (`S3Backend`
+uses `s3fs`, which uses `aiobotocore`, which delegates to `botocore`'s
+credential provider chain — not `boto3` directly, though the chain behavior
+is identical). If `credential` is omitted
 from Azure options, `DefaultAzureCredential()` is used. The config loaders
 should *not* attempt to replicate or interfere with these chains.
 
@@ -414,6 +417,23 @@ object) cannot be represented in any config file format. These always require
 code-level construction. This is acceptable — the `from_dict()` / `from_toml()`
 / `from_yaml()` path is for the common case; complex credentials use the
 Python-object constructor.
+
+Additionally, `host_key_policy` (`HostKeyPolicy` Enum with values `"strict"`,
+`"tofu"`, `"auto"`) is *string-representable* but requires coercion: TOML/YAML
+will produce a raw string like `"strict"`, but `SFTPBackend.__init__` expects
+a `HostKeyPolicy` instance. Without coercion, `factory(**cfg.options)` passes
+the raw string through, and comparisons in `_create_ssh_client()` silently fail
+(`"strict" != HostKeyPolicy.STRICT` — Python Enum equality is identity-based).
+The implementation should add string→Enum coercion in `SFTPBackend.__init__`:
+
+```python
+if isinstance(host_key_policy, str):
+    host_key_policy = HostKeyPolicy(host_key_policy)
+```
+
+This is a pre-existing gap in `SFTPBackend`, not specific to config loaders,
+but config loaders make it a practical problem. Tracked as part of ID-039
+(credential hygiene), item 4.
 
 Possible mitigations for file-based configs:
 
@@ -742,7 +762,8 @@ def from_yaml(cls, path: str | Path) -> RegistryConfig:
 
 | Pitfall | Impact on remote-store | Mitigation |
 |---------|----------------------|------------|
-| `yes`/`no`/`on`/`off` parsed as booleans (YAML 1.1) | Port numbers like `port: 22` are fine; but `host_key_policy: "STRICT"` needs quoting if a future option name collides | Document: always quote string values that could be ambiguous |
+| `yes`/`no`/`on`/`off` parsed as booleans (YAML 1.1) | Port numbers like `port: 22` are fine; string values that happen to match YAML boolean literals would be silently coerced | Document: always quote string values that could be ambiguous |
+| Enum values loaded as raw strings | `host_key_policy: "strict"` loads as a Python `str`, but `SFTPBackend` expects a `HostKeyPolicy` Enum. The `from_dict()` → `factory(**options)` pipeline passes strings through without coercion, causing silent failures (see §4.4). | Implement string→Enum coercion in `SFTPBackend.__init__` |
 | **The Norway problem** — bare `NO` is parsed as `false` in YAML 1.1 | Country codes, region names, or any short string matching YAML 1.1 boolean literals (`NO`, `YES`, `ON`, `OFF`) silently become booleans. This caused real bugs in npm package country-code lists and GitHub Actions workflows. | Always quote string values. This is a concrete argument for TOML's stricter typing — TOML has no implicit boolean coercion, making it the safer default for config files. |
 | Indentation errors silently change structure | Could produce malformed config | `from_dict()` validation catches invalid structures |
 | No native type distinction (everything is a string without explicit tags) | Numbers and booleans auto-convert, which is actually desirable for our schema | Non-issue |
@@ -849,6 +870,16 @@ class RemoteStoreSettings(BaseSettings):
     def to_registry_config(self) -> RegistryConfig:
         ...
 ```
+
+**SecretStr for credential awareness.** Documented Pydantic example models
+should use `pydantic.SecretStr` for sensitive fields (`key`, `secret`,
+`password`, `account_key`, `sas_token`, `connection_string`). `SecretStr`
+provides no real security boundary — the plain value is accessible via
+`.get_secret_value()` — but it prevents accidental exposure in logs, `repr()`,
+and serialization output. More importantly, it signals to users that these
+fields contain secrets and should be treated with care. The
+`to_registry_config()` method would call `.get_secret_value()` when building
+the options dict.
 
 #### Option B: Generic converter from any Pydantic model
 
@@ -1069,10 +1100,15 @@ storage_options = {
 remote-store's `BackendConfig.options` is already a dict of kwargs splatted
 into the backend constructor. For S3, the constructor accepts `key`, `secret`,
 `region_name`, `endpoint_url`, and `client_options` — which overlap
-significantly with fsspec's `storage_options` but are not identical (fsspec
-uses `client_kwargs`, remote-store uses `client_options`; fsspec uses
-`endpoint_url` inside `client_kwargs`, remote-store accepts it as a top-level
-option).
+significantly with fsspec's `storage_options` but the mapping is hierarchical,
+not a simple rename. `S3Backend`'s `client_options` is a pass-through dict for
+*all* `s3fs.S3FileSystem` kwargs, while fsspec's `client_kwargs` is a *nested
+key within* that dict. In `_s3.py`, `region_name` is placed into
+`opts.setdefault("client_kwargs", {})`, so
+`client_options={"client_kwargs": {"region_name": "us-east-1"}}` is valid.
+Similarly, fsspec puts `endpoint_url` inside `client_kwargs`, while
+remote-store accepts it as a top-level constructor option (which then gets
+placed into `client_kwargs` internally).
 
 **Recommendation:** Do not attempt to auto-translate `storage_options` dicts.
 Instead, document the mapping between fsspec's `storage_options` keys and
