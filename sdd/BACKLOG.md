@@ -54,6 +54,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   attempts, backoff, and jitter per-backend.
 
 - [ ] **ID-013 — Async Store / Backend API**
+  Research: `sdd/research/research-async-store-api.md` (design decisions pending).
   Async version of `Store` and `Backend` for use in async frameworks (FastAPI,
   aiohttp, etc.). Could be a parallel `AsyncStore` class or an async mode on
   the existing `Store`. Needs design decision on whether to wrap sync backends

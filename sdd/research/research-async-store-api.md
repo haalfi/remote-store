@@ -1,6 +1,7 @@
 # Research: Async Store / Backend API (ID-013)
 
 **Date:** 2026-03-03
+**Backlog items:** ID-013 (Async Store / Backend API)
 **Status:** Research complete — ready for design decisions
 
 ---
@@ -389,7 +390,7 @@ later if trio demand materializes (it hasn't for any comparable storage library)
 
 ---
 
-### 2.9 Summary Table
+### 2.12 Summary Table
 
 | Library | Pattern | Native Async? | Sync/Async Bridge | Runtime Dep Added |
 |---------|---------|---------------|-------------------|-------------------|
