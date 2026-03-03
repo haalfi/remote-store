@@ -53,8 +53,10 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Expose a `RetryPolicy` dataclass in `BackendConfig.options` so users can tune
   attempts, backoff, and jitter per-backend.
 
-- [ ] **ID-013 — Async Store / Backend API**
-  Research: `sdd/research/research-async-store-api.md` (design decisions pending).
+- [~] **ID-013 — Async Store / Backend API**
+  Research complete: `sdd/research/research-async-store-api.md`.
+  Remaining: ADR, spec, implementation (Phase 1: core async surface,
+  Phase 2: native async backends, Phase 3: async extensions).
   Async version of `Store` and `Backend` for use in async frameworks (FastAPI,
   aiohttp, etc.). Could be a parallel `AsyncStore` class or an async mode on
   the existing `Store`. Needs design decision on whether to wrap sync backends

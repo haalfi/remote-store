@@ -799,7 +799,7 @@ async def read(self, path: str) -> AsyncIterator[bytes]:
 
 | Extension | Async variant needed? | Approach |
 |-----------|-----------------------|----------|
-| `ext.batch` | Yes | `async_batch_delete()`, `async_batch_copy()`, `async_batch_exists()` — use `asyncio.TaskGroup` (3.11+) for structured concurrency with proper cancellation, or `anyio.create_task_group()` for Python <3.11. Avoid `asyncio.gather()` — if one task fails, the others keep running (no structured cancellation). |
+| `ext.batch` | Yes | `async_batch_delete()`, `async_batch_copy()`, `async_batch_exists()` — use `asyncio.TaskGroup` (3.11+) for structured concurrency with proper cancellation. Avoid `asyncio.gather()` — if one task fails, the others keep running (no structured cancellation). (Phase 3 decision: Python 3.10 lacks `asyncio.TaskGroup` — may require anyio or a Python >=3.11 floor bump for async batch ops. See §6 Q2.) |
 | `ext.transfer` | Yes | `async_upload()`, `async_download()`, `async_transfer()` |
 | `ext.observe` | Yes | `AsyncObservedStore(AsyncStore)` — same proxy pattern |
 | `ext.arrow` | No | PyArrow FileSystemHandler is inherently sync (C++ layer) |
@@ -871,9 +871,11 @@ async def main():
    maximizes convenience — users don't need to know about the adapter.
 
 2. **Should we use `anyio` or stick to `asyncio`?**
-   Recommendation: `asyncio` only for now. anyio adds a runtime dependency and
-   trio demand for storage libraries is near-zero. Can be added later without
-   breaking changes.
+   Recommendation: `asyncio` only for now. The rationale is simplicity (fewer
+   abstractions, easier debugging), not dependency cost — our primary async
+   audience (FastAPI, Starlette, httpx users) already has anyio installed
+   transitively (see §2.11). trio demand for storage libraries is near-zero.
+   Can be added later without breaking changes.
 
 3. **Should async backends live in the same module as sync backends?**
    Recommendation: Separate modules — `backends/_async_s3.py` alongside
