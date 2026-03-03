@@ -88,7 +88,7 @@ if __name__ == "__main__":
     s3_opts = config_with_secrets.backends["s3"].options
     assert repr(s3_opts["key"]) == "Secret('***')"
     assert repr(s3_opts["secret"]) == "Secret('***')"
-    print(f"\nAuto-wrapped credentials masked: key and secret → Secret('***')")
+    print("\nAuto-wrapped credentials masked: key and secret → Secret('***')")
     print(f"Bucket (not secret): {s3_opts['bucket']!r}")  # → 'my-bucket'
 
     # --- Backend configs for S3, S3-PyArrow, and SFTP ---
