@@ -120,8 +120,9 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `014-pyarrow-filesystem-adapter.md` Phase 2 sections.
 
 - [x] **ID-040 — `move(src, dst)` same-path consistency across backends** (v0.13.1)
-  Added `src == dst` short-circuit in `Store.move()` so all backends uniformly
-  treat same-path moves as no-ops. Removed redundant guard from MemoryBackend.
+  Added `src == dst` short-circuit in `Store.move()` with source-existence
+  check (`NotFound` for missing files). MemoryBackend retains its own guard
+  for defense in depth. Spec: STORE-008a.
 
 - [x] **ID-041 — `Registry.get_store()` backend ownership foot-gun** (v0.13.1)
   `get_store()` now sets `_owns_backend = False` on returned stores (same
