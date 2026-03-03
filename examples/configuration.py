@@ -63,8 +63,10 @@ if __name__ == "__main__":
     # Secret prevents accidental exposure in repr(), str(), and logs.
 
     manual_secret = Secret("my-secret-key")
-    print(f"\nSecret repr: {manual_secret!r}")  # → Secret('***')
-    print(f"Secret str:  {manual_secret}")  # → ***
+    # repr() and str() always mask the value — verify, don't print the object:
+    assert repr(manual_secret) == "Secret('***')"
+    assert str(manual_secret) == "***"
+    print("\nSecret masking: repr → Secret('***'), str → ***")
     print(f"Secret reveal: {manual_secret.reveal()}")  # → my-secret-key
 
     # from_dict() auto-wraps known sensitive keys (key, secret, password,
@@ -84,8 +86,9 @@ if __name__ == "__main__":
     }
     config_with_secrets = RegistryConfig.from_dict(raw_with_creds)
     s3_opts = config_with_secrets.backends["s3"].options
-    print(f"\nAuto-wrapped key:    {s3_opts['key']!r}")  # → Secret('***')
-    print(f"Auto-wrapped secret: {s3_opts['secret']!r}")  # → Secret('***')
+    assert repr(s3_opts["key"]) == "Secret('***')"
+    assert repr(s3_opts["secret"]) == "Secret('***')"
+    print(f"\nAuto-wrapped credentials masked: key and secret → Secret('***')")
     print(f"Bucket (not secret): {s3_opts['bucket']!r}")  # → 'my-bucket'
 
     # --- Backend configs for S3, S3-PyArrow, and SFTP ---
