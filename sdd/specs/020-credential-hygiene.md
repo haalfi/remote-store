@@ -27,9 +27,11 @@ plain-text value. `__eq__` and `__hash__` compare/hash the underlying value.
 
 ### SEC-002: Secret Immutability
 
-**Invariant:** `Secret.__setattr__` raises `AttributeError` after
-construction. The class uses `__slots__ = ("_value",)` and bypasses the
-override in `__init__` via `object.__setattr__`.
+**Invariant:** `Secret.__setattr__` and `__delattr__` raise `AttributeError`
+after construction. The class uses `__slots__ = ("_value",)` and bypasses the
+override in `__init__` via `object.__setattr__`. `__reduce__` is implemented
+so that `pickle` and `copy.deepcopy` reconstruct via the public constructor
+instead of hitting the `__setattr__` override.
 
 ---
 

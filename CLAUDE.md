@@ -68,3 +68,6 @@ It requires a `GITHUB_TOKEN` environment variable with PR read/write scope.
 - Any `gh` operation without the user explicitly requesting it
 
 For lookup tables, detailed procedures, and repo layout see `sdd/CLAUDE-REFERENCE.md`.
+
+## Miscellaneous
+Ignore AGENTS.md; this file defines Claude Code behavior for this repo.

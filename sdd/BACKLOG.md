@@ -113,12 +113,14 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   benchmark tiers with Docker backends to produce accurate baseline data.
   64KB write values for S3-PyArrow and Azure are also outlier-skewed.
 
-- [x] **ID-039 — Credential hygiene: `Secret` wrapper and central redaction** (unreleased)
+- [~] **ID-039 — Credential hygiene: `Secret` wrapper and central redaction** (unreleased)
   `Secret` type in `_config.py`: wraps sensitive strings, `__repr__`/`__str__`
   → `'***'`, `.reveal()` → actual value. `from_dict()` wraps `_SENSITIVE_KEYS`.
   Backends accept `str | Secret` via `_reveal()`. SFTP enum coercion for
   `host_key_policy`. `SecretRedactionFilter` logging filter. Regression tests.
-  Credential provider preference docs deferred to config loaders follow-up.
+  Remaining: README configuration section and `examples/configuration.py`
+  showing `Secret` usage (ripple: public API exports). Credential provider
+  preference docs deferred to config loaders follow-up.
   → Spec: `sdd/specs/020-credential-hygiene.md` (SEC-001 through SEC-008)
 
 ---

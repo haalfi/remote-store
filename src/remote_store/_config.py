@@ -60,6 +60,12 @@ class Secret:
     def __setattr__(self, name: str, value: object) -> None:
         raise AttributeError("Secret instances are immutable")
 
+    def __delattr__(self, name: str) -> None:
+        raise AttributeError("Secret instances are immutable")
+
+    def __reduce__(self) -> tuple[type[Secret], tuple[str]]:
+        return (Secret, (self._value,))  # type: ignore[attr-defined]
+
 
 def _reveal(value: str | Secret | None) -> str | None:
     """Unwrap a ``Secret`` to a plain string, passing through ``str`` and ``None``."""

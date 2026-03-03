@@ -194,6 +194,30 @@ class TestSecret:
         with pytest.raises(AttributeError):
             s.foo = "bar"  # type: ignore[attr-defined]
 
+    @pytest.mark.spec("SEC-002")
+    def test_immutability_delattr(self) -> None:
+        s = Secret("abc")
+        with pytest.raises(AttributeError):
+            del s._value  # type: ignore[misc]
+
+    @pytest.mark.spec("SEC-002")
+    def test_pickle_roundtrip(self) -> None:
+        import pickle
+
+        s = Secret("roundtrip")
+        restored = pickle.loads(pickle.dumps(s))
+        assert isinstance(restored, Secret)
+        assert restored.reveal() == "roundtrip"
+
+    @pytest.mark.spec("SEC-002")
+    def test_deepcopy(self) -> None:
+        import copy
+
+        s = Secret("deep")
+        cloned = copy.deepcopy(s)
+        assert isinstance(cloned, Secret)
+        assert cloned.reveal() == "deep"
+
     @pytest.mark.spec("SEC-001")
     def test_not_iterable(self) -> None:
         s = Secret("abc")
