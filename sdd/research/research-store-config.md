@@ -1107,8 +1107,8 @@ key within* that dict. In `_s3.py`, `region_name` is placed into
 `opts.setdefault("client_kwargs", {})`, so
 `client_options={"client_kwargs": {"region_name": "us-east-1"}}` is valid.
 Similarly, fsspec puts `endpoint_url` inside `client_kwargs`, while
-remote-store accepts it as a top-level constructor option (which then gets
-placed into `client_kwargs` internally).
+remote-store accepts it as a top-level constructor option (which is then
+passed as a top-level kwarg to `s3fs.S3FileSystem`).
 
 **Recommendation:** Do not attempt to auto-translate `storage_options` dicts.
 Instead, document the mapping between fsspec's `storage_options` keys and

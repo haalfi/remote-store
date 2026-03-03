@@ -19,19 +19,22 @@ Active work items, ordered by priority.
 
 Parking lot. Not evaluated, not committed to. Pick up when relevant.
 
-- [ ] **ID-002 — YAML config support**
+- [~] **ID-002 — YAML config support**
   Allow `RegistryConfig.from_yaml()` alongside the existing `from_dict()`.
   Optional dependency on `pyyaml` or `ruamel.yaml`.
+  Research complete (`sdd/research/research-store-config.md`). Implementation pending.
 
-- [ ] **ID-003 — Pydantic BaseSettings integration**
+- [~] **ID-003 — Pydantic BaseSettings integration**
   Let users define backend config via Pydantic `BaseSettings` for env-var binding,
   `.env` file loading, and validation. Optional `pydantic` dependency.
+  Research complete (`sdd/research/research-store-config.md`). Implementation pending.
 
-- [ ] **ID-005 — Built-in `from_toml()` config loader**
+- [~] **ID-005 — Built-in `from_toml()` config loader**
   Use `tomllib` (stdlib in 3.11+, `tomli` backport for 3.10) to add
   `RegistryConfig.from_toml(path)` alongside the existing `from_dict()`.
   Eliminates boilerplate for every user who keeps config in `pyproject.toml` or a
   standalone `.toml` file.
+  Research complete (`sdd/research/research-store-config.md`). Implementation pending.
 
 - [ ] **ID-006 — Progress callbacks for large transfers**
   Add an optional `callback: Callable[[int], None]` parameter to `read()` and
