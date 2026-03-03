@@ -106,7 +106,7 @@ class Store:
     def _require_file_path(self, path: str) -> str:
         """Resolve a path that must be non-empty (file-targeted operations)."""
         if not path or path == ".":
-            raise InvalidPath("Path must not be empty for file operations", path=path)
+            raise InvalidPath("Path must not be empty or root for file operations", path=path)
         return self._full_path(path)
 
     def _strip_root(self, backend_rel: str) -> str:
