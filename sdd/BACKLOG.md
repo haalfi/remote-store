@@ -119,10 +119,11 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   where GIL contention in `PythonFile` limits throughput. See spec
   `014-pyarrow-filesystem-adapter.md` Phase 2 sections.
 
-- [x] **ID-040 — `move(src, dst)` same-path consistency across backends** (v0.13.1)
-  Added `src == dst` short-circuit in `Store.move()` with source-existence
-  check (`NotFound` for missing files). MemoryBackend retains its own guard
-  for defense in depth. Spec: STORE-008a.
+- [x] **ID-040 — `move(src, dst)` and `copy(src, dst)` same-path consistency** (v0.13.1)
+  Added `src == dst` short-circuit in `Store.move()` and `Store.copy()` with
+  `is_file()` verification (`NotFound` for missing files or folders at source
+  path). MemoryBackend retains its own move guard for defense in depth.
+  Spec: STORE-008a.
 
 - [x] **ID-041 — `Registry.get_store()` backend ownership foot-gun** (v0.13.1)
   `get_store()` now sets `_owns_backend = False` on returned stores (same

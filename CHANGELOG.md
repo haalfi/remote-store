@@ -13,10 +13,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   a store's `close()` from shutting down the cached backend and breaking sibling
   stores. `Registry.close()` remains the lifecycle owner.
 
-- **`Store.move(src, dst)` short-circuits when `src == dst`** (ID-040)
-  Moving a file to itself is now a uniform no-op across all backends. Previously
-  only `MemoryBackend` had this guard; other backends performed a wasted
-  copy+delete round-trip (S3, Azure) or platform-dependent rename (Local, SFTP).
+- **`Store.move()` and `Store.copy()` short-circuit when `src == dst`** (ID-040)
+  Moving or copying a file to itself is now a uniform no-op across all backends.
+  Source existence is verified via `is_file()` (not `exists()`), so folders at
+  the source path correctly raise `NotFound`. Spec: STORE-008a.
 
 ### Added
 

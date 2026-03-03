@@ -40,9 +40,9 @@
 
 **Invariant:** Store exposes: `read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`, `to_key`, `unwrap`, `child`.
 
-### STORE-008a: Same-Path Move
+### STORE-008a: Same-Path Move and Copy
 
-**Invariant:** `move(src, dst)` where `src` and `dst` resolve to the same path is a no-op (the file is not modified, copied, or deleted). The source file must exist; otherwise `NotFound` is raised even for same-path calls.
+**Invariant:** `move(src, dst)` or `copy(src, dst)` where `src` and `dst` resolve to the same path is a no-op (the file is not modified, copied, or deleted). The source must be an existing file (verified via `is_file()`); otherwise `NotFound` is raised even for same-path calls.
 
 ### STORE-009: Resource Management
 
