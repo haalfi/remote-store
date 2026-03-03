@@ -106,7 +106,10 @@ code inside the greenlet, transparently converting blocking I/O to async.
 - Full ORM features available in async mode.
 
 **Weaknesses:**
-- greenlet is a C extension — adds a binary dependency.
+- greenlet is a C extension — adds a binary dependency. (As of
+  [2.1.0b1, Jan 2026](https://www.sqlalchemy.org/blog/2026/01/21/sqlalchemy-2.1.0b1-released/),
+  greenlet is no longer installed by default — users must
+  `pip install sqlalchemy[asyncio]`.)
 - Hard to understand/debug the greenlet switching semantics.
 - "Lazy loading" patterns require careful handling in async mode.
 - Not truly async for CPU-bound work in the ORM layer.
@@ -259,7 +262,8 @@ exactly this pattern — there's no native async alternative for `pathlib`.
 **How it works:**
 - All I/O is natively async — socket reads/writes use `asyncio` transport.
 - SFTP operations: `await sftp.open()`, `await sftp.listdir()`, etc.
-- Internal parallelization: SFTP reads/writes spawn 128 coroutines.
+- Internal parallelization: SFTP reads/writes allow up to 128 outstanding
+  request slots (`_MAX_SFTP_REQUESTS = 128`, default block size 32KB).
 
 **Performance vs paramiko:**
 - **Multi-host concurrency:** asyncssh is 15x+ faster than paramiko (async
@@ -301,8 +305,8 @@ mechanically transforms `async def` → `def`, `await expr()` → `expr()`,
 - Runs as a pre-commit hook — the `_sync/` directory is committed but
   never hand-edited.
 
-**Libraries using this:** httpcore (httpx's transport layer), urllib3,
-Elasticsearch Python client.
+**Libraries using this:** httpcore (httpx's transport layer), Elasticsearch
+Python client.
 
 **Strengths:**
 - True zero-duplication. Sync and async guaranteed in lockstep.
@@ -333,7 +337,7 @@ transports use the same logic — ours don't.
 
 libcloud's 2017 RFC proposed three approaches:
 1. **AsyncSession wrapper** — wrap sync driver in `async with AsyncSession(driver)`.
-2. **Async mixins** (favored) — `StorageAsyncDriver` with `_async`-suffixed methods.
+2. **Async mixins** — `StorageAsyncDriver` with `_async`-suffixed methods.
 3. **`async=True` flag** — constructor flag patches Connection with AsyncConnection.
 
 **Why it failed:** The deep call tree (methods like `list_nodes` make network
@@ -372,16 +376,26 @@ async file-like object.
 - Use `anyio.run(main, backend='asyncio')` or `anyio.run(main, backend='trio')`.
 - ~2µs dispatch overhead — negligible for I/O-bound work.
 
-**Who uses it:** Prefect, Starlette, httpx (optionally), encode/databases.
+**Who uses it:** Prefect, Starlette, httpx (hard dependency), encode/databases.
 
 **Relevance to us:** DESIGN.md says "No dependency on anyio / asyncio / trio."
-Using `anyio` would add a runtime dependency, which conflicts with the zero-dep
-core policy. However, we could use `anyio` as an **optional dependency** (like
-how we handle `pyarrow` or `opentelemetry-api`). Alternatively, we can target
-`asyncio` only (vastly dominant) and defer trio/anyio support.
+However, our primary audience (FastAPI, Starlette, httpx users) already has
+anyio installed transitively — the marginal dependency cost is zero:
+- FastAPI → Starlette → anyio (hard dep, >=3.6.2)
+- httpx → anyio (hard dep)
+- Prefect → anyio (hard dep)
+- Litestar → anyio (hard dep)
 
-**Recommendation:** Target `asyncio` only initially. anyio can be considered
-later if trio demand materializes (it hasn't for any comparable storage library).
+The real reason to target `asyncio` only in Phase 1 is simplicity: fewer
+abstractions, easier debugging, and Python 3.11+'s `asyncio.TaskGroup` covers
+the structured concurrency gap for batch operations. anyio becomes relevant
+in Phase 3 if we need to support trio or Python <3.11 with structured task
+groups.
+
+**Recommendation:** Target `asyncio` only initially. The rationale is simplicity
+(not dependency cost), since our async users already have anyio. anyio can be
+considered later if trio demand materializes or if we need structured concurrency
+on Python <3.11.
 
 **Sources:**
 - [anyio docs](https://anyio.readthedocs.io/en/stable/basics.html)
@@ -390,7 +404,77 @@ later if trio demand materializes (it hasn't for any comparable storage library)
 
 ---
 
-### 2.12 Summary Table
+### 2.12 redis-py — Merged async into main package
+
+**Pattern:** Sync `redis.Redis` and async `redis.asyncio.Redis` in the same
+package. Merged from the standalone `aioredis` project (v4.2+).
+
+**How it works:**
+- `redis.Redis` is sync (uses `socket`).
+- `redis.asyncio.Redis` is async (uses `asyncio` streams).
+- Both share connection pool infrastructure and the same command API surface.
+- Async cleanup uses `await client.aclose()` — the `aclose()` convention.
+
+**Relevance to us:** Validates the `.aio` / sub-namespace pattern for shipping
+sync and async in one package. The `aclose()` convention matches our proposed
+naming (§5.3). The merged-aioredis history shows that maintaining a standalone
+async wrapper eventually becomes untenable — better to ship both in one package.
+
+**Sources:**
+- [redis-py asyncio docs](https://redis.readthedocs.io/en/stable/examples/asyncio_examples.html)
+- [aioredis merger FAQ](https://redis.io/faq/doc/26366kjrif/what-is-the-difference-between-aioredis-v2-0-and-redis-py-asyncio)
+
+---
+
+### 2.13 Django — Incremental async migration (cautionary tale)
+
+**Pattern:** Multi-year incremental migration. Django 3.1: async views. Django
+4.1: async ORM queries. Django 5.2: async auth. Still ongoing.
+
+**How it works:**
+- Uses `asgiref`'s `sync_to_async` / `async_to_sync` bridges — essentially
+  our `SyncBackendAdapter` pattern.
+- Async views run in the ASGI event loop; sync ORM calls are bridged via
+  `sync_to_async(thread_sensitive=True)`.
+- Django maintainers acknowledged that making the ORM core fully async may
+  never be feasible — maintaining two parallel ORM cores is too costly.
+
+**Relevance to us:** Directly informs §7 risk assessment ("Doubling maintenance
+surface"). Django's experience shows the hybrid approach has real long-term
+costs, but also that the `sync_to_async` bridge is battle-tested and production-
+viable as a permanent solution for sync internals. Our flat Backend ABC is far
+simpler than Django's ORM, making the maintenance burden more manageable.
+
+**Sources:**
+- [Django async support](https://docs.djangoproject.com/en/6.0/topics/async/)
+- [Django async ORM discussion](https://www.loopwerk.io/articles/2025/async-django-why/)
+
+---
+
+### 2.14 Motor → PyMongo Async — Thread-pool wrapper deprecated in favor of native async
+
+**Pattern:** Motor wrapped PyMongo via thread pool — literally our
+`SyncBackendAdapter` pattern. Deprecated May 2025 in favor of PyMongo Async,
+which builds native asyncio directly into PyMongo.
+
+**How it works:**
+- Motor delegated every PyMongo call through `asyncio.to_thread()` (originally
+  `loop.run_in_executor()`).
+- PyMongo Async (PyMongo 4.x) ships native async support in the same package,
+  rendering Motor unnecessary.
+
+**Relevance to us:** Empirical evidence for our recommended Phase 1 → Phase 2
+trajectory. Motor proved that thread-pool wrapping works as a production bridge
+but has performance costs that eventually justify native async. Validates the
+phased approach: ship `SyncBackendAdapter` now, add native async backends later.
+
+**Sources:**
+- [Motor deprecation](https://www.mongodb.com/docs/languages/python/pymongo-driver/current/reference/migration/)
+- [Motor docs](https://motor.readthedocs.io/)
+
+---
+
+### 2.15 Summary Table
 
 | Library | Pattern | Native Async? | Sync/Async Bridge | Runtime Dep Added |
 |---------|---------|---------------|-------------------|-------------------|
@@ -401,6 +485,9 @@ later if trio demand materializes (it hasn't for any comparable storage library)
 | **aioboto3** | Wrapper around sync boto3 | Partial (transport only) | Monkey-patch + async CM | aiohttp |
 | **aiofiles** | Thread-pool wrapper | No (threads only) | `run_in_executor` | None |
 | **asyncssh** | Ground-up async SSH | Yes | None | None |
+| **redis-py** | Merged async into main package | Yes (asyncio streams) | None (separate impls) | None |
+| **Django** | Incremental async migration | Partial (views, ORM) | `asgiref` `sync_to_async` | asgiref |
+| **Motor → PyMongo** | Thread-pool wrapper → native | Motor: No; PyMongo Async: Yes | Motor: `to_thread`; PyMongo: native | None |
 | **anyio** | Backend-agnostic abstraction | Yes (asyncio/trio) | None | anyio |
 
 ---
@@ -712,7 +799,7 @@ async def read(self, path: str) -> AsyncIterator[bytes]:
 
 | Extension | Async variant needed? | Approach |
 |-----------|-----------------------|----------|
-| `ext.batch` | Yes | `async_batch_delete()`, `async_batch_copy()`, `async_batch_exists()` — can use `asyncio.gather()` for true parallelism |
+| `ext.batch` | Yes | `async_batch_delete()`, `async_batch_copy()`, `async_batch_exists()` — use `asyncio.TaskGroup` (3.11+) for structured concurrency with proper cancellation, or `anyio.create_task_group()` for Python <3.11. Avoid `asyncio.gather()` — if one task fails, the others keep running (no structured cancellation). |
 | `ext.transfer` | Yes | `async_upload()`, `async_download()`, `async_transfer()` |
 | `ext.observe` | Yes | `AsyncObservedStore(AsyncStore)` — same proxy pattern |
 | `ext.arrow` | No | PyArrow FileSystemHandler is inherently sync (C++ layer) |
