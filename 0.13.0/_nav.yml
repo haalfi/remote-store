@@ -1,0 +1,17 @@
+- Home: index.md
+- Getting Started: getting-started.md
+- Examples: examples/
+- API Reference: api/
+- Backends: backends/
+- Extensions: extensions.md
+- Performance: performance.md
+- Concurrency: concurrency.md
+- PyArrow Adapter: pyarrow-adapter.md
+- Batch Operations: batch-operations.md
+- Glob Pattern Matching: glob-pattern-matching.md
+- Transfer Operations: transfer-operations.md
+- Observability Hooks: observe.md
+- Design: design/
+- Contributing: contributing.md
+- Changelog: changelog.md
+- Development Story: development-story.md
