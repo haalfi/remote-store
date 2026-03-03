@@ -160,3 +160,83 @@ class TestRemotePathEqualityHashing:
     @pytest.mark.spec("PATH-013")
     def test_not_equal_to_string(self) -> None:
         assert RemotePath("a/b") != "a/b"
+
+
+class TestRemotePathRoot:
+    """PATH-015: RemotePath.ROOT — class-level sentinel for root folder."""
+
+    @pytest.mark.spec("PATH-015")
+    def test_str_is_dot(self) -> None:
+        assert str(RemotePath.ROOT) == "."
+
+    @pytest.mark.spec("PATH-015")
+    def test_repr(self) -> None:
+        assert repr(RemotePath.ROOT) == "RemotePath('.')"
+
+    @pytest.mark.spec("PATH-015")
+    def test_name_is_dot(self) -> None:
+        assert RemotePath.ROOT.name == "."
+
+    @pytest.mark.spec("PATH-015")
+    def test_parent_is_none(self) -> None:
+        assert RemotePath.ROOT.parent is None
+
+    @pytest.mark.spec("PATH-015")
+    def test_parts(self) -> None:
+        assert RemotePath.ROOT.parts == (".",)
+
+    @pytest.mark.spec("PATH-015")
+    def test_suffix_is_empty(self) -> None:
+        assert RemotePath.ROOT.suffix == ""
+
+    @pytest.mark.spec("PATH-015")
+    def test_join_produces_normal_path(self) -> None:
+        assert RemotePath("a") == RemotePath.ROOT / "a"
+
+    @pytest.mark.spec("PATH-015")
+    def test_join_nested(self) -> None:
+        assert RemotePath("a/b") == RemotePath.ROOT / "a/b"
+
+    @pytest.mark.spec("PATH-015")
+    def test_equality(self) -> None:
+        assert RemotePath.ROOT == RemotePath.ROOT
+
+    @pytest.mark.spec("PATH-015")
+    def test_hash(self) -> None:
+        assert hash(RemotePath.ROOT) == hash(RemotePath.ROOT)
+
+    @pytest.mark.spec("PATH-015")
+    def test_singleton_identity(self) -> None:
+        assert RemotePath.ROOT is RemotePath.ROOT
+
+    @pytest.mark.spec("PATH-015")
+    def test_immutable_setattr(self) -> None:
+        with pytest.raises(AttributeError, match="immutable"):
+            RemotePath.ROOT.x = 1  # type: ignore[attr-defined]
+
+    @pytest.mark.spec("PATH-015")
+    def test_immutable_delattr(self) -> None:
+        with pytest.raises(AttributeError, match="immutable"):
+            del RemotePath.ROOT._path  # type: ignore[misc]
+
+    @pytest.mark.spec("PATH-015")
+    def test_from_backend_path_empty(self) -> None:
+        """from_backend_path('') returns ROOT."""
+        assert RemotePath.from_backend_path("") is RemotePath.ROOT
+
+    @pytest.mark.spec("PATH-015")
+    def test_from_backend_path_nonempty(self) -> None:
+        """from_backend_path('a/b') returns RemotePath('a/b')."""
+        assert RemotePath.from_backend_path("a/b") == RemotePath("a/b")
+
+    @pytest.mark.spec("PATH-008")
+    def test_empty_string_still_rejected(self) -> None:
+        """PATH-008 must still reject empty string — ROOT is a separate sentinel."""
+        with pytest.raises(InvalidPath):
+            RemotePath("")
+
+    @pytest.mark.spec("PATH-008")
+    def test_dot_still_rejected(self) -> None:
+        """PATH-008 must still reject '.' via constructor."""
+        with pytest.raises(InvalidPath):
+            RemotePath(".")

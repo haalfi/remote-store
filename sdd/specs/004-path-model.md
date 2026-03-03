@@ -120,3 +120,31 @@ assert hash(RemotePath("a/b")) == hash(RemotePath("a//b"))
 assert RemotePath("file.tar.gz").suffix == ".gz"
 assert RemotePath("noext").suffix == ""
 ```
+
+## PATH-015: Root Sentinel
+
+**Invariant:** `RemotePath.ROOT` is a class-level singleton sentinel representing the root folder.
+It bypasses `__init__` validation (PATH-008 still rejects `RemotePath("")` and `RemotePath(".")`).
+
+**Properties:**
+- `str(ROOT)` returns `"."`.
+- `ROOT.name` returns `"."`.
+- `ROOT.parent` returns `None`.
+- `ROOT.parts` returns `(".",)`.
+- `ROOT.suffix` returns `""`.
+- `ROOT / "a"` produces `RemotePath("a")` (join strips the dot prefix).
+- `ROOT` is immutable: `__setattr__` and `__delattr__` raise `AttributeError`.
+- `ROOT` is a singleton: `RemotePath.ROOT is RemotePath.ROOT`.
+
+**Round-trip:** Store methods that accept a folder path (`get_folder_info`, `list_files`, etc.)
+accept `"."` as a root alias, so `str(folder_info.path)` can be fed back into Store methods.
+
+**Example:**
+```python
+fi = store.get_folder_info("")
+assert fi.path is RemotePath.ROOT
+assert str(fi.path) == "."
+# Round-trip: "." works as input
+fi2 = store.get_folder_info(str(fi.path))
+assert fi2.path is RemotePath.ROOT
+```

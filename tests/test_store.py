@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, CapabilityNotSupported, InvalidPath, NotFound
 from remote_store._models import FileInfo, FolderInfo
+from remote_store._path import RemotePath
 from remote_store._store import Store
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
@@ -231,6 +232,75 @@ class TestStoreRoundTrip:
         store.write("fold/a.txt", b"a")
         fi = store.get_folder_info("fold")
         assert str(fi.path) == "fold"
+
+
+class TestGetFolderInfoRoot:
+    """BUG-001: get_folder_info('') must work for root folder."""
+
+    def test_store_get_folder_info_empty_root(self) -> None:
+        """Store with root_path='' should return root FolderInfo."""
+        backend = MemoryBackend()
+        s = Store(backend=backend, root_path="")
+        s.write("a.txt", b"aaa")
+        fi = s.get_folder_info("")
+        assert isinstance(fi, FolderInfo)
+        assert fi.file_count == 1
+        assert fi.total_size == 3
+        assert str(fi.path) == "."
+        assert fi.path == RemotePath.ROOT
+        assert fi.path is RemotePath.ROOT
+
+    def test_store_get_folder_info_with_root(self, store: Store) -> None:
+        """Store with root_path='data' — get_folder_info('') returns root."""
+        store.write("r.txt", b"rr")
+        fi = store.get_folder_info("")
+        assert isinstance(fi, FolderInfo)
+        assert fi.file_count == 1
+        assert fi.total_size == 2
+        assert str(fi.path) == "."
+        assert fi.path == RemotePath.ROOT
+        assert fi.path is RemotePath.ROOT
+
+    def test_backend_get_folder_info_empty_string(self) -> None:
+        """Backend.get_folder_info('') should not raise InvalidPath."""
+        backend = MemoryBackend()
+        backend.write("x.txt", b"x")
+        fi = backend.get_folder_info("")
+        assert isinstance(fi, FolderInfo)
+        assert fi.file_count == 1
+        assert str(fi.path) == "."
+        assert fi.path is RemotePath.ROOT
+
+    def test_root_path_round_trip_get_folder_info(self, store: Store) -> None:
+        """str(get_folder_info('').path) round-trips as input to get_folder_info."""
+        store.write("rt.txt", b"abc")
+        fi = store.get_folder_info("")
+        key = str(fi.path)  # "."
+        fi2 = store.get_folder_info(key)
+        assert fi2.file_count == fi.file_count
+        assert fi2.path is RemotePath.ROOT
+
+    def test_root_path_round_trip_list_files(self, store: Store) -> None:
+        """str(get_folder_info('').path) round-trips as input to list_files."""
+        store.write("rt.txt", b"abc")
+        fi = store.get_folder_info("")
+        key = str(fi.path)  # "."
+        names = [str(f.path) for f in store.list_files(key)]
+        assert "rt.txt" in names
+
+    def test_local_backend_get_folder_info_empty_string(self, tmp_path: object) -> None:
+        """LocalBackend.get_folder_info('') should not raise InvalidPath."""
+        import pathlib
+
+        root = pathlib.Path(str(tmp_path))
+        (root / "f.txt").write_bytes(b"hello")
+        backend = LocalBackend(root=str(root))
+        fi = backend.get_folder_info("")
+        assert isinstance(fi, FolderInfo)
+        assert fi.file_count == 1
+        assert fi.total_size == 5
+        assert str(fi.path) == "."
+        assert fi.path is RemotePath.ROOT
 
 
 class TestStoreToKey:

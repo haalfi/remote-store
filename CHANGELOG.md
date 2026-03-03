@@ -41,6 +41,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   New optional extra: `pip install "remote-store[otel]"`.
   Spec: `sdd/specs/019-ext-observe.md` (OBS-011--OBS-014).
 
+### Fixed
+
+- **`get_folder_info("")` crashed with `InvalidPath` for root folders** (BUG-001)
+  Added `RemotePath.ROOT` class-level sentinel that bypasses `__init__` validation
+  (`str(ROOT) == "."`). Fixed all 6 backends and `_rebase_folder_info` to return
+  `RemotePath.ROOT` for root-level queries. Store methods now accept `"."` as a
+  root alias so that `str(folder_info.path)` round-trips correctly.
+  Spec: `sdd/specs/004-path-model.md` (PATH-015).
+
 ## [0.12.0] - 2026-03-01
 
 ### Added

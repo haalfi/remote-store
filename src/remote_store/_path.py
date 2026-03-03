@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Final
+from typing import ClassVar, Final
 
 from remote_store._errors import InvalidPath
 
@@ -16,6 +16,7 @@ class RemotePath:
 
     __slots__ = ("_path",)
     _path: Final[str]  # type: ignore[misc]
+    ROOT: ClassVar[RemotePath]
 
     def __init__(self, raw: str) -> None:
         normalized = self._normalize(raw)
@@ -94,3 +95,18 @@ class RemotePath:
 
     def __delattr__(self, name: str) -> None:
         raise AttributeError(f"RemotePath is immutable: cannot delete '{name}'")
+
+    @classmethod
+    def from_backend_path(cls, path: str) -> RemotePath:
+        """Create a RemotePath, using ROOT for empty paths.
+
+        Backends use this in ``get_folder_info`` to avoid duplicating
+        the ``RemotePath(path) if path else RemotePath.ROOT`` pattern.
+        """
+        return cls(path) if path else cls.ROOT
+
+
+# Class-level root sentinel (bypasses __init__ validation).
+_root = object.__new__(RemotePath)
+object.__setattr__(_root, "_path", ".")
+RemotePath.ROOT = _root

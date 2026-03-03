@@ -89,8 +89,12 @@ class Store:
         return child_store
 
     def _full_path(self, path: str) -> str:
-        """Resolve a path that may be empty (store root) or a relative subpath."""
-        if not path:
+        """Resolve a path that may be empty (store root) or a relative subpath.
+
+        Accepts ``""`` and ``"."`` as root aliases so that
+        ``str(RemotePath.ROOT)`` round-trips through Store methods.
+        """
+        if not path or path == ".":
             if self._root:
                 return self._root
             return ""
@@ -101,8 +105,8 @@ class Store:
 
     def _require_file_path(self, path: str) -> str:
         """Resolve a path that must be non-empty (file-targeted operations)."""
-        if not path:
-            raise InvalidPath("Path must not be empty for file operations", path=path)
+        if not path or path == ".":
+            raise InvalidPath("Path must not be empty or root for file operations", path=path)
         return self._full_path(path)
 
     def _strip_root(self, backend_rel: str) -> str:
@@ -135,7 +139,8 @@ class Store:
         rel = self._strip_root(str(info.path))
         if rel == str(info.path):
             return info
-        return dataclasses.replace(info, path=RemotePath(rel))
+        new_path = RemotePath.from_backend_path(rel)
+        return dataclasses.replace(info, path=new_path)
 
     def to_key(self, path: str) -> str:
         """Convert an absolute or backend-native path to a store-relative key.
@@ -255,7 +260,7 @@ class Store:
             recursive,
             extra={"op": "delete_folder", "path": path, "backend": _bk},
         )
-        if not path:
+        if not path or path == ".":
             raise InvalidPath("Cannot delete the store root", path=path)
         self._backend.capabilities.require(Capability.DELETE, backend=_bk)
         self._backend.delete_folder(self._full_path(path), recursive=recursive, missing_ok=missing_ok)

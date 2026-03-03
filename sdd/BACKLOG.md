@@ -15,6 +15,15 @@ Active work items, ordered by priority.
 
 ---
 
+## Known Bugs
+
+- [x] **BUG-001 — `get_folder_info("")` fails for empty-root stores**
+  Fixed via `RemotePath.ROOT` sentinel (bypasses `__init__` validation,
+  `str(ROOT) == "."`). All 6 backends + `_rebase_folder_info` updated.
+  19 new tests (15 ROOT unit tests + 4 regression tests now passing).
+
+---
+
 ## Ideas (Unprioritized)
 
 Parking lot. Not evaluated, not committed to. Pick up when relevant.
@@ -109,6 +118,22 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Python I/O for data-path operations. Critical for large Parquet workloads
   where GIL contention in `PythonFile` limits throughput. See spec
   `014-pyarrow-filesystem-adapter.md` Phase 2 sections.
+
+- [ ] **ID-040 — `move(src, dst)` same-path consistency across backends**
+  MemoryBackend short-circuits `move(x, x)` as a no-op (line 392). Other
+  backends have no equivalent guard: LocalBackend delegates to `shutil.move`
+  (OS-dependent), S3/S3-PyArrow/Azure do a wasted copy+delete round-trip,
+  SFTP does a rename-to-self (server-dependent). Nothing crashes, but behavior
+  is inconsistent. Fix: add a uniform `src == dst` short-circuit at the
+  `Backend` ABC level or in `Store.move()`.
+
+- [ ] **ID-041 — `Registry.get_store()` backend ownership foot-gun**
+  `Registry._get_backend()` caches and shares backend instances, but
+  `Store.__init__` defaults `_owns_backend = True`. This means any store
+  from `reg.get_store()` can `close()` the shared backend, breaking sibling
+  stores. Fix: `get_store()` should set `_owns_backend = False` on returned
+  stores (same pattern as `Store.child()`). `Registry.close()` remains the
+  lifecycle owner.
 
 - [ ] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix**
   Listing numbers in `benchmarks/results/comparative.md` pre-date the ID-032

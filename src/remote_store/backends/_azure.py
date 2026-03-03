@@ -604,7 +604,7 @@ class AzureBackend(Backend):
                 raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 
             return FolderInfo(
-                path=RemotePath(path),
+                path=RemotePath.from_backend_path(path),
                 file_count=file_count,
                 total_size=total_size,
                 modified_at=latest_modified,
