@@ -271,6 +271,23 @@ class TestGetFolderInfoRoot:
         assert str(fi.path) == "."
         assert fi.path is RemotePath.ROOT
 
+    def test_root_path_round_trip_get_folder_info(self, store: Store) -> None:
+        """str(get_folder_info('').path) round-trips as input to get_folder_info."""
+        store.write("rt.txt", b"abc")
+        fi = store.get_folder_info("")
+        key = str(fi.path)  # "."
+        fi2 = store.get_folder_info(key)
+        assert fi2.file_count == fi.file_count
+        assert fi2.path is RemotePath.ROOT
+
+    def test_root_path_round_trip_list_files(self, store: Store) -> None:
+        """str(get_folder_info('').path) round-trips as input to list_files."""
+        store.write("rt.txt", b"abc")
+        fi = store.get_folder_info("")
+        key = str(fi.path)  # "."
+        names = [str(f.path) for f in store.list_files(key)]
+        assert "rt.txt" in names
+
     def test_local_backend_get_folder_info_empty_string(self, tmp_path: object) -> None:
         """LocalBackend.get_folder_info('') should not raise InvalidPath."""
         import pathlib

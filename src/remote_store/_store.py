@@ -89,8 +89,12 @@ class Store:
         return child_store
 
     def _full_path(self, path: str) -> str:
-        """Resolve a path that may be empty (store root) or a relative subpath."""
-        if not path:
+        """Resolve a path that may be empty (store root) or a relative subpath.
+
+        Accepts ``""`` and ``"."`` as root aliases so that
+        ``str(RemotePath.ROOT)`` round-trips through Store methods.
+        """
+        if not path or path == ".":
             if self._root:
                 return self._root
             return ""
@@ -101,7 +105,7 @@ class Store:
 
     def _require_file_path(self, path: str) -> str:
         """Resolve a path that must be non-empty (file-targeted operations)."""
-        if not path:
+        if not path or path == ".":
             raise InvalidPath("Path must not be empty for file operations", path=path)
         return self._full_path(path)
 
