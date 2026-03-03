@@ -729,6 +729,15 @@ def from_yaml(
 Simpler than TOML — no `table` parameter needed because YAML files are
 typically standalone (no `pyproject.yaml` convention).
 
+**API asymmetry note:** This creates an asymmetry with `from_toml(table=...)`.
+YAML files are sometimes embedded in larger application config bundles (Ansible
+vars, Helm values, multi-concern app configs). A user with
+`remote_store:` nested under a parent key must pre-process:
+`yaml.safe_load(f)["remote_store"]` → `from_dict()`. This is an acceptable
+workaround and consistent with YAML ecosystem conventions (no standard
+shared-file format exists). If demand emerges, a `key` parameter can be added
+later without breaking changes.
+
 ### 6.5 Implementation sketch
 
 ```python
@@ -762,7 +771,7 @@ def from_yaml(cls, path: str | Path) -> RegistryConfig:
 
 | Pitfall | Impact on remote-store | Mitigation |
 |---------|----------------------|------------|
-| `yes`/`no`/`on`/`off` parsed as booleans (YAML 1.1) | Port numbers like `port: 22` are fine; string values that happen to match YAML boolean literals would be silently coerced | Document: always quote string values that could be ambiguous |
+| `yes`/`no`/`on`/`off` parsed as booleans (YAML 1.1) | Port numbers like `port: 22` are fine; string values that happen to match YAML boolean literals would be silently coerced. **Import precedence interaction:** since pyyaml (YAML 1.1) takes priority over ruamel.yaml (YAML 1.2) in our import chain (§6.2), a user who specifically installed ruamel.yaml expecting YAML 1.2 strictness (no implicit boolean coercion) will get pyyaml behavior silently if both are installed. The implementation spec should document this precedence prominently in the `from_yaml()` docstring and consider adding a `parser` parameter (e.g., `parser="ruamel"`) for users who need YAML 1.2 semantics. | Document: always quote string values that could be ambiguous. Document import precedence in `from_yaml()` docstring. |
 | Enum values loaded as raw strings | `host_key_policy: "strict"` loads as a Python `str`, but `SFTPBackend` expects a `HostKeyPolicy` Enum. The `from_dict()` → `factory(**options)` pipeline passes strings through without coercion, causing silent failures (see §4.4). | Implement string→Enum coercion in `SFTPBackend.__init__` |
 | **The Norway problem** — bare `NO` is parsed as `false` in YAML 1.1 | Country codes, region names, or any short string matching YAML 1.1 boolean literals (`NO`, `YES`, `ON`, `OFF`) silently become booleans. This caused real bugs in npm package country-code lists and GitHub Actions workflows. | Always quote string values. This is a concrete argument for TOML's stricter typing — TOML has no implicit boolean coercion, making it the safer default for config files. |
 | Indentation errors silently change structure | Could produce malformed config | `from_dict()` validation catches invalid structures |
@@ -893,6 +902,23 @@ def pydantic_to_registry_config(settings: BaseModel) -> RegistryConfig:
     return RegistryConfig.from_dict(settings.model_dump())
 ```
 
+**`SecretStr` interaction warning:** If the user's Pydantic model uses
+`SecretStr` for credential fields (as recommended in Option A above),
+`model_dump()` by default calls `.get_secret_value()` on all `SecretStr`
+fields, exposing secrets as plain strings in the intermediate dict. This
+negates `SecretStr`'s accidental-exposure protection. The implementation
+should either:
+- Use `model_dump(mode="python")` with a custom serializer that preserves
+  wrapping until `BackendConfig.options` is built, or
+- Document that the `SecretStr` → plain string conversion is intentional at
+  this boundary (secrets must be plain strings for backend constructors), or
+- Accept the trade-off: `SecretStr` protects against accidental `repr()`/log
+  exposure in user code, and the `to_registry_config()` call is an explicit
+  "I'm done configuring, build the registry" boundary where exposure is
+  expected.
+
+The third option is the pragmatic choice — document it explicitly.
+
 #### Recommendation: Option B with documented patterns
 
 Option A is opinionated and hard to maintain — it pre-defines env var prefixes
@@ -938,11 +964,15 @@ class RemoteStoreSettings(BaseSettings):
     stores: dict[str, StoreEntry] = {}
 
     def to_registry_config(self) -> RegistryConfig:
+        # SecretStr fields are intentionally exposed here — this is the
+        # config→registry boundary where plain strings are required.
         return RegistryConfig.from_dict(self.model_dump())
 ```
 
 Then env vars `RS_BACKENDS__S3_PROD__OPTIONS__BUCKET=prod-data` resolve
-correctly. This is *documented pattern*, not library code.
+correctly. This is *documented pattern*, not library code. See the
+`SecretStr` interaction warning in §7.3 Option B for details on why
+`model_dump()` exposure of secrets is acceptable at this boundary.
 
 ### 7.5 Pydantic's built-in file sources
 
@@ -1068,8 +1098,21 @@ credential object. Document both paths.
 All three loaders delegate to `from_dict()`, which validates structure. The
 Registry constructor calls `validate()`, which checks backend references.
 Backend construction catches `TypeError` from invalid options and re-raises
-with a clear message including the provided option keys. This validation chain
-is sufficient — no need to add format-specific validation.
+with a clear message including the provided option keys. No format-specific
+validation is needed — `from_dict()` handles structure.
+
+**Gap: unknown top-level keys are silently ignored.** `from_dict()` uses
+`data.get("backends", {})` and `data.get("stores", {})`, so a typo like
+`backend:` (singular) or `store:` produces an empty `RegistryConfig` with no
+error or warning. This is acceptable for programmatic use but becomes a real
+usability problem when loading from config files — a user's carefully written
+TOML/YAML silently produces nothing.
+
+**Implementation spec must address this:** either `warnings.warn()` for
+unrecognized top-level keys, or a strict mode that raises `ValueError`. The
+implementation spec should include a test case for this scenario. Suggested
+approach: warn by default, with a `strict=True` parameter on `from_dict()`
+(or on `from_toml()` / `from_yaml()`) that raises instead.
 
 ### 8.4 Where to put the code
 
@@ -1106,9 +1149,12 @@ not a simple rename. `S3Backend`'s `client_options` is a pass-through dict for
 key within* that dict. In `_s3.py`, `region_name` is placed into
 `opts.setdefault("client_kwargs", {})`, so
 `client_options={"client_kwargs": {"region_name": "us-east-1"}}` is valid.
-Similarly, fsspec puts `endpoint_url` inside `client_kwargs`, while
-remote-store accepts it as a top-level constructor option (which is then
-passed as a top-level kwarg to `s3fs.S3FileSystem`).
+For `endpoint_url`, `s3fs` accepts it as both a top-level kwarg **and**
+inside `client_kwargs`, with the top-level form being the documented preferred
+approach. remote-store accepts it as a top-level constructor option (which is
+then passed as a top-level kwarg to `s3fs.S3FileSystem`). The divergence
+between fsspec and remote-store is therefore smaller than it might appear —
+both prefer `endpoint_url` at the top level.
 
 **Recommendation:** Do not attempt to auto-translate `storage_options` dicts.
 Instead, document the mapping between fsspec's `storage_options` keys and
@@ -1176,8 +1222,10 @@ the same config model and validation chain. Suggested invariants:
 | Q3 | Should the Pydantic adapter live in `ext/pydantic.py` or `_pydantic.py`? | `ext/` / top-level private | **`ext/pydantic.py`** — follows extension architecture (ADR-0008). |
 | Q4 | Should the Pydantic adapter provide pre-built `S3Options` etc., or just a generic converter? | Pre-built models / Generic converter + docs | **Generic converter + documented patterns.** Pre-built models are opinionated and maintenance-heavy. |
 | Q5 | Should `from_toml()` accept `str`, `Path`, or both? | `str` only / `Path` only / Both | **Both** (`str | Path`) — consistent with Python stdlib conventions. |
-| Q6 | Should `from_yaml()` accept a `key` parameter (like `table` for TOML)? | Yes / No | **No** — YAML has no equivalent of `pyproject.toml` shared-file convention. If needed later, add it then. |
+| Q6 | Should `from_yaml()` accept a `key` parameter (like `table` for TOML)? | Yes / No | **No** — YAML has no equivalent of `pyproject.toml` shared-file convention. Creates an API asymmetry with `from_toml(table=...)`, but the asymmetry reflects a real ecosystem difference. Users with nested YAML can use `yaml.safe_load(f)["remote_store"]` → `from_dict()`. A `key` parameter can be added later without breaking changes if demand emerges. |
 | Q7 | Should we add `from_json()` while we're at it? | Yes / No | **No** — JSON has no comments, is less readable, and `from_dict(json.load(f))` is a one-liner. Not worth a dedicated method. |
+| Q8 | Should there be automatic config file discovery (e.g., `RegistryConfig.from_default()` searching `~/.config/remote-store/`, `pyproject.toml`, etc.)? | Yes / No | **No** — ADR-0002's explicit-config philosophy means the user provides the path. Auto-discovery adds implicit behavior, magic path conventions, and platform-specific logic (XDG vs. AppDirs vs. Windows `%APPDATA%`). Other tools that do discovery (ruff, pytest) are CLI tools where implicit config lookup is expected; remote-store is a library where explicit is better. Users who want discovery can implement it in their application layer. |
+| Q9 | Should the config schema include a `version` key for future migration? | Yes (reserve `version` key) / No | **No** — premature. The schema maps directly to `from_dict()` which maps directly to constructor kwargs. Schema evolution would likely be additive (new keys) rather than breaking (renamed keys), so a version field adds complexity without clear benefit today. If a breaking change is ever needed, a `v2` key or a separate `from_dict_v2()` method is simpler than a version-based migration system. Acknowledge this decision in the implementation spec so it's revisited if the schema grows. |
 
 ---
 
