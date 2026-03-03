@@ -3105,6 +3105,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-20-research-before-implementation-post-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 20: Research Before Implementation (post-v0.12.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3630,6 +3641,17 @@
     <span class="md-ellipsis">
       
         Phase 19: Cloud Glob and Conda (v0.12.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-20-research-before-implementation-post-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 20: Research Before Implementation (post-v0.12.0)
       
     </span>
   </a>
@@ -4244,6 +4266,40 @@
 <p>The glob story completed. v0.11.0 shipped with native glob only for LocalBackend; now S3, S3-PyArrow, and Azure all override <code>Backend.glob()</code> with prefix-optimized listing and client-side regex filtering (GLOB-018/019/020). Shared helpers were extracted to an internal <code>_glob.py</code> module to avoid duplicating prefix extraction and regex compilation across backends. All four file-capable backends now declare <code>Capability.GLOB</code>.</p>
 <p>On the infrastructure side, a conda-forge recipe was added (<code>packaging/conda-forge/recipe.yaml</code>, v1 CEP-13 format) with CI validation via <code>rattler-build --render-only</code>. The release checklist gained conda-specific steps: version bump in Phase 2, version match check in Phase 3, and sha256 update in Phase 5. Benchmark fixtures were fixed to invalidate fsspec listing caches (ID-032), and the 1000-file listing test was moved from quick to standard tier (ID-033).</p>
 <p>This release also demonstrated iterative self-review: the <code>/review-pr</code> skill (added in PR #76) was used to review its own PR and subsequent conda PRs, catching real consistency gaps each time -- including a non-existent GitHub Action, a premature version bump, and a missing staging step in the release checklist.</p>
+<h3 id="phase-20-research-before-implementation-post-v0120">Phase 20: Research Before Implementation (post-v0.12.0)<a class="headerlink" href="#phase-20-research-before-implementation-post-v0120" title="Permanent link">&para;</a></h3>
+<p>Three backlog items (ID-002 YAML config, ID-003 Pydantic adapter, ID-005 TOML config) had been sitting in the Ideas tier for months. Rather than jumping to implementation, the approach was to write a research document first: <code>sdd/research/research-store-config.md</code>. The document mapped the design space -- config formats, library choices, API surface, ecosystem compatibility -- before committing to any implementation decisions.</p>
+<p><strong>The research went through four review rounds, and each round found real problems:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Round</th>
+<th>Approach</th>
+<th>Findings</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Substantive review (fresh session)</td>
+<td>10 gaps: no fsspec analysis, no credential chain patterns, no Airflow/Hydra/dynaconf evaluation, secrets management hand-waved</td>
+</tr>
+<tr>
+<td>2-3</td>
+<td>Inline review comments</td>
+<td>Factual errors: <code>boto3</code> attribution wrong (S3Backend uses <code>s3fs</code> -&gt; <code>aiobotocore</code> -&gt; <code>botocore</code>), <code>endpoint_url</code> placement incorrect, <code>HostKeyPolicy</code> Enum case wrong</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Challenge review (adversarial session)</td>
+<td>7 gaps: <code>from_dict()</code> silently ignores unknown keys, YAML import precedence undermines YAML 1.2 intent, <code>SecretStr</code> + <code>model_dump()</code> negates secret protection, config discovery and schema versioning unaddressed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The most valuable discovery was a real pre-existing bug.</strong> The research process -- not a test, not a linter, not a code review -- found that <code>SFTPBackend.__init__</code> stores <code>host_key_policy</code> as a raw string without Enum coercion. When config loaders pass <code>"strict"</code> (a string from TOML/YAML), the Enum comparisons in <code>_create_ssh_client()</code> silently fail because <code>"strict" != HostKeyPolicy.STRICT</code> in Python. The result: host key verification silently degrades to the least secure mode. This bug existed since v0.2.0 and was invisible to every test, type checker, and code review because no test exercised the string-to-Enum path -- they all used the Enum directly.</p>
+<p><strong>The lesson has two parts:</strong></p>
+<p>First, <strong>research documents catch design-level bugs that code-level tools miss.</strong> The Enum coercion bug was invisible to mypy (both types are valid kwargs), invisible to tests (tests use Enum values, not strings), and invisible to code review (the constructor looks correct in isolation). Only by thinking through "what happens when a TOML parser sends a string here?" did the failure path become apparent. Thinking through integration scenarios on paper is cheaper than debugging them in production.</p>
+<p>Second, <strong>research quality improves dramatically under adversarial review.</strong> The first draft was described as "an implementation plan wearing a research hat" -- it proposed solutions before demonstrating that alternatives were studied. Four rounds of review transformed it into a genuine landscape analysis with explicit decisions, documented trade-offs, and scoped-out concerns. Each round found issues the previous round missed because each reviewer brought a different framing: the first focused on external landscape completeness, the second on factual accuracy, the third on internal consistency, the fourth on edge cases and missing explicit decisions.</p>
+<p>The final document (1,250 lines) covers 8+ ecosystem tools, maps all 6 backends' config surfaces, provides implementation sketches, resolves ADR-0002 tension with Pydantic, and captures 9 open design questions with reasoned recommendations. All of this exists before a single line of implementation code is written -- and the implementation spec can now cite specific decisions with ecosystem evidence rather than asserting them without context.</p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
@@ -4363,6 +4419,9 @@ prioritization scheme each session.</p>
 </li>
 <li>
 <p><strong>Run adversarial audits after major releases.</strong> PR reviews catch local issues; adversarial audits catch systemic ones. Cross-backend semantic inconsistencies, capability declarations with no implementation, and docs-to-code drift are invisible at the PR level because each PR is internally consistent. Asking a fresh session to "prove this package wrong" with parallel specialized agents (security, tests, design, CI) surfaces the cross-cutting concerns that no single review would find. The cost is one session; the yield is a prioritized list of real problems ranked by severity.</p>
+</li>
+<li>
+<p><strong>Write research documents before implementation specs, and review them like code.</strong> When a feature touches multiple design dimensions (formats, libraries, ecosystem compatibility, security), a research document that maps the full design space before committing to any solution prevents expensive mid-implementation pivots. But the document itself must be reviewed rigorously -- the first draft tends to be "an implementation plan wearing a research hat," proposing solutions before proving alternatives were studied. Multiple review rounds from fresh sessions, each with a different angle (landscape completeness, factual accuracy, internal consistency, adversarial challenge), transform shallow research into genuine analysis. The investment is front-loaded but pays compound interest: every downstream artifact -- spec, implementation, docs, tests -- can cite explicit decisions with ecosystem evidence instead of asserting them without context. Research also catches design-level bugs that no amount of code review, testing, or type-checking will find, because those tools operate on code that exists, not on integration scenarios that haven't been built yet.</p>
 </li>
 </ol>
 <h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>
