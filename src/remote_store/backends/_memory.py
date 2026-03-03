@@ -389,10 +389,6 @@ class MemoryBackend(Backend):
         if not dst_segments:
             raise InvalidPath("Destination path must not be empty", path=dst, backend="memory")
 
-        # Short-circuit: moving a file to itself is a no-op
-        if src_segments == dst_segments:
-            return
-
         with self._lock:
             # Find source
             src_parent = self._traverse(src_segments[:-1])

@@ -1,6 +1,7 @@
-"""Configuration — config-as-code, from_dict(), multiple stores, and backend configs.
+"""Configuration — config-as-code, from_dict(), Secret wrapping, and backend configs.
 
 Demonstrates different ways to create and use RegistryConfig, including
+credential hygiene with Secret, from_dict() auto-wrapping, and
 configuration for S3, S3-PyArrow, SFTP, and Azure backends.
 """
 
@@ -8,7 +9,7 @@ from __future__ import annotations
 
 import tempfile
 
-from remote_store import BackendConfig, Registry, RegistryConfig, StoreProfile
+from remote_store import BackendConfig, Registry, RegistryConfig, Secret, StoreProfile
 
 if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as tmp:
@@ -57,6 +58,35 @@ if __name__ == "__main__":
 
             print(f"\nfrom_dict() data: {data.read_bytes('input.csv').decode().strip()}")
             print(f"from_dict() logs: {logs.read_bytes('app.log').decode().strip()}")
+
+    # --- Credential hygiene: Secret wrapping ---
+    # Secret prevents accidental exposure in repr(), str(), and logs.
+
+    manual_secret = Secret("my-secret-key")
+    print(f"\nSecret repr: {manual_secret!r}")  # → Secret('***')
+    print(f"Secret str:  {manual_secret}")  # → ***
+    print(f"Secret reveal: {manual_secret.reveal()}")  # → my-secret-key
+
+    # from_dict() auto-wraps known sensitive keys (key, secret, password,
+    # account_key, sas_token, connection_string):
+    raw_with_creds = {
+        "backends": {
+            "s3": {
+                "type": "s3",
+                "options": {
+                    "bucket": "my-bucket",
+                    "key": "AKIAIOSFODNN7EXAMPLE",
+                    "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                },
+            },
+        },
+        "stores": {"data": {"backend": "s3", "root_path": "data"}},
+    }
+    config_with_secrets = RegistryConfig.from_dict(raw_with_creds)
+    s3_opts = config_with_secrets.backends["s3"].options
+    print(f"\nAuto-wrapped key:    {s3_opts['key']!r}")  # → Secret('***')
+    print(f"Auto-wrapped secret: {s3_opts['secret']!r}")  # → Secret('***')
+    print(f"Bucket (not secret): {s3_opts['bucket']!r}")  # → 'my-bucket'
 
     # --- Backend configs for S3, S3-PyArrow, and SFTP ---
     # These are config-only examples. They show the structure but don't

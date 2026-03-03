@@ -119,21 +119,13 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   where GIL contention in `PythonFile` limits throughput. See spec
   `014-pyarrow-filesystem-adapter.md` Phase 2 sections.
 
-- [ ] **ID-040 — `move(src, dst)` same-path consistency across backends**
-  MemoryBackend short-circuits `move(x, x)` as a no-op (line 392). Other
-  backends have no equivalent guard: LocalBackend delegates to `shutil.move`
-  (OS-dependent), S3/S3-PyArrow/Azure do a wasted copy+delete round-trip,
-  SFTP does a rename-to-self (server-dependent). Nothing crashes, but behavior
-  is inconsistent. Fix: add a uniform `src == dst` short-circuit at the
-  `Backend` ABC level or in `Store.move()`.
+- [x] **ID-040 — `move(src, dst)` same-path consistency across backends** (v0.13.1)
+  Added `src == dst` short-circuit in `Store.move()` so all backends uniformly
+  treat same-path moves as no-ops. Removed redundant guard from MemoryBackend.
 
-- [ ] **ID-041 — `Registry.get_store()` backend ownership foot-gun**
-  `Registry._get_backend()` caches and shares backend instances, but
-  `Store.__init__` defaults `_owns_backend = True`. This means any store
-  from `reg.get_store()` can `close()` the shared backend, breaking sibling
-  stores. Fix: `get_store()` should set `_owns_backend = False` on returned
-  stores (same pattern as `Store.child()`). `Registry.close()` remains the
-  lifecycle owner.
+- [x] **ID-041 — `Registry.get_store()` backend ownership foot-gun** (v0.13.1)
+  `get_store()` now sets `_owns_backend = False` on returned stores (same
+  pattern as `Store.child()`). `Registry.close()` remains the lifecycle owner.
 
 - [ ] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix**
   Listing numbers in `benchmarks/results/comparative.md` pre-date the ID-032
@@ -148,12 +140,10 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `host_key_policy`. `SecretRedactionFilter` logging filter. Regression tests.
   → Spec: `sdd/specs/020-credential-hygiene.md` (SEC-001 through SEC-008)
 
-- [ ] **ID-042 — Document Secret usage in README and examples**
-  Add a "Credential hygiene" section to the README configuration area and
-  update `examples/configuration.py` to demonstrate `Secret` wrapping,
-  `from_dict()` auto-wrapping, and `.reveal()` usage. Credential provider
-  preference docs deferred to config loaders follow-up.
-  Related: ID-039.
+- [x] **ID-042 — Document Secret usage in README and examples** (v0.13.1)
+  Added "Credential hygiene" section to README and updated
+  `examples/configuration.py` with `Secret` wrapping, `from_dict()`
+  auto-wrapping, and `.reveal()` demonstration. Related: ID-039.
 
 ---
 

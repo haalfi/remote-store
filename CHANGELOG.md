@@ -6,7 +6,23 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-*(No changes yet.)*
+### Fixed
+
+- **`Registry.get_store()` no longer owns the shared backend** (ID-041)
+  Stores returned by `get_store()` now set `_owns_backend = False`, preventing
+  a store's `close()` from shutting down the cached backend and breaking sibling
+  stores. `Registry.close()` remains the lifecycle owner.
+
+- **`Store.move(src, dst)` short-circuits when `src == dst`** (ID-040)
+  Moving a file to itself is now a uniform no-op across all backends. Previously
+  only `MemoryBackend` had this guard; other backends performed a wasted
+  copy+delete round-trip (S3, Azure) or platform-dependent rename (Local, SFTP).
+
+### Added
+
+- **Credential hygiene documentation** (ID-042)
+  Added "Credential hygiene" section to README and updated `examples/configuration.py`
+  with `Secret` wrapping, `from_dict()` auto-wrapping, and `.reveal()` usage.
 
 ## [0.13.0] - 2026-03-03
 

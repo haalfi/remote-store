@@ -118,6 +118,29 @@ config = RegistryConfig.from_dict({
 })
 ```
 
+### Credential hygiene
+
+Credentials passed through `from_dict()` are automatically wrapped in `Secret`, which masks values in `repr()` and `str()` to prevent accidental leakage in logs or tracebacks. Sensitive keys: `key`, `secret`, `password`, `account_key`, `sas_token`, `connection_string`.
+
+```python
+from remote_store import RegistryConfig, Secret
+
+# Auto-wrapped by from_dict():
+config = RegistryConfig.from_dict({
+    "backends": {"s3": {"type": "s3", "options": {
+        "bucket": "my-bucket",
+        "key": "AKIA...",
+        "secret": "wJalr...",
+    }}},
+    "stores": {"data": {"backend": "s3", "root_path": "data"}},
+})
+print(config.backends["s3"].options["secret"])  # → ***
+
+# Or wrap manually:
+secret = Secret("my-secret-key")
+secret.reveal()  # → 'my-secret-key'
+```
+
 ## Store API
 
 **Read & write**

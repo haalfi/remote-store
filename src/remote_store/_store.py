@@ -358,7 +358,11 @@ class Store:
             "move src=%r dst=%r overwrite=%r", src, dst, overwrite, extra={"op": "move", "path": src, "backend": _bk}
         )
         self._backend.capabilities.require(Capability.MOVE, backend=_bk)
-        self._backend.move(self._require_file_path(src), self._require_file_path(dst), overwrite=overwrite)
+        src_path = self._require_file_path(src)
+        dst_path = self._require_file_path(dst)
+        if src_path == dst_path:
+            return
+        self._backend.move(src_path, dst_path, overwrite=overwrite)
         log.info("move complete src=%r dst=%r", src, dst, extra={"op": "move", "path": src, "backend": _bk})
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
