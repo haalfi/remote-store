@@ -8,7 +8,7 @@ import logging
 from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._capabilities import Capability
-from remote_store._errors import InvalidPath
+from remote_store._errors import InvalidPath, NotFound
 from remote_store._path import RemotePath
 
 log = logging.getLogger(__name__)
@@ -358,7 +358,13 @@ class Store:
             "move src=%r dst=%r overwrite=%r", src, dst, overwrite, extra={"op": "move", "path": src, "backend": _bk}
         )
         self._backend.capabilities.require(Capability.MOVE, backend=_bk)
-        self._backend.move(self._require_file_path(src), self._require_file_path(dst), overwrite=overwrite)
+        src_path = self._require_file_path(src)
+        dst_path = self._require_file_path(dst)
+        if src_path == dst_path:
+            if not self._backend.is_file(src_path):
+                raise NotFound(f"Source not found: {src}", path=src, backend=_bk)
+            return
+        self._backend.move(src_path, dst_path, overwrite=overwrite)
         log.info("move complete src=%r dst=%r", src, dst, extra={"op": "move", "path": src, "backend": _bk})
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
@@ -373,5 +379,11 @@ class Store:
             "copy src=%r dst=%r overwrite=%r", src, dst, overwrite, extra={"op": "copy", "path": src, "backend": _bk}
         )
         self._backend.capabilities.require(Capability.COPY, backend=_bk)
-        self._backend.copy(self._require_file_path(src), self._require_file_path(dst), overwrite=overwrite)
+        src_path = self._require_file_path(src)
+        dst_path = self._require_file_path(dst)
+        if src_path == dst_path:
+            if not self._backend.is_file(src_path):
+                raise NotFound(f"Source not found: {src}", path=src, backend=_bk)
+            return
+        self._backend.copy(src_path, dst_path, overwrite=overwrite)
         log.info("copy complete src=%r dst=%r", src, dst, extra={"op": "copy", "path": src, "backend": _bk})

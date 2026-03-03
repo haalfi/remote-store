@@ -106,7 +106,9 @@ class Registry:
 
         profile = self._config.stores[name]
         backend = self._get_backend(profile.backend)
-        return Store(backend=backend, root_path=profile.root_path)
+        store = Store(backend=backend, root_path=profile.root_path)
+        store._owns_backend = False
+        return store
 
     def _get_backend(self, name: str) -> Backend:
         """Lazily instantiate and cache a backend."""

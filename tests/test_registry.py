@@ -87,6 +87,36 @@ class TestRegistryBackendLifecycle:
             assert len(reg._backends) == 0
 
 
+class TestRegistryStoreOwnership:
+    """ID-041: Stores from get_store() must not own the shared backend."""
+
+    @pytest.mark.spec("REG-005")
+    def test_get_store_does_not_own_backend(self) -> None:
+        """get_store() returns stores with _owns_backend=False."""
+        with tempfile.TemporaryDirectory() as tmp:
+            reg = Registry(_make_config(tmp))
+            store = reg.get_store("main")
+            assert store._owns_backend is False
+
+    @pytest.mark.spec("REG-005")
+    def test_store_close_does_not_close_shared_backend(self) -> None:
+        """Closing a store from get_store() must not close the shared backend."""
+        with tempfile.TemporaryDirectory() as tmp:
+            reg = Registry(_make_config(tmp))
+            s1 = reg.get_store("main")
+            s2 = reg.get_store("other")
+
+            s1.write("test.txt", b"hello")
+            s1.close()
+
+            # Sibling store still works — backend is alive
+            assert s2.exists("test.txt") is False  # different root_path
+            s2.write("test.txt", b"world")
+            assert s2.read_bytes("test.txt") == b"world"
+
+            reg.close()
+
+
 class TestRegistryCloseOnError:
     """AF-009: close() must close all backends even when one raises."""
 

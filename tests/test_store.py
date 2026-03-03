@@ -176,6 +176,40 @@ class TestStoreFullAPI:
         assert store.exists("mv_src.txt") is False
         assert store.read_bytes("mv_dst.txt") == b"data"
 
+    @pytest.mark.spec("STORE-008a")
+    def test_move_same_path_is_noop(self, store: Store) -> None:
+        store.write("same.txt", b"original")
+        store.move("same.txt", "same.txt")
+        assert store.read_bytes("same.txt") == b"original"
+
+    @pytest.mark.spec("STORE-008a")
+    def test_move_same_path_nonexistent_raises(self, store: Store) -> None:
+        with pytest.raises(NotFound):
+            store.move("ghost.txt", "ghost.txt")
+
+    @pytest.mark.spec("STORE-008a")
+    def test_move_same_path_folder_raises(self, store: Store) -> None:
+        store.write("dir/file.txt", b"x")
+        with pytest.raises(NotFound):
+            store.move("dir", "dir")
+
+    @pytest.mark.spec("STORE-008a")
+    def test_copy_same_path_is_noop(self, store: Store) -> None:
+        store.write("same.txt", b"original")
+        store.copy("same.txt", "same.txt")
+        assert store.read_bytes("same.txt") == b"original"
+
+    @pytest.mark.spec("STORE-008a")
+    def test_copy_same_path_nonexistent_raises(self, store: Store) -> None:
+        with pytest.raises(NotFound):
+            store.copy("ghost.txt", "ghost.txt")
+
+    @pytest.mark.spec("STORE-008a")
+    def test_copy_same_path_folder_raises(self, store: Store) -> None:
+        store.write("dir/file.txt", b"x")
+        with pytest.raises(NotFound):
+            store.copy("dir", "dir")
+
     @pytest.mark.spec("STORE-008")
     def test_copy(self, store: Store) -> None:
         store.write("cp_src.txt", b"data")
