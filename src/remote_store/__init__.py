@@ -4,7 +4,13 @@ import logging
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
-from remote_store._config import BackendConfig, RegistryConfig, StoreProfile
+from remote_store._config import (
+    BackendConfig,
+    RegistryConfig,
+    Secret,
+    SecretRedactionFilter,
+    StoreProfile,
+)
 from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
@@ -51,6 +57,8 @@ __all__ = [
     "BackendConfig",
     "StoreProfile",
     "RegistryConfig",
+    "Secret",
+    "SecretRedactionFilter",
     # Errors
     "RemoteStoreError",
     "NotFound",

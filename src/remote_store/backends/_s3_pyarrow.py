@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
+from remote_store._config import Secret, _reveal
 from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
@@ -120,8 +121,8 @@ class S3PyArrowBackend(Backend):
         bucket: str,
         *,
         endpoint_url: str | None = None,
-        key: str | None = None,
-        secret: str | None = None,
+        key: str | Secret | None = None,
+        secret: str | Secret | None = None,
         region_name: str | None = None,
         client_options: dict[str, Any] | None = None,
     ) -> None:
@@ -129,8 +130,8 @@ class S3PyArrowBackend(Backend):
             raise ValueError("bucket must be a non-empty string")
         self._bucket = bucket
         self._endpoint_url = endpoint_url
-        self._key = key
-        self._secret = secret
+        self._key = _reveal(key)
+        self._secret = _reveal(secret)
         self._region_name = region_name
         self._client_options = client_options or {}
         self._pa_fs_instance: Any = None

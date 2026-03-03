@@ -31,6 +31,8 @@ The Registry loads configuration, validates it, lazily instantiates backends, an
 ### CFG-005: from_dict()
 
 **Invariant:** `from_dict(data)` constructs a `RegistryConfig` from a dict.
+String values for sensitive keys are wrapped in `Secret()` — see
+[020-credential-hygiene.md](020-credential-hygiene.md) SEC-003.
 **Example:**
 ```python
 config = RegistryConfig.from_dict({
