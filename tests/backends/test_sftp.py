@@ -6,8 +6,11 @@ All tests are skipped if dependencies are not installed.
 
 from __future__ import annotations
 
+import errno
+import io
 import uuid
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import pytest
 
@@ -673,6 +676,453 @@ class TestSFTPDelete:
     def test_delete_missing_raises(self, sftp_backend: Backend) -> None:
         with pytest.raises(NotFound):
             sftp_backend.delete("nope.txt")
+
+
+# endregion
+
+
+# region: Coverage gap tests (BK-005)
+
+
+class TestSFTPHostKeyPolicyCoercion:
+    """BK-005: string-to-enum coercion in constructor (line 167)."""
+
+    def test_host_key_policy_string_auto(self) -> None:
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        assert backend._host_key_policy is HostKeyPolicy.AUTO_ADD
+
+    def test_host_key_policy_string_strict(self) -> None:
+        backend = SFTPBackend(host="dummy", host_key_policy="strict")
+        assert backend._host_key_policy is HostKeyPolicy.STRICT
+
+    def test_host_key_policy_string_tofu(self) -> None:
+        backend = SFTPBackend(host="dummy", host_key_policy="tofu")
+        assert backend._host_key_policy is HostKeyPolicy.TRUST_ON_FIRST_USE
+
+    def test_host_key_policy_invalid_string(self) -> None:
+        with pytest.raises(ValueError):
+            SFTPBackend(host="dummy", host_key_policy="invalid")
+
+
+class TestSFTPToKey:
+    """BK-005: to_key() all branches (lines 324, 326, 328)."""
+
+    def test_to_key_root_base_path(self) -> None:
+        """base_path='/' strips leading slash (line 324)."""
+        backend = SFTPBackend(host="dummy", base_path="/", host_key_policy="auto")
+        assert backend.to_key("/file.txt") == "file.txt"
+        assert backend.to_key("/a/b/c.txt") == "a/b/c.txt"
+
+    def test_to_key_subdir_base_path(self) -> None:
+        """base_path='/data' strips prefix (line 326)."""
+        backend = SFTPBackend(host="dummy", base_path="/data", host_key_policy="auto")
+        assert backend.to_key("/data/file.txt") == "file.txt"
+        assert backend.to_key("/data/sub/file.txt") == "sub/file.txt"
+
+    def test_to_key_equals_base_path(self) -> None:
+        """native_path == base_path returns empty string (line 328)."""
+        backend = SFTPBackend(host="dummy", base_path="/data", host_key_policy="auto")
+        assert backend.to_key("/data") == ""
+
+    def test_to_key_no_match(self) -> None:
+        """native_path doesn't match base_path — returned as-is (line 329)."""
+        backend = SFTPBackend(host="dummy", base_path="/data", host_key_policy="auto")
+        assert backend.to_key("/other/file.txt") == "/other/file.txt"
+
+
+class TestSFTPMapException:
+    """BK-005: _map_exception edge cases (lines 431, 437, 442)."""
+
+    def test_map_exception_remote_store_error_passthrough(self) -> None:
+        """RemoteStoreError passes through unchanged (line 431)."""
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        original = NotFound("test", path="p", backend="sftp")
+        result = backend._map_exception(original, "p")
+        assert result is original
+
+    def test_map_exception_oserror_enoent(self) -> None:
+        """OSError with ENOENT (not FileNotFoundError) maps to NotFound (line 437).
+
+        Python auto-coerces OSError(errno.ENOENT, ...) to FileNotFoundError,
+        so we create a plain OSError and set errno manually to reach the
+        OSError-with-ENOENT branch that paramiko can trigger.
+        """
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        exc = OSError("No such file")
+        exc.errno = errno.ENOENT
+        result = backend._map_exception(exc, "missing.txt")
+        assert isinstance(result, NotFound)
+        assert result.path == "missing.txt"
+
+    def test_map_exception_generic_oserror(self) -> None:
+        """OSError with unknown errno maps to RemoteStoreError (line 442)."""
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        exc = OSError(errno.EIO, "I/O error")
+        result = backend._map_exception(exc, "file.txt")
+        assert isinstance(result, RemoteStoreError)
+        assert not isinstance(result, (NotFound, PermissionDenied, AlreadyExists))
+
+    def test_map_exception_file_not_found_error(self) -> None:
+        """FileNotFoundError maps to NotFound (line 433)."""
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        exc = FileNotFoundError("gone")
+        result = backend._map_exception(exc, "gone.txt")
+        assert isinstance(result, NotFound)
+
+
+class TestSFTPTypeGuards:
+    """BK-005: type guards — file/folder confusion (lines 544, 632, 645)."""
+
+    def test_get_file_info_on_directory(self, sftp_backend: Backend) -> None:
+        """get_file_info on a directory raises NotFound (line 632)."""
+        sftp_backend.write("typedir/file.txt", b"x")
+        with pytest.raises(NotFound):
+            sftp_backend.get_file_info("typedir")
+
+    def test_get_folder_info_on_file(self, sftp_backend: Backend) -> None:
+        """get_folder_info on a file raises NotFound (line 645)."""
+        sftp_backend.write("typefile.txt", b"x")
+        with pytest.raises(NotFound):
+            sftp_backend.get_folder_info("typefile.txt")
+
+    def test_delete_folder_on_file(self, sftp_backend: Backend) -> None:
+        """delete_folder on a file raises NotFound (line 544)."""
+        sftp_backend.write("notadir.txt", b"x")
+        with pytest.raises(NotFound):
+            sftp_backend.delete_folder("notadir.txt")
+
+
+class TestSFTPWriteAtomicStream:
+    """BK-005: write_atomic with BinaryIO content (line 509)."""
+
+    def test_write_atomic_stream_content(self, sftp_backend: Backend) -> None:
+        sftp_backend.write_atomic("stream_atomic.txt", io.BytesIO(b"streamed atomic"))
+        assert sftp_backend.read_bytes("stream_atomic.txt") == b"streamed atomic"
+
+    def test_write_atomic_stream_content_overwrite(self, sftp_backend: Backend) -> None:
+        sftp_backend.write_atomic("sa_ow.txt", b"first")
+        sftp_backend.write_atomic("sa_ow.txt", io.BytesIO(b"second stream"), overwrite=True)
+        assert sftp_backend.read_bytes("sa_ow.txt") == b"second stream"
+
+
+class TestSFTPWriteAtomicCleanup:
+    """BK-005: write_atomic failure cleans up temp file (lines 517-521)."""
+
+    def test_write_atomic_cleanup_on_failure(self, sftp_backend: Backend) -> None:
+        """Temp file is cleaned up when write_atomic fails mid-write."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")  # force connection
+
+        original_file = sftp_backend._sftp_client.file
+
+        def failing_file(path: str, mode: str) -> None:
+            if ".~tmp." in path and mode == "w":
+                # Let temp file be created, then fail inside context manager
+                raise OSError(errno.EIO, "Disk full")
+            return original_file(path, mode)
+
+        with (
+            patch.object(sftp_backend._sftp_client, "file", side_effect=failing_file),
+            pytest.raises(RemoteStoreError),
+        ):
+            sftp_backend.write_atomic("fail_atomic.txt", b"data")
+
+        # Verify no temp files remain
+        files = list(sftp_backend.list_files(""))
+        temp_files = [f for f in files if f.name.startswith(".~tmp.")]
+        assert temp_files == []
+
+
+class TestSFTPCollectFolderStats:
+    """BK-005: _collect_folder_stats recursive subdirectory (lines 675-680)."""
+
+    def test_folder_info_nested_subdirectories(self, sftp_backend: Backend) -> None:
+        """get_folder_info counts files in nested subdirectories."""
+        sftp_backend.write("nested/a.txt", b"aaa")
+        sftp_backend.write("nested/sub1/b.txt", b"bb")
+        sftp_backend.write("nested/sub1/sub2/c.txt", b"c")
+        fi = sftp_backend.get_folder_info("nested")
+        assert fi.file_count == 3
+        assert fi.total_size == 6
+        assert fi.modified_at is not None
+
+
+class TestSFTPNonEnoentOSErrors:
+    """BK-005: non-ENOENT OSError re-raises via mock (lines 480, 497, 550, 630, 643, 698, 707, 737, 746)."""
+
+    @staticmethod
+    def _eio() -> OSError:
+        return OSError(errno.EIO, "I/O error")
+
+    def _stat_eio_on_path(self, sftp_backend: SFTPBackend, target_suffix: str) -> object:
+        """Return a stat replacement that raises EIO only for a specific file path."""
+        original_stat = sftp_backend._sftp_client.stat
+
+        def selective_stat(path: str) -> object:
+            if path.endswith(target_suffix):
+                raise OSError(errno.EIO, "I/O error")
+            return original_stat(path)
+
+        return selective_stat
+
+    def test_write_non_enoent_reraise(self, sftp_backend: Backend) -> None:
+        """write() re-raises non-ENOENT OSError from stat (line 480)."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "stat",
+                side_effect=self._stat_eio_on_path(sftp_backend, "w_eio.txt"),
+            ),
+            pytest.raises(RemoteStoreError),
+        ):
+            sftp_backend.write("w_eio.txt", b"data", overwrite=False)
+
+    def test_write_atomic_non_enoent_reraise(self, sftp_backend: Backend) -> None:
+        """write_atomic() re-raises non-ENOENT OSError from stat (line 497)."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "stat",
+                side_effect=self._stat_eio_on_path(sftp_backend, "wa_eio.txt"),
+            ),
+            pytest.raises(RemoteStoreError),
+        ):
+            sftp_backend.write_atomic("wa_eio.txt", b"data", overwrite=False)
+
+    def test_delete_folder_non_enoent_reraise(self, sftp_backend: Backend) -> None:
+        """delete_folder() re-raises non-ENOENT OSError from stat (line 550)."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "stat",
+                side_effect=self._stat_eio_on_path(sftp_backend, "df_eio"),
+            ),
+            pytest.raises(RemoteStoreError),
+        ):
+            sftp_backend.delete_folder("df_eio")
+
+    def test_get_file_info_non_enoent_reraise(self, sftp_backend: Backend) -> None:
+        """get_file_info() re-raises non-ENOENT OSError from stat (line 630)."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "stat",
+                side_effect=self._stat_eio_on_path(sftp_backend, "gfi_eio.txt"),
+            ),
+            pytest.raises(RemoteStoreError),
+        ):
+            sftp_backend.get_file_info("gfi_eio.txt")
+
+    def test_get_folder_info_non_enoent_reraise(self, sftp_backend: Backend) -> None:
+        """get_folder_info() re-raises non-ENOENT OSError from stat (line 643)."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "stat",
+                side_effect=self._stat_eio_on_path(sftp_backend, "gfoi_eio"),
+            ),
+            pytest.raises(RemoteStoreError),
+        ):
+            sftp_backend.get_folder_info("gfoi_eio")
+
+    def test_move_src_non_enoent_reraise(self, sftp_backend: Backend) -> None:
+        """move() re-raises non-ENOENT OSError on source stat (line 698)."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "stat",
+                side_effect=self._stat_eio_on_path(sftp_backend, "m_src_eio.txt"),
+            ),
+            pytest.raises(RemoteStoreError),
+        ):
+            sftp_backend.move("m_src_eio.txt", "m_dst.txt")
+
+    def test_move_dst_non_enoent_reraise(self, sftp_backend: Backend) -> None:
+        """move() re-raises non-ENOENT OSError on destination stat (line 707)."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("m_src2.txt", b"data")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "stat",
+                side_effect=self._stat_eio_on_path(sftp_backend, "m_dst2.txt"),
+            ),
+            pytest.raises(RemoteStoreError),
+        ):
+            sftp_backend.move("m_src2.txt", "m_dst2.txt", overwrite=False)
+
+    def test_copy_src_non_enoent_reraise(self, sftp_backend: Backend) -> None:
+        """copy() re-raises non-ENOENT OSError on source stat (line 737)."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "stat",
+                side_effect=self._stat_eio_on_path(sftp_backend, "c_src_eio.txt"),
+            ),
+            pytest.raises(RemoteStoreError),
+        ):
+            sftp_backend.copy("c_src_eio.txt", "c_dst.txt")
+
+    def test_copy_dst_non_enoent_reraise(self, sftp_backend: Backend) -> None:
+        """copy() re-raises non-ENOENT OSError on destination stat (line 746)."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("c_src2.txt", b"data")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "stat",
+                side_effect=self._stat_eio_on_path(sftp_backend, "c_dst2.txt"),
+            ),
+            pytest.raises(RemoteStoreError),
+        ):
+            sftp_backend.copy("c_src2.txt", "c_dst2.txt", overwrite=False)
+
+
+class TestSFTPListingExceptions:
+    """BK-005: generic exception wrapping in list_files/list_folders (lines 599-602, 614-617)."""
+
+    def test_list_files_wraps_generic_exception(self, sftp_backend: Backend) -> None:
+        """Non-RemoteStoreError during list_files iteration wraps to RemoteStoreError."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("lexc/a.txt", b"a")
+
+        original_listdir_attr = sftp_backend._sftp_client.listdir_attr
+
+        def exploding_listdir(path: str) -> list[object]:
+            original_listdir_attr(path)
+            raise RuntimeError("unexpected failure")
+
+        with (
+            patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=exploding_listdir),
+            pytest.raises(RemoteStoreError, match="unexpected failure"),
+        ):
+            list(sftp_backend.list_files("lexc"))
+
+    def test_list_files_reraises_remote_store_error(self, sftp_backend: Backend) -> None:
+        """RemoteStoreError during list_files is re-raised directly."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "listdir_attr",
+                side_effect=NotFound("injected", path="x", backend="sftp"),
+            ),
+            pytest.raises(NotFound, match="injected"),
+        ):
+            list(sftp_backend.list_files("any"))
+
+    def test_list_folders_wraps_generic_exception(self, sftp_backend: Backend) -> None:
+        """Non-RemoteStoreError during list_folders wraps to RemoteStoreError."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("lfexc/sub/a.txt", b"a")
+
+        original_listdir_attr = sftp_backend._sftp_client.listdir_attr
+
+        def exploding_listdir(path: str) -> list[object]:
+            original_listdir_attr(path)
+            raise RuntimeError("folder list boom")
+
+        with (
+            patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=exploding_listdir),
+            pytest.raises(RemoteStoreError, match="folder list boom"),
+        ):
+            list(sftp_backend.list_folders("lfexc"))
+
+    def test_list_folders_reraises_remote_store_error(self, sftp_backend: Backend) -> None:
+        """RemoteStoreError during list_folders is re-raised directly."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        with (
+            patch.object(
+                sftp_backend._sftp_client,
+                "listdir_attr",
+                side_effect=NotFound("injected", path="x", backend="sftp"),
+            ),
+            pytest.raises(NotFound, match="injected"),
+        ):
+            list(sftp_backend.list_folders("any"))
+
+
+class TestSFTPDeleteFolderEdgeCases:
+    """BK-005: delete_folder listdir OSError and _rmtree OSError (lines 558-559, 572-573)."""
+
+    def test_delete_folder_non_recursive_listdir_oserror(self, sftp_backend: Backend) -> None:
+        """Non-recursive delete_folder treats OSError on listdir as empty (lines 558-559)."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        # Create an empty folder
+        sftp_backend.write("df_oserr/tmp.txt", b"x")
+        sftp_backend.delete("df_oserr/tmp.txt")
+
+        def failing_listdir(path: str) -> None:
+            raise OSError(errno.EIO, "I/O error on listdir")
+
+        # With listdir failing, it assumes empty and tries rmdir — should succeed
+        with patch.object(sftp_backend._sftp_client, "listdir", side_effect=failing_listdir):
+            sftp_backend.delete_folder("df_oserr", recursive=False)
+
+        assert sftp_backend.is_folder("df_oserr") is False
+
+    def test_rmtree_listdir_attr_oserror(self, sftp_backend: Backend) -> None:
+        """_rmtree handles OSError on listdir_attr gracefully (lines 572-573)."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("rmtree_oserr/a.txt", b"a")
+
+        def failing_listdir_attr(path: str) -> None:
+            raise OSError(errno.EIO, "I/O error on listdir_attr")
+
+        # _rmtree returns early on OSError — folder is NOT deleted
+        with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=failing_listdir_attr):
+            sftp_backend._rmtree(sftp_backend._sftp_path("rmtree_oserr"))
+
+        # Folder still exists because _rmtree bailed out
+        assert sftp_backend.is_folder("rmtree_oserr") is True
+
+
+class TestSFTPCollectFolderStatsOSError:
+    """BK-005: _collect_folder_stats OSError on listdir_attr (lines 664-665)."""
+
+    def test_collect_folder_stats_listdir_oserror(self, sftp_backend: Backend) -> None:
+        """_collect_folder_stats returns zeros when listdir_attr fails."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("cfs_oserr/a.txt", b"a")
+
+        def failing_listdir_attr(path: str) -> None:
+            raise OSError(errno.EIO, "I/O error")
+
+        with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=failing_listdir_attr):
+            count, size, latest = sftp_backend._collect_folder_stats(
+                sftp_backend._sftp_path("cfs_oserr")
+            )
+
+        assert count == 0
+        assert size == 0
+        assert latest is None
 
 
 # endregion

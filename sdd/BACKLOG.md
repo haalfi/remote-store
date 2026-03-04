@@ -11,7 +11,25 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-*(Empty — no active prioritized work items.)*
+- [x] **BK-005 — SFTP backend test coverage gaps**
+  Coverage improved from 90% (44 uncovered) to 100% (0 uncovered) on `_sftp.py`.
+  35 new tests covering: `to_key()` all branches, string-to-enum coercion,
+  `_map_exception()` edge cases (RemoteStoreError pass-through, OSError ENOENT
+  via paramiko, generic OSError, FileNotFoundError), `write_atomic()` stream
+  content & failure cleanup, type guards in `get_file_info`/`get_folder_info`/
+  `delete_folder` (file-vs-directory), `_collect_folder_stats` recursive
+  subdirectory branch, non-ENOENT OSError re-raises in write/write_atomic/
+  delete_folder/get_file_info/get_folder_info/move/copy (src+dst), generic
+  exception wrapping in `list_files`/`list_folders`, `_rmtree` and
+  `delete_folder` listdir OSError fallbacks.
+
+- [ ] **BK-006 — Memory backend test coverage gaps**
+  Coverage is ~88% with 35 uncovered lines. Most are low-criticality defensive
+  paths: `InvalidPath` for null bytes / absolute paths / `..` segments,
+  `_traverse` returning `None` on file-as-directory, `_ensure_parents`
+  file-as-intermediate conflict, empty-path guards in move/copy, directory-at-
+  destination guards. Less urgent than BK-005 as MemoryBackend has no I/O and
+  these paths are primarily input validation.
 
 ---
 
