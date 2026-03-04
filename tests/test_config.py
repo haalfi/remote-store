@@ -586,7 +586,10 @@ class TestFromToml:
     @pytest.mark.spec("CFG-008")
     def test_from_toml_invalid_toml(self, tmp_path: Path) -> None:
         """Malformed TOML raises TOMLDecodeError."""
-        import tomllib
+        try:
+            import tomllib
+        except ModuleNotFoundError:
+            import tomli as tomllib  # type: ignore[no-redef]
 
         bad = tmp_path / "bad.toml"
         bad.write_text("[invalid\n")

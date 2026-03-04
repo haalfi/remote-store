@@ -18,7 +18,7 @@ if __name__ == "__main__":
         # --- from_toml(): standalone TOML file ---
         toml_file = root / "remote-store.toml"
         toml_file.write_text(
-            '[backends.local]\n'
+            "[backends.local]\n"
             'type = "local"\n\n'
             "[backends.local.options]\n"
             f'root = "{root / "toml-data"}"\n\n'
