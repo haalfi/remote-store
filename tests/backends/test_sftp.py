@@ -809,25 +809,24 @@ class TestSFTPWriteAtomicCleanup:
     """BK-005: write_atomic failure cleans up temp file (lines 517-521)."""
 
     def test_write_atomic_cleanup_on_failure(self, sftp_backend: Backend) -> None:
-        """Temp file is cleaned up when write_atomic fails mid-write."""
-        assert isinstance(sftp_backend, SFTPBackend)
-        sftp_backend.exists("warmup.txt")  # force connection
+        """Temp file is cleaned up when write_atomic fails mid-write.
 
-        original_file = sftp_backend._sftp_client.file
+        Uses a stream whose read() raises *after* the temp file has been
+        opened on the server, so the except block (lines 517-521) must
+        actually remove a real temp file.
+        """
 
-        def failing_file(path: str, mode: str) -> None:
-            if ".~tmp." in path and mode == "w":
-                # Let temp file be created, then fail inside context manager
+        class FailingStream(io.BytesIO):
+            """Stream that raises on read — simulates I/O failure after temp file is opened."""
+
+            def read(self, size: int = -1) -> bytes:
                 raise OSError(errno.EIO, "Disk full")
-            return original_file(path, mode)
 
-        with (
-            patch.object(sftp_backend._sftp_client, "file", side_effect=failing_file),
-            pytest.raises(RemoteStoreError),
-        ):
-            sftp_backend.write_atomic("fail_atomic.txt", b"data")
+        with pytest.raises(RemoteStoreError):
+            sftp_backend.write_atomic("fail_atomic.txt", FailingStream())
 
-        # Verify no temp files remain
+        # Verify no temp files remain — the except block (lines 517-521) must
+        # have removed the temp file that was created by file(tmp_path, "w")
         files = list(sftp_backend.list_files(""))
         temp_files = [f for f in files if f.name.startswith(".~tmp.")]
         assert temp_files == []
@@ -849,10 +848,6 @@ class TestSFTPCollectFolderStats:
 
 class TestSFTPNonEnoentOSErrors:
     """BK-005: non-ENOENT OSError re-raises via mock (lines 480, 497, 550, 630, 643, 698, 707, 737, 746)."""
-
-    @staticmethod
-    def _eio() -> OSError:
-        return OSError(errno.EIO, "I/O error")
 
     def _stat_eio_on_path(self, sftp_backend: SFTPBackend, target_suffix: str) -> object:
         """Return a stat replacement that raises EIO only for a specific file path."""
