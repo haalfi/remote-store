@@ -142,3 +142,26 @@ jobs:
       - run: twine check dist/*
       - run: pip install dist/*.whl
       - run: python -c "import remote_store; print(remote_store.__version__)"
+
+  gate:
+    needs: [lint, typecheck, test, examples, docs, package]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        run: |
+          results=( \
+            "${{ needs.lint.result }}" \
+            "${{ needs.typecheck.result }}" \
+            "${{ needs.test.result }}" \
+            "${{ needs.examples.result }}" \
+            "${{ needs.docs.result }}" \
+            "${{ needs.package.result }}" \
+          )
+          for r in "${results[@]}"; do
+            if [[ "$r" != "success" && "$r" != "skipped" ]]; then
+              echo "::error::Job failed with result: $r"
+              exit 1
+            fi
+          done
+          echo "All jobs passed or were skipped."
