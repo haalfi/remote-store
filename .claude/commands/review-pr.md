@@ -1,142 +1,72 @@
-# Review PR — Automated Code Review with Inline Comments
+# Review PR — Inline Code Review
 
-You are reviewing a pull request and leaving review comments directly on GitHub.
-Your job is to find real issues — bugs, missed edge cases, spec violations,
-inconsistencies — and post them as inline comments. No fluff, no praise, no
-"looks good" filler.
+Post inline review comments on a GitHub PR. Find real issues only — no fluff.
 
 ## Arguments
 
-The user provides a PR number: `$ARGUMENTS`
+PR number: `$ARGUMENTS` (ask if missing).
 
-If no PR number is provided, ask the user for one.
-
-## Instructions
-
-### Step 1: Gather PR context
-
-Run these commands to understand the PR:
+## Step 1: Gather context
 
 ```bash
 gh pr view $PR_NUMBER --json title,body,baseRefName,headRefName,files
 gh pr diff $PR_NUMBER
 ```
 
-Note the base branch, changed files, and PR description.
+Read every changed file **in full** (not just diff hunks) — you need surrounding
+context to spot contract changes, missing imports, and pattern breaks.
 
-### Step 2: Read changed files in full
+## Step 2: Analyze
 
-For each file in the diff, read the **full file** (not just the diff hunks).
-You need surrounding context to spot issues like:
-- Functions that callers depend on but whose contract changed
-- Missing imports or exports
-- Inconsistency with patterns elsewhere in the same file
+Check the diff against these concerns (priority order):
 
-### Step 3: Analyze against project standards
+1. **Correctness** — bugs, logic errors, wrong exceptions, missing boundary checks
+2. **Spec compliance** — code vs `sdd/specs/`, missing `@pytest.mark.spec("ID")`
+3. **Test coverage** — untested behavior, missing edge cases, untested branches
+4. **Consistency** — breaks established codebase patterns
+5. **Ripple gaps** — cross-refs not updated (see `sdd/CLAUDE-REFERENCE.md` table)
+6. **Security** — injection, traversal, credential exposure
 
-Check the diff against these project-specific concerns (in priority order):
+**Skip:** style (ruff handles it), docstrings on unchanged code, "consider X"
+without reason, praise, logging suggestions.
 
-1. **Correctness** — bugs, logic errors, off-by-one, wrong exception types,
-   missing error handling at system boundaries
-2. **Spec compliance** — does the code match its spec in `sdd/specs/`? Are
-   `@pytest.mark.spec("ID")` markers present for new spec sections?
-3. **Test coverage** — is new/changed behavior tested? Are edge cases covered?
-   Are there untested branches?
-4. **Consistency** — does the change follow patterns established elsewhere in
-   the codebase? (naming, error handling, backend contract, path model)
-5. **Cross-reference gaps** — use the ripple-check table from
-   `sdd/CLAUDE-REFERENCE.md`. Did the PR update all downstream references?
-   (README, CHANGELOG, BACKLOG, guides, examples, exports)
-6. **Security** — command injection, path traversal, credential exposure
+## Step 3: Post review
 
-Skip these (they are noise, not value):
-- Style preferences already enforced by ruff
-- Missing docstrings or type annotations on unchanged code
-- Suggestions to add logging or comments
-- "Consider using X instead of Y" without a concrete reason
-- Praise or positive remarks
-
-### Step 4: Post review
-
-Collect all findings and submit as a single review with inline comments.
-
-**Use `gh api` with `--input -` and a JSON heredoc** (the `-f`/`-F` flag
-approach breaks on `comments[]` array fields):
+Submit one review with all inline comments via `gh api --input -`:
 
 ```bash
 gh api repos/{owner}/{repo}/pulls/$PR_NUMBER/reviews --input - <<'EOF'
 {
   "event": "COMMENT",
-  "body": "Review summary (if needed)",
+  "body": "Summary",
   "comments": [
-    {
-      "path": "src/remote_store/_store.py",
-      "line": 42,
-      "body": "Bug: this raises `NotFound` but the spec (STORE-015) requires `PermissionError` when..."
-    }
+    {"path": "src/remote_store/_store.py", "line": 42, "body": "Bug: ..."}
   ]
 }
 EOF
 ```
 
-Rules for posting:
-- **Event must be `COMMENT`** — never `APPROVE` or `REQUEST_CHANGES` (the
-  token belongs to the repo owner; `APPROVE` fails with "Can not approve your
-  own pull request").
-- **Use `line` (not `position`)** — `line` is the line number in the
-  head-commit version of the file. `position` is deprecated/confusing.
-  **Constraint:** only lines visible in the diff can receive comments. If a
-  finding relates to unchanged code outside the diff hunks, attach the comment
-  to the nearest changed line and reference the actual location in the body.
-- **Deleted lines** need `"side": "LEFT"` and the line number from the
-  base-branch version of the file. Without `side`, the API defaults to
-  `"RIGHT"` (new code). Use `LEFT` when commenting on removed code.
-- **Each comment must reference a specific line** — no general "file-level"
-  comments unless absolutely necessary.
-- **Comment body format**: Start with a category tag, then the issue.
-  - `Bug:` — correctness issue
-  - `Spec:` — deviation from specification
-  - `Test:` — missing or inadequate test coverage
-  - `Consistency:` — breaks established patterns
-  - `Ripple:` — cross-reference not updated
-  - `Security:` — security concern
-- **Be terse.** State the problem and (if not obvious) the fix. No preamble.
+**Critical rules:**
+- **`"event": "COMMENT"`** always — never APPROVE/REQUEST_CHANGES (owner token)
+- **`"line"` not `"position"`** — must be a line visible in the diff; if the
+  finding is outside diff hunks, attach to nearest changed line and reference
+  the actual location in the body
+- **Deleted lines** need `"side": "LEFT"` with the base-branch line number
+- **Tag each comment:** `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Security:`
+- Be terse — state problem and fix, no preamble
 
-### Step 5: Report
-
-After posting, output a summary:
+## Step 4: Report
 
 ```
-## PR #N Review Posted
-
-| Category     | Count |
-|--------------|-------|
-| Bug          | N     |
-| Spec         | N     |
-| Test         | N     |
-| Consistency  | N     |
-| Ripple       | N     |
-| Security     | N     |
-| **Total**    | **N** |
-
-Comments posted to: <PR URL>
+## PR #N Review — X comments posted
+Bug: N | Spec: N | Test: N | Consistency: N | Ripple: N | Security: N
 ```
 
-If no issues were found, post nothing and report:
+If no issues: `## PR #N Review — No issues found`
 
-```
-## PR #N Review — No Issues Found
+## Rules
 
-No actionable findings. The diff looks correct.
-```
-
-## Important
-
-- **Do not approve, merge, close, or modify the PR** — review only.
-- **Do not create issues or leave comments outside the review.**
-- If the diff is too large to analyze thoroughly, focus on `src/` changes first,
-  then tests, then docs/config. State what you skipped.
-- Comments must add value. If you would not flag it in a real code review
-  between senior engineers, do not post it.
-- When in doubt about whether something is a real issue, err on the side of
-  posting it with a "Possible:" prefix rather than staying silent.
+- **Do not** approve, merge, close, or modify the PR.
+- **Do not** create issues or leave comments outside the review.
+- Large diffs: prioritize `src/` → tests → docs. State what you skipped.
+- Only post what a senior engineer would flag. When uncertain, use `Possible:` prefix.
