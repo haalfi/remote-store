@@ -3,6 +3,7 @@
 - Streaming I/O: streaming-io.md
 - Atomic Writes: atomic-writes.md
 - Configuration: configuration.md
+- Config Loaders: config-loaders.md
 - Error Handling: error-handling.md
 - Memory Backend: memory-backend.md
 - Store.child(): store-child.md
