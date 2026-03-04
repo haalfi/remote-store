@@ -88,11 +88,11 @@ class TestEnsureParentsConflict:
 class TestIsFileRoot:
     """is_file returns False for root path."""
 
-    @pytest.mark.spec("BE-004")
+    @pytest.mark.spec("BE-005")
     def test_is_file_empty_string(self, mb: MemoryBackend) -> None:
         assert mb.is_file("") is False
 
-    @pytest.mark.spec("BE-004")
+    @pytest.mark.spec("BE-005")
     def test_is_file_dot(self, mb: MemoryBackend) -> None:
         assert mb.is_file(".") is False
 
