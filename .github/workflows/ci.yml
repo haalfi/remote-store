@@ -7,7 +7,39 @@ on:
     branches: [master]
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - 'src/**'
+              - 'tests/**'
+              - 'examples/**'
+              - 'pyproject.toml'
+              - '.github/workflows/ci.yml'
+            docs:
+              - 'docs-src/**'
+              - 'guides/**'
+              - 'mkdocs.yml'
+              - 'README.md'
+              - 'CHANGELOG.md'
+              - 'sdd/specs/**'
+              - 'sdd/adrs/**'
+              - 'sdd/rfcs/**'
+              - '.github/workflows/ci.yml'
+
   lint:
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -19,6 +51,8 @@ jobs:
       - run: ruff format --check src/ tests/ examples/
 
   typecheck:
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -29,6 +63,8 @@ jobs:
       - run: mypy src/
 
   test:
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -51,6 +87,8 @@ jobs:
       - run: pytest --cov=remote_store --cov-report=term-missing --cov-fail-under=95
 
   examples:
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -79,6 +117,8 @@ jobs:
           if [ $rc -ne 0 ] && [ $rc -ne 124 ]; then exit $rc; fi
 
   docs:
+    needs: [changes]
+    if: needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -89,6 +129,8 @@ jobs:
       - run: mkdocs build --strict
 
   package:
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
