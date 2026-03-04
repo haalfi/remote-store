@@ -25,6 +25,7 @@ build/
 
 # Testing & Coverage
 .coverage
+coverage.xml
 htmlcov/
 
 # Benchmarks (machine-specific saved results)
