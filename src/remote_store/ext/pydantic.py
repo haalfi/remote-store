@@ -43,14 +43,16 @@ def pydantic_to_registry_config(model: BaseModel) -> RegistryConfig:
     :meth:`RegistryConfig.from_dict`. Secret wrapping, unknown-key warnings,
     and validation all happen in ``from_dict()``.
 
-    If the Pydantic model uses ``pydantic.SecretStr`` for credential fields,
-    ``model_dump()`` exposes them as plain strings. This is intentional —
-    ``from_dict()`` re-wraps sensitive keys in :class:`Secret` at the
-    config→registry boundary.
+    .. note:: Pydantic ``SecretStr`` fields are **not** auto-unwrapped.
+       ``model_dump()`` returns ``SecretStr`` objects (not plain strings),
+       which bypass ``from_dict()``'s ``isinstance(v, str)`` check and are
+       **not** re-wrapped in :class:`Secret`. Use plain ``str`` for
+       credential values in your model's ``options`` dicts — ``from_dict()``
+       handles Secret wrapping at the config→registry boundary.
 
     :param model: A Pydantic model whose ``model_dump()`` output has
         ``backends`` and ``stores`` keys matching the RegistryConfig schema.
     :returns: An immutable ``RegistryConfig``.
     :raises TypeError: If the model dump does not conform to the expected schema.
     """
-    return RegistryConfig.from_dict(model.model_dump())
+    return RegistryConfig.from_dict(model.model_dump(), _stacklevel=3)

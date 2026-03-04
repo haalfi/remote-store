@@ -156,7 +156,12 @@ class RegistryConfig:
                 )
 
     @classmethod
-    def from_dict(cls, data: dict[str, object]) -> RegistryConfig:
+    def from_dict(
+        cls,
+        data: dict[str, object],
+        *,
+        _stacklevel: int = 2,
+    ) -> RegistryConfig:
         """Construct from a plain dict (e.g. parsed TOML/JSON).
 
         :param data: Dict with ``backends`` and ``stores`` keys.
@@ -167,7 +172,7 @@ class RegistryConfig:
             warnings.warn(
                 f"Unknown top-level config keys ignored: {sorted(unknown)}. Expected keys: {sorted(_KNOWN_KEYS)}",
                 UserWarning,
-                stacklevel=2,
+                stacklevel=_stacklevel,
             )
 
         raw_backends = data.get("backends", {})
@@ -241,7 +246,7 @@ class RegistryConfig:
             msg = f"Expected a TOML table, got {type(data).__name__}"
             raise TypeError(msg)
 
-        return cls.from_dict(data)
+        return cls.from_dict(data, _stacklevel=3)
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> RegistryConfig:
@@ -262,7 +267,7 @@ class RegistryConfig:
             msg = f"Expected YAML mapping at top level, got {type(data).__name__}"
             raise TypeError(msg)
 
-        return cls.from_dict(data)
+        return cls.from_dict(data, _stacklevel=3)
 
 
 def _get_yaml_loader() -> Callable[..., Any]:

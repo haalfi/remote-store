@@ -95,7 +95,10 @@ forcing a specific library on users who already have one installed.
 than `"backends"` and `"stores"`. This catches typos like `"backend"` (singular)
 or `"store"` that would otherwise silently produce an empty config.
 
-**Behavior:** Uses `warnings.warn()` with `stacklevel=2`. Does not raise.
+**Behavior:** Uses `warnings.warn()` with `stacklevel` adjusted so the
+warning source points to user code. Direct `from_dict()` calls use
+`stacklevel=2`; indirect calls via `from_toml()`, `from_yaml()`, and
+`pydantic_to_registry_config()` use `stacklevel=3`. Does not raise.
 
 ### CFG-013: Loader Equivalence
 
@@ -140,11 +143,12 @@ format-to-dict translators.
 **Postconditions:** The returned `RegistryConfig` is identical to calling
 `RegistryConfig.from_dict(model.model_dump())`.
 
-**SecretStr note:** If the Pydantic model uses `pydantic.SecretStr` for
-credential fields, `model_dump()` exposes them as plain strings. This is
-intentional — the `pydantic_to_registry_config()` call is the
-config→registry boundary where `from_dict()` re-wraps sensitive keys in
-`Secret`. Document this explicitly.
+**SecretStr note:** Pydantic `SecretStr` fields are **not** auto-unwrapped.
+`model_dump()` returns `SecretStr` objects (not plain strings), which bypass
+`from_dict()`'s `isinstance(v, str)` check and are **not** re-wrapped in
+`Secret`. Users should use plain `str` for credential values in their
+model's `options` dicts — `from_dict()` handles Secret wrapping at the
+config→registry boundary.
 
 ### CFG-016: ADR-0002 Compatibility
 

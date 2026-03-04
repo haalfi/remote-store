@@ -583,6 +583,16 @@ class TestFromToml:
         rc = RegistryConfig.from_toml(str(toml_file))
         assert rc.backends["m"].type == "memory"
 
+    @pytest.mark.spec("CFG-008")
+    def test_from_toml_invalid_toml(self, tmp_path: Path) -> None:
+        """Malformed TOML raises TOMLDecodeError."""
+        import tomllib
+
+        bad = tmp_path / "bad.toml"
+        bad.write_text("[invalid\n")
+        with pytest.raises(tomllib.TOMLDecodeError):
+            RegistryConfig.from_toml(bad)
+
 
 class TestFromYaml:
     """CFG-010, CFG-011: from_yaml() loads config from YAML files."""
@@ -617,6 +627,16 @@ class TestFromYaml:
         yaml_file.write_text("- item1\n- item2\n")
         with pytest.raises(TypeError, match="mapping"):
             RegistryConfig.from_yaml(yaml_file)
+
+    @pytest.mark.spec("CFG-010")
+    def test_from_yaml_invalid_yaml(self, tmp_path: Path) -> None:
+        """Malformed YAML raises yaml.YAMLError."""
+        from yaml import YAMLError
+
+        bad = tmp_path / "bad.yaml"
+        bad.write_text(":\n  - [unterminated\n")
+        with pytest.raises(YAMLError):
+            RegistryConfig.from_yaml(bad)
 
     @pytest.mark.spec("CFG-010")
     def test_from_yaml_secret_wrapping(self, tmp_path: Path) -> None:
