@@ -141,7 +141,7 @@ format = "ruff format src/ tests/ examples/"
 format-check = "ruff format --check src/ tests/ examples/"
 typecheck = "mypy src/"
 test = "pytest"
-test-cov = "pytest --cov=remote_store --cov-report=term-missing --cov-fail-under=95"
+test-cov = "pytest --cov=remote_store --cov-report=term-missing --cov-report=xml --cov-fail-under=95"
 # Core examples only — cloud backend examples (examples/backends/) need
 # real services and credentials, so they are excluded from `hatch run examples`.
 examples = [
