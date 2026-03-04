@@ -144,12 +144,18 @@ jobs:
       - run: python -c "import remote_store; print(remote_store.__version__)"
 
   gate:
-    needs: [lint, typecheck, test, examples, docs, package]
+    needs: [changes, lint, typecheck, test, examples, docs, package]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check job results
         run: |
+          # changes job must succeed — if it fails, path filters never ran
+          # and all downstream jobs are auto-skipped, which would silently pass
+          if [[ "${{ needs.changes.result }}" != "success" ]]; then
+            echo "::error::changes job did not succeed: ${{ needs.changes.result }}"
+            exit 1
+          fi
           results=( \
             "${{ needs.lint.result }}" \
             "${{ needs.typecheck.result }}" \
