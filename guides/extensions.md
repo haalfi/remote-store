@@ -13,6 +13,7 @@ on top of the core Store API.
 | `ext.transfer` | -- | Upload, download, and cross-store transfer |
 | `ext.otel` | `otel` | OpenTelemetry tracing and metrics bridge |
 | `ext.arrow` | `arrow` | PyArrow FileSystem adapter |
+| `ext.pydantic` | `pydantic` | Pydantic BaseModel/BaseSettings adapter |
 
 ## Using Extensions
 
@@ -36,22 +37,26 @@ from remote_store.ext.transfer import upload
 
 ### Optional-dependency extensions
 
-`ext.arrow` requires PyArrow, and `ext.otel` requires the OpenTelemetry
-API.  Install the relevant extra first:
+`ext.arrow` requires PyArrow, `ext.otel` requires the OpenTelemetry
+API, and `ext.pydantic` requires Pydantic v2.  Install the relevant
+extra first:
 
 ```bash
-pip install "remote-store[arrow]"   # PyArrow filesystem adapter
-pip install "remote-store[otel]"    # OpenTelemetry tracing and metrics
+pip install "remote-store[arrow]"     # PyArrow filesystem adapter
+pip install "remote-store[otel]"      # OpenTelemetry tracing and metrics
+pip install "remote-store[pydantic]"  # Pydantic BaseSettings adapter
 ```
 
 Then import from the top-level package or the extension module directly:
 
 ```python
-from remote_store import pyarrow_fs       # ext.arrow
-from remote_store import otel_hooks       # ext.otel
+from remote_store import pyarrow_fs                  # ext.arrow
+from remote_store import otel_hooks                  # ext.otel
+from remote_store import pydantic_to_registry_config # ext.pydantic
 # or
 from remote_store.ext.arrow import pyarrow_fs
 from remote_store.ext.otel import otel_hooks
+from remote_store.ext.pydantic import pydantic_to_registry_config
 ```
 
 If the required dependency is not installed, the top-level import

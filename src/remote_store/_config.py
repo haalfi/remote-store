@@ -260,7 +260,7 @@ class RegistryConfig:
         """
         safe_load = _get_yaml_loader()
 
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = safe_load(f)
 
         if not isinstance(data, dict):
