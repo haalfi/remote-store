@@ -1111,9 +1111,7 @@ class TestSFTPCollectFolderStatsOSError:
             raise OSError(errno.EIO, "I/O error")
 
         with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=failing_listdir_attr):
-            count, size, latest = sftp_backend._collect_folder_stats(
-                sftp_backend._sftp_path("cfs_oserr")
-            )
+            count, size, latest = sftp_backend._collect_folder_stats(sftp_backend._sftp_path("cfs_oserr"))
 
         assert count == 0
         assert size == 0
