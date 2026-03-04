@@ -519,6 +519,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/config-loaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config Loaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/error-handling/" class="md-nav__link">
         
   
@@ -2237,6 +2265,34 @@
     
   
     020: Credential Hygiene Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/021-config-loaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    021: Config Loaders Specification
   
 
     
@@ -4382,9 +4438,34 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Credential hygiene documentation</strong> (ID-042)
+<li>
+<p><strong>Credential hygiene documentation</strong> (ID-042)
   Added "Credential hygiene" section to README and updated <code>examples/configuration.py</code>
-  with <code>Secret</code> wrapping, <code>from_dict()</code> auto-wrapping, and <code>.reveal()</code> usage.</li>
+  with <code>Secret</code> wrapping, <code>from_dict()</code> auto-wrapping, and <code>.reveal()</code> usage.</p>
+</li>
+<li>
+<p><strong><code>RegistryConfig.from_toml()</code> — TOML config loader</strong> (ID-005)
+  Load config from a standalone <code>.toml</code> file or from <code>pyproject.toml</code> via
+  <code>table=("tool", "remote-store")</code>. Zero dependencies on Python 3.11+;
+  optional <code>tomli</code> backport for 3.10. Spec: CFG-008, CFG-009.</p>
+</li>
+<li>
+<p><strong><code>RegistryConfig.from_yaml()</code> — YAML config loader</strong> (ID-002)
+  Load config from a YAML file. Accepts <code>pyyaml</code> (primary) or <code>ruamel.yaml</code>
+  (fallback). Spec: CFG-010, CFG-011.</p>
+</li>
+<li>
+<p><strong>Unknown top-level key warning in <code>from_dict()</code></strong> (CFG-012)
+  <code>from_dict()</code> now emits <code>UserWarning</code> for unrecognized keys like <code>"backend"</code>
+  (typo for <code>"backends"</code>), preventing silently empty configs.</p>
+</li>
+<li>
+<p><strong><code>pydantic_to_registry_config()</code> — Pydantic adapter</strong> (ID-003)
+  Convert any Pydantic <code>BaseModel</code> or <code>BaseSettings</code> instance to a
+  <code>RegistryConfig</code> via <code>model_dump() → from_dict()</code>. Supports env-var binding,
+  <code>.env</code> file loading, and validation via <code>pydantic-settings</code>. Optional
+  <code>pydantic</code> extra. Spec: CFG-015, CFG-016, CFG-017.</p>
+</li>
 </ul>
 <h2 id="0130-2026-03-03">[0.13.0] - 2026-03-03<a class="headerlink" href="#0130-2026-03-03" title="Permanent link">&para;</a></h2>
 <h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>

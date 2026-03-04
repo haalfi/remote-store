@@ -519,6 +519,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/config-loaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config Loaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/error-handling/" class="md-nav__link">
         
   
@@ -2380,6 +2408,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/021-config-loaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    021: Config Loaders Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3144,6 +3200,11 @@ on top of the core Store API.</p>
 <td><code>arrow</code></td>
 <td>PyArrow FileSystem adapter</td>
 </tr>
+<tr>
+<td><code>ext.pydantic</code></td>
+<td><code>pydantic</code></td>
+<td>Pydantic BaseModel/BaseSettings adapter</td>
+</tr>
 </tbody>
 </table>
 <h2 id="using-extensions">Using Extensions<a class="headerlink" href="#using-extensions" title="Permanent link">&para;</a></h2>
@@ -3159,17 +3220,21 @@ dependencies. They are re-exported from the top-level package:</p>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.transfer</span><span class="w"> </span><span class="kn">import</span> <span class="n">upload</span>
 </code></pre></div>
 <h3 id="optional-dependency-extensions">Optional-dependency extensions<a class="headerlink" href="#optional-dependency-extensions" title="Permanent link">&para;</a></h3>
-<p><code>ext.arrow</code> requires PyArrow, and <code>ext.otel</code> requires the OpenTelemetry
-API.  Install the relevant extra first:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[arrow]&quot;</span><span class="w">   </span><span class="c1"># PyArrow filesystem adapter</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[otel]&quot;</span><span class="w">    </span><span class="c1"># OpenTelemetry tracing and metrics</span>
+<p><code>ext.arrow</code> requires PyArrow, <code>ext.otel</code> requires the OpenTelemetry
+API, and <code>ext.pydantic</code> requires Pydantic v2.  Install the relevant
+extra first:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[arrow]&quot;</span><span class="w">     </span><span class="c1"># PyArrow filesystem adapter</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[otel]&quot;</span><span class="w">      </span><span class="c1"># OpenTelemetry tracing and metrics</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[pydantic]&quot;</span><span class="w">  </span><span class="c1"># Pydantic BaseSettings adapter</span>
 </code></pre></div>
 <p>Then import from the top-level package or the extension module directly:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>       <span class="c1"># ext.arrow</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>       <span class="c1"># ext.otel</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># or</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>                  <span class="c1"># ext.arrow</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>                  <span class="c1"># ext.otel</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">pydantic_to_registry_config</span> <span class="c1"># ext.pydantic</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># or</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">pydantic_to_registry_config</span>
 </code></pre></div>
 <p>If the required dependency is not installed, the top-level import
 silently omits the symbols, and importing the extension module directly
