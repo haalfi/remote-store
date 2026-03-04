@@ -11,64 +11,19 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [x] **ID-005 — Built-in `from_toml()` config loader** (v0.14.0)
-  `RegistryConfig.from_toml(path, *, table=())` classmethod in `_config.py`.
-  Zero-dep on 3.11+ (`tomllib`), optional `tomli` on 3.10. Includes
-  unknown-key warning (CFG-012). Spec: `sdd/specs/021-config-loaders.md`.
-
-- [x] **ID-002 — YAML config support: `from_yaml()`** (v0.14.0)
-  `RegistryConfig.from_yaml(path)` classmethod in `_config.py`.
-  Accepts `pyyaml` (primary) or `ruamel.yaml` (fallback).
-  Spec: `sdd/specs/021-config-loaders.md`.
-
-- [x] **BK-005 — SFTP backend test coverage gaps**
-  Coverage improved from 90% (44 uncovered) to 100% (0 uncovered) on `_sftp.py`.
-  35 new tests covering: `to_key()` all branches, string-to-enum coercion,
-  `_map_exception()` edge cases (RemoteStoreError pass-through, OSError ENOENT
-  via paramiko, generic OSError, FileNotFoundError), `write_atomic()` stream
-  content & failure cleanup, type guards in `get_file_info`/`get_folder_info`/
-  `delete_folder` (file-vs-directory), `_collect_folder_stats` recursive
-  subdirectory branch, non-ENOENT OSError re-raises in write/write_atomic/
-  delete_folder/get_file_info/get_folder_info/move/copy (src+dst), generic
-  exception wrapping in `list_files`/`list_folders`, `_rmtree` and
-  `delete_folder` listdir OSError fallbacks.
-
-- [ ] **BK-006 — Memory backend test coverage gaps**
-  Coverage is ~88% with 35 uncovered lines. Most are low-criticality defensive
-  paths: `InvalidPath` for null bytes / absolute paths / `..` segments,
-  `_traverse` returning `None` on file-as-directory, `_ensure_parents`
-  file-as-intermediate conflict, empty-path guards in move/copy, directory-at-
-  destination guards. Less urgent than BK-005 as MemoryBackend has no I/O and
-  these paths are primarily input validation.
+*(empty — all items shipped or moved to Ideas)*
 
 ---
 
 ## Known Bugs
 
-- [x] **BUG-001 — `get_folder_info("")` fails for empty-root stores** (v0.13.0)
-  Fixed via `RemotePath.ROOT` sentinel (bypasses `__init__` validation,
-  `str(ROOT) == "."`). All 6 backends + `_rebase_folder_info` updated.
-  19 new tests (15 ROOT unit tests + 4 regression tests now passing).
+*(none open)*
 
 ---
 
 ## Ideas (Unprioritized)
 
 Parking lot. Not evaluated, not committed to. Pick up when relevant.
-
-- [x] **ID-002 — YAML config support** (v0.14.0)
-  `RegistryConfig.from_yaml(path)` — optional `pyyaml` or `ruamel.yaml`.
-  Spec: `sdd/specs/021-config-loaders.md` (CFG-010/CFG-011).
-
-- [x] **ID-003 — Pydantic BaseSettings integration** (v0.14.0)
-  `pydantic_to_registry_config()` in `ext/pydantic.py`. Converts any Pydantic
-  `BaseModel`/`BaseSettings` to `RegistryConfig` via `model_dump() → from_dict()`.
-  Optional `pydantic-settings` dependency. Spec: `sdd/specs/021-config-loaders.md`
-  (CFG-015, CFG-016, CFG-017).
-
-- [x] **ID-005 — Built-in `from_toml()` config loader** (v0.14.0)
-  `RegistryConfig.from_toml(path, table=())` — zero-dep on 3.11+, `tomli` on 3.10.
-  Spec: `sdd/specs/021-config-loaders.md` (CFG-008/CFG-009).
 
 - [ ] **ID-006 — Progress callbacks for large transfers**
   Add an optional `callback: Callable[[int], None]` parameter to `read()` and
@@ -101,7 +56,8 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `noarch: python`, zero core deps, `run_constraints` for optional backends).
   CI validation via `conda-recipe.yml` workflow (rattler-build `--render-only`).
   Release checklist updated with conda version/sha256 steps (Phase 2, 3, 5).
-  Remaining: fork `conda-forge/staged-recipes`, submit PR externally.
+  Staged-recipes PR submitted: conda-forge/staged-recipes#32401. Waiting for
+  conda-forge reviewer approval.
 
 - [ ] **ID-025 — `ext.cache` — store-level caching middleware**
   Wraps a Store and caches reads, folder stats, existence checks with TTL.
@@ -144,33 +100,11 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   where GIL contention in `PythonFile` limits throughput. See spec
   `014-pyarrow-filesystem-adapter.md` Phase 2 sections.
 
-- [x] **ID-040 — `move(src, dst)` and `copy(src, dst)` same-path consistency** (v0.13.1)
-  Added `src == dst` short-circuit in `Store.move()` and `Store.copy()` with
-  `is_file()` verification (`NotFound` for missing files or folders at source
-  path). MemoryBackend retains its own move guard for defense in depth.
-  Spec: STORE-008a.
-
-- [x] **ID-041 — `Registry.get_store()` backend ownership foot-gun** (v0.13.1)
-  `get_store()` now sets `_owns_backend = False` on returned stores (same
-  pattern as `Store.child()`). `Registry.close()` remains the lifecycle owner.
-
 - [ ] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix**
   Listing numbers in `benchmarks/results/comparative.md` pre-date the ID-032
   cache-invalidation fix (`invalidate_cache()` on `BenchTarget`). Re-run all
   benchmark tiers with Docker backends to produce accurate baseline data.
   64KB write values for S3-PyArrow and Azure are also outlier-skewed.
-
-- [x] **ID-039 — Credential hygiene: `Secret` wrapper and central redaction** (v0.13.0)
-  `Secret` type in `_config.py`: wraps sensitive strings, `__repr__`/`__str__`
-  → `'***'`, `.reveal()` → actual value. `from_dict()` wraps `_SENSITIVE_KEYS`.
-  Backends accept `str | Secret` via `_reveal()`. SFTP enum coercion for
-  `host_key_policy`. `SecretRedactionFilter` logging filter. Regression tests.
-  → Spec: `sdd/specs/020-credential-hygiene.md` (SEC-001 through SEC-008)
-
-- [x] **ID-042 — Document Secret usage in README and examples** (v0.13.1)
-  Added "Credential hygiene" section to README and updated
-  `examples/configuration.py` with `Secret` wrapping, `from_dict()`
-  auto-wrapping, and `.reveal()` demonstration. Related: ID-039.
 
 ---
 
@@ -227,6 +161,21 @@ All v1.0 release blockers were resolved across v0.3.0–v0.4.1.
   Docs live at https://remote-store.readthedocs.io/.
 
 ### Backlog items
+
+- [x] **BK-005 — SFTP backend test coverage gaps** (v0.13.1)
+  Coverage improved from 90% to 100% on `_sftp.py`. 35 new tests covering
+  all uncovered branches: `to_key()`, string-to-enum coercion, `_map_exception()`
+  edge cases, `write_atomic()` stream paths, type guards, recursive stats,
+  non-ENOENT OSError re-raises, generic exception wrapping, `_rmtree` fallbacks.
+
+- [x] **BK-006 — Memory backend test coverage gaps** (v0.14.0)
+  Coverage improved from 90% to 100% on `_memory.py`. 30 new tests covering
+  all uncovered branches: `_split_path` validation (null bytes, absolute paths,
+  `..` segments), `_traverse` file-as-directory, `_ensure_parents` file conflict,
+  empty-path guards (write, delete, delete_folder, get_file_info, move, copy),
+  directory-at-destination guards, `delete_folder` non-recursive non-empty,
+  `get_folder_info` nested subdirectory traversal, move same-path branch,
+  source/destination type guards in move/copy.
 
 - [x] **BK-001 — Azure backend** (v0.5.0)
   `AzureBackend` implemented with HNS adaptive behavior, streaming reads,
@@ -338,7 +287,28 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
   (CONTRIBUTING.md spec 012), L-4 (Azure config example), L-5 (`[Unreleased]`
   section in CHANGELOG).
 
+### Known bugs
+
+- [x] **BUG-001 — `get_folder_info("")` fails for empty-root stores** (v0.13.0)
+  Fixed via `RemotePath.ROOT` sentinel (bypasses `__init__` validation,
+  `str(ROOT) == "."`). All 6 backends + `_rebase_folder_info` updated.
+  19 new tests (15 ROOT unit tests + 4 regression tests now passing).
+
 ### Ideas shipped
+
+- [x] **ID-002 — YAML config support** (v0.14.0)
+  `RegistryConfig.from_yaml(path)` — optional `pyyaml` or `ruamel.yaml`.
+  Spec: `sdd/specs/021-config-loaders.md` (CFG-010/CFG-011).
+
+- [x] **ID-003 — Pydantic BaseSettings integration** (v0.14.0)
+  `pydantic_to_registry_config()` in `ext/pydantic.py`. Converts any Pydantic
+  `BaseModel`/`BaseSettings` to `RegistryConfig` via `model_dump() → from_dict()`.
+  Optional `pydantic-settings` dependency. Spec: `sdd/specs/021-config-loaders.md`
+  (CFG-015, CFG-016, CFG-017).
+
+- [x] **ID-005 — Built-in `from_toml()` config loader** (v0.14.0)
+  `RegistryConfig.from_toml(path, table=())` — zero-dep on 3.11+, `tomli` on 3.10.
+  Spec: `sdd/specs/021-config-loaders.md` (CFG-008/CFG-009).
 
 - [x] **ID-001 — Cross-store transfer** *(subsumed by ID-023 `ext.transfer`)* (v0.9.0)
   Shipped as `transfer()` in `ext.transfer`. See spec `017-ext-transfer.md`.
@@ -483,6 +453,28 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
   Moved 1000-file listing test (`TestListPerformanceLarge`) from quick to
   `@pytest.mark.standard` tier. Updated README with per-tier cloud timing
   estimates (~5 min quick, ~15 min standard, ~60+ min full).
+
+- [x] **ID-039 — Credential hygiene: `Secret` wrapper and central redaction** (v0.13.0)
+  `Secret` type in `_config.py`: wraps sensitive strings, `__repr__`/`__str__`
+  → `'***'`, `.reveal()` → actual value. `from_dict()` wraps `_SENSITIVE_KEYS`.
+  Backends accept `str | Secret` via `_reveal()`. SFTP enum coercion for
+  `host_key_policy`. `SecretRedactionFilter` logging filter. Regression tests.
+  → Spec: `sdd/specs/020-credential-hygiene.md` (SEC-001 through SEC-008)
+
+- [x] **ID-040 — `move(src, dst)` and `copy(src, dst)` same-path consistency** (v0.13.1)
+  Added `src == dst` short-circuit in `Store.move()` and `Store.copy()` with
+  `is_file()` verification (`NotFound` for missing files or folders at source
+  path). MemoryBackend retains its own move guard for defense in depth.
+  Spec: STORE-008a.
+
+- [x] **ID-041 — `Registry.get_store()` backend ownership foot-gun** (v0.13.1)
+  `get_store()` now sets `_owns_backend = False` on returned stores (same
+  pattern as `Store.child()`). `Registry.close()` remains the lifecycle owner.
+
+- [x] **ID-042 — Document Secret usage in README and examples** (v0.13.1)
+  Added "Credential hygiene" section to README and updated
+  `examples/configuration.py` with `Secret` wrapping, `from_dict()`
+  auto-wrapping, and `.reveal()` demonstration. Related: ID-039.
 
 ### Other completed work
 
