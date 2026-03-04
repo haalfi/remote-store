@@ -6,7 +6,7 @@
 that are thin translation layers over `from_dict()`. Both produce identical
 `RegistryConfig` objects for equivalent input. The core config model does not change.
 
-**Backlog items:** ID-005 (`from_toml`), ID-002 (`from_yaml`)
+**Backlog items:** ID-005 (`from_toml`), ID-002 (`from_yaml`), ID-003 (Pydantic adapter)
 **Research:** `sdd/research/research-store-config.md`
 **Constraint:** ADR-0002 (no merging) — loaders are pre-processing steps that
 produce a single immutable `RegistryConfig`.
@@ -99,16 +99,75 @@ or `"store"` that would otherwise silently produce an empty config.
 
 ### CFG-013: Loader Equivalence
 
-**Invariant:** `from_toml()`, `from_yaml()`, and `from_dict()` produce identical
-`RegistryConfig` objects for semantically equivalent input. All Secret wrapping,
-type coercion, and validation happens in `from_dict()` — the file loaders are
-pure format-to-dict translators.
+**Invariant:** `from_toml()`, `from_yaml()`, `from_dict()`, and
+`pydantic_to_registry_config()` produce identical `RegistryConfig` objects for
+semantically equivalent input. All Secret wrapping, type coercion, and
+validation happens in `from_dict()` — the loaders/adapters are pure
+format-to-dict translators.
 
 ### CFG-014: Optional Extras
 
 **Invariant:** `pyproject.toml` declares optional extras:
 - `toml`: `["tomli>=1.1.0; python_version < '3.11'"]`
 - `yaml`: `["pyyaml>=5.1"]`
+- `pydantic`: `["pydantic-settings>=2.0.0"]`
+
+---
+
+## Pydantic Adapter
+
+### CFG-015: `pydantic_to_registry_config()`
+
+**Invariant:** `pydantic_to_registry_config(model)` converts any Pydantic
+`BaseModel` instance to a `RegistryConfig`.
+
+**Location:** `remote_store/ext/pydantic.py`
+
+**Parameters:**
+- `model: BaseModel` — A Pydantic model whose `model_dump()` output conforms
+  to the `RegistryConfig` schema (i.e. has `backends` and `stores` keys).
+
+**Behavior:**
+1. Call `model.model_dump()` to produce a plain dict.
+2. Delegate to `RegistryConfig.from_dict()` (inherits Secret wrapping,
+   unknown-key warning, validation).
+
+**Raises:**
+- `ModuleNotFoundError` if `pydantic` is not installed. Message includes
+  install instructions: `pip install 'remote-store[pydantic]'`.
+- Any exception from `from_dict()` (e.g. `TypeError`, `KeyError`).
+
+**Postconditions:** The returned `RegistryConfig` is identical to calling
+`RegistryConfig.from_dict(model.model_dump())`.
+
+**SecretStr note:** If the Pydantic model uses `pydantic.SecretStr` for
+credential fields, `model_dump()` exposes them as plain strings. This is
+intentional — the `pydantic_to_registry_config()` call is the
+config→registry boundary where `from_dict()` re-wraps sensitive keys in
+`Secret`. Document this explicitly.
+
+### CFG-016: ADR-0002 Compatibility
+
+**Invariant:** The Pydantic adapter operates entirely on the user side.
+Pydantic's source merging (env vars, `.env` files, config files) happens
+*before* `pydantic_to_registry_config()` is called. The resulting
+`RegistryConfig` is immutable and subject to ADR-0002 (no further merging).
+
+**Flow:**
+```
+User's Pydantic model (merges env + .env + files)
+    → pydantic_to_registry_config() → from_dict()
+        → RegistryConfig (immutable, ADR-0002 applies)
+```
+
+### CFG-017: Extension Contract
+
+**Invariant:** `ext/pydantic.py` follows the extension architecture (ADR-0008):
+- Defines `__all__`.
+- Uses only the public `RegistryConfig.from_dict()` API.
+- Conditionally re-exported from `remote_store.__init__` (silent
+  `try/except ImportError`).
+- Import of `pydantic` is guarded at module level with a clear error message.
 
 ---
 
@@ -119,6 +178,7 @@ pure format-to-dict translators.
 | `from_toml()` | `_config.py` classmethod on `RegistryConfig` |
 | `from_yaml()` | `_config.py` classmethod on `RegistryConfig` |
 | Unknown-key warning | `_config.py` inside `from_dict()` |
+| Pydantic adapter | `ext/pydantic.py` |
 | Optional extras | `pyproject.toml` `[project.optional-dependencies]` |
 
 ---
@@ -171,4 +231,33 @@ stores:
 
 ```python
 config = RegistryConfig.from_yaml("remote-store.yaml")
+```
+
+## Example Pydantic
+
+```python
+from pydantic import BaseModel
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from remote_store.ext.pydantic import pydantic_to_registry_config
+
+class BackendEntry(BaseModel):
+    type: str
+    options: dict[str, object] = {}
+
+class StoreEntry(BaseModel):
+    backend: str
+    root_path: str = ""
+    options: dict[str, object] = {}
+
+class RemoteStoreSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="RS_",
+        env_nested_delimiter="__",
+    )
+
+    backends: dict[str, BackendEntry] = {}
+    stores: dict[str, StoreEntry] = {}
+
+settings = RemoteStoreSettings()
+config = pydantic_to_registry_config(settings)
 ```

@@ -59,6 +59,7 @@ arrow = ["pyarrow>=12.0.0"]
 otel = ["opentelemetry-api>=1.28.0"]
 toml = ["tomli>=1.1.0; python_version < '3.11'"]
 yaml = ["pyyaml>=5.1"]
+pydantic = ["pydantic-settings>=2.0.0"]
 
 bench = [
   "pytest-benchmark>=4.0",

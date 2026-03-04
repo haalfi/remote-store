@@ -37,6 +37,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `from_dict()` now emits `UserWarning` for unrecognized keys like `"backend"`
   (typo for `"backends"`), preventing silently empty configs.
 
+- **`pydantic_to_registry_config()` — Pydantic adapter** (ID-003)
+  Convert any Pydantic `BaseModel` or `BaseSettings` instance to a
+  `RegistryConfig` via `model_dump() → from_dict()`. Supports env-var binding,
+  `.env` file loading, and validation via `pydantic-settings`. Optional
+  `pydantic` extra. Spec: CFG-015, CFG-016, CFG-017.
+
 ## [0.13.0] - 2026-03-03
 
 ### Added

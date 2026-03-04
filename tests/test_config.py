@@ -539,11 +539,7 @@ class TestFromToml:
         """Secrets in TOML are auto-wrapped via from_dict() delegation."""
         toml_file = tmp_path / "creds.toml"
         toml_file.write_text(
-            '[backends.s3]\ntype = "s3"\n\n'
-            "[backends.s3.options]\n"
-            'bucket = "b"\n'
-            'key = "AKID"\n'
-            'secret = "SK"\n'
+            '[backends.s3]\ntype = "s3"\n\n[backends.s3.options]\nbucket = "b"\nkey = "AKID"\nsecret = "SK"\n'
         )
         rc = RegistryConfig.from_toml(toml_file)
         opts = rc.backends["s3"].options
@@ -671,9 +667,7 @@ class TestUnknownKeyWarning:
     @pytest.mark.spec("CFG-012")
     def test_unknown_key_warns(self) -> None:
         with pytest.warns(UserWarning, match="Unknown top-level config keys"):
-            RegistryConfig.from_dict(
-                {"backends": {}, "stores": {}, "backend": {"typo": True}}
-            )
+            RegistryConfig.from_dict({"backends": {}, "stores": {}, "backend": {"typo": True}})
 
     @pytest.mark.spec("CFG-012")
     def test_known_keys_no_warning(self) -> None:

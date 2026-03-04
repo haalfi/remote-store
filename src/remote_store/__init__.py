@@ -106,3 +106,12 @@ try:
 except ImportError:
     # opentelemetry-api not installed — don't crash the core package.
     pass
+
+# Optional Pydantic extension (available when pydantic is installed)
+try:
+    from remote_store.ext.pydantic import pydantic_to_registry_config
+
+    __all__ += ["pydantic_to_registry_config"]
+except ImportError:
+    # pydantic not installed — don't crash the core package.
+    pass

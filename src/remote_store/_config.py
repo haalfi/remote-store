@@ -165,8 +165,7 @@ class RegistryConfig:
         unknown = set(data.keys()) - _KNOWN_KEYS
         if unknown:
             warnings.warn(
-                f"Unknown top-level config keys ignored: {sorted(unknown)}. "
-                f"Expected keys: {sorted(_KNOWN_KEYS)}",
+                f"Unknown top-level config keys ignored: {sorted(unknown)}. Expected keys: {sorted(_KNOWN_KEYS)}",
                 UserWarning,
                 stacklevel=2,
             )
@@ -227,8 +226,7 @@ class RegistryConfig:
                 import tomli as tomllib  # type: ignore[no-redef,import-not-found]
             except ModuleNotFoundError:
                 raise ModuleNotFoundError(
-                    "TOML support requires tomli on Python < 3.11. "
-                    "Install it with: pip install 'remote-store[toml]'"
+                    "TOML support requires tomli on Python < 3.11. Install it with: pip install 'remote-store[toml]'"
                 ) from None
 
         with open(path, "rb") as f:
@@ -283,6 +281,5 @@ def _get_yaml_loader() -> Callable[..., Any]:
     except ImportError:
         pass
     raise ModuleNotFoundError(
-        "YAML support requires pyyaml or ruamel.yaml. "
-        "Install with: pip install 'remote-store[yaml]'"
+        "YAML support requires pyyaml or ruamel.yaml. Install with: pip install 'remote-store[yaml]'"
     )

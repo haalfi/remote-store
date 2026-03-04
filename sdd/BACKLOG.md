@@ -60,10 +60,11 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `RegistryConfig.from_yaml(path)` — optional `pyyaml` or `ruamel.yaml`.
   Spec: `sdd/specs/021-config-loaders.md` (CFG-010/CFG-011).
 
-- [~] **ID-003 — Pydantic BaseSettings integration**
-  Let users define backend config via Pydantic `BaseSettings` for env-var binding,
-  `.env` file loading, and validation. Optional `pydantic` dependency.
-  Research complete (`sdd/research/research-store-config.md`). Implementation pending.
+- [x] **ID-003 — Pydantic BaseSettings integration** (v0.14.0)
+  `pydantic_to_registry_config()` in `ext/pydantic.py`. Converts any Pydantic
+  `BaseModel`/`BaseSettings` to `RegistryConfig` via `model_dump() → from_dict()`.
+  Optional `pydantic-settings` dependency. Spec: `sdd/specs/021-config-loaders.md`
+  (CFG-015, CFG-016, CFG-017).
 
 - [x] **ID-005 — Built-in `from_toml()` config loader** (v0.14.0)
   `RegistryConfig.from_toml(path, table=())` — zero-dep on 3.11+, `tomli` on 3.10.
