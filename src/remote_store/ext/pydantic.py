@@ -40,8 +40,8 @@ def pydantic_to_registry_config(model: BaseModel) -> RegistryConfig:
     """Convert a Pydantic model to a :class:`RegistryConfig`.
 
     Calls ``model.model_dump()`` to produce a plain dict, then delegates to
-    :meth:`RegistryConfig._from_dict`. Secret wrapping, unknown-key warnings,
-    and validation all happen there.
+    :meth:`RegistryConfig.from_dict`. Secret wrapping, unknown-key warnings,
+    and validation all happen in ``from_dict()``.
 
     .. note:: Pydantic ``SecretStr`` fields are **not** auto-unwrapped.
        ``model_dump()`` returns ``SecretStr`` objects (not plain strings),
@@ -55,4 +55,4 @@ def pydantic_to_registry_config(model: BaseModel) -> RegistryConfig:
     :returns: An immutable ``RegistryConfig``.
     :raises TypeError: If the model dump does not conform to the expected schema.
     """
-    return RegistryConfig._from_dict(model.model_dump(), stacklevel=3)
+    return RegistryConfig.from_dict(model.model_dump())
