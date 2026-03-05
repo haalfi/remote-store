@@ -156,15 +156,11 @@ class RegistryConfig:
                 )
 
     @classmethod
-    def from_dict(
-        cls,
-        data: dict[str, object],
-        *,
-        _stacklevel: int = 2,
-    ) -> RegistryConfig:
-        """Construct from a plain dict (e.g. parsed TOML/JSON).
+    def _from_dict(cls, data: dict[str, object], *, stacklevel: int) -> RegistryConfig:
+        """Private implementation shared by all loaders.
 
-        :param data: Dict with ``backends`` and ``stores`` keys.
+        *stacklevel* is passed directly to :func:`warnings.warn` so that the
+        warning points at the correct frame in each calling context.
         """
         _KNOWN_KEYS = {"backends", "stores"}
         unknown = set(data.keys()) - _KNOWN_KEYS
@@ -172,7 +168,7 @@ class RegistryConfig:
             warnings.warn(
                 f"Unknown top-level config keys ignored: {sorted(unknown)}. Expected keys: {sorted(_KNOWN_KEYS)}",
                 UserWarning,
-                stacklevel=_stacklevel,
+                stacklevel=stacklevel,
             )
 
         raw_backends = data.get("backends", {})
@@ -207,6 +203,14 @@ class RegistryConfig:
             )
 
         return cls(backends=backends, stores=stores)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> RegistryConfig:
+        """Construct from a plain dict (e.g. parsed TOML/JSON).
+
+        :param data: Dict with ``backends`` and ``stores`` keys.
+        """
+        return cls._from_dict(data, stacklevel=3)
 
     @classmethod
     def from_toml(
@@ -246,7 +250,7 @@ class RegistryConfig:
             msg = f"Expected a TOML table, got {type(data).__name__}"
             raise TypeError(msg)
 
-        return cls.from_dict(data, _stacklevel=3)
+        return cls._from_dict(data, stacklevel=3)
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> RegistryConfig:
@@ -267,7 +271,7 @@ class RegistryConfig:
             msg = f"Expected YAML mapping at top level, got {type(data).__name__}"
             raise TypeError(msg)
 
-        return cls.from_dict(data, _stacklevel=3)
+        return cls._from_dict(data, stacklevel=3)
 
 
 def _get_yaml_loader() -> Callable[..., Any]:

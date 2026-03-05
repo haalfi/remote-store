@@ -55,4 +55,4 @@ def pydantic_to_registry_config(model: BaseModel) -> RegistryConfig:
     :returns: An immutable ``RegistryConfig``.
     :raises TypeError: If the model dump does not conform to the expected schema.
     """
-    return RegistryConfig.from_dict(model.model_dump(), _stacklevel=3)
+    return RegistryConfig.from_dict(model.model_dump())
