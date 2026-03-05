@@ -110,6 +110,6 @@ if __name__ == "__main__":
                 print(f"  wrote: {notes.read_bytes('todo.txt').decode()}")
 
         except ImportError:
-            print("\n(pydantic not installed — skipping pydantic example)")
+            print("\n(pydantic not installed -- skipping pydantic example)")
 
     print("\nDone!")

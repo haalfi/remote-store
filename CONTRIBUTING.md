@@ -235,6 +235,7 @@ Documentation, examples, and metadata live in many places. Use these checklists 
 
 - [ ] Master is clean: `git status` shows no uncommitted changes
 - [ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)
+- [ ] `hatch run all` passes **locally** (lint + format-check + typecheck + test-cov + examples). Local runs without Docker backends are stricter than CI for coverage — CI has Azurite which inflates Azure backend coverage, potentially masking gaps in new code
 - [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete (`[x]`) or defer (`[ ]`)
 - [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
 - [ ] Decide bump level (patch / minor / major) per the table above
