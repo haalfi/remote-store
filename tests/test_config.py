@@ -710,3 +710,99 @@ class TestUnknownKeyWarning:
 
 
 # endregion
+
+
+# region: Config loader fallback paths (CFG-008, CFG-009, CFG-010, CFG-011)
+
+
+class TestFromTomlFallbacks:
+    """Tests for optional-dependency fallback paths in from_toml()."""
+
+    @pytest.mark.spec("CFG-009")
+    def test_tomli_fallback_when_tomllib_missing(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """When tomllib is unavailable, from_toml() falls back to tomli."""
+        import sys
+
+        try:
+            import tomli  # noqa: F401
+        except ImportError:
+            pytest.skip("tomli not installed — fallback path cannot be exercised")
+
+        toml_file = tmp_path / "config.toml"
+        toml_file.write_text('[backends.m]\ntype = "memory"\n\n[stores]\n')
+
+        # Hide tomllib so the fallback branch runs
+        monkeypatch.setitem(sys.modules, "tomllib", None)
+        rc = RegistryConfig.from_toml(toml_file)
+        assert rc.backends["m"].type == "memory"
+
+    @pytest.mark.spec("CFG-009")
+    def test_no_toml_lib_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """When neither tomllib nor tomli is available, from_toml() raises."""
+        import sys
+
+        toml_file = tmp_path / "config.toml"
+        toml_file.write_text('[backends.m]\ntype = "memory"\n\n[stores]\n')
+
+        monkeypatch.setitem(sys.modules, "tomllib", None)
+        monkeypatch.setitem(sys.modules, "tomli", None)
+        with pytest.raises(ModuleNotFoundError, match="tomli"):
+            RegistryConfig.from_toml(toml_file)
+
+    @pytest.mark.spec("CFG-008")
+    def test_from_toml_non_dict_table_value(self, tmp_path: Path) -> None:
+        """TypeError when table path resolves to a non-dict value."""
+        toml_file = tmp_path / "scalar.toml"
+        toml_file.write_text('[tool]\nremote-store = "not a table"\n')
+        with pytest.raises(TypeError, match="Expected a TOML table"):
+            RegistryConfig.from_toml(toml_file, table=("tool", "remote-store"))
+
+
+class TestFromYamlFallbacks:
+    """Tests for optional-dependency fallback paths in from_yaml() / _get_yaml_loader()."""
+
+    @pytest.mark.spec("CFG-011")
+    def test_ruamel_fallback_when_pyyaml_missing(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """When pyyaml is unavailable, from_yaml() falls back to ruamel.yaml."""
+        import sys
+
+        yaml_file = tmp_path / "config.yaml"
+        yaml_file.write_text("backends:\n  m:\n    type: memory\nstores: {}\n")
+
+        # Block pyyaml so _get_yaml_loader tries ruamel
+        monkeypatch.setitem(sys.modules, "yaml", None)
+
+        try:
+            from ruamel.yaml import YAML  # noqa: F401
+
+            ruamel_available = True
+        except ImportError:
+            ruamel_available = False
+
+        if not ruamel_available:
+            pytest.skip("ruamel.yaml not installed")
+
+        from remote_store._config import _get_yaml_loader
+
+        loader = _get_yaml_loader()
+        with open(yaml_file, encoding="utf-8") as f:
+            data = loader(f)
+        assert isinstance(data, dict)
+        assert data["backends"]["m"]["type"] == "memory"
+
+    @pytest.mark.spec("CFG-011")
+    def test_no_yaml_lib_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """When neither pyyaml nor ruamel.yaml is available, raises ModuleNotFoundError."""
+        import sys
+
+        monkeypatch.setitem(sys.modules, "yaml", None)
+        monkeypatch.setitem(sys.modules, "ruamel", None)
+        monkeypatch.setitem(sys.modules, "ruamel.yaml", None)
+
+        from remote_store._config import _get_yaml_loader
+
+        with pytest.raises(ModuleNotFoundError, match="pyyaml or ruamel"):
+            _get_yaml_loader()
+
+
+# endregion

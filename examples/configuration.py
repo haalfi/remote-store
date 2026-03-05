@@ -66,8 +66,8 @@ if __name__ == "__main__":
     # repr() and str() always mask the value — verify, don't print the object:
     assert repr(manual_secret) == "Secret('***')"
     assert str(manual_secret) == "***"
-    print("\nSecret masking: repr → Secret('***'), str → ***")
-    print(f"Secret reveal: {manual_secret.reveal()}")  # → my-secret-key
+    print("\nSecret masking: repr -> Secret('***'), str -> ***")
+    print(f"Secret reveal: {manual_secret.reveal()}")  # -> my-secret-key
 
     # from_dict() auto-wraps known sensitive keys (key, secret, password,
     # account_key, sas_token, connection_string):
@@ -88,8 +88,8 @@ if __name__ == "__main__":
     s3_opts = config_with_secrets.backends["s3"].options
     assert repr(s3_opts["key"]) == "Secret('***')"
     assert repr(s3_opts["secret"]) == "Secret('***')"
-    print("\nAuto-wrapped credentials masked: key and secret → Secret('***')")
-    print(f"Bucket (not secret): {s3_opts['bucket']!r}")  # → 'my-bucket'
+    print("\nAuto-wrapped credentials masked: key and secret -> Secret('***')")
+    print(f"Bucket (not secret): {s3_opts['bucket']!r}")  # -> 'my-bucket'
 
     # --- Backend configs for S3, S3-PyArrow, and SFTP ---
     # These are config-only examples. They show the structure but don't
