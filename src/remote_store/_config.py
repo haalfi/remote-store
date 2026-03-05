@@ -205,12 +205,16 @@ class RegistryConfig:
         return cls(backends=backends, stores=stores)
 
     @classmethod
-    def from_dict(cls, data: dict[str, object]) -> RegistryConfig:
+    def from_dict(cls, data: dict[str, object], *, _extra_frames: int = 0) -> RegistryConfig:
         """Construct from a plain dict (e.g. parsed TOML/JSON).
 
         :param data: Dict with ``backends`` and ``stores`` keys.
+        :param _extra_frames: Protected. Extra call-stack frames to skip when
+            issuing warnings, for use by adapter layers (e.g. the pydantic
+            adapter) that add an extra frame between user code and this method.
+            Not part of the public API; subject to change without notice.
         """
-        return cls._from_dict(data, stacklevel=3)
+        return cls._from_dict(data, stacklevel=3 + _extra_frames)
 
     @classmethod
     def from_toml(

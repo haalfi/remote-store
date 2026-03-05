@@ -99,13 +99,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   where GIL contention in `PythonFile` limits throughput. See spec
   `014-pyarrow-filesystem-adapter.md` Phase 2 sections.
 
-- [x] **ID-043 — Remove `_stacklevel` from public `from_dict()` signature** *(done, next release)*
-  `RegistryConfig.from_dict()` exposes a `_stacklevel: int = 2` keyword
-  argument — a private implementation detail leaking into the public API.
-  Fixed: extracted `_from_dict()` private impl; `from_dict()`, `from_toml()`,
-  `from_yaml()` call it with correct `stacklevel`. `ext/pydantic.py` now calls
-  only the public `from_dict()` API.
-
 - [ ] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix**
   Listing numbers in `benchmarks/results/comparative.md` pre-date the ID-032
   cache-invalidation fix (`invalidate_cache()` on `BenchTarget`). Re-run all
@@ -481,6 +474,15 @@ From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-revie
   Added "Credential hygiene" section to README and updated
   `examples/configuration.py` with `Secret` wrapping, `from_dict()`
   auto-wrapping, and `.reveal()` demonstration. Related: ID-039.
+
+- [x] **ID-043 — Remove `_stacklevel` from public `from_dict()` signature** *(unreleased)*
+  `RegistryConfig.from_dict()` exposes a `_stacklevel: int = 2` keyword
+  argument — a private implementation detail leaking into the public API.
+  Fixed: extracted `_from_dict()` private impl; `from_dict()`, `from_toml()`,
+  `from_yaml()` call it with correct `stacklevel`. `ext/pydantic.py` now calls
+  only the public `from_dict()` API. `from_dict()` gains a protected
+  `_extra_frames` param so adapter layers (e.g. the pydantic adapter) can
+  correctly offset the warning stacklevel.
 
 ### Other completed work
 
