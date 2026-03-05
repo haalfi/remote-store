@@ -68,14 +68,7 @@ class S3Backend(Backend):
         self._client_options = client_options or {}
         self._fs_instance: Any = None
 
-    def __repr__(self) -> str:
-        return (
-            f"S3Backend(bucket={self._bucket!r}, "
-            f"endpoint_url={self._endpoint_url!r}, "
-            f"key={'***' if self._key is not None else None!r}, "
-            f"secret={'***' if self._secret is not None else None!r}, "
-            f"region_name={self._region_name!r})"
-        )
+    # region: properties
 
     @property
     def name(self) -> str:
@@ -85,33 +78,9 @@ class S3Backend(Backend):
     def capabilities(self) -> CapabilitySet:
         return _ALL_CAPABILITIES
 
-    # region: lazy filesystem
-    @property
-    def _fs(self) -> Any:
-        if self._fs_instance is None:
-            import s3fs  # type: ignore[import-untyped]
-
-            opts: dict[str, Any] = dict(self._client_options)
-            if self._endpoint_url is not None:
-                opts["endpoint_url"] = self._endpoint_url
-            if self._key is not None:
-                opts["key"] = self._key
-            if self._secret is not None:
-                opts["secret"] = self._secret
-            if self._region_name is not None:
-                client_kwargs: dict[str, Any] = opts.setdefault("client_kwargs", {})
-                client_kwargs["region_name"] = self._region_name
-            opts.setdefault("anon", False)
-            self._fs_instance = s3fs.S3FileSystem(**opts)
-        return self._fs_instance
-
     # endregion
 
-    # region: path helpers
-    def _s3_path(self, path: str) -> str:
-        if path:
-            return f"{self._bucket}/{path}"
-        return self._bucket
+    # region: public methods
 
     def to_key(self, native_path: str) -> str:
         prefix = f"{self._bucket}/"
@@ -119,58 +88,6 @@ class S3Backend(Backend):
             return native_path[len(prefix) :]
         return native_path
 
-    # endregion
-
-    # region: error mapping
-    @contextmanager
-    def _errors(self, path: str = "") -> Iterator[None]:
-        """Map s3fs/botocore exceptions to remote_store errors."""
-        try:
-            yield
-        except RemoteStoreError:
-            raise
-        except FileNotFoundError:
-            raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-        except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
-            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-        except Exception as exc:
-            raise self._classify_error(exc, path) from None
-
-    def _classify_error(self, exc: Exception, path: str) -> RemoteStoreError:
-        """Classify an unknown exception into a remote_store error type."""
-        msg = str(exc).lower()
-        if "404" in msg or "nosuchkey" in msg or "nosuchbucket" in msg or "not found" in msg:
-            return NotFound(f"Not found: {path}", path=path, backend=self.name)
-        if "403" in msg or "accessdenied" in msg or "access denied" in msg:
-            return PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name)
-        if any(kw in msg for kw in ("endpoint", "connect", "timeout", "dns", "name or service")):
-            return BackendUnavailable(str(exc), path=path, backend=self.name)
-        return RemoteStoreError(str(exc), path=path, backend=self.name)
-
-    # endregion
-
-    # region: helpers
-    def _info_to_fileinfo(self, info: dict[str, Any], path: str) -> FileInfo:
-        """Convert an s3fs info dict to a FileInfo."""
-        name = path.rsplit("/", 1)[-1] if "/" in path else path
-        size = info.get("size", info.get("Size", 0)) or 0
-        modified = info.get("LastModified", info.get("last_modified"))
-        if isinstance(modified, str):
-            modified = datetime.fromisoformat(modified)
-        if modified is not None and modified.tzinfo is None:
-            modified = modified.replace(tzinfo=timezone.utc)
-        if modified is None:
-            modified = datetime.now(tz=timezone.utc)
-        return FileInfo(
-            path=RemotePath(path),
-            name=name,
-            size=int(size),
-            modified_at=modified,
-        )
-
-    # endregion
-
-    # region: existence checks
     def exists(self, path: str) -> bool:
         with self._errors(path):
             return bool(self._fs.exists(self._s3_path(path)))
@@ -191,9 +108,6 @@ class S3Backend(Backend):
             except FileNotFoundError:
                 return False
 
-    # endregion
-
-    # region: read operations
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
             f: BinaryIO = self._fs.open(self._s3_path(path), "rb")
@@ -204,9 +118,6 @@ class S3Backend(Backend):
         with self._errors(path):
             return bytes(self._fs.cat_file(self._s3_path(path)))
 
-    # endregion
-
-    # region: write operations
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         with self._errors(path):
             if not overwrite and self._fs.exists(self._s3_path(path)):
@@ -221,9 +132,6 @@ class S3Backend(Backend):
         # S3 PUT is inherently atomic (S3-010)
         self.write(path, content, overwrite=overwrite)
 
-    # endregion
-
-    # region: delete operations
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._errors(path):
             if not self._fs.exists(self._s3_path(path)):
@@ -251,9 +159,6 @@ class S3Backend(Backend):
                         backend=self.name,
                     )
 
-    # endregion
-
-    # region: listing operations
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         try:
             s3_path = self._s3_path(path)
@@ -310,9 +215,6 @@ class S3Backend(Backend):
             if compiled.match(str(info.path)):
                 yield info
 
-    # endregion
-
-    # region: metadata
     def get_file_info(self, path: str) -> FileInfo:
         with self._errors(path):
             info = self._fs.info(self._s3_path(path))
@@ -353,9 +255,6 @@ class S3Backend(Backend):
                 modified_at=latest_modified,
             )
 
-    # endregion
-
-    # region: move and copy
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         with self._errors(src):
             if not self._fs.exists(self._s3_path(src)):
@@ -373,15 +272,12 @@ class S3Backend(Backend):
                 raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
             self._fs.copy(self._s3_path(src), self._s3_path(dst))
 
-    # endregion
-
-    # region: lifecycle
     def close(self) -> None:
         if self._fs_instance is not None:
             self._fs_instance = None
 
     def unwrap(self, type_hint: type[T]) -> T:
-        import s3fs
+        import s3fs  # type: ignore[import-untyped]
 
         if type_hint is s3fs.S3FileSystem:
             return self._fs  # type: ignore[no-any-return]
@@ -390,6 +286,90 @@ class S3Backend(Backend):
             f"Override unwrap() in your backend to provide native access.",
             capability="unwrap",
             backend=self.name,
+        )
+
+    # endregion
+
+    # region: dunder methods
+
+    def __repr__(self) -> str:
+        return (
+            f"S3Backend(bucket={self._bucket!r}, "
+            f"endpoint_url={self._endpoint_url!r}, "
+            f"key={'***' if self._key is not None else None!r}, "
+            f"secret={'***' if self._secret is not None else None!r}, "
+            f"region_name={self._region_name!r})"
+        )
+
+    # endregion
+
+    # region: private helpers
+
+    @property
+    def _fs(self) -> Any:
+        if self._fs_instance is None:
+            import s3fs
+
+            opts: dict[str, Any] = dict(self._client_options)
+            if self._endpoint_url is not None:
+                opts["endpoint_url"] = self._endpoint_url
+            if self._key is not None:
+                opts["key"] = self._key
+            if self._secret is not None:
+                opts["secret"] = self._secret
+            if self._region_name is not None:
+                client_kwargs: dict[str, Any] = opts.setdefault("client_kwargs", {})
+                client_kwargs["region_name"] = self._region_name
+            opts.setdefault("anon", False)
+            self._fs_instance = s3fs.S3FileSystem(**opts)
+        return self._fs_instance
+
+    def _s3_path(self, path: str) -> str:
+        if path:
+            return f"{self._bucket}/{path}"
+        return self._bucket
+
+    @contextmanager
+    def _errors(self, path: str = "") -> Iterator[None]:
+        """Map s3fs/botocore exceptions to remote_store errors."""
+        try:
+            yield
+        except RemoteStoreError:
+            raise
+        except FileNotFoundError:
+            raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+        except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        except Exception as exc:
+            raise self._classify_error(exc, path) from None
+
+    def _classify_error(self, exc: Exception, path: str) -> RemoteStoreError:
+        """Classify an unknown exception into a remote_store error type."""
+        msg = str(exc).lower()
+        if "404" in msg or "nosuchkey" in msg or "nosuchbucket" in msg or "not found" in msg:
+            return NotFound(f"Not found: {path}", path=path, backend=self.name)
+        if "403" in msg or "accessdenied" in msg or "access denied" in msg:
+            return PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name)
+        if any(kw in msg for kw in ("endpoint", "connect", "timeout", "dns", "name or service")):
+            return BackendUnavailable(str(exc), path=path, backend=self.name)
+        return RemoteStoreError(str(exc), path=path, backend=self.name)
+
+    def _info_to_fileinfo(self, info: dict[str, Any], path: str) -> FileInfo:
+        """Convert an s3fs info dict to a FileInfo."""
+        name = path.rsplit("/", 1)[-1] if "/" in path else path
+        size = info.get("size", info.get("Size", 0)) or 0
+        modified = info.get("LastModified", info.get("last_modified"))
+        if isinstance(modified, str):
+            modified = datetime.fromisoformat(modified)
+        if modified is not None and modified.tzinfo is None:
+            modified = modified.replace(tzinfo=timezone.utc)
+        if modified is None:
+            modified = datetime.now(tz=timezone.utc)
+        return FileInfo(
+            path=RemotePath(path),
+            name=name,
+            size=int(size),
+            modified_at=modified,
         )
 
     # endregion

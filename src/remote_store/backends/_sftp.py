@@ -180,14 +180,7 @@ class SFTPBackend(Backend):
         self._ssh_client: Any = None
         self._sftp_client: Any = None
 
-    def __repr__(self) -> str:
-        return (
-            f"SFTPBackend(host={self._host!r}, port={self._port!r}, "
-            f"username={self._username!r}, "
-            f"password={'***' if self._password is not None else None!r}, "
-            f"pkey={'***' if self._pkey is not None else None!r}, "
-            f"base_path={self._base_path!r})"
-        )
+    # region: properties
 
     @property
     def name(self) -> str:
@@ -197,7 +190,324 @@ class SFTPBackend(Backend):
     def capabilities(self) -> CapabilitySet:
         return _SFTP_CAPABILITIES
 
-    # region: lazy connection
+    # endregion
+
+    # region: public methods
+
+    def to_key(self, native_path: str) -> str:
+        if self._base_path == "/":
+            # Strip leading slash
+            return native_path.lstrip("/")
+        if native_path.startswith(self._base_path + "/"):
+            return native_path[len(self._base_path) + 1 :]
+        if native_path == self._base_path:
+            return ""
+        return native_path
+
+    def exists(self, path: str) -> bool:
+        with self._errors(path):
+            try:
+                self._sftp.stat(self._sftp_path(path))
+                return True
+            except OSError:
+                return False
+
+    def is_file(self, path: str) -> bool:
+        with self._errors(path):
+            try:
+                attrs = self._sftp.stat(self._sftp_path(path))
+                return bool(stat.S_ISREG(attrs.st_mode))
+            except OSError:
+                return False
+
+    def is_folder(self, path: str) -> bool:
+        with self._errors(path):
+            try:
+                attrs = self._sftp.stat(self._sftp_path(path))
+                return bool(stat.S_ISDIR(attrs.st_mode))
+            except OSError:
+                return False
+
+    def read(self, path: str) -> BinaryIO:
+        with self._errors(path):
+            sftp_path = self._sftp_path(path)
+            f: BinaryIO = self._sftp.file(sftp_path, "r")
+            raw = _ErrorMappingStream(f, self._map_exception, path)
+            return io.BufferedReader(cast("io.RawIOBase", raw))
+
+    def read_bytes(self, path: str) -> bytes:
+        with self._errors(path):
+            sftp_path = self._sftp_path(path)
+            try:
+                with self._sftp.file(sftp_path, "r") as f:
+                    f.prefetch()
+                    return bytes(f.read())
+            except OSError as exc:
+                code = getattr(exc, "errno", None)
+                if code == errno.ENOENT:
+                    raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+                raise
+
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+        with self._errors(path):
+            sftp_path = self._sftp_path(path)
+            if not overwrite:
+                try:
+                    self._sftp.stat(sftp_path)
+                    raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+                except OSError as exc:
+                    if getattr(exc, "errno", None) != errno.ENOENT:
+                        raise
+            self._ensure_parent_dirs(sftp_path)
+            with self._sftp.file(sftp_path, "w") as f:
+                if isinstance(content, bytes):
+                    f.write(content)
+                else:
+                    shutil.copyfileobj(content, f, _CHUNK_SIZE)
+
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+        with self._errors(path):
+            sftp_path = self._sftp_path(path)
+            if not overwrite:
+                try:
+                    self._sftp.stat(sftp_path)
+                    raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+                except OSError as exc:
+                    if getattr(exc, "errno", None) != errno.ENOENT:
+                        raise
+            self._ensure_parent_dirs(sftp_path)
+            # Write to temp file, then rename
+            name = sftp_path.rsplit("/", 1)[-1] if "/" in sftp_path else sftp_path
+            parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else "."
+            tmp_name = f".~tmp.{name}.{uuid.uuid4().hex[:8]}"
+            tmp_path = f"{parent}/{tmp_name}"
+            try:
+                with self._sftp.file(tmp_path, "w") as f:
+                    if isinstance(content, bytes):
+                        f.write(content)
+                    else:
+                        shutil.copyfileobj(content, f, _CHUNK_SIZE)
+                try:
+                    self._sftp.posix_rename(tmp_path, sftp_path)
+                except OSError:  # pragma: no cover -- fallback for servers without posix_rename
+                    if overwrite:
+                        with contextlib.suppress(OSError):
+                            self._sftp.remove(sftp_path)
+                    self._sftp.rename(tmp_path, sftp_path)
+            except Exception:
+                # Attempt to clean up temp file on failure
+                with contextlib.suppress(Exception):
+                    self._sftp.remove(tmp_path)
+                raise
+
+    def delete(self, path: str, *, missing_ok: bool = False) -> None:
+        with self._errors(path):
+            sftp_path = self._sftp_path(path)
+            try:
+                self._sftp.remove(sftp_path)
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    if not missing_ok:
+                        raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
+                    return
+                raise
+
+    def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
+        with self._errors(path):
+            sftp_path = self._sftp_path(path)
+            try:
+                attrs = self._sftp.stat(sftp_path)
+                if not stat.S_ISDIR(attrs.st_mode):
+                    raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    if not missing_ok:
+                        raise NotFound(f"Folder not found: {path}", path=path, backend=self.name) from None
+                    return
+                raise
+
+            if recursive:
+                self._rmtree(sftp_path)
+            else:
+                # Non-recursive: fail if folder has contents
+                try:
+                    entries = self._sftp.listdir(sftp_path)
+                except OSError:
+                    entries = []
+                if entries:
+                    raise DirectoryNotEmpty(
+                        f"Folder not empty: {path}",
+                        path=path,
+                        backend=self.name,
+                    )
+                self._sftp.rmdir(sftp_path)
+
+    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
+        try:
+            sftp_path = self._sftp_path(path)
+            try:
+                entries = self._sftp.listdir_attr(sftp_path)
+            except OSError:
+                return
+            for attr in entries:
+                if stat.S_ISREG(attr.st_mode):
+                    rel = f"{path}/{attr.filename}" if path else attr.filename
+                    yield self._stat_to_fileinfo(rel, attr)
+                elif recursive and stat.S_ISDIR(attr.st_mode):
+                    subpath = f"{path}/{attr.filename}" if path else attr.filename
+                    yield from self.list_files(subpath, recursive=True)
+        except RemoteStoreError:
+            raise
+        except Exception as exc:
+            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
+
+    def list_folders(self, path: str) -> Iterator[str]:
+        try:
+            sftp_path = self._sftp_path(path)
+            try:
+                entries = self._sftp.listdir_attr(sftp_path)
+            except OSError:
+                return
+            for attr in entries:
+                if stat.S_ISDIR(attr.st_mode):
+                    yield attr.filename
+        except RemoteStoreError:
+            raise
+        except Exception as exc:
+            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
+
+    def get_file_info(self, path: str) -> FileInfo:
+        with self._errors(path):
+            sftp_path = self._sftp_path(path)
+            try:
+                attrs = self._sftp.stat(sftp_path)
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
+                raise
+            if not stat.S_ISREG(attrs.st_mode):
+                raise NotFound(f"File not found: {path}", path=path, backend=self.name)
+            return self._stat_to_fileinfo(path, attrs)
+
+    def get_folder_info(self, path: str) -> FolderInfo:
+        with self._errors(path):
+            sftp_path = self._sftp_path(path)
+            try:
+                attrs = self._sftp.stat(sftp_path)
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    raise NotFound(f"Folder not found: {path}", path=path, backend=self.name) from None
+                raise
+            if not stat.S_ISDIR(attrs.st_mode):
+                raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
+
+            file_count, total_size, latest_modified = self._collect_folder_stats(sftp_path)
+
+            return FolderInfo(
+                path=RemotePath.from_backend_path(path),
+                file_count=file_count,
+                total_size=total_size,
+                modified_at=latest_modified,
+            )
+
+    def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        with self._errors(src):
+            src_sftp = self._sftp_path(src)
+            dst_sftp = self._sftp_path(dst)
+
+            # Check source exists
+            try:
+                self._sftp.stat(src_sftp)
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    raise NotFound(f"Source not found: {src}", path=src, backend=self.name) from None
+                raise
+
+            # Check destination
+            if not overwrite:
+                try:
+                    self._sftp.stat(dst_sftp)
+                    raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
+                except OSError as exc:
+                    if getattr(exc, "errno", None) != errno.ENOENT:
+                        raise
+
+            self._ensure_parent_dirs(dst_sftp)
+
+            # Try posix_rename (atomic), then rename, then copy+delete
+            try:
+                self._sftp.posix_rename(src_sftp, dst_sftp)
+            except OSError:  # pragma: no cover -- fallback for servers without posix_rename
+                try:
+                    if overwrite:
+                        with contextlib.suppress(OSError):
+                            self._sftp.remove(dst_sftp)
+                    self._sftp.rename(src_sftp, dst_sftp)
+                except OSError:
+                    # Fallback: stream copy + delete
+                    with self._sftp.file(src_sftp, "r") as src_f, self._sftp.file(dst_sftp, "w") as dst_f:
+                        shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
+                    self._sftp.remove(src_sftp)
+
+    def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        with self._errors(src):
+            src_sftp = self._sftp_path(src)
+            dst_sftp = self._sftp_path(dst)
+
+            # Check source exists
+            try:
+                self._sftp.stat(src_sftp)
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    raise NotFound(f"Source not found: {src}", path=src, backend=self.name) from None
+                raise
+
+            # Check destination
+            if not overwrite:
+                try:
+                    self._sftp.stat(dst_sftp)
+                    raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
+                except OSError as exc:
+                    if getattr(exc, "errno", None) != errno.ENOENT:
+                        raise
+
+            self._ensure_parent_dirs(dst_sftp)
+
+            # Stream source to destination (no server-side copy in SFTP)
+            with self._sftp.file(src_sftp, "r") as src_f, self._sftp.file(dst_sftp, "w") as dst_f:
+                shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
+
+    def close(self) -> None:
+        self._close_clients()
+
+    def unwrap(self, type_hint: type[T]) -> T:
+        import paramiko
+
+        if type_hint is paramiko.SFTPClient:
+            return self._sftp  # type: ignore[no-any-return]
+        raise CapabilityNotSupported(
+            f"Backend 'sftp' does not expose native handle of type {type_hint.__name__}. "
+            f"Override unwrap() in your backend to provide native access.",
+            capability="unwrap",
+            backend=self.name,
+        )
+
+    # endregion
+
+    # region: dunder methods
+
+    def __repr__(self) -> str:
+        return (
+            f"SFTPBackend(host={self._host!r}, port={self._port!r}, "
+            f"username={self._username!r}, "
+            f"password={'***' if self._password is not None else None!r}, "
+            f"pkey={'***' if self._pkey is not None else None!r}, "
+            f"base_path={self._base_path!r})"
+        )
+
+    # endregion
+
+    # region: private helpers
 
     @property
     def _sftp(self) -> Any:
@@ -314,20 +624,6 @@ class SFTPBackend(Backend):
                 self._ssh_client.close()
             self._ssh_client = None
 
-    # endregion
-
-    # region: path helpers
-
-    def to_key(self, native_path: str) -> str:
-        if self._base_path == "/":
-            # Strip leading slash
-            return native_path.lstrip("/")
-        if native_path.startswith(self._base_path + "/"):
-            return native_path[len(self._base_path) + 1 :]
-        if native_path == self._base_path:
-            return ""
-        return native_path
-
     def _sftp_path(self, path: str) -> str:
         """Convert a relative remote_store path to an absolute SFTP path."""
         if path:
@@ -355,10 +651,6 @@ class SFTPBackend(Backend):
                 with contextlib.suppress(OSError):
                     self._sftp.mkdir(current)
 
-    # endregion
-
-    # region: error mapping
-
     @contextmanager
     def _errors(self, path: str = "") -> Iterator[None]:
         """Map paramiko/OS exceptions to remote_store errors."""
@@ -368,56 +660,6 @@ class SFTPBackend(Backend):
             raise
         except Exception as exc:
             raise self._map_exception(exc, path) from None
-
-    # endregion
-
-    # region: helpers
-
-    def _stat_to_fileinfo(self, path: str, attrs: Any) -> FileInfo:
-        """Convert paramiko SFTPAttributes to a FileInfo."""
-        name = path.rsplit("/", 1)[-1] if "/" in path else path
-        size = attrs.st_size or 0
-        mtime = attrs.st_mtime
-        if mtime is not None:
-            modified = datetime.fromtimestamp(mtime, tz=timezone.utc)
-        else:
-            modified = datetime.now(tz=timezone.utc)
-        return FileInfo(
-            path=RemotePath(path),
-            name=name,
-            size=int(size),
-            modified_at=modified,
-        )
-
-    # endregion
-
-    # region: existence checks
-
-    def exists(self, path: str) -> bool:
-        with self._errors(path):
-            try:
-                self._sftp.stat(self._sftp_path(path))
-                return True
-            except OSError:
-                return False
-
-    def is_file(self, path: str) -> bool:
-        with self._errors(path):
-            try:
-                attrs = self._sftp.stat(self._sftp_path(path))
-                return bool(stat.S_ISREG(attrs.st_mode))
-            except OSError:
-                return False
-
-    def is_folder(self, path: str) -> bool:
-        with self._errors(path):
-            try:
-                attrs = self._sftp.stat(self._sftp_path(path))
-                return bool(stat.S_ISDIR(attrs.st_mode))
-            except OSError:
-                return False
-
-    # endregion
 
     def _map_exception(self, exc: Exception, path: str) -> RemoteStoreError:
         """Classify an exception into a remote_store error.
@@ -444,126 +686,21 @@ class SFTPBackend(Backend):
             return BackendUnavailable(str(exc), path=path, backend=self.name)
         return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover
 
-    # region: read operations
-    def read(self, path: str) -> BinaryIO:
-        with self._errors(path):
-            sftp_path = self._sftp_path(path)
-            f: BinaryIO = self._sftp.file(sftp_path, "r")
-            raw = _ErrorMappingStream(f, self._map_exception, path)
-            return io.BufferedReader(cast("io.RawIOBase", raw))
-
-    def read_bytes(self, path: str) -> bytes:
-        with self._errors(path):
-            sftp_path = self._sftp_path(path)
-            try:
-                with self._sftp.file(sftp_path, "r") as f:
-                    f.prefetch()
-                    return bytes(f.read())
-            except OSError as exc:
-                code = getattr(exc, "errno", None)
-                if code == errno.ENOENT:
-                    raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-                raise
-
-    # endregion
-
-    # region: write operations
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        with self._errors(path):
-            sftp_path = self._sftp_path(path)
-            if not overwrite:
-                try:
-                    self._sftp.stat(sftp_path)
-                    raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-                except OSError as exc:
-                    if getattr(exc, "errno", None) != errno.ENOENT:
-                        raise
-            self._ensure_parent_dirs(sftp_path)
-            with self._sftp.file(sftp_path, "w") as f:
-                if isinstance(content, bytes):
-                    f.write(content)
-                else:
-                    shutil.copyfileobj(content, f, _CHUNK_SIZE)
-
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        with self._errors(path):
-            sftp_path = self._sftp_path(path)
-            if not overwrite:
-                try:
-                    self._sftp.stat(sftp_path)
-                    raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-                except OSError as exc:
-                    if getattr(exc, "errno", None) != errno.ENOENT:
-                        raise
-            self._ensure_parent_dirs(sftp_path)
-            # Write to temp file, then rename
-            name = sftp_path.rsplit("/", 1)[-1] if "/" in sftp_path else sftp_path
-            parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else "."
-            tmp_name = f".~tmp.{name}.{uuid.uuid4().hex[:8]}"
-            tmp_path = f"{parent}/{tmp_name}"
-            try:
-                with self._sftp.file(tmp_path, "w") as f:
-                    if isinstance(content, bytes):
-                        f.write(content)
-                    else:
-                        shutil.copyfileobj(content, f, _CHUNK_SIZE)
-                try:
-                    self._sftp.posix_rename(tmp_path, sftp_path)
-                except OSError:  # pragma: no cover -- fallback for servers without posix_rename
-                    if overwrite:
-                        with contextlib.suppress(OSError):
-                            self._sftp.remove(sftp_path)
-                    self._sftp.rename(tmp_path, sftp_path)
-            except Exception:
-                # Attempt to clean up temp file on failure
-                with contextlib.suppress(Exception):
-                    self._sftp.remove(tmp_path)
-                raise
-
-    # endregion
-
-    # region: delete operations
-    def delete(self, path: str, *, missing_ok: bool = False) -> None:
-        with self._errors(path):
-            sftp_path = self._sftp_path(path)
-            try:
-                self._sftp.remove(sftp_path)
-            except OSError as exc:
-                if getattr(exc, "errno", None) == errno.ENOENT:
-                    if not missing_ok:
-                        raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
-                    return
-                raise
-
-    def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
-        with self._errors(path):
-            sftp_path = self._sftp_path(path)
-            try:
-                attrs = self._sftp.stat(sftp_path)
-                if not stat.S_ISDIR(attrs.st_mode):
-                    raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
-            except OSError as exc:
-                if getattr(exc, "errno", None) == errno.ENOENT:
-                    if not missing_ok:
-                        raise NotFound(f"Folder not found: {path}", path=path, backend=self.name) from None
-                    return
-                raise
-
-            if recursive:
-                self._rmtree(sftp_path)
-            else:
-                # Non-recursive: fail if folder has contents
-                try:
-                    entries = self._sftp.listdir(sftp_path)
-                except OSError:
-                    entries = []
-                if entries:
-                    raise DirectoryNotEmpty(
-                        f"Folder not empty: {path}",
-                        path=path,
-                        backend=self.name,
-                    )
-                self._sftp.rmdir(sftp_path)
+    def _stat_to_fileinfo(self, path: str, attrs: Any) -> FileInfo:
+        """Convert paramiko SFTPAttributes to a FileInfo."""
+        name = path.rsplit("/", 1)[-1] if "/" in path else path
+        size = attrs.st_size or 0
+        mtime = attrs.st_mtime
+        if mtime is not None:
+            modified = datetime.fromtimestamp(mtime, tz=timezone.utc)
+        else:
+            modified = datetime.now(tz=timezone.utc)
+        return FileInfo(
+            path=RemotePath(path),
+            name=name,
+            size=int(size),
+            modified_at=modified,
+        )
 
     def _rmtree(self, sftp_path: str) -> None:
         """Recursively remove a directory tree, bottom-up."""
@@ -578,80 +715,6 @@ class SFTPBackend(Backend):
             else:
                 self._sftp.remove(child)
         self._sftp.rmdir(sftp_path)
-
-    # endregion
-
-    # region: listing operations
-    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
-        try:
-            sftp_path = self._sftp_path(path)
-            try:
-                entries = self._sftp.listdir_attr(sftp_path)
-            except OSError:
-                return
-            for attr in entries:
-                if stat.S_ISREG(attr.st_mode):
-                    rel = f"{path}/{attr.filename}" if path else attr.filename
-                    yield self._stat_to_fileinfo(rel, attr)
-                elif recursive and stat.S_ISDIR(attr.st_mode):
-                    subpath = f"{path}/{attr.filename}" if path else attr.filename
-                    yield from self.list_files(subpath, recursive=True)
-        except RemoteStoreError:
-            raise
-        except Exception as exc:
-            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
-
-    def list_folders(self, path: str) -> Iterator[str]:
-        try:
-            sftp_path = self._sftp_path(path)
-            try:
-                entries = self._sftp.listdir_attr(sftp_path)
-            except OSError:
-                return
-            for attr in entries:
-                if stat.S_ISDIR(attr.st_mode):
-                    yield attr.filename
-        except RemoteStoreError:
-            raise
-        except Exception as exc:
-            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
-
-    # endregion
-
-    # region: metadata
-    def get_file_info(self, path: str) -> FileInfo:
-        with self._errors(path):
-            sftp_path = self._sftp_path(path)
-            try:
-                attrs = self._sftp.stat(sftp_path)
-            except OSError as exc:
-                if getattr(exc, "errno", None) == errno.ENOENT:
-                    raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
-                raise
-            if not stat.S_ISREG(attrs.st_mode):
-                raise NotFound(f"File not found: {path}", path=path, backend=self.name)
-            return self._stat_to_fileinfo(path, attrs)
-
-    def get_folder_info(self, path: str) -> FolderInfo:
-        with self._errors(path):
-            sftp_path = self._sftp_path(path)
-            try:
-                attrs = self._sftp.stat(sftp_path)
-            except OSError as exc:
-                if getattr(exc, "errno", None) == errno.ENOENT:
-                    raise NotFound(f"Folder not found: {path}", path=path, backend=self.name) from None
-                raise
-            if not stat.S_ISDIR(attrs.st_mode):
-                raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
-
-            file_count, total_size, latest_modified = self._collect_folder_stats(sftp_path)
-
-            return FolderInfo(
-                path=RemotePath.from_backend_path(path),
-                file_count=file_count,
-                total_size=total_size,
-                modified_at=latest_modified,
-            )
 
     def _collect_folder_stats(self, sftp_path: str) -> tuple[int, int, datetime | None]:
         """Recursively collect file count, total size, and latest modification time."""
@@ -680,93 +743,5 @@ class SFTPBackend(Backend):
                     latest_modified = sub_latest
 
         return file_count, total_size, latest_modified
-
-    # endregion
-
-    # region: move and copy
-    def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        with self._errors(src):
-            src_sftp = self._sftp_path(src)
-            dst_sftp = self._sftp_path(dst)
-
-            # Check source exists
-            try:
-                self._sftp.stat(src_sftp)
-            except OSError as exc:
-                if getattr(exc, "errno", None) == errno.ENOENT:
-                    raise NotFound(f"Source not found: {src}", path=src, backend=self.name) from None
-                raise
-
-            # Check destination
-            if not overwrite:
-                try:
-                    self._sftp.stat(dst_sftp)
-                    raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
-                except OSError as exc:
-                    if getattr(exc, "errno", None) != errno.ENOENT:
-                        raise
-
-            self._ensure_parent_dirs(dst_sftp)
-
-            # Try posix_rename (atomic), then rename, then copy+delete
-            try:
-                self._sftp.posix_rename(src_sftp, dst_sftp)
-            except OSError:  # pragma: no cover -- fallback for servers without posix_rename
-                try:
-                    if overwrite:
-                        with contextlib.suppress(OSError):
-                            self._sftp.remove(dst_sftp)
-                    self._sftp.rename(src_sftp, dst_sftp)
-                except OSError:
-                    # Fallback: stream copy + delete
-                    with self._sftp.file(src_sftp, "r") as src_f, self._sftp.file(dst_sftp, "w") as dst_f:
-                        shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
-                    self._sftp.remove(src_sftp)
-
-    def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        with self._errors(src):
-            src_sftp = self._sftp_path(src)
-            dst_sftp = self._sftp_path(dst)
-
-            # Check source exists
-            try:
-                self._sftp.stat(src_sftp)
-            except OSError as exc:
-                if getattr(exc, "errno", None) == errno.ENOENT:
-                    raise NotFound(f"Source not found: {src}", path=src, backend=self.name) from None
-                raise
-
-            # Check destination
-            if not overwrite:
-                try:
-                    self._sftp.stat(dst_sftp)
-                    raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
-                except OSError as exc:
-                    if getattr(exc, "errno", None) != errno.ENOENT:
-                        raise
-
-            self._ensure_parent_dirs(dst_sftp)
-
-            # Stream source to destination (no server-side copy in SFTP)
-            with self._sftp.file(src_sftp, "r") as src_f, self._sftp.file(dst_sftp, "w") as dst_f:
-                shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
-
-    # endregion
-
-    # region: lifecycle
-    def close(self) -> None:
-        self._close_clients()
-
-    def unwrap(self, type_hint: type[T]) -> T:
-        import paramiko
-
-        if type_hint is paramiko.SFTPClient:
-            return self._sftp  # type: ignore[no-any-return]
-        raise CapabilityNotSupported(
-            f"Backend 'sftp' does not expose native handle of type {type_hint.__name__}. "
-            f"Override unwrap() in your backend to provide native access.",
-            capability="unwrap",
-            backend=self.name,
-        )
 
     # endregion

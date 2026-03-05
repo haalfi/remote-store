@@ -11,52 +11,7 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [ ] **AF-016 — Fix stale capability sections in specs 008, 011, 012 (GLOB missing)**
-  Specs `008-s3-backend.md` § S3-003, `011-s3-pyarrow-backend.md` § S3PA-003,
-  and `012-azure-backend.md` § AZ-003 all still say "Does not declare `GLOB`."
-  This is wrong since v0.12.0 (BK-002): S3, S3-PyArrow, and Azure all declare
-  `Capability.GLOB` and implement `glob()`. Spec 018-glob.md (GLOB-018/019/020),
-  the code (`CapabilitySet(set(Capability))`), and CHANGELOG v0.12.0 all agree.
-  Fix: add `GLOB` to each capability list and cross-reference `018-glob.md`.
-  Source: `sdd/audit-002-design-compliance.md` AF-016.
-
-- [ ] **AF-017 — Add ID-043 to CHANGELOG [Unreleased]**
-  ID-043 ("Remove `_stacklevel` from public `from_dict()` signature") is marked
-  done in BACKLOG as `*(unreleased)*` and is confirmed implemented (`_from_dict()`
-  private helper in `_config.py`), but has no entry in `CHANGELOG.md [Unreleased]`.
-  Fix: add a `### Changed` entry for ID-043 in `[Unreleased]`.
-  Source: `sdd/audit-002-design-compliance.md` AF-017.
-
-- [ ] **AF-018 — Correct BACKLOG version tags for ID-040/041/042**
-  BACKLOG items ID-040, ID-041, and ID-042 are annotated `(v0.13.1)` but
-  v0.13.1 has not been released. All version files (`pyproject.toml`,
-  `__init__.py`, `CITATION.cff`) say `0.13.0` and CHANGELOG lists these items
-  as `[Unreleased]`. CLAUDE.md §3 requires the repo to describe reality.
-  Fix: change the three annotations to `*(unreleased)*` until the release commit.
-  Source: `sdd/audit-002-design-compliance.md` AF-018.
-
-- [ ] **AF-020 — Fix §11.6 method ordering: `__repr__` and private helpers misplaced**
-  DESIGN.md §11.6 specifies: (1) class variables, (2) `__init__`, (3) properties,
-  (4) public methods, (5) dunder methods (`__eq__`, `__hash__`, `__repr__`),
-  (6) private helpers. Violations in `_store.py` and all 6 backend files:
-  `__repr__` placed immediately after `__init__` (before properties and public
-  methods); in `_store.py` private helpers also interleaved before some public
-  methods. No behavioral impact — style-only fix.
-  Source: `sdd/audit-002-design-compliance.md` AF-020.
-
-- [ ] **AF-019 — Fix spec count in DEVELOPMENT_STORY.md (20 → 21)**
-  `DEVELOPMENT_STORY.md` line 11 says `20 specs`. There are 21 spec files
-  (`001`–`021`) in `sdd/specs/`. Spec 021 was added for v0.14.0 config loaders
-  (ID-002/003/005) and the table was not updated.
-  Fix: `| Specs & docs | 21 specs, 10 ADRs, 3 RFCs |`.
-  Source: `sdd/audit-002-design-compliance.md` AF-019.
-
-- [ ] **AF-021 — Add backlog ID to unlinked TODO in `ext/arrow.py`**
-  `src/remote_store/ext/arrow.py:277` has `# TODO(Phase 2): …` with no linked
-  backlog item ID. DESIGN.md §11.7 requires all TODO comments to reference a
-  linked issue. The relevant item is ID-037 (PyArrow adapter Phase 2).
-  Fix: change to `# TODO(ID-037 Phase 2): …`.
-  Source: `sdd/audit-002-design-compliance.md` AF-021.
+*(all prioritized items completed — see Done § Audit findings)*
 
 ---
 
@@ -251,10 +206,10 @@ All v1.0 release blockers were resolved across v0.3.0–v0.4.1.
   `from __future__ import annotations` everywhere and performs no runtime
   annotation inspection, so PEP 649 is a non-issue.
 
-### Audit findings (v0.6.0–v0.9.0)
+### Audit findings (v0.6.0–v0.9.0, v0.13.0)
 
 From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-review.md`.
-Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md` (AF-016–AF-021 active above).
+Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
 
 - [x] **AF-001 — Auto-register S3/SFTP/S3-PyArrow in Registry** (v0.6.0)
   `_register_builtin_backends()` only registered `local` and `azure`. Now
@@ -331,6 +286,27 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md` (AF-016
   L-1 (README `azure-storage-file-datalake`), L-2 (SECURITY.md), L-3
   (CONTRIBUTING.md spec 012), L-4 (Azure config example), L-5 (`[Unreleased]`
   section in CHANGELOG).
+
+- [x] **AF-016 — Fix stale capability sections in specs 008, 011, 012** *(unreleased)*
+  Added `GLOB` to capability lists in S3-003, S3PA-003, and AZ-003. Cross-referenced
+  `018-glob.md` (GLOB-018/019/020).
+
+- [x] **AF-017 — Add ID-043 to CHANGELOG [Unreleased]** *(unreleased)*
+  Added `### Changed` entry for ID-043 in `[Unreleased]`.
+
+- [x] **AF-018 — Correct BACKLOG version tags for ID-040/041/042** *(unreleased)*
+  Changed `(v0.13.1)` annotations to `*(unreleased)*`.
+
+- [x] **AF-019 — Fix spec count in DEVELOPMENT_STORY.md** *(unreleased)*
+  Updated `20 specs` to `21 specs`.
+
+- [x] **AF-020 — Fix §11.6 method ordering** *(unreleased)*
+  Reordered all 7 class files (`_store.py`, 6 backends) to follow DESIGN.md
+  §11.6: `__init__` → properties → public methods → dunder methods → private
+  helpers. `# region:` comments restructured to match.
+
+- [x] **AF-021 — Add backlog ID to unlinked TODO in `ext/arrow.py`** *(unreleased)*
+  Changed `# TODO(Phase 2):` to `# TODO(ID-037 Phase 2):`.
 
 ### Known bugs
 
@@ -506,17 +482,17 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md` (AF-016
   `host_key_policy`. `SecretRedactionFilter` logging filter. Regression tests.
   → Spec: `sdd/specs/020-credential-hygiene.md` (SEC-001 through SEC-008)
 
-- [x] **ID-040 — `move(src, dst)` and `copy(src, dst)` same-path consistency** (v0.13.1)
+- [x] **ID-040 — `move(src, dst)` and `copy(src, dst)` same-path consistency** *(unreleased)*
   Added `src == dst` short-circuit in `Store.move()` and `Store.copy()` with
   `is_file()` verification (`NotFound` for missing files or folders at source
   path). MemoryBackend retains its own move guard for defense in depth.
   Spec: STORE-008a.
 
-- [x] **ID-041 — `Registry.get_store()` backend ownership foot-gun** (v0.13.1)
+- [x] **ID-041 — `Registry.get_store()` backend ownership foot-gun** *(unreleased)*
   `get_store()` now sets `_owns_backend = False` on returned stores (same
   pattern as `Store.child()`). `Registry.close()` remains the lifecycle owner.
 
-- [x] **ID-042 — Document Secret usage in README and examples** (v0.13.1)
+- [x] **ID-042 — Document Secret usage in README and examples** *(unreleased)*
   Added "Credential hygiene" section to README and updated
   `examples/configuration.py` with `Secret` wrapping, `from_dict()`
   auto-wrapping, and `.reveal()` demonstration. Related: ID-039.

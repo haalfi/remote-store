@@ -6,6 +6,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Changed
+
+- **`_stacklevel` removed from public `from_dict()` signature** (ID-043)
+  Internal `_stacklevel` parameter no longer leaks into the public
+  `RegistryConfig.from_dict()` API. Warning stack-level control is now handled
+  via a private `_from_dict()` helper.
+
 ### Fixed
 
 - **`Registry.get_store()` no longer owns the shared backend** (ID-041)
