@@ -99,6 +99,11 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   where GIL contention in `PythonFile` limits throughput. See spec
   `014-pyarrow-filesystem-adapter.md` Phase 2 sections.
 
+- [ ] **ID-043 — Remove `_stacklevel` from public `from_dict()` signature**
+  `RegistryConfig.from_dict()` exposes a `_stacklevel: int = 2` keyword
+  argument — a private implementation detail leaking into the public API.
+  Internal-only params must not appear on public method signatures.
+
 - [ ] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix**
   Listing numbers in `benchmarks/results/comparative.md` pre-date the ID-032
   cache-invalidation fix (`invalidate_cache()` on `BenchTarget`). Re-run all
