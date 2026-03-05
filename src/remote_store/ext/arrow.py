@@ -274,7 +274,7 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
         path = _normalize(path)
         with _map_errors():
             stream = self._store.read(path)
-            # TODO(Phase 2): Subsequent reads from PythonFile bypass _map_errors(),
+            # TODO(ID-037 Phase 2): Subsequent reads from PythonFile bypass _map_errors(),
             # so mid-read RemoteStoreError from cloud streams would leak unmapped.
             # Also affects Tier 3 in open_input_file (PythonFile for large seekable
             # files). Inert in Phase 1: cloud backends always materialize via Tier 2,

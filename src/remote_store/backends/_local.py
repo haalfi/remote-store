@@ -36,8 +36,7 @@ class LocalBackend(Backend):
         self._root = Path(root).resolve()
         self._root.mkdir(parents=True, exist_ok=True)
 
-    def __repr__(self) -> str:
-        return f"LocalBackend(root={str(self._root)!r})"
+    # region: properties
 
     @property
     def name(self) -> str:
@@ -47,22 +46,9 @@ class LocalBackend(Backend):
     def capabilities(self) -> CapabilitySet:
         return _ALL_CAPABILITIES
 
-    # region: path safety
-    def _resolve(self, path: str) -> Path:
-        """Resolve a relative path to an absolute path within root.
+    # endregion
 
-        Safety: ``.resolve()`` follows symlinks to their real target, and
-        ``relative_to(self._root)`` then rejects any path that escapes the
-        root — including symlinks pointing outside it.
-
-        :raises InvalidPath: If the resolved path escapes the root.
-        """
-        resolved = (self._root / path).resolve()
-        try:
-            resolved.relative_to(self._root)
-        except ValueError:
-            raise InvalidPath(f"Path escapes root directory: {path}", path=path, backend=self.name) from None
-        return resolved
+    # region: public methods
 
     def to_key(self, native_path: str) -> str:
         root_str = str(self._root)
@@ -75,21 +61,6 @@ class LocalBackend(Backend):
             return ""
         return native_path
 
-    # endregion
-
-    # region: helpers
-    def _stat_to_fileinfo(self, path: str, full: Path) -> FileInfo:
-        st = full.stat()
-        return FileInfo(
-            path=RemotePath(path),
-            name=full.name,
-            size=st.st_size,
-            modified_at=datetime.fromtimestamp(st.st_mtime, tz=timezone.utc),
-        )
-
-    # endregion
-
-    # region: BE-004 through BE-005: existence checks
     def exists(self, path: str) -> bool:
         return self._resolve(path).exists()
 
@@ -99,9 +70,6 @@ class LocalBackend(Backend):
     def is_folder(self, path: str) -> bool:
         return self._resolve(path).is_dir()
 
-    # endregion
-
-    # region: BE-006 through BE-007: read operations
     def read(self, path: str) -> BinaryIO:
         full = self._resolve(path)
         try:
@@ -120,9 +88,6 @@ class LocalBackend(Backend):
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
-    # endregion
-
-    # region: BE-008 through BE-011: write operations
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         full = self._resolve(path)
         if not overwrite and full.exists():
@@ -158,9 +123,6 @@ class LocalBackend(Backend):
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
-    # endregion
-
-    # region: BE-012 through BE-013: delete operations
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         full = self._resolve(path)
         try:
@@ -191,9 +153,6 @@ class LocalBackend(Backend):
                 raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name) from None
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
-    # endregion
-
-    # region: GLOB-004: native glob
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         for item in self._root.glob(pattern):
             if item.is_file():
@@ -204,9 +163,6 @@ class LocalBackend(Backend):
                 rel = self.to_key(str(item))
                 yield self._stat_to_fileinfo(rel, item)
 
-    # endregion
-
-    # region: BE-014 through BE-017: listing and metadata
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         full = self._resolve(path)
         if not full.is_dir():
@@ -258,9 +214,6 @@ class LocalBackend(Backend):
             modified_at=modified_at,
         )
 
-    # endregion
-
-    # region: BE-018 through BE-019: move and copy
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         src_full = self._resolve(src)
         dst_full = self._resolve(dst)
@@ -286,5 +239,41 @@ class LocalBackend(Backend):
             shutil.copy2(str(src_full), str(dst_full))
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {src} -> {dst}", path=src, backend=self.name) from None
+
+    # endregion
+
+    # region: dunder methods
+
+    def __repr__(self) -> str:
+        return f"LocalBackend(root={str(self._root)!r})"
+
+    # endregion
+
+    # region: private helpers
+
+    def _resolve(self, path: str) -> Path:
+        """Resolve a relative path to an absolute path within root.
+
+        Safety: ``.resolve()`` follows symlinks to their real target, and
+        ``relative_to(self._root)`` then rejects any path that escapes the
+        root — including symlinks pointing outside it.
+
+        :raises InvalidPath: If the resolved path escapes the root.
+        """
+        resolved = (self._root / path).resolve()
+        try:
+            resolved.relative_to(self._root)
+        except ValueError:
+            raise InvalidPath(f"Path escapes root directory: {path}", path=path, backend=self.name) from None
+        return resolved
+
+    def _stat_to_fileinfo(self, path: str, full: Path) -> FileInfo:
+        st = full.stat()
+        return FileInfo(
+            path=RemotePath(path),
+            name=full.name,
+            size=st.st_size,
+            modified_at=datetime.fromtimestamp(st.st_mtime, tz=timezone.utc),
+        )
 
     # endregion

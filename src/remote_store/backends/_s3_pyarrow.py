@@ -137,14 +137,7 @@ class S3PyArrowBackend(Backend):
         self._pa_fs_instance: Any = None
         self._s3fs_instance: Any = None
 
-    def __repr__(self) -> str:
-        return (
-            f"S3PyArrowBackend(bucket={self._bucket!r}, "
-            f"endpoint_url={self._endpoint_url!r}, "
-            f"key={'***' if self._key is not None else None!r}, "
-            f"secret={'***' if self._secret is not None else None!r}, "
-            f"region_name={self._region_name!r})"
-        )
+    # region: properties
 
     @property
     def name(self) -> str:
@@ -154,69 +147,9 @@ class S3PyArrowBackend(Backend):
     def capabilities(self) -> CapabilitySet:
         return _ALL_CAPABILITIES
 
-    # region: lazy filesystems
-    @property
-    def _pa_fs(self) -> Any:
-        """Lazy PyArrow S3FileSystem."""
-        if self._pa_fs_instance is None:
-            from pyarrow.fs import S3FileSystem as PyArrowS3  # type: ignore[import-untyped]
-
-            kwargs: dict[str, Any] = {}
-            if self._key is not None:
-                kwargs["access_key"] = self._key
-            if self._secret is not None:
-                kwargs["secret_key"] = self._secret
-            if self._region_name is not None:
-                kwargs["region"] = self._region_name
-            if self._endpoint_url is not None:
-                endpoint = self._endpoint_url
-                # PyArrow uses endpoint_override (host:port) and scheme separately
-                if endpoint.startswith("http://"):
-                    kwargs["scheme"] = "http"
-                    kwargs["endpoint_override"] = endpoint[len("http://") :]
-                elif endpoint.startswith("https://"):  # pragma: no cover -- tests use http
-                    kwargs["scheme"] = "https"
-                    kwargs["endpoint_override"] = endpoint[len("https://") :]
-                else:  # pragma: no cover -- tests always have scheme prefix
-                    kwargs["endpoint_override"] = endpoint
-            kwargs.setdefault("anonymous", False)
-            self._pa_fs_instance = PyArrowS3(**kwargs)
-        return self._pa_fs_instance
-
-    @property
-    def _s3fs(self) -> Any:
-        """Lazy s3fs S3FileSystem."""
-        if self._s3fs_instance is None:
-            import s3fs  # type: ignore[import-untyped]
-
-            opts: dict[str, Any] = dict(self._client_options)
-            if self._endpoint_url is not None:
-                opts["endpoint_url"] = self._endpoint_url
-            if self._key is not None:
-                opts["key"] = self._key
-            if self._secret is not None:
-                opts["secret"] = self._secret
-            if self._region_name is not None:
-                client_kwargs: dict[str, Any] = opts.setdefault("client_kwargs", {})
-                client_kwargs["region_name"] = self._region_name
-            opts.setdefault("anon", False)
-            self._s3fs_instance = s3fs.S3FileSystem(**opts)
-        return self._s3fs_instance
-
     # endregion
 
-    # region: path helpers
-    def _s3_path(self, path: str) -> str:
-        """Build bucket/key path for s3fs."""
-        if path:
-            return f"{self._bucket}/{path}"
-        return self._bucket  # pragma: no cover -- tests always provide a path
-
-    def _pa_path(self, path: str) -> str:
-        """Build bucket/key path for PyArrow."""
-        if path:
-            return f"{self._bucket}/{path}"
-        return self._bucket  # pragma: no cover -- tests always provide a path
+    # region: public methods
 
     def to_key(self, native_path: str) -> str:
         prefix = f"{self._bucket}/"
@@ -224,81 +157,6 @@ class S3PyArrowBackend(Backend):
             return native_path[len(prefix) :]
         return native_path
 
-    # endregion
-
-    # region: error mapping
-    @contextmanager
-    def _s3fs_errors(self, path: str = "") -> Iterator[None]:
-        """Map s3fs/botocore exceptions to remote_store errors."""
-        try:
-            yield
-        except RemoteStoreError:
-            raise
-        except FileNotFoundError:
-            raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-        except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
-            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-        except Exception as exc:  # pragma: no cover -- defensive; moto raises standard errors
-            raise self._classify_error(exc, path) from None
-
-    @contextmanager
-    def _pyarrow_errors(self, path: str = "") -> Iterator[None]:
-        """Map PyArrow exceptions to remote_store errors."""
-        try:
-            yield
-        except RemoteStoreError:  # pragma: no cover -- passthrough
-            raise
-        except FileNotFoundError:
-            raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-        except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
-            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-        except OSError as exc:  # pragma: no cover -- moto raises FileNotFoundError directly
-            msg = str(exc).lower()
-            if "404" in msg or "not found" in msg or "no such" in msg or "path does not exist" in msg:
-                raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-            if "403" in msg or "access denied" in msg:
-                raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-            if any(kw in msg for kw in ("endpoint", "connect", "timeout", "dns", "name or service")):
-                raise BackendUnavailable(str(exc), path=path, backend=self.name) from None
-            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
-        except Exception as exc:  # pragma: no cover -- defensive
-            raise self._classify_error(exc, path) from None
-
-    def _classify_error(self, exc: Exception, path: str) -> RemoteStoreError:  # pragma: no cover
-        """Classify an unknown exception into a remote_store error type."""
-        msg = str(exc).lower()
-        if "404" in msg or "nosuchkey" in msg or "nosuchbucket" in msg or "not found" in msg:
-            return NotFound(f"Not found: {path}", path=path, backend=self.name)
-        if "403" in msg or "accessdenied" in msg or "access denied" in msg:
-            return PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name)
-        if any(kw in msg for kw in ("endpoint", "connect", "timeout", "dns", "name or service")):
-            return BackendUnavailable(str(exc), path=path, backend=self.name)
-        return RemoteStoreError(str(exc), path=path, backend=self.name)
-
-    # endregion
-
-    # region: helpers
-    def _info_to_fileinfo(self, info: dict[str, Any], path: str) -> FileInfo:
-        """Convert an s3fs info dict to a FileInfo."""
-        name = path.rsplit("/", 1)[-1] if "/" in path else path
-        size = info.get("size", info.get("Size", 0)) or 0
-        modified = info.get("LastModified", info.get("last_modified"))
-        if isinstance(modified, str):  # pragma: no cover -- moto returns datetime objects
-            modified = datetime.fromisoformat(modified)
-        if modified is not None and modified.tzinfo is None:  # pragma: no cover -- moto includes tzinfo
-            modified = modified.replace(tzinfo=timezone.utc)
-        if modified is None:  # pragma: no cover -- moto always provides LastModified
-            modified = datetime.now(tz=timezone.utc)
-        return FileInfo(
-            path=RemotePath(path),
-            name=name,
-            size=int(size),
-            modified_at=modified,
-        )
-
-    # endregion
-
-    # region: existence checks (s3fs)
     def exists(self, path: str) -> bool:
         with self._s3fs_errors(path):
             return bool(self._s3fs.exists(self._s3_path(path)))
@@ -319,9 +177,6 @@ class S3PyArrowBackend(Backend):
             except FileNotFoundError:
                 return False
 
-    # endregion
-
-    # region: read operations (pyarrow)
     def read(self, path: str) -> BinaryIO:
         with self._pyarrow_errors(path):
             pa_file = self._pa_fs.open_input_file(self._pa_path(path))
@@ -333,9 +188,6 @@ class S3PyArrowBackend(Backend):
             stream = self._pa_fs.open_input_stream(self._pa_path(path))
             return bytes(stream.read())
 
-    # endregion
-
-    # region: write operations (pyarrow data, s3fs checks)
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         with self._s3fs_errors(path):
             if not overwrite and self._s3fs.exists(self._s3_path(path)):
@@ -354,9 +206,6 @@ class S3PyArrowBackend(Backend):
         # S3 PUT is inherently atomic (S3PA-013)
         self.write(path, content, overwrite=overwrite)
 
-    # endregion
-
-    # region: delete operations (s3fs)
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._s3fs_errors(path):
             if not self._s3fs.exists(self._s3_path(path)):
@@ -384,9 +233,6 @@ class S3PyArrowBackend(Backend):
                         backend=self.name,
                     )
 
-    # endregion
-
-    # region: listing operations (s3fs)
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         try:
             s3_path = self._s3_path(path)
@@ -443,9 +289,6 @@ class S3PyArrowBackend(Backend):
             if compiled.match(str(info.path)):
                 yield info
 
-    # endregion
-
-    # region: metadata (s3fs)
     def get_file_info(self, path: str) -> FileInfo:
         with self._s3fs_errors(path):
             info = self._s3fs.info(self._s3_path(path))
@@ -484,9 +327,6 @@ class S3PyArrowBackend(Backend):
                 modified_at=latest_modified,
             )
 
-    # endregion
-
-    # region: move and copy
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         # Existence checks via s3fs, copy via pyarrow, delete via s3fs
         with self._s3fs_errors(src):
@@ -508,17 +348,14 @@ class S3PyArrowBackend(Backend):
         with self._pyarrow_errors(src):
             self._pa_fs.copy_file(self._pa_path(src), self._pa_path(dst))
 
-    # endregion
-
-    # region: lifecycle
     def close(self) -> None:
         if self._s3fs_instance is not None:
             self._s3fs_instance = None
         self._pa_fs_instance = None
 
     def unwrap(self, type_hint: type[T]) -> T:
-        import s3fs
-        from pyarrow.fs import S3FileSystem as PyArrowS3
+        import s3fs  # type: ignore[import-untyped]
+        from pyarrow.fs import S3FileSystem as PyArrowS3  # type: ignore[import-untyped]
 
         if type_hint is PyArrowS3:
             return self._pa_fs  # type: ignore[no-any-return]
@@ -529,6 +366,149 @@ class S3PyArrowBackend(Backend):
             f"Supported: pyarrow.fs.S3FileSystem, s3fs.S3FileSystem.",
             capability="unwrap",
             backend=self.name,
+        )
+
+    # endregion
+
+    # region: dunder methods
+
+    def __repr__(self) -> str:
+        return (
+            f"S3PyArrowBackend(bucket={self._bucket!r}, "
+            f"endpoint_url={self._endpoint_url!r}, "
+            f"key={'***' if self._key is not None else None!r}, "
+            f"secret={'***' if self._secret is not None else None!r}, "
+            f"region_name={self._region_name!r})"
+        )
+
+    # endregion
+
+    # region: private helpers
+
+    @property
+    def _pa_fs(self) -> Any:
+        """Lazy PyArrow S3FileSystem."""
+        if self._pa_fs_instance is None:
+            from pyarrow.fs import S3FileSystem as PyArrowS3
+
+            kwargs: dict[str, Any] = {}
+            if self._key is not None:
+                kwargs["access_key"] = self._key
+            if self._secret is not None:
+                kwargs["secret_key"] = self._secret
+            if self._region_name is not None:
+                kwargs["region"] = self._region_name
+            if self._endpoint_url is not None:
+                endpoint = self._endpoint_url
+                # PyArrow uses endpoint_override (host:port) and scheme separately
+                if endpoint.startswith("http://"):
+                    kwargs["scheme"] = "http"
+                    kwargs["endpoint_override"] = endpoint[len("http://") :]
+                elif endpoint.startswith("https://"):  # pragma: no cover -- tests use http
+                    kwargs["scheme"] = "https"
+                    kwargs["endpoint_override"] = endpoint[len("https://") :]
+                else:  # pragma: no cover -- tests always have scheme prefix
+                    kwargs["endpoint_override"] = endpoint
+            kwargs.setdefault("anonymous", False)
+            self._pa_fs_instance = PyArrowS3(**kwargs)
+        return self._pa_fs_instance
+
+    @property
+    def _s3fs(self) -> Any:
+        """Lazy s3fs S3FileSystem."""
+        if self._s3fs_instance is None:
+            import s3fs
+
+            opts: dict[str, Any] = dict(self._client_options)
+            if self._endpoint_url is not None:
+                opts["endpoint_url"] = self._endpoint_url
+            if self._key is not None:
+                opts["key"] = self._key
+            if self._secret is not None:
+                opts["secret"] = self._secret
+            if self._region_name is not None:
+                client_kwargs: dict[str, Any] = opts.setdefault("client_kwargs", {})
+                client_kwargs["region_name"] = self._region_name
+            opts.setdefault("anon", False)
+            self._s3fs_instance = s3fs.S3FileSystem(**opts)
+        return self._s3fs_instance
+
+    def _s3_path(self, path: str) -> str:
+        """Build bucket/key path for s3fs."""
+        if path:
+            return f"{self._bucket}/{path}"
+        return self._bucket  # pragma: no cover -- tests always provide a path
+
+    def _pa_path(self, path: str) -> str:
+        """Build bucket/key path for PyArrow."""
+        if path:
+            return f"{self._bucket}/{path}"
+        return self._bucket  # pragma: no cover -- tests always provide a path
+
+    @contextmanager
+    def _s3fs_errors(self, path: str = "") -> Iterator[None]:
+        """Map s3fs/botocore exceptions to remote_store errors."""
+        try:
+            yield
+        except RemoteStoreError:
+            raise
+        except FileNotFoundError:
+            raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+        except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        except Exception as exc:  # pragma: no cover -- defensive; moto raises standard errors
+            raise self._classify_error(exc, path) from None
+
+    @contextmanager
+    def _pyarrow_errors(self, path: str = "") -> Iterator[None]:
+        """Map PyArrow exceptions to remote_store errors."""
+        try:
+            yield
+        except RemoteStoreError:  # pragma: no cover -- passthrough
+            raise
+        except FileNotFoundError:
+            raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+        except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        except OSError as exc:  # pragma: no cover -- moto raises FileNotFoundError directly
+            msg = str(exc).lower()
+            if "404" in msg or "not found" in msg or "no such" in msg or "path does not exist" in msg:
+                raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+            if "403" in msg or "access denied" in msg:
+                raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+            if any(kw in msg for kw in ("endpoint", "connect", "timeout", "dns", "name or service")):
+                raise BackendUnavailable(str(exc), path=path, backend=self.name) from None
+            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
+        except Exception as exc:  # pragma: no cover -- defensive
+            raise self._classify_error(exc, path) from None
+
+    def _classify_error(self, exc: Exception, path: str) -> RemoteStoreError:  # pragma: no cover
+        """Classify an unknown exception into a remote_store error type."""
+        msg = str(exc).lower()
+        if "404" in msg or "nosuchkey" in msg or "nosuchbucket" in msg or "not found" in msg:
+            return NotFound(f"Not found: {path}", path=path, backend=self.name)
+        if "403" in msg or "accessdenied" in msg or "access denied" in msg:
+            return PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name)
+        if any(kw in msg for kw in ("endpoint", "connect", "timeout", "dns", "name or service")):
+            return BackendUnavailable(str(exc), path=path, backend=self.name)
+        return RemoteStoreError(str(exc), path=path, backend=self.name)
+
+    def _info_to_fileinfo(self, info: dict[str, Any], path: str) -> FileInfo:
+        """Convert an s3fs info dict to a FileInfo."""
+        name = path.rsplit("/", 1)[-1] if "/" in path else path
+        size = info.get("size", info.get("Size", 0)) or 0
+        modified = info.get("LastModified", info.get("last_modified"))
+        if isinstance(modified, str):  # pragma: no cover -- moto returns datetime objects
+            modified = datetime.fromisoformat(modified)
+        if modified is not None and modified.tzinfo is None:  # pragma: no cover -- moto includes tzinfo
+            modified = modified.replace(tzinfo=timezone.utc)
+        if modified is None:  # pragma: no cover -- moto always provides LastModified
+            modified = datetime.now(tz=timezone.utc)
+        return FileInfo(
+            path=RemotePath(path),
+            name=name,
+            size=int(size),
+            modified_at=modified,
         )
 
     # endregion

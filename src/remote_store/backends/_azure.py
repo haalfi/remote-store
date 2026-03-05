@@ -118,15 +118,7 @@ class AzureBackend(Backend):
         self._fs_instance: Any = None
         self._hns_enabled: bool | None = None
 
-    def __repr__(self) -> str:
-        return (
-            f"AzureBackend(container={self._container!r}, "
-            f"account_name={self._account_name!r}, "
-            f"account_key={'***' if self._account_key is not None else None!r}, "
-            f"sas_token={'***' if self._sas_token is not None else None!r}, "
-            f"connection_string={'***' if self._connection_string is not None else None!r}, "
-            f"credential={'***' if self._credential is not None else None!r})"
-        )
+    # region: properties
 
     @property
     def name(self) -> str:
@@ -136,192 +128,15 @@ class AzureBackend(Backend):
     def capabilities(self) -> CapabilitySet:
         return _ALL_CAPABILITIES
 
-    # region: credential helper
-
-    def _resolve_credential(self) -> Any:  # pragma: no cover -- only reached without connection_string
-        """Build credential from constructor params."""
-        cred = self._credential
-        if cred is None and self._account_key is not None:
-            cred = self._account_key
-        elif cred is None and self._sas_token is not None:
-            cred = self._sas_token
-        elif cred is None:
-            try:
-                from azure.identity import DefaultAzureCredential
-
-                cred = DefaultAzureCredential()
-            except ImportError:
-                raise BackendUnavailable(
-                    "No credential provided and azure-identity is not installed. "
-                    "Install azure-identity or provide account_key/sas_token/credential.",
-                    backend=self.name,
-                ) from None
-        return cred
-
     # endregion
 
-    # region: lazy connection -- Blob SDK (always used for non-HNS)
-
-    @property
-    def _blob_service(self) -> Any:
-        """Lazy BlobServiceClient."""
-        if self._blob_service_instance is None:
-            from azure.storage.blob import BlobServiceClient
-
-            opts: dict[str, Any] = dict(self._client_options)
-            if self._connection_string:
-                self._blob_service_instance = BlobServiceClient.from_connection_string(self._connection_string, **opts)
-            else:  # pragma: no cover -- only reached without connection_string
-                url = self._account_url
-                if url is None and self._account_name is not None:
-                    url = f"https://{self._account_name}.blob.core.windows.net"
-                assert url is not None  # guaranteed by __init__ validation
-                cred = self._resolve_credential()
-                self._blob_service_instance = BlobServiceClient(account_url=url, credential=cred, **opts)
-        return self._blob_service_instance
-
-    @property
-    def _cc(self) -> Any:
-        """Lazy ContainerClient (Blob SDK)."""
-        if self._cc_instance is None:
-            self._cc_instance = self._blob_service.get_container_client(self._container)
-        return self._cc_instance
-
-    # endregion
-
-    # region: lazy connection -- DataLake SDK (used for HNS only)
-
-    @property
-    def _datalake_service(self) -> Any:  # pragma: no cover -- HNS only, requires ADLS Gen2
-        """Lazy DataLakeServiceClient (only used for HNS accounts)."""
-        if self._datalake_service_instance is None:
-            from azure.storage.filedatalake import DataLakeServiceClient
-
-            opts: dict[str, Any] = dict(self._client_options)
-            if self._connection_string:
-                self._datalake_service_instance = DataLakeServiceClient.from_connection_string(
-                    self._connection_string, **opts
-                )
-            else:
-                url = self._account_url
-                if url is None and self._account_name is not None:
-                    url = f"https://{self._account_name}.dfs.core.windows.net"
-                assert url is not None
-                cred = self._resolve_credential()
-                self._datalake_service_instance = DataLakeServiceClient(account_url=url, credential=cred, **opts)
-        return self._datalake_service_instance
-
-    @property
-    def _fs(self) -> Any:  # pragma: no cover -- HNS only, requires ADLS Gen2
-        """Lazy FileSystemClient (DataLake SDK, HNS only)."""
-        if self._fs_instance is None:
-            self._fs_instance = self._datalake_service.get_file_system_client(self._container)
-        return self._fs_instance
-
-    # endregion
-
-    # region: HNS detection
-
-    @property
-    def _hns(self) -> bool:
-        """Whether the storage account has Hierarchical Namespace enabled."""
-        if self._hns_enabled is None:
-            try:
-                info = self._blob_service.get_account_information()
-                self._hns_enabled = bool(info.get("is_hns_enabled", False))
-            except Exception:
-                log.warning(
-                    "Failed to detect HNS status, falling back to non-HNS behavior",
-                    exc_info=True,
-                )
-                self._hns_enabled = False
-        return self._hns_enabled
-
-    # endregion
-
-    # region: path helpers
-
-    def _azure_path(self, path: str) -> str:
-        """Normalize path for Azure (strip leading /, collapse double separators)."""
-        return re.sub(r"/+", "/", path).lstrip("/")
+    # region: public methods
 
     def to_key(self, native_path: str) -> str:
         prefix = f"{self._container}/"
         if native_path.startswith(prefix):
             return native_path[len(prefix) :]
         return native_path
-
-    # endregion
-
-    # region: error mapping
-
-    @contextmanager
-    def _errors(self, path: str = "") -> Iterator[None]:
-        """Map Azure SDK exceptions to remote_store errors."""
-        try:
-            yield
-        except RemoteStoreError:
-            raise
-        except Exception as exc:
-            raise self._classify(exc, path) from None
-
-    def _classify(self, exc: Exception, path: str) -> RemoteStoreError:
-        """Classify an Azure SDK exception into a remote_store error type."""
-        from azure.core.exceptions import (
-            ClientAuthenticationError,
-            HttpResponseError,
-            ResourceExistsError,
-            ResourceNotFoundError,
-            ServiceRequestError,
-            ServiceResponseError,
-        )
-
-        if isinstance(exc, ResourceNotFoundError):
-            return NotFound(f"Not found: {path}", path=path, backend=self.name)
-        if isinstance(exc, ResourceExistsError):
-            return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
-        if isinstance(exc, ClientAuthenticationError):
-            return PermissionDenied(f"Authentication failed: {path}", path=path, backend=self.name)
-        if isinstance(exc, ServiceRequestError | ServiceResponseError):
-            return BackendUnavailable(str(exc), path=path, backend=self.name)
-        if isinstance(exc, HttpResponseError):
-            status = getattr(exc, "status_code", None)
-            if status == 404:
-                return NotFound(f"Not found: {path}", path=path, backend=self.name)
-            if status == 403:
-                return PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name)
-            if status == 409:
-                return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
-            return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover
-        return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover
-
-    # endregion
-
-    # region: helpers
-
-    def _blob_client(self, path: str) -> Any:
-        """Get a BlobClient for the given path."""
-        return self._cc.get_blob_client(self._azure_path(path))
-
-    def _props_to_fileinfo(self, props: Any, path: str) -> FileInfo:
-        """Convert blob/path properties to FileInfo."""
-        name = path.rsplit("/", 1)[-1] if "/" in path else path
-        size = getattr(props, "size", None) or getattr(props, "content_length", 0) or 0
-        modified = getattr(props, "last_modified", None)
-        if modified is not None and modified.tzinfo is None:
-            modified = modified.replace(tzinfo=timezone.utc)  # pragma: no cover
-        if modified is None:
-            modified = datetime.now(tz=timezone.utc)  # pragma: no cover
-        return FileInfo(
-            path=RemotePath(path),
-            name=name,
-            size=int(size),
-            modified_at=modified,
-        )
-
-    # endregion
-
-    # region: existence checks
 
     def exists(self, path: str) -> bool:
         from azure.core.exceptions import ResourceNotFoundError
@@ -378,10 +193,6 @@ class AzureBackend(Backend):
                 blobs = self._cc.list_blobs(name_starts_with=prefix, results_per_page=1)
                 return any(True for _ in blobs)
 
-    # endregion
-
-    # region: read operations
-
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
             bc = self._blob_client(path)
@@ -393,10 +204,6 @@ class AzureBackend(Backend):
         with self._errors(path):
             bc = self._blob_client(path)
             return bytes(bc.download_blob().readall())
-
-    # endregion
-
-    # region: write operations
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         from azure.core.exceptions import ResourceNotFoundError
@@ -449,10 +256,6 @@ class AzureBackend(Backend):
                     tmp_fc.delete_file()
                 raise
 
-    # endregion
-
-    # region: delete operations
-
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._errors(path):
             bc = self._blob_client(path)
@@ -498,10 +301,6 @@ class AzureBackend(Backend):
                         self._cc.get_blob_client(blob.name).delete_blob()
                 elif not missing_ok:
                     raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
-
-    # endregion
-
-    # region: listing operations
 
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         with self._errors(path):
@@ -563,10 +362,6 @@ class AzureBackend(Backend):
             if compiled.match(str(info.path)):
                 yield info
 
-    # endregion
-
-    # region: metadata
-
     def get_file_info(self, path: str) -> FileInfo:
         with self._errors(path):
             bc = self._blob_client(path)
@@ -609,10 +404,6 @@ class AzureBackend(Backend):
                 total_size=total_size,
                 modified_at=latest_modified,
             )
-
-    # endregion
-
-    # region: move and copy
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         from azure.core.exceptions import ResourceNotFoundError
@@ -659,10 +450,6 @@ class AzureBackend(Backend):
 
             dst_bc.start_copy_from_url(src_bc.url)
 
-    # endregion
-
-    # region: lifecycle
-
     def close(self) -> None:
         clients = (self._cc_instance, self._blob_service_instance, self._fs_instance, self._datalake_service_instance)
         for client in clients:
@@ -685,6 +472,175 @@ class AzureBackend(Backend):
             f"Supported: azure.storage.filedatalake.FileSystemClient.",
             capability="unwrap",
             backend=self.name,
+        )
+
+    # endregion
+
+    # region: dunder methods
+
+    def __repr__(self) -> str:
+        return (
+            f"AzureBackend(container={self._container!r}, "
+            f"account_name={self._account_name!r}, "
+            f"account_key={'***' if self._account_key is not None else None!r}, "
+            f"sas_token={'***' if self._sas_token is not None else None!r}, "
+            f"connection_string={'***' if self._connection_string is not None else None!r}, "
+            f"credential={'***' if self._credential is not None else None!r})"
+        )
+
+    # endregion
+
+    # region: private helpers
+
+    def _resolve_credential(self) -> Any:  # pragma: no cover -- only reached without connection_string
+        """Build credential from constructor params."""
+        cred = self._credential
+        if cred is None and self._account_key is not None:
+            cred = self._account_key
+        elif cred is None and self._sas_token is not None:
+            cred = self._sas_token
+        elif cred is None:
+            try:
+                from azure.identity import DefaultAzureCredential
+
+                cred = DefaultAzureCredential()
+            except ImportError:
+                raise BackendUnavailable(
+                    "No credential provided and azure-identity is not installed. "
+                    "Install azure-identity or provide account_key/sas_token/credential.",
+                    backend=self.name,
+                ) from None
+        return cred
+
+    @property
+    def _blob_service(self) -> Any:
+        """Lazy BlobServiceClient."""
+        if self._blob_service_instance is None:
+            from azure.storage.blob import BlobServiceClient
+
+            opts: dict[str, Any] = dict(self._client_options)
+            if self._connection_string:
+                self._blob_service_instance = BlobServiceClient.from_connection_string(self._connection_string, **opts)
+            else:  # pragma: no cover -- only reached without connection_string
+                url = self._account_url
+                if url is None and self._account_name is not None:
+                    url = f"https://{self._account_name}.blob.core.windows.net"
+                assert url is not None  # guaranteed by __init__ validation
+                cred = self._resolve_credential()
+                self._blob_service_instance = BlobServiceClient(account_url=url, credential=cred, **opts)
+        return self._blob_service_instance
+
+    @property
+    def _cc(self) -> Any:
+        """Lazy ContainerClient (Blob SDK)."""
+        if self._cc_instance is None:
+            self._cc_instance = self._blob_service.get_container_client(self._container)
+        return self._cc_instance
+
+    @property
+    def _datalake_service(self) -> Any:  # pragma: no cover -- HNS only, requires ADLS Gen2
+        """Lazy DataLakeServiceClient (only used for HNS accounts)."""
+        if self._datalake_service_instance is None:
+            from azure.storage.filedatalake import DataLakeServiceClient
+
+            opts: dict[str, Any] = dict(self._client_options)
+            if self._connection_string:
+                self._datalake_service_instance = DataLakeServiceClient.from_connection_string(
+                    self._connection_string, **opts
+                )
+            else:
+                url = self._account_url
+                if url is None and self._account_name is not None:
+                    url = f"https://{self._account_name}.dfs.core.windows.net"
+                assert url is not None
+                cred = self._resolve_credential()
+                self._datalake_service_instance = DataLakeServiceClient(account_url=url, credential=cred, **opts)
+        return self._datalake_service_instance
+
+    @property
+    def _fs(self) -> Any:  # pragma: no cover -- HNS only, requires ADLS Gen2
+        """Lazy FileSystemClient (DataLake SDK, HNS only)."""
+        if self._fs_instance is None:
+            self._fs_instance = self._datalake_service.get_file_system_client(self._container)
+        return self._fs_instance
+
+    @property
+    def _hns(self) -> bool:
+        """Whether the storage account has Hierarchical Namespace enabled."""
+        if self._hns_enabled is None:
+            try:
+                info = self._blob_service.get_account_information()
+                self._hns_enabled = bool(info.get("is_hns_enabled", False))
+            except Exception:
+                log.warning(
+                    "Failed to detect HNS status, falling back to non-HNS behavior",
+                    exc_info=True,
+                )
+                self._hns_enabled = False
+        return self._hns_enabled
+
+    def _azure_path(self, path: str) -> str:
+        """Normalize path for Azure (strip leading /, collapse double separators)."""
+        return re.sub(r"/+", "/", path).lstrip("/")
+
+    @contextmanager
+    def _errors(self, path: str = "") -> Iterator[None]:
+        """Map Azure SDK exceptions to remote_store errors."""
+        try:
+            yield
+        except RemoteStoreError:
+            raise
+        except Exception as exc:
+            raise self._classify(exc, path) from None
+
+    def _classify(self, exc: Exception, path: str) -> RemoteStoreError:
+        """Classify an Azure SDK exception into a remote_store error type."""
+        from azure.core.exceptions import (
+            ClientAuthenticationError,
+            HttpResponseError,
+            ResourceExistsError,
+            ResourceNotFoundError,
+            ServiceRequestError,
+            ServiceResponseError,
+        )
+
+        if isinstance(exc, ResourceNotFoundError):
+            return NotFound(f"Not found: {path}", path=path, backend=self.name)
+        if isinstance(exc, ResourceExistsError):
+            return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
+        if isinstance(exc, ClientAuthenticationError):
+            return PermissionDenied(f"Authentication failed: {path}", path=path, backend=self.name)
+        if isinstance(exc, ServiceRequestError | ServiceResponseError):
+            return BackendUnavailable(str(exc), path=path, backend=self.name)
+        if isinstance(exc, HttpResponseError):
+            status = getattr(exc, "status_code", None)
+            if status == 404:
+                return NotFound(f"Not found: {path}", path=path, backend=self.name)
+            if status == 403:
+                return PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name)
+            if status == 409:
+                return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
+            return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover
+        return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover
+
+    def _blob_client(self, path: str) -> Any:
+        """Get a BlobClient for the given path."""
+        return self._cc.get_blob_client(self._azure_path(path))
+
+    def _props_to_fileinfo(self, props: Any, path: str) -> FileInfo:
+        """Convert blob/path properties to FileInfo."""
+        name = path.rsplit("/", 1)[-1] if "/" in path else path
+        size = getattr(props, "size", None) or getattr(props, "content_length", 0) or 0
+        modified = getattr(props, "last_modified", None)
+        if modified is not None and modified.tzinfo is None:
+            modified = modified.replace(tzinfo=timezone.utc)  # pragma: no cover
+        if modified is None:
+            modified = datetime.now(tz=timezone.utc)  # pragma: no cover
+        return FileInfo(
+            path=RemotePath(path),
+            name=name,
+            size=int(size),
+            modified_at=modified,
         )
 
     # endregion

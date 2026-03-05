@@ -39,16 +39,7 @@ class Store:
         self._root = str(RemotePath(root_path)) if root_path else ""
         self._owns_backend = True
 
-    def __repr__(self) -> str:
-        return f"Store(backend={self._backend.name!r}, root_path={self._root!r})"
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, Store):
-            return self._backend is other._backend and self._root == other._root
-        return NotImplemented
-
-    def __hash__(self) -> int:
-        return hash((id(self._backend), self._root))
+    # region: public methods
 
     def close(self) -> None:
         """Close the underlying backend, releasing any held resources.
@@ -58,17 +49,6 @@ class Store:
         """
         if self._owns_backend:
             self._backend.close()
-
-    def __enter__(self) -> Store:
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        self.close()
 
     def child(self, subpath: str) -> Store:
         """Return a new Store scoped to a subfolder of this store.
@@ -87,60 +67,6 @@ class Store:
         child_store = Store(backend=self._backend, root_path=new_root)
         child_store._owns_backend = False
         return child_store
-
-    def _full_path(self, path: str) -> str:
-        """Resolve a path that may be empty (store root) or a relative subpath.
-
-        Accepts ``""`` and ``"."`` as root aliases so that
-        ``str(RemotePath.ROOT)`` round-trips through Store methods.
-        """
-        if not path or path == ".":
-            if self._root:
-                return self._root
-            return ""
-        validated = RemotePath(path)
-        if self._root:
-            return f"{self._root}/{validated}"
-        return str(validated)
-
-    def _require_file_path(self, path: str) -> str:
-        """Resolve a path that must be non-empty (file-targeted operations)."""
-        if not path or path == ".":
-            raise InvalidPath("Path must not be empty or root for file operations", path=path)
-        return self._full_path(path)
-
-    def _strip_root(self, backend_rel: str) -> str:
-        """Strip ``root_path`` prefix from a backend-relative path.
-
-        :returns: Store-relative key.
-        :raises InvalidPath: If the path does not start with ``root_path``.
-        """
-        if not self._root:
-            return backend_rel
-        if backend_rel == self._root:
-            return ""
-        prefix = self._root + "/"
-        if backend_rel.startswith(prefix):
-            return backend_rel[len(prefix) :]
-        raise InvalidPath(
-            f"Path {backend_rel!r} is not under store root {self._root!r}",
-            path=backend_rel,
-        )
-
-    def _rebase_file_info(self, info: FileInfo) -> FileInfo:
-        """Return a copy of *info* with its path rebased to store-relative."""
-        rel = self._strip_root(str(info.path))
-        if rel == str(info.path):
-            return info
-        return dataclasses.replace(info, path=RemotePath(rel))
-
-    def _rebase_folder_info(self, info: FolderInfo) -> FolderInfo:
-        """Return a copy of *info* with its path rebased to store-relative."""
-        rel = self._strip_root(str(info.path))
-        if rel == str(info.path):
-            return info
-        new_path = RemotePath.from_backend_path(rel)
-        return dataclasses.replace(info, path=new_path)
 
     def to_key(self, path: str) -> str:
         """Convert an absolute or backend-native path to a store-relative key.
@@ -387,3 +313,89 @@ class Store:
             return
         self._backend.copy(src_path, dst_path, overwrite=overwrite)
         log.info("copy complete src=%r dst=%r", src, dst, extra={"op": "copy", "path": src, "backend": _bk})
+
+    # endregion
+
+    # region: dunder methods
+
+    def __repr__(self) -> str:
+        return f"Store(backend={self._backend.name!r}, root_path={self._root!r})"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Store):
+            return self._backend is other._backend and self._root == other._root
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash((id(self._backend), self._root))
+
+    def __enter__(self) -> Store:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    # endregion
+
+    # region: private helpers
+
+    def _full_path(self, path: str) -> str:
+        """Resolve a path that may be empty (store root) or a relative subpath.
+
+        Accepts ``""`` and ``"."`` as root aliases so that
+        ``str(RemotePath.ROOT)`` round-trips through Store methods.
+        """
+        if not path or path == ".":
+            if self._root:
+                return self._root
+            return ""
+        validated = RemotePath(path)
+        if self._root:
+            return f"{self._root}/{validated}"
+        return str(validated)
+
+    def _require_file_path(self, path: str) -> str:
+        """Resolve a path that must be non-empty (file-targeted operations)."""
+        if not path or path == ".":
+            raise InvalidPath("Path must not be empty or root for file operations", path=path)
+        return self._full_path(path)
+
+    def _strip_root(self, backend_rel: str) -> str:
+        """Strip ``root_path`` prefix from a backend-relative path.
+
+        :returns: Store-relative key.
+        :raises InvalidPath: If the path does not start with ``root_path``.
+        """
+        if not self._root:
+            return backend_rel
+        if backend_rel == self._root:
+            return ""
+        prefix = self._root + "/"
+        if backend_rel.startswith(prefix):
+            return backend_rel[len(prefix) :]
+        raise InvalidPath(
+            f"Path {backend_rel!r} is not under store root {self._root!r}",
+            path=backend_rel,
+        )
+
+    def _rebase_file_info(self, info: FileInfo) -> FileInfo:
+        """Return a copy of *info* with its path rebased to store-relative."""
+        rel = self._strip_root(str(info.path))
+        if rel == str(info.path):
+            return info
+        return dataclasses.replace(info, path=RemotePath(rel))
+
+    def _rebase_folder_info(self, info: FolderInfo) -> FolderInfo:
+        """Return a copy of *info* with its path rebased to store-relative."""
+        rel = self._strip_root(str(info.path))
+        if rel == str(info.path):
+            return info
+        new_path = RemotePath.from_backend_path(rel)
+        return dataclasses.replace(info, path=new_path)
+
+    # endregion

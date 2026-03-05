@@ -38,11 +38,12 @@ AzureBackend(
 
 ### AZ-003: Capability Declaration
 
-**Invariant:** `AzureBackend` declares capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`. Does not declare `GLOB` (no native pattern matching; use `list_files(pattern=…)` or `ext.glob` for client-side fallback).
+**Invariant:** `AzureBackend` declares capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `GLOB`. Native glob via prefix-optimized listing (see [018-glob.md](018-glob.md) GLOB-020).
 **Rationale:**
 - `ATOMIC_WRITE`: HNS accounts use temp file + atomic rename; non-HNS accounts use direct upload (Azure PUT is atomic, same as S3). See AZ-006 and AZ-014.
 - `MOVE`: HNS accounts use native atomic rename; non-HNS accounts use copy + delete. See AZ-006 and AZ-017.
 - `COPY`: Implemented via server-side copy (`start_copy_from_url`). See AZ-018.
+- `GLOB`: Native prefix-optimized glob since v0.12.0 (BK-002).
 
 ### AZ-004: Lazy Connection
 

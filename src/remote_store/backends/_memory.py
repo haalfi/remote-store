@@ -59,8 +59,7 @@ class MemoryBackend(Backend):
         self._folder_count = 0
         self._lock = threading.Lock()
 
-    def __repr__(self) -> str:
-        return f"MemoryBackend(files={self._file_count}, folders={self._folder_count})"
+    # region: properties
 
     @property
     def name(self) -> str:
@@ -70,61 +69,9 @@ class MemoryBackend(Backend):
     def capabilities(self) -> CapabilitySet:
         return _ALL_CAPABILITIES
 
-    # region: path helpers (MEM-DS-005)
-
-    @staticmethod
-    def _split_path(path: str) -> list[str]:
-        """Split and validate a path, returning a list of segments.
-
-        :raises InvalidPath: For absolute paths, ``..`` segments, or null bytes.
-        """
-        if "\0" in path:
-            raise InvalidPath("Path contains null byte", path=path, backend="memory")
-        if path.startswith("/"):
-            raise InvalidPath("Absolute paths are not allowed", path=path, backend="memory")
-
-        segments: list[str] = []
-        for seg in path.split("/"):
-            if seg == "" or seg == ".":
-                continue
-            if seg == "..":
-                raise InvalidPath("Path contains '..' segment", path=path, backend="memory")
-            segments.append(seg)
-        return segments
-
-    def _traverse(self, segments: list[str]) -> _DirNode | _FileEntry | None:
-        """Walk the tree following *segments*. Returns None if any segment is missing."""
-        node: _DirNode | _FileEntry = self._root
-        for seg in segments:
-            if not isinstance(node, _DirNode):
-                return None
-            child = node.children.get(seg)
-            if child is None:
-                return None
-            node = child
-        return node
-
-    def _ensure_parents(self, segments: list[str]) -> _DirNode:
-        """Create intermediate directories as needed, return the parent node."""
-        node = self._root
-        for seg in segments[:-1]:
-            child = node.children.get(seg)
-            if child is None:
-                child = _DirNode()
-                node.children[seg] = child
-                self._folder_count += 1
-            elif isinstance(child, _FileEntry):
-                raise InvalidPath(
-                    f"Cannot create directory — '{seg}' exists as a file",
-                    path="/".join(segments),
-                    backend="memory",
-                )
-            node = child
-        return node
-
     # endregion
 
-    # region: existence checks (BE-004, BE-005)
+    # region: public methods
 
     def exists(self, path: str) -> bool:
         segments = self._split_path(path)
@@ -147,10 +94,6 @@ class MemoryBackend(Backend):
                 return True  # root is a folder
             return isinstance(self._traverse(segments), _DirNode)
 
-    # endregion
-
-    # region: read operations (MEM-010, MEM-011)
-
     def read(self, path: str) -> BinaryIO:
         segments = self._split_path(path)
         with self._lock:
@@ -167,10 +110,6 @@ class MemoryBackend(Backend):
             if not isinstance(node, _FileEntry):
                 raise NotFound(f"File not found: {path}", path=path, backend="memory")
             return bytes(node.data)
-
-    # endregion
-
-    # region: write operations (MEM-012, MEM-013)
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         segments = self._split_path(path)
@@ -204,10 +143,6 @@ class MemoryBackend(Backend):
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         self.write(path, content, overwrite=overwrite)
-
-    # endregion
-
-    # region: delete operations (BE-012, MEM-014)
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         segments = self._split_path(path)
@@ -259,26 +194,6 @@ class MemoryBackend(Backend):
                 self._file_count -= files
                 self._folder_count -= folders + 1  # +1 for the node itself
 
-    @staticmethod
-    def _count_subtree(node: _DirNode) -> tuple[int, int]:
-        """Count files and sub-folders in a subtree (excludes the node itself)."""
-        files = 0
-        folders = 0
-        stack: list[_DirNode] = [node]
-        while stack:
-            current = stack.pop()
-            for child in current.children.values():
-                if isinstance(child, _FileEntry):
-                    files += 1
-                else:
-                    folders += 1
-                    stack.append(child)
-        return files, folders
-
-    # endregion
-
-    # region: listing (BE-014, BE-015)
-
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         segments = self._split_path(path)
         with self._lock:
@@ -289,38 +204,6 @@ class MemoryBackend(Backend):
             results = self._collect_files(node, prefix, recursive=recursive)
         yield from results
 
-    @staticmethod
-    def _collect_files(
-        node: _DirNode,
-        prefix: str,
-        *,
-        recursive: bool,
-    ) -> list[FileInfo]:
-        """Collect FileInfo objects from a directory node (under lock).
-
-        Uses iterative DFS for consistency with ``_count_subtree`` and
-        ``get_folder_info``, avoiding recursion-limit concerns on deep trees.
-        """
-        results: list[FileInfo] = []
-        stack: list[tuple[_DirNode, str]] = [(node, prefix)]
-        while stack:
-            current, cur_prefix = stack.pop()
-            for name, child in current.children.items():
-                child_path = f"{cur_prefix}/{name}" if cur_prefix else name
-                if isinstance(child, _FileEntry):
-                    results.append(
-                        FileInfo(
-                            path=RemotePath(child_path),
-                            name=name,
-                            size=len(child.data),
-                            modified_at=child.modified_at,
-                            content_type=child.content_type,
-                        )
-                    )
-                elif recursive and isinstance(child, _DirNode):
-                    stack.append((child, child_path))
-        return results
-
     def list_folders(self, path: str) -> Iterator[str]:
         segments = self._split_path(path)
         with self._lock:
@@ -329,10 +212,6 @@ class MemoryBackend(Backend):
                 return
             results = [name for name, child in node.children.items() if isinstance(child, _DirNode)]
         yield from results
-
-    # endregion
-
-    # region: metadata (BE-016, BE-017, MEM-015)
 
     def get_file_info(self, path: str) -> FileInfo:
         segments = self._split_path(path)
@@ -376,10 +255,6 @@ class MemoryBackend(Backend):
                 total_size=total_size,
                 modified_at=latest,
             )
-
-    # endregion
-
-    # region: move and copy (MEM-016, MEM-016b)
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         src_segments = self._split_path(src)
@@ -468,5 +343,114 @@ class MemoryBackend(Backend):
                 self._file_count += 1
 
             dst_parent.children[dst_leaf] = new_entry
+
+    # endregion
+
+    # region: dunder methods
+
+    def __repr__(self) -> str:
+        return f"MemoryBackend(files={self._file_count}, folders={self._folder_count})"
+
+    # endregion
+
+    # region: private helpers
+
+    @staticmethod
+    def _split_path(path: str) -> list[str]:
+        """Split and validate a path, returning a list of segments.
+
+        :raises InvalidPath: For absolute paths, ``..`` segments, or null bytes.
+        """
+        if "\0" in path:
+            raise InvalidPath("Path contains null byte", path=path, backend="memory")
+        if path.startswith("/"):
+            raise InvalidPath("Absolute paths are not allowed", path=path, backend="memory")
+
+        segments: list[str] = []
+        for seg in path.split("/"):
+            if seg == "" or seg == ".":
+                continue
+            if seg == "..":
+                raise InvalidPath("Path contains '..' segment", path=path, backend="memory")
+            segments.append(seg)
+        return segments
+
+    def _traverse(self, segments: list[str]) -> _DirNode | _FileEntry | None:
+        """Walk the tree following *segments*. Returns None if any segment is missing."""
+        node: _DirNode | _FileEntry = self._root
+        for seg in segments:
+            if not isinstance(node, _DirNode):
+                return None
+            child = node.children.get(seg)
+            if child is None:
+                return None
+            node = child
+        return node
+
+    def _ensure_parents(self, segments: list[str]) -> _DirNode:
+        """Create intermediate directories as needed, return the parent node."""
+        node = self._root
+        for seg in segments[:-1]:
+            child = node.children.get(seg)
+            if child is None:
+                child = _DirNode()
+                node.children[seg] = child
+                self._folder_count += 1
+            elif isinstance(child, _FileEntry):
+                raise InvalidPath(
+                    f"Cannot create directory — '{seg}' exists as a file",
+                    path="/".join(segments),
+                    backend="memory",
+                )
+            node = child
+        return node
+
+    @staticmethod
+    def _count_subtree(node: _DirNode) -> tuple[int, int]:
+        """Count files and sub-folders in a subtree (excludes the node itself)."""
+        files = 0
+        folders = 0
+        stack: list[_DirNode] = [node]
+        while stack:
+            current = stack.pop()
+            for child in current.children.values():
+                if isinstance(child, _FileEntry):
+                    files += 1
+                else:
+                    folders += 1
+                    stack.append(child)
+        return files, folders
+
+    @staticmethod
+    def _collect_files(
+        node: _DirNode,
+        prefix: str,
+        *,
+        recursive: bool,
+    ) -> list[FileInfo]:
+        """Collect FileInfo objects from a directory node (under lock).
+
+        Uses iterative DFS for consistency with ``_count_subtree`` and
+        ``get_folder_info``, avoiding recursion-limit concerns on deep trees.
+        """
+        results: list[FileInfo] = []
+        stack: list[tuple[_DirNode, str]] = [(node, prefix)]
+        while stack:
+            current, cur_prefix = stack.pop()
+            for name, child in current.children.items():
+                child_path = f"{cur_prefix}/{name}" if cur_prefix else name
+                if isinstance(child, _FileEntry):
+                    results.append(
+                        FileInfo(
+                            path=RemotePath(child_path),
+                            name=name,
+                            size=len(child.data),
+                            modified_at=child.modified_at,
+                            content_type=child.content_type,
+                        )
+                    )
+                elif recursive and isinstance(child, _DirNode):
+                    stack.append((child, child_path))
+        return results
 
     # endregion
