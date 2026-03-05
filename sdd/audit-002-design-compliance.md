@@ -16,7 +16,7 @@
 | Moderate | 3 | CHANGELOG missing ID-043 entry; BACKLOG version annotations ahead of actual release; §11.6 method ordering violated across Store and all backends |
 | Minor | 2 | DEVELOPMENT_STORY.md spec count wrong (20 vs 21); unlinked TODO in `ext/arrow.py` |
 
-Items AF-016 through AF-018 are **documentation/spec fixes only** — no production code changes required. AF-020 and AF-021 are code style fixes with no behavioral impact.
+Items AF-016 through AF-019 are **documentation/spec fixes only** — no production code changes required. AF-020 and AF-021 are code style fixes with no behavioral impact.
 
 ---
 
@@ -59,7 +59,7 @@ Items AF-016 through AF-018 are **documentation/spec fixes only** — no product
 
 | Source | S3 GLOB | S3PA GLOB | Azure GLOB |
 |--------|---------|-----------|-----------|
-| `sdd/specs/008-s3-backend.md` § S3-003 | ✗ No | ✗ No | — |
+| `sdd/specs/008-s3-backend.md` § S3-003 | ✗ No | — | — |
 | `sdd/specs/011-s3-pyarrow-backend.md` § S3PA-003 | — | ✗ No | — |
 | `sdd/specs/012-azure-backend.md` § AZ-003 | — | — | ✗ No |
 | `sdd/specs/018-glob.md` § GLOB-018/019/020 | ✓ Yes | ✓ Yes | ✓ Yes |
@@ -155,21 +155,6 @@ Update all three to `(v0.13.1)` when the release commit is made.
 
 ---
 
-## Not Applicable
-
-| Item | Reason |
-|------|--------|
-| `guides/backends/` prerequisites | No dependency changes since last verified |
-| `mkdocs.yml` nav / `_nav.yml` sync | No new backends or docs sections since v0.13.0 |
-| `CONTRIBUTING.md` repo structure | No new directories or structural changes |
-| `examples/configuration.py` | Updated for ID-042 (credential hygiene) — in CHANGELOG |
-| CITATION.cff sha256 (conda-forge) | ID-018 conda-forge submission still pending externally |
-| Error model tests per-backend | All backends tested via conformance suite; ERR-* coverage confirmed |
-
----
-
----
-
 ### AF-020 — MODERATE — DESIGN.md §11.6 method ordering violated across Store and all backends
 
 **Rule (DESIGN.md §11.6):**
@@ -214,6 +199,19 @@ Update all three to `(v0.13.1)` when the release commit is made.
 ```
 
 **Backlog entry:** AF-021
+
+---
+
+## Not Applicable
+
+| Item | Reason |
+|------|--------|
+| `guides/backends/` prerequisites | No dependency changes since last verified |
+| `mkdocs.yml` nav / `_nav.yml` sync | No new backends or docs sections since v0.13.0 |
+| `CONTRIBUTING.md` repo structure | No new directories or structural changes |
+| `examples/configuration.py` | Updated for ID-042 (credential hygiene) — in CHANGELOG |
+| CITATION.cff sha256 (conda-forge) | ID-018 conda-forge submission still pending externally |
+| Error model tests per-backend | All backends tested via conformance suite; ERR-* coverage confirmed |
 
 ---
 
