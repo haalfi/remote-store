@@ -3722,11 +3722,12 @@
 <h3 id="s3-002-backend-name">S3-002: Backend Name<a class="headerlink" href="#s3-002-backend-name" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>name</code> property returns <code>"s3"</code>.</p>
 <h3 id="s3-003-capability-declaration">S3-003: Capability Declaration<a class="headerlink" href="#s3-003-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>S3Backend</code> declares capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>. Does not declare <code>GLOB</code> (no native pattern matching; use <code>list_files(pattern=…)</code> or <code>ext.glob</code> for client-side fallback).
+<p><strong>Invariant:</strong> <code>S3Backend</code> declares capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>GLOB</code>. Native glob via prefix-optimized listing (see <a href="../018-glob/">018-glob.md</a> GLOB-018).
 <strong>Rationale:</strong>
 - <code>ATOMIC_WRITE</code>: S3 PUT is inherently atomic -- readers never see partial content (see S3-010).
 - <code>MOVE</code>: Implemented via server-side copy + delete (see S3-013).
-- <code>COPY</code>: Implemented via S3 server-side copy (see S3-014).</p>
+- <code>COPY</code>: Implemented via S3 server-side copy (see S3-014).
+- <code>GLOB</code>: Native prefix-optimized glob since v0.12.0 (BK-002).</p>
 <h3 id="s3-004-lazy-connection">S3-004: Lazy Connection<a class="headerlink" href="#s3-004-lazy-connection" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. The s3fs filesystem is created lazily on first operation.
 <strong>Rationale:</strong> Fail-fast at construction is undesirable -- the backend may be created during application wiring before the network is available.</p>

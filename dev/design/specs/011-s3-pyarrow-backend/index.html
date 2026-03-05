@@ -3756,8 +3756,8 @@
 <h3 id="s3pa-002-backend-name">S3PA-002: Backend Name<a class="headerlink" href="#s3pa-002-backend-name" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>name</code> property returns <code>"s3-pyarrow"</code>.</p>
 <h3 id="s3pa-003-capability-declaration">S3PA-003: Capability Declaration<a class="headerlink" href="#s3pa-003-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>S3PyArrowBackend</code> declares capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>. Does not declare <code>GLOB</code> (no native pattern matching; use <code>list_files(pattern=…)</code> or <code>ext.glob</code> for client-side fallback).
-<strong>Rationale:</strong> Same as S3Backend -- S3 PUT is inherently atomic, move via copy+delete, copy via server-side copy.</p>
+<p><strong>Invariant:</strong> <code>S3PyArrowBackend</code> declares capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>GLOB</code>. Native glob via prefix-optimized listing (see <a href="../018-glob/">018-glob.md</a> GLOB-019).
+<strong>Rationale:</strong> Same as S3Backend -- S3 PUT is inherently atomic, move via copy+delete, copy via server-side copy. <code>GLOB</code>: native prefix-optimized glob since v0.12.0 (BK-002).</p>
 <h3 id="s3pa-004-lazy-connection">S3PA-004: Lazy Connection<a class="headerlink" href="#s3pa-004-lazy-connection" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. Both the PyArrow and s3fs filesystem instances are created lazily on first use.
 <strong>Rationale:</strong> Same as S3-004.</p>
