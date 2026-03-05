@@ -106,8 +106,8 @@ for registering retryable exception types. These are global — not per-instance
 
 Azure Storage SDK uses HTTP pipeline policies for retry:
 
-- **Default:** `ExponentialRetry(initial_backoff=15, increment=3, retry_total=3)`.
-- **Alternative:** `LinearRetry(backoff=15, retry_total=3)`.
+- **Default:** `ExponentialRetry(initial_backoff=15, increment_base=3, retry_total=3, random_jitter_range=3)`.
+- **Alternative:** `LinearRetry(backoff=15, retry_total=3, random_jitter_range=3)`.
 - **Retried errors:** HTTP 408, 429, 500, 502, 503, 504, connection errors.
 
 Users can pass retry config through `client_options`:
@@ -123,14 +123,18 @@ AzureBackend(
 
 Again, undiscoverable and SDK-specific.
 
-### 2.4 S3-PyArrow — Hybrid, limited control
+### 2.4 S3-PyArrow — Hybrid, partially configurable
 
 **File:** `src/remote_store/backends/_s3_pyarrow.py`
 
-- **Data path (PyArrow C++ S3):** Retry is internal to the C++ layer. PyArrow's
-  `S3FileSystem` constructor accepts `retry_strategy` but this is not well
-  documented and has limited configurability. Default is 3 retries with
-  exponential backoff.
+- **Data path (PyArrow C++ S3):** PyArrow exposes `retry_strategy` on
+  `S3FileSystem` with two strategy classes:
+  - `AwsStandardS3RetryStrategy(max_attempts=3)` — default, exponential
+    backoff, broad error coverage (recommended).
+  - `AwsDefaultS3RetryStrategy(max_attempts=N)` — legacy, narrower coverage.
+  The **only configurable knob** is `max_attempts`. Backoff timing, jitter,
+  and error classification are not configurable through PyArrow's API.
+  Related timeout parameters: `request_timeout`, `connect_timeout`.
 - **Control path (s3fs):** Same as S3 backend above.
 
 ### 2.5 Local / Memory — No retry (correct)
@@ -413,10 +417,10 @@ class RetryPolicy:
 
 | Parameter | SFTP (tenacity) | S3 (botocore) | Azure SDK | S3-PyArrow |
 |-----------|----------------|---------------|-----------|------------|
-| `max_attempts` | `stop_after_attempt(N)` | `Config(retries={"max_attempts": N})` | `retry_total=N-1` | s3fs side only |
-| `backoff_base` | `wait_exponential(min=N)` | Not directly mapped¹ | `initial_backoff=N` | Not configurable |
-| `backoff_max` | `wait_exponential(max=N)` | Not directly mapped¹ | Implicit via increment | Not configurable |
-| `jitter` | `wait_random(0, N)` | Built-in (not configurable) | Built-in | Not configurable |
+| `max_attempts` | `stop_after_attempt(N)` | `Config(retries={"max_attempts": N})` | `retry_total=N-1` | `AwsStandardS3RetryStrategy(max_attempts=N)` + s3fs side |
+| `backoff_base` | `wait_exponential(min=N)` | Not directly mapped¹ | `initial_backoff=N` | Not configurable (C++ internal) |
+| `backoff_max` | `wait_exponential(max=N)` | Not directly mapped¹ | Implicit via increment | Not configurable (C++ internal) |
+| `jitter` | `wait_random(0, N)` | Built-in (not configurable) | `random_jitter_range=N` | Not configurable (C++ internal) |
 | `timeout` | `stop_after_delay(N)` | Not supported | Not supported | Not supported |
 
 ¹ botocore uses fixed backoff: `min(base * 2^attempt, 20)` where base is
