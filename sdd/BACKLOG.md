@@ -56,8 +56,7 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `noarch: python`, zero core deps, `run_constraints` for optional backends).
   CI validation via `conda-recipe.yml` workflow (rattler-build `--render-only`).
   Release checklist updated with conda version/sha256 steps (Phase 2, 3, 5).
-  Staged-recipes PR submitted: conda-forge/staged-recipes#32401. Waiting for
-  conda-forge reviewer approval.
+  Remaining: fork `conda-forge/staged-recipes`, submit PR externally.
 
 - [ ] **ID-025 — `ext.cache` — store-level caching middleware**
   Wraps a Store and caches reads, folder stats, existence checks with TTL.
