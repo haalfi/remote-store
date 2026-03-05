@@ -73,12 +73,14 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   entire files in memory. Needed for any large-file workflow (Parquet exports,
   log rotation, report generation). Needs temp-path strategy per backend.
 
-- [ ] **ID-034 — Parquet lake guide (Bronze / Silver / Gold patterns)**
+- [~] **ID-034 — Parquet lake guide (Bronze / Silver / Gold patterns)**
   User-facing guide showing how to use `Store.child()` + `ext.arrow` +
   `ext.transfer` to build a multi-layer Parquet lake on any backend.
   Patterns: Bronze (raw ingestion), Silver (cleaned/typed), Gold (aggregated).
   Example with Pandas/Polars reading and writing Parquet via `pyarrow_fs()`.
   No new code needed — purely documents existing capabilities.
+  Done: `guides/data-lake-patterns.md`, docs-src wrapper, nav entry.
+  Remaining: review with examples run, possible example script.
 
 - [ ] **ID-035 — Parallel batch operations**
   Add `concurrent=True` (or `max_workers=N`) option to `ext.batch` functions

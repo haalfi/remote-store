@@ -27,6 +27,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **Data lake patterns guide** (ID-034)
+  New guide (`guides/data-lake-patterns.md`) documenting Bronze/Silver/Gold
+  medallion architecture using `Store.child()` + `ext.arrow` + `ext.transfer`.
+  Covers PyArrow, Polars, DuckDB, Delta Lake integration, batch partition
+  operations, cross-backend transfer, and testing without cloud credentials.
+  Includes honest assessment of where remote-store fits vs. Databricks/Spark.
+
 - **Credential hygiene documentation** (ID-042)
   Added "Credential hygiene" section to README and updated `examples/configuration.py`
   with `Secret` wrapping, `from_dict()` auto-wrapping, and `.reveal()` usage.
