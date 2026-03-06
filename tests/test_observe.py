@@ -245,6 +245,32 @@ class TestObservedStoreProxy:
         assert store.exists("a.txt")
 
     @pytest.mark.spec("OBS-003")
+    def test_on_any_exception_suppressed(self) -> None:
+        """on_any hook exception must not break the operation."""
+        store = _make_store()
+
+        def bad_any(event: StoreEvent) -> None:
+            raise RuntimeError("on_any boom")
+
+        observed = observe(store, on_any=bad_any)
+        observed.write("a.txt", b"hello")
+        assert store.exists("a.txt")
+
+    @pytest.mark.spec("OBS-003")
+    def test_on_error_exception_suppressed(self) -> None:
+        """on_error hook exception must not break error propagation."""
+        store = _make_store()
+
+        def bad_error(event: StoreEvent) -> None:
+            raise RuntimeError("on_error boom")
+
+        observed = observe(store, on_error=bad_error)
+        from remote_store._errors import NotFound
+
+        with pytest.raises(NotFound):
+            observed.read("nonexistent.txt")
+
+    @pytest.mark.spec("OBS-003")
     def test_backend_name_in_event(self) -> None:
         store = _make_store()
         events: list[StoreEvent] = []
@@ -451,6 +477,26 @@ class TestBufferedObserver:
             assert batches[0][0].operation == "read_bytes"
         finally:
             observer.close()
+
+    @pytest.mark.spec("OBS-006")
+    def test_on_event_after_close_is_noop(self) -> None:
+        """Events sent after close() are silently dropped."""
+        batches: list[list[StoreEvent]] = []
+        observer = BufferedObserver(batches.append, flush_interval=60.0)
+        observer.close()
+        event = StoreEvent(
+            operation="read",
+            path="late.txt",
+            backend="memory",
+            started_at=0.0,
+            duration_ms=0.0,
+            error=None,
+            metadata={},
+            correlation_id=None,
+        )
+        observer.on_event(event)  # should not raise or enqueue
+        all_events = [e for batch in batches for e in batch]
+        assert event not in all_events
 
 
 # ---------------------------------------------------------------------------

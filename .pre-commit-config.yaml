@@ -12,3 +12,11 @@ repos:
         additional_dependencies: [s3fs, paramiko, tenacity, types-paramiko, pyarrow, azure-storage-file-datalake, azure-identity, opentelemetry-api]
         args: [--config-file=pyproject.toml]
         files: ^src/
+  - repo: local
+    hooks:
+      - id: no-unicode-in-print
+        name: no non-ASCII in print() calls
+        language: pygrep
+        entry: 'print\(.*[^\x00-\x7f]'
+        types: [python]
+        files: ^(src/|examples/)

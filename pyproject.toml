@@ -102,6 +102,9 @@ dev = [
   "azure-identity>=1.0.0",
   "opentelemetry-api>=1.28.0",
   "opentelemetry-sdk>=1.28.0",
+  "tomli>=1.1.0",
+  "ruamel.yaml>=0.15",
+  "pyyaml>=5.1",
   "pre-commit",
   "bump-my-version>=0.28",
   "twine",
@@ -127,6 +130,9 @@ dependencies = [
   "pytest-benchmark",
   "adlfs>=2024.2.0",
   "sshfs>=2023.1.0",
+  "tomli>=1.1.0",
+  "ruamel.yaml>=0.15",
+  "pyyaml>=5.1",
   "pre-commit",
   "mkdocs>=1.6,<2",
   "mkdocs-material>=9.5",
@@ -191,6 +197,18 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "pydantic_settings.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tomli"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "ruamel.yaml"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "remote_store._config"
+warn_unused_ignores = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -232,7 +232,7 @@ class RegistryConfig:
             import tomllib
         except ModuleNotFoundError:
             try:
-                import tomli as tomllib  # type: ignore[no-redef,import-not-found]
+                import tomli as tomllib  # type: ignore[no-redef]
             except ModuleNotFoundError:
                 raise ModuleNotFoundError(
                     "TOML support requires tomli on Python < 3.11. Install it with: pip install 'remote-store[toml]'"
@@ -283,7 +283,7 @@ def _get_yaml_loader() -> Callable[..., Any]:
     except ImportError:
         pass
     try:
-        from ruamel.yaml import YAML  # type: ignore[import-not-found]
+        from ruamel.yaml import YAML
 
         _yaml = YAML(typ="safe")
         return _yaml.load  # type: ignore[no-any-return]
