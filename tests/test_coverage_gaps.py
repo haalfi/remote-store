@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import tempfile
 from datetime import datetime, timezone
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -27,21 +28,15 @@ from remote_store._types import Extras, PathLike, WritableContent
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
 
+from .conftest import make_restricted_store
+
 NOW = datetime(2024, 1, 1, tzinfo=timezone.utc)
 
 
 # region: _types.py — verify type aliases are importable and usable
-class TestTypeAliases:
-    """Ensure type aliases in _types.py are importable."""
-
-    def test_writable_content_alias(self) -> None:
-        assert WritableContent is not None
-
-    def test_pathlike_alias(self) -> None:
-        assert PathLike is not None
-
-    def test_extras_alias(self) -> None:
-        assert Extras is not None
+@pytest.mark.parametrize("alias", [WritableContent, PathLike, Extras])
+def test_type_aliases_importable(alias: Any) -> None:
+    assert alias is not None
 
 
 # endregion
@@ -51,160 +46,103 @@ class TestTypeAliases:
 class TestStoreRepr:
     """Store.__repr__ for debugging."""
 
-    def test_repr(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
+    def test_repr(self, mem_backend: MemoryBackend) -> None:
+        store = Store(backend=mem_backend, root_path="data")
         r = repr(store)
         assert "Store(" in r
         assert "memory" in r
         assert "data" in r
 
-    def test_repr_no_root(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend)
+    def test_repr_no_root(self, mem_backend: MemoryBackend) -> None:
+        store = Store(backend=mem_backend)
         assert "root_path=''" in repr(store)
 
 
 class TestStoreEmptyPathNoRoot:
     """Store with no root_path handles empty path correctly."""
 
-    def test_full_path_empty_no_root(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="")
+    def test_full_path_empty_no_root(self, mem_backend: MemoryBackend) -> None:
+        store = Store(backend=mem_backend, root_path="")
         store.write("a.txt", b"data")
         assert store.exists("")
         assert store.is_folder("")
         assert list(store.list_files("")) != []
 
-    def test_full_path_nonempty_no_root(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="")
+    def test_full_path_nonempty_no_root(self, mem_backend: MemoryBackend) -> None:
+        store = Store(backend=mem_backend, root_path="")
         store.write("sub/a.txt", b"data")
         assert store.exists("sub/a.txt")
 
 
-class TestStoreEmptyPathRejection:
-    """File-targeted methods reject empty path."""
+# -- Empty/dot path rejection: parametrized over (method, path, needs_setup) --
 
-    def test_write_empty_path(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.write("", b"data")
+_EMPTY_PATH_CASES: list[tuple[str, str, bool]] = [
+    ("write", "", False),
+    ("write_atomic", "", False),
+    ("read", "", False),
+    ("read_bytes", "", False),
+    ("delete", "", False),
+    ("delete_folder", "", False),
+    ("delete_folder", ".", False),
+    ("write", ".", False),
+    ("read_bytes", ".", False),
+    ("delete", ".", False),
+    ("get_file_info", "", False),
+    ("move", "", False),  # empty src
+    ("copy", "", False),  # empty src
+    ("move_dst", "", True),  # empty dst (needs src written)
+    ("copy_dst", "", True),  # empty dst (needs src written)
+]
 
-    def test_write_atomic_empty_path(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.write_atomic("", b"data")
 
-    def test_read_empty_path(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.read("")
-
-    def test_read_bytes_empty_path(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.read_bytes("")
-
-    def test_delete_empty_path(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.delete("")
-
-    def test_delete_folder_empty_path(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.delete_folder("")
-
-    def test_delete_folder_dot_path(self) -> None:
-        """'.' is a root alias — delete_folder must reject it like empty string."""
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.delete_folder(".")
-
-    def test_write_dot_path(self) -> None:
-        """'.' triggers _require_file_path, not delete_folder's own guard."""
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.write(".", b"x")
-
-    def test_read_bytes_dot_path(self) -> None:
-        """'.' triggers _require_file_path for read operations."""
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.read_bytes(".")
-
-    def test_delete_dot_path(self) -> None:
-        """'.' triggers _require_file_path for delete (file) operations."""
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.delete(".")
-
-    def test_get_file_info_empty_path(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.get_file_info("")
-
-    def test_move_empty_src(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.move("", "dst.txt")
-
-    def test_move_empty_dst(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
+@pytest.mark.parametrize(
+    "method,path,needs_setup",
+    _EMPTY_PATH_CASES,
+    ids=[f"{m}{'_dst' if m.endswith('_dst') else ''}({p!r})" for m, p, _ in _EMPTY_PATH_CASES],
+)
+def test_empty_path_rejected(method: str, path: str, needs_setup: bool) -> None:
+    """File-targeted methods reject empty and dot paths."""
+    store = Store(backend=MemoryBackend(), root_path="data")
+    if needs_setup:
         store.write("src.txt", b"data")
-        with pytest.raises(InvalidPath):
-            store.move("src.txt", "")
-
-    def test_copy_empty_src(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        with pytest.raises(InvalidPath):
-            store.copy("", "dst.txt")
-
-    def test_copy_empty_dst(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        store.write("src.txt", b"data")
-        with pytest.raises(InvalidPath):
-            store.copy("src.txt", "")
+    with pytest.raises(InvalidPath):
+        if method == "move_dst":
+            store.move("src.txt", path)
+        elif method == "copy_dst":
+            store.copy("src.txt", path)
+        elif method in ("write", "write_atomic"):
+            getattr(store, method)(path, b"data")
+        elif method == "delete_folder":
+            store.delete_folder(path)
+        elif method == "move":
+            store.move(path, "dst.txt")
+        elif method == "copy":
+            store.copy(path, "dst.txt")
+        else:
+            getattr(store, method)(path)
 
 
 # endregion
 
 
 # region: _config.py — TypeError branches in from_dict
-class TestConfigFromDictErrors:
-    """from_dict() error branches."""
 
-    def test_backends_not_dict(self) -> None:
-        with pytest.raises(TypeError, match="dicts"):
-            RegistryConfig.from_dict({"backends": "bad", "stores": {}})
+_CONFIG_ERROR_CASES = [
+    ({"backends": "bad", "stores": {}}, TypeError, "dicts"),
+    ({"backends": {}, "stores": "bad"}, TypeError, "dicts"),
+    ({"backends": {"local": "bad"}, "stores": {}}, TypeError, "Backend config"),
+    ({"backends": {}, "stores": {"main": "bad"}}, TypeError, "Store profile"),
+]
 
-    def test_stores_not_dict(self) -> None:
-        with pytest.raises(TypeError, match="dicts"):
-            RegistryConfig.from_dict({"backends": {}, "stores": "bad"})
 
-    def test_backend_entry_not_dict(self) -> None:
-        with pytest.raises(TypeError, match="Backend config"):
-            RegistryConfig.from_dict({"backends": {"local": "bad"}, "stores": {}})
-
-    def test_store_entry_not_dict(self) -> None:
-        with pytest.raises(TypeError, match="Store profile"):
-            RegistryConfig.from_dict({"backends": {}, "stores": {"main": "bad"}})
+@pytest.mark.parametrize(
+    "data,exc,match",
+    _CONFIG_ERROR_CASES,
+    ids=["backends_not_dict", "stores_not_dict", "backend_entry_not_dict", "store_entry_not_dict"],
+)
+def test_config_from_dict_errors(data: dict[str, Any], exc: type, match: str) -> None:
+    with pytest.raises(exc, match=match):
+        RegistryConfig.from_dict(data)
 
 
 # endregion
@@ -216,8 +154,7 @@ class TestErrorReprEdgeCases:
 
     def test_base_error_repr_no_extras(self) -> None:
         e = RemoteStoreError("boom")
-        r = repr(e)
-        assert r == "RemoteStoreError('boom')"
+        assert repr(e) == "RemoteStoreError('boom')"
 
     def test_base_error_repr_with_path_and_backend(self) -> None:
         e = RemoteStoreError("boom", path="a.txt", backend="s3")
@@ -226,26 +163,19 @@ class TestErrorReprEdgeCases:
         assert "backend='s3'" in r
 
     def test_capability_not_supported_str_no_capability(self) -> None:
-        e = CapabilityNotSupported("nope")
-        s = str(e)
-        assert "nope" in s
+        assert "nope" in str(CapabilityNotSupported("nope"))
 
     def test_capability_not_supported_repr_full(self) -> None:
         e = CapabilityNotSupported("msg", path="p", backend="b", capability="c")
         r = repr(e)
-        assert "CapabilityNotSupported" in r
-        assert "path='p'" in r
-        assert "backend='b'" in r
-        assert "capability='c'" in r
+        for s in ("CapabilityNotSupported", "path='p'", "backend='b'", "capability='c'"):
+            assert s in r
 
     def test_capability_not_supported_repr_no_extras(self) -> None:
-        e = CapabilityNotSupported("msg")
-        r = repr(e)
-        assert r == "CapabilityNotSupported('msg')"
+        assert repr(CapabilityNotSupported("msg")) == "CapabilityNotSupported('msg')"
 
     def test_base_error_str_message_only(self) -> None:
-        e = RemoteStoreError("just a message")
-        assert str(e) == "just a message"
+        assert str(RemoteStoreError("just a message")) == "just a message"
 
 
 # endregion
@@ -273,15 +203,10 @@ class TestModelEqualityNotImplemented:
 
 
 # region: _capabilities.py — CapabilitySet repr
-class TestCapabilitySetRepr:
-    """Cover CapabilitySet.__repr__."""
-
-    def test_repr(self) -> None:
-        cs = CapabilitySet({Capability.READ, Capability.WRITE})
-        r = repr(cs)
-        assert "CapabilitySet" in r
-        assert "READ" in r
-        assert "WRITE" in r
+def test_capability_set_repr() -> None:
+    cs = CapabilitySet({Capability.READ, Capability.WRITE})
+    r = repr(cs)
+    assert "CapabilitySet" in r and "READ" in r and "WRITE" in r
 
 
 # endregion
@@ -301,23 +226,19 @@ class TestRegistryRepr:
             )
             reg = Registry(config)
             r = repr(reg)
-            assert "Registry(" in r
-            assert "data" in r
+            assert "Registry(" in r and "data" in r
 
 
-class TestRegistryUnknownBackendType:
-    """Cover unknown backend type error path."""
-
-    def test_unknown_backend_type_raises(self) -> None:
-        config = RegistryConfig.from_dict(
-            {
-                "backends": {"bad": {"type": "nonexistent_backend_type"}},
-                "stores": {"main": {"backend": "bad"}},
-            }
-        )
-        reg = Registry(config)
-        with pytest.raises(ValueError, match="nonexistent_backend_type"):
-            reg.get_store("main")
+def test_registry_unknown_backend_type_raises() -> None:
+    config = RegistryConfig.from_dict(
+        {
+            "backends": {"bad": {"type": "nonexistent_backend_type"}},
+            "stores": {"main": {"backend": "bad"}},
+        }
+    )
+    reg = Registry(config)
+    with pytest.raises(ValueError, match="nonexistent_backend_type"):
+        reg.get_store("main")
 
 
 # endregion
@@ -331,168 +252,196 @@ class TestBackendRepr:
         with tempfile.TemporaryDirectory() as tmp:
             backend = LocalBackend(root=tmp)
             r = repr(backend)
-            assert "LocalBackend(" in r
-            assert repr(tmp) in r
+            assert "LocalBackend(" in r and repr(tmp) in r
 
     def test_local_repr_no_secrets(self) -> None:
-        """LocalBackend has no secrets, but should still have a useful repr."""
         with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            r = repr(backend)
-            assert "LocalBackend(root=" in r
+            assert "LocalBackend(root=" in repr(LocalBackend(root=tmp))
 
-    def test_memory_repr(self) -> None:
-        backend = MemoryBackend()
-        r = repr(backend)
-        assert "MemoryBackend(" in r
-        assert "files=0" in r
-        assert "folders=0" in r
+    def test_memory_repr(self, mem_backend: MemoryBackend) -> None:
+        r = repr(mem_backend)
+        assert "MemoryBackend(" in r and "files=0" in r and "folders=0" in r
 
-    def test_memory_repr_after_writes(self) -> None:
-        backend = MemoryBackend()
-        backend.write("a/b.txt", b"data")
-        r = repr(backend)
-        assert "files=1" in r
-        assert "folders=1" in r
+    def test_memory_repr_after_writes(self, mem_backend: MemoryBackend) -> None:
+        mem_backend.write("a/b.txt", b"data")
+        r = repr(mem_backend)
+        assert "files=1" in r and "folders=1" in r
 
 
-class TestBackendReprMasking:
-    """AF-008: Backends must mask set secrets and show None for unset ones."""
-
-    def test_s3_masks_set_secrets(self) -> None:
-        from remote_store.backends._s3 import S3Backend
-
-        backend = S3Backend(bucket="b", key="AKID", secret="SK", endpoint_url="http://x")
-        r = repr(backend)
-        assert "AKID" not in r
-        assert "SK" not in r
-        assert "key='***'" in r
-        assert "secret='***'" in r
-        # Non-secrets are visible
-        assert "bucket='b'" in r
-        assert "endpoint_url='http://x'" in r
-
-    def test_s3_shows_none_for_unset_secrets(self) -> None:
-        from remote_store.backends._s3 import S3Backend
-
-        backend = S3Backend(bucket="b")
-        r = repr(backend)
-        assert "key=None" in r
-        assert "secret=None" in r
-
-    def test_s3_pyarrow_masks_set_secrets(self) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        backend = S3PyArrowBackend(bucket="b", key="AKID", secret="SK")
-        r = repr(backend)
-        assert "AKID" not in r
-        assert "SK" not in r
-        assert "key='***'" in r
-        assert "secret='***'" in r
-
-    def test_s3_pyarrow_shows_none_for_unset_secrets(self) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        backend = S3PyArrowBackend(bucket="b")
-        r = repr(backend)
-        assert "key=None" in r
-        assert "secret=None" in r
-
-    def test_sftp_masks_set_secrets(self) -> None:
-        from remote_store.backends._sftp import SFTPBackend
-
-        backend = SFTPBackend(host="h", password="secret123", pkey="keydata")
-        r = repr(backend)
-        assert "secret123" not in r
-        assert "keydata" not in r
-        assert "password='***'" in r
-        assert "pkey='***'" in r
-        # Non-secrets are visible
-        assert "host='h'" in r
-
-    def test_sftp_shows_none_for_unset_secrets(self) -> None:
-        from remote_store.backends._sftp import SFTPBackend
-
-        backend = SFTPBackend(host="h")
-        r = repr(backend)
-        assert "password=None" in r
-        assert "pkey=None" in r
-
-    def test_azure_masks_set_secrets(self) -> None:
-        from remote_store.backends._azure import AzureBackend
-
-        backend = AzureBackend(
-            container="c",
-            account_name="acct",
-            account_key="mykey",
-            sas_token="mysas",
-            connection_string="conn=str",
-            credential="cred_obj",
-        )
-        r = repr(backend)
-        assert "mykey" not in r
-        assert "mysas" not in r
-        assert "conn=str" not in r
-        assert "cred_obj" not in r
-        assert "account_key='***'" in r
-        assert "sas_token='***'" in r
-        assert "connection_string='***'" in r
-        assert "credential='***'" in r
-        # Non-secrets are visible
-        assert "container='c'" in r
-        assert "account_name='acct'" in r
-
-    def test_azure_shows_none_for_unset_secrets(self) -> None:
-        from remote_store.backends._azure import AzureBackend
-
-        backend = AzureBackend(container="c", account_url="https://x.blob.core.windows.net")
-        r = repr(backend)
-        assert "account_key=None" in r
-        assert "sas_token=None" in r
-        assert "connection_string=None" in r
-        assert "credential=None" in r
+# -- Backend repr masking: parametrized over (backend_factory, secret_values, masked_keys, visible) --
 
 
-class TestBackendSecretConstruction:
-    """SEC-004: Backends accept str | Secret for credential params via _reveal()."""
+def _s3_with_secrets() -> Any:
+    from remote_store.backends._s3 import S3Backend
 
-    @pytest.mark.spec("SEC-004")
-    def test_s3_accepts_secret(self) -> None:
-        from remote_store.backends._s3 import S3Backend
+    return S3Backend(bucket="b", key="AKID", secret="SK", endpoint_url="http://x")
 
-        backend = S3Backend(bucket="b", key=Secret("AKID"), secret=Secret("SK"))
-        assert backend._key == "AKID"
-        assert backend._secret == "SK"
 
-    @pytest.mark.spec("SEC-004")
-    def test_s3_pyarrow_accepts_secret(self) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+def _s3_no_secrets() -> Any:
+    from remote_store.backends._s3 import S3Backend
 
-        backend = S3PyArrowBackend(bucket="b", key=Secret("AKID"), secret=Secret("SK"))
-        assert backend._key == "AKID"
-        assert backend._secret == "SK"
+    return S3Backend(bucket="b")
 
-    @pytest.mark.spec("SEC-004")
-    def test_sftp_accepts_secret(self) -> None:
-        from remote_store.backends._sftp import SFTPBackend
 
-        backend = SFTPBackend(host="h", password=Secret("pass123"))
-        assert backend._password == "pass123"
+def _s3pa_with_secrets() -> Any:
+    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
-    @pytest.mark.spec("SEC-004")
-    def test_azure_accepts_secret(self) -> None:
-        from remote_store.backends._azure import AzureBackend
+    return S3PyArrowBackend(bucket="b", key="AKID", secret="SK")
 
-        backend = AzureBackend(
+
+def _s3pa_no_secrets() -> Any:
+    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+    return S3PyArrowBackend(bucket="b")
+
+
+def _sftp_with_secrets() -> Any:
+    from remote_store.backends._sftp import SFTPBackend
+
+    return SFTPBackend(host="h", password="secret123", pkey="keydata")
+
+
+def _sftp_no_secrets() -> Any:
+    from remote_store.backends._sftp import SFTPBackend
+
+    return SFTPBackend(host="h")
+
+
+def _azure_with_secrets() -> Any:
+    from remote_store.backends._azure import AzureBackend
+
+    return AzureBackend(
+        container="c",
+        account_name="acct",
+        account_key="mykey",
+        sas_token="mysas",
+        connection_string="conn=str",
+        credential="cred_obj",
+    )
+
+
+def _azure_no_secrets() -> Any:
+    from remote_store.backends._azure import AzureBackend
+
+    return AzureBackend(container="c", account_url="https://x.blob.core.windows.net")
+
+
+_MASKING_SET_CASES = [
+    pytest.param(
+        _s3_with_secrets,
+        ["AKID", "SK"],
+        ["key='***'", "secret='***'"],
+        ["bucket='b'", "endpoint_url='http://x'"],
+        id="s3-set",
+    ),
+    pytest.param(
+        _s3pa_with_secrets,
+        ["AKID", "SK"],
+        ["key='***'", "secret='***'"],
+        [],
+        id="s3pa-set",
+    ),
+    pytest.param(
+        _sftp_with_secrets,
+        ["secret123", "keydata"],
+        ["password='***'", "pkey='***'"],
+        ["host='h'"],
+        id="sftp-set",
+    ),
+    pytest.param(
+        _azure_with_secrets,
+        ["mykey", "mysas", "conn=str", "cred_obj"],
+        ["account_key='***'", "sas_token='***'", "connection_string='***'", "credential='***'"],
+        ["container='c'", "account_name='acct'"],
+        id="azure-set",
+    ),
+]
+
+
+@pytest.mark.parametrize("factory,raw_secrets,masked,visible", _MASKING_SET_CASES)
+def test_backend_masks_set_secrets(
+    factory: Any,
+    raw_secrets: list[str],
+    masked: list[str],
+    visible: list[str],
+) -> None:
+    r = repr(factory())
+    for raw in raw_secrets:
+        assert raw not in r
+    for m in masked:
+        assert m in r
+    for v in visible:
+        assert v in r
+
+
+_MASKING_UNSET_CASES = [
+    pytest.param(_s3_no_secrets, ["key=None", "secret=None"], id="s3-unset"),
+    pytest.param(_s3pa_no_secrets, ["key=None", "secret=None"], id="s3pa-unset"),
+    pytest.param(_sftp_no_secrets, ["password=None", "pkey=None"], id="sftp-unset"),
+    pytest.param(
+        _azure_no_secrets,
+        ["account_key=None", "sas_token=None", "connection_string=None", "credential=None"],
+        id="azure-unset",
+    ),
+]
+
+
+@pytest.mark.parametrize("factory,expected", _MASKING_UNSET_CASES)
+def test_backend_shows_none_for_unset_secrets(factory: Any, expected: list[str]) -> None:
+    r = repr(factory())
+    for e in expected:
+        assert e in r
+
+
+# -- SEC-004: Backends accept str | Secret for credential params --
+
+_SECRET_CASES = [
+    pytest.param(
+        lambda: __import__("remote_store.backends._s3", fromlist=["S3Backend"]).S3Backend(
+            bucket="b",
+            key=Secret("AKID"),
+            secret=Secret("SK"),
+        ),
+        [("_key", "AKID"), ("_secret", "SK")],
+        id="s3",
+    ),
+    pytest.param(
+        lambda: __import__("remote_store.backends._s3_pyarrow", fromlist=["S3PyArrowBackend"]).S3PyArrowBackend(
+            bucket="b",
+            key=Secret("AKID"),
+            secret=Secret("SK"),
+        ),
+        [("_key", "AKID"), ("_secret", "SK")],
+        id="s3pa",
+    ),
+    pytest.param(
+        lambda: __import__("remote_store.backends._sftp", fromlist=["SFTPBackend"]).SFTPBackend(
+            host="h",
+            password=Secret("pass123"),
+        ),
+        [("_password", "pass123")],
+        id="sftp",
+    ),
+    pytest.param(
+        lambda: __import__("remote_store.backends._azure", fromlist=["AzureBackend"]).AzureBackend(
             container="c",
             account_name="acct",
             account_key=Secret("mykey"),
             sas_token=Secret("tok"),
             connection_string=Secret("conn=str"),
-        )
-        assert backend._account_key == "mykey"
-        assert backend._sas_token == "tok"
-        assert backend._connection_string == "conn=str"
+        ),
+        [("_account_key", "mykey"), ("_sas_token", "tok"), ("_connection_string", "conn=str")],
+        id="azure",
+    ),
+]
+
+
+@pytest.mark.spec("SEC-004")
+@pytest.mark.parametrize("factory,checks", _SECRET_CASES)
+def test_backend_accepts_secret(factory: Any, checks: list[tuple[str, str]]) -> None:
+    backend = factory()
+    for attr, expected in checks:
+        assert getattr(backend, attr) == expected
 
 
 # endregion
@@ -517,92 +466,81 @@ class TestLocalBackendDeleteFolderEdgeCases:
                 backend.delete_folder("file.txt")
 
 
-class TestLocalBackendListEdgeCases:
-    """Cover listing on non-directory paths."""
-
-    def test_list_files_on_nonexistent_path(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            assert list(backend.list_files("nonexistent")) == []
-
-    def test_list_folders_on_nonexistent_path(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            assert list(backend.list_folders("nonexistent")) == []
+@pytest.mark.parametrize("method", ["list_files", "list_folders"])
+def test_local_list_nonexistent(method: str) -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        backend = LocalBackend(root=tmp)
+        assert list(getattr(backend, method)("nonexistent")) == []
 
 
-class TestLocalBackendPermissionErrors:
-    """Cover PermissionError mapping via mocking."""
+# -- Permission errors: parametrized over (operation, patch_target, needs_file, call) --
 
-    def test_read_permission_denied(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
+_PERM_CASES = [
+    pytest.param(
+        "builtins.open",
+        True,
+        lambda b: b.read("secret.txt"),
+        id="read",
+    ),
+    pytest.param(
+        "pathlib.Path.read_bytes",
+        True,
+        lambda b: b.read_bytes("secret.txt"),
+        id="read_bytes",
+    ),
+    pytest.param(
+        "pathlib.Path.write_bytes",
+        False,
+        lambda b: b.write("test.txt", b"data"),
+        id="write",
+    ),
+    pytest.param(
+        "pathlib.Path.unlink",
+        True,
+        lambda b: b.delete("file.txt"),
+        id="delete",
+    ),
+    pytest.param(
+        "shutil.move",
+        True,
+        lambda b: b.move("src.txt", "dst.txt"),
+        id="move",
+    ),
+    pytest.param(
+        "shutil.copy2",
+        True,
+        lambda b: b.copy("src.txt", "dst.txt"),
+        id="copy",
+    ),
+]
+
+
+@pytest.mark.parametrize("patch_target,needs_file,call", _PERM_CASES)
+def test_local_permission_errors(patch_target: str, needs_file: bool, call: Any) -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        backend = LocalBackend(root=tmp)
+        if needs_file:
             backend.write("secret.txt", b"data")
-            with (
-                patch("builtins.open", side_effect=PermissionError("denied")),
-                pytest.raises(PermissionDenied),
-            ):
-                backend.read("secret.txt")
-
-    def test_read_bytes_permission_denied(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            backend.write("secret.txt", b"data")
-            with (
-                patch("pathlib.Path.read_bytes", side_effect=PermissionError("denied")),
-                pytest.raises(PermissionDenied),
-            ):
-                backend.read_bytes("secret.txt")
-
-    def test_write_permission_denied(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            with (
-                patch("pathlib.Path.write_bytes", side_effect=PermissionError("denied")),
-                pytest.raises(PermissionDenied),
-            ):
-                backend.write("test.txt", b"data")
-
-    def test_delete_permission_denied(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
+            backend.write("src.txt", b"data")
             backend.write("file.txt", b"data")
-            with (
-                patch("pathlib.Path.unlink", side_effect=PermissionError("denied")),
-                pytest.raises(PermissionDenied),
-            ):
-                backend.delete("file.txt")
+        with (
+            patch(patch_target, side_effect=PermissionError("denied")),
+            pytest.raises(PermissionDenied),
+        ):
+            call(backend)
 
-    def test_move_permission_denied(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            backend.write("src.txt", b"data")
-            with (
-                patch("shutil.move", side_effect=PermissionError("denied")),
-                pytest.raises(PermissionDenied),
-            ):
-                backend.move("src.txt", "dst.txt")
 
-    def test_copy_permission_denied(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            backend.write("src.txt", b"data")
-            with (
-                patch("shutil.copy2", side_effect=PermissionError("denied")),
-                pytest.raises(PermissionDenied),
-            ):
-                backend.copy("src.txt", "dst.txt")
-
-    def test_delete_folder_permission_denied(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            backend.write("folder/file.txt", b"data")
-            backend.delete("folder/file.txt")
-            with (
-                patch("pathlib.Path.rmdir", side_effect=OSError("permission error")),
-                pytest.raises(PermissionDenied),
-            ):
-                backend.delete_folder("folder", recursive=False)
+def test_local_delete_folder_permission_denied() -> None:
+    """delete_folder maps OSError to PermissionDenied (separate: needs folder setup)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        backend = LocalBackend(root=tmp)
+        backend.write("folder/file.txt", b"data")
+        backend.delete("folder/file.txt")
+        with (
+            patch("pathlib.Path.rmdir", side_effect=OSError("permission error")),
+            pytest.raises(PermissionDenied),
+        ):
+            backend.delete_folder("folder", recursive=False)
 
 
 class TestLocalBackendWriteAtomicCleanup:
@@ -613,7 +551,7 @@ class TestLocalBackendWriteAtomicCleanup:
             backend = LocalBackend(root=tmp)
             original_fdopen = os.fdopen
 
-            def failing_fdopen(fd, mode="r"):
+            def failing_fdopen(fd: int, mode: str = "r") -> Any:
                 f = original_fdopen(fd, mode)
 
                 def bad_write(data: bytes) -> int:
@@ -624,7 +562,6 @@ class TestLocalBackendWriteAtomicCleanup:
 
             with patch("os.fdopen", side_effect=failing_fdopen), pytest.raises(OSError, match="disk full"):
                 backend.write_atomic("test.txt", b"data")
-            # Temp file should be cleaned up
             assert not backend.exists("test.txt")
 
     def test_write_atomic_permission_denied(self) -> None:
@@ -634,14 +571,11 @@ class TestLocalBackendWriteAtomicCleanup:
                 backend.write_atomic("test.txt", b"data")
 
 
-class TestLocalBackendUnwrap:
-    """Cover Backend.unwrap() default implementation."""
-
-    def test_unwrap_raises(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = LocalBackend(root=tmp)
-            with pytest.raises(CapabilityNotSupported, match="unwrap"):
-                backend.unwrap(dict)
+def test_unwrap_raises() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        backend = LocalBackend(root=tmp)
+        with pytest.raises(CapabilityNotSupported, match="unwrap"):
+            backend.unwrap(dict)
 
 
 # endregion
@@ -669,14 +603,12 @@ class TestRemotePathImmutability:
 class TestStoreContextManager:
     """Store supports close() and context manager protocol."""
 
-    def test_close(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        store.close()  # should not raise
+    def test_close(self, mem_backend: MemoryBackend) -> None:
+        store = Store(backend=mem_backend, root_path="data")
+        store.close()
 
-    def test_context_manager(self) -> None:
-        backend = MemoryBackend()
-        with Store(backend=backend, root_path="data") as store:
+    def test_context_manager(self, mem_backend: MemoryBackend) -> None:
+        with Store(backend=mem_backend, root_path="data") as store:
             store.write("a.txt", b"data")
             assert store.exists("a.txt")
 
@@ -684,45 +616,39 @@ class TestStoreContextManager:
 class TestStoreRootPathValidation:
     """Store constructor validates root_path."""
 
-    def test_root_path_with_dotdot_rejected(self) -> None:
-        backend = MemoryBackend()
+    def test_root_path_with_dotdot_rejected(self, mem_backend: MemoryBackend) -> None:
         with pytest.raises(InvalidPath, match="\\.\\."):
-            Store(backend=backend, root_path="../escape")
+            Store(backend=mem_backend, root_path="../escape")
 
-    def test_root_path_with_null_byte_rejected(self) -> None:
-        backend = MemoryBackend()
+    def test_root_path_with_null_byte_rejected(self, mem_backend: MemoryBackend) -> None:
         with pytest.raises(InvalidPath, match="null"):
-            Store(backend=backend, root_path="bad\0path")
+            Store(backend=mem_backend, root_path="bad\0path")
 
-    def test_root_path_normalized(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="a//b/./c")
+    def test_root_path_normalized(self, mem_backend: MemoryBackend) -> None:
+        store = Store(backend=mem_backend, root_path="a//b/./c")
         assert store._root == "a/b/c"
 
 
 class TestStoreEquality:
     """Store __eq__ and __hash__."""
 
-    def test_same_store_equal(self) -> None:
-        backend = MemoryBackend()
-        a = Store(backend=backend, root_path="data")
-        b = Store(backend=backend, root_path="data")
+    def test_same_store_equal(self, mem_backend: MemoryBackend) -> None:
+        a = Store(backend=mem_backend, root_path="data")
+        b = Store(backend=mem_backend, root_path="data")
         assert a == b
 
-    def test_different_root_not_equal(self) -> None:
-        backend = MemoryBackend()
-        a = Store(backend=backend, root_path="data")
-        b = Store(backend=backend, root_path="other")
+    def test_different_root_not_equal(self, mem_backend: MemoryBackend) -> None:
+        a = Store(backend=mem_backend, root_path="data")
+        b = Store(backend=mem_backend, root_path="other")
         assert a != b
 
     def test_different_backend_not_equal(self) -> None:
         a = Store(backend=MemoryBackend(), root_path="data")
         b = Store(backend=MemoryBackend(), root_path="data")
-        assert a != b  # different backend instances
+        assert a != b
 
-    def test_not_equal_to_non_store(self) -> None:
-        store = Store(backend=MemoryBackend())
-        assert store != "not a store"
+    def test_not_equal_to_non_store(self, mem_store: Store) -> None:
+        assert mem_store != "not a store"
 
 
 class TestRegistryEquality:
@@ -730,39 +656,28 @@ class TestRegistryEquality:
 
     def test_same_config_equal(self) -> None:
         config = RegistryConfig.from_dict({"backends": {}, "stores": {}})
-        a = Registry(config)
-        b = Registry(config)
-        assert a == b
+        assert Registry(config) == Registry(config)
 
     def test_not_equal_to_non_registry(self) -> None:
-        reg = Registry()
-        assert reg != "not a registry"
+        assert Registry() != "not a registry"
 
 
-class TestRegistryBadBackendOptions:
-    """Registry wraps TypeError from bad backend options."""
-
-    def test_bad_option_key(self) -> None:
-        config = RegistryConfig.from_dict(
-            {
-                "backends": {"local": {"type": "local", "options": {"root": "/tmp", "nonexistent_opt": True}}},
-                "stores": {"main": {"backend": "local"}},
-            }
-        )
-        reg = Registry(config)
-        with pytest.raises(ValueError, match="Invalid options"):
-            reg.get_store("main")
+def test_registry_bad_backend_options() -> None:
+    config = RegistryConfig.from_dict(
+        {
+            "backends": {"local": {"type": "local", "options": {"root": "/tmp", "nonexistent_opt": True}}},
+            "stores": {"main": {"backend": "local"}},
+        }
+    )
+    reg = Registry(config)
+    with pytest.raises(ValueError, match="Invalid options"):
+        reg.get_store("main")
 
 
-class TestCapabilityErrorShowsSupported:
-    """Capability error includes supported capabilities."""
-
-    def test_error_lists_supported(self) -> None:
-        from remote_store._capabilities import CapabilitySet
-
-        caps = CapabilitySet({Capability.READ, Capability.LIST})
-        with pytest.raises(CapabilityNotSupported, match="Supported"):
-            caps.require(Capability.WRITE, backend="test")
+def test_capability_error_shows_supported() -> None:
+    caps = CapabilitySet({Capability.READ, Capability.LIST})
+    with pytest.raises(CapabilityNotSupported, match="Supported"):
+        caps.require(Capability.WRITE, backend="test")
 
 
 # endregion
@@ -770,166 +685,51 @@ class TestCapabilityErrorShowsSupported:
 
 # region: AF-012 — Store capability gating tests (STORE-006)
 
-
-class _RestrictedBackend:
-    """Backend wrapper that removes specific capabilities for testing.
-
-    Delegates all methods to the inner MemoryBackend but overrides the
-    ``capabilities`` property to return a restricted ``CapabilitySet``.
-    """
-
-    def __init__(self, backend: MemoryBackend, exclude: set[Capability]) -> None:
-        self._inner = backend
-        self._caps = CapabilitySet(set(Capability) - exclude)
-
-    @property
-    def capabilities(self) -> CapabilitySet:
-        return self._caps
-
-    @property
-    def name(self) -> str:
-        return self._inner.name
-
-    def __getattr__(self, item: str) -> object:
-        return getattr(self._inner, item)
+_CAPABILITY_GATING_CASES = [
+    pytest.param(Capability.READ, lambda s: s.read("test.txt"), "read", id="read"),
+    pytest.param(Capability.READ, lambda s: s.read_bytes("test.txt"), "read", id="read_bytes"),
+    pytest.param(Capability.WRITE, lambda s: s.write("new.txt", b"data"), "write", id="write"),
+    pytest.param(
+        Capability.ATOMIC_WRITE,
+        lambda s: s.write_atomic("new.txt", b"data"),
+        "atomic_write",
+        id="write_atomic",
+    ),
+    pytest.param(Capability.DELETE, lambda s: s.delete("test.txt"), "delete", id="delete"),
+    pytest.param(Capability.DELETE, lambda s: s.delete_folder("folder"), "delete", id="delete_folder"),
+    pytest.param(Capability.LIST, lambda s: list(s.list_files("")), "list", id="list_files"),
+    pytest.param(Capability.LIST, lambda s: list(s.list_folders("")), "list", id="list_folders"),
+    pytest.param(Capability.METADATA, lambda s: s.get_file_info("test.txt"), "metadata", id="get_file_info"),
+    pytest.param(Capability.METADATA, lambda s: s.get_folder_info(""), "metadata", id="get_folder_info"),
+    pytest.param(Capability.MOVE, lambda s: s.move("test.txt", "moved.txt"), "move", id="move"),
+    pytest.param(Capability.COPY, lambda s: s.copy("test.txt", "copied.txt"), "copy", id="copy"),
+]
 
 
-def _make_store(exclude: set[Capability]) -> Store:
-    """Create a Store whose backend lacks the given capabilities."""
-    backend = MemoryBackend()
-    backend.write("test.txt", b"hello")
-    backend.write("folder/a.txt", b"data")
-    restricted = _RestrictedBackend(backend, exclude)
-    # Store expects a Backend; we pass our duck-typed wrapper
-    return Store(backend=restricted, root_path="")  # type: ignore[arg-type]
+@pytest.mark.spec("STORE-006")
+@pytest.mark.parametrize("capability,call,expected_name", _CAPABILITY_GATING_CASES)
+def test_store_capability_gating(capability: Capability, call: Any, expected_name: str) -> None:
+    """AF-012: Every Store method raises CapabilityNotSupported when the backend lacks it."""
+    store = make_restricted_store(exclude={capability})
+    with pytest.raises(CapabilityNotSupported) as exc_info:
+        call(store)
+    assert exc_info.value.capability == expected_name
 
 
-class TestStoreCapabilityGating:
-    """AF-012: Every Store method that requires a capability must raise
-    ``CapabilityNotSupported`` when the backend lacks that capability.
+@pytest.mark.spec("STORE-006")
+def test_capability_error_includes_backend_name() -> None:
+    store = make_restricted_store(exclude={Capability.READ})
+    with pytest.raises(CapabilityNotSupported) as exc_info:
+        store.read("test.txt")
+    assert exc_info.value.backend == "memory"
 
-    Tests cover all 12 capability-gated methods with correct exception type
-    and correct ``.capability`` attribute value.
-    """
 
-    # -- READ capability --
-
-    @pytest.mark.spec("STORE-006")
-    def test_read_requires_read_capability(self) -> None:
-        store = _make_store(exclude={Capability.READ})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            store.read("test.txt")
-        assert exc_info.value.capability == "read"
-
-    @pytest.mark.spec("STORE-006")
-    def test_read_bytes_requires_read_capability(self) -> None:
-        store = _make_store(exclude={Capability.READ})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            store.read_bytes("test.txt")
-        assert exc_info.value.capability == "read"
-
-    # -- WRITE capability --
-
-    @pytest.mark.spec("STORE-006")
-    def test_write_requires_write_capability(self) -> None:
-        store = _make_store(exclude={Capability.WRITE})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            store.write("new.txt", b"data")
-        assert exc_info.value.capability == "write"
-
-    # -- ATOMIC_WRITE capability --
-
-    @pytest.mark.spec("STORE-006")
-    def test_write_atomic_requires_atomic_write_capability(self) -> None:
-        store = _make_store(exclude={Capability.ATOMIC_WRITE})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            store.write_atomic("new.txt", b"data")
-        assert exc_info.value.capability == "atomic_write"
-
-    # -- DELETE capability --
-
-    @pytest.mark.spec("STORE-006")
-    def test_delete_requires_delete_capability(self) -> None:
-        store = _make_store(exclude={Capability.DELETE})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            store.delete("test.txt")
-        assert exc_info.value.capability == "delete"
-
-    @pytest.mark.spec("STORE-006")
-    def test_delete_folder_requires_delete_capability(self) -> None:
-        store = _make_store(exclude={Capability.DELETE})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            store.delete_folder("folder")
-        assert exc_info.value.capability == "delete"
-
-    # -- LIST capability --
-
-    @pytest.mark.spec("STORE-006")
-    def test_list_files_requires_list_capability(self) -> None:
-        store = _make_store(exclude={Capability.LIST})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            list(store.list_files(""))
-        assert exc_info.value.capability == "list"
-
-    @pytest.mark.spec("STORE-006")
-    def test_list_folders_requires_list_capability(self) -> None:
-        store = _make_store(exclude={Capability.LIST})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            list(store.list_folders(""))
-        assert exc_info.value.capability == "list"
-
-    # -- METADATA capability --
-
-    @pytest.mark.spec("STORE-006")
-    def test_get_file_info_requires_metadata_capability(self) -> None:
-        store = _make_store(exclude={Capability.METADATA})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            store.get_file_info("test.txt")
-        assert exc_info.value.capability == "metadata"
-
-    @pytest.mark.spec("STORE-006")
-    def test_get_folder_info_requires_metadata_capability(self) -> None:
-        store = _make_store(exclude={Capability.METADATA})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            store.get_folder_info("")
-        assert exc_info.value.capability == "metadata"
-
-    # -- MOVE capability --
-
-    @pytest.mark.spec("STORE-006")
-    def test_move_requires_move_capability(self) -> None:
-        store = _make_store(exclude={Capability.MOVE})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            store.move("test.txt", "moved.txt")
-        assert exc_info.value.capability == "move"
-
-    # -- COPY capability --
-
-    @pytest.mark.spec("STORE-006")
-    def test_copy_requires_copy_capability(self) -> None:
-        store = _make_store(exclude={Capability.COPY})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            store.copy("test.txt", "copied.txt")
-        assert exc_info.value.capability == "copy"
-
-    # -- Verify the backend name is included in the error --
-
-    @pytest.mark.spec("STORE-006")
-    def test_error_includes_backend_name(self) -> None:
-        store = _make_store(exclude={Capability.READ})
-        with pytest.raises(CapabilityNotSupported) as exc_info:
-            store.read("test.txt")
-        assert exc_info.value.backend == "memory"
-
-    # -- Verify gating happens before path validation --
-
-    @pytest.mark.spec("STORE-006")
-    def test_capability_check_before_path_validation(self) -> None:
-        """Capability check fires before _require_file_path validates the path,
-        so even an empty path should raise CapabilityNotSupported, not InvalidPath."""
-        store = _make_store(exclude={Capability.READ})
-        with pytest.raises(CapabilityNotSupported):
-            store.read("")
+@pytest.mark.spec("STORE-006")
+def test_capability_check_before_path_validation() -> None:
+    """Capability check fires before _require_file_path validates the path."""
+    store = make_restricted_store(exclude={Capability.READ})
+    with pytest.raises(CapabilityNotSupported):
+        store.read("")
 
 
 # endregion
