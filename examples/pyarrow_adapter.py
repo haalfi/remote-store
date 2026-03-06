@@ -22,13 +22,14 @@ from remote_store.backends import MemoryBackend
 from remote_store.ext.arrow import pyarrow_fs
 
 
-def main() -> None:
-    # Create a Store with an in-memory backend
-    backend = MemoryBackend()
-    store = Store(backend=backend)
+def demo(store):
+    """PyArrow filesystem: Parquet round-trip and dataset discovery. Returns results dict."""
+    import pyarrow.dataset as ds
 
-    # Wrap the Store as a PyArrow filesystem
+    results = {}
+
     fs = pyarrow_fs(store)
+    results["type_name"] = fs.type_name
     print(f"Filesystem type: {fs.type_name}")
 
     # Write a Parquet file
@@ -38,11 +39,14 @@ def main() -> None:
 
     # Read it back
     result = pq.read_table("people.parquet", filesystem=fs)
+    results["people_rows"] = result.num_rows
+    results["people_data"] = result.to_pydict()
     print(f"Read back {result.num_rows} rows:")
     print(result.to_pydict())
 
     # File info
     info = fs.get_file_info("people.parquet")
+    results["file_size"] = info.size
     print(f"\nFile info: type={info.type}, size={info.size} bytes")
 
     # Write multiple files for dataset discovery
@@ -52,13 +56,19 @@ def main() -> None:
     print("\nWrote 3 partitions to dataset/")
 
     # Discover and read all partitions
-    import pyarrow.dataset as ds
-
     dataset = ds.dataset("dataset", filesystem=fs, format="parquet")
     all_data = dataset.to_table()
+    results["dataset_rows"] = all_data.num_rows
+    results["dataset_files"] = len(dataset.files)
     print(f"Dataset: {all_data.num_rows} total rows from {len(dataset.files)} files")
 
-    # Clean up
+    return results
+
+
+def main() -> None:
+    backend = MemoryBackend()
+    store = Store(backend=backend)
+    demo(store)
     store.close()
     print("\nDone!")
 

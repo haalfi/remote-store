@@ -12,6 +12,20 @@ import tempfile
 
 from remote_store import BackendConfig, Registry, RegistryConfig, StoreProfile
 
+
+def demo(store):
+    """Write a file, read it back, check metadata."""
+    store.write("hello.txt", b"Hello, world!")
+    print(f"File exists: {store.exists('hello.txt')}")
+
+    content = store.read_bytes("hello.txt")
+    print(f"Content: {content}")
+
+    info = store.get_file_info("hello.txt")
+    print(f"Size: {info.size} bytes")
+    print(f"Modified: {info.modified_at}")
+
+
 if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as tmp:
         config = RegistryConfig(
@@ -21,18 +35,6 @@ if __name__ == "__main__":
 
         with Registry(config) as registry:
             store = registry.get_store("data")
-
-            # Write a file
-            store.write("hello.txt", b"Hello, world!")
-            print(f"File exists: {store.exists('hello.txt')}")
-
-            # Read it back
-            content = store.read_bytes("hello.txt")
-            print(f"Content: {content}")
-
-            # Check metadata
-            info = store.get_file_info("hello.txt")
-            print(f"Size: {info.size} bytes")
-            print(f"Modified: {info.modified_at}")
+            demo(store)
 
     print("Done! Temp directory cleaned up automatically.")

@@ -109,15 +109,16 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   benchmark tiers with Docker backends to produce accurate baseline data.
   64KB write values for S3-PyArrow and Azure are also outlier-skewed.
 
-- [ ] **ID-044 — Harden examples into assertion-based expectation tests**
-  The 13 core examples (`hatch run examples`) are print-based demos that only
-  verify absence-of-crash, not correct behavior. Add `assert` statements to
-  each example so they function as genuine expectation tests. Priority targets:
-  `file_operations.py` (verify read-back matches write), `error_handling.py`
-  (assert exception types and attributes), `streaming_io.py` (assert stream
-  contents), `batch_operations.py` (assert `BatchResult` fields). Currently
-  only `configuration.py` has any assertions (2 of them). Goal: every example
-  asserts the key postconditions of the spec features it exercises.
+- [x] **ID-044 — Harden examples into assertion-based expectation tests** *(unreleased)*
+  Approach: examples expose `demo(store)` functions; `tests/test_examples.py`
+  imports each demo and wraps it with assertions. Examples stay print-based
+  and user-friendly; tests add spec verification — no duplicated setup.
+  Refactored all 14 examples, created 14 test classes in `test_examples.py`
+  covering specs STORE-008, SIO-001–003, AW-001/003, CFG-003/005, SEC-001/003,
+  ERR-002/003/005, MEM-DS-002, CHILD-001–006, BATCH-001/002/008/014,
+  GLOB-001/009, XFER-001/006/011, OBS-001–006/011, PA-002. Also added 4
+  missing examples to `hatch run examples` (batch, glob, transfer, observe)
+  and fixed OTel example to use SDK `SimpleSpanProcessor`.
 
 - [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
   Four specs have no dedicated example coverage:
