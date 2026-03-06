@@ -7,7 +7,7 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Metric | Value |
 |--------|-------|
 | Source code | ~6,200 lines (6 backends) |
-| Tests | 1,305 tests, ~10,300 lines |
+| Tests | 1,304 tests, ~10,800 lines |
 | Specs & docs | 21 specs, 10 ADRs, 3 RFCs |
 | Examples | 14 core + 4 cloud + 4 notebooks |
 | Extensions | 7 (`ext.arrow`, `ext.batch`, `ext.glob`, `ext.transfer`, `ext.observe`, `ext.otel`, `ext.pydantic`) |
@@ -517,6 +517,8 @@ prioritization scheme each session.
 13. **Write research documents before implementation specs, and review them like code.** When a feature touches multiple design dimensions (formats, libraries, ecosystem compatibility, security), a research document that maps the full design space before committing to any solution prevents expensive mid-implementation pivots. But the document itself must be reviewed rigorously -- the first draft tends to be "an implementation plan wearing a research hat," proposing solutions before proving alternatives were studied. Multiple review rounds from fresh sessions, each with a different angle (landscape completeness, factual accuracy, internal consistency, adversarial challenge), transform shallow research into genuine analysis. The investment is front-loaded but pays compound interest: every downstream artifact -- spec, implementation, docs, tests -- can cite explicit decisions with ecosystem evidence instead of asserting them without context. Research also catches design-level bugs that no amount of code review, testing, or type-checking will find, because those tools operate on code that exists, not on integration scenarios that haven't been built yet.
 
 14. **Your CI environment is not your user's environment.** CI ran on Linux with Azurite (our Azure emulator), which inflated test coverage enough to mask untested code paths in new config loaders. Meanwhile, example scripts used Unicode arrows (`→`) that rendered fine on Linux's UTF-8 locale but crashed on Windows cp1252. Both bugs shipped through green CI. The fix was a pre-commit hook rejecting non-ASCII in `print()` calls and a release checklist item requiring `hatch run all` locally — because the developer's environment (Windows, no Docker backends) was closer to a real user's experience than CI was. **If your CI is more forgiving than your users' environments, your CI is testing itself, not your software.**
+
+15. **Parametrize tests ruthlessly, but only after they exist.** Once a test suite reaches critical mass, repetitive test functions become a maintenance burden — every API change ripples through dozens of near-identical functions. Collapsing them into `@pytest.mark.parametrize` data tables with `pytest.param(..., id="...")` preserves every test case while cutting hundreds of lines. Shared fixtures (a single `RestrictedBackend` in `conftest.py` replaced five per-file copies) compound the savings. But this works precisely because the tests existed first as explicit, readable functions — parametrizing from scratch risks hiding what's actually being tested behind opaque data tables. **Write tests verbosely, then compress them once patterns emerge.** The result is a suite that's faster to scan, cheaper to extend, and just as thorough.
 
 ## Reproducing This Workflow
 
