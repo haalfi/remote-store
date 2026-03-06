@@ -146,7 +146,7 @@ class TestSpanConventions:
         assert attrs["remote_store.path"] == "data.csv"
 
     @pytest.mark.spec("OBS-012")
-    def test_span_error_status(self, otel_env: dict[str, Any]) -> None:
+    def test_span_error_status_and_exception(self, otel_env: dict[str, Any]) -> None:
         from opentelemetry.trace import StatusCode
 
         from remote_store._errors import NotFound
@@ -161,18 +161,7 @@ class TestSpanConventions:
         assert span.status.status_code == StatusCode.ERROR
         assert span.attributes is not None
         assert span.attributes.get("error.type") == "NotFound"
-
-    @pytest.mark.spec("OBS-012")
-    def test_span_records_exception(self, otel_env: dict[str, Any]) -> None:
-        from remote_store._errors import NotFound
-
-        store = _make_store()
-        observed = otel_observe(store, tracer=otel_env["tracer"], meter=otel_env["meter"])
-        with pytest.raises(NotFound):
-            observed.read("missing.txt")
-        spans = otel_env["span_exporter"].get_finished_spans()
-        events = spans[0].events
-        assert any(e.name == "exception" for e in events)
+        assert any(e.name == "exception" for e in span.events)
 
     @pytest.mark.spec("OBS-012")
     def test_multiple_operations_create_multiple_spans(self, otel_env: dict[str, Any]) -> None:
@@ -210,7 +199,8 @@ class TestMetricInstruments:
         assert attrs["status"] == "ok"
 
     @pytest.mark.spec("OBS-013")
-    def test_operations_counter_on_error(self, otel_env: dict[str, Any]) -> None:
+    def test_error_metrics(self, otel_env: dict[str, Any]) -> None:
+        """operations counter status=error + errors counter + error.type attr."""
         from remote_store._errors import NotFound
 
         store = _make_store()
@@ -218,28 +208,16 @@ class TestMetricInstruments:
         with pytest.raises(NotFound):
             observed.read("missing.txt")
         m = _get_metrics(otel_env["metric_reader"])
-        counter = m["remote_store.operations"]
-        points = list(counter.data.data_points)
-        assert len(points) == 1
-        attrs = dict(points[0].attributes)
-        assert attrs["status"] == "error"
-
-    @pytest.mark.spec("OBS-013")
-    def test_errors_counter(self, otel_env: dict[str, Any]) -> None:
-        from remote_store._errors import NotFound
-
-        store = _make_store()
-        observed = otel_observe(store, tracer=otel_env["tracer"], meter=otel_env["meter"])
-        with pytest.raises(NotFound):
-            observed.read("missing.txt")
-        m = _get_metrics(otel_env["metric_reader"])
+        # operations counter records status=error
+        ops_points = list(m["remote_store.operations"].data.data_points)
+        assert len(ops_points) == 1
+        assert dict(ops_points[0].attributes)["status"] == "error"
+        # errors counter records error.type
         assert "remote_store.errors" in m
-        err_counter = m["remote_store.errors"]
-        points = list(err_counter.data.data_points)
-        assert len(points) == 1
-        assert points[0].value == 1
-        attrs = dict(points[0].attributes)
-        assert attrs["error.type"] == "NotFound"
+        err_points = list(m["remote_store.errors"].data.data_points)
+        assert len(err_points) == 1
+        assert err_points[0].value == 1
+        assert dict(err_points[0].attributes)["error.type"] == "NotFound"
 
     @pytest.mark.spec("OBS-013")
     def test_duration_histogram(self, otel_env: dict[str, Any]) -> None:
@@ -256,9 +234,12 @@ class TestMetricInstruments:
         attrs = dict(points[0].attributes)
         assert attrs["operation"] == "read_bytes"
         assert attrs["backend"] == "memory"
-        # path should NOT be in metric attributes
-        assert "path" not in attrs
-        assert "remote_store.path" not in attrs
+        # High-cardinality path must NOT appear in any metric attributes
+        for metric_data in m.values():
+            for pt in metric_data.data.data_points:
+                pt_attrs = dict(pt.attributes)
+                assert "path" not in pt_attrs
+                assert "remote_store.path" not in pt_attrs
 
     @pytest.mark.spec("OBS-013")
     def test_duration_histogram_error_includes_error_type(self, otel_env: dict[str, Any]) -> None:
@@ -275,19 +256,6 @@ class TestMetricInstruments:
         attrs = dict(points[0].attributes)
         assert attrs["error.type"] == "NotFound"
 
-    @pytest.mark.spec("OBS-013")
-    def test_no_path_in_metric_attributes(self, otel_env: dict[str, Any]) -> None:
-        """High-cardinality path must NOT appear in metric attributes."""
-        store = _make_store()
-        observed = otel_observe(store, tracer=otel_env["tracer"], meter=otel_env["meter"])
-        observed.write("unique/path/file.txt", b"data")
-        m = _get_metrics(otel_env["metric_reader"])
-        for metric_data in m.values():
-            for point in metric_data.data.data_points:
-                attrs = dict(point.attributes)
-                assert "path" not in attrs
-                assert "remote_store.path" not in attrs
-
 
 # ---------------------------------------------------------------------------
 # OBS-014: Import gating
@@ -296,20 +264,14 @@ class TestMetricInstruments:
 
 class TestImportGating:
     @pytest.mark.spec("OBS-014")
-    def test_conditional_reexport(self) -> None:
-        """otel_hooks and otel_observe are available from the top-level package."""
+    @pytest.mark.parametrize("name", ["otel_hooks", "otel_observe"])
+    def test_exports(self, name: str) -> None:
+        """Public API available from top-level and ext.otel.__all__."""
         import remote_store
-
-        assert hasattr(remote_store, "otel_hooks")
-        assert hasattr(remote_store, "otel_observe")
-
-    @pytest.mark.spec("OBS-014")
-    def test_all_exports(self) -> None:
-        """ext.otel.__all__ lists the public API."""
         from remote_store.ext import otel
 
-        assert "otel_hooks" in otel.__all__
-        assert "otel_observe" in otel.__all__
+        assert hasattr(remote_store, name)
+        assert name in otel.__all__
 
 
 # ---------------------------------------------------------------------------
