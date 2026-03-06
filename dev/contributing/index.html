@@ -3827,6 +3827,7 @@
 <ul>
 <li>[ ] Master is clean: <code>git status</code> shows no uncommitted changes</li>
 <li>[ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)</li>
+<li>[ ] <code>hatch run all</code> passes <strong>locally</strong> (lint + format-check + typecheck + test-cov + examples). Local runs without Docker backends are stricter than CI for coverage — CI has Azurite which inflates Azure backend coverage, potentially masking gaps in new code</li>
 <li>[ ] No open <code>[~]</code> items shipping in this release in <code>sdd/BACKLOG.md</code> — complete (<code>[x]</code>) or defer (<code>[ ]</code>)</li>
 <li>[ ] <code>[Unreleased]</code> section in CHANGELOG.md is non-empty</li>
 <li>[ ] Decide bump level (patch / minor / major) per the table above</li>
