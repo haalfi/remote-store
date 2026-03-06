@@ -107,29 +107,20 @@ class TestConstruction:
 
 class TestPathNormalization:
     @pytest.mark.spec("PA-006")
-    def test_strip_leading_slash(self) -> None:
-        assert StoreFileSystemHandler.normalize_path("/foo/bar") == "foo/bar"
-
-    @pytest.mark.spec("PA-006")
-    def test_strip_trailing_slash(self) -> None:
-        assert StoreFileSystemHandler.normalize_path("foo/bar/") == "foo/bar"
-
-    @pytest.mark.spec("PA-006")
-    def test_collapse_separators(self) -> None:
-        assert StoreFileSystemHandler.normalize_path("foo//bar///baz") == "foo/bar/baz"
-
-    @pytest.mark.spec("PA-005")
-    def test_root_returns_empty(self) -> None:
-        assert StoreFileSystemHandler.normalize_path("") == ""
-        assert StoreFileSystemHandler.normalize_path("/") == ""
-
-    @pytest.mark.spec("PA-004")
-    def test_backslash_normalized(self) -> None:
-        assert StoreFileSystemHandler.normalize_path("foo\\bar\\baz") == "foo/bar/baz"
-
-    @pytest.mark.spec("PA-006")
-    def test_combined_normalization(self) -> None:
-        assert StoreFileSystemHandler.normalize_path("/foo//bar\\baz/") == "foo/bar/baz"
+    @pytest.mark.parametrize(
+        "raw,expected",
+        [
+            pytest.param("/foo/bar", "foo/bar", id="strip_leading_slash"),
+            pytest.param("foo/bar/", "foo/bar", id="strip_trailing_slash"),
+            pytest.param("foo//bar///baz", "foo/bar/baz", id="collapse_separators"),
+            pytest.param("", "", id="root_empty"),
+            pytest.param("/", "", id="root_slash"),
+            pytest.param("foo\\bar\\baz", "foo/bar/baz", id="backslash"),
+            pytest.param("/foo//bar\\baz/", "foo/bar/baz", id="combined"),
+        ],
+    )
+    def test_normalize_path(self, raw: str, expected: str) -> None:
+        assert StoreFileSystemHandler.normalize_path(raw) == expected
 
 
 # ---------------------------------------------------------------------------
@@ -362,18 +353,13 @@ class TestStoreSink:
         assert store.read_bytes("sink.txt") == b"hello world"
 
     @pytest.mark.spec("PA-016")
-    def test_tell(self, store: Store) -> None:
+    def test_tell_and_properties(self, store: Store) -> None:
         sink = _StoreSink(store, "tell.txt", spill_threshold=1024)
         assert sink.tell() == 0
-        sink.write(b"12345")
-        assert sink.tell() == 5
-        sink.close()
-
-    @pytest.mark.spec("PA-016")
-    def test_writable_readable(self, store: Store) -> None:
-        sink = _StoreSink(store, "wr.txt", spill_threshold=1024)
         assert sink.writable() is True
         assert sink.readable() is False
+        sink.write(b"12345")
+        assert sink.tell() == 5
         sink.close()
 
     @pytest.mark.spec("PA-016")
@@ -517,46 +503,28 @@ class TestMutationOps:
 # ---------------------------------------------------------------------------
 
 
+_ERROR_MAPPING_CASES = [
+    pytest.param(NotFound("gone", path="x"), FileNotFoundError, id="not_found"),
+    pytest.param(InvalidPath("bad path", path="x"), ValueError, id="invalid_path"),
+    pytest.param(PermissionDenied("nope", path="x"), PermissionError, id="permission_denied"),
+    pytest.param(AlreadyExists("exists", path="x"), FileExistsError, id="already_exists"),
+    pytest.param(
+        CapabilityNotSupported("nope", capability="x", backend="test"),
+        NotImplementedError,
+        id="capability_not_supported",
+    ),
+    pytest.param(DirectoryNotEmpty("not empty", path="x"), OSError, id="directory_not_empty"),
+    pytest.param(BackendUnavailable("unavailable", backend="test"), OSError, id="backend_unavailable"),
+    pytest.param(RemoteStoreError("generic"), OSError, id="base_error"),
+]
+
+
 class TestErrorMapping:
     @pytest.mark.spec("PA-019")
-    def test_not_found_maps_to_file_not_found(self) -> None:
-        with pytest.raises(FileNotFoundError), _map_errors():
-            raise NotFound("gone", path="x")
-
-    @pytest.mark.spec("PA-019")
-    def test_invalid_path_maps_to_value_error(self) -> None:
-        with pytest.raises(ValueError), _map_errors():
-            raise InvalidPath("bad path", path="x")
-
-    @pytest.mark.spec("PA-019")
-    def test_permission_denied_maps_to_permission_error(self) -> None:
-        with pytest.raises(PermissionError), _map_errors():
-            raise PermissionDenied("nope", path="x")
-
-    @pytest.mark.spec("PA-019")
-    def test_already_exists_maps_to_file_exists_error(self) -> None:
-        with pytest.raises(FileExistsError), _map_errors():
-            raise AlreadyExists("exists", path="x")
-
-    @pytest.mark.spec("PA-019")
-    def test_capability_not_supported_maps_to_not_implemented(self) -> None:
-        with pytest.raises(NotImplementedError), _map_errors():
-            raise CapabilityNotSupported("nope", capability="x", backend="test")
-
-    @pytest.mark.spec("PA-019")
-    def test_directory_not_empty_maps_to_os_error(self) -> None:
-        with pytest.raises(OSError), _map_errors():
-            raise DirectoryNotEmpty("not empty", path="x")
-
-    @pytest.mark.spec("PA-019")
-    def test_backend_unavailable_maps_to_os_error(self) -> None:
-        with pytest.raises(OSError), _map_errors():
-            raise BackendUnavailable("unavailable", backend="test")
-
-    @pytest.mark.spec("PA-019")
-    def test_base_error_maps_to_os_error(self) -> None:
-        with pytest.raises(OSError), _map_errors():
-            raise RemoteStoreError("generic")
+    @pytest.mark.parametrize("exc,expected_type", _ERROR_MAPPING_CASES)
+    def test_error_mapping(self, exc: Exception, expected_type: type) -> None:
+        with pytest.raises(expected_type), _map_errors():
+            raise exc
 
     @pytest.mark.spec("PA-020")
     def test_no_remote_store_error_leakage(self, fs: Any) -> None:
@@ -794,56 +762,40 @@ class TestHandlerEquality:
     def test_same_store_equal(self, store: Store) -> None:
         h1 = StoreFileSystemHandler(store)
         h2 = StoreFileSystemHandler(store)
-        assert h1 == h2
-
-    def test_same_store_ne_returns_false(self, store: Store) -> None:
-        h1 = StoreFileSystemHandler(store)
-        h2 = StoreFileSystemHandler(store)
-        assert (h1 != h2) is False
+        assert h1.__eq__(h2) is True
+        assert h1.__ne__(h2) is False
 
     def test_different_store_not_equal(self) -> None:
         s1 = Store(backend=MemoryBackend())
         s2 = Store(backend=MemoryBackend())
         h1 = StoreFileSystemHandler(s1)
         h2 = StoreFileSystemHandler(s2)
-        assert h1 != h2
+        assert h1.__eq__(h2) is False
+        assert h1.__ne__(h2) is True
 
-    def test_different_store_eq_returns_false(self) -> None:
-        s1 = Store(backend=MemoryBackend())
-        s2 = Store(backend=MemoryBackend())
-        h1 = StoreFileSystemHandler(s1)
-        h2 = StoreFileSystemHandler(s2)
-        assert (h1 == h2) is False
-
-    def test_eq_other_type_returns_not_implemented(self, store: Store) -> None:
+    @pytest.mark.parametrize("dunder", ["__eq__", "__ne__"], ids=["eq", "ne"])
+    def test_other_type_returns_not_implemented(self, store: Store, dunder: str) -> None:
         h = StoreFileSystemHandler(store)
-        assert h.__eq__("not a handler") is NotImplemented
-        assert h.__eq__(42) is NotImplemented
-
-    def test_ne_other_type_returns_not_implemented(self, store: Store) -> None:
-        h = StoreFileSystemHandler(store)
-        assert h.__ne__("not a handler") is NotImplemented
-        assert h.__ne__(42) is NotImplemented
+        method = getattr(h, dunder)
+        assert method("not a handler") is NotImplemented
+        assert method(42) is NotImplemented
 
 
 class TestNormalizeDotDotDot:
     """normalize_path resolves . and .. components."""
 
     @pytest.mark.spec("PA-006")
-    def test_single_dot_removed(self) -> None:
-        assert StoreFileSystemHandler.normalize_path("dir/./file.txt") == "dir/file.txt"
-
-    @pytest.mark.spec("PA-006")
-    def test_double_dot_resolved(self) -> None:
-        assert StoreFileSystemHandler.normalize_path("dir/../file.txt") == "file.txt"
-
-    @pytest.mark.spec("PA-006")
-    def test_double_dot_at_root_ignored(self) -> None:
-        assert StoreFileSystemHandler.normalize_path("../file.txt") == "file.txt"
-
-    @pytest.mark.spec("PA-006")
-    def test_complex_dot_resolution(self) -> None:
-        assert StoreFileSystemHandler.normalize_path("a/b/../c/./d/../e") == "a/c/e"
+    @pytest.mark.parametrize(
+        "raw,expected",
+        [
+            pytest.param("dir/./file.txt", "dir/file.txt", id="single_dot"),
+            pytest.param("dir/../file.txt", "file.txt", id="double_dot"),
+            pytest.param("../file.txt", "file.txt", id="double_dot_at_root"),
+            pytest.param("a/b/../c/./d/../e", "a/c/e", id="complex"),
+        ],
+    )
+    def test_dot_resolution(self, raw: str, expected: str) -> None:
+        assert StoreFileSystemHandler.normalize_path(raw) == expected
 
 
 class TestAllExports:
