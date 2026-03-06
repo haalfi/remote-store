@@ -265,7 +265,9 @@ class TestObservedStoreProxy:
             raise RuntimeError("on_error boom")
 
         observed = observe(store, on_error=bad_error)
-        with pytest.raises(Exception):  # noqa: B017
+        from remote_store._errors import NotFound
+
+        with pytest.raises(NotFound):
             observed.read("nonexistent.txt")
 
     @pytest.mark.spec("OBS-003")
