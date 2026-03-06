@@ -198,6 +198,18 @@ ignore_missing_imports = true
 module = "pydantic_settings.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "tomli"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "ruamel.yaml"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "remote_store._config"
+warn_unused_ignores = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
