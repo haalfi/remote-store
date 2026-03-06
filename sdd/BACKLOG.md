@@ -109,6 +109,33 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   benchmark tiers with Docker backends to produce accurate baseline data.
   64KB write values for S3-PyArrow and Azure are also outlier-skewed.
 
+- [ ] **ID-044 — Harden examples into assertion-based expectation tests**
+  The 13 core examples (`hatch run examples`) are print-based demos that only
+  verify absence-of-crash, not correct behavior. Add `assert` statements to
+  each example so they function as genuine expectation tests. Priority targets:
+  `file_operations.py` (verify read-back matches write), `error_handling.py`
+  (assert exception types and attributes), `streaming_io.py` (assert stream
+  contents), `batch_operations.py` (assert `BatchResult` fields). Currently
+  only `configuration.py` has any assertions (2 of them). Goal: every example
+  asserts the key postconditions of the spec features it exercises.
+
+- [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
+  Four specs have no dedicated example coverage:
+  • **003 — Backend adapter contract**: capability system (`CapabilitySet`,
+    `require()`, `supports()`), `unwrap()`, error-mapping guarantees.
+  • **004 — Path model**: `RemotePath` validation (backslash normalization,
+    `..` rejection, null bytes), `ROOT` sentinel, `/` operator, `parent`/
+    `name`/`parts` properties.
+  • **020 — Credential hygiene**: `SecretRedactionFilter`, `Secret`
+    immutability, pickle/deepcopy safety (partially in `configuration.py`
+    but no dedicated example).
+  • **021 — Config loaders**: `from_toml()`, `from_yaml()`, pydantic
+    integration via `pydantic_to_registry_config()`.
+  Additionally, systemic gaps across existing examples: no capability-missing
+  scenarios, no `PermissionDenied`/`BackendUnavailable` error paths, no
+  empty-input edge cases (`batch_delete([])`, `glob("")`), no resource-cleanup
+  verification.
+
 ---
 
 ## Done
