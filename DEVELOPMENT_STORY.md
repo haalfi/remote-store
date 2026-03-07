@@ -7,14 +7,14 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Metric | Value |
 |--------|-------|
 | Source code | ~6,200 lines (6 backends) |
-| Tests | 1,304 tests, ~10,800 lines |
+| Tests | ~1,430 tests, ~11,300 lines |
 | Specs & docs | 21 specs, 10 ADRs, 3 RFCs |
 | Examples | 14 core + 4 cloud + 4 notebooks |
 | Extensions | 7 (`ext.arrow`, `ext.batch`, `ext.glob`, `ext.transfer`, `ext.observe`, `ext.otel`, `ext.pydantic`) |
 | Documentation site | MkDocs Material (versioned via mike) |
 | Coverage | 95% |
 | Calendar time | ~9 weeks of sessions |
-| Commits | 269 |
+| Commits | 289 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
@@ -392,6 +392,20 @@ This release shipped two new extensions and a security hardening layer, all foll
 The `Secret` wrapper emerged from the config loaders research (Phase 20). While mapping out how TOML/YAML config values flow into backend constructors, the research identified that credential strings were stored and logged in plain text throughout the library. Rather than waiting for config loaders to ship, the credential hygiene layer was extracted as a standalone improvement -- a case of research producing immediate value before its primary deliverable.
 
 The release also fixed BUG-001 (`get_folder_info("")` crashing for root folders) and added intrinsic stdlib logging to all modules (ID-004), completing the three-layer observability stack: Layer 1 (stdlib logging), Layer 2 (`ext.observe` callbacks), Layer 3 (`ext.otel` OpenTelemetry).
+
+### Phase 22: Config Loaders and Consolidation (post-v0.13.0)
+
+Phase 20's research document finally paid off. Three config loaders shipped in a single PR: `RegistryConfig.from_toml()` (zero-dep on 3.11+, `tomli` backport for 3.10), `RegistryConfig.from_yaml()` (pyyaml or ruamel.yaml), and `pydantic_to_registry_config()` in the new `ext/pydantic.py` module. The research had mapped every design decision in advance -- format precedence, library fallback chains, `SecretStr` interaction, unknown-key detection -- so implementation was a matter of following the blueprint. `from_dict()` also gained a `UserWarning` for unrecognized top-level keys like `"backend"` (typo for `"backends"`), a gap the Phase 20 adversarial review had flagged.
+
+Alongside the loaders, three "Tier 1" fixes addressed foot-guns the research had surfaced: `Registry.get_store()` no longer owns the shared backend (ID-041), `move()`/`copy()` short-circuit when `src == dst` (ID-040), and `_stacklevel` was removed from the public `from_dict()` signature (ID-043). The last one was a strict application of a project rule: no private parameters on public APIs, ever.
+
+**The consolidation work was as significant as the features.** Both SFTP and Memory backends reached 100% test coverage (BK-005, BK-006) -- 65 new tests covering every uncovered branch. The slim-tests effort (PR #116) then went the other direction: collapsing verbose test functions into `@pytest.mark.parametrize` tables and extracting a shared `RestrictedBackend` fixture into `conftest.py`, saving ~940 lines while preserving every test case. This was lesson #15 in practice -- write tests verbosely, then compress once patterns emerge.
+
+A design-compliance audit (AF-016 through AF-021) swept the codebase for spec drift: glob capabilities missing from three backend specs, method ordering violations in `_store.py` and all six backends, an unlinked TODO in `ext/arrow.py`. These were individually minor but collectively represented the kind of slow rot that compounds across releases.
+
+Three more research documents were added to the `sdd/research/` collection: unified retry policy (ID-010), v1 communication strategy, and example testing patterns across language ecosystems. The research-first pattern from Phase 20 was becoming habitual -- map the space on paper before committing to implementation.
+
+The data lake patterns guide (ID-034) demonstrated that existing features could combine into something greater than the sum of their parts. `Store.child()` + `ext.arrow` + `ext.transfer` already supported Bronze/Silver/Gold medallion architectures -- the guide just documented the patterns. No new code was needed; the API surface was already sufficient.
 
 ## What Worked Well
 
