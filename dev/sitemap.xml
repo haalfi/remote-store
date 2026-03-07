@@ -2,350 +2,350 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/SUMMARY/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/batch-operations/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/changelog/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/concurrency/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/contributing/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/development-story/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/extensions/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/getting-started/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/glob-pattern-matching/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/observe/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/performance/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/pyarrow-adapter/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/transfer-operations/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/api/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/api/backend/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/api/capabilities/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/api/config/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/api/errors/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/api/models/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/api/path/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/api/registry/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/api/store/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/backends/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/backends/azure/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/backends/local/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/backends/memory/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/backends/s3-pyarrow/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/backends/s3/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/backends/sftp/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/design-spec/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/process/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/adrs/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0001-architecture-store-registry-backends/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0002-config-resolution-no-merge/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0003-fsspec-is-implementation-detail/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0004-empty-path-semantics/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0005-native-path-resolution/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0006-documentation-architecture/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0007-docs-src-literate-nav/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0008-extension-architecture/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0009-glob-three-tier-design/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0010-observe-proxy-pattern/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/rfcs/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/rfcs/rfc-0001-azure-backend/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/rfcs/rfc-0002-pyarrow-filesystem-adapter/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/rfcs/rfc-0003-s3-pyarrow-read-optimization/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/rfcs/rfc-template/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/001-store-api/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/002-registry-config/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/003-backend-adapter-contract/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/004-path-model/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/005-error-model/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/006-streaming-io/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/007-atomic-writes/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/008-s3-backend/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/009-sftp-backend/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/010-native-path-resolution/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/011-s3-pyarrow-backend/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/012-azure-backend/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/013-memory-backend/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/014-pyarrow-filesystem-adapter/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/015-store-child/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/016-ext-batch/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/017-ext-transfer/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/018-glob/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/019-ext-observe/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/020-credential-hygiene/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/021-config-loaders/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/atomic-writes/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/azure-backend/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/batch-operations/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/config-loaders/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/configuration/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/error-handling/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/file-operations/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/memory-backend/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/quickstart/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/s3-backend/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/s3-pyarrow-backend/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/sftp-backend/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/store-child/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/streaming-io/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/examples/transfer-operations/</loc>
-         <lastmod>2026-03-06</lastmod>
+         <lastmod>2026-03-07</lastmod>
     </url>
 </urlset>
