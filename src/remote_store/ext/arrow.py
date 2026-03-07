@@ -164,7 +164,11 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
         self._materialization_threshold = materialization_threshold
         self._write_spill_threshold = write_spill_threshold
 
-        # Tier 1 probing: check if the backend exposes a native PyArrow FS
+        # Tier 1 probing: check if the backend exposes a native PyArrow FS.
+        # The bound method reference is captured at construction time for
+        # performance (no attribute lookup per read).  This is safe because
+        # Store is effectively immutable after construction — it has no public
+        # API to change _root or _backend.
         self._native_fs: pafs.FileSystem | None = None
         self._native_path_fn: Callable[[str], str] | None = None
         try:

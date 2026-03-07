@@ -358,6 +358,10 @@ def open_input_file(self, path):
 **Encapsulation:** Tier 1 uses only public Store APIs — `store.unwrap()` for
 the native filesystem handle and `store.native_path()` for path translation
 (STORE-015). It never accesses `store._backend` or other private attributes.
+Both the native FS reference and the `store.native_path` bound method are
+captured at construction time (see pseudocode above) and reused at read time
+for performance. This is safe because Store is effectively immutable after
+construction — it has no public API to change `_root` or `_backend`.
 `store.unwrap(type_hint)` delegates to `backend.unwrap()` through the Store's
 public surface; `store.native_path(key)` converts a store-relative key to the
 full backend-native path (prepending `root_path` and any backend-specific

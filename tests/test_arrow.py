@@ -313,22 +313,81 @@ class TestOpenInputFile:
 # ---------------------------------------------------------------------------
 
 
+class _FakePyArrowBackend:
+    """Minimal backend stub that exposes a native PyArrow FS via unwrap().
+
+    Used to test Tier 1 E2E probing without requiring Docker/S3.
+    Delegates actual I/O to a LocalBackend underneath.
+    """
+
+    def __init__(self, local_backend: Any) -> None:
+        self._inner = local_backend
+        self._pa_fs = pafs.LocalFileSystem()
+
+    def unwrap(self, type_hint: type) -> Any:
+        if type_hint is pafs.FileSystem or issubclass(type_hint, pafs.FileSystem):
+            return self._pa_fs
+        raise CapabilityNotSupported(
+            f"Cannot unwrap {type_hint}",
+            capability="unwrap",
+            backend="fake-pyarrow",
+        )
+
+    def native_path(self, path: str) -> str:
+        # Return absolute filesystem path for the local FS
+        root = str(self._inner._root)
+        return f"{root}/{path}" if path else root
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._inner, name)
+
+
 class TestTier1NativeFastPath:
     """Tier 1: native PyArrow FS fast path via unwrap() + native_path()."""
 
     @pytest.mark.spec("PA-010")
-    def test_tier1_probed_when_native_fs_available(self, local_store: Store) -> None:
-        """Handler detects native PyArrow FS and caches it for Tier 1."""
-        # LocalBackend does not expose a PyArrow FS, so Tier 1 should be disabled
-        handler = StoreFileSystemHandler(local_store)
-        assert handler._native_fs is None
-        assert handler._native_path_fn is None
+    @pytest.mark.parametrize(
+        "backend_cls",
+        [
+            pytest.param(LocalBackend, id="local"),
+            pytest.param(MemoryBackend, id="memory"),
+        ],
+    )
+    def test_tier1_disabled_for_non_native_backends(self, backend_cls: type) -> None:
+        """Backends without PyArrow FS unwrap disable Tier 1."""
+        if backend_cls is LocalBackend:
+            with tempfile.TemporaryDirectory() as tmp:
+                store = Store(backend=backend_cls(root=tmp))
+                handler = StoreFileSystemHandler(store)
+                assert handler._native_fs is None
+                assert handler._native_path_fn is None
+        else:
+            store = Store(backend=backend_cls())
+            handler = StoreFileSystemHandler(store)
+            assert handler._native_fs is None
+            assert handler._native_path_fn is None
 
     @pytest.mark.spec("PA-010")
-    def test_tier1_disabled_for_non_native_backend(self, store: Store) -> None:
-        """MemoryBackend has no PyArrow FS — Tier 1 is disabled."""
-        handler = StoreFileSystemHandler(store)
-        assert handler._native_fs is None
+    def test_tier1_e2e_with_native_backend(self, local_store: Store) -> None:
+        """E2E: backend exposing unwrap(FileSystem) auto-enables Tier 1."""
+        local_store.write("tier1.txt", b"native read")
+
+        # Replace the store's backend with one that exposes a PyArrow FS
+        fake = _FakePyArrowBackend(local_store._backend)
+        patched_store = Store.__new__(Store)
+        patched_store._backend = fake  # type: ignore[attr-defined]
+        patched_store._root = local_store._root  # type: ignore[attr-defined]
+        patched_store._owns_backend = False  # type: ignore[attr-defined]
+
+        handler = StoreFileSystemHandler(patched_store)
+        # Tier 1 should be auto-detected
+        assert handler._native_fs is not None
+        assert handler._native_path_fn is not None
+
+        # Read through Tier 1 fast path
+        fs = pafs.PyFileSystem(handler)
+        with fs.open_input_file("tier1.txt") as f:
+            assert f.read() == b"native read"
 
     @pytest.mark.spec("PA-010")
     def test_tier1_dispatch_with_mock_native_fs(self, local_store: Store) -> None:
@@ -350,16 +409,24 @@ class TestTier1NativeFastPath:
 
     @pytest.mark.spec("PA-010")
     def test_tier1_with_root_path(self, local_store: Store) -> None:
-        """Tier 1 path translation includes store root_path."""
-        # Create a child store with root_path
+        """Tier 1 path translation includes store root_path via dispatch."""
         local_store.write("sub/file.txt", b"child data")
         child = local_store.child("sub")
 
         handler = StoreFileSystemHandler(child)
         # Tier 1 disabled for local — verify native_path composition
-        # and that handler construction doesn't fail
         assert handler._native_fs is None
         assert child.native_path("file.txt") == "sub/file.txt"
+
+        # Now inject Tier 1 and verify dispatch uses native_path_fn correctly
+        local_pa_fs = pafs.LocalFileSystem()
+        handler._native_fs = local_pa_fs
+        root = local_store._backend._root  # type: ignore[attr-defined]
+        handler._native_path_fn = lambda key: str(root / child._root / key) if key else str(root / child._root)  # type: ignore[attr-defined]
+
+        fs = pafs.PyFileSystem(handler)
+        with fs.open_input_file("file.txt") as f:
+            assert f.read() == b"child data"
 
     @pytest.mark.spec("PA-010")
     def test_tier1_missing_file_raises(self, local_store: Store) -> None:
