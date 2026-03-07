@@ -3790,8 +3790,10 @@ overrides every public method of <code>Store</code>. Each override:</p>
 - <code>inner: Store</code> -- read-only property returning the wrapped store.</p>
 <p><strong>Postconditions:</strong>
 - The proxy never modifies arguments or return values.
-- Hook exceptions are suppressed (logged at WARNING) to prevent observation
-  from breaking the observed operation.</p>
+- After-hook exceptions (<code>on_&lt;op&gt;</code>, <code>on_any</code>, <code>on_error</code>) are suppressed
+  (logged at WARNING) to prevent observation from breaking the observed
+  operation. The <code>around</code> context manager follows standard Python semantics:
+  exceptions from <code>__enter__</code> or <code>__exit__</code> propagate (see OBS-005).</p>
 <h3 id="obs-003a-hook-to-operation-mapping">OBS-003a: Hook-to-Operation Mapping<a class="headerlink" href="#obs-003a-hook-to-operation-mapping" title="Permanent link">&para;</a></h3>
 <p>The <code>on_&lt;op&gt;</code> hooks map to operations as follows:</p>
 <table>
@@ -3903,9 +3905,10 @@ observation. See ADR-0010.</p>
 methods always propagate to the caller. The proxy catches exceptions only
 to build the <code>StoreEvent</code> (with <code>error</code> set) and fire hooks, then
 re-raises unconditionally.</p>
-<p>Hook exceptions (from <code>on_&lt;op&gt;</code>, <code>on_any</code>, <code>on_error</code>, or <code>around</code>) are
-suppressed and logged at WARNING level. They never mask the original
-operation's result or exception.</p>
+<p>After-hook exceptions (from <code>on_&lt;op&gt;</code>, <code>on_any</code>, <code>on_error</code>) are suppressed
+and logged at WARNING level. They never mask the original operation's result
+or exception. The <code>around</code> context manager is not suppressed — its exceptions
+propagate per standard context manager semantics (see OBS-005).</p>
 <hr />
 <h2 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h2>
 <h3 id="obs-010-no-lifecycle-ownership">OBS-010: No Lifecycle Ownership<a class="headerlink" href="#obs-010-no-lifecycle-ownership" title="Permanent link">&para;</a></h3>

@@ -3531,7 +3531,8 @@ a <code>RegistryConfig</code>.</p>
   Message includes install instructions: <code>pip install 'remote-store[yaml]'</code>.
 - <code>FileNotFoundError</code> if <code>path</code> does not exist.
 - <code>TypeError</code> if the top-level YAML value is not a mapping.
-- <code>yaml.YAMLError</code> if the file is not valid YAML.</p>
+- <code>yaml.YAMLError</code> (pyyaml) or <code>ruamel.yaml.YAMLError</code> (ruamel) if the file
+  is not valid YAML.</p>
 <p><strong>Design note:</strong> No <code>key</code>/<code>table</code> parameter. YAML has no shared-file convention
 like <code>pyproject.toml</code>. Users with nested YAML use
 <code>yaml.safe_load(f)["key"] → from_dict()</code>. A <code>key</code> parameter can be added later

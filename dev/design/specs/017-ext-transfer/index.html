@@ -3449,8 +3449,9 @@
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p><code>ext.transfer</code> provides three standalone functions for moving data between
 local files and Stores, or between two Stores: <code>upload</code>, <code>download</code>, and
-<code>transfer</code>. All functions stream data — no file is ever fully loaded into
-memory. An optional <code>on_progress</code> callback fires per chunk.</p>
+<code>transfer</code>. All functions stream data via <code>BinaryIO</code> — the extension never buffers the
+full file content. End-to-end memory behavior depends on the backend's
+<code>write()</code> implementation (see SIO-003). An optional <code>on_progress</code> callback fires per chunk.</p>
 <p><strong>Module:</strong> <code>src/remote_store/ext/transfer.py</code>
 <strong>Dependencies:</strong> None (pure Python, always available)
 <strong>Related:</strong> <a href="../001-store-api/">001-store-api.md</a> (Store API), ID-023
@@ -3460,7 +3461,7 @@ memory. An optional <code>on_progress</code> callback fires per chunk.</p>
 <h3 id="xfer-001-upload-signature">XFER-001: upload Signature<a class="headerlink" href="#xfer-001-upload-signature" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>upload(store, local_path, remote_path, *, overwrite=False, on_progress=None) -&gt; None</code>. <code>store</code> is a <code>Store</code> instance. <code>local_path</code> is a <code>str | os.PathLike[str]</code>. <code>remote_path</code> is a <code>str</code>. <code>on_progress</code> is <code>Callable[[int], None] | None</code>.</p>
 <h3 id="xfer-002-upload-streaming">XFER-002: upload Streaming<a class="headerlink" href="#xfer-002-upload-streaming" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>upload</code> opens the local file in binary read mode, wraps it in a <code>_ProgressReader</code> (if <code>on_progress</code> is provided), and passes the file handle directly to <code>store.write()</code>. The full file is never loaded into memory.</p>
+<p><strong>Invariant:</strong> <code>upload</code> opens the local file in binary read mode, wraps it in a <code>_ProgressReader</code> (if <code>on_progress</code> is provided), and passes the file handle directly to <code>store.write()</code>. The extension never buffers the full file content in memory.</p>
 <h3 id="xfer-003-upload-overwrite">XFER-003: upload overwrite<a class="headerlink" href="#xfer-003-upload-overwrite" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The <code>overwrite</code> parameter is forwarded to <code>store.write()</code>. When <code>False</code> (default), writing to an existing remote path raises <code>AlreadyExists</code>.</p>
 <h3 id="xfer-004-upload-filenotfounderror">XFER-004: upload FileNotFoundError<a class="headerlink" href="#xfer-004-upload-filenotfounderror" title="Permanent link">&para;</a></h3>
@@ -3470,7 +3471,7 @@ memory. An optional <code>on_progress</code> callback fires per chunk.</p>
 <h3 id="xfer-006-download-signature">XFER-006: download Signature<a class="headerlink" href="#xfer-006-download-signature" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>download(store, remote_path, local_path, *, overwrite=False, on_progress=None) -&gt; None</code>. <code>store</code> is a <code>Store</code> instance. <code>remote_path</code> is a <code>str</code>. <code>local_path</code> is a <code>str | os.PathLike[str]</code>. <code>on_progress</code> is <code>Callable[[int], None] | None</code>.</p>
 <h3 id="xfer-007-download-streaming">XFER-007: download Streaming<a class="headerlink" href="#xfer-007-download-streaming" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>download</code> calls <code>store.read()</code> to get a stream, then reads chunks of 1 MiB (<code>1_048_576</code> bytes) and writes each chunk to the local file. The full file is never loaded into memory. The remote stream is always closed via <code>try/finally</code>.</p>
+<p><strong>Invariant:</strong> <code>download</code> calls <code>store.read()</code> to get a stream, then reads chunks of 1 MiB (<code>1_048_576</code> bytes) and writes each chunk to the local file. The extension never buffers the full file content in memory. The remote stream is always closed via <code>try/finally</code>.</p>
 <h3 id="xfer-008-download-overwrite-guard">XFER-008: download overwrite Guard<a class="headerlink" href="#xfer-008-download-overwrite-guard" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> When <code>overwrite=False</code> (default) and the local file already exists, <code>download</code> raises <code>FileExistsError</code> (stdlib). This check happens before calling <code>store.read()</code>.</p>
 <h3 id="xfer-009-download-on_progress">XFER-009: download on_progress<a class="headerlink" href="#xfer-009-download-on_progress" title="Permanent link">&para;</a></h3>
@@ -3480,7 +3481,7 @@ memory. An optional <code>on_progress</code> callback fires per chunk.</p>
 <h3 id="xfer-011-transfer-signature">XFER-011: transfer Signature<a class="headerlink" href="#xfer-011-transfer-signature" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>transfer(src_store, src_path, dst_store, dst_path, *, overwrite=False, on_progress=None) -&gt; None</code>. <code>src_store</code> and <code>dst_store</code> are <code>Store</code> instances (may be the same). <code>src_path</code> and <code>dst_path</code> are <code>str</code>. <code>on_progress</code> is <code>Callable[[int], None] | None</code>.</p>
 <h3 id="xfer-012-transfer-streaming">XFER-012: transfer Streaming<a class="headerlink" href="#xfer-012-transfer-streaming" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>transfer</code> calls <code>src_store.read()</code> to get a stream, wraps it in a <code>_ProgressReader</code> (if <code>on_progress</code> is provided), and passes the wrapped stream to <code>dst_store.write()</code>. The full file is never loaded into memory.</p>
+<p><strong>Invariant:</strong> <code>transfer</code> calls <code>src_store.read()</code> to get a stream, wraps it in a <code>_ProgressReader</code> (if <code>on_progress</code> is provided), and passes the wrapped stream to <code>dst_store.write()</code>. The extension never buffers the full file content in memory.</p>
 <h3 id="xfer-013-transfer-overwrite">XFER-013: transfer overwrite<a class="headerlink" href="#xfer-013-transfer-overwrite" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The <code>overwrite</code> parameter is forwarded to <code>dst_store.write()</code>. When <code>False</code> (default), writing to an existing destination raises <code>AlreadyExists</code>.</p>
 <h3 id="xfer-014-transfer-on_progress">XFER-014: transfer on_progress<a class="headerlink" href="#xfer-014-transfer-on_progress" title="Permanent link">&para;</a></h3>
