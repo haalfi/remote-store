@@ -3691,10 +3691,8 @@ produces charts:</p>
 <p>For cloud benchmarks, set the appropriate environment variables (see
 <code>benchmarks/README.md</code> for the full reference table) and use <code>--infra cloud</code>.</p>
 <h2 id="comparative-results-remote-store-vs-raw-sdk-vs-fsspec">Comparative Results: remote-store vs Raw SDK vs fsspec<a class="headerlink" href="#comparative-results-remote-store-vs-raw-sdk-vs-fsspec" title="Permanent link">&para;</a></h2>
-<!-- Generated 2026-02-28 from Docker benchmarks (MinIO, Azurite, OpenSSH) -->
+<!-- Generated 2026-03-07 09:59 UTC -->
 <!-- Hardware: Intel(R) Core(TM) Ultra 7 265K, Python 3.13.11, Windows -->
-<!-- NOTE: Listing numbers below pre-date the ID-032 cache-invalidation fix. -->
-<!-- Re-run benchmarks to get updated numbers without fsspec caching bias. -->
 
 <h3 id="local">Local<a class="headerlink" href="#local" title="Permanent link">&para;</a></h3>
 <table>
@@ -3709,33 +3707,33 @@ produces charts:</p>
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">484us</td>
+<td style="text-align: right;">473us</td>
+<td style="text-align: right;">481us</td>
 <td style="text-align: right;">404us (1.2x faster)</td>
-<td style="text-align: right;">764us (1.6x slower)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">321us</td>
-<td style="text-align: right;">259us (1.2x faster)</td>
-<td style="text-align: right;">253us (1.3x faster)</td>
+<td style="text-align: right;">311us</td>
+<td style="text-align: right;">248us (1.3x faster)</td>
+<td style="text-align: right;">247us (1.3x faster)</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
 <td style="text-align: right;">55us</td>
-<td style="text-align: right;">5us (10.2x faster)</td>
-<td style="text-align: right;">4us (14.1x faster)</td>
+<td style="text-align: right;">5us (10.1x faster)</td>
+<td style="text-align: right;">4us (13.8x faster)</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">702us</td>
-<td style="text-align: right;">702us</td>
-<td style="text-align: right;">155us (4.5x faster)</td>
+<td style="text-align: right;">659us</td>
+<td style="text-align: right;">666us</td>
+<td style="text-align: right;">146us (4.5x faster)</td>
 </tr>
 <tr>
 <td>Delete</td>
 <td style="text-align: right;">106us</td>
 <td style="text-align: right;">49us (2.2x faster)</td>
-<td style="text-align: right;">49us (2.2x faster)</td>
+<td style="text-align: right;">66us (1.6x faster)</td>
 </tr>
 </tbody>
 </table>
@@ -3752,33 +3750,33 @@ produces charts:</p>
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">20.1ms</td>
-<td style="text-align: right;">30.4ms (1.5x slower)</td>
-<td style="text-align: right;">21.2ms (1.1x slower)</td>
+<td style="text-align: right;">18.7ms</td>
+<td style="text-align: right;">31.6ms (1.7x slower)</td>
+<td style="text-align: right;">17.4ms (1.1x faster)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">5.9ms</td>
-<td style="text-align: right;">5.1ms (1.2x faster)</td>
-<td style="text-align: right;">7.0ms (1.2x slower)</td>
+<td style="text-align: right;">6.4ms</td>
+<td style="text-align: right;">5.3ms (1.2x faster)</td>
+<td style="text-align: right;">6.7ms (1.1x slower)</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
 <td style="text-align: right;">1.4ms</td>
-<td style="text-align: right;">1.3ms</td>
-<td style="text-align: right;">1.3ms</td>
+<td style="text-align: right;">1.3ms (1.1x faster)</td>
+<td style="text-align: right;">1.4ms</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">239us</td>
-<td style="text-align: right;">4.4ms (18.4x slower)</td>
-<td style="text-align: right;">67us (3.5x faster)</td>
+<td style="text-align: right;">256us</td>
+<td style="text-align: right;">4.5ms (17.6x slower)</td>
+<td style="text-align: right;">112us (2.3x faster)</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td style="text-align: right;">3.4ms</td>
-<td style="text-align: right;">1.5ms (2.2x faster)</td>
+<td style="text-align: right;">3.3ms</td>
 <td style="text-align: right;">1.6ms (2.1x faster)</td>
+<td style="text-align: right;">1.8ms (1.9x faster)</td>
 </tr>
 </tbody>
 </table>
@@ -3795,33 +3793,33 @@ produces charts:</p>
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">24.7ms</td>
-<td style="text-align: right;">23.6ms</td>
-<td style="text-align: right;">15.2ms (1.6x faster)</td>
+<td style="text-align: right;">26.2ms</td>
+<td style="text-align: right;">24.3ms (1.1x faster)</td>
+<td style="text-align: right;">13.5ms (1.9x faster)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">13.5ms</td>
-<td style="text-align: right;">12.5ms (1.1x faster)</td>
-<td style="text-align: right;">7.5ms (1.8x faster)</td>
+<td style="text-align: right;">12.1ms</td>
+<td style="text-align: right;">12.8ms (1.1x slower)</td>
+<td style="text-align: right;">8.2ms (1.5x faster)</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
-<td style="text-align: right;">859us</td>
-<td style="text-align: right;">413us (2.1x faster)</td>
-<td style="text-align: right;">699us (1.2x faster)</td>
+<td style="text-align: right;">841us</td>
+<td style="text-align: right;">381us (2.2x faster)</td>
+<td style="text-align: right;">691us (1.2x faster)</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">2.8ms</td>
-<td style="text-align: right;">2.2ms (1.3x faster)</td>
-<td style="text-align: right;">3.1ms (1.1x slower)</td>
+<td style="text-align: right;">2.5ms</td>
+<td style="text-align: right;">2.0ms (1.3x faster)</td>
+<td style="text-align: right;">3.3ms (1.3x slower)</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td style="text-align: right;">988us</td>
-<td style="text-align: right;">422us (2.3x faster)</td>
-<td style="text-align: right;">1.2ms (1.2x slower)</td>
+<td style="text-align: right;">1.1ms</td>
+<td style="text-align: right;">384us (3.0x faster)</td>
+<td style="text-align: right;">1.3ms (1.1x slower)</td>
 </tr>
 </tbody>
 </table>
@@ -3838,39 +3836,36 @@ produces charts:</p>
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">13.7ms</td>
-<td style="text-align: right;">13.7ms</td>
-<td style="text-align: right;">16.9ms (1.2x slower)</td>
+<td style="text-align: right;">13.0ms</td>
+<td style="text-align: right;">14.9ms (1.1x slower)</td>
+<td style="text-align: right;">17.1ms (1.3x slower)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">5.8ms</td>
+<td style="text-align: right;">5.7ms</td>
 <td style="text-align: right;">5.9ms</td>
-<td style="text-align: right;">10.8ms (1.9x slower)</td>
+<td style="text-align: right;">10.6ms (1.8x slower)</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
 <td style="text-align: right;">1.7ms</td>
 <td style="text-align: right;">1.7ms</td>
-<td style="text-align: right;">1.9ms (1.2x slower)</td>
+<td style="text-align: right;">1.8ms (1.1x slower)</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">11.4ms</td>
-<td style="text-align: right;">9.5ms (1.2x faster)</td>
-<td style="text-align: right;">83us (137.8x faster)</td>
+<td style="text-align: right;">10.5ms</td>
+<td style="text-align: right;">8.7ms (1.2x faster)</td>
+<td style="text-align: right;">83us (126.6x faster)</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td style="text-align: right;">1.8ms</td>
-<td style="text-align: right;">1.8ms</td>
-<td style="text-align: right;">4.0ms (2.2x slower)</td>
+<td style="text-align: right;">1.7ms</td>
+<td style="text-align: right;">1.7ms</td>
+<td style="text-align: right;">4.4ms (2.7x slower)</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<p><em>Listing numbers above pre-date the ID-032 cache-invalidation fix.
-Re-run benchmarks to get updated numbers without fsspec caching bias.</em></p>
 
 
 
