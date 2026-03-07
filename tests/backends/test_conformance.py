@@ -471,3 +471,15 @@ class TestBackendNativePath:
         result = backend.native_path("some/key")
         assert isinstance(result, str)
         assert "some/key" in result  # may have prefix prepended
+
+    @pytest.mark.spec("BE-025")
+    def test_native_path_round_trip(self, backend: Backend) -> None:
+        """native_path is the inverse of to_key (NPR-020)."""
+        key = "some/key"
+        assert backend.to_key(backend.native_path(key)) == key
+
+    @pytest.mark.spec("BE-025")
+    def test_native_path_empty_returns_root(self, backend: Backend) -> None:
+        """native_path('') returns the backend's root (NPR-021)."""
+        result = backend.native_path("")
+        assert isinstance(result, str)

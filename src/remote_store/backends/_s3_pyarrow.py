@@ -158,9 +158,7 @@ class S3PyArrowBackend(Backend):
         return native_path
 
     def native_path(self, path: str) -> str:
-        if path:
-            return f"{self._bucket}/{path}"
-        return self._bucket
+        return self._pa_path(path)
 
     def exists(self, path: str) -> bool:
         with self._s3fs_errors(path):
@@ -449,7 +447,7 @@ class S3PyArrowBackend(Backend):
         """Build bucket/key path for PyArrow."""
         if path:
             return f"{self._bucket}/{path}"
-        return self._bucket  # pragma: no cover -- tests always provide a path
+        return self._bucket
 
     @contextmanager
     def _s3fs_errors(self, path: str = "") -> Iterator[None]:
