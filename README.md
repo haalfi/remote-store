@@ -28,7 +28,7 @@ and painful to replace later.
 
 `remote-store` replaces them with one simple interface.
 
-> **Write storage code once. Run it against local files, S3, SFTP, or Azure.**
+> **Write file storage code once. Run it against local files, S3, SFTP, or Azure.**
 
 Where files live is configuration, not application code.
 Under the hood, established Python libraries (`s3fs`, `paramiko`,

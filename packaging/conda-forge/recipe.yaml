@@ -59,7 +59,7 @@ about:
   summary: "A small Python library for working with files across local storage, S3, SFTP, and Azure"
   description: |
     remote-store provides a consistent Python API for file storage across
-    backends (Local, S3, SFTP, Azure). Write storage code once, run it
+    backends (Local, S3, SFTP, Azure). Write file storage code once, run it
     against any backend. Core has no dependencies; optional extras add
     cloud backend support.
   license: MIT
