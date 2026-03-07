@@ -162,6 +162,10 @@ examples = [
   "python examples/error_handling.py",
   "python examples/memory_backend.py",
   "python examples/store_child.py",
+  "python examples/batch_operations.py",
+  "python examples/glob_pattern_matching.py",
+  "python examples/transfer_operations.py",
+  "python examples/observe_hooks.py",
   "python examples/pyarrow_adapter.py",
 ]
 bench = 'pytest benchmarks/ -v --benchmark-sort=mean -m "not standard and not full"'
@@ -212,6 +216,7 @@ warn_unused_ignores = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 markers = [
   "spec(id): links test to a spec section ID",
   "integration: requires external services",

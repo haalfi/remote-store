@@ -12,15 +12,12 @@ from __future__ import annotations
 from remote_store import BackendConfig, Registry, RegistryConfig, Store, StoreProfile
 from remote_store.backends import MemoryBackend
 
-if __name__ == "__main__":
-    # --- Option 1: Direct usage (simplest) ---
-    backend = MemoryBackend()
-    store = Store(backend=backend, root_path="data")
 
+def demo(store):
+    """Standard Store operations on any backend."""
     store.write("hello.txt", b"Hello from memory!")
     print(f"exists: {store.exists('hello.txt')}")
     print(f"content: {store.read_bytes('hello.txt')}")
-    print(f"backend: {backend!r}")
 
     # Folders are created automatically
     store.write("reports/q1.csv", b"revenue,100\n")
@@ -38,6 +35,13 @@ if __name__ == "__main__":
     print(f"  reports: {[f.name for f in store.list_files('reports')]}")
     print(f"  archive: {[f.name for f in store.list_files('archive')]}")
 
+
+if __name__ == "__main__":
+    # --- Option 1: Direct usage (simplest) ---
+    backend = MemoryBackend()
+    store = Store(backend=backend, root_path="data")
+
+    demo(store)
     print(f"\nFinal state: {backend!r}")
 
     # --- Option 2: Via Registry config ---

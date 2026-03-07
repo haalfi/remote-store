@@ -109,6 +109,34 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   benchmark tiers with Docker backends to produce accurate baseline data.
   64KB write values for S3-PyArrow and Azure are also outlier-skewed.
 
+- [x] **ID-044 — Harden examples into assertion-based expectation tests** *(unreleased)*
+  Approach: examples expose `demo(store)` functions; `tests/test_examples.py`
+  imports each demo and wraps it with assertions. Examples stay print-based
+  and user-friendly; tests add spec verification — no duplicated setup.
+  Refactored all 14 examples, created 14 test classes in `test_examples.py`
+  covering specs STORE-008, SIO-001–003, AW-001/003, CFG-003/005, SEC-001/003,
+  ERR-002/003/005, MEM-DS-002, CHILD-001/002/004–006, BATCH-001/002/008/014,
+  GLOB-001/009, XFER-001/006/011, OBS-001–003/005/006/011, PA-002. Also added 4
+  missing examples to `hatch run examples` (batch, glob, transfer, observe)
+  and fixed OTel example to use SDK `SimpleSpanProcessor`.
+
+- [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
+  Four specs have no dedicated example coverage:
+  • **003 — Backend adapter contract**: capability system (`CapabilitySet`,
+    `require()`, `supports()`), `unwrap()`, error-mapping guarantees.
+  • **004 — Path model**: `RemotePath` validation (backslash normalization,
+    `..` rejection, null bytes), `ROOT` sentinel, `/` operator, `parent`/
+    `name`/`parts` properties.
+  • **020 — Credential hygiene**: `SecretRedactionFilter`, `Secret`
+    immutability, pickle/deepcopy safety (partially in `configuration.py`
+    but no dedicated example).
+  • **021 — Config loaders**: `from_toml()`, `from_yaml()`, pydantic
+    integration via `pydantic_to_registry_config()`.
+  Additionally, systemic gaps across existing examples: no capability-missing
+  scenarios, no `PermissionDenied`/`BackendUnavailable` error paths, no
+  empty-input edge cases (`batch_delete([])`, `glob("")`), no resource-cleanup
+  verification.
+
 ---
 
 ## Done
