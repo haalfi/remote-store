@@ -118,13 +118,21 @@ with Registry(config) as registry:
 
 Switch to S3 by changing the config. The application code stays the same:
 
+**Dev config:**
+
 ```toml
-# remote-store.toml -- dev
 [backends.main]
 type = "local"
 options = { root = "/tmp/data" }
 
-# remote-store.toml -- production
+[stores.data]
+backend = "main"
+root_path = "reports"
+```
+
+**Production -- just swap the backend:**
+
+```toml
 [backends.main]
 type = "s3"
 options = { bucket = "analytics-data" }
