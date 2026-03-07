@@ -250,7 +250,16 @@ The `_OP_TO_HOOK` mapping gains `"open_atomic": "on_write"` (same hook as
 
 ### 5. Proposed spec IDs
 
-New spec `022-streaming-atomic-writes.md` with IDs:
+New spec `022-streaming-atomic-writes.md` with IDs.
+
+**Capacity note (S3-010, AZ-007 scope):** S3Backend, S3PyArrowBackend, and
+AzureBackend (non-HNS) buffer the entire file via `SpooledTemporaryFile`
+before uploading. Files <= 8 MB are held in memory; larger files spill to
+disk. For streams exceeding ~10 GB, callers should consider native multipart
+methods or splitting the file. A follow-up RFC may add S3-native streaming
+to eliminate this constraint.
+
+Spec IDs:
 
 | ID | Requirement |
 |----|-------------|
@@ -266,7 +275,7 @@ New spec `022-streaming-atomic-writes.md` with IDs:
 | SAW-010 | S3Backend / S3PyArrowBackend buffer then PUT (atomic by nature) |
 | SAW-011 | AzureBackend non-HNS buffers then PUT; HNS uses temp + DFS rename |
 | SAW-012 | MemoryBackend buffers in `BytesIO` then commits |
-| SAW-013 | Yielded file object supports `write()`, `tell()`, and is not seekable during writes |
+| SAW-013 | Yielded file object supports `write()` and `tell()`; seekability is backend-dependent and MUST NOT be relied upon by callers |
 | SAW-014 | `ext.observe` fires `on_write` hook after successful promotion |
 | SAW-015 | `ext.otel` emits a span covering the full open-write-promote lifecycle |
 
@@ -331,14 +340,29 @@ profiling shows the overhead matters.
   file in memory — peak memory drops from O(file_size) to O(chunk_size). For
   S3/Azure (non-HNS), memory profile is similar to `write_atomic()` with
   `SpooledTemporaryFile` providing disk spill for files > 8 MB.
-- **Testing:** New tests needed:
-  - Context manager lifecycle (success path, exception path)
-  - Temp file cleanup on failure (no partial files)
-  - `AlreadyExists` guard (overwrite=True/False)
-  - Streaming write correctness (content matches after promotion)
-  - All 6 backends
-  - `ext.observe` hook fires on successful promotion
-  - Integration with PyArrow `pq.write_table()` (example, not unit test)
+- **Testing:** Spec `022-streaming-atomic-writes.md` must include tests for:
+  - **Success path (SAW-003):** temp file created during write, promoted to
+    target on `__exit__(None)`, temp artifact no longer exists, target
+    readable with correct content.
+  - **Exception path (SAW-004, SAW-005):** exception inside `with` block,
+    target path unchanged (no partial file), temp artifact cleaned up.
+  - **Early close (SAW-005):** caller calls `f.close()` before exiting
+    context — behaviour defined (promote or raise).
+  - **`AlreadyExists` guard (SAW-006):** `overwrite=False` raises when
+    target exists; `overwrite=True` succeeds and replaces content.
+  - **`InvalidPath` (SAW-007):** empty path raises `InvalidPath`.
+  - **Per-backend temp-path validation (SAW-008/009/010/011/012):**
+    - Local: `mkstemp` temp file exists in parent dir during write.
+    - SFTP: `.~tmp.*` file exists on server during write, removed after.
+    - S3/S3-PyArrow: `SpooledTemporaryFile` used (no server-side temp).
+    - Azure non-HNS: buffered PUT; Azure HNS: temp blob + DFS rename.
+    - Memory: `BytesIO` buffer, committed on success.
+  - **Content correctness:** multi-chunk write, content matches after
+    promotion (all 6 backends).
+  - **Observe hook (SAW-014):** `on_write` fires after successful promotion,
+    does not fire on exception path.
+  - **OTel span (SAW-015):** span covers full open-write-promote lifecycle.
+  - Integration with PyArrow `pq.write_table()` (example, not unit test).
 
 ## Open Questions
 
@@ -360,9 +384,11 @@ profiling shows the overhead matters.
    seekable. For cloud backends using `SpooledTemporaryFile`, it's also
    seekable. However, seeking mid-write is an unusual pattern, and documenting
    seekability as guaranteed would constrain future backends (e.g. native
-   multipart). Recommendation: do not guarantee seekability in the spec
-   (SAW-013 says "not seekable during writes"). If a backend happens to return
-   a seekable stream, callers may use it but should not depend on it.
+   multipart). **Resolution:** SAW-013 declares seekability as
+   backend-dependent — callers MUST NOT rely on it. All current backends
+   happen to yield seekable streams, but this is an implementation detail,
+   not a contract. Future backends (e.g. native S3 multipart) may yield
+   non-seekable streams.
 
 ## References
 
