@@ -5,7 +5,7 @@
 <h1 align="center">remote-store</h1>
 
 <p align="center">
-  One simple API for file storage. Local, S3, SFTP, Azure. Same methods, swappable backends, zero reinvention.
+  A consistent storage API for Python applications that need to work across local files, S3, SFTP, and Azure.
 </p>
 
 <p align="center">
@@ -21,36 +21,46 @@
 > contain breaking changes before 1.0. See the [changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
 > for what's new, and [open an issue](https://github.com/haalfi/remote-store/issues) if something breaks.
 
-`remote-store` gives you one simple API to read, write, list, and delete files.
-The same methods work whether your files live on disk, in S3, on an SFTP server,
-or anywhere else. You just swap the backend config.
+Most Python projects that deal with files eventually accumulate storage glue:
+small wrappers around local paths, `boto3`, SFTP clients, and cloud-specific edge cases.
+That code is usually repetitive, hard to standardize, and expensive to replace later.
 
-That's the whole trick.
+`remote-store` provides one small, consistent API for the file operations applications actually need:
+read, write, list, delete, move, copy, and existence checks.
+The same code works across local storage, S3, SFTP, Azure, and in-memory storage.
 
-### Who is this for?
+The practical value is simple:
+you can change where files live without rewriting the application code that uses them.
+Platform teams can standardize storage access.
+Application teams can work with a predictable interface instead of learning multiple SDKs.
 
-- **Citizen developers** -- analysts, scientists, and domain experts who write Python but shouldn't need to learn `boto3`, `paramiko`, or cloud-specific SDKs just to read and write files.
-- **Platform teams** -- engineers who set up the infrastructure and want to hand their colleagues a simple, safe API that can't be misused.
-- **Anyone tired of rewriting storage glue** -- if you've wrapped S3 or SFTP access more than once, this is that wrapper, tested and maintained.
+Configuration is immutable, so non-experts can't accidentally break state.
+Errors are clear instead of raw SDK tracebacks.
+Streaming just works without tuning buffer sizes.
 
-The library was born from enabling citizen-developer teams: the config is immutable so non-experts can't accidentally break state, errors are clear instead of raw SDK tracebacks, and streaming just works without tuning buffer sizes.
+`remote-store` is not trying to replace native SDKs.
+It uses them underneath and gives your application a stable interface on top.
 
-Reads and writes stream by default, so large files just work.
-Under the hood, each backend delegates to the library you'd pick anyway
-(`boto3`, `paramiko`, `azure-storage-file-datalake`, …). This package doesn't
-reinvent file I/O. It just gives every backend the same simple front door.
+### Who this is for
+
+- **Analysts, scientists, and domain experts** who write Python but shouldn't need to learn `boto3`, `paramiko`, or cloud-specific SDKs just to read and write files
+- **Platform and internal tooling teams** that need one storage interface across multiple environments or customers
+- **Data and application teams** that move between local files, S3, SFTP, and Azure
+- **Teams tired of maintaining custom storage wrappers** for each backend
+
+This is most useful when backend choice is an operational detail, not something every application should encode for itself.
 
 ## What you get
 
-- **One `Store`, many backends:** local fs, S3, SFTP, Azure Blob, more to come
-- **Just the basics:** read, write, list, delete, exists. No magic, no surprises
-- **Battle-tested I/O under the hood:** backends wrap `boto3`, `paramiko`, etc.
-- **Swappable via config:** switch backends without touching application code
-- **Streaming by default:** reads and writes handle large files without blowing up memory
-- **Atomic writes** where the backend supports it
-- **PyArrow ecosystem interop:** use any Store as a `pyarrow.fs.FileSystem` -- works with Parquet, Pandas, Polars, DuckDB, and dataset discovery out of the box
+- **One storage interface across backends:** the same methods for local files, S3, SFTP, Azure, and memory
+- **Backend changes through configuration:** move between environments without rewriting storage code
+- **A smaller surface area than raw SDKs:** enough for common file operations without backend-specific sprawl
+- **Streaming reads and writes by default:** works for large files without forcing everything into memory
+- **Atomic writes where supported:** safer updates for file-producing workflows
+- **Optional PyArrow integration:** use a store with Parquet, Pandas, Polars, DuckDB, and dataset tooling
+- **Native SDKs underneath:** keep proven backend implementations instead of relying on custom protocol layers
 - **Zero runtime dependencies:** the core package installs nothing; backend extras pull in only what they need
-- **Typed & tested:** strict mypy, spec-driven test suite
+- **Typed and tested:** strict mypy, spec-driven test suite
 
 ## Installation
 
@@ -266,7 +276,7 @@ Interactive Jupyter notebooks are available in [`examples/notebooks/`](https://g
 
 - **Sync only** -- all operations are synchronous. For async frameworks, wrap calls with `asyncio.to_thread()`.
 - **Glob** -- `list_files(pattern=)` and `ext.glob.glob_files()` work on all backends. Native `Store.glob()` is supported by Local, S3, S3-PyArrow, and Azure backends.
-- **PyArrow adapter** -- Phase 1 (Tier 2/3 reads, writes) is complete. Phase 2 native fast-path reads are deferred. See the [backlog](https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md) for details.
+- **PyArrow adapter** -- Tier 1 native fast-path reads (S3-PyArrow), Tier 2/3 reads, and writes are complete. Remaining backends for `native_path()` are tracked in the [backlog](https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md).
 
 ## Contributing
 
