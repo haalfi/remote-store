@@ -72,12 +72,16 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Reduces round-trips for read-heavy or metadata-heavy workloads.
   In-memory by default, pluggable cache backend for distributed use.
 
-- [ ] **ID-026 — Streaming atomic writes**
+- [~] **ID-026 — Streaming atomic writes**
   Context manager for streaming large files with atomic commit:
-  `with store.open_write_atomic(key) as out: out.write(chunk)`.
+  `with store.open_atomic(key) as out: out.write(chunk)`.
   Current `write_atomic()` only accepts `bytes`, forcing callers to buffer
   entire files in memory. Needed for any large-file workflow (Parquet exports,
   log rotation, report generation). Needs temp-path strategy per backend.
+  RFC-0004 published (Draft). API renamed from `open_write_atomic()` to
+  `open_atomic()` for consistency with `write_atomic()`.
+  Remaining: accept RFC, write spec `022-streaming-atomic-writes.md`,
+  implement across all 6 backends.
 
 - [ ] **ID-035 — Parallel batch operations**
   Add `concurrent=True` (or `max_workers=N`) option to `ext.batch` functions
