@@ -2,6 +2,24 @@
 
 Post inline review comments on a GitHub PR. Find real issues only — no fluff.
 
+## MANDATORY: Bash command rules (read first)
+
+These rules prevent built-in security prompts that CANNOT be bypassed via
+settings. Violating them causes the user to approve every single command.
+
+1. **NO `cd` prefix** — NEVER write `cd /path && ...`. The working directory
+   is already correct. Just run the command directly.
+2. **NO `git -C`** — NEVER write `git -C /path ...`. Not in allow list.
+3. **NO piped git commands** — NEVER write `git show ... | grep` or
+   `git diff ... | wc`. Use `Read`/`Grep`/`Glob` tools instead.
+4. **NO `git show master:file`** — `gh pr diff` already provides the base
+   comparison. Use `Read` tool for current file contents. Do NOT compare
+   against master via git commands.
+5. **NO heredoc** — NEVER use `<<EOF` or `<<'EOF'` in Bash commands.
+   Write JSON/text to a temp file with the `Write` tool, then reference it.
+6. **Use dedicated tools** — `Read` (not `cat`/`git show`), `Grep` (not `grep`),
+   `Glob` (not `find`).
+
 ## Arguments
 
 PR number: `$ARGUMENTS` (ask if missing).
@@ -13,8 +31,9 @@ gh pr view $PR_NUMBER --json title,body,baseRefName,headRefName,files
 gh pr diff $PR_NUMBER
 ```
 
-Read every changed file **in full** (not just diff hunks) — you need surrounding
-context to spot contract changes, missing imports, and pattern breaks.
+Read every changed file **in full** using the `Read` tool (not just diff hunks) —
+you need surrounding context to spot contract changes, missing imports, and
+pattern breaks.
 
 ## Step 2: Analyze
 
@@ -32,10 +51,15 @@ without reason, praise, logging suggestions.
 
 ## Step 3: Post review
 
-Submit one review with all inline comments via `gh api --input -`:
+Write the review JSON to a temp file, then submit via `gh api --input`:
 
-```bash
-gh api repos/{owner}/{repo}/pulls/$PR_NUMBER/reviews --input - <<'EOF'
+```python
+# 1. Use the Write tool to create the review payload:
+#    Path: /tmp/pr-review-$PR_NUMBER.json
+#    Content: the JSON object below
+```
+
+```json
 {
   "event": "COMMENT",
   "body": "Summary",
@@ -43,7 +67,11 @@ gh api repos/{owner}/{repo}/pulls/$PR_NUMBER/reviews --input - <<'EOF'
     {"path": "src/remote_store/_store.py", "line": 42, "body": "Bug: ..."}
   ]
 }
-EOF
+```
+
+```bash
+# 2. Post the review (single, non-compound command):
+gh api repos/{owner}/{repo}/pulls/$PR_NUMBER/reviews --input /tmp/pr-review-$PR_NUMBER.json
 ```
 
 **Critical rules:**
@@ -54,6 +82,8 @@ EOF
 - **Deleted lines** need `"side": "LEFT"` with the base-branch line number
 - **Tag each comment:** `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Security:`
 - Be terse — state problem and fix, no preamble
+- **NEVER use heredoc (`<<EOF`)** with `gh api` — it triggers security prompts.
+  Always write JSON to a file first with the `Write` tool.
 
 ## Step 4: Report
 
