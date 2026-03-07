@@ -11,24 +11,18 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-*(all prioritized items completed — see Done § Audit findings)*
+- [~] **ID-047 — Spec accuracy fixes**
+  Add ERR-010 (`DirectoryNotEmpty`) to error model spec. Clarify `around`-hook
+  propagation vs after-hook suppression in `ext.observe`. Add ownership
+  qualifier to STORE-009 `close()` contract. Scope `ext.transfer` memory
+  guarantee to extension layer. List both `yaml.YAMLError` and
+  `ruamel.yaml.YAMLError` in config loader spec.
 
 ---
 
 ## Known Bugs
 
 *(none open)*
-
----
-
-## Prioritized
-
-- [ ] **ID-047 — Spec accuracy fixes**
-  Add ERR-010 (`DirectoryNotEmpty`) to error model spec. Clarify `around`-hook
-  propagation vs after-hook suppression in `ext.observe`. Add ownership
-  qualifier to STORE-009 `close()` contract. Scope `ext.transfer` memory
-  guarantee to extension layer. List both `yaml.YAMLError` and
-  `ruamel.yaml.YAMLError` in config loader spec.
 
 ---
 
