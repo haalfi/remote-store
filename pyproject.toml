@@ -168,7 +168,7 @@ examples = [
   "python examples/observe_hooks.py",
   "python examples/pyarrow_adapter.py",
 ]
-notebooks = "python examples/notebooks/run_notebooks.py"
+notebooks = "python tests/run_notebooks.py"
 bench = 'pytest benchmarks/ -v --benchmark-sort=mean -m "not standard and not full"'
 bench-standard = 'pytest benchmarks/ -v --benchmark-sort=mean -m "not full"'
 bench-full = "pytest benchmarks/ -v --benchmark-sort=mean"

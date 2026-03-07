@@ -9,7 +9,7 @@ data and matplotlib.
 
 Usage::
 
-    python examples/notebooks/run_notebooks.py
+    python tests/run_notebooks.py
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from pathlib import Path
 
 SKIP = {"benchmark_analysis.ipynb"}
 
-NOTEBOOK_DIR = Path(__file__).resolve().parent
+NOTEBOOK_DIR = Path(__file__).resolve().parent.parent / "examples" / "notebooks"
 
 
 def _run_notebook(path: Path) -> None:
