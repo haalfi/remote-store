@@ -68,7 +68,8 @@ a `RegistryConfig`.
   Message includes install instructions: `pip install 'remote-store[yaml]'`.
 - `FileNotFoundError` if `path` does not exist.
 - `TypeError` if the top-level YAML value is not a mapping.
-- `yaml.YAMLError` if the file is not valid YAML.
+- `yaml.YAMLError` (pyyaml) or `ruamel.yaml.YAMLError` (ruamel) if the file
+  is not valid YAML.
 
 **Design note:** No `key`/`table` parameter. YAML has no shared-file convention
 like `pyproject.toml`. Users with nested YAML use

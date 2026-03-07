@@ -85,3 +85,14 @@ e = NotFound("File not found", path="data/file.txt", backend="s3")
 assert "data/file.txt" in str(e)
 assert "NotFound" in repr(e)
 ```
+
+## ERR-010: DirectoryNotEmpty
+
+**Invariant:** Raised when `delete_folder(..., recursive=False)` targets a non-empty directory.
+**Postconditions:** `path` attribute is set to the offending folder path.
+**Example:**
+```python
+store.write("folder/file.txt", b"data")
+with pytest.raises(DirectoryNotEmpty):
+    store.delete_folder("folder", recursive=False)
+```

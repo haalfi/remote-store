@@ -101,8 +101,10 @@ overrides every public method of `Store`. Each override:
 
 **Postconditions:**
 - The proxy never modifies arguments or return values.
-- Hook exceptions are suppressed (logged at WARNING) to prevent observation
-  from breaking the observed operation.
+- After-hook exceptions (`on_<op>`, `on_any`, `on_error`) are suppressed
+  (logged at WARNING) to prevent observation from breaking the observed
+  operation. The `around` context manager follows standard Python semantics:
+  exceptions from `__enter__` or `__exit__` propagate (see OBS-005).
 
 ### OBS-003a: Hook-to-Operation Mapping
 
@@ -219,9 +221,10 @@ methods always propagate to the caller. The proxy catches exceptions only
 to build the `StoreEvent` (with `error` set) and fire hooks, then
 re-raises unconditionally.
 
-Hook exceptions (from `on_<op>`, `on_any`, `on_error`, or `around`) are
-suppressed and logged at WARNING level. They never mask the original
-operation's result or exception.
+After-hook exceptions (from `on_<op>`, `on_any`, `on_error`) are suppressed
+and logged at WARNING level. They never mask the original operation's result
+or exception. The `around` context manager is not suppressed — its exceptions
+propagate per standard context manager semantics (see OBS-005).
 
 ---
 

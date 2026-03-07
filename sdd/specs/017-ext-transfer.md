@@ -4,8 +4,9 @@
 
 `ext.transfer` provides three standalone functions for moving data between
 local files and Stores, or between two Stores: `upload`, `download`, and
-`transfer`. All functions stream data — no file is ever fully loaded into
-memory. An optional `on_progress` callback fires per chunk.
+`transfer`. All functions stream data via `BinaryIO` — the extension never buffers the
+full file content. End-to-end memory behavior depends on the backend's
+`write()` implementation (see SIO-003). An optional `on_progress` callback fires per chunk.
 
 **Module:** `src/remote_store/ext/transfer.py`
 **Dependencies:** None (pure Python, always available)
@@ -22,7 +23,7 @@ memory. An optional `on_progress` callback fires per chunk.
 
 ### XFER-002: upload Streaming
 
-**Invariant:** `upload` opens the local file in binary read mode, wraps it in a `_ProgressReader` (if `on_progress` is provided), and passes the file handle directly to `store.write()`. The full file is never loaded into memory.
+**Invariant:** `upload` opens the local file in binary read mode, wraps it in a `_ProgressReader` (if `on_progress` is provided), and passes the file handle directly to `store.write()`. The extension never buffers the full file content in memory.
 
 ### XFER-003: upload overwrite
 
@@ -42,7 +43,7 @@ memory. An optional `on_progress` callback fires per chunk.
 
 ### XFER-007: download Streaming
 
-**Invariant:** `download` calls `store.read()` to get a stream, then reads chunks of 1 MiB (`1_048_576` bytes) and writes each chunk to the local file. The full file is never loaded into memory. The remote stream is always closed via `try/finally`.
+**Invariant:** `download` calls `store.read()` to get a stream, then reads chunks of 1 MiB (`1_048_576` bytes) and writes each chunk to the local file. The extension never buffers the full file content in memory. The remote stream is always closed via `try/finally`.
 
 ### XFER-008: download overwrite Guard
 
@@ -62,7 +63,7 @@ memory. An optional `on_progress` callback fires per chunk.
 
 ### XFER-012: transfer Streaming
 
-**Invariant:** `transfer` calls `src_store.read()` to get a stream, wraps it in a `_ProgressReader` (if `on_progress` is provided), and passes the wrapped stream to `dst_store.write()`. The full file is never loaded into memory.
+**Invariant:** `transfer` calls `src_store.read()` to get a stream, wraps it in a `_ProgressReader` (if `on_progress` is provided), and passes the wrapped stream to `dst_store.write()`. The extension never buffers the full file content in memory.
 
 ### XFER-013: transfer overwrite
 
