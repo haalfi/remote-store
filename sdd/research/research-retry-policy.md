@@ -46,7 +46,7 @@ The backlog item states:
 
 ### 2.1 SFTP — Explicit tenacity on connect only
 
-**File:** `src/remote_store/backends/_sftp.py` (lines 519–566)
+**File:** `src/remote_store/backends/_sftp.py` — `_connect()` method (lines 519–566)
 
 ```python
 @retry(

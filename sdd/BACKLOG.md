@@ -37,7 +37,9 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `FileInfo.checksum` consistently across backends (S3 ETag, local SHA-256).
   Gives users data-integrity guarantees with a single flag.
 
-- [ ] **ID-010 — Retry policy configuration**
+- [~] **ID-010 — Retry policy configuration**
+  Research complete: `sdd/research/research-retry-policy.md`.
+  Remaining: design decisions (ADR), spec, implementation.
   SFTP has hardcoded retry logic (3 attempts, 2–10 s backoff via `tenacity`).
   Expose a `RetryPolicy` dataclass in `BackendConfig.options` so users can tune
   attempts, backoff, and jitter per-backend.
