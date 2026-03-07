@@ -44,8 +44,8 @@ via the PyArrow adapter.
    separate credentials, connections, or config.
 3. **Streaming by default.** Reads and writes never fully materialize large
    files in memory. Critical for multi-GB Parquet partitions.
-4. **Atomic writes.** `write_atomic()` uses rename-based commit protocols,
-   compatible with Delta Lake and Iceberg expectations.
+4. **Atomic writes.** `write_atomic()` uses rename-based semantics, reducing
+   partial-write risk for individual files.
 5. **Batch operations.** `batch_delete`, `batch_copy`, `batch_exists` for
    partition-scale workflows with error aggregation.
 6. **Observability.** `ext.observe` hooks and OpenTelemetry bridge give
@@ -127,15 +127,15 @@ pq.write_table(raw, "readings/2026-03-01.parquet", filesystem=bronze_fs)
 
 ```python
 import polars as pl
+import pyarrow.parquet as pq
+from remote_store.ext.arrow import pyarrow_fs
 
-# Read bronze partition
+# Read bronze partition via PyArrow, convert to Polars
 bronze_fs = pyarrow_fs(bronze)
-df = pl.read_parquet(
-    "readings/2026-03-01.parquet",
-    storage_options={"filesystem": bronze_fs},
-)
+raw = pq.read_table("readings/2026-03-01.parquet", filesystem=bronze_fs)
+df = pl.from_arrow(raw)
 
-# Clean and type (bronze → silver)
+# Clean and type (bronze -> silver)
 silver_df = (
     df.with_columns(
         pl.col("timestamp").str.to_datetime(),
@@ -144,12 +144,9 @@ silver_df = (
     .filter(pl.col("reading").is_not_null())
 )
 
-# Write to silver layer
+# Write to silver layer via PyArrow
 silver_fs = pyarrow_fs(silver)
-silver_df.write_parquet(
-    "readings/2026-03-01.parquet",
-    storage_options={"filesystem": silver_fs},
-)
+pq.write_table(silver_df.to_arrow(), "readings/2026-03-01.parquet", filesystem=silver_fs)
 ```
 
 ## Partitioned datasets with PyArrow
@@ -187,6 +184,8 @@ march_1 = dataset.to_table(filter=ds.field("date") == "2026-03-01")
 
 ```python
 import duckdb
+import pyarrow.dataset as ds
+from remote_store.ext.arrow import pyarrow_fs
 
 silver_fs = pyarrow_fs(silver)
 dataset = ds.dataset("readings", filesystem=silver_fs, format="parquet")
@@ -229,12 +228,12 @@ remote-store provides the I/O — it does not replace Delta's ACID guarantees.
 ```python
 from remote_store import batch_delete, batch_copy
 
-# Archive old bronze partitions to a different layer
+# Archive old bronze partitions within the same store
 old_files = [
     f.path for f in bronze.list_files("readings", recursive=True)
     if f.path < "readings/2026-01-01"
 ]
-batch_copy(bronze, old_files, archive)
+batch_copy(bronze, [(f, f"archive/{f}") for f in old_files])
 batch_delete(bronze, old_files)
 ```
 
