@@ -15,7 +15,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/r/remote-store/remote_store-${{ version }}.tar.gz
-  sha256: 2f92827e292dd0acf470fc765f98801ccb3499e966598991518f3887552b10d9
+  sha256: 3e2dcad10b6c1f5a94d16a163179b79ffb7dac26954ef178808ab5f9d1241034
 
 build:
   noarch: python
