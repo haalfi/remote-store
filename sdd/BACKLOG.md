@@ -95,27 +95,12 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   where GIL contention in `PythonFile` limits throughput. See spec
   `014-pyarrow-filesystem-adapter.md` Phase 2 sections.
 
-- [ ] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix**
-  Listing numbers in `benchmarks/results/comparative.md` pre-date the ID-032
-  cache-invalidation fix (`invalidate_cache()` on `BenchTarget`). Re-run all
-  benchmark tiers with Docker backends to produce accurate baseline data.
-  64KB write values for S3-PyArrow and Azure are also outlier-skewed.
-
 - [~] **ID-044 — Harden examples into assertion-based expectation tests**
   Approach: examples expose `demo(store)` functions; `tests/test_examples.py`
   imports each demo and wraps it with assertions. Examples stay print-based
   and user-friendly; tests add spec verification — no duplicated setup.
   Done: refactored all 14 examples, created 14 test classes in `test_examples.py`.
   Remaining: branch `claude/review-example-tests-GiVnG` not yet merged.
-
-- [ ] **ID-046 — Audit version-conditional imports for mypy coverage**
-  `tomllib` (stdlib 3.11+) was missing a mypy override, caught only by
-  `publish.yml` (which runs mypy on 3.10) not `ci.yml` (which ran mypy only
-  on 3.13). Fixed for `tomllib` but need a sweep of all `try: import X /
-  except: import Y` patterns and version-gated stdlib modules to ensure
-  each has a `[[tool.mypy.overrides]]` entry. Candidates: `tomllib`,
-  `tomli`, `ruamel.yaml`, `pydantic_settings`, any future 3.12+/3.13+
-  stdlib additions.
 
 - [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
   Four specs have no dedicated example coverage:
@@ -541,6 +526,18 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   only the public `from_dict()` API. `from_dict()` gains a protected
   `_extra_frames` param so adapter layers (e.g. the pydantic adapter) can
   correctly offset the warning stacklevel.
+
+- [x] **ID-046 — Audit version-conditional imports for mypy coverage** (v0.14.0)
+  Swept all `try/except` import patterns in `src/` and `tests/`. The only
+  version-conditional import is `tomllib`/`tomli` in `_config.py` and
+  `test_config.py` — already covered by `[[tool.mypy.overrides]]` entries
+  for `tomli`, `tomllib`, `ruamel.yaml`, `pydantic`/`pydantic_settings`,
+  plus `warn_unused_ignores = false` on `_config` module. No gaps found.
+
+- [x] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix** (v0.14.0)
+  Re-ran quick + standard tier benchmarks with Docker backends (MinIO, Azurite,
+  SFTP). Updated `benchmarks/results/comparative.md` with post-ID-032 data.
+  Listing numbers now reflect real I/O without fsspec caching bias.
 
 ### Other completed work
 
