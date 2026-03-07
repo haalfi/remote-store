@@ -12,6 +12,7 @@ pa = pytest.importorskip("pyarrow")
 pafs = pytest.importorskip("pyarrow.fs")
 pq = pytest.importorskip("pyarrow.parquet")
 
+from remote_store._backend import Backend  # noqa: E402
 from remote_store._errors import (  # noqa: E402
     AlreadyExists,
     BackendUnavailable,
@@ -313,7 +314,7 @@ class TestOpenInputFile:
 # ---------------------------------------------------------------------------
 
 
-class _FakePyArrowBackend:
+class _FakePyArrowBackend(Backend):
     """Minimal backend stub that exposes a native PyArrow FS via unwrap().
 
     Used to test Tier 1 E2E probing without requiring Docker/S3.
@@ -324,8 +325,22 @@ class _FakePyArrowBackend:
         self._inner = local_backend
         self._pa_fs = pafs.LocalFileSystem()
 
+    # region: properties
+
+    @property
+    def name(self) -> str:
+        return "fake-pyarrow"
+
+    @property
+    def capabilities(self) -> Any:
+        return self._inner.capabilities
+
+    # endregion
+
+    # region: public methods
+
     def unwrap(self, type_hint: type) -> Any:
-        if type_hint is pafs.FileSystem or issubclass(type_hint, pafs.FileSystem):
+        if type_hint is pafs.FileSystem:
             return self._pa_fs
         raise CapabilityNotSupported(
             f"Cannot unwrap {type_hint}",
@@ -334,12 +349,55 @@ class _FakePyArrowBackend:
         )
 
     def native_path(self, path: str) -> str:
-        # Return absolute filesystem path for the local FS
         root = str(self._inner._root)
         return f"{root}/{path}" if path else root
 
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._inner, name)
+    def exists(self, path: str) -> bool:
+        return self._inner.exists(path)
+
+    def is_file(self, path: str) -> bool:
+        return self._inner.is_file(path)
+
+    def is_folder(self, path: str) -> bool:
+        return self._inner.is_folder(path)
+
+    def read(self, path: str) -> Any:
+        return self._inner.read(path)
+
+    def read_bytes(self, path: str) -> bytes:
+        return self._inner.read_bytes(path)
+
+    def write(self, path: str, content: Any, *, overwrite: bool = False) -> None:
+        self._inner.write(path, content, overwrite=overwrite)
+
+    def write_atomic(self, path: str, content: Any, *, overwrite: bool = False) -> None:
+        self._inner.write_atomic(path, content, overwrite=overwrite)
+
+    def delete(self, path: str, *, missing_ok: bool = False) -> None:
+        self._inner.delete(path, missing_ok=missing_ok)
+
+    def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
+        self._inner.delete_folder(path, recursive=recursive, missing_ok=missing_ok)
+
+    def list_files(self, path: str, *, recursive: bool = False) -> Any:
+        return self._inner.list_files(path, recursive=recursive)
+
+    def list_folders(self, path: str) -> Any:
+        return self._inner.list_folders(path)
+
+    def get_file_info(self, path: str) -> Any:
+        return self._inner.get_file_info(path)
+
+    def get_folder_info(self, path: str) -> Any:
+        return self._inner.get_folder_info(path)
+
+    def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        self._inner.move(src, dst, overwrite=overwrite)
+
+    def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        self._inner.copy(src, dst, overwrite=overwrite)
+
+    # endregion
 
 
 class TestTier1NativeFastPath:
@@ -374,10 +432,7 @@ class TestTier1NativeFastPath:
 
         # Replace the store's backend with one that exposes a PyArrow FS
         fake = _FakePyArrowBackend(local_store._backend)
-        patched_store = Store.__new__(Store)
-        patched_store._backend = fake  # type: ignore[attr-defined]
-        patched_store._root = local_store._root  # type: ignore[attr-defined]
-        patched_store._owns_backend = False  # type: ignore[attr-defined]
+        patched_store = Store(backend=fake)
 
         handler = StoreFileSystemHandler(patched_store)
         # Tier 1 should be auto-detected

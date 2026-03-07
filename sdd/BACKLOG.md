@@ -98,10 +98,9 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   (BE-025), `Store.native_path()` (STORE-015), `S3PyArrowBackend.unwrap()`
   accepts `pyarrow.fs.FileSystem` base class, `StoreFileSystemHandler` probes
   at construction and dispatches reads directly to the native PyArrow FS.
-  Remaining: `native_path()` overrides for non-S3PyArrow backends (Local,
-  SFTP, Azure, S3) — not needed for Tier 1 but complete the inverse-of-to_key
-  contract. Streaming error-mapping wrapper for mid-read exceptions on cloud
-  PythonFile reads is a separate concern (see NOTE in `open_input_stream`).
+  `native_path()` overrides for all backends (Local, S3, SFTP, Azure) done.
+  Remaining: streaming error-mapping wrapper for mid-read exceptions on cloud
+  PythonFile reads (see NOTE in `open_input_stream`).
 
 - [~] **ID-044 — Harden examples into assertion-based expectation tests**
   Approach: examples expose `demo(store)` functions; `tests/test_examples.py`

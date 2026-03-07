@@ -465,14 +465,6 @@ class TestBackendNativePath:
     """BE-025: native_path() default is identity."""
 
     @pytest.mark.spec("BE-025")
-    def test_native_path_default_identity(self, backend: Backend) -> None:
-        # Default identity for backends that don't override
-        # (backends that DO override will return a prefixed path)
-        result = backend.native_path("some/key")
-        assert isinstance(result, str)
-        assert "some/key" in result  # may have prefix prepended
-
-    @pytest.mark.spec("BE-025")
     def test_native_path_round_trip(self, backend: Backend) -> None:
         """native_path is the inverse of to_key (NPR-020)."""
         key = "some/key"

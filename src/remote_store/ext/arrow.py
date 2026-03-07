@@ -176,11 +176,11 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
             if isinstance(native_fs, pafs.FileSystem):
                 self._native_fs = native_fs
                 self._native_path_fn = store.native_path
-        except Exception:  # noqa: BLE001
+        except Exception as _exc:  # noqa: BLE001
             # CapabilityNotSupported (backend lacks unwrap), TypeError (wrong
             # type_hint), or any backend/client initialization error — all
             # disable Tier 1 gracefully; reads fall through to Tier 2/3.
-            pass
+            log.debug("Tier 1 probe failed, falling back to Tier 2/3: %s", _exc)
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, StoreFileSystemHandler):
