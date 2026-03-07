@@ -44,6 +44,7 @@ Under the hood, established Python libraries (`s3fs`, `paramiko`,
 ## What you get
 
 - **One interface, many backends:** local fs, S3, SFTP, Azure, in-memory
+- **Folder-scoped stores:** each Store is rooted at a folder -- compose layouts with multiple stores or narrow scope with `child()`
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
 - **Atomic writes where supported:** safer updates for file-producing workflows
@@ -51,6 +52,12 @@ Under the hood, established Python libraries (`s3fs`, `paramiko`,
 - **Zero runtime dependencies:** backend extras pull in only what they need
 - **Typed and tested:** strict mypy, spec-driven test suite
 - **Optional integrations:** PyArrow filesystem adapter, OpenTelemetry tracing and metrics
+
+### What it is not
+
+- Not a query engine (no SQL, no predicate pushdown)
+- Not a table format (no Delta Lake log, no Iceberg manifests)
+- Not a filesystem reimplementation (delegates to `s3fs`, `paramiko`, `azure-storage-file-datalake`, `pyarrow` -- the libraries you'd pick anyway)
 
 ## Installation
 
@@ -248,13 +255,16 @@ Detailed configuration guides for each backend are in [`guides/backends/`](https
 
 ### Extensions
 
+All extensions live in `remote_store.ext` and are optional -- import only what you need.
+
 |Extension            |Extra                       |Description                 |
 |---------------------|----------------------------|----------------------------|
-|PyArrow adapter      |`remote-store[arrow]`       |Use any Store as a `pyarrow.fs.FileSystem` for Parquet, datasets, Pandas, Polars, DuckDB ([guide](https://remote-store.readthedocs.io/en/latest/pyarrow-adapter/)) |
-|Batch operations     |*(none)*                    |Bulk delete, copy, and exists with error aggregation ([guide](https://remote-store.readthedocs.io/en/latest/batch-operations/)) |
-|Transfer operations  |*(none)*                    |Upload, download, and cross-store transfer with streaming and progress ([guide](https://remote-store.readthedocs.io/en/latest/transfer-operations/)) |
-|Observability hooks  |*(none)*                    |Callback-based instrumentation for logging, metrics, and tracing ([guide](https://remote-store.readthedocs.io/en/latest/observe/)) |
-|OpenTelemetry bridge |`remote-store[otel]`        |Pre-built OTel spans and metrics for Store operations ([guide](https://remote-store.readthedocs.io/en/latest/observe/)) |
+|PyArrow adapter      |`remote-store[arrow]`       |Use any Store as a `pyarrow.fs.FileSystem` for Parquet, datasets, Pandas, Polars, DuckDB ([guide](https://remote-store.readthedocs.io/en/latest/pyarrow-adapter/), [example](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py)) |
+|Batch operations     |*(none)*                    |Bulk delete, copy, and exists with error aggregation ([guide](https://remote-store.readthedocs.io/en/latest/batch-operations/), [example](https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py)) |
+|Transfer operations  |*(none)*                    |Upload, download, and cross-store transfer with streaming and progress ([guide](https://remote-store.readthedocs.io/en/latest/transfer-operations/), [example](https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py)) |
+|Observability hooks  |*(none)*                    |Callback-based instrumentation for logging, metrics, and tracing ([guide](https://remote-store.readthedocs.io/en/latest/observe/), [example](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py)) |
+|OpenTelemetry bridge |`remote-store[otel]`        |Pre-built OTel spans and metrics for Store operations ([guide](https://remote-store.readthedocs.io/en/latest/observe/), [example](https://github.com/haalfi/remote-store/blob/master/examples/otel_tracing.py)) |
+|Glob helpers         |*(none)*                    |Portable glob fallback for backends without native glob support ([guide](https://remote-store.readthedocs.io/en/latest/glob-pattern-matching/), [example](https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py)) |
 
 ## Examples
 
@@ -295,6 +305,26 @@ Interactive Jupyter notebooks are available in [`examples/notebooks/`](https://g
 - **Sync only** -- all operations are synchronous. For async frameworks, wrap calls with `asyncio.to_thread()`.
 - **Glob** -- `list_files(pattern=)` and `ext.glob.glob_files()` work on all backends. Native `Store.glob()` is supported by Local, S3, S3-PyArrow, and Azure backends.
 - **PyArrow adapter** -- Tier 1 native fast-path reads (S3-PyArrow), Tier 2/3 reads, and writes are complete. Remaining backends for `native_path()` are tracked in the [backlog](https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md).
+
+## How it compares
+
+There are several excellent Python libraries for file I/O across backends. Here is where `remote-store` sits:
+
+| | fsspec | smart_open | cloudpathlib | obstore | **remote-store** |
+|---|---|---|---|---|---|
+| API surface | ~56 methods | `open()` only | pathlib-style | ~10 methods | 22 methods |
+| Backends | 30+ filesystems | S3, GCS, Az, SFTP | S3, GCS, Azure | S3, GCS, Azure | Local, S3, SFTP, Az, Memory |
+| SFTP | via sshfs | Yes | No | No | Built-in |
+| Streaming I/O | Yes | Yes | No (downloads) | Bytes-oriented | Yes (BinaryIO) |
+| Atomic writes | No | No | No | No | Yes (capability-gated) |
+| Async | Yes | No | No | Yes (first-class) | Sync-only (for now) |
+| Observability | No | No | No | No | `ext.observe` + OTel |
+| Config model | Per-filesystem | URI-based | Per-client | Per-store kwargs | Immutable Registry |
+| Runtime deps | Yes | Minimal | SDK-based | Rust binary | Zero (core) |
+
+*Comparison as of March 2026. Method counts and feature sets may change as these libraries evolve.*
+
+**In short:** `remote-store` is for teams that need more than `open()` (smart_open) but less than a full filesystem abstraction (fsspec), with streaming, SFTP, atomic writes, observability, and immutable config. The closest comparison is cloudpathlib, but `remote-store` adds SFTP, streaming, atomic writes, and observability -- and doesn't use the pathlib metaphor for object stores. Under the hood, `remote-store` delegates to the same libraries you'd pick anyway (`s3fs`/`boto3`, `paramiko`, Azure SDK, PyArrow).
 
 ## Contributing
 
