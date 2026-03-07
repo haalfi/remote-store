@@ -115,8 +115,8 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   and user-friendly; tests add spec verification — no duplicated setup.
   Refactored all 14 examples, created 14 test classes in `test_examples.py`
   covering specs STORE-008, SIO-001–003, AW-001/003, CFG-003/005, SEC-001/003,
-  ERR-002/003/005, MEM-DS-002, CHILD-001–006, BATCH-001/002/008/014,
-  GLOB-001/009, XFER-001/006/011, OBS-001–006/011, PA-002. Also added 4
+  ERR-002/003/005, MEM-DS-002, CHILD-001/002/004–006, BATCH-001/002/008/014,
+  GLOB-001/009, XFER-001/006/011, OBS-001–003/005/006/011, PA-002. Also added 4
   missing examples to `hatch run examples` (batch, glob, transfer, observe)
   and fixed OTel example to use SDK `SimpleSpanProcessor`.
 
