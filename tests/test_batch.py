@@ -116,7 +116,7 @@ class TestBatchDelete:
         ids=["missing_ok_true", "missing_ok_false"],
     )
     def test_missing_ok(self, missing_ok: bool, expect_success: bool) -> None:
-        store = _populated_store("a.txt") if not missing_ok else _populated_store("a.txt")
+        store = _populated_store("a.txt")
         paths = ["a.txt", "gone.txt"] if missing_ok else ["nope.txt"]
         result = batch_delete(store, paths, missing_ok=missing_ok)
         assert result.all_succeeded is expect_success
