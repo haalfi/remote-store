@@ -1,6 +1,6 @@
 """Expectation tests wrapping example demos.
 
-Each example exposes a ``demo(store)`` function with the scenario.
+Each example exposes a ``demo(...)`` function with the scenario.
 This module imports each demo and asserts on postconditions.
 Examples stay print-based for users; tests add verification.
 
@@ -70,6 +70,9 @@ class TestQuickstart:
         store = Store(LocalBackend(root=str(tmp_path / "direct")))
         assert store.exists("hello.txt")
         assert store.read_bytes("hello.txt") == b"Hello, world!"
+        info = store.get_file_info("hello.txt")
+        assert info.size == 13
+        store.close()
 
     @pytest.mark.spec("STORE-008")
     def test_demo_registry(self, tmp_path):
@@ -83,6 +86,9 @@ class TestQuickstart:
         store = Store(LocalBackend(root=str(tmp_path / "registry")))
         assert store.exists("hello.txt")
         assert store.read_bytes("hello.txt") == b"Hello, world!"
+        info = store.get_file_info("hello.txt")
+        assert info.size == 13
+        store.close()
 
 
 # ---------------------------------------------------------------------------

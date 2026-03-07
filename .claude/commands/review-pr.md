@@ -54,8 +54,9 @@ without reason, praise, logging suggestions.
 Write the review JSON to a temp file, then submit via `gh api --input`:
 
 ```python
-# 1. Use the Write tool to create the review payload:
-#    Path: /tmp/pr-review-$PR_NUMBER.json
+# 1. Use the Write tool to create the review payload in the WORKING DIRECTORY
+#    (NOT /tmp/ — the Write tool's /tmp/ is virtual and invisible to shell tools):
+#    Path: pr-review-$PR_NUMBER.json  (working directory)
 #    Content: the JSON object below
 ```
 
@@ -71,7 +72,9 @@ Write the review JSON to a temp file, then submit via `gh api --input`:
 
 ```bash
 # 2. Post the review (single, non-compound command):
-gh api repos/{owner}/{repo}/pulls/$PR_NUMBER/reviews --input /tmp/pr-review-$PR_NUMBER.json
+gh api repos/{owner}/{repo}/pulls/$PR_NUMBER/reviews --input pr-review-$PR_NUMBER.json
+# 3. Clean up:
+rm pr-review-$PR_NUMBER.json
 ```
 
 **Critical rules:**
