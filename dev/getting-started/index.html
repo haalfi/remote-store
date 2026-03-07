@@ -456,6 +456,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#how-it-compares" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it compares
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3210,6 +3221,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#how-it-compares" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it compares
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3271,68 +3293,72 @@ use a Registry with declarative config:</p>
 <a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">))</span>  <span class="c1"># b&#39;Hello, world!&#39;</span>
 </code></pre></div>
 <p>Switch to S3 by changing the config. The application code stays the same:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># remote-store.toml -- dev</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">[backends.main]</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;local&quot;</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">root</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;/tmp/data&quot;</span><span class="w"> </span><span class="p">}</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># remote-store.toml -- production</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="k">[backends.main]</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3&quot;</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">bucket</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;analytics-data&quot;</span><span class="w"> </span><span class="p">}</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="k">[stores.data]</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;main&quot;</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;reports&quot;</span>
+<p><strong>Dev config:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">[backends.main]</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;local&quot;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">root</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;/tmp/data&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">[stores.data]</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;main&quot;</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;reports&quot;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_toml</span><span class="p">(</span><span class="s2">&quot;remote-store.toml&quot;</span><span class="p">)</span>
+<p><strong>Production -- just swap the backend:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[backends.main]</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3&quot;</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">bucket</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;analytics-data&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">[stores.data]</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;main&quot;</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;reports&quot;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_toml</span><span class="p">(</span><span class="s2">&quot;remote-store.toml&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>Configuration is declarative and immutable. Load from TOML, YAML, Pydantic, a dict, or build with Python objects:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegistryConfig</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># From a TOML file (zero dependencies on Python 3.11+):</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_toml</span><span class="p">(</span><span class="s2">&quot;remote-store.toml&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="c1"># From pyproject.toml:</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_toml</span><span class="p">(</span><span class="s2">&quot;pyproject.toml&quot;</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;tool&quot;</span><span class="p">,</span> <span class="s2">&quot;remote-store&quot;</span><span class="p">))</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="c1"># From YAML (requires pyyaml or ruamel.yaml):</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="s2">&quot;remote-store.yaml&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="c1"># From Pydantic BaseSettings (requires pydantic-settings):</span>
-<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">pydantic_to_registry_config</span>
-<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="n">config</span> <span class="o">=</span> <span class="n">pydantic_to_registry_config</span><span class="p">(</span><span class="n">my_settings</span><span class="p">)</span>
-<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>
-<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="c1"># From a dict (e.g. loaded from JSON):</span>
-<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span>
-<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>    <span class="s2">&quot;backends&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>        <span class="s2">&quot;local&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="s2">&quot;/data&quot;</span><span class="p">}},</span>
-<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>    <span class="p">},</span>
-<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>    <span class="s2">&quot;stores&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>        <span class="s2">&quot;uploads&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;root_path&quot;</span><span class="p">:</span> <span class="s2">&quot;uploads&quot;</span><span class="p">},</span>
-<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>        <span class="s2">&quot;reports&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;root_path&quot;</span><span class="p">:</span> <span class="s2">&quot;reports&quot;</span><span class="p">},</span>
-<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>    <span class="p">},</span>
-<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="p">})</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegistryConfig</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># From a TOML file (zero dependencies on Python 3.11+):</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_toml</span><span class="p">(</span><span class="s2">&quot;remote-store.toml&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1"># From pyproject.toml:</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_toml</span><span class="p">(</span><span class="s2">&quot;pyproject.toml&quot;</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;tool&quot;</span><span class="p">,</span> <span class="s2">&quot;remote-store&quot;</span><span class="p">))</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># From YAML (requires pyyaml or ruamel.yaml):</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="s2">&quot;remote-store.yaml&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="c1"># From Pydantic BaseSettings (requires pydantic-settings):</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">pydantic_to_registry_config</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="n">config</span> <span class="o">=</span> <span class="n">pydantic_to_registry_config</span><span class="p">(</span><span class="n">my_settings</span><span class="p">)</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="c1"># From a dict (e.g. loaded from JSON):</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>    <span class="s2">&quot;backends&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>        <span class="s2">&quot;local&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="s2">&quot;/data&quot;</span><span class="p">}},</span>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>    <span class="p">},</span>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>    <span class="s2">&quot;stores&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>        <span class="s2">&quot;uploads&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;root_path&quot;</span><span class="p">:</span> <span class="s2">&quot;uploads&quot;</span><span class="p">},</span>
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>        <span class="s2">&quot;reports&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;root_path&quot;</span><span class="p">:</span> <span class="s2">&quot;reports&quot;</span><span class="p">},</span>
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>    <span class="p">},</span>
+<a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a><span class="p">})</span>
 </code></pre></div>
 <h3 id="credential-hygiene">Credential hygiene<a class="headerlink" href="#credential-hygiene" title="Permanent link">&para;</a></h3>
 <p>Credentials passed through <code>from_dict()</code> are automatically wrapped in <code>Secret</code>, which masks values in <code>repr()</code> and <code>str()</code> to prevent accidental leakage in logs or tracebacks. Sensitive keys: <code>key</code>, <code>secret</code>, <code>password</code>, <code>account_key</code>, <code>sas_token</code>, <code>connection_string</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegistryConfig</span><span class="p">,</span> <span class="n">Secret</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># Auto-wrapped by from_dict():</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="s2">&quot;backends&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;s3&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;s3&quot;</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>        <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;AKIA...&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>        <span class="s2">&quot;secret&quot;</span><span class="p">:</span> <span class="s2">&quot;wJalr...&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="p">}}},</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    <span class="s2">&quot;stores&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="s2">&quot;s3&quot;</span><span class="p">,</span> <span class="s2">&quot;root_path&quot;</span><span class="p">:</span> <span class="s2">&quot;data&quot;</span><span class="p">}},</span>
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="p">})</span>
-<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">backends</span><span class="p">[</span><span class="s2">&quot;s3&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;secret&quot;</span><span class="p">])</span>  <span class="c1"># → ***</span>
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>
-<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="c1"># Or wrap manually:</span>
-<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="n">secret</span> <span class="o">=</span> <span class="n">Secret</span><span class="p">(</span><span class="s2">&quot;my-secret-key&quot;</span><span class="p">)</span>
-<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="n">secret</span><span class="o">.</span><span class="n">reveal</span><span class="p">()</span>  <span class="c1"># → &#39;my-secret-key&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegistryConfig</span><span class="p">,</span> <span class="n">Secret</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># Auto-wrapped by from_dict():</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="s2">&quot;backends&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;s3&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;s3&quot;</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>        <span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>        <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;AKIA...&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>        <span class="s2">&quot;secret&quot;</span><span class="p">:</span> <span class="s2">&quot;wJalr...&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="p">}}},</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="s2">&quot;stores&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="s2">&quot;s3&quot;</span><span class="p">,</span> <span class="s2">&quot;root_path&quot;</span><span class="p">:</span> <span class="s2">&quot;data&quot;</span><span class="p">}},</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="p">})</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">backends</span><span class="p">[</span><span class="s2">&quot;s3&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;secret&quot;</span><span class="p">])</span>  <span class="c1"># → ***</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="c1"># Or wrap manually:</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="n">secret</span> <span class="o">=</span> <span class="n">Secret</span><span class="p">(</span><span class="s2">&quot;my-secret-key&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="n">secret</span><span class="o">.</span><span class="n">reveal</span><span class="p">()</span>  <span class="c1"># → &#39;my-secret-key&#39;</span>
 </code></pre></div>
 <h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
 <p><strong>Read &amp; write</strong></p>
@@ -3509,6 +3535,7 @@ use a Registry with declarative config:</p>
 </table>
 <p>Detailed configuration guides for each backend are in <a href="https://remote-store.readthedocs.io/en/latest/backends/"><code>guides/backends/</code></a>.</p>
 <h3 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">&para;</a></h3>
+<p>All extensions live in <code>remote_store.ext</code> and are optional -- import only what you need.</p>
 <table>
 <thead>
 <tr>
@@ -3521,27 +3548,32 @@ use a Registry with declarative config:</p>
 <tr>
 <td>PyArrow adapter</td>
 <td><code>remote-store[arrow]</code></td>
-<td>Use any Store as a <code>pyarrow.fs.FileSystem</code> for Parquet, datasets, Pandas, Polars, DuckDB (<a href="https://remote-store.readthedocs.io/en/latest/pyarrow-adapter/">guide</a>)</td>
+<td>Use any Store as a <code>pyarrow.fs.FileSystem</code> for Parquet, datasets, Pandas, Polars, DuckDB (<a href="https://remote-store.readthedocs.io/en/latest/pyarrow-adapter/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py">example</a>)</td>
 </tr>
 <tr>
 <td>Batch operations</td>
 <td><em>(none)</em></td>
-<td>Bulk delete, copy, and exists with error aggregation (<a href="https://remote-store.readthedocs.io/en/latest/batch-operations/">guide</a>)</td>
+<td>Bulk delete, copy, and exists with error aggregation (<a href="https://remote-store.readthedocs.io/en/latest/batch-operations/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py">example</a>)</td>
 </tr>
 <tr>
 <td>Transfer operations</td>
 <td><em>(none)</em></td>
-<td>Upload, download, and cross-store transfer with streaming and progress (<a href="https://remote-store.readthedocs.io/en/latest/transfer-operations/">guide</a>)</td>
+<td>Upload, download, and cross-store transfer with streaming and progress (<a href="https://remote-store.readthedocs.io/en/latest/transfer-operations/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py">example</a>)</td>
 </tr>
 <tr>
 <td>Observability hooks</td>
 <td><em>(none)</em></td>
-<td>Callback-based instrumentation for logging, metrics, and tracing (<a href="https://remote-store.readthedocs.io/en/latest/observe/">guide</a>)</td>
+<td>Callback-based instrumentation for logging, metrics, and tracing (<a href="https://remote-store.readthedocs.io/en/latest/observe/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py">example</a>)</td>
 </tr>
 <tr>
 <td>OpenTelemetry bridge</td>
 <td><code>remote-store[otel]</code></td>
-<td>Pre-built OTel spans and metrics for Store operations (<a href="https://remote-store.readthedocs.io/en/latest/observe/">guide</a>)</td>
+<td>Pre-built OTel spans and metrics for Store operations (<a href="https://remote-store.readthedocs.io/en/latest/observe/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/otel_tracing.py">example</a>)</td>
+</tr>
+<tr>
+<td>Glob helpers</td>
+<td><em>(none)</em></td>
+<td>Portable glob fallback for backends without native glob support (<a href="https://remote-store.readthedocs.io/en/latest/glob-pattern-matching/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py">example</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -3648,6 +3680,96 @@ use a Registry with declarative config:</p>
 <li><strong>Glob</strong> -- <code>list_files(pattern=)</code> and <code>ext.glob.glob_files()</code> work on all backends. Native <code>Store.glob()</code> is supported by Local, S3, S3-PyArrow, and Azure backends.</li>
 <li><strong>PyArrow adapter</strong> -- Tier 1 native fast-path reads (S3-PyArrow), Tier 2/3 reads, and writes are complete. Remaining backends for <code>native_path()</code> are tracked in the <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">backlog</a>.</li>
 </ul>
+<h2 id="how-it-compares">How it compares<a class="headerlink" href="#how-it-compares" title="Permanent link">&para;</a></h2>
+<p>There are several excellent Python libraries for file I/O across backends. Here is where <code>remote-store</code> sits:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>fsspec</th>
+<th>smart_open</th>
+<th>cloudpathlib</th>
+<th>obstore</th>
+<th><strong>remote-store</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API surface</td>
+<td>~56 methods</td>
+<td><code>open()</code> only</td>
+<td>pathlib-style</td>
+<td>~10 methods</td>
+<td>22 methods</td>
+</tr>
+<tr>
+<td>Backends</td>
+<td>30+ filesystems</td>
+<td>S3, GCS, Az, SFTP</td>
+<td>S3, GCS, Azure</td>
+<td>S3, GCS, Azure</td>
+<td>Local, S3, SFTP, Az, Memory</td>
+</tr>
+<tr>
+<td>SFTP</td>
+<td>via sshfs</td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+<td>Built-in</td>
+</tr>
+<tr>
+<td>Streaming I/O</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No (downloads)</td>
+<td>Bytes-oriented</td>
+<td>Yes (BinaryIO)</td>
+</tr>
+<tr>
+<td>Atomic writes</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>Yes (capability-gated)</td>
+</tr>
+<tr>
+<td>Async</td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+<td>Yes (first-class)</td>
+<td>Sync-only (for now)</td>
+</tr>
+<tr>
+<td>Observability</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td><code>ext.observe</code> + OTel</td>
+</tr>
+<tr>
+<td>Config model</td>
+<td>Per-filesystem</td>
+<td>URI-based</td>
+<td>Per-client</td>
+<td>Per-store kwargs</td>
+<td>Immutable Registry</td>
+</tr>
+<tr>
+<td>Runtime deps</td>
+<td>Yes</td>
+<td>Minimal</td>
+<td>SDK-based</td>
+<td>Rust binary</td>
+<td>Zero (core)</td>
+</tr>
+</tbody>
+</table>
+<p><em>Comparison as of March 2026. Method counts and feature sets may change as these libraries evolve.</em></p>
+<p><strong>In short:</strong> <code>remote-store</code> is for teams that need more than <code>open()</code> (smart_open) but less than a full filesystem abstraction (fsspec), with streaming, SFTP, atomic writes, observability, and immutable config. The closest comparison is cloudpathlib, but <code>remote-store</code> adds SFTP, streaming, atomic writes, and observability -- and doesn't use the pathlib metaphor for object stores. Under the hood, <code>remote-store</code> delegates to the same libraries you'd pick anyway (<code>s3fs</code>/<code>boto3</code>, <code>paramiko</code>, Azure SDK, PyArrow).</p>
 
 
 
