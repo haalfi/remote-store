@@ -9,6 +9,7 @@ from remote_store._errors import CapabilityNotSupported
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from contextlib import AbstractContextManager
 
     from remote_store._capabilities import CapabilitySet
     from remote_store._models import FileInfo, FolderInfo
@@ -74,6 +75,17 @@ class Backend(abc.ABC):
 
         :raises CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
         :raises AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+        """
+
+    @abc.abstractmethod
+    def open_atomic(self, path: str, *, overwrite: bool = False) -> AbstractContextManager[BinaryIO]:
+        """Yield a writable file object backed by a temporary location.
+
+        On successful exit the temp file is atomically promoted to *path*.
+        On exception the temp file is removed and *path* is untouched.
+
+        :raises AlreadyExists: If *path* exists and *overwrite* is ``False``.
+        :raises CapabilityNotSupported: If the backend lacks ``ATOMIC_WRITE``.
         """
 
     @abc.abstractmethod

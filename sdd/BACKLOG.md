@@ -11,12 +11,25 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [x] **ID-047 — Spec accuracy fixes** (v0.14.0 -- PA-010 deferred to ID-037)
-  Add ERR-010 (`DirectoryNotEmpty`) to error model spec. Clarify `around`-hook
-  propagation vs after-hook suppression in `ext.observe`. Add ownership
-  qualifier to STORE-009 `close()` contract. Scope `ext.transfer` memory
-  guarantee to extension layer. List both `yaml.YAMLError` and
-  `ruamel.yaml.YAMLError` in config loader spec.
+- [ ] **ID-035 — Parallel batch operations**
+  Add `concurrent=True` (or `max_workers=N`) option to `ext.batch` functions
+  (`batch_delete`, `batch_copy`, `batch_exists`). Cloud backends benefit
+  significantly from concurrent I/O — sequential execution over hundreds of
+  partition files is a bottleneck. Use `concurrent.futures.ThreadPoolExecutor`
+  (stdlib). Needs spec update to `016-ext-batch.md`. Related: ID-013 (async).
+
+- [ ] **ID-025 — `ext.cache` — store-level caching middleware**
+  Wraps a Store and caches reads, folder stats, existence checks with TTL.
+  `cached = CachedStore(store, ttl=300)`. Auto-invalidates on writes.
+  Reduces round-trips for read-heavy or metadata-heavy workloads.
+  In-memory by default, pluggable cache backend for distributed use.
+
+- [ ] **ID-036 — Hive-style partition path helpers**
+  Thin utility for building and parsing Hive partition paths
+  (e.g., `year=2026/month=03/day=01/data.parquet`). Could live in `ext/` or
+  as a helper on `Store`. Scope: `partition_path(key, **parts) -> str` and
+  `parse_partition(path) -> dict`. Useful for Parquet lake workloads alongside
+  PyArrow datasets. No external dependencies.
 
 ---
 
@@ -65,46 +78,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Release checklist updated with conda version/sha256 steps (Phase 2, 3, 5).
   Staged-recipes PR submitted: `conda-forge/staged-recipes#32401` (CI green).
   Remaining: waiting for conda-forge reviewer approval.
-
-- [ ] **ID-025 — `ext.cache` — store-level caching middleware**
-  Wraps a Store and caches reads, folder stats, existence checks with TTL.
-  `cached = CachedStore(store, ttl=300)`. Auto-invalidates on writes.
-  Reduces round-trips for read-heavy or metadata-heavy workloads.
-  In-memory by default, pluggable cache backend for distributed use.
-
-- [~] **ID-026 — Streaming atomic writes**
-  Context manager for streaming large files with atomic commit:
-  `with store.open_atomic(key) as out: out.write(chunk)`.
-  Current `write_atomic()` only accepts `bytes`, forcing callers to buffer
-  entire files in memory. Needed for any large-file workflow (Parquet exports,
-  log rotation, report generation). Needs temp-path strategy per backend.
-  RFC-0004 published (Draft). API renamed from `open_write_atomic()` to
-  `open_atomic()` for consistency with `write_atomic()`.
-  Remaining: accept RFC, write spec `022-streaming-atomic-writes.md`,
-  implement across all 6 backends.
-
-- [ ] **ID-035 — Parallel batch operations**
-  Add `concurrent=True` (or `max_workers=N`) option to `ext.batch` functions
-  (`batch_delete`, `batch_copy`, `batch_exists`). Cloud backends benefit
-  significantly from concurrent I/O — sequential execution over hundreds of
-  partition files is a bottleneck. Use `concurrent.futures.ThreadPoolExecutor`
-  (stdlib). Needs spec update to `016-ext-batch.md`. Related: ID-013 (async).
-
-- [ ] **ID-036 — Hive-style partition path helpers**
-  Thin utility for building and parsing Hive partition paths
-  (e.g., `year=2026/month=03/day=01/data.parquet`). Could live in `ext/` or
-  as a helper on `Store`. Scope: `partition_path(key, **parts) -> str` and
-  `parse_partition(path) -> dict`. Useful for Parquet lake workloads alongside
-  PyArrow datasets. No external dependencies.
-
-- [~] **ID-037 — PyArrow adapter Phase 2 — Tier 1 native fast-path reads**
-  Tier 1 native fast-path reads (PA-010) implemented: `Backend.native_path()`
-  (BE-025), `Store.native_path()` (STORE-015), `S3PyArrowBackend.unwrap()`
-  accepts `pyarrow.fs.FileSystem` base class, `StoreFileSystemHandler` probes
-  at construction and dispatches reads directly to the native PyArrow FS.
-  `native_path()` overrides for all backends (Local, S3, SFTP, Azure) done.
-  Remaining: streaming error-mapping wrapper for mid-read exceptions on cloud
-  PythonFile reads (see NOTE in `open_input_stream`).
 
 - [~] **ID-044 — Harden examples into assertion-based expectation tests**
   Approach: examples expose `demo(store)` functions; `tests/test_examples.py`
@@ -349,6 +322,13 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   `str(ROOT) == "."`). All 6 backends + `_rebase_folder_info` updated.
   19 new tests (15 ROOT unit tests + 4 regression tests now passing).
 
+- [x] **ID-047 — Spec accuracy fixes** (v0.14.0)
+  Add ERR-010 (`DirectoryNotEmpty`) to error model spec. Clarify `around`-hook
+  propagation vs after-hook suppression in `ext.observe`. Add ownership
+  qualifier to STORE-009 `close()` contract. Scope `ext.transfer` memory
+  guarantee to extension layer. List both `yaml.YAMLError` and
+  `ruamel.yaml.YAMLError` in config loader spec.
+
 ### Ideas shipped
 
 - [x] **ID-002 — YAML config support** (v0.14.0)
@@ -553,6 +533,24 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   `test_config.py` — already covered by `[[tool.mypy.overrides]]` entries
   for `tomli`, `tomllib`, `ruamel.yaml`, `pydantic`/`pydantic_settings`,
   plus `warn_unused_ignores = false` on `_config` module. No gaps found.
+
+- [x] **ID-026 — Streaming atomic writes**
+  `Store.open_atomic()` and `Backend.open_atomic()` — context manager yielding
+  a writable file object backed by a temporary location. On success, atomically
+  promoted; on exception, cleaned up. All 6 backends: `mkstemp`+`os.replace`
+  (Local), `.~tmp.*`+`posix_rename` (SFTP), `SpooledTemporaryFile`+PUT (S3,
+  S3-PyArrow, Azure non-HNS), temp blob+DFS rename (Azure HNS), `BytesIO`
+  (Memory). RFC-0004 accepted. Spec: `022-streaming-atomic-writes.md`
+  (SAW-001 through SAW-015). `ext.observe` maps to `on_write` hook.
+
+- [x] **ID-037 — PyArrow adapter Phase 2 — Tier 1 native fast-path reads** (v0.14.0)
+  Tier 1 native fast-path reads (PA-010) implemented: `Backend.native_path()`
+  (BE-025), `Store.native_path()` (STORE-015), `S3PyArrowBackend.unwrap()`
+  accepts `pyarrow.fs.FileSystem` base class, `StoreFileSystemHandler` probes
+  at construction and dispatches reads directly to the native PyArrow FS.
+  `native_path()` overrides for all backends (Local, S3, SFTP, Azure) done.
+  Streaming error-mapping wrapper deferred — currently inert (cloud backends
+  materialize via Tier 2, no mid-read exceptions on PythonFile possible).
 
 - [x] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix** (v0.14.0)
   Re-ran quick + standard tier benchmarks with Docker backends (MinIO, Azurite,

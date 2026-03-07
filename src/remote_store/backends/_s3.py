@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import logging
 import shutil
+import tempfile
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
@@ -136,6 +137,22 @@ class S3Backend(Backend):
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         # S3 PUT is inherently atomic (S3-010)
         self.write(path, content, overwrite=overwrite)
+
+    @contextmanager
+    def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+        # S3 PUT is inherently atomic -- buffer then upload (SAW-010)
+        with self._errors(path):
+            if not overwrite and self._fs.exists(self._s3_path(path)):
+                raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+        buf: tempfile.SpooledTemporaryFile[bytes] = tempfile.SpooledTemporaryFile(  # noqa: SIM115
+            max_size=8 * 1024 * 1024,
+        )
+        try:
+            yield cast("BinaryIO", buf)
+            buf.seek(0)
+            self.write(path, cast("BinaryIO", buf), overwrite=overwrite)
+        finally:
+            buf.close()
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._errors(path):

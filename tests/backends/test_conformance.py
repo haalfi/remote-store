@@ -161,6 +161,44 @@ class TestBackendWriteAtomic:
             backend.write_atomic("atomic3.txt", b"second", overwrite=False)
 
 
+class TestBackendOpenAtomic:
+    """SAW-001 through SAW-005: streaming atomic write operations."""
+
+    @pytest.mark.spec("SAW-003")
+    def test_open_atomic_creates_file(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.ATOMIC_WRITE):
+            pytest.skip("Backend does not support ATOMIC_WRITE")
+        with backend.open_atomic("oat.txt") as f:
+            f.write(b"streaming atomic")
+        assert backend.read_bytes("oat.txt") == b"streaming atomic"
+
+    @pytest.mark.spec("SAW-006")
+    def test_open_atomic_overwrite(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.ATOMIC_WRITE):
+            pytest.skip("Backend does not support ATOMIC_WRITE")
+        backend.write("oat2.txt", b"first")
+        with backend.open_atomic("oat2.txt", overwrite=True) as f:
+            f.write(b"second")
+        assert backend.read_bytes("oat2.txt") == b"second"
+
+    @pytest.mark.spec("SAW-006")
+    def test_open_atomic_already_exists(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.ATOMIC_WRITE):
+            pytest.skip("Backend does not support ATOMIC_WRITE")
+        backend.write("oat3.txt", b"first")
+        with pytest.raises(AlreadyExists), backend.open_atomic("oat3.txt", overwrite=False):
+            pass
+
+    @pytest.mark.spec("SAW-004")
+    def test_open_atomic_exception_cleanup(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.ATOMIC_WRITE):
+            pytest.skip("Backend does not support ATOMIC_WRITE")
+        with pytest.raises(RuntimeError), backend.open_atomic("oat_fail.txt") as f:
+            f.write(b"partial")
+            raise RuntimeError("boom")
+        assert not backend.exists("oat_fail.txt")
+
+
 class TestBackendDelete:
     """BE-012 through BE-013: delete operations."""
 

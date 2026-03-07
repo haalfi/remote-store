@@ -373,6 +373,9 @@ class _FakePyArrowBackend(Backend):
     def write_atomic(self, path: str, content: Any, *, overwrite: bool = False) -> None:
         self._inner.write_atomic(path, content, overwrite=overwrite)
 
+    def open_atomic(self, path: str, *, overwrite: bool = False) -> Any:
+        return self._inner.open_atomic(path, overwrite=overwrite)
+
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         self._inner.delete(path, missing_ok=missing_ok)
 

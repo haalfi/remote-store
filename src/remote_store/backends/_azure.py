@@ -6,6 +6,7 @@ import contextlib
 import io
 import logging
 import re
+import tempfile
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -260,6 +261,70 @@ class AzureBackend(Backend):
                 with contextlib.suppress(Exception):
                     tmp_fc.delete_file()
                 raise
+
+    @contextmanager
+    def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+        if not self._hns:
+            # non-HNS: buffer then PUT (atomic by nature) -- SAW-011
+            from azure.core.exceptions import ResourceNotFoundError
+
+            with self._errors(path):
+                bc = self._blob_client(path)
+                if not overwrite:
+                    try:
+                        bc.get_blob_properties()
+                        raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+                    except AlreadyExists:
+                        raise
+                    except ResourceNotFoundError:
+                        pass
+            buf: tempfile.SpooledTemporaryFile[bytes] = tempfile.SpooledTemporaryFile(  # noqa: SIM115
+                max_size=8 * 1024 * 1024,
+            )
+            try:
+                yield cast("BinaryIO", buf)
+                buf.seek(0)
+                self.write(path, cast("BinaryIO", buf), overwrite=overwrite)
+            finally:
+                buf.close()
+        else:
+            # HNS: write to temp file via DFS, then atomic rename -- SAW-011
+            from azure.core.exceptions import ResourceNotFoundError
+
+            with self._errors(path):  # pragma: no cover -- HNS only
+                bc = self._blob_client(path)
+                if not overwrite:
+                    try:
+                        bc.get_blob_properties()
+                        raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+                    except AlreadyExists:
+                        raise
+                    except ResourceNotFoundError:
+                        pass
+
+                azure_path = self._azure_path(path)
+                basename = azure_path.rsplit("/", 1)[-1] if "/" in azure_path else azure_path
+                parent = azure_path.rsplit("/", 1)[0] if "/" in azure_path else ""
+                tmp_name = f".~tmp.{basename}.{uuid.uuid4().hex[:8]}"
+                tmp_path = f"{parent}/{tmp_name}" if parent else tmp_name
+
+                buf_hns: tempfile.SpooledTemporaryFile[bytes] = tempfile.SpooledTemporaryFile(  # noqa: SIM115
+                    max_size=8 * 1024 * 1024,
+                )
+                try:
+                    yield cast("BinaryIO", buf_hns)
+                    buf_hns.seek(0)
+                    tmp_fc = self._fs.get_file_client(tmp_path)
+                    try:
+                        tmp_fc.upload_data(buf_hns, overwrite=True)
+                        new_name = f"{self._container}/{azure_path}"
+                        tmp_fc.rename_file(new_name)
+                    except Exception:
+                        with contextlib.suppress(Exception):
+                            tmp_fc.delete_file()
+                        raise
+                finally:
+                    buf_hns.close()
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._errors(path):

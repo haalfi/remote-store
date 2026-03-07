@@ -307,6 +307,40 @@ class SFTPBackend(Backend):
                     self._sftp.remove(tmp_path)
                 raise
 
+    @contextmanager
+    def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+        # Setup phase: existence check + parent dirs (within error mapping)
+        with self._errors(path):
+            sftp_path = self._sftp_path(path)
+            if not overwrite:
+                try:
+                    self._sftp.stat(sftp_path)
+                    raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+                except OSError as exc:
+                    if getattr(exc, "errno", None) != errno.ENOENT:
+                        raise
+            self._ensure_parent_dirs(sftp_path)
+            name = sftp_path.rsplit("/", 1)[-1] if "/" in sftp_path else sftp_path
+            parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else "."
+            tmp_name = f".~tmp.{name}.{uuid.uuid4().hex[:8]}"
+            tmp_path = f"{parent}/{tmp_name}"
+        # Yield phase: outside _errors() so user exceptions propagate cleanly
+        try:
+            with self._sftp.file(tmp_path, "w") as f:
+                yield f
+            with self._errors(path):
+                try:
+                    self._sftp.posix_rename(tmp_path, sftp_path)
+                except OSError:  # pragma: no cover -- fallback for servers without posix_rename
+                    if overwrite:
+                        with contextlib.suppress(OSError):
+                            self._sftp.remove(sftp_path)
+                    self._sftp.rename(tmp_path, sftp_path)
+        except Exception:
+            with contextlib.suppress(Exception):
+                self._sftp.remove(tmp_path)
+            raise
+
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._errors(path):
             sftp_path = self._sftp_path(path)

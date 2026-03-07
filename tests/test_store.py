@@ -112,6 +112,19 @@ class TestStoreFullAPI:
         store.write_atomic("at.txt", b"atomic")
         assert store.read_bytes("at.txt") == b"atomic"
 
+    @pytest.mark.spec("SAW-002")
+    def test_open_atomic(self, store: Store) -> None:
+        with store.open_atomic("oa.txt") as f:
+            f.write(b"streaming")
+        assert store.read_bytes("oa.txt") == b"streaming"
+
+    @pytest.mark.spec("SAW-006")
+    def test_open_atomic_overwrite(self, store: Store) -> None:
+        store.write("oa_ow.txt", b"old")
+        with store.open_atomic("oa_ow.txt", overwrite=True) as f:
+            f.write(b"new")
+        assert store.read_bytes("oa_ow.txt") == b"new"
+
     @pytest.mark.spec("STORE-008")
     def test_delete(self, store: Store) -> None:
         store.write("del.txt", b"x")
