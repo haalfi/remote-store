@@ -38,9 +38,9 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Gives users data-integrity guarantees with a single flag.
 
 - [~] **ID-010 — Retry policy configuration**
-  Research complete: `sdd/research/research-retry-policy.md`.
-  Remaining: design decisions (ADR), spec, implementation.
-  SFTP has hardcoded retry logic (3 attempts, 2–10 s backoff via `tenacity`).
+  Research complete: `sdd/research/research-retry-policy.md` (PR #113).
+  Remaining: ADR, spec, implementation.
+  SFTP has hardcoded retry logic (3 attempts, 2-10 s backoff via `tenacity`).
   Expose a `RetryPolicy` dataclass in `BackendConfig.options` so users can tune
   attempts, backoff, and jitter per-backend.
 
@@ -58,7 +58,8 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `noarch: python`, zero core deps, `run_constraints` for optional backends).
   CI validation via `conda-recipe.yml` workflow (rattler-build `--render-only`).
   Release checklist updated with conda version/sha256 steps (Phase 2, 3, 5).
-  Remaining: fork `conda-forge/staged-recipes`, submit PR externally.
+  Staged-recipes PR submitted: `conda-forge/staged-recipes#32401` (CI green).
+  Remaining: waiting for conda-forge reviewer approval.
 
 - [ ] **ID-025 — `ext.cache` — store-level caching middleware**
   Wraps a Store and caches reads, folder stats, existence checks with TTL.
@@ -72,15 +73,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Current `write_atomic()` only accepts `bytes`, forcing callers to buffer
   entire files in memory. Needed for any large-file workflow (Parquet exports,
   log rotation, report generation). Needs temp-path strategy per backend.
-
-- [~] **ID-034 — Parquet lake guide (Bronze / Silver / Gold patterns)**
-  User-facing guide showing how to use `Store.child()` + `ext.arrow` +
-  `ext.transfer` to build a multi-layer Parquet lake on any backend.
-  Patterns: Bronze (raw ingestion), Silver (cleaned/typed), Gold (aggregated).
-  Example with Pandas/Polars reading and writing Parquet via `pyarrow_fs()`.
-  No new code needed — purely documents existing capabilities.
-  Done: `guides/data-lake-patterns.md`, docs-src wrapper, nav entry.
-  Remaining: review with examples run, possible example script.
 
 - [ ] **ID-035 — Parallel batch operations**
   Add `concurrent=True` (or `max_workers=N`) option to `ext.batch` functions
@@ -109,16 +101,12 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   benchmark tiers with Docker backends to produce accurate baseline data.
   64KB write values for S3-PyArrow and Azure are also outlier-skewed.
 
-- [x] **ID-044 — Harden examples into assertion-based expectation tests** *(unreleased)*
+- [~] **ID-044 — Harden examples into assertion-based expectation tests**
   Approach: examples expose `demo(store)` functions; `tests/test_examples.py`
   imports each demo and wraps it with assertions. Examples stay print-based
   and user-friendly; tests add spec verification — no duplicated setup.
-  Refactored all 14 examples, created 14 test classes in `test_examples.py`
-  covering specs STORE-008, SIO-001–003, AW-001/003, CFG-003/005, SEC-001/003,
-  ERR-002/003/005, MEM-DS-002, CHILD-001/002/004–006, BATCH-001/002/008/014,
-  GLOB-001/009, XFER-001/006/011, OBS-001–003/005/006/011, PA-002. Also added 4
-  missing examples to `hatch run examples` (batch, glob, transfer, observe)
-  and fixed OTel example to use SDK `SimpleSpanProcessor`.
+  Done: refactored all 14 examples, created 14 test classes in `test_examples.py`.
+  Remaining: branch `claude/review-example-tests-GiVnG` not yet merged.
 
 - [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
   Four specs have no dedicated example coverage:
@@ -193,13 +181,13 @@ All v1.0 release blockers were resolved across v0.3.0–v0.4.1.
 
 ### Backlog items
 
-- [x] **BK-005 — SFTP backend test coverage gaps** (v0.13.1)
+- [x] **BK-005 — SFTP backend test coverage gaps** *(unreleased)*
   Coverage improved from 90% to 100% on `_sftp.py`. 35 new tests covering
   all uncovered branches: `to_key()`, string-to-enum coercion, `_map_exception()`
   edge cases, `write_atomic()` stream paths, type guards, recursive stats,
   non-ENOENT OSError re-raises, generic exception wrapping, `_rmtree` fallbacks.
 
-- [x] **BK-006 — Memory backend test coverage gaps** (v0.14.0)
+- [x] **BK-006 — Memory backend test coverage gaps** *(unreleased)*
   Coverage improved from 90% to 100% on `_memory.py`. 30 new tests covering
   all uncovered branches: `_split_path` validation (null bytes, absolute paths,
   `..` segments), `_traverse` file-as-directory, `_ensure_parents` file conflict,
@@ -349,19 +337,26 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
 
 ### Ideas shipped
 
-- [x] **ID-002 — YAML config support** (v0.14.0)
+- [x] **ID-002 — YAML config support** *(unreleased)*
   `RegistryConfig.from_yaml(path)` — optional `pyyaml` or `ruamel.yaml`.
   Spec: `sdd/specs/021-config-loaders.md` (CFG-010/CFG-011).
 
-- [x] **ID-003 — Pydantic BaseSettings integration** (v0.14.0)
+- [x] **ID-003 — Pydantic BaseSettings integration** *(unreleased)*
   `pydantic_to_registry_config()` in `ext/pydantic.py`. Converts any Pydantic
   `BaseModel`/`BaseSettings` to `RegistryConfig` via `model_dump() → from_dict()`.
   Optional `pydantic-settings` dependency. Spec: `sdd/specs/021-config-loaders.md`
   (CFG-015, CFG-016, CFG-017).
 
-- [x] **ID-005 — Built-in `from_toml()` config loader** (v0.14.0)
+- [x] **ID-005 — Built-in `from_toml()` config loader** *(unreleased)*
   `RegistryConfig.from_toml(path, table=())` — zero-dep on 3.11+, `tomli` on 3.10.
   Spec: `sdd/specs/021-config-loaders.md` (CFG-008/CFG-009).
+
+- [x] **ID-034 — Parquet lake guide (Bronze / Silver / Gold patterns)** *(unreleased)*
+  User-facing guide (`guides/data-lake-patterns.md`) documenting Bronze/Silver/Gold
+  medallion architecture using `Store.child()` + `ext.arrow` + `ext.transfer`.
+  Covers PyArrow, Polars, DuckDB, Delta Lake integration, batch partition
+  operations, cross-backend transfer, and testing without cloud credentials.
+  Docs-src wrapper and nav entry included. PR #114.
 
 - [x] **ID-001 — Cross-store transfer** *(subsumed by ID-023 `ext.transfer`)* (v0.9.0)
   Shipped as `transfer()` in `ext.transfer`. See spec `017-ext-transfer.md`.
