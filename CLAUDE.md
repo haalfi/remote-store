@@ -29,6 +29,8 @@ hatch run typecheck         # mypy strict on src/
 hatch run all               # lint + format-check + typecheck + test-cov + examples
 ```
 
+- **Use single commands, not compound commands.** Compound commands (`&&`, `||`, `;`) cannot be auto-approved by permission patterns. Split them into separate tool calls instead. The extra round-trip cost is minor compared to blocking on a security prompt.
+
 ## Branching
 
 - **Never commit or push directly to master.** Always create a feature branch.
