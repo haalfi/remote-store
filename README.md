@@ -5,7 +5,7 @@
 <h1 align="center">remote-store</h1>
 
 <p align="center">
-  A consistent storage API for Python applications that need to work across local files, S3, SFTP, and Azure.
+  A small Python library for working with files across local storage, S3, SFTP, and Azure using the same API.
 </p>
 
 <p align="center">
@@ -21,24 +21,30 @@
 > contain breaking changes before 1.0. See the [changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
 > for what's new, and [open an issue](https://github.com/haalfi/remote-store/issues) if something breaks.
 
-Most Python projects that deal with files eventually accumulate storage glue:
-small wrappers around local paths, `boto3`, SFTP clients, and cloud-specific edge cases.
-That code is usually repetitive, hard to standardize, and expensive to replace later.
+Most Python projects that deal with files eventually grow storage glue:
+small wrappers around local paths, S3 clients, SFTP connections, and cloud SDKs.
+Those wrappers are usually duplicated across projects, slightly inconsistent,
+and painful to replace later.
 
-`remote-store` replaces those wrappers with one small, tested API:
+`remote-store` replaces them with one simple interface.
 
 > **Write storage code once. Run it against local files, S3, SFTP, or Azure.**
 
-The same `store.read()` / `store.write()` calls work everywhere.
-Change where files live by changing config, not application code.
-Native SDKs (`boto3`, `paramiko`, `azure-storage-file-datalake`) do the real work underneath.
+```python
+store.write("reports/result.csv", data)
+data = store.read_bytes("reports/result.csv")
+```
+
+Where files live is configuration, not application code.
+Under the hood, established Python libraries (`s3fs`, `paramiko`,
+`azure-storage-file-datalake`) still do the work.
 
 ### Who this is for
 
-- **Citizen developers** -- analysts and domain experts who write Python but shouldn't need to learn `boto3`, `paramiko`, or cloud-specific SDKs just to read and write files
-- **Platform and internal tooling teams** that need one storage interface across environments
-- **Data engineering teams** building pipelines that must run against multiple backends
-- **Teams tired of maintaining custom storage wrappers** -- if you've wrapped S3 or SFTP more than once, this is that wrapper, tested and maintained
+- **Platform and internal tooling teams** -- provide one stable storage interface across environments
+- **Data engineering teams** -- pipelines that run against local storage, S3, or SFTP depending on the environment
+- **Teams that include citizen developers** -- analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files
+- **Anyone tired of rewriting storage wrappers**
 
 ## What you get
 
@@ -46,10 +52,10 @@ Native SDKs (`boto3`, `paramiko`, `azure-storage-file-datalake`) do the real wor
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
 - **Atomic writes where supported:** safer updates for file-producing workflows
-- **Native SDKs underneath:** `boto3`, `paramiko`, etc. do the real work
+- **Established libraries underneath:** `s3fs`, `paramiko`, etc. do the real work
 - **Zero runtime dependencies:** backend extras pull in only what they need
 - **Typed and tested:** strict mypy, spec-driven test suite
-- **Optional PyArrow integration:** use any Store as a `pyarrow.fs.FileSystem` for Parquet, Pandas, Polars, DuckDB
+- **Optional integrations:** PyArrow filesystem adapter, OpenTelemetry tracing and metrics
 
 ## Installation
 
@@ -80,6 +86,20 @@ pip install "remote-store[pydantic]"     # Pydantic config (pydantic-settings)
 
 ## Quick Start
 
+The simplest way to use `remote-store`:
+
+```python
+from remote_store import Store
+from remote_store.backends import LocalBackend
+
+store = Store(LocalBackend(root="/tmp/data"))
+store.write("hello.txt", b"Hello, world!")
+print(store.read_bytes("hello.txt"))  # b'Hello, world!'
+```
+
+For applications that manage multiple backends or switch between environments,
+use a Registry with declarative config:
+
 ```python
 from remote_store import Registry, RegistryConfig
 
@@ -90,7 +110,6 @@ config = RegistryConfig.from_dict({
 
 with Registry(config) as registry:
     store = registry.get_store("data")
-
     store.write("hello.txt", b"Hello, world!")
     print(store.read_bytes("hello.txt"))  # b'Hello, world!'
 ```
