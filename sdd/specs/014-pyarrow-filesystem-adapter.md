@@ -159,16 +159,17 @@ StoreFileSystemHandler(
 
 **Postconditions:**
 - The handler holds a reference to the Store; it does not copy or wrap it.
-- **Phase 2 (deferred):** At construction time, the handler probes the Store
-  for a native PyArrow filesystem via `store.unwrap(pyarrow.fs.FileSystem)`.
-  If a native FS is available, the handler caches both the native FS reference
-  and a path-translation closure for Tier 1 fast-path reads (PA-010). If
-  `unwrap()` raises `TypeError` or returns a non-PyArrow type, Tier 1 is
-  disabled. This pre-capture means Tier 1 never accesses private Store
-  internals at call time. Phase 1 skips this probing — Tier 1 is not yet
-  implemented.
-- No I/O occurs during construction (Phase 1). Phase 2 adds the `unwrap()`
-  probe, which may trigger backend initialization.
+- At construction time, the handler probes the Store for a native PyArrow
+  filesystem via `store.unwrap(pyarrow.fs.FileSystem)`. If a native FS is
+  available and is a `pyarrow.fs.FileSystem` instance, the handler caches
+  both the native FS reference and `store.native_path` as the path-translation
+  function for Tier 1 fast-path reads (PA-010). If `unwrap()` or native FS
+  initialization raises any exception, Tier 1 is disabled and the handler
+  falls through to Tier 2/3. The broad catch ensures that constructor-time
+  probing never propagates backend/client errors to the caller.
+- Construction is side-effect-free when the backend does not support
+  `unwrap()`. For backends that do (e.g., S3PyArrowBackend), probing may
+  trigger lazy client initialization, but failures are suppressed.
 - The Store's lifetime is managed externally — the handler does not own it.
 
 ### PA-002: Convenience Factory
@@ -342,27 +343,30 @@ instead of going through the Store abstraction:
 # At construction time (PA-001):
 try:
     native_fs = store.unwrap(pyarrow.fs.FileSystem)
-    # Pre-build path translator: store-relative key → native FS path
-    self._native_fs = native_fs
-    self._native_path = store.native_path  # returns backend-absolute path
-except TypeError:
-    self._native_fs = None
+    if isinstance(native_fs, pyarrow.fs.FileSystem):
+        self._native_fs = native_fs
+        self._native_path_fn = store.native_path
+except Exception:
+    pass  # Tier 1 disabled — fall through to Tier 2/3
 
 # At read time:
 def open_input_file(self, path):
     if self._native_fs is not None:
-        return self._native_fs.open_input_file(self._native_path(path))
+        return self._native_fs.open_input_file(self._native_path_fn(path))
     # ... fall through to Tier 2/3
 ```
 
 **Encapsulation:** Tier 1 uses only public Store APIs — `store.unwrap()` for
-the native filesystem handle and `store.native_path()` for path translation.
-It never accesses `store._backend` or other private attributes. The
-`store.unwrap(type_hint)` method delegates to `backend.unwrap()` through the
-Store's public surface; `store.native_path(key)` converts a store-relative
-key to the full backend-native path (prepending `root_path` and any
-backend-specific prefix). Both methods are proposed additions to the Store
-public API (spec 001 amendment, tracked separately).
+the native filesystem handle and `store.native_path()` for path translation
+(STORE-015). It never accesses `store._backend` or other private attributes.
+Both the native FS reference and the `store.native_path` bound method are
+captured at construction time (see pseudocode above) and reused at read time
+for performance. This is safe because Store is effectively immutable after
+construction — it has no public API to change `_root` or `_backend`.
+`store.unwrap(type_hint)` delegates to `backend.unwrap()` through the Store's
+public surface; `store.native_path(key)` converts a store-relative key to the
+full backend-native path (prepending `root_path` and any backend-specific
+prefix).
 
 **Path conversion:** Store-relative paths (e.g., `'file.parquet'`) cannot be
 passed directly to the native filesystem — they lack the `root_path` prefix

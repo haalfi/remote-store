@@ -204,6 +204,13 @@ class SFTPBackend(Backend):
             return ""
         return native_path
 
+    def native_path(self, path: str) -> str:
+        if path:
+            if self._base_path == "/":
+                return f"/{path}"
+            return f"{self._base_path}/{path}"
+        return self._base_path
+
     def exists(self, path: str) -> bool:
         with self._errors(path):
             try:

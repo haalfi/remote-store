@@ -88,6 +88,11 @@ class S3Backend(Backend):
             return native_path[len(prefix) :]
         return native_path
 
+    def native_path(self, path: str) -> str:
+        if path:
+            return f"{self._bucket}/{path}"
+        return self._bucket
+
     def exists(self, path: str) -> bool:
         with self._errors(path):
             return bool(self._fs.exists(self._s3_path(path)))

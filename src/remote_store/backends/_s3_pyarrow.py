@@ -157,6 +157,9 @@ class S3PyArrowBackend(Backend):
             return native_path[len(prefix) :]
         return native_path
 
+    def native_path(self, path: str) -> str:
+        return self._pa_path(path)
+
     def exists(self, path: str) -> bool:
         with self._s3fs_errors(path):
             return bool(self._s3fs.exists(self._s3_path(path)))
@@ -355,15 +358,16 @@ class S3PyArrowBackend(Backend):
 
     def unwrap(self, type_hint: type[T]) -> T:
         import s3fs  # type: ignore[import-untyped]
-        from pyarrow.fs import S3FileSystem as PyArrowS3  # type: ignore[import-untyped]
+        from pyarrow.fs import FileSystem as PyArrowFS  # type: ignore[import-untyped]
+        from pyarrow.fs import S3FileSystem as PyArrowS3
 
-        if type_hint is PyArrowS3:
+        if type_hint is PyArrowS3 or type_hint is PyArrowFS:
             return self._pa_fs  # type: ignore[no-any-return]
         if type_hint is s3fs.S3FileSystem:
             return self._s3fs  # type: ignore[no-any-return]
         raise CapabilityNotSupported(
             f"Backend 's3-pyarrow' does not expose native handle of type {type_hint.__name__}. "
-            f"Supported: pyarrow.fs.S3FileSystem, s3fs.S3FileSystem.",
+            f"Supported: pyarrow.fs.FileSystem, pyarrow.fs.S3FileSystem, s3fs.S3FileSystem.",
             capability="unwrap",
             backend=self.name,
         )
@@ -443,7 +447,7 @@ class S3PyArrowBackend(Backend):
         """Build bucket/key path for PyArrow."""
         if path:
             return f"{self._bucket}/{path}"
-        return self._bucket  # pragma: no cover -- tests always provide a path
+        return self._bucket
 
     @contextmanager
     def _s3fs_errors(self, path: str = "") -> Iterator[None]:

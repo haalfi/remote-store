@@ -459,3 +459,19 @@ class TestBackendUnwrap:
     def test_unwrap_raises_by_default(self, backend: Backend) -> None:
         with pytest.raises(CapabilityNotSupported):
             backend.unwrap(str)
+
+
+class TestBackendNativePath:
+    """BE-025: native_path() default is identity."""
+
+    @pytest.mark.spec("BE-025")
+    def test_native_path_round_trip(self, backend: Backend) -> None:
+        """native_path is the inverse of to_key (NPR-020)."""
+        key = "some/key"
+        assert backend.to_key(backend.native_path(key)) == key
+
+    @pytest.mark.spec("BE-025")
+    def test_native_path_empty_returns_root(self, backend: Backend) -> None:
+        """native_path('') returns the backend's root (NPR-021)."""
+        result = backend.native_path("")
+        assert isinstance(result, str)

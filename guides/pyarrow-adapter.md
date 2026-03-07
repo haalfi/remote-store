@@ -95,12 +95,16 @@ fs = pyarrow_fs(
 
 | Condition | Strategy | Memory | Notes |
 |-----------|----------|--------|-------|
+| Backend has native PyArrow FS | **Tier 1**: native `open_input_file` | ~range size | Zero overhead, C++ range requests |
 | File <= threshold | **Tier 2**: `read_bytes()` -> `BufferReader` | Full file | Zero GIL overhead |
 | File > threshold, seekable stream | **Tier 3**: `read()` -> `PythonFile` | Streaming | GIL per read call |
 | File > threshold, non-seekable | **Tier 2 fallback** (with warning) | Full file | S3/Azure HTTP streams |
 
-A future Phase 2 will add **Tier 1** (backend-native fast path) for backends
-like S3-PyArrow that expose a native `pyarrow.fs.FileSystem` via `unwrap()`.
+**Tier 1** is automatically enabled for backends that expose a native PyArrow
+filesystem via `unwrap()` (currently `S3PyArrowBackend`). The handler detects
+this at construction time and bypasses Python I/O entirely for reads -- the full
+C++ `ReadAt` -> HTTP Range request -> I/O coalescing pipeline runs with zero GIL
+overhead.
 
 ## Thread Safety
 
@@ -119,8 +123,8 @@ thread-safe.
 - **Write buffering.** Writes are buffered until `close()` -- data is not
   visible in the Store during the write. This is inherent to the Store's
   single-shot `write()` API.
-- **No Tier 1 fast path yet.** Phase 1 uses Tier 2/3 for all backends.
-  Phase 2 will add Tier 1 for backends with native PyArrow support.
+- **Tier 1 only for S3-PyArrow.** Currently only `S3PyArrowBackend` exposes
+  a native PyArrow filesystem. Other backends use Tier 2/3.
 - **Process exit on Linux.** PyArrow's C++ atexit handlers can deadlock
   during interpreter shutdown when a `PyFileSystem` is still alive. If your
   script hangs after completing, explicitly `del` the PyArrow filesystem and
