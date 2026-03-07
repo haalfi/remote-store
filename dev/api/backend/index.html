@@ -1204,6 +1204,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.Backend.native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        native_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.Backend.close" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3468,6 +3479,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.Backend.native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        native_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.Backend.close" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4395,6 +4417,82 @@ root (filesystem path, bucket prefix, base_path) override this.</p>
             <td>
               <div class="doc-md-description">
                 <p>Path relative to the backend's root.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.Backend.native_path" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">native_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+<a href="#remote_store.Backend.native_path" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Convert a backend-relative key to the backend-native path.</p>
+<p>The inverse of :meth:<code>to_key</code>. The default implementation is the
+identity function — backends with a native root (bucket, base_path)
+override this to prepend their prefix.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Backend-relative key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Backend-native path usable with the native handle from
+:meth:<code>unwrap</code>.</p>
               </div>
             </td>
           </tr>

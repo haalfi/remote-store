@@ -2368,6 +2368,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#inverse-native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inverse: native_path
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Inverse: native_path">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#npr-020-backendnative_path-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NPR-020: Backend.native_path Method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npr-021-backendnative_path-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NPR-021: Backend.native_path Contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npr-022-storenative_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NPR-022: Store.native_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3608,6 +3658,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#inverse-native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inverse: native_path
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Inverse: native_path">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#npr-020-backendnative_path-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NPR-020: Backend.native_path Method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npr-021-backendnative_path-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NPR-021: Backend.native_path Contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npr-022-storenative_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NPR-022: Store.native_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3801,6 +3901,30 @@ identically to the current system for forward operations (rel→abs via
 <code>_full_path</code>). The listing round-trip fix is a <strong>bug fix</strong>, not a behavioral
 change — current behavior (leaking <code>root_path</code> in returned paths) is incorrect
 per NPR-001.</p>
+<hr />
+<h2 id="inverse-native_path">Inverse: <code>native_path</code><a class="headerlink" href="#inverse-native_path" title="Permanent link">&para;</a></h2>
+<h3 id="npr-020-backendnative_path-method">NPR-020: Backend.native_path Method<a class="headerlink" href="#npr-020-backendnative_path-method" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> The Backend ABC gains a concrete (non-abstract) method:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">native_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a backend-relative key to the backend-native path.&quot;&quot;&quot;</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="k">return</span> <span class="n">path</span>  <span class="c1"># default: identity</span>
+</code></pre></div>
+<strong>Postconditions:</strong> The default is the identity function. Backends with a native
+root (bucket, base_path, filesystem root) <strong>must</strong> override to prepend their
+prefix. This is the inverse of <code>to_key</code>:
+<code>backend.to_key(backend.native_path(key)) == key</code> for all valid keys.
+<strong>Overrides:</strong> <code>LocalBackend</code> (prepends root dir), <code>S3Backend</code> (prepends bucket),
+<code>S3PyArrowBackend</code> (prepends bucket), <code>SFTPBackend</code> (prepends base_path),
+<code>AzureBackend</code> (prepends container). <code>MemoryBackend</code> inherits the identity default.</p>
+<h3 id="npr-021-backendnative_path-contract">NPR-021: Backend.native_path Contract<a class="headerlink" href="#npr-021-backendnative_path-contract" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Same as NPR-004 (<code>to_key</code>): deterministic, pure, total. If the
+key is empty, returns the backend's root (e.g., <code>"my-bucket"</code> for S3).</p>
+<h3 id="npr-022-storenative_path">NPR-022: Store.native_path<a class="headerlink" href="#npr-022-storenative_path" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>Store.native_path(key)</code> composes store root-path prefixing with
+<code>Backend.native_path()</code>. The result is usable with the native handle from
+<code>Store.unwrap()</code>.
+<strong>See also:</strong> <a href="../001-store-api/">001-store-api.md</a> (STORE-015),
+<a href="../014-pyarrow-filesystem-adapter/">014-pyarrow-filesystem-adapter.md</a> (PA-010 Tier 1).</p>
 
 
 

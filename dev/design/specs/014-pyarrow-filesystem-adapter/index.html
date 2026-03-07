@@ -4488,16 +4488,17 @@ and optional tuning parameters.</p>
   <code>_StoreSink</code> before spilling to disk. See PA-011 / PA-016.</p>
 <p><strong>Postconditions:</strong>
 - The handler holds a reference to the Store; it does not copy or wrap it.
-- <strong>Phase 2 (deferred):</strong> At construction time, the handler probes the Store
-  for a native PyArrow filesystem via <code>store.unwrap(pyarrow.fs.FileSystem)</code>.
-  If a native FS is available, the handler caches both the native FS reference
-  and a path-translation closure for Tier 1 fast-path reads (PA-010). If
-  <code>unwrap()</code> raises <code>TypeError</code> or returns a non-PyArrow type, Tier 1 is
-  disabled. This pre-capture means Tier 1 never accesses private Store
-  internals at call time. Phase 1 skips this probing — Tier 1 is not yet
-  implemented.
-- No I/O occurs during construction (Phase 1). Phase 2 adds the <code>unwrap()</code>
-  probe, which may trigger backend initialization.
+- At construction time, the handler probes the Store for a native PyArrow
+  filesystem via <code>store.unwrap(pyarrow.fs.FileSystem)</code>. If a native FS is
+  available and is a <code>pyarrow.fs.FileSystem</code> instance, the handler caches
+  both the native FS reference and <code>store.native_path</code> as the path-translation
+  function for Tier 1 fast-path reads (PA-010). If <code>unwrap()</code> or native FS
+  initialization raises any exception, Tier 1 is disabled and the handler
+  falls through to Tier 2/3. The broad catch ensures that constructor-time
+  probing never propagates backend/client errors to the caller.
+- Construction is side-effect-free when the backend does not support
+  <code>unwrap()</code>. For backends that do (e.g., S3PyArrowBackend), probing may
+  trigger lazy client initialization, but failures are suppressed.
 - The Store's lifetime is managed externally — the handler does not own it.</p>
 <h3 id="pa-002-convenience-factory">PA-002: Convenience Factory<a class="headerlink" href="#pa-002-convenience-factory" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> A module-level <code>pyarrow_fs(store)</code> factory creates a ready-to-use
@@ -4638,26 +4639,29 @@ instead of going through the Store abstraction:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># At construction time (PA-001):</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">try</span><span class="p">:</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">native_fs</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">FileSystem</span><span class="p">)</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="c1"># Pre-build path translator: store-relative key → native FS path</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_native_fs</span> <span class="o">=</span> <span class="n">native_fs</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_native_path</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">native_path</span>  <span class="c1"># returns backend-absolute path</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_native_fs</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">native_fs</span><span class="p">,</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">FileSystem</span><span class="p">):</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_native_fs</span> <span class="o">=</span> <span class="n">native_fs</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_native_path_fn</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">native_path</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="k">pass</span>  <span class="c1"># Tier 1 disabled — fall through to Tier 2/3</span>
 <a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
 <a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># At read time:</span>
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">open_input_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_native_fs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_native_fs</span><span class="o">.</span><span class="n">open_input_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_native_path</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_native_fs</span><span class="o">.</span><span class="n">open_input_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_native_path_fn</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
 <a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="c1"># ... fall through to Tier 2/3</span>
 </code></pre></div>
 <p><strong>Encapsulation:</strong> Tier 1 uses only public Store APIs — <code>store.unwrap()</code> for
-the native filesystem handle and <code>store.native_path()</code> for path translation.
-It never accesses <code>store._backend</code> or other private attributes. The
-<code>store.unwrap(type_hint)</code> method delegates to <code>backend.unwrap()</code> through the
-Store's public surface; <code>store.native_path(key)</code> converts a store-relative
-key to the full backend-native path (prepending <code>root_path</code> and any
-backend-specific prefix). Both methods are proposed additions to the Store
-public API (spec 001 amendment, tracked separately).</p>
+the native filesystem handle and <code>store.native_path()</code> for path translation
+(STORE-015). It never accesses <code>store._backend</code> or other private attributes.
+Both the native FS reference and the <code>store.native_path</code> bound method are
+captured at construction time (see pseudocode above) and reused at read time
+for performance. This is safe because Store is effectively immutable after
+construction — it has no public API to change <code>_root</code> or <code>_backend</code>.
+<code>store.unwrap(type_hint)</code> delegates to <code>backend.unwrap()</code> through the Store's
+public surface; <code>store.native_path(key)</code> converts a store-relative key to the
+full backend-native path (prepending <code>root_path</code> and any backend-specific
+prefix).</p>
 <p><strong>Path conversion:</strong> Store-relative paths (e.g., <code>'file.parquet'</code>) cannot be
 passed directly to the native filesystem — they lack the <code>root_path</code> prefix
 and backend-specific path components (bucket, base path, etc.).

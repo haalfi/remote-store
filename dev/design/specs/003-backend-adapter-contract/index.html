@@ -2227,6 +2227,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#be-025-native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BE-025: native_path()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#be-024-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3733,6 +3744,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#be-025-native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BE-025: native_path()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#be-024-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3858,6 +3880,12 @@
 <p><strong>Invariant:</strong> <code>to_key(native_path)</code> converts a backend-native or absolute path to a backend-relative key by stripping the backend's own root/prefix. The default implementation is the identity function.
 <strong>Postconditions:</strong> Pure, deterministic, total (never raises). If the input path does not start with the backend's root, it is returned unchanged.
 <strong>See also:</strong> <a href="../010-native-path-resolution/">010-native-path-resolution.md</a> (NPR-003 through NPR-009), <a href="../../adrs/0005-native-path-resolution/">ADR-0005</a>.</p>
+<h3 id="be-025-native_path">BE-025: native_path()<a class="headerlink" href="#be-025-native_path" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>native_path(path)</code> converts a backend-relative key to the backend-native path. The inverse of <code>to_key()</code>: <code>backend.to_key(backend.native_path(key)) == key</code>. The default implementation is the identity function — backends with a native root <strong>must</strong> override.
+<strong>Postconditions:</strong> Pure, deterministic, total (never raises). The returned path is usable with the native handle from <code>unwrap()</code>.
+<strong>Overrides:</strong> <code>LocalBackend</code> (prepends root dir), <code>S3Backend</code> (prepends bucket), <code>S3PyArrowBackend</code> (prepends bucket), <code>SFTPBackend</code> (prepends base_path), <code>AzureBackend</code> (prepends container).
+<strong>Example:</strong> <code>S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")</code> returns <code>"lake/data/file.parquet"</code>.
+<strong>See also:</strong> <a href="../001-store-api/">001-store-api.md</a> (STORE-015), <a href="../014-pyarrow-filesystem-adapter/">014-pyarrow-filesystem-adapter.md</a> (PA-010 Tier 1).</p>
 <h3 id="be-024-glob">BE-024: glob()<a class="headerlink" href="#be-024-glob" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>glob(pattern)</code> matches files against a glob pattern. Non-abstract — the default implementation raises <code>CapabilityNotSupported</code>. Backends with native glob support override this and declare <code>Capability.GLOB</code>.
 <strong>Postconditions:</strong> Returns only files (not folders). Paths in returned <code>FileInfo</code> objects are backend-relative (same convention as <code>list_files</code>).

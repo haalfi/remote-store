@@ -3335,6 +3335,12 @@ with any backend -- no extra configuration needed.</p>
 </thead>
 <tbody>
 <tr>
+<td>Backend has native PyArrow FS</td>
+<td><strong>Tier 1</strong>: native <code>open_input_file</code></td>
+<td>~range size</td>
+<td>Zero overhead, C++ range requests</td>
+</tr>
+<tr>
 <td>File &lt;= threshold</td>
 <td><strong>Tier 2</strong>: <code>read_bytes()</code> -&gt; <code>BufferReader</code></td>
 <td>Full file</td>
@@ -3354,8 +3360,11 @@ with any backend -- no extra configuration needed.</p>
 </tr>
 </tbody>
 </table>
-<p>A future Phase 2 will add <strong>Tier 1</strong> (backend-native fast path) for backends
-like S3-PyArrow that expose a native <code>pyarrow.fs.FileSystem</code> via <code>unwrap()</code>.</p>
+<p><strong>Tier 1</strong> is automatically enabled for backends that expose a native PyArrow
+filesystem via <code>unwrap()</code> (currently <code>S3PyArrowBackend</code>). The handler detects
+this at construction time and bypasses Python I/O entirely for reads -- the full
+C++ <code>ReadAt</code> -&gt; HTTP Range request -&gt; I/O coalescing pipeline runs with zero GIL
+overhead.</p>
 <h2 id="thread-safety">Thread Safety<a class="headerlink" href="#thread-safety" title="Permanent link">&para;</a></h2>
 <p>The handler holds no shared mutable state. PyArrow's C++ layer may call handler
 methods from background threads (with the GIL acquired). Thread safety depends
@@ -3371,8 +3380,8 @@ thread-safe.</p>
 <li><strong>Write buffering.</strong> Writes are buffered until <code>close()</code> -- data is not
   visible in the Store during the write. This is inherent to the Store's
   single-shot <code>write()</code> API.</li>
-<li><strong>No Tier 1 fast path yet.</strong> Phase 1 uses Tier 2/3 for all backends.
-  Phase 2 will add Tier 1 for backends with native PyArrow support.</li>
+<li><strong>Tier 1 only for S3-PyArrow.</strong> Currently only <code>S3PyArrowBackend</code> exposes
+  a native PyArrow filesystem. Other backends use Tier 2/3.</li>
 <li><strong>Process exit on Linux.</strong> PyArrow's C++ atexit handlers can deadlock
   during interpreter shutdown when a <code>PyFileSystem</code> is still alive. If your
   script hangs after completing, explicitly <code>del</code> the PyArrow filesystem and

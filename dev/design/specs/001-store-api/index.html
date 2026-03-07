@@ -1989,6 +1989,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#store-015-native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        STORE-015: native_path()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#store-014-list_filespattern" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3463,6 +3474,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#store-015-native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        STORE-015: native_path()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#store-014-list_filespattern" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3609,7 +3631,7 @@
 <h3 id="store-007-thread-safety">STORE-007: Thread Safety<a class="headerlink" href="#store-007-thread-safety" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Store is immutable and safe to share across threads.</p>
 <h3 id="store-008-full-api-surface">STORE-008: Full API Surface<a class="headerlink" href="#store-008-full-api-surface" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Store exposes: <code>read</code>, <code>read_bytes</code>, <code>write</code>, <code>write_atomic</code>, <code>delete</code>, <code>delete_folder</code>, <code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>, <code>get_file_info</code>, <code>get_folder_info</code>, <code>move</code>, <code>copy</code>, <code>close</code>, <code>supports</code>, <code>to_key</code>, <code>unwrap</code>, <code>child</code>.</p>
+<p><strong>Invariant:</strong> Store exposes: <code>read</code>, <code>read_bytes</code>, <code>write</code>, <code>write_atomic</code>, <code>delete</code>, <code>delete_folder</code>, <code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>, <code>get_file_info</code>, <code>get_folder_info</code>, <code>move</code>, <code>copy</code>, <code>close</code>, <code>supports</code>, <code>to_key</code>, <code>native_path</code>, <code>unwrap</code>, <code>child</code>.</p>
 <h3 id="store-008a-same-path-move-and-copy">STORE-008a: Same-Path Move and Copy<a class="headerlink" href="#store-008a-same-path-move-and-copy" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move(src, dst)</code> or <code>copy(src, dst)</code> where <code>src</code> and <code>dst</code> resolve to the same path is a no-op (the file is not modified, copied, or deleted). The source must be an existing file (verified via <code>is_file()</code>); otherwise <code>NotFound</code> is raised even for same-path calls.</p>
 <h3 id="store-009-resource-management">STORE-009: Resource Management<a class="headerlink" href="#store-009-resource-management" title="Permanent link">&para;</a></h3>
@@ -3628,6 +3650,11 @@
 <p><strong>Invariant:</strong> <code>unwrap(type_hint)</code> delegates to <code>Backend.unwrap(type_hint)</code> and returns the backend's native handle if it matches the requested type.
 <strong>Raises:</strong> <code>CapabilityNotSupported</code> if the backend cannot provide the requested type.
 <strong>Rationale:</strong> Enables adapters (e.g., <code>StoreFileSystemHandler</code>) to access backend-native handles via the public Store surface without reaching into private attributes.</p>
+<h3 id="store-015-native_path">STORE-015: native_path()<a class="headerlink" href="#store-015-native_path" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>native_path(key)</code> converts a store-relative key to the backend-native path. Composes store root-path prefixing with <code>Backend.native_path()</code> (adds backend-specific prefix such as bucket name).
+<strong>Postconditions:</strong> The returned path is usable with the native handle from <code>unwrap()</code>. This is the inverse of <code>to_key()</code>.
+<strong>Example:</strong> <code>Store(backend=s3_pyarrow, root_path="data").native_path("file.parquet")</code> returns <code>"my-bucket/data/file.parquet"</code>.
+<strong>See also:</strong> <a href="../010-native-path-resolution/">010-native-path-resolution.md</a>, <a href="../014-pyarrow-filesystem-adapter/">014-pyarrow-filesystem-adapter.md</a> (PA-010 Tier 1).</p>
 <h3 id="store-014-list_filespattern">STORE-014: list_files(pattern=…)<a class="headerlink" href="#store-014-list_filespattern" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>list_files(path, *, recursive=False, pattern=None)</code> accepts an optional <code>pattern</code> keyword. When set, files whose name does not match the pattern (via <code>fnmatch.fnmatch</code>) are excluded from results. Filtering is applied at the Store level after path rebasing.
 <strong>Rationale:</strong> Covers the common "give me the CSVs" use case without new capabilities or extensions.

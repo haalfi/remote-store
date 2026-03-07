@@ -3388,10 +3388,12 @@ via the PyArrow adapter.</p>
   remote-store's <code>BackendConfig</code> takes explicit credentials. On Databricks,
   you would either pass credentials explicitly or use the native DBFS/ABFSS
   paths directly and skip the abstraction.</li>
-<li><strong>No GIL-free fast path yet.</strong> The PyArrow adapter currently uses Tier 2/3
-  reads (Python I/O). For large Parquet workloads where GIL contention in
-  <code>PythonFile</code> limits throughput, Phase 2 (ID-037) will add Tier 1 native
-  fast-path reads.</li>
+<li><strong>GIL-free fast path for native backends.</strong> When the backend exposes a native
+  PyArrow filesystem (e.g., <code>S3PyArrowBackend</code>), the adapter uses Tier 1
+  fast-path reads that bypass Python I/O entirely — full C++ range requests
+  with I/O coalescing and zero GIL overhead. Backends without native PyArrow
+  support fall back to Tier 2 (full-file materialization) or Tier 3
+  (PythonFile streaming).</li>
 </ul>
 <p>The bridge metaphor works best with a clear boundary: <strong>remote-store owns
 portable, testable, observable storage I/O. Everything above the storage
