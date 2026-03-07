@@ -3249,6 +3249,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-22-config-loaders-and-consolidation-post-v0130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 22: Config Loaders and Consolidation (post-v0.13.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3813,6 +3824,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-22-config-loaders-and-consolidation-post-v0130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 22: Config Loaders and Consolidation (post-v0.13.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4093,7 +4115,7 @@
 </tr>
 <tr>
 <td>Tests</td>
-<td>1,304 tests, ~10,800 lines</td>
+<td>~1,430 tests, ~11,300 lines</td>
 </tr>
 <tr>
 <td>Specs &amp; docs</td>
@@ -4121,7 +4143,7 @@
 </tr>
 <tr>
 <td>Commits</td>
-<td>269</td>
+<td>289</td>
 </tr>
 </tbody>
 </table>
@@ -4473,6 +4495,13 @@
 </ul>
 <p>The <code>Secret</code> wrapper emerged from the config loaders research (Phase 20). While mapping out how TOML/YAML config values flow into backend constructors, the research identified that credential strings were stored and logged in plain text throughout the library. Rather than waiting for config loaders to ship, the credential hygiene layer was extracted as a standalone improvement -- a case of research producing immediate value before its primary deliverable.</p>
 <p>The release also fixed BUG-001 (<code>get_folder_info("")</code> crashing for root folders) and added intrinsic stdlib logging to all modules (ID-004), completing the three-layer observability stack: Layer 1 (stdlib logging), Layer 2 (<code>ext.observe</code> callbacks), Layer 3 (<code>ext.otel</code> OpenTelemetry).</p>
+<h3 id="phase-22-config-loaders-and-consolidation-post-v0130">Phase 22: Config Loaders and Consolidation (post-v0.13.0)<a class="headerlink" href="#phase-22-config-loaders-and-consolidation-post-v0130" title="Permanent link">&para;</a></h3>
+<p>Phase 20's research document finally paid off. Three config loaders shipped in a single PR: <code>RegistryConfig.from_toml()</code> (zero-dep on 3.11+, <code>tomli</code> backport for 3.10), <code>RegistryConfig.from_yaml()</code> (pyyaml or ruamel.yaml), and <code>pydantic_to_registry_config()</code> in the new <code>ext/pydantic.py</code> module. The research had mapped every design decision in advance -- format precedence, library fallback chains, <code>SecretStr</code> interaction, unknown-key detection -- so implementation was a matter of following the blueprint. <code>from_dict()</code> also gained a <code>UserWarning</code> for unrecognized top-level keys like <code>"backend"</code> (typo for <code>"backends"</code>), a gap the Phase 20 adversarial review had flagged.</p>
+<p>Alongside the loaders, three "Tier 1" fixes addressed foot-guns the research had surfaced: <code>Registry.get_store()</code> no longer owns the shared backend (ID-041), <code>move()</code>/<code>copy()</code> short-circuit when <code>src == dst</code> (ID-040), and <code>_stacklevel</code> was removed from the public <code>from_dict()</code> signature (ID-043). The last one was a strict application of a project rule: no private parameters on public APIs, ever.</p>
+<p><strong>The consolidation work was as significant as the features.</strong> Both SFTP and Memory backends reached 100% test coverage (BK-005, BK-006) -- 65 new tests covering every uncovered branch. The slim-tests effort (PR #116) then went the other direction: collapsing verbose test functions into <code>@pytest.mark.parametrize</code> tables and extracting a shared <code>RestrictedBackend</code> fixture into <code>conftest.py</code>, saving ~940 lines while preserving every test case. This was lesson #15 in practice -- write tests verbosely, then compress once patterns emerge.</p>
+<p>A design-compliance audit (AF-016 through AF-021) swept the codebase for spec drift: glob capabilities missing from three backend specs, method ordering violations in <code>_store.py</code> and all six backends, an unlinked TODO in <code>ext/arrow.py</code>. These were individually minor but collectively represented the kind of slow rot that compounds across releases.</p>
+<p>Three more research documents were added to the <code>sdd/research/</code> collection: unified retry policy (ID-010), v1 communication strategy, and example testing patterns across language ecosystems. The research-first pattern from Phase 20 was becoming habitual -- map the space on paper before committing to implementation.</p>
+<p>The data lake patterns guide (ID-034) demonstrated that existing features could combine into something greater than the sum of their parts. <code>Store.child()</code> + <code>ext.arrow</code> + <code>ext.transfer</code> already supported Bronze/Silver/Gold medallion architectures -- the guide just documented the patterns. No new code was needed; the API surface was already sufficient.</p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
