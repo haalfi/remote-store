@@ -30,11 +30,6 @@ and painful to replace later.
 
 > **Write storage code once. Run it against local files, S3, SFTP, or Azure.**
 
-```python
-store.write("reports/result.csv", data)
-data = store.read_bytes("reports/result.csv")
-```
-
 Where files live is configuration, not application code.
 Under the hood, established Python libraries (`s3fs`, `paramiko`,
 `azure-storage-file-datalake`) still do the work.
@@ -86,7 +81,7 @@ pip install "remote-store[pydantic]"     # Pydantic config (pydantic-settings)
 
 ## Quick Start
 
-The simplest way to use `remote-store`:
+The simplest way to use `remote-store` ([`examples/quickstart.py`](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py)):
 
 ```python
 from remote_store import Store
@@ -269,7 +264,7 @@ Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/ma
 
 | Script | What it shows |
 |--------|---------------|
-| [quickstart.py](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py) | Minimal config, write, read |
+| [quickstart.py](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py) | Direct construction and Registry config |
 | [file_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/file_operations.py) | Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key |
 | [streaming_io.py](https://github.com/haalfi/remote-store/blob/master/examples/streaming_io.py) | Streaming writes and reads with `BytesIO` |
 | [atomic_writes.py](https://github.com/haalfi/remote-store/blob/master/examples/atomic_writes.py) | Atomic writes and overwrite semantics |
