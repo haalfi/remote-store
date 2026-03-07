@@ -108,6 +108,15 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Done: refactored all 14 examples, created 14 test classes in `test_examples.py`.
   Remaining: branch `claude/review-example-tests-GiVnG` not yet merged.
 
+- [ ] **ID-046 — Audit version-conditional imports for mypy coverage**
+  `tomllib` (stdlib 3.11+) was missing a mypy override, caught only by
+  `publish.yml` (which runs mypy on 3.10) not `ci.yml` (which ran mypy only
+  on 3.13). Fixed for `tomllib` but need a sweep of all `try: import X /
+  except: import Y` patterns and version-gated stdlib modules to ensure
+  each has a `[[tool.mypy.overrides]]` entry. Candidates: `tomllib`,
+  `tomli`, `ruamel.yaml`, `pydantic_settings`, any future 3.12+/3.13+
+  stdlib additions.
+
 - [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
   Four specs have no dedicated example coverage:
   • **003 — Backend adapter contract**: capability system (`CapabilitySet`,
