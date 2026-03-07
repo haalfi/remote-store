@@ -250,6 +250,10 @@ class ObservedStore(Store):
         with self._observe_op("unwrap", "", {"type_hint": str(type_hint)}):
             return self._inner.unwrap(type_hint)
 
+    def native_path(self, key: str) -> str:
+        with self._observe_op("native_path", key, {}):
+            return self._inner.native_path(key)
+
     def supports(self, capability: Capability) -> bool:
         with self._observe_op("supports", "", {"capability": capability.name}):
             return self._inner.supports(capability)

@@ -91,6 +91,17 @@ class Store:
         """
         return self._backend.unwrap(type_hint)
 
+    def native_path(self, key: str) -> str:
+        """Convert a store-relative key to the backend-native path.
+
+        Composes store root-path prefixing with :meth:`Backend.native_path`.
+        The result is usable with the native handle returned by :meth:`unwrap`.
+
+        :param key: Store-relative key (e.g., ``"file.parquet"``).
+        :returns: Backend-native path (e.g., ``"my-bucket/root/file.parquet"``).
+        """
+        return self._backend.native_path(self._full_path(key))
+
     def supports(self, capability: Capability) -> bool:
         """Check whether the backend supports a capability."""
         return self._backend.capabilities.supports(capability)

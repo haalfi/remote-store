@@ -36,6 +36,7 @@ from remote_store._errors import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from typing import BinaryIO
 
     from remote_store._store import Store
@@ -163,6 +164,17 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
         self._materialization_threshold = materialization_threshold
         self._write_spill_threshold = write_spill_threshold
 
+        # Tier 1 probing: check if the backend exposes a native PyArrow FS
+        self._native_fs: pafs.FileSystem | None = None
+        self._native_path_fn: Callable[[str], str] | None = None
+        try:
+            native_fs = store.unwrap(pafs.FileSystem)
+            if isinstance(native_fs, pafs.FileSystem):
+                self._native_fs = native_fs
+                self._native_path_fn = store.native_path
+        except (CapabilityNotSupported, TypeError):
+            pass
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, StoreFileSystemHandler):
             return self._store == other._store
@@ -274,12 +286,12 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
         path = _normalize(path)
         with _map_errors():
             stream = self._store.read(path)
-            # TODO(ID-037 Phase 2): Subsequent reads from PythonFile bypass _map_errors(),
-            # so mid-read RemoteStoreError from cloud streams would leak unmapped.
-            # Also affects Tier 3 in open_input_file (PythonFile for large seekable
-            # files). Inert in Phase 1: cloud backends always materialize via Tier 2,
-            # and LocalBackend raises OSError directly (not RemoteStoreError). Phase 2
-            # seekable cloud streams will need an error-mapping stream wrapper.
+            # NOTE: Subsequent reads from PythonFile bypass _map_errors(), so
+            # mid-read RemoteStoreError from cloud streams would leak unmapped.
+            # Also affects Tier 3 in open_input_file. Currently inert: cloud
+            # backends materialize via Tier 2, LocalBackend raises OSError
+            # directly. Future seekable cloud streams would need an
+            # error-mapping stream wrapper.
             try:
                 return pa.PythonFile(stream, mode="r")
             except Exception:  # pragma: no cover
@@ -288,10 +300,14 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
 
     def open_input_file(self, path: str) -> Any:  # noqa: ANN401
         path = _normalize(path)
+
+        # Tier 1: native fast path — bypass Store I/O entirely.
+        # The native PyArrow FS raises standard exceptions (FileNotFoundError,
+        # OSError), so no _map_errors() translation is needed.
+        if self._native_fs is not None and self._native_path_fn is not None:
+            return self._native_fs.open_input_file(self._native_path_fn(path))
+
         with _map_errors():
-            # Phase 1: Tier 2 / Tier 3 only (Tier 1 deferred to Phase 2)
-            # NOTE: get_file_info + read_bytes = 2 RPCs per call. Phase 2 could
-            # optimize via optimistic read, file-info caching, or known-sizes.
             info = self._store.get_file_info(path)
 
             if info.size <= self._materialization_threshold:

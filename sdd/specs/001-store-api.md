@@ -38,7 +38,7 @@
 
 ### STORE-008: Full API Surface
 
-**Invariant:** Store exposes: `read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`, `to_key`, `unwrap`, `child`.
+**Invariant:** Store exposes: `read`, `read_bytes`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`, `to_key`, `native_path`, `unwrap`, `child`.
 
 ### STORE-008a: Same-Path Move and Copy
 
@@ -69,6 +69,13 @@
 **Invariant:** `unwrap(type_hint)` delegates to `Backend.unwrap(type_hint)` and returns the backend's native handle if it matches the requested type.
 **Raises:** `CapabilityNotSupported` if the backend cannot provide the requested type.
 **Rationale:** Enables adapters (e.g., `StoreFileSystemHandler`) to access backend-native handles via the public Store surface without reaching into private attributes.
+
+### STORE-015: native_path()
+
+**Invariant:** `native_path(key)` converts a store-relative key to the backend-native path. Composes store root-path prefixing with `Backend.native_path()` (adds backend-specific prefix such as bucket name).
+**Postconditions:** The returned path is usable with the native handle from `unwrap()`. This is the inverse of `to_key()`.
+**Example:** `Store(backend=s3_pyarrow, root_path="data").native_path("file.parquet")` returns `"my-bucket/data/file.parquet"`.
+**See also:** [010-native-path-resolution.md](010-native-path-resolution.md), [014-pyarrow-filesystem-adapter.md](014-pyarrow-filesystem-adapter.md) (PA-010 Tier 1).
 
 ### STORE-014: list_files(pattern=…)
 

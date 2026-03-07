@@ -382,3 +382,34 @@ class TestStoreUnwrap:
         child = store.child("sub")
         with pytest.raises(CapabilityNotSupported):
             child.unwrap(dict)
+
+
+class TestStoreNativePath:
+    """STORE-015: Store.native_path() composition."""
+
+    @pytest.mark.spec("STORE-015")
+    def test_native_path_identity_backend(self) -> None:
+        """Default backend.native_path is identity; Store prepends root."""
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        # MemoryBackend inherits identity native_path, so result = root/key
+        assert store.native_path("file.txt") == "data/file.txt"
+
+    @pytest.mark.spec("STORE-015")
+    def test_native_path_no_root(self) -> None:
+        backend = MemoryBackend()
+        store = Store(backend=backend)
+        assert store.native_path("file.txt") == "file.txt"
+
+    @pytest.mark.spec("STORE-015")
+    def test_native_path_child_store(self) -> None:
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        child = store.child("sub")
+        assert child.native_path("file.txt") == "data/sub/file.txt"
+
+    @pytest.mark.spec("STORE-015")
+    def test_native_path_root_key(self) -> None:
+        backend = MemoryBackend()
+        store = Store(backend=backend, root_path="data")
+        assert store.native_path("") == "data"

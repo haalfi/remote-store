@@ -197,6 +197,7 @@ secret.reveal()  # → 'my-secret-key'
 |`child(subpath)`     |Return a child store scoped to a subfolder    |
 |`supports(capability)`|Check if the backend supports a capability   |
 |`to_key(path)`       |Convert native/absolute path to store-relative key|
+|`native_path(key)`   |Convert store-relative key to backend-native path |
 |`unwrap(type_hint)`  |Get backend's native handle (e.g., `pyarrow.fs.FileSystem`)|
 |`close()`            |Close the underlying backend                  |
 

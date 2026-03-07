@@ -93,12 +93,15 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   `parse_partition(path) -> dict`. Useful for Parquet lake workloads alongside
   PyArrow datasets. No external dependencies.
 
-- [ ] **ID-037 — PyArrow adapter Phase 2 — Tier 1 native fast-path reads**
-  Complete the deferred Phase 2 work from ID-016: `Store.native_path()`,
-  `Backend.native_path()`, Tier 1 native fast-path reads (PA-010) bypassing
-  Python I/O for data-path operations. Critical for large Parquet workloads
-  where GIL contention in `PythonFile` limits throughput. See spec
-  `014-pyarrow-filesystem-adapter.md` Phase 2 sections.
+- [~] **ID-037 — PyArrow adapter Phase 2 — Tier 1 native fast-path reads**
+  Tier 1 native fast-path reads (PA-010) implemented: `Backend.native_path()`
+  (BE-025), `Store.native_path()` (STORE-015), `S3PyArrowBackend.unwrap()`
+  accepts `pyarrow.fs.FileSystem` base class, `StoreFileSystemHandler` probes
+  at construction and dispatches reads directly to the native PyArrow FS.
+  Remaining: `native_path()` overrides for non-S3PyArrow backends (Local,
+  SFTP, Azure, S3) — not needed for Tier 1 but complete the inverse-of-to_key
+  contract. Streaming error-mapping wrapper for mid-read exceptions on cloud
+  PythonFile reads is a separate concern (see NOTE in `open_input_stream`).
 
 - [~] **ID-044 — Harden examples into assertion-based expectation tests**
   Approach: examples expose `demo(store)` functions; `tests/test_examples.py`

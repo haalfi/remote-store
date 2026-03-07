@@ -160,6 +160,19 @@ class Backend(abc.ABC):
         """
         return native_path
 
+    def native_path(self, path: str) -> str:
+        """Convert a backend-relative key to the backend-native path.
+
+        The inverse of :meth:`to_key`. The default implementation is the
+        identity function — backends with a native root (bucket, base_path)
+        override this to prepend their prefix.
+
+        :param path: Backend-relative key.
+        :returns: Backend-native path usable with the native handle from
+            :meth:`unwrap`.
+        """
+        return path
+
     def close(self) -> None:  # noqa: B027
         """Release resources. Default is a no-op."""
 

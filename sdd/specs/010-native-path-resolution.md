@@ -246,3 +246,32 @@ identically to the current system for forward operations (rel→abs via
 `_full_path`). The listing round-trip fix is a **bug fix**, not a behavioral
 change — current behavior (leaking `root_path` in returned paths) is incorrect
 per NPR-001.
+
+---
+
+## Inverse: `native_path`
+
+### NPR-020: Backend.native_path Method
+
+**Invariant:** The Backend ABC gains a concrete (non-abstract) method:
+```python
+def native_path(self, path: str) -> str:
+    """Convert a backend-relative key to the backend-native path."""
+    return path  # default: identity
+```
+**Postconditions:** The default is the identity function. Backends with a native
+root (bucket, base_path) override to prepend their prefix. This is the inverse
+of `to_key`.
+
+### NPR-021: Backend.native_path Contract
+
+**Invariant:** Same as NPR-004 (`to_key`): deterministic, pure, total. If the
+key is empty, returns the backend's root (e.g., `"my-bucket"` for S3).
+
+### NPR-022: Store.native_path
+
+**Invariant:** `Store.native_path(key)` composes store root-path prefixing with
+`Backend.native_path()`. The result is usable with the native handle from
+`Store.unwrap()`.
+**See also:** [001-store-api.md](001-store-api.md) (STORE-015),
+[014-pyarrow-filesystem-adapter.md](014-pyarrow-filesystem-adapter.md) (PA-010 Tier 1).
