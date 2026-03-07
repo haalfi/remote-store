@@ -1,40 +1,44 @@
-"""Quickstart — minimal config, write, and read with remote-store.
+"""Quickstart — minimal usage of remote-store.
 
-Demonstrates:
-- Creating a RegistryConfig with a local backend
-- Opening a Registry and getting a Store
-- Writing and reading a file
+Demonstrates two ways to get started:
+1. Direct construction — three lines, no config
+2. Registry with declarative config — for multi-backend applications
 """
 
 from __future__ import annotations
 
 import tempfile
 
-from remote_store import BackendConfig, Registry, RegistryConfig, StoreProfile
+from remote_store import Registry, RegistryConfig, Store
+from remote_store.backends import LocalBackend
 
 
-def demo(store):
-    """Write a file, read it back, check metadata."""
+def demo_direct(root: str) -> None:
+    """Simplest usage: construct a Store directly."""
+    store = Store(LocalBackend(root=root))
     store.write("hello.txt", b"Hello, world!")
-    print(f"File exists: {store.exists('hello.txt')}")
+    print(store.read_bytes("hello.txt"))  # b'Hello, world!'
 
-    content = store.read_bytes("hello.txt")
-    print(f"Content: {content}")
 
-    info = store.get_file_info("hello.txt")
-    print(f"Size: {info.size} bytes")
-    print(f"Modified: {info.modified_at}")
+def demo_registry(root: str) -> None:
+    """Registry usage: declarative config, multiple stores."""
+    config = RegistryConfig.from_dict(
+        {
+            "backends": {"main": {"type": "local", "options": {"root": root}}},
+            "stores": {"data": {"backend": "main", "root_path": ""}},
+        }
+    )
+
+    with Registry(config) as registry:
+        store = registry.get_store("data")
+        store.write("hello.txt", b"Hello, world!")
+        print(store.read_bytes("hello.txt"))  # b'Hello, world!'
 
 
 if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as tmp:
-        config = RegistryConfig(
-            backends={"local": BackendConfig(type="local", options={"root": tmp})},
-            stores={"data": StoreProfile(backend="local", root_path="data")},
-        )
+        print("-- Direct construction --")
+        demo_direct(f"{tmp}/direct")
 
-        with Registry(config) as registry:
-            store = registry.get_store("data")
-            demo(store)
-
-    print("Done! Temp directory cleaned up automatically.")
+        print("-- Registry config --")
+        demo_registry(f"{tmp}/registry")

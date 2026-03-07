@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "remote-store"
 version = "0.14.0"
-description = "One simple API for file storage. Local, S3, SFTP, Azure. Same methods, swappable backends, zero reinvention."
+description = "A Python library for file storage across local, S3, SFTP, and Azure backends."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"

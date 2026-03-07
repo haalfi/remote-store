@@ -56,11 +56,11 @@ tests:
 
 about:
   homepage: https://github.com/haalfi/remote-store
-  summary: "One simple API for file storage -- local, S3, SFTP, Azure"
+  summary: "Write file storage code once. Run it against local files, S3, SFTP, or Azure."
   description: |
-    remote-store provides a unified Python API for file storage across
-    backends (Local, S3, SFTP, Azure). Same methods, swappable backends,
-    zero reinvention. Core has no dependencies; optional extras add
+    remote-store provides a consistent Python API for file storage across
+    backends (Local, S3, SFTP, Azure). Write file storage code once, run it
+    against any backend. Core has no dependencies; optional extras add
     cloud backend support.
   license: MIT
   license_file: LICENSE

@@ -59,15 +59,30 @@ def two_stores():
 
 class TestQuickstart:
     @pytest.mark.spec("STORE-008")
-    def test_demo(self, memory_store):
-        from examples.quickstart import demo
+    def test_demo_direct(self, tmp_path):
+        from examples.quickstart import demo_direct
 
-        demo(memory_store)
+        demo_direct(str(tmp_path / "direct"))
 
-        assert memory_store.exists("hello.txt")
-        assert memory_store.read_bytes("hello.txt") == b"Hello, world!"
-        info = memory_store.get_file_info("hello.txt")
-        assert info.size == 13
+        from remote_store import Store
+        from remote_store.backends import LocalBackend
+
+        store = Store(LocalBackend(root=str(tmp_path / "direct")))
+        assert store.exists("hello.txt")
+        assert store.read_bytes("hello.txt") == b"Hello, world!"
+
+    @pytest.mark.spec("STORE-008")
+    def test_demo_registry(self, tmp_path):
+        from examples.quickstart import demo_registry
+
+        demo_registry(str(tmp_path / "registry"))
+
+        from remote_store import Store
+        from remote_store.backends import LocalBackend
+
+        store = Store(LocalBackend(root=str(tmp_path / "registry")))
+        assert store.exists("hello.txt")
+        assert store.read_bytes("hello.txt") == b"Hello, world!"
 
 
 # ---------------------------------------------------------------------------
