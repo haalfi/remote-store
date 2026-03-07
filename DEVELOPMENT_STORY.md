@@ -393,7 +393,7 @@ The `Secret` wrapper emerged from the config loaders research (Phase 20). While 
 
 The release also fixed BUG-001 (`get_folder_info("")` crashing for root folders) and added intrinsic stdlib logging to all modules (ID-004), completing the three-layer observability stack: Layer 1 (stdlib logging), Layer 2 (`ext.observe` callbacks), Layer 3 (`ext.otel` OpenTelemetry).
 
-### Phase 22: Config Loaders and Consolidation (post-v0.13.0)
+### Phase 22: Config Loaders and Consolidation (v0.14.0)
 
 Phase 20's research document finally paid off. Three config loaders shipped in a single PR: `RegistryConfig.from_toml()` (zero-dep on 3.11+, `tomli` backport for 3.10), `RegistryConfig.from_yaml()` (pyyaml or ruamel.yaml), and `pydantic_to_registry_config()` in the new `ext/pydantic.py` module. The research had mapped every design decision in advance -- format precedence, library fallback chains, `SecretStr` interaction, unknown-key detection -- so implementation was a matter of following the blueprint. `from_dict()` also gained a `UserWarning` for unrecognized top-level keys like `"backend"` (typo for `"backends"`), a gap the Phase 20 adversarial review had flagged.
 

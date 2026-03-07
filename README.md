@@ -69,6 +69,9 @@ pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
 pip install "remote-store[arrow]"        # PyArrow filesystem adapter
 pip install "remote-store[otel]"         # OpenTelemetry tracing and metrics
+pip install "remote-store[toml]"        # TOML config (backport for Python 3.10)
+pip install "remote-store[yaml]"        # YAML config (pyyaml)
+pip install "remote-store[pydantic]"    # Pydantic config (pydantic-settings)
 ```
 
 ## Quick Start

@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-03-07
+
 ### Changed
 
 - **`_stacklevel` removed from public `from_dict()` signature** (ID-043)

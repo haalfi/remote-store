@@ -36,7 +36,7 @@ from remote_store.ext.observe import (
 )
 from remote_store.ext.transfer import download, transfer, upload
 
-__version__ = "0.13.0"
+__version__ = "0.14.0"
 
 logging.getLogger("remote_store").addHandler(logging.NullHandler())
 
