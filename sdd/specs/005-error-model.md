@@ -72,6 +72,17 @@ assert exc_info.value.capability == "atomic_write"
 **Invariant:** Raised when the backend cannot be reached or initialized.
 **Postconditions:** `backend` attribute is set.
 
+## ERR-010: DirectoryNotEmpty
+
+**Invariant:** Raised when `delete_folder(..., recursive=False)` targets a non-empty directory.
+**Postconditions:** `path` attribute is set to the offending folder path.
+**Example:**
+```python
+store.write("folder/file.txt", b"data")
+with pytest.raises(DirectoryNotEmpty):
+    store.delete_folder("folder", recursive=False)
+```
+
 ## ERR-008: Flat Hierarchy
 
 **Invariant:** All concrete errors inherit directly from `RemoteStoreError`, never from each other.

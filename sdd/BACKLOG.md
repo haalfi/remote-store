@@ -21,6 +21,17 @@ Active work items, ordered by priority.
 
 ---
 
+## Prioritized
+
+- [ ] **ID-047 — Spec accuracy fixes**
+  Add ERR-010 (`DirectoryNotEmpty`) to error model spec. Clarify `around`-hook
+  propagation vs after-hook suppression in `ext.observe`. Add ownership
+  qualifier to STORE-009 `close()` contract. Scope `ext.transfer` memory
+  guarantee to extension layer. List both `yaml.YAMLError` and
+  `ruamel.yaml.YAMLError` in config loader spec.
+
+---
+
 ## Ideas (Unprioritized)
 
 Parking lot. Not evaluated, not committed to. Pick up when relevant.

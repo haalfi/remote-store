@@ -46,7 +46,7 @@
 
 ### STORE-009: Resource Management
 
-**Invariant:** Store supports the context manager protocol (`__enter__`/`__exit__`). Exiting the context calls `close()`, which delegates to `Backend.close()`. Store may also be used without a context manager; in that case, `close()` should be called explicitly when the store is no longer needed.
+**Invariant:** Store supports the context manager protocol (`__enter__`/`__exit__`). Exiting the context calls `close()`, which delegates to `Backend.close()` if the Store owns the backend. Stores created via `child()` do not own the backend — their `close()` is a no-op (see CHILD-006). Store may also be used without a context manager; in that case, `close()` should be called explicitly when the store is no longer needed.
 
 ### STORE-010: Equality
 
