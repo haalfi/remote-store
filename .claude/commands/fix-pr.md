@@ -3,6 +3,24 @@
 Read review comments from a PR, fix each issue in the local code, resolve the
 threads on GitHub, then validate. Don't auto-push.
 
+## MANDATORY: Bash command rules (read first)
+
+These rules prevent built-in security prompts that CANNOT be bypassed via
+settings. Violating them causes the user to approve every single command.
+
+1. **NO `cd` prefix** — NEVER write `cd /path && git ...` or `cd /path && hatch ...`.
+   The working directory is already correct. Just run `git status`, not
+   `cd /path && git status`.
+2. **NO `git -C`** — NEVER write `git -C /path ...`. Same reason: not in allow list.
+3. **NO heredoc/command substitution in commits** — NEVER write
+   `git commit -m "$(cat <<'EOF'...EOF)"`. Use a plain `-m` string instead.
+   For multi-line messages, use multiple `-m` flags:
+   `git commit -m "subject line" -m "body paragraph" -m "Co-Authored-By: ..."`
+4. **NO piped git commands** — NEVER write `git show ... | grep` or
+   `git diff ... | wc`. Use `Read`/`Grep`/`Glob` tools instead.
+5. **Use dedicated tools** — `Read` (not `cat`/`git show`), `Grep` (not `grep`),
+   `Glob` (not `find`).
+
 ## Arguments
 
 PR number: `$ARGUMENTS` (ask if missing).
@@ -64,7 +82,7 @@ do not silently ignore it.
 ## Step 3: Fix
 
 For each actionable comment:
-1. Read the full file
+1. Read the full file using the `Read` tool
 2. Make the fix — match the category:
    - `Bug:` / `Spec:` — fix the code to match correct behavior / spec
    - `Test:` — add or improve test coverage
@@ -75,19 +93,19 @@ For each actionable comment:
 
 ## Step 4: Resolve threads
 
-After fixing each comment, resolve its thread on GitHub:
+Batch-resolve all fixed threads in a single GraphQL mutation using aliases:
 
 ```bash
 gh api graphql -f query='
-  mutation($threadId:ID!) {
-    resolveReviewThread(input:{threadId:$threadId}) {
-      thread { isResolved }
-    }
+  mutation {
+    t0: resolveReviewThread(input:{threadId:"THREAD_ID_0"}) { thread { isResolved } }
+    t1: resolveReviewThread(input:{threadId:"THREAD_ID_1"}) { thread { isResolved } }
   }
-' -f threadId='$THREAD_NODE_ID'
+'
 ```
 
 Only resolve threads you actually fixed. Never resolve skipped items.
+If only one thread, use a single alias (`t0`).
 
 ## Step 5: Validate
 
@@ -101,12 +119,16 @@ Fix any failures introduced by your changes. Re-run until clean.
 ## Step 6: Commit
 
 Stage and commit. Use one commit per fix or one combined commit — whichever
-makes the history clearer (prefer small focused commits when fixes are independent):
+makes the history clearer (prefer small focused commits when fixes are independent).
 
+Follow the Bash rules from the top of this file. Examples:
+
+```bash
+git add file1.py file2.py
 ```
-fix: address PR #N review — <short description>
 
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+```bash
+git commit -m "fix: address PR #N review -- short description" -m "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 ```
 
 After all commits, push once:
