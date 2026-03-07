@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://haalfi.github.io/remote-store/dev/pyarrow-adapter/">
+        <link rel="canonical" href="https://haalfi.github.io/remote-store/dev/data-lake-patterns/">
       
       
-        <link rel="prev" href="../data-lake-patterns/">
+        <link rel="prev" href="../concurrency/">
       
       
-        <link rel="next" href="../batch-operations/">
+        <link rel="next" href="../pyarrow-adapter/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>PyArrow Adapter - remote-store</title>
+        <title>Data Lake Patterns - remote-store</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#pyarrow-filesystem-adapter" class="md-skip">
+        <a href="#data-lake-patterns" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              PyArrow Adapter
+              Data Lake Patterns
             
           </span>
         </div>
@@ -1412,33 +1412,6 @@
       
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../data-lake-patterns/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Data Lake Patterns
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
     
   
   
@@ -1458,7 +1431,7 @@
   <span class="md-ellipsis">
     
   
-    PyArrow Adapter
+    Data Lake Patterns
   
 
     
@@ -1476,7 +1449,7 @@
   <span class="md-ellipsis">
     
   
-    PyArrow Adapter
+    Data Lake Patterns
   
 
     
@@ -1502,10 +1475,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
+  <a href="#the-idea" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installation
+        The idea
       
     </span>
   </a>
@@ -1513,10 +1486,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#what-this-gets-you" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start
+        What this gets you
       
     </span>
   </a>
@@ -1524,10 +1497,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#parquet-round-trip" class="md-nav__link">
+  <a href="#what-this-does-not-get-you" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Parquet Round-Trip
+        What this does not get you
       
     </span>
   </a>
@@ -1535,10 +1508,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pandas-integration" class="md-nav__link">
+  <a href="#bronze-silver-gold-with-storechild" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pandas Integration
+        Bronze / Silver / Gold with Store.child()
       
     </span>
   </a>
@@ -1546,10 +1519,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#dataset-discovery" class="md-nav__link">
+  <a href="#writing-parquet-via-pyarrow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Dataset Discovery
+        Writing Parquet via PyArrow
       
     </span>
   </a>
@@ -1557,10 +1530,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#reading-and-transforming-with-polars" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        Reading and transforming with Polars
       
     </span>
   </a>
@@ -1568,10 +1541,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#tiered-read-strategy" class="md-nav__link">
+  <a href="#partitioned-datasets-with-pyarrow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tiered Read Strategy
+        Partitioned datasets with PyArrow
       
     </span>
   </a>
@@ -1579,10 +1552,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#thread-safety" class="md-nav__link">
+  <a href="#duckdb-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Thread Safety
+        DuckDB integration
       
     </span>
   </a>
@@ -1590,10 +1563,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#limitations" class="md-nav__link">
+  <a href="#delta-lake-via-deltalake" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Limitations
+        Delta Lake (via deltalake)
       
     </span>
   </a>
@@ -1601,10 +1574,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
+  <a href="#batch-operations-across-partitions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error Mapping
+        Batch operations across partitions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-backend-transfer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-backend transfer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-without-cloud-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing without cloud credentials
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-comes-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What comes next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -1615,6 +1632,33 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pyarrow-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PyArrow Adapter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -3109,10 +3153,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
+  <a href="#the-idea" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installation
+        The idea
       
     </span>
   </a>
@@ -3120,10 +3164,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#what-this-gets-you" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start
+        What this gets you
       
     </span>
   </a>
@@ -3131,10 +3175,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#parquet-round-trip" class="md-nav__link">
+  <a href="#what-this-does-not-get-you" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Parquet Round-Trip
+        What this does not get you
       
     </span>
   </a>
@@ -3142,10 +3186,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pandas-integration" class="md-nav__link">
+  <a href="#bronze-silver-gold-with-storechild" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pandas Integration
+        Bronze / Silver / Gold with Store.child()
       
     </span>
   </a>
@@ -3153,10 +3197,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#dataset-discovery" class="md-nav__link">
+  <a href="#writing-parquet-via-pyarrow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Dataset Discovery
+        Writing Parquet via PyArrow
       
     </span>
   </a>
@@ -3164,10 +3208,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#reading-and-transforming-with-polars" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        Reading and transforming with Polars
       
     </span>
   </a>
@@ -3175,10 +3219,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#tiered-read-strategy" class="md-nav__link">
+  <a href="#partitioned-datasets-with-pyarrow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tiered Read Strategy
+        Partitioned datasets with PyArrow
       
     </span>
   </a>
@@ -3186,10 +3230,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#thread-safety" class="md-nav__link">
+  <a href="#duckdb-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Thread Safety
+        DuckDB integration
       
     </span>
   </a>
@@ -3197,10 +3241,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#limitations" class="md-nav__link">
+  <a href="#delta-lake-via-deltalake" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Limitations
+        Delta Lake (via deltalake)
       
     </span>
   </a>
@@ -3208,10 +3252,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
+  <a href="#batch-operations-across-partitions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error Mapping
+        Batch operations across partitions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-backend-transfer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-backend transfer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-without-cloud-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing without cloud credentials
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-comes-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What comes next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -3238,184 +3326,304 @@
   
 
 
-<h1 id="pyarrow-filesystem-adapter">PyArrow FileSystem Adapter<a class="headerlink" href="#pyarrow-filesystem-adapter" title="Permanent link">&para;</a></h1>
-<p>The <code>ext.arrow</code> module wraps any <code>Store</code> into a <code>pyarrow.fs.PyFileSystem</code>,
-unlocking seamless interop with the PyArrow ecosystem: datasets, Pandas,
-Polars, DuckDB, PyIceberg, and Delta Lake all accept <code>pyarrow.fs.FileSystem</code>
-objects for I/O.</p>
-<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[arrow]&quot;</span>
+<h1 id="data-lake-patterns">Data Lake Patterns<a class="headerlink" href="#data-lake-patterns" title="Permanent link">&para;</a></h1>
+<p>How to use remote-store as the storage plumbing layer for a multi-layer
+Parquet data lake — and where to draw the line.</p>
+<h2 id="the-idea">The idea<a class="headerlink" href="#the-idea" title="Permanent link">&para;</a></h2>
+<p>remote-store provides a <strong>unified, backend-agnostic I/O layer</strong> that makes
+data lake patterns portable across storage backends. A team can develop
+locally against Memory or Local backends, test in CI without cloud
+credentials, and deploy to S3 or Azure without changing application code.</p>
+<p>The value proposition is not competing with Databricks, Spark, or any
+query/compute engine. It is making <strong>the storage layer underneath them
+swappable and testable</strong>. remote-store owns the I/O path; table formats
+(Delta Lake, Iceberg) and query engines (Spark, DuckDB, Polars) sit on top
+via the PyArrow adapter.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌─────────────────────────────────────────────────────┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│  Query / Compute                                    │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│  Polars · DuckDB · Pandas · Spark · Databricks      │
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├─────────────────────────────────────────────────────┤
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│  Table Format (optional)                            │
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│  Delta Lake · PyIceberg · plain Parquet             │
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├─────────────────────────────────────────────────────┤
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│  PyArrow FileSystem interface                       │
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│  pyarrow_fs(store)                                  │
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├─────────────────────────────────────────────────────┤
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│  remote-store                                       │
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│  Store · child() · ext.batch · ext.transfer         │
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>├─────────────────────────────────────────────────────┤
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│  Backend                                            │
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│  Local · Memory · S3 · S3-PyArrow · SFTP · Azure    │
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>└─────────────────────────────────────────────────────┘
 </code></pre></div>
-<p>This installs <code>pyarrow &gt;= 12.0.0</code> as an optional dependency. The adapter works
-with any backend -- no extra configuration needed.</p>
-<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.parquet</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pq</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryBackend</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">MemoryBackend</span><span class="p">())</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">fs</span> <span class="o">=</span> <span class="n">pyarrow_fs</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># Now use `fs` anywhere PyArrow accepts a filesystem:</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">table</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">table</span><span class="p">({</span><span class="s2">&quot;col&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]})</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">pq</span><span class="o">.</span><span class="n">write_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="s2">&quot;data.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">fs</span><span class="p">)</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">result</span> <span class="o">=</span> <span class="n">pq</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="s2">&quot;data.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">fs</span><span class="p">)</span>
+<h2 id="what-this-gets-you">What this gets you<a class="headerlink" href="#what-this-gets-you" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Backend portability.</strong> Develop against <code>MemoryBackend</code>, deploy to S3/Azure.
+   Same code, zero cloud dependencies in dev.</li>
+<li><strong>Layer isolation.</strong> <code>store.child("bronze")</code>, <code>store.child("silver")</code>,
+   <code>store.child("gold")</code> — each layer gets its own namespace without
+   separate credentials, connections, or config.</li>
+<li><strong>Streaming by default.</strong> Reads and writes never fully materialize large
+   files in memory. Critical for multi-GB Parquet partitions.</li>
+<li><strong>Atomic writes.</strong> <code>write_atomic()</code> uses rename-based semantics, reducing
+   partial-write risk for individual files.</li>
+<li><strong>Batch operations.</strong> <code>batch_delete</code>, <code>batch_copy</code>, <code>batch_exists</code> for
+   partition-scale workflows with error aggregation.</li>
+<li><strong>Observability.</strong> <code>ext.observe</code> hooks and OpenTelemetry bridge give
+   visibility into every I/O operation without instrumenting application code.</li>
+</ol>
+<h2 id="what-this-does-not-get-you">What this does not get you<a class="headerlink" href="#what-this-does-not-get-you" title="Permanent link">&para;</a></h2>
+<p>Being honest about the boundary:</p>
+<ul>
+<li><strong>No table format protocol.</strong> remote-store does not implement the Delta Lake
+  transaction log, Iceberg manifest management, or any table format's commit
+  protocol. Libraries like <code>deltalake</code> (delta-rs) or <code>pyiceberg</code> handle that —
+  remote-store is the I/O layer they write through.</li>
+<li><strong>No query execution.</strong> No SQL, no predicate pushdown, no shuffle.
+  Polars, DuckDB, or Spark handle query planning and execution.</li>
+<li><strong>No catalog integration.</strong> Unity Catalog, Hive Metastore, and Glue Catalog
+  are metadata services remote-store does not interact with.</li>
+<li><strong>No Databricks-native credential passthrough.</strong> Databricks clusters use
+  instance profiles, workspace tokens, and Unity Catalog vended credentials.
+  remote-store's <code>BackendConfig</code> takes explicit credentials. On Databricks,
+  you would either pass credentials explicitly or use the native DBFS/ABFSS
+  paths directly and skip the abstraction.</li>
+<li><strong>No GIL-free fast path yet.</strong> The PyArrow adapter currently uses Tier 2/3
+  reads (Python I/O). For large Parquet workloads where GIL contention in
+  <code>PythonFile</code> limits throughput, Phase 2 (ID-037) will add Tier 1 native
+  fast-path reads.</li>
+</ul>
+<p>The bridge metaphor works best with a clear boundary: <strong>remote-store owns
+portable, testable, observable storage I/O. Everything above the storage
+layer — formats, queries, catalogs — belongs to purpose-built tools.</strong></p>
+<h2 id="bronze-silver-gold-with-storechild">Bronze / Silver / Gold with <code>Store.child()</code><a class="headerlink" href="#bronze-silver-gold-with-storechild" title="Permanent link">&para;</a></h2>
+<p>The medallion architecture maps naturally to child stores:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">BackendConfig</span><span class="p">,</span> <span class="n">Registry</span><span class="p">,</span> <span class="n">RegistryConfig</span><span class="p">,</span> <span class="n">StoreProfile</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="p">(</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">backends</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="s2">&quot;lake&quot;</span><span class="p">:</span> <span class="n">BackendConfig</span><span class="p">(</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>            <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>            <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="s2">&quot;my-data-lake&quot;</span><span class="p">},</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="p">),</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="p">},</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">stores</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;lake&quot;</span><span class="p">:</span> <span class="n">StoreProfile</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="s2">&quot;lake&quot;</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;v1&quot;</span><span class="p">)},</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="k">with</span> <span class="n">Registry</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="k">as</span> <span class="n">registry</span><span class="p">:</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">lake</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;lake&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">bronze</span> <span class="o">=</span> <span class="n">lake</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>   <span class="c1"># raw ingestion</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="n">silver</span> <span class="o">=</span> <span class="n">lake</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;silver&quot;</span><span class="p">)</span>   <span class="c1"># cleaned and typed</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">gold</span> <span class="o">=</span> <span class="n">lake</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;gold&quot;</span><span class="p">)</span>       <span class="c1"># aggregated / business-ready</span>
 </code></pre></div>
-<h2 id="parquet-round-trip">Parquet Round-Trip<a class="headerlink" href="#parquet-round-trip" title="Permanent link">&para;</a></h2>
+<p>Each layer is a full <code>Store</code> — same API, same backend connection, independent
+namespace. In dev/test, swap the backend to <code>MemoryBackend</code> or <code>LocalBackend</code>
+with zero code changes.</p>
+<h2 id="writing-parquet-via-pyarrow">Writing Parquet via PyArrow<a class="headerlink" href="#writing-parquet-via-pyarrow" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.parquet</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pq</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">fs</span> <span class="o">=</span> <span class="n">pyarrow_fs</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Write</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">table</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">table</span><span class="p">({</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">]})</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">pq</span><span class="o">.</span><span class="n">write_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="s2">&quot;output.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">fs</span><span class="p">)</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="c1"># Read</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">result</span> <span class="o">=</span> <span class="n">pq</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="s2">&quot;output.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">fs</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Bronze: ingest raw data as Parquet</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">bronze_fs</span> <span class="o">=</span> <span class="n">pyarrow_fs</span><span class="p">(</span><span class="n">bronze</span><span class="p">)</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">table</span><span class="p">({</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;2026-03-01T10:00:00&quot;</span><span class="p">,</span> <span class="s2">&quot;2026-03-01T10:01:00&quot;</span><span class="p">],</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="s2">&quot;sensor_id&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;s-001&quot;</span><span class="p">,</span> <span class="s2">&quot;s-002&quot;</span><span class="p">],</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="s2">&quot;reading&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">23.4</span><span class="p">,</span> <span class="mf">19.8</span><span class="p">],</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="p">})</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">pq</span><span class="o">.</span><span class="n">write_table</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="s2">&quot;readings/2026-03-01.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">bronze_fs</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="pandas-integration">Pandas Integration<a class="headerlink" href="#pandas-integration" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">],</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="s2">&quot;bar&quot;</span><span class="p">]})</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">df</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="s2">&quot;pandas.parquet&quot;</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;pyarrow&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">fs</span><span class="p">)</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">result</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;pandas.parquet&quot;</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;pyarrow&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">fs</span><span class="p">)</span>
+<h2 id="reading-and-transforming-with-polars">Reading and transforming with Polars<a class="headerlink" href="#reading-and-transforming-with-polars" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.parquet</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pq</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># Read bronze partition via PyArrow, convert to Polars</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">bronze_fs</span> <span class="o">=</span> <span class="n">pyarrow_fs</span><span class="p">(</span><span class="n">bronze</span><span class="p">)</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">pq</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="s2">&quot;readings/2026-03-01.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">bronze_fs</span><span class="p">)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_arrow</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># Clean and type (bronze -&gt; silver)</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">silver_df</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;timestamp&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(),</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;reading&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Float64</span><span class="p">),</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="p">)</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;reading&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_not_null</span><span class="p">())</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="p">)</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="c1"># Write to silver layer via PyArrow</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="n">silver_fs</span> <span class="o">=</span> <span class="n">pyarrow_fs</span><span class="p">(</span><span class="n">silver</span><span class="p">)</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="n">pq</span><span class="o">.</span><span class="n">write_table</span><span class="p">(</span><span class="n">silver_df</span><span class="o">.</span><span class="n">to_arrow</span><span class="p">(),</span> <span class="s2">&quot;readings/2026-03-01.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">silver_fs</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="dataset-discovery">Dataset Discovery<a class="headerlink" href="#dataset-discovery" title="Permanent link">&para;</a></h2>
-<p>PyArrow's dataset API discovers partitioned data automatically:</p>
+<h2 id="partitioned-datasets-with-pyarrow">Partitioned datasets with PyArrow<a class="headerlink" href="#partitioned-datasets-with-pyarrow" title="Permanent link">&para;</a></h2>
+<p>PyArrow's dataset API handles Hive-style partitioned layouts automatically:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.dataset</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ds</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">dataset</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">)</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">table</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Write partitioned by date</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">part</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">table</span><span class="p">({</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;2026-03-01&quot;</span><span class="p">,</span> <span class="s2">&quot;2026-03-01&quot;</span><span class="p">,</span> <span class="s2">&quot;2026-03-02&quot;</span><span class="p">],</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="s2">&quot;sensor&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;s-001&quot;</span><span class="p">,</span> <span class="s2">&quot;s-002&quot;</span><span class="p">,</span> <span class="s2">&quot;s-001&quot;</span><span class="p">],</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">23.4</span><span class="p">,</span> <span class="mf">19.8</span><span class="p">,</span> <span class="mf">21.1</span><span class="p">],</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="p">})</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">ds</span><span class="o">.</span><span class="n">write_dataset</span><span class="p">(</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="n">part</span><span class="p">,</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="s2">&quot;sensors&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">filesystem</span><span class="o">=</span><span class="n">pyarrow_fs</span><span class="p">(</span><span class="n">silver</span><span class="p">),</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>    <span class="n">partitioning</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">partitioning</span><span class="p">(</span><span class="n">pa</span><span class="o">.</span><span class="n">schema</span><span class="p">([(</span><span class="s2">&quot;date&quot;</span><span class="p">,</span> <span class="n">pa</span><span class="o">.</span><span class="n">string</span><span class="p">())])),</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="p">)</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="c1"># Read with partition pruning</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">dataset</span><span class="p">(</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>    <span class="s2">&quot;sensors&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>    <span class="n">filesystem</span><span class="o">=</span><span class="n">pyarrow_fs</span><span class="p">(</span><span class="n">silver</span><span class="p">),</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>    <span class="n">partitioning</span><span class="o">=</span><span class="s2">&quot;hive&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="p">)</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="n">march_1</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">to_table</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s2">&quot;date&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;2026-03-01&quot;</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p>The adapter accepts two tuning parameters:</p>
+<h2 id="duckdb-integration">DuckDB integration<a class="headerlink" href="#duckdb-integration" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">duckdb</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.dataset</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ds</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">silver_fs</span> <span class="o">=</span> <span class="n">pyarrow_fs</span><span class="p">(</span><span class="n">silver</span><span class="p">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">dataset</span><span class="p">(</span><span class="s2">&quot;readings&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">silver_fs</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="c1"># DuckDB queries PyArrow datasets directly</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">result</span> <span class="o">=</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="s2">    SELECT sensor_id, AVG(reading) as avg_reading</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="s2">    FROM dataset</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="s2">    GROUP BY sensor_id</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="s2">&quot;&quot;&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">fetchdf</span><span class="p">())</span>
+</code></pre></div>
+<h2 id="delta-lake-via-deltalake">Delta Lake (via deltalake)<a class="headerlink" href="#delta-lake-via-deltalake" title="Permanent link">&para;</a></h2>
+<p>The <code>deltalake</code> library accepts PyArrow filesystems for storage:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">deltalake</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeltaTable</span><span class="p">,</span> <span class="n">write_deltalake</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">gold_fs</span> <span class="o">=</span> <span class="n">pyarrow_fs</span><span class="p">(</span><span class="n">gold</span><span class="p">)</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># Write a Delta table</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">write_deltalake</span><span class="p">(</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="s2">&quot;aggregates&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">silver_df</span><span class="o">.</span><span class="n">to_arrow</span><span class="p">(),</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">filesystem</span><span class="o">=</span><span class="n">gold_fs</span><span class="p">,</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="p">)</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="c1"># Read it back</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">dt</span> <span class="o">=</span> <span class="n">DeltaTable</span><span class="p">(</span><span class="s2">&quot;aggregates&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">gold_fs</span><span class="p">)</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_arrow</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">to_pyarrow_table</span><span class="p">())</span>
+</code></pre></div>
+<p>Note: <code>deltalake</code> (delta-rs) owns the transaction log and commit protocol.
+remote-store provides the I/O — it does not replace Delta's ACID guarantees.</p>
+<h2 id="batch-operations-across-partitions">Batch operations across partitions<a class="headerlink" href="#batch-operations-across-partitions" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">batch_delete</span><span class="p">,</span> <span class="n">batch_copy</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># Archive old bronze partitions within the same store</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">old_files</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">f</span><span class="o">.</span><span class="n">path</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">bronze</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;readings&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">path</span> <span class="o">&lt;</span> <span class="s2">&quot;readings/2026-01-01&quot;</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="p">]</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="n">batch_copy</span><span class="p">(</span><span class="n">bronze</span><span class="p">,</span> <span class="p">[(</span><span class="n">f</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;archive/</span><span class="si">{</span><span class="n">f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">old_files</span><span class="p">])</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="n">batch_delete</span><span class="p">(</span><span class="n">bronze</span><span class="p">,</span> <span class="n">old_files</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="cross-backend-transfer">Cross-backend transfer<a class="headerlink" href="#cross-backend-transfer" title="Permanent link">&para;</a></h2>
+<p>Move data between backends without intermediate files:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">transfer</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># Stream a partition from S3 bronze to Azure silver</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">transfer</span><span class="p">(</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">s3_bronze</span><span class="p">,</span> <span class="s2">&quot;readings/2026-03-01.parquet&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="n">azure_silver</span><span class="p">,</span> <span class="s2">&quot;readings/2026-03-01.parquet&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">on_progress</span><span class="o">=</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2"> bytes transferred&quot;</span><span class="p">),</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="p">)</span>
+</code></pre></div>
+<h2 id="testing-without-cloud-credentials">Testing without cloud credentials<a class="headerlink" href="#testing-without-cloud-credentials" title="Permanent link">&para;</a></h2>
+<p>The entire pipeline can run against <code>MemoryBackend</code> in unit tests:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryBackend</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">lake</span><span class="p">():</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;In-memory data lake for testing.&quot;&quot;&quot;</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">MemoryBackend</span><span class="p">())</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    <span class="k">return</span> <span class="p">{</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>        <span class="s2">&quot;bronze&quot;</span><span class="p">:</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">),</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>        <span class="s2">&quot;silver&quot;</span><span class="p">:</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;silver&quot;</span><span class="p">),</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>        <span class="s2">&quot;gold&quot;</span><span class="p">:</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;gold&quot;</span><span class="p">),</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>    <span class="p">}</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_bronze_to_silver</span><span class="p">(</span><span class="n">lake</span><span class="p">):</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.parquet</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pq</span>
+<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>
+<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>    <span class="c1"># Write raw data to bronze</span>
+<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>    <span class="n">bronze_fs</span> <span class="o">=</span> <span class="n">pyarrow_fs</span><span class="p">(</span><span class="n">lake</span><span class="p">[</span><span class="s2">&quot;bronze&quot;</span><span class="p">])</span>
+<a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a>    <span class="n">table</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">table</span><span class="p">({</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">]})</span>
+<a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>    <span class="n">pq</span><span class="o">.</span><span class="n">write_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="s2">&quot;batch.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">bronze_fs</span><span class="p">)</span>
+<a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a>
+<a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a>    <span class="c1"># Transform and write to silver</span>
+<a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a>    <span class="n">silver_fs</span> <span class="o">=</span> <span class="n">pyarrow_fs</span><span class="p">(</span><span class="n">lake</span><span class="p">[</span><span class="s2">&quot;silver&quot;</span><span class="p">])</span>
+<a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a>    <span class="n">raw</span> <span class="o">=</span> <span class="n">pq</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="s2">&quot;batch.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">bronze_fs</span><span class="p">)</span>
+<a id="__codelineno-9-30" name="__codelineno-9-30" href="#__codelineno-9-30"></a>    <span class="c1"># ... apply transformations ...</span>
+<a id="__codelineno-9-31" name="__codelineno-9-31" href="#__codelineno-9-31"></a>    <span class="n">pq</span><span class="o">.</span><span class="n">write_table</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="s2">&quot;batch.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">silver_fs</span><span class="p">)</span>
+<a id="__codelineno-9-32" name="__codelineno-9-32" href="#__codelineno-9-32"></a>
+<a id="__codelineno-9-33" name="__codelineno-9-33" href="#__codelineno-9-33"></a>    <span class="c1"># Verify silver has the data</span>
+<a id="__codelineno-9-34" name="__codelineno-9-34" href="#__codelineno-9-34"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">pq</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="s2">&quot;batch.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">silver_fs</span><span class="p">)</span>
+<a id="__codelineno-9-35" name="__codelineno-9-35" href="#__codelineno-9-35"></a>    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">num_rows</span> <span class="o">==</span> <span class="mi">2</span>
+</code></pre></div>
+<h2 id="what-comes-next">What comes next<a class="headerlink" href="#what-comes-next" title="Permanent link">&para;</a></h2>
+<p>Several backlog items would strengthen this path:</p>
 <table>
 <thead>
 <tr>
-<th>Parameter</th>
-<th>Default</th>
-<th>Description</th>
+<th>ID</th>
+<th>Item</th>
+<th>Impact</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>materialization_threshold</code></td>
-<td>64 MB</td>
-<td>Max file size for full-file read in <code>open_input_file</code>. Files above this threshold stream via <code>PythonFile</code> (if seekable) or fall back to materialization with a warning.</td>
+<td>ID-035</td>
+<td>Parallel batch operations</td>
+<td>Concurrent I/O for partition-scale deletes and copies</td>
 </tr>
 <tr>
-<td><code>write_spill_threshold</code></td>
-<td>64 MB</td>
-<td>Max in-memory buffer size for writes. Exceeding this spills to a temporary file on disk.</td>
+<td>ID-036</td>
+<td>Hive partition path helpers</td>
+<td>Convenience for building/parsing <code>year=2026/month=03/</code> paths</td>
+</tr>
+<tr>
+<td>ID-037</td>
+<td>PyArrow Tier 1 fast-path reads</td>
+<td>Removes the GIL bottleneck for large Parquet workloads</td>
+</tr>
+<tr>
+<td>ID-026</td>
+<td>Streaming atomic writes</td>
+<td>Context-manager writes for multi-GB Parquet exports</td>
+</tr>
+<tr>
+<td>ID-025</td>
+<td><code>ext.cache</code></td>
+<td>Reduces round-trips for metadata-heavy listing workflows</td>
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">fs</span> <span class="o">=</span> <span class="n">pyarrow_fs</span><span class="p">(</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">store</span><span class="p">,</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">materialization_threshold</span><span class="o">=</span><span class="mi">128</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>  <span class="c1"># 128 MB</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">write_spill_threshold</span><span class="o">=</span><span class="mi">32</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>        <span class="c1"># 32 MB</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">)</span>
-</code></pre></div>
-<h2 id="tiered-read-strategy">Tiered Read Strategy<a class="headerlink" href="#tiered-read-strategy" title="Permanent link">&para;</a></h2>
-<p><code>open_input_file</code> (used by Parquet readers) selects the best approach:</p>
-<table>
-<thead>
-<tr>
-<th>Condition</th>
-<th>Strategy</th>
-<th>Memory</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>File &lt;= threshold</td>
-<td><strong>Tier 2</strong>: <code>read_bytes()</code> -&gt; <code>BufferReader</code></td>
-<td>Full file</td>
-<td>Zero GIL overhead</td>
-</tr>
-<tr>
-<td>File &gt; threshold, seekable stream</td>
-<td><strong>Tier 3</strong>: <code>read()</code> -&gt; <code>PythonFile</code></td>
-<td>Streaming</td>
-<td>GIL per read call</td>
-</tr>
-<tr>
-<td>File &gt; threshold, non-seekable</td>
-<td><strong>Tier 2 fallback</strong> (with warning)</td>
-<td>Full file</td>
-<td>S3/Azure HTTP streams</td>
-</tr>
-</tbody>
-</table>
-<p>A future Phase 2 will add <strong>Tier 1</strong> (backend-native fast path) for backends
-like S3-PyArrow that expose a native <code>pyarrow.fs.FileSystem</code> via <code>unwrap()</code>.</p>
-<h2 id="thread-safety">Thread Safety<a class="headerlink" href="#thread-safety" title="Permanent link">&para;</a></h2>
-<p>The handler holds no shared mutable state. PyArrow's C++ layer may call handler
-methods from background threads (with the GIL acquired). Thread safety depends
-on the backend -- all built-in backends (Memory, Local, S3, SFTP, Azure) are
-safe under concurrent calls. If using a custom backend, ensure its methods are
-thread-safe.</p>
-<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>No append support.</strong> <code>open_append_stream</code> raises <code>NotImplementedError</code>.
-  Most backends (S3, Azure) lack native append semantics.</li>
-<li><strong>Root deletion blocked.</strong> <code>delete_dir("")</code>, <code>delete_dir_contents("")</code>, and
-  <code>delete_root_dir_contents()</code> raise <code>NotImplementedError</code> as a safety guard.</li>
-<li><strong>Write buffering.</strong> Writes are buffered until <code>close()</code> -- data is not
-  visible in the Store during the write. This is inherent to the Store's
-  single-shot <code>write()</code> API.</li>
-<li><strong>No Tier 1 fast path yet.</strong> Phase 1 uses Tier 2/3 for all backends.
-  Phase 2 will add Tier 1 for backends with native PyArrow support.</li>
-<li><strong>Process exit on Linux.</strong> PyArrow's C++ atexit handlers can deadlock
-  during interpreter shutdown when a <code>PyFileSystem</code> is still alive. If your
-  script hangs after completing, explicitly <code>del</code> the PyArrow filesystem and
-  dataset objects before exit, or call <code>os._exit(0)</code> after cleanup.</li>
+<li><a href="../pyarrow-adapter/">PyArrow FileSystem Adapter</a> — adapter configuration and tiered read strategy</li>
+<li><a href="../transfer-operations/">Transfer Operations</a> — cross-store and local-path transfers</li>
+<li><a href="../batch-operations/">Batch Operations</a> — bulk delete, copy, exists</li>
+<li><a href="../concurrency/">Concurrency</a> — TOCTOU and atomicity considerations</li>
 </ul>
-<h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<p>Store errors are translated to standard Python exceptions:</p>
-<table>
-<thead>
-<tr>
-<th>Store error</th>
-<th>Python exception</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>NotFound</code></td>
-<td><code>FileNotFoundError</code></td>
-</tr>
-<tr>
-<td><code>AlreadyExists</code></td>
-<td><code>FileExistsError</code></td>
-</tr>
-<tr>
-<td><code>PermissionDenied</code></td>
-<td><code>PermissionError</code></td>
-</tr>
-<tr>
-<td><code>InvalidPath</code></td>
-<td><code>ValueError</code></td>
-</tr>
-<tr>
-<td><code>CapabilityNotSupported</code></td>
-<td><code>NotImplementedError</code></td>
-</tr>
-<tr>
-<td>Other <code>RemoteStoreError</code></td>
-<td><code>OSError</code></td>
-</tr>
-</tbody>
-</table>
-<p>No <code>RemoteStoreError</code> leaks to PyArrow callers -- all exceptions are mapped
-with <code>from</code> chaining for debuggability.</p>
 
 
 
