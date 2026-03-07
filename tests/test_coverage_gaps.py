@@ -98,7 +98,7 @@ _EMPTY_PATH_CASES: list[tuple[str, str, bool]] = [
 @pytest.mark.parametrize(
     "method,path,needs_setup",
     _EMPTY_PATH_CASES,
-    ids=[f"{m}{'_dst' if m.endswith('_dst') else ''}({p!r})" for m, p, _ in _EMPTY_PATH_CASES],
+    ids=[f"{m}({p!r})" for m, p, _ in _EMPTY_PATH_CASES],
 )
 def test_empty_path_rejected(method: str, path: str, needs_setup: bool) -> None:
     """File-targeted methods reject empty and dot paths."""

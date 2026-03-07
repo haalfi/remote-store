@@ -110,16 +110,18 @@ class TestBatchDelete:
         assert store.exists("c.txt")
 
     @pytest.mark.spec("BATCH-006")
-    @pytest.mark.parametrize(
-        "missing_ok,expect_success",
-        [(True, True), (False, False)],
-        ids=["missing_ok_true", "missing_ok_false"],
-    )
-    def test_missing_ok(self, missing_ok: bool, expect_success: bool) -> None:
+    def test_missing_ok_true(self) -> None:
         store = _populated_store("a.txt")
-        paths = ["a.txt", "gone.txt"] if missing_ok else ["nope.txt"]
-        result = batch_delete(store, paths, missing_ok=missing_ok)
-        assert result.all_succeeded is expect_success
+        result = batch_delete(store, ["a.txt", "gone.txt"], missing_ok=True)
+        assert result.all_succeeded
+        assert result.succeeded == ("a.txt", "gone.txt")
+
+    @pytest.mark.spec("BATCH-006")
+    def test_missing_ok_false(self) -> None:
+        store = _populated_store("a.txt")
+        result = batch_delete(store, ["nope.txt"], missing_ok=False)
+        assert not result.all_succeeded
+        assert isinstance(result.failed["nope.txt"], NotFound)
 
     @pytest.mark.spec("BATCH-007")
     def test_empty_paths(self) -> None:
