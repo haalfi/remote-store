@@ -28,7 +28,7 @@ runtime dependencies in the core package.
 - Not a table format (no Delta Lake log, no Iceberg manifests)
 - Not a filesystem reimplementation (delegates to `boto3`, `paramiko`,
   `azure-storage-file-datalake`, `pyarrow` — the libraries you'd pick anyway)
-- Not competing with `fsspec` on the same axis (see § 4)
+- Not competing with `fsspec` on the same axis (see § 2)
 
 ### Primary audiences
 
@@ -74,17 +74,17 @@ Understanding the ecosystem is essential for honest, non-salesy positioning.
   `object_store` crate. S3, GCS, Azure. First-class async.
 - **Strengths:** 9x throughput over fsspec for concurrent small reads,
   stateless API, self-contained (no boto3/Azure SDK), strong types.
-- **Criticisms:** Object-store-only (no local filesystem, no SFTP), no
-  streaming file-like interface, newer ecosystem.
-- **remote-store's angle:** obstore optimises for raw throughput on cloud
-  object stores. remote-store optimises for _simplicity and portability_
-  across heterogeneous backends (local, SFTP, cloud). Different goals,
+- **Criticisms:** No SFTP, no streaming file-like interface, newer ecosystem.
+- **remote-store's angle:** obstore optimises for raw throughput on object
+  stores (cloud + local). remote-store optimises for _simplicity and
+  portability_ across heterogeneous backends including SFTP, with streaming
+  file-like I/O, observability, and immutable config. Different goals,
   overlapping but distinct audiences.
 
 ### smart_open (by RaRe Technologies)
 
 - **What:** Drop-in replacement for Python's `open()` that handles S3, GCS,
-  Azure, HDFS, SFTP, HTTP, and local files. 9.7M weekly PyPI downloads.
+  Azure, HDFS, SFTP, HTTP, and local files. 14M+ weekly PyPI downloads.
   A **key ecosystem project** with 120+ contributors.
 - **Strengths:** Ubiquitous adoption, dead-simple API (`open("s3://...")` just
   works), transparent compression, minimal learning curve.
@@ -147,7 +147,7 @@ Understanding the ecosystem is essential for honest, non-salesy positioning.
 | API surface            | ~56 methods     | `open()` only   | pathlib-style   | ~10 methods      | ~18 methods         |
 | Backend scope          | 30+ filesystems | S3,GCS,Az,SFTP  | S3,GCS,Azure    | S3, GCS, Azure   | Local,S3,SFTP,Az,Mem|
 | SFTP support           | via sshfs       | Yes             | No              | No               | Built-in            |
-| Local filesystem       | Yes             | Yes (fallback)  | Mock only       | No               | Built-in            |
+| Local filesystem       | Yes             | Yes (fallback)  | Mock only       | Yes (LocalStore) | Built-in            |
 | Memory backend (test)  | Yes             | No              | Local mock      | No               | Built-in            |
 | List/glob/delete       | Yes             | No              | Yes (pathlib)   | Yes              | Yes                 |
 | Atomic writes          | No              | No              | No              | No               | Yes (capability-gated)|
@@ -158,7 +158,7 @@ Understanding the ecosystem is essential for honest, non-salesy positioning.
 | Observability          | No              | No              | No              | No               | `ext.observe`+OTel  |
 | Config model           | Per-filesystem  | URI-based       | Per-client      | Per-store kwargs | Immutable Registry  |
 | Typing                 | Limited         | Limited         | Good            | Strong           | Strict mypy         |
-| Weekly PyPI downloads  | ~30M+           | ~9.7M           | ~200K           | ~50K             | New                 |
+| Weekly PyPI downloads  | ~30M+           | ~14M+           | ~200K           | ~150K            | New                 |
 
 ### Positioning takeaway
 
@@ -359,7 +359,7 @@ Reaching them requires different channels than developer communities.
 
 #### Startup segments that benefit directly
 
-**1. Data infrastructure startups (Airbyte, dltHub, Meltano, Tower, Dagster)**
+**1. Data infrastructure startups (Airbyte, dltHub, Meltano, Dagster)**
 - These build ETL/ELT tools. Their users deal with multi-backend file I/O
   constantly. remote-store could be a dependency or recommended companion.
 - **Action:** Open issues or discussions on their repos showing integration
@@ -410,7 +410,7 @@ Reaching them requires different channels than developer communities.
 | **Polars** Discord/GitHub | "How do I read Parquet from S3?" → PyArrow adapter |
 | **DuckDB** Discord | "How do I scan files across backends?" → `ext.arrow` |
 | **Pandas** (SO/Reddit) | "How do I write to S3?" → `store.write()` |
-| **Airflow** Slack | "How do I abstract file transfers?" → `ext.transfer` |
+| **Airflow** Slack | "How do I abstract file transfers?" → Store API (`read`/`write` across backends) |
 | **Dagster** Slack | "How do I make I/O manager backend-agnostic?" → Registry |
 | **Prefect** community | Same as Dagster — pipeline I/O abstraction |
 | **FastAPI** Discord | "How do I handle file uploads to S3/local?" → Store |
@@ -437,7 +437,7 @@ Reaching them requires different channels than developer communities.
 - **Angle 1 (platform teams):** "We enabled our analyst teams to work with
   S3 and SFTP without learning boto3 or paramiko."
 - **Angle 2 (engineering managers):** "How spec-driven development with AI
-  produced a 1,300-test Python library in 9 weeks."
+  produced a 1,400-test Python library in ~11 weeks."
 - **Angle 3 (data leads):** "Our analysts stopped asking how to upload to S3.
   Here's the library that made it a non-question."
 
