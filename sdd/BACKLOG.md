@@ -181,13 +181,13 @@ All v1.0 release blockers were resolved across v0.3.0–v0.4.1.
 
 ### Backlog items
 
-- [x] **BK-005 — SFTP backend test coverage gaps** *(unreleased)*
+- [x] **BK-005 — SFTP backend test coverage gaps** (v0.14.0)
   Coverage improved from 90% to 100% on `_sftp.py`. 35 new tests covering
   all uncovered branches: `to_key()`, string-to-enum coercion, `_map_exception()`
   edge cases, `write_atomic()` stream paths, type guards, recursive stats,
   non-ENOENT OSError re-raises, generic exception wrapping, `_rmtree` fallbacks.
 
-- [x] **BK-006 — Memory backend test coverage gaps** *(unreleased)*
+- [x] **BK-006 — Memory backend test coverage gaps** (v0.14.0)
   Coverage improved from 90% to 100% on `_memory.py`. 30 new tests covering
   all uncovered branches: `_split_path` validation (null bytes, absolute paths,
   `..` segments), `_traverse` file-as-directory, `_ensure_parents` file conflict,
@@ -307,25 +307,25 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   (CONTRIBUTING.md spec 012), L-4 (Azure config example), L-5 (`[Unreleased]`
   section in CHANGELOG).
 
-- [x] **AF-016 — Fix stale capability sections in specs 008, 011, 012** *(unreleased)*
+- [x] **AF-016 — Fix stale capability sections in specs 008, 011, 012** (v0.14.0)
   Added `GLOB` to capability lists in S3-003, S3PA-003, and AZ-003. Cross-referenced
   `018-glob.md` (GLOB-018/019/020).
 
-- [x] **AF-017 — Add ID-043 to CHANGELOG [Unreleased]** *(unreleased)*
+- [x] **AF-017 — Add ID-043 to CHANGELOG [Unreleased]** (v0.14.0)
   Added `### Changed` entry for ID-043 in `[Unreleased]`.
 
-- [x] **AF-018 — Correct BACKLOG version tags for ID-040/041/042** *(unreleased)*
-  Changed `(v0.13.1)` annotations to `*(unreleased)*`.
+- [x] **AF-018 — Correct BACKLOG version tags for ID-040/041/042** (v0.14.0)
+  Changed `(v0.13.1)` annotations to `(v0.14.0)`.
 
-- [x] **AF-019 — Fix spec count in DEVELOPMENT_STORY.md** *(unreleased)*
+- [x] **AF-019 — Fix spec count in DEVELOPMENT_STORY.md** (v0.14.0)
   Updated `20 specs` to `21 specs`.
 
-- [x] **AF-020 — Fix §11.6 method ordering** *(unreleased)*
+- [x] **AF-020 — Fix §11.6 method ordering** (v0.14.0)
   Reordered all 7 class files (`_store.py`, 6 backends) to follow DESIGN.md
   §11.6: `__init__` → properties → public methods → dunder methods → private
   helpers. `# region:` comments restructured to match.
 
-- [x] **AF-021 — Add backlog ID to unlinked TODO in `ext/arrow.py`** *(unreleased)*
+- [x] **AF-021 — Add backlog ID to unlinked TODO in `ext/arrow.py`** (v0.14.0)
   Changed `# TODO(Phase 2):` to `# TODO(ID-037 Phase 2):`.
 
 ### Known bugs
@@ -337,21 +337,21 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
 
 ### Ideas shipped
 
-- [x] **ID-002 — YAML config support** *(unreleased)*
+- [x] **ID-002 — YAML config support** (v0.14.0)
   `RegistryConfig.from_yaml(path)` — optional `pyyaml` or `ruamel.yaml`.
   Spec: `sdd/specs/021-config-loaders.md` (CFG-010/CFG-011).
 
-- [x] **ID-003 — Pydantic BaseSettings integration** *(unreleased)*
+- [x] **ID-003 — Pydantic BaseSettings integration** (v0.14.0)
   `pydantic_to_registry_config()` in `ext/pydantic.py`. Converts any Pydantic
   `BaseModel`/`BaseSettings` to `RegistryConfig` via `model_dump() → from_dict()`.
   Optional `pydantic-settings` dependency. Spec: `sdd/specs/021-config-loaders.md`
   (CFG-015, CFG-016, CFG-017).
 
-- [x] **ID-005 — Built-in `from_toml()` config loader** *(unreleased)*
+- [x] **ID-005 — Built-in `from_toml()` config loader** (v0.14.0)
   `RegistryConfig.from_toml(path, table=())` — zero-dep on 3.11+, `tomli` on 3.10.
   Spec: `sdd/specs/021-config-loaders.md` (CFG-008/CFG-009).
 
-- [x] **ID-034 — Parquet lake guide (Bronze / Silver / Gold patterns)** *(unreleased)*
+- [x] **ID-034 — Parquet lake guide (Bronze / Silver / Gold patterns)** (v0.14.0)
   User-facing guide (`guides/data-lake-patterns.md`) documenting Bronze/Silver/Gold
   medallion architecture using `Store.child()` + `ext.arrow` + `ext.transfer`.
   Covers PyArrow, Polars, DuckDB, Delta Lake integration, batch partition
@@ -509,22 +509,22 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   `host_key_policy`. `SecretRedactionFilter` logging filter. Regression tests.
   → Spec: `sdd/specs/020-credential-hygiene.md` (SEC-001 through SEC-008)
 
-- [x] **ID-040 — `move(src, dst)` and `copy(src, dst)` same-path consistency** *(unreleased)*
+- [x] **ID-040 — `move(src, dst)` and `copy(src, dst)` same-path consistency** (v0.14.0)
   Added `src == dst` short-circuit in `Store.move()` and `Store.copy()` with
   `is_file()` verification (`NotFound` for missing files or folders at source
   path). MemoryBackend retains its own move guard for defense in depth.
   Spec: STORE-008a.
 
-- [x] **ID-041 — `Registry.get_store()` backend ownership foot-gun** *(unreleased)*
+- [x] **ID-041 — `Registry.get_store()` backend ownership foot-gun** (v0.14.0)
   `get_store()` now sets `_owns_backend = False` on returned stores (same
   pattern as `Store.child()`). `Registry.close()` remains the lifecycle owner.
 
-- [x] **ID-042 — Document Secret usage in README and examples** *(unreleased)*
+- [x] **ID-042 — Document Secret usage in README and examples** (v0.14.0)
   Added "Credential hygiene" section to README and updated
   `examples/configuration.py` with `Secret` wrapping, `from_dict()`
   auto-wrapping, and `.reveal()` demonstration. Related: ID-039.
 
-- [x] **ID-043 — Remove `_stacklevel` from public `from_dict()` signature** *(unreleased)*
+- [x] **ID-043 — Remove `_stacklevel` from public `from_dict()` signature** (v0.14.0)
   `RegistryConfig.from_dict()` exposes a `_stacklevel: int = 2` keyword
   argument — a private implementation detail leaking into the public API.
   Fixed: extracted `_from_dict()` private impl; `from_dict()`, `from_toml()`,
