@@ -56,7 +56,7 @@ tests:
 
 about:
   homepage: https://github.com/haalfi/remote-store
-  summary: "A small Python library for working with files across local storage, S3, SFTP, and Azure"
+  summary: "Write file storage code once. Run it against local files, S3, SFTP, or Azure."
   description: |
     remote-store provides a consistent Python API for file storage across
     backends (Local, S3, SFTP, Azure). Write file storage code once, run it

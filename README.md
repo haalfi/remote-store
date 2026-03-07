@@ -5,7 +5,7 @@
 <h1 align="center">remote-store</h1>
 
 <p align="center">
-  A small Python library for working with files across local storage, S3, SFTP, and Azure using the same API.
+  Write file storage code once. Run it against local files, S3, SFTP, or Azure.
 </p>
 
 <p align="center">

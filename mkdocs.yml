@@ -1,6 +1,6 @@
 site_name: remote-store
 site_url: https://haalfi.github.io/remote-store/
-site_description: A small Python library for working with files across local storage, S3, SFTP, and Azure using the same API.
+site_description: Write file storage code once. Run it against local files, S3, SFTP, or Azure.
 repo_url: https://github.com/haalfi/remote-store
 repo_name: haalfi/remote-store
 

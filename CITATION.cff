@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
 title: "remote-store"
 abstract: >-
-  A small Python library for working with files across local
-  storage, S3, SFTP, and Azure using the same API.
+  Write file storage code once. Run it against local files,
+  S3, SFTP, or Azure.
 type: software
 version: 0.14.0
 date-released: 2026-03-07
