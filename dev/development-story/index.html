@@ -4066,7 +4066,7 @@
 </tr>
 <tr>
 <td>Tests</td>
-<td>1,305 tests, ~10,300 lines</td>
+<td>1,304 tests, ~10,800 lines</td>
 </tr>
 <tr>
 <td>Specs &amp; docs</td>
@@ -4571,6 +4571,9 @@ prioritization scheme each session.</p>
 </li>
 <li>
 <p><strong>Your CI environment is not your user's environment.</strong> CI ran on Linux with Azurite (our Azure emulator), which inflated test coverage enough to mask untested code paths in new config loaders. Meanwhile, example scripts used Unicode arrows (<code>→</code>) that rendered fine on Linux's UTF-8 locale but crashed on Windows cp1252. Both bugs shipped through green CI. The fix was a pre-commit hook rejecting non-ASCII in <code>print()</code> calls and a release checklist item requiring <code>hatch run all</code> locally — because the developer's environment (Windows, no Docker backends) was closer to a real user's experience than CI was. <strong>If your CI is more forgiving than your users' environments, your CI is testing itself, not your software.</strong></p>
+</li>
+<li>
+<p><strong>Parametrize tests ruthlessly, but only after they exist.</strong> Once a test suite reaches critical mass, repetitive test functions become a maintenance burden — every API change ripples through dozens of near-identical functions. Collapsing them into <code>@pytest.mark.parametrize</code> data tables with <code>pytest.param(..., id="...")</code> preserves every test case while cutting hundreds of lines. Shared fixtures (a single <code>RestrictedBackend</code> in <code>conftest.py</code> replaced five per-file copies) compound the savings. But this works precisely because the tests existed first as explicit, readable functions — parametrizing from scratch risks hiding what's actually being tested behind opaque data tables. <strong>Write tests verbosely, then compress them once patterns emerge.</strong> The result is a suite that's faster to scan, cheaper to extend, and just as thorough.</p>
 </li>
 </ol>
 <h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>
