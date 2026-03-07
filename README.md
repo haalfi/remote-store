@@ -25,42 +25,31 @@ Most Python projects that deal with files eventually accumulate storage glue:
 small wrappers around local paths, `boto3`, SFTP clients, and cloud-specific edge cases.
 That code is usually repetitive, hard to standardize, and expensive to replace later.
 
-`remote-store` provides one small, consistent API for the file operations applications actually need:
-read, write, list, delete, move, copy, and existence checks.
-The same code works across local storage, S3, SFTP, Azure, and in-memory storage.
+`remote-store` replaces those wrappers with one small, tested API:
 
-The practical value is simple:
-you can change where files live without rewriting the application code that uses them.
-Platform teams can standardize storage access.
-Application teams can work with a predictable interface instead of learning multiple SDKs.
+> **Write storage code once. Run it against local files, S3, SFTP, or Azure.**
 
-Configuration is immutable, so non-experts can't accidentally break state.
-Errors are clear instead of raw SDK tracebacks.
-Streaming just works without tuning buffer sizes.
-
-`remote-store` is not trying to replace native SDKs.
-It uses them underneath and gives your application a stable interface on top.
+The same `store.read()` / `store.write()` calls work everywhere.
+Change where files live by changing config, not application code.
+Native SDKs (`boto3`, `paramiko`, `azure-storage-file-datalake`) do the real work underneath.
 
 ### Who this is for
 
-- **Analysts, scientists, and domain experts** who write Python but shouldn't need to learn `boto3`, `paramiko`, or cloud-specific SDKs just to read and write files
-- **Platform and internal tooling teams** that need one storage interface across multiple environments or customers
-- **Data and application teams** that move between local files, S3, SFTP, and Azure
-- **Teams tired of maintaining custom storage wrappers** for each backend
-
-This is most useful when backend choice is an operational detail, not something every application should encode for itself.
+- **Citizen developers** -- analysts and domain experts who write Python but shouldn't need to learn `boto3`, `paramiko`, or cloud-specific SDKs just to read and write files
+- **Platform and internal tooling teams** that need one storage interface across environments
+- **Data engineering teams** building pipelines that must run against multiple backends
+- **Teams tired of maintaining custom storage wrappers** -- if you've wrapped S3 or SFTP more than once, this is that wrapper, tested and maintained
 
 ## What you get
 
-- **One storage interface across backends:** the same methods for local files, S3, SFTP, Azure, and memory
-- **Backend changes through configuration:** move between environments without rewriting storage code
-- **A smaller surface area than raw SDKs:** enough for common file operations without backend-specific sprawl
-- **Streaming reads and writes by default:** works for large files without forcing everything into memory
+- **One interface, many backends:** local fs, S3, SFTP, Azure, in-memory
+- **Swap backends via config:** move between environments without changing code
+- **Streaming by default:** large files just work without blowing up memory
 - **Atomic writes where supported:** safer updates for file-producing workflows
-- **Optional PyArrow integration:** use a store with Parquet, Pandas, Polars, DuckDB, and dataset tooling
-- **Native SDKs underneath:** keep proven backend implementations instead of relying on custom protocol layers
-- **Zero runtime dependencies:** the core package installs nothing; backend extras pull in only what they need
+- **Native SDKs underneath:** `boto3`, `paramiko`, etc. do the real work
+- **Zero runtime dependencies:** backend extras pull in only what they need
 - **Typed and tested:** strict mypy, spec-driven test suite
+- **Optional PyArrow integration:** use any Store as a `pyarrow.fs.FileSystem` for Parquet, Pandas, Polars, DuckDB
 
 ## Installation
 
@@ -74,43 +63,58 @@ Backends that need extra dependencies use extras:
 
 ```bash
 pip install "remote-store[s3]"           # Amazon S3 / MinIO
-pip install "remote-store[s3-pyarrow]"   # S3 with PyArrow (high-throughput)
 pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
+```
+
+Optional extras for tooling and config formats:
+
+```bash
 pip install "remote-store[arrow]"        # PyArrow filesystem adapter
+pip install "remote-store[s3-pyarrow]"   # S3 with PyArrow (high-throughput)
 pip install "remote-store[otel]"         # OpenTelemetry tracing and metrics
-pip install "remote-store[toml]"        # TOML config (backport for Python 3.10)
-pip install "remote-store[yaml]"        # YAML config (pyyaml)
-pip install "remote-store[pydantic]"    # Pydantic config (pydantic-settings)
+pip install "remote-store[toml]"         # TOML config (backport for Python 3.10)
+pip install "remote-store[yaml]"         # YAML config (pyyaml)
+pip install "remote-store[pydantic]"     # Pydantic config (pydantic-settings)
 ```
 
 ## Quick Start
 
 ```python
-import tempfile
-from remote_store import BackendConfig, RegistryConfig, Registry, StoreProfile
+from remote_store import Registry, RegistryConfig
 
-with tempfile.TemporaryDirectory() as tmp:
-    config = RegistryConfig(
-        backends={"local": BackendConfig(type="local", options={"root": tmp})},
-        stores={"data": StoreProfile(backend="local", root_path="data")},
-    )
+config = RegistryConfig.from_dict({
+    "backends": {"main": {"type": "local", "options": {"root": "/tmp/data"}}},
+    "stores": {"data": {"backend": "main", "root_path": ""}},
+})
 
-    with Registry(config) as registry:
-        store = registry.get_store("data")
+with Registry(config) as registry:
+    store = registry.get_store("data")
 
-        store.write("hello.txt", b"Hello, world!")
-        content = store.read_bytes("hello.txt")
-        print(content)  # b'Hello, world!'
+    store.write("hello.txt", b"Hello, world!")
+    print(store.read_bytes("hello.txt"))  # b'Hello, world!'
 ```
 
-Switch to S3 by changing the config. The rest of the code stays the same:
+Switch to S3 by changing the config. The application code stays the same:
+
+```toml
+# remote-store.toml -- dev
+[backends.main]
+type = "local"
+options = { root = "/tmp/data" }
+
+# remote-store.toml -- production
+[backends.main]
+type = "s3"
+options = { bucket = "analytics-data" }
+
+[stores.data]
+backend = "main"
+root_path = "reports"
+```
 
 ```python
-config = RegistryConfig(
-    backends={"s3": BackendConfig(type="s3", options={"bucket": "my-bucket"})},
-    stores={"data": StoreProfile(backend="s3", root_path="data")},
-)
+config = RegistryConfig.from_toml("remote-store.toml")
 ```
 
 ## Configuration
