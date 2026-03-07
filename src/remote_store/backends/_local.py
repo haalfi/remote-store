@@ -61,6 +61,12 @@ class LocalBackend(Backend):
             return ""
         return native_path
 
+    def native_path(self, path: str) -> str:
+        root_str = str(self._root).replace("\\", "/")
+        if path:
+            return f"{root_str}/{path}"
+        return root_str
+
     def exists(self, path: str) -> bool:
         return self._resolve(path).exists()
 

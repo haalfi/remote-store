@@ -260,8 +260,12 @@ def native_path(self, path: str) -> str:
     return path  # default: identity
 ```
 **Postconditions:** The default is the identity function. Backends with a native
-root (bucket, base_path) override to prepend their prefix. This is the inverse
-of `to_key`.
+root (bucket, base_path, filesystem root) **must** override to prepend their
+prefix. This is the inverse of `to_key`:
+`backend.to_key(backend.native_path(key)) == key` for all valid keys.
+**Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket),
+`S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path),
+`AzureBackend` (prepends container). `MemoryBackend` inherits the identity default.
 
 ### NPR-021: Backend.native_path Contract
 

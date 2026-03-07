@@ -416,13 +416,15 @@ class TestTier1NativeFastPath:
         handler = StoreFileSystemHandler(child)
         # Tier 1 disabled for local — verify native_path composition
         assert handler._native_fs is None
-        assert child.native_path("file.txt") == "sub/file.txt"
+        # native_path returns full backend-native path (root dir + root_path + key)
+        native = child.native_path("file.txt")
+        assert native.endswith("sub/file.txt")
+        assert child.to_key(native) == "file.txt"
 
         # Now inject Tier 1 and verify dispatch uses native_path_fn correctly
         local_pa_fs = pafs.LocalFileSystem()
         handler._native_fs = local_pa_fs
-        root = local_store._backend._root  # type: ignore[attr-defined]
-        handler._native_path_fn = lambda key: str(root / child._root / key) if key else str(root / child._root)  # type: ignore[attr-defined]
+        handler._native_path_fn = child.native_path
 
         fs = pafs.PyFileSystem(handler)
         with fs.open_input_file("file.txt") as f:

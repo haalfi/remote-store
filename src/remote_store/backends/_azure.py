@@ -138,6 +138,11 @@ class AzureBackend(Backend):
             return native_path[len(prefix) :]
         return native_path
 
+    def native_path(self, path: str) -> str:
+        if path:
+            return f"{self._container}/{path}"
+        return self._container
+
     def exists(self, path: str) -> bool:
         from azure.core.exceptions import ResourceNotFoundError
 

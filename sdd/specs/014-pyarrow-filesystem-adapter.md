@@ -163,12 +163,13 @@ StoreFileSystemHandler(
   filesystem via `store.unwrap(pyarrow.fs.FileSystem)`. If a native FS is
   available and is a `pyarrow.fs.FileSystem` instance, the handler caches
   both the native FS reference and `store.native_path` as the path-translation
-  function for Tier 1 fast-path reads (PA-010). If `unwrap()` raises
-  `CapabilityNotSupported` or `TypeError`, Tier 1 is disabled and the handler
-  falls through to Tier 2/3. This pre-capture means Tier 1 never accesses
-  private Store internals at call time.
-- Construction may trigger backend initialization via `unwrap()` (lazy
-  backends initialize their native handle on first access).
+  function for Tier 1 fast-path reads (PA-010). If `unwrap()` or native FS
+  initialization raises any exception, Tier 1 is disabled and the handler
+  falls through to Tier 2/3. The broad catch ensures that constructor-time
+  probing never propagates backend/client errors to the caller.
+- Construction is side-effect-free when the backend does not support
+  `unwrap()`. For backends that do (e.g., S3PyArrowBackend), probing may
+  trigger lazy client initialization, but failures are suppressed.
 - The Store's lifetime is managed externally — the handler does not own it.
 
 ### PA-002: Convenience Factory
@@ -345,7 +346,7 @@ try:
     if isinstance(native_fs, pyarrow.fs.FileSystem):
         self._native_fs = native_fs
         self._native_path_fn = store.native_path
-except (CapabilityNotSupported, TypeError):
+except Exception:
     pass  # Tier 1 disabled — fall through to Tier 2/3
 
 # At read time:
