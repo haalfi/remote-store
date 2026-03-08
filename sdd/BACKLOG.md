@@ -11,6 +11,15 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
+- [ ] **ID-051 — Sweep stale backlog references in docs and guides**
+  Post-v0.15.0, several guides and doc pages reference backlog items as
+  "upcoming" or "planned" that have since shipped. Sweep all docs, guides,
+  and examples for stale `ID-NNN` references pointing to completed work.
+  Replace with links to the actual shipped features (guides, API pages).
+  Known instance: `guides/data-lake-patterns.md` "What comes next" section
+  (fixed in this commit). May affect other guides written before their
+  referenced features shipped.
+
 - [ ] **ID-049 — Enable GitHub Vigilant Mode**
   Commit signing with SSH/GPG for supply chain transparency. Soft enforcement
   (visual badges, no blocking of unsigned commits). Ops-only, no code changes.

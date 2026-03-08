@@ -285,17 +285,17 @@ def test_bronze_to_silver(lake):
     assert result.num_rows == 2
 ```
 
-## What comes next
+## Features that complement this pattern
 
-Several backlog items would strengthen this path:
+These extensions work well with data lake workflows:
 
-| ID | Item | Impact |
-|-----|------|--------|
-| ID-035 | Parallel batch operations | Concurrent I/O for partition-scale deletes and copies |
-| ID-036 | Hive partition path helpers | Convenience for building/parsing `year=2026/month=03/` paths |
-| ID-037 | PyArrow Tier 1 fast-path reads | Removes the GIL bottleneck for large Parquet workloads |
-| ID-026 | Streaming atomic writes | Context-manager writes for multi-GB Parquet exports |
-| ID-025 | `ext.cache` | Reduces round-trips for metadata-heavy listing workflows |
+| Feature | What it does |
+|---------|-------------|
+| [Parallel batch operations](batch-operations.md) | Concurrent I/O for partition-scale deletes and copies (`concurrent=True`) |
+| [Hive partition helpers](https://remote-store.readthedocs.io/en/latest/api/ext-partition/) | Build and parse `year=2026/month=03/` paths with `partition_path()` and `parse_partition()` |
+| [PyArrow Tier 1 fast-path](pyarrow-adapter.md) | Zero-GIL C++ range requests for large Parquet workloads (S3-PyArrow) |
+| [Streaming atomic writes](https://remote-store.readthedocs.io/en/latest/api/store/#remote_store.Store.open_atomic) | `open_atomic()` context manager for multi-GB Parquet exports |
+| [Caching middleware](cache.md) | Reduces round-trips for metadata-heavy listing workflows |
 
 ## See also
 
