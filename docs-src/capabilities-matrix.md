@@ -1,0 +1,44 @@
+# Capabilities Matrix
+
+Every backend declares which operations it supports via the
+[Capability](api/capabilities.md#remote_store.Capability) enum.
+Use [CapabilitySet](api/capabilities.md#remote_store.CapabilitySet) to query
+at runtime before calling an operation.
+
+## Backend x Capability
+
+| Capability | Local | Memory | S3 | S3-PyArrow | SFTP | Azure |
+|------------|:-----:|:------:|:--:|:----------:|:----:|:-----:|
+| READ           | Y | Y | Y | Y | Y | Y |
+| WRITE          | Y | Y | Y | Y | Y | Y |
+| DELETE         | Y | Y | Y | Y | Y | Y |
+| LIST           | Y | Y | Y | Y | Y | Y |
+| MOVE           | Y | Y | Y | Y | Y | Y |
+| COPY           | Y | Y | Y | Y | Y | Y |
+| ATOMIC_WRITE   | Y | Y | Y | Y | Y | Y |
+| METADATA       | Y | Y | Y | Y | Y | Y |
+| GLOB           | Y | N | Y | Y | N | Y |
+
+**Full support (9/9):** Local, S3, S3-PyArrow, Azure.
+
+**Partial (8/9):** Memory and SFTP lack native `GLOB`. Use the portable
+fallback `ext.glob.glob_files()` instead -- see the
+[Glob Pattern Matching](glob-pattern-matching.md) guide.
+
+## Querying capabilities at runtime
+
+```python
+from remote_store import Capability
+
+if Capability.GLOB in store.capabilities():
+    results = store.glob("**/*.csv")
+else:
+    from remote_store import glob_files
+    results = glob_files(store, "**/*.csv")
+```
+
+## See also
+
+- [Choosing a Backend](choosing-a-backend.md) -- decision tree for picking
+  the right backend
+- [API Reference: Capability](api/capabilities.md)
