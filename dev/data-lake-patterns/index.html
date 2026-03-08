@@ -1762,10 +1762,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-comes-next" class="md-nav__link">
+  <a href="#features-that-complement-this-pattern" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What comes next
+        Features that complement this pattern
       
     </span>
   </a>
@@ -4559,10 +4559,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-comes-next" class="md-nav__link">
+  <a href="#features-that-complement-this-pattern" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What comes next
+        Features that complement this pattern
       
     </span>
   </a>
@@ -4868,40 +4868,34 @@ remote-store provides the I/O — it does not replace Delta's ACID guarantees.</
 <a id="__codelineno-8-34" name="__codelineno-8-34" href="#__codelineno-8-34"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">pq</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="s2">&quot;batch.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">silver_fs</span><span class="p">)</span>
 <a id="__codelineno-8-35" name="__codelineno-8-35" href="#__codelineno-8-35"></a>    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">num_rows</span> <span class="o">==</span> <span class="mi">2</span>
 </code></pre></div>
-<h2 id="what-comes-next">What comes next<a class="headerlink" href="#what-comes-next" title="Permanent link">&para;</a></h2>
-<p>Several backlog items would strengthen this path:</p>
+<h2 id="features-that-complement-this-pattern">Features that complement this pattern<a class="headerlink" href="#features-that-complement-this-pattern" title="Permanent link">&para;</a></h2>
+<p>These extensions work well with data lake workflows:</p>
 <table>
 <thead>
 <tr>
-<th>ID</th>
-<th>Item</th>
-<th>Impact</th>
+<th>Feature</th>
+<th>What it does</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>ID-035</td>
-<td>Parallel batch operations</td>
-<td>Concurrent I/O for partition-scale deletes and copies</td>
+<td><a href="../batch-operations/">Parallel batch operations</a></td>
+<td>Concurrent I/O for partition-scale deletes and copies (<code>concurrent=True</code>)</td>
 </tr>
 <tr>
-<td>ID-036</td>
-<td>Hive partition path helpers</td>
-<td>Convenience for building/parsing <code>year=2026/month=03/</code> paths</td>
+<td><a href="https://remote-store.readthedocs.io/en/latest/api/ext-partition/">Hive partition helpers</a></td>
+<td>Build and parse <code>year=2026/month=03/</code> paths with <code>partition_path()</code> and <code>parse_partition()</code></td>
 </tr>
 <tr>
-<td>ID-037</td>
-<td>PyArrow Tier 1 fast-path reads</td>
-<td>Removes the GIL bottleneck for large Parquet workloads</td>
+<td><a href="../pyarrow-adapter/">PyArrow Tier 1 fast-path</a></td>
+<td>Zero-GIL C++ range requests for large Parquet workloads (S3-PyArrow)</td>
 </tr>
 <tr>
-<td>ID-026</td>
-<td>Streaming atomic writes</td>
-<td>Context-manager writes for multi-GB Parquet exports</td>
+<td><a href="https://remote-store.readthedocs.io/en/latest/api/store/#remote_store.Store.open_atomic">Streaming atomic writes</a></td>
+<td><code>open_atomic()</code> context manager for multi-GB Parquet exports</td>
 </tr>
 <tr>
-<td>ID-025</td>
-<td><code>ext.cache</code></td>
+<td><a href="../cache/">Caching middleware</a></td>
 <td>Reduces round-trips for metadata-heavy listing workflows</td>
 </tr>
 </tbody>
