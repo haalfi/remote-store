@@ -36,7 +36,7 @@ The lifecycle manager. It:
 
 - Loads and validates configuration (`RegistryConfig`)
 - Lazily creates backend instances (one per backend config, shared across stores)
-- Manages cleanup via `close()` / `aclose()`
+- Manages cleanup via `close()`
 
 The Registry is a **passive resource** -- it does not spawn threads or async
 tasks, making it compatible with any concurrency model.

@@ -48,10 +48,16 @@ regardless of backend. Switch via configuration:
 type = "local"
 base_path = "./data"
 
+[stores.default]
+backend = "storage"
+
 # prod.toml
 [backends.storage]
 type = "s3"
 bucket = "my-bucket"
+
+[stores.default]
+backend = "storage"
 ```
 
 ```python
