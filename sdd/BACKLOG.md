@@ -36,7 +36,8 @@ Active work items, ordered by priority.
   Commit signing with SSH/GPG for supply chain transparency. Soft enforcement
   (visual badges, no blocking of unsigned commits). Ops-only, no code changes.
   **Steps when pulling this item:**
-  1. Toggle Vigilant Mode in GitHub repo settings (Settings → Code security).
+  1. Enable Vigilant Mode on maintainer GitHub accounts (Settings > SSH
+     and GPG keys > "Flag unsigned commits as unverified").
   2. Configure local signing: `git config --global gpg.format ssh`,
      `git config --global user.signingkey ~/.ssh/id_ed25519`,
      `git config --global commit.gpgSign true`,
