@@ -37,20 +37,34 @@ class Backend(abc.ABC):
 
     @abc.abstractmethod
     def exists(self, path: str) -> bool:
-        """Check if a file or folder exists. Never raises ``NotFound``."""
+        """Check if a file or folder exists. Never raises ``NotFound``.
+
+        :param path: Backend-relative key, or ``""`` for the root.
+        :returns: ``True`` if a file or folder exists at *path*.
+        """
 
     @abc.abstractmethod
     def is_file(self, path: str) -> bool:
-        """Return ``True`` if ``path`` is an existing file."""
+        """Return ``True`` if ``path`` is an existing file.
+
+        :param path: Backend-relative key.
+        :returns: ``True`` if *path* exists and is a file.
+        """
 
     @abc.abstractmethod
     def is_folder(self, path: str) -> bool:
-        """Return ``True`` if ``path`` is an existing folder."""
+        """Return ``True`` if ``path`` is an existing folder.
+
+        :param path: Backend-relative key, or ``""`` for the root.
+        :returns: ``True`` if *path* exists and is a folder.
+        """
 
     @abc.abstractmethod
     def read(self, path: str) -> BinaryIO:
         """Open a file for reading and return a binary stream.
 
+        :param path: Backend-relative key.
+        :returns: A readable binary stream.
         :raises NotFound: If the file does not exist.
         """
 
@@ -58,6 +72,8 @@ class Backend(abc.ABC):
     def read_bytes(self, path: str) -> bytes:
         """Read the full content of a file as bytes.
 
+        :param path: Backend-relative key.
+        :returns: The file content.
         :raises NotFound: If the file does not exist.
         """
 
@@ -65,6 +81,8 @@ class Backend(abc.ABC):
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         """Write content to a file.
 
+        :param path: Backend-relative key.
+        :param content: Data to write.
         :param overwrite: If ``False``, raise if file already exists.
         :raises AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         """
@@ -73,6 +91,9 @@ class Backend(abc.ABC):
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         """Write content atomically via temp file + rename.
 
+        :param path: Backend-relative key.
+        :param content: Data to write.
+        :param overwrite: If ``False``, raise if file already exists.
         :raises CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
         :raises AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         """
@@ -84,6 +105,8 @@ class Backend(abc.ABC):
         On successful exit the temp file is atomically promoted to *path*.
         On exception the temp file is removed and *path* is untouched.
 
+        :param path: Backend-relative key.
+        :param overwrite: If ``False``, raise if file already exists.
         :raises AlreadyExists: If *path* exists and *overwrite* is ``False``.
         :raises CapabilityNotSupported: If the backend lacks ``ATOMIC_WRITE``.
         """
@@ -92,6 +115,8 @@ class Backend(abc.ABC):
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file.
 
+        :param path: Backend-relative key.
+        :param missing_ok: If ``True``, do not raise when the file is absent.
         :raises NotFound: If the file is missing and ``missing_ok`` is ``False``.
         """
 
@@ -99,24 +124,36 @@ class Backend(abc.ABC):
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         """Delete a folder.
 
+        :param path: Backend-relative key.
+        :param recursive: If ``True``, delete all contents first.
+        :param missing_ok: If ``True``, do not raise when absent.
         :raises NotFound: If the folder is missing and ``missing_ok`` is ``False``.
+        :raises DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
         """
 
     @abc.abstractmethod
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         """List files under ``path``.
 
+        :param path: Backend-relative folder key, or ``""`` for the root.
         :param recursive: If ``True``, include files in all subdirectories.
+        :returns: An iterator of ``FileInfo`` objects.
         """
 
     @abc.abstractmethod
     def list_folders(self, path: str) -> Iterator[str]:
-        """List immediate subfolder names under ``path``."""
+        """List immediate subfolder names under ``path``.
+
+        :param path: Backend-relative folder key, or ``""`` for the root.
+        :returns: An iterator of subfolder name strings.
+        """
 
     @abc.abstractmethod
     def get_file_info(self, path: str) -> FileInfo:
         """Get metadata for a file.
 
+        :param path: Backend-relative key.
+        :returns: A ``FileInfo`` with size, modification time, etc.
         :raises NotFound: If the file does not exist.
         """
 
@@ -124,13 +161,18 @@ class Backend(abc.ABC):
     def get_folder_info(self, path: str) -> FolderInfo:
         """Get metadata for a folder.
 
+        :param path: Backend-relative folder key, or ``""`` for the root.
+        :returns: A ``FolderInfo`` with file count, total size, etc.
         :raises NotFound: If the folder does not exist.
         """
 
     @abc.abstractmethod
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        """Move/rename a file.
+        """Move or rename a file.
 
+        :param src: Backend-relative source key.
+        :param dst: Backend-relative destination key.
+        :param overwrite: If ``True``, replace any existing file at *dst*.
         :raises NotFound: If ``src`` does not exist.
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
@@ -139,6 +181,9 @@ class Backend(abc.ABC):
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Copy a file.
 
+        :param src: Backend-relative source key.
+        :param dst: Backend-relative destination key.
+        :param overwrite: If ``True``, replace any existing file at *dst*.
         :raises NotFound: If ``src`` does not exist.
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
@@ -175,13 +220,13 @@ class Backend(abc.ABC):
     def native_path(self, path: str) -> str:
         """Convert a backend-relative key to the backend-native path.
 
-        The inverse of :meth:`to_key`. The default implementation is the
+        The inverse of ``to_key()``. The default implementation is the
         identity function — backends with a native root (bucket, base_path)
         override this to prepend their prefix.
 
         :param path: Backend-relative key.
         :returns: Backend-native path usable with the native handle from
-            :meth:`unwrap`.
+            ``unwrap()``.
         """
         return path
 

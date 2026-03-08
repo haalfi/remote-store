@@ -12,7 +12,34 @@ if TYPE_CHECKING:
 
 
 class Capability(enum.Enum):
-    """Operations a backend may support."""
+    """Operations a backend may support.
+
+    Each value gates one or more ``Store`` methods.
+    Use ``Store.supports()`` to query at runtime.
+
+    Values:
+
+    - ``READ`` -- Stream or bulk-read file content.
+      Gates ``Store.read()`` and ``Store.read_bytes()``.
+    - ``WRITE`` -- Create or overwrite files.
+      Gates ``Store.write()``.
+    - ``DELETE`` -- Remove files and folders.
+      Gates ``Store.delete()`` and ``Store.delete_folder()``.
+    - ``LIST`` -- Enumerate files and subfolders.
+      Gates ``Store.list_files()`` and ``Store.list_folders()``.
+    - ``MOVE`` -- Rename or relocate a file within the same backend.
+      Gates ``Store.move()``.
+    - ``COPY`` -- Duplicate a file within the same backend.
+      Gates ``Store.copy()``.
+    - ``ATOMIC_WRITE`` -- Write via temp-file-and-rename so readers never
+      see partial content. Gates ``Store.write_atomic()`` and
+      ``Store.open_atomic()``.
+    - ``METADATA`` -- Retrieve file or folder metadata.
+      Gates ``Store.get_file_info()`` and ``Store.get_folder_info()``.
+    - ``GLOB`` -- Native pattern matching against file paths.
+      Gates ``Store.glob()``. Not all backends support this -- use
+      ``ext.glob.glob_files()`` as a portable fallback.
+    """
 
     READ = "read"
     WRITE = "write"
