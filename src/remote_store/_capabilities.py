@@ -14,60 +14,31 @@ if TYPE_CHECKING:
 class Capability(enum.Enum):
     """Operations a backend may support.
 
-    Each value gates one or more :class:`~remote_store.Store` methods.
-    Use :meth:`Store.supports` to query at runtime.
+    Each value gates one or more ``Store`` methods.
+    Use ``Store.supports()`` to query at runtime.
 
-    .. attribute:: READ
+    Values:
 
-       Stream or bulk-read file content.
-       Gates :meth:`~remote_store.Store.read` and
-       :meth:`~remote_store.Store.read_bytes`.
-
-    .. attribute:: WRITE
-
-       Create or overwrite files.
-       Gates :meth:`~remote_store.Store.write`.
-
-    .. attribute:: DELETE
-
-       Remove files and folders.
-       Gates :meth:`~remote_store.Store.delete` and
-       :meth:`~remote_store.Store.delete_folder`.
-
-    .. attribute:: LIST
-
-       Enumerate files and subfolders.
-       Gates :meth:`~remote_store.Store.list_files` and
-       :meth:`~remote_store.Store.list_folders`.
-
-    .. attribute:: MOVE
-
-       Rename or relocate a file within the same backend.
-       Gates :meth:`~remote_store.Store.move`.
-
-    .. attribute:: COPY
-
-       Duplicate a file within the same backend.
-       Gates :meth:`~remote_store.Store.copy`.
-
-    .. attribute:: ATOMIC_WRITE
-
-       Write via temp-file-and-rename so readers never see partial content.
-       Gates :meth:`~remote_store.Store.write_atomic` and
-       :meth:`~remote_store.Store.open_atomic`.
-
-    .. attribute:: METADATA
-
-       Retrieve file or folder metadata.
-       Gates :meth:`~remote_store.Store.get_file_info` and
-       :meth:`~remote_store.Store.get_folder_info`.
-
-    .. attribute:: GLOB
-
-       Native pattern matching against file paths.
-       Gates :meth:`~remote_store.Store.glob`.
-       Not all backends support this -- use
-       :func:`~remote_store.ext.glob.glob_files` as a portable fallback.
+    - ``READ`` -- Stream or bulk-read file content.
+      Gates ``Store.read()`` and ``Store.read_bytes()``.
+    - ``WRITE`` -- Create or overwrite files.
+      Gates ``Store.write()``.
+    - ``DELETE`` -- Remove files and folders.
+      Gates ``Store.delete()`` and ``Store.delete_folder()``.
+    - ``LIST`` -- Enumerate files and subfolders.
+      Gates ``Store.list_files()`` and ``Store.list_folders()``.
+    - ``MOVE`` -- Rename or relocate a file within the same backend.
+      Gates ``Store.move()``.
+    - ``COPY`` -- Duplicate a file within the same backend.
+      Gates ``Store.copy()``.
+    - ``ATOMIC_WRITE`` -- Write via temp-file-and-rename so readers never
+      see partial content. Gates ``Store.write_atomic()`` and
+      ``Store.open_atomic()``.
+    - ``METADATA`` -- Retrieve file or folder metadata.
+      Gates ``Store.get_file_info()`` and ``Store.get_folder_info()``.
+    - ``GLOB`` -- Native pattern matching against file paths.
+      Gates ``Store.glob()``. Not all backends support this -- use
+      ``ext.glob.glob_files()`` as a portable fallback.
     """
 
     READ = "read"

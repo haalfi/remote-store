@@ -45,7 +45,7 @@ class Store:
     def close(self) -> None:
         """Close the underlying backend, releasing any held resources.
 
-        Child stores created via :meth:`child` do **not** close the shared
+        Child stores created via ``child()`` do **not** close the shared
         backend — only the owning store does.
         """
         if self._owns_backend:
@@ -90,7 +90,7 @@ class Store:
     def unwrap(self, type_hint: type[T]) -> T:
         """Return the backend's native handle if it matches the requested type.
 
-        Delegates to :meth:`Backend.unwrap`.
+        Delegates to ``Backend.unwrap()``.
 
         :param type_hint: The expected type (e.g., ``pyarrow.fs.FileSystem``).
         :returns: The native handle cast to *type_hint*.
@@ -101,8 +101,8 @@ class Store:
     def native_path(self, key: str) -> str:
         """Convert a store-relative key to the backend-native path.
 
-        Composes store root-path prefixing with :meth:`Backend.native_path`.
-        The result is usable with the native handle returned by :meth:`unwrap`.
+        Composes store root-path prefixing with ``Backend.native_path()``.
+        The result is usable with the native handle returned by ``unwrap()``.
 
         :param key: Store-relative key (e.g., ``"file.parquet"``).
         :returns: Backend-native path (e.g., ``"my-bucket/root/file.parquet"``).
@@ -324,7 +324,7 @@ class Store:
             ``ext.glob.glob_files()`` for full path-based pattern matching.
             Filtering is applied at the Store level so it works with every
             backend.
-        :returns: An iterator of :class:`FileInfo` objects with store-relative
+        :returns: An iterator of ``FileInfo`` objects with store-relative
             paths.
 
         Example::
@@ -350,7 +350,7 @@ class Store:
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         """Match files against a glob pattern using native backend support.
 
-        Like :meth:`unwrap`, this gives direct access to a backend-specific
+        Like ``unwrap()``, this gives direct access to a backend-specific
         capability.  For portable pattern matching that works on every
         backend, use ``list_files(pattern=...)`` for simple name filters
         or ``ext.glob.glob_files()`` for full recursive glob patterns.
@@ -360,7 +360,7 @@ class Store:
 
         :param pattern: Glob pattern relative to the store root
             (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
-        :returns: An iterator of :class:`FileInfo` objects with store-relative
+        :returns: An iterator of ``FileInfo`` objects with store-relative
             paths.
         :raises CapabilityNotSupported: If the backend lacks ``GLOB``.
         """
@@ -385,7 +385,7 @@ class Store:
         """Get file metadata.
 
         :param path: Store-relative key.
-        :returns: A :class:`FileInfo` with size, modification time, and other
+        :returns: A ``FileInfo`` with size, modification time, and other
             backend-provided metadata.
         :raises NotFound: If the file does not exist.
         :raises InvalidPath: If ``path`` is empty.
@@ -405,7 +405,7 @@ class Store:
         """Get folder metadata.
 
         :param path: Store-relative folder key, or ``""`` for the store root.
-        :returns: A :class:`FolderInfo` with file count, total size, and other
+        :returns: A ``FolderInfo`` with file count, total size, and other
             backend-provided metadata.
         :raises NotFound: If the folder does not exist.
         """

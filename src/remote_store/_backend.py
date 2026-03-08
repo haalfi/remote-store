@@ -137,7 +137,7 @@ class Backend(abc.ABC):
 
         :param path: Backend-relative folder key, or ``""`` for the root.
         :param recursive: If ``True``, include files in all subdirectories.
-        :returns: An iterator of :class:`FileInfo` objects.
+        :returns: An iterator of ``FileInfo`` objects.
         """
 
     @abc.abstractmethod
@@ -153,7 +153,7 @@ class Backend(abc.ABC):
         """Get metadata for a file.
 
         :param path: Backend-relative key.
-        :returns: A :class:`FileInfo` with size, modification time, etc.
+        :returns: A ``FileInfo`` with size, modification time, etc.
         :raises NotFound: If the file does not exist.
         """
 
@@ -162,7 +162,7 @@ class Backend(abc.ABC):
         """Get metadata for a folder.
 
         :param path: Backend-relative folder key, or ``""`` for the root.
-        :returns: A :class:`FolderInfo` with file count, total size, etc.
+        :returns: A ``FolderInfo`` with file count, total size, etc.
         :raises NotFound: If the folder does not exist.
         """
 
@@ -220,13 +220,13 @@ class Backend(abc.ABC):
     def native_path(self, path: str) -> str:
         """Convert a backend-relative key to the backend-native path.
 
-        The inverse of :meth:`to_key`. The default implementation is the
+        The inverse of ``to_key()``. The default implementation is the
         identity function — backends with a native root (bucket, base_path)
         override this to prepend their prefix.
 
         :param path: Backend-relative key.
         :returns: Backend-native path usable with the native handle from
-            :meth:`unwrap`.
+            ``unwrap()``.
         """
         return path
 
