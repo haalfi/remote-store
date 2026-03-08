@@ -9,7 +9,7 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Source code | ~6,200 lines (6 backends) |
 | Tests | ~1,430 tests, ~11,300 lines |
 | Specs & docs | 24 specs, 10 ADRs, 4 RFCs |
-| Examples | 14 core + 5 cloud + 4 notebooks |
+| Examples | 16 core + 4 cloud + 4 notebooks |
 | Extensions | 9 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.glob`, `ext.observe`, `ext.otel`, `ext.partition`, `ext.pydantic`, `ext.transfer`) |
 | Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
 | Coverage | 95% |
