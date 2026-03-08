@@ -16,9 +16,11 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | `sdd/specs/`, `CONTRIBUTING.md` repo structure,           |
 |                            | `src/remote_store/_registry.py` auto-registration         |
 | **An error type**          | `sdd/specs/005-error-model.md`, all backends' error       |
-|                            | mapping, tests for every backend                          |
+|                            | mapping, tests for every backend,                         |
+|                            | error docstring "raised by" list, troubleshooting guide   |
 | **A capability**           | `sdd/specs/003-backend-adapter-contract.md`,              |
-|                            | every backend's `capabilities()`, Store surface API       |
+|                            | every backend's `capabilities()`, Store surface API,      |
+|                            | capabilities matrix page                                  |
 | **Version number**         | `pyproject.toml`, `src/remote_store/__init__.py`,         |
 |                            | `CITATION.cff` (version + date-released),                 |
 |                            | `CHANGELOG.md` (new heading + `[Unreleased]` section),    |
@@ -27,6 +29,8 @@ Before committing, check whether your change has cross-file dependencies:
 | **A dependency**           | `pyproject.toml` extras + minimum pins, README install    |
 |                            | instructions, docs prerequisites                          |
 | **Store or Backend ABC**   | All backend implementations, conformance tests            |
+| **A public method signature** | Docstring (Args, Returns, Raises), examples that       |
+|                            | call it, guides that reference it                         |
 | **A Store method**         | README Store API table, `__init__.py` `__all__`,          |
 |                            | `examples/`, spec in `sdd/specs/`, guides, CHANGELOG      |
 | **Public API** (`__all__`) | README Store API table, `examples/`, user guides          |
@@ -35,7 +39,8 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | `guides/`, `docs-src/` + `_nav.yml`, `examples/`,         |
 |                            | CHANGELOG, BACKLOG                                        |
 | **Docs navigation**        | Per-section `_nav.yml` files in `docs-src/`,              |
-|                            | `guides/backends/index.md`                                |
+|                            | `guides/backends/index.md`,                               |
+|                            | `sdd/DOCUMENTATION.md` § 3                                |
 | **Source/test/spec counts**| `DEVELOPMENT_STORY.md` "The Numbers" table                |
 
 ---

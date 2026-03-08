@@ -111,6 +111,16 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   empty-input edge cases (`batch_delete([])`, `glob("")`), no resource-cleanup
   verification.
 
+- [~] **DOC-001 — Documentation overhaul per Documentation Master**
+  `sdd/DOCUMENTATION.md` defines the authoritative standard (Diataxis
+  structure, docstring quality bar, cross-linking rules, nav restructure).
+  Done: master document, ripple-check table updates.
+  Remaining: nav restructure (section 3), docstring audit (section 5),
+  cross-links (section 6), new pages -- troubleshooting, capabilities
+  matrix, choosing a backend, migration guide, architecture overview,
+  security model, extension API reference pages (section 7 missing pages),
+  research docs on site, further reading page.
+
 ---
 
 ## Done
