@@ -16,24 +16,13 @@ swappable and testable**. remote-store owns the I/O path; table formats
 (Delta Lake, Iceberg) and query engines (Spark, DuckDB, Polars) sit on top
 via the PyArrow adapter.
 
-```
-┌─────────────────────────────────────────────────────┐
-│  Query / Compute                                    │
-│  Polars · DuckDB · Pandas · Spark · Databricks      │
-├─────────────────────────────────────────────────────┤
-│  Table Format (optional)                            │
-│  Delta Lake · PyIceberg · plain Parquet             │
-├─────────────────────────────────────────────────────┤
-│  PyArrow FileSystem interface                       │
-│  pyarrow_fs(store)                                  │
-├─────────────────────────────────────────────────────┤
-│  remote-store                                       │
-│  Store · child() · ext.batch · ext.transfer         │
-├─────────────────────────────────────────────────────┤
-│  Backend                                            │
-│  Local · Memory · S3 · S3-PyArrow · SFTP · Azure    │
-└─────────────────────────────────────────────────────┘
-```
+| Layer | Components |
+|-------|------------|
+| **Query / Compute** | Polars, DuckDB, Pandas, Spark, Databricks |
+| **Table Format** (optional) | Delta Lake, PyIceberg, plain Parquet |
+| **PyArrow FileSystem** | `pyarrow_fs(store)` |
+| **remote-store** | `Store`, `child()`, `ext.batch`, `ext.transfer` |
+| **Backend** | Local, Memory, S3, S3-PyArrow, SFTP, Azure |
 
 ## What this gets you
 

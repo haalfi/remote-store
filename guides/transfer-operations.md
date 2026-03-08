@@ -126,3 +126,9 @@ reports = store.child("reports")
 upload(reports, "local/q1.csv", "q1.csv")
 # File is at "reports/q1.csv" in the root store
 ```
+
+---
+
+**See also:**
+[API reference](api/ext-transfer.md) --
+[Example script](https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py)

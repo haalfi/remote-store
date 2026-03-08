@@ -20,6 +20,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **`ext.cache` -- store-level caching middleware** (ID-025) -- `cached_store(store, ttl=300)` wraps a Store in a proxy that caches read-only operations (`exists`, `is_file`, `is_folder`, `read_bytes`, `get_file_info`, `get_folder_info`, `list_files`, `list_folders`, `glob`) with TTL-based expiration. All mutating operations automatically invalidate affected entries. `max_content_size` limits memory for large files. Thread-safe. Spec: CACHE-001 through CACHE-015.
 - **`ext.partition` -- Hive-style partition path helpers** (ID-036) -- `partition_path(filename, **partitions)` builds paths like `year=2026/month=03/data.parquet`, `parse_partition(path)` extracts the partition dict and filename. Pure Python, zero dependencies. Spec: PART-001 through PART-013.
 
+### Documentation
+
+- **Documentation overhaul** (DOC-001) -- Diataxis nav restructure (Getting Started / Guides / Reference / Explanation), extension API reference pages for all 9 ext modules, 7 new content pages (capabilities matrix, choosing a backend, troubleshooting, migration, architecture overview, security model, further reading), research docs surfaced on site, docstring audit for Store/Backend/errors with complete `:param:`/`:returns:`/`:raises:` and examples, cross-links between guides and API reference pages.
+
 ## [0.14.0] - 2026-03-07
 
 ### Changed

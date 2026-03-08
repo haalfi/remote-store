@@ -29,3 +29,10 @@ with Registry(config) as registry:
 - **`move()` uses `shutil.move()`**, which delegates to `os.rename()` on the same filesystem (atomic) but falls back to copy+delete across filesystems. `write_atomic()` uses `os.replace()` and is truly atomic.
 
 See the [Concurrency and Atomicity Guarantees](../concurrency.md) guide for details.
+
+---
+
+**See also:**
+[Capabilities matrix](../capabilities-matrix.md) --
+[API reference](../api/store.md) --
+[Example script](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py)

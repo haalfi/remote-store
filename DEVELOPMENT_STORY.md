@@ -7,14 +7,14 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Metric | Value |
 |--------|-------|
 | Source code | ~6,200 lines (6 backends) |
-| Tests | ~1,430 tests, ~11,300 lines |
-| Specs & docs | 21 specs, 10 ADRs, 3 RFCs |
-| Examples | 14 core + 4 cloud + 4 notebooks |
-| Extensions | 7 (`ext.arrow`, `ext.batch`, `ext.glob`, `ext.transfer`, `ext.observe`, `ext.otel`, `ext.pydantic`) |
-| Documentation site | MkDocs Material (versioned via mike) |
+| Tests | ~1,600 tests, ~11,300 lines |
+| Specs & docs | 24 specs, 10 ADRs, 4 RFCs |
+| Examples | 16 core + 4 cloud + 4 notebooks |
+| Extensions | 9 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.glob`, `ext.observe`, `ext.otel`, `ext.partition`, `ext.pydantic`, `ext.transfer`) |
+| Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
 | Coverage | 95% |
-| Calendar time | ~9 weeks of sessions |
-| Commits | 289 |
+| Calendar time | ~11 weeks of sessions |
+| Commits | ~315 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
@@ -533,6 +533,8 @@ prioritization scheme each session.
 14. **Your CI environment is not your user's environment.** CI ran on Linux with Azurite (our Azure emulator), which inflated test coverage enough to mask untested code paths in new config loaders. Meanwhile, example scripts used Unicode arrows (`→`) that rendered fine on Linux's UTF-8 locale but crashed on Windows cp1252. Both bugs shipped through green CI. The fix was a pre-commit hook rejecting non-ASCII in `print()` calls and a release checklist item requiring `hatch run all` locally — because the developer's environment (Windows, no Docker backends) was closer to a real user's experience than CI was. **If your CI is more forgiving than your users' environments, your CI is testing itself, not your software.**
 
 15. **Parametrize tests ruthlessly, but only after they exist.** Once a test suite reaches critical mass, repetitive test functions become a maintenance burden — every API change ripples through dozens of near-identical functions. Collapsing them into `@pytest.mark.parametrize` data tables with `pytest.param(..., id="...")` preserves every test case while cutting hundreds of lines. Shared fixtures (a single `RestrictedBackend` in `conftest.py` replaced five per-file copies) compound the savings. But this works precisely because the tests existed first as explicit, readable functions — parametrizing from scratch risks hiding what's actually being tested behind opaque data tables. **Write tests verbosely, then compress them once patterns emerge.** The result is a suite that's faster to scan, cheaper to extend, and just as thorough.
+
+16. **Adopt a documentation framework early.** We retrofitted the [Diataxis](https://diataxis.fr/) framework (tutorials, how-to guides, reference, explanation) onto an existing flat docs site. Every existing page needed reclassification, the navigation had to be rebuilt, and pages that mixed guide content with reference material had to be split. If we had adopted Diataxis from the start, content would have landed in the right category naturally. The lesson applies beyond Diataxis: any structural decision (code architecture, test organization, docs layout) is cheapest when made before content accumulates, and most expensive when retrofitted after hundreds of pages exist. We also learned that Sphinx RST cross-reference syntax (`:meth:`, `:class:`) does not render in mkdocstrings -- a subtle trap when writing docstrings with IDE autocompletion trained on Sphinx projects.
 
 ## Reproducing This Workflow
 
