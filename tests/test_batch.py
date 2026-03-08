@@ -280,6 +280,177 @@ def test_capability_gating(excluded_cap: Capability, call: Any) -> None:
 
 
 # ===========================================================================
+# BATCH-020 through BATCH-025: Concurrent execution (ID-035)
+# ===========================================================================
+
+
+class TestConcurrentDelete:
+    @pytest.mark.spec("BATCH-020")
+    def test_concurrent_deletes_all(self) -> None:
+        store = _populated_store("a.txt", "b.txt", "c.txt")
+        result = batch_delete(store, ["a.txt", "b.txt", "c.txt"], concurrent=True)
+        assert result.all_succeeded
+        assert set(result.succeeded) == {"a.txt", "b.txt", "c.txt"}
+        for p in ("a.txt", "b.txt", "c.txt"):
+            assert not store.exists(p)
+
+    @pytest.mark.spec("BATCH-024")
+    def test_concurrent_error_collection(self) -> None:
+        store = _populated_store("a.txt", "c.txt")
+        result = batch_delete(store, ["a.txt", "b.txt", "c.txt"], concurrent=True)
+        assert set(result.succeeded) == {"a.txt", "c.txt"}
+        assert isinstance(result.failed["b.txt"], NotFound)
+
+    @pytest.mark.spec("BATCH-022")
+    def test_concurrent_stop_on_error_raises(self) -> None:
+        with pytest.raises(ValueError, match="stop_on_error"):
+            batch_delete(_make_store(), ["a.txt"], concurrent=True, stop_on_error=True)
+
+    @pytest.mark.spec("BATCH-020")
+    def test_concurrent_missing_ok(self) -> None:
+        store = _populated_store("a.txt")
+        result = batch_delete(store, ["a.txt", "gone.txt"], missing_ok=True, concurrent=True)
+        assert result.all_succeeded
+        assert set(result.succeeded) == {"a.txt", "gone.txt"}
+
+    @pytest.mark.spec("BATCH-025")
+    def test_concurrent_empty(self) -> None:
+        result = batch_delete(_make_store(), [], concurrent=True)
+        assert result.succeeded == () and result.failed == {} and result.total == 0
+
+    @pytest.mark.spec("BATCH-021")
+    def test_concurrent_max_workers(self) -> None:
+        store = _populated_store("a.txt", "b.txt")
+        result = batch_delete(store, ["a.txt", "b.txt"], concurrent=True, max_workers=1)
+        assert result.all_succeeded
+
+
+class TestConcurrentCopy:
+    @pytest.mark.spec("BATCH-020")
+    def test_concurrent_copies_all(self) -> None:
+        store = _populated_store("a.txt", "b.txt")
+        result = batch_copy(
+            store,
+            [("a.txt", "a_copy.txt"), ("b.txt", "b_copy.txt")],
+            concurrent=True,
+        )
+        assert result.all_succeeded
+        assert store.read_bytes("a_copy.txt") == b"data"
+        assert store.read_bytes("b_copy.txt") == b"data"
+
+    @pytest.mark.spec("BATCH-024")
+    def test_concurrent_error_collection(self) -> None:
+        store = _populated_store("a.txt")
+        result = batch_copy(
+            store,
+            [("missing.txt", "x.txt"), ("a.txt", "a2.txt")],
+            concurrent=True,
+        )
+        assert "a.txt" in result.succeeded
+        assert isinstance(result.failed["missing.txt"], NotFound)
+
+    @pytest.mark.spec("BATCH-022")
+    def test_concurrent_stop_on_error_raises(self) -> None:
+        with pytest.raises(ValueError, match="stop_on_error"):
+            batch_copy(
+                _make_store(),
+                [("a.txt", "b.txt")],
+                concurrent=True,
+                stop_on_error=True,
+            )
+
+    @pytest.mark.spec("BATCH-020")
+    def test_concurrent_overwrite(self) -> None:
+        store = _populated_store("src.txt", "dst.txt")
+        result = batch_copy(store, [("src.txt", "dst.txt")], overwrite=True, concurrent=True)
+        assert result.all_succeeded
+
+    @pytest.mark.spec("BATCH-025")
+    def test_concurrent_empty(self) -> None:
+        result = batch_copy(_make_store(), [], concurrent=True)
+        assert result.succeeded == () and result.failed == {} and result.total == 0
+
+    @pytest.mark.spec("BATCH-021")
+    def test_concurrent_max_workers(self) -> None:
+        store = _populated_store("a.txt")
+        result = batch_copy(store, [("a.txt", "a2.txt")], concurrent=True, max_workers=1)
+        assert result.all_succeeded
+
+
+class TestConcurrentExists:
+    @pytest.mark.spec("BATCH-020")
+    def test_concurrent_checks(self) -> None:
+        store = _populated_store("a.txt", "b.txt")
+        result = batch_exists(store, ["a.txt", "b.txt", "c.txt"], concurrent=True)
+        assert result == {"a.txt": True, "b.txt": True, "c.txt": False}
+
+    @pytest.mark.spec("BATCH-024")
+    def test_concurrent_error_propagates(self) -> None:
+        store = _make_store()
+        original_exists = store.exists
+
+        def boom(path: str) -> bool:
+            if path == "bad":
+                raise RemoteStoreError("backend failure")
+            return original_exists(path)
+
+        store.exists = boom  # type: ignore[assignment]
+        with pytest.raises(RemoteStoreError, match="backend failure"):
+            batch_exists(store, ["ok.txt", "bad"], concurrent=True)
+
+    @pytest.mark.spec("BATCH-025")
+    def test_concurrent_empty(self) -> None:
+        assert batch_exists(_make_store(), [], concurrent=True) == {}
+
+    @pytest.mark.spec("BATCH-021")
+    def test_concurrent_max_workers(self) -> None:
+        store = _populated_store("a.txt")
+        result = batch_exists(store, ["a.txt"], concurrent=True, max_workers=1)
+        assert result == {"a.txt": True}
+
+
+class TestConcurrentCapabilityGating:
+    @pytest.mark.spec("BATCH-024")
+    @pytest.mark.parametrize(
+        "excluded_cap,call",
+        [
+            pytest.param(
+                Capability.DELETE,
+                lambda s: batch_delete(s, ["a.txt"], concurrent=True),
+                id="delete_concurrent",
+            ),
+            pytest.param(
+                Capability.COPY,
+                lambda s: batch_copy(s, [("a.txt", "b.txt")], concurrent=True),
+                id="copy_concurrent",
+            ),
+        ],
+    )
+    def test_capability_gating_concurrent(self, excluded_cap: Capability, call: Any) -> None:
+        backend = MemoryBackend()
+        backend.write("a.txt", b"data")
+        restricted = RestrictedBackend(backend, exclude={excluded_cap})
+        store = Store(backend=restricted, root_path="")  # type: ignore[arg-type]
+        with pytest.raises(CapabilityNotSupported):
+            call(store)
+
+
+class TestConcurrentChildStore:
+    @pytest.mark.spec("BATCH-018")
+    def test_concurrent_with_child_store(self) -> None:
+        store = _populated_store("sub/a.txt", "sub/b.txt")
+        child = store.child("sub")
+        assert batch_exists(child, ["a.txt", "b.txt", "c.txt"], concurrent=True) == {
+            "a.txt": True,
+            "b.txt": True,
+            "c.txt": False,
+        }
+        assert batch_copy(child, [("a.txt", "a_copy.txt")], concurrent=True).all_succeeded
+        assert batch_delete(child, ["a.txt", "b.txt"], concurrent=True).all_succeeded
+        assert not child.exists("a.txt")
+
+
+# ===========================================================================
 # Module exports
 # ===========================================================================
 
