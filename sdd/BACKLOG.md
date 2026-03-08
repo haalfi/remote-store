@@ -32,6 +32,18 @@ Active work items, ordered by priority.
   `parse_partition(path) -> dict`. Useful for Parquet lake workloads alongside
   PyArrow datasets. No external dependencies.
 
+- [ ] **ID-049 — Enable GitHub Vigilant Mode**
+  Commit signing with SSH/GPG for supply chain transparency. Soft enforcement
+  (visual badges, no blocking of unsigned commits). Ops-only, no code changes.
+  **Steps when pulling this item:**
+  1. Toggle Vigilant Mode in GitHub repo settings (Settings → Code security).
+  2. Configure local signing: `git config --global gpg.format ssh`,
+     `git config --global user.signingkey ~/.ssh/id_ed25519`,
+     `git config --global commit.gpgSign true`,
+     `git config --global tag.gpgSign true`.
+  3. Add CONTRIBUTING.md § Code Signing with SSH/GPG setup instructions.
+  4. Consider a SIGNING.md verification guide if moving to hard enforcement.
+
 - [ ] **DOC-001 — Documentation overhaul per Documentation Master**
   `sdd/DOCUMENTATION.md` defines the authoritative standard (Diataxis
   structure, docstring quality bar, cross-linking rules, nav restructure).
