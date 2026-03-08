@@ -15,13 +15,13 @@ Active work items, ordered by priority.
   `sdd/DOCUMENTATION.md` defines the authoritative standard (Diataxis
   structure, docstring quality bar, cross-linking rules, nav restructure).
   Done: master document, ripple-check table updates, Phase 1 (Diataxis nav
-  restructure — Getting Started / Guides / Reference / Explanation), Phase 2
-  (extension API reference pages for all 9 ext modules), DOCUMENTATION.md
-  updated to Sphinx-style docstrings (section 5).
-  Remaining: new pages (troubleshooting, capabilities matrix, choosing a
-  backend, migration guide, architecture overview, security model, further
-  reading), research docs on site, docstring audit, cross-links, final
-  polish.
+  restructure), Phase 2 (extension API reference pages for all 9 ext
+  modules), DOCUMENTATION.md updated to Sphinx-style docstrings, Phase 3
+  (7 new content pages: capabilities matrix, choosing a backend,
+  troubleshooting, migration guide, architecture overview, security model,
+  further reading).
+  Remaining: Phase 4 (research docs on site), Phase 5 (docstring audit),
+  Phase 6 (cross-links), Phase 7 (final polish).
 
 - [ ] **ID-049 — Enable GitHub Vigilant Mode**
   Commit signing with SSH/GPG for supply chain transparency. Soft enforcement
