@@ -1,0 +1,31 @@
+- Home: index.md
+- Getting Started:
+    - Tutorial: getting-started.md
+    - Examples: examples/
+- Guides:
+    - Backends: backends/
+    - Extensions:
+        - Overview: extensions.md
+        - PyArrow Adapter: pyarrow-adapter.md
+        - Batch Operations: batch-operations.md
+        - Glob Pattern Matching: glob-pattern-matching.md
+        - Transfer Operations: transfer-operations.md
+        - Observability Hooks: observe.md
+        - Caching: cache.md
+    - Data Lake Patterns: data-lake-patterns.md
+    - Troubleshooting: troubleshooting.md
+    - Choosing a Backend: choosing-a-backend.md
+    - Migration: migration.md
+- Reference:
+    - API: api/
+    - Capabilities Matrix: capabilities-matrix.md
+    - Changelog: changelog.md
+- Explanation:
+    - Architecture Overview: architecture.md
+    - Performance: performance.md
+    - Concurrency: concurrency.md
+    - Security Model: security-model.md
+    - Design: design/
+- Contributing: contributing.md
+- Further Reading: further-reading.md
+- Development Story: development-story.md

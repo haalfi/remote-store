@@ -1,0 +1,17 @@
+- Store: store.md
+- Registry: registry.md
+- Backend: backend.md
+- Config: config.md
+- Models: models.md
+- RemotePath: path.md
+- Capabilities: capabilities.md
+- Errors: errors.md
+- ext.arrow: ext-arrow.md
+- ext.batch: ext-batch.md
+- ext.cache: ext-cache.md
+- ext.glob: ext-glob.md
+- ext.observe: ext-observe.md
+- ext.otel: ext-otel.md
+- ext.partition: ext-partition.md
+- ext.pydantic: ext-pydantic.md
+- ext.transfer: ext-transfer.md
