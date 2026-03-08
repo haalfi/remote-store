@@ -1,4 +1,4 @@
-# ext.transfer — Upload, Download, Cross-Store Transfer Specification
+# ext.transfer - Upload, Download, Cross-Store Transfer Specification
 
 ## Overview
 

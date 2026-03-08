@@ -1,4 +1,4 @@
-# ext.batch — Batch Operations Specification
+# ext.batch - Batch Operations Specification
 
 ## Overview
 

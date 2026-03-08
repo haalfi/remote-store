@@ -1,4 +1,4 @@
-# ext.partition — Hive-Style Partition Path Helpers Specification
+# ext.partition - Hive-Style Partition Path Helpers Specification
 
 ## Overview
 

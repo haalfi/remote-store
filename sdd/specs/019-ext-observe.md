@@ -1,4 +1,4 @@
-# ext.observe — Observability Hooks Specification
+# ext.observe - Observability Hooks Specification
 
 ## Overview
 

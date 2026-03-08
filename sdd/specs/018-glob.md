@@ -1,4 +1,4 @@
-# Glob — Pattern Matching Specification
+# Glob - Pattern Matching Specification
 
 ## Overview
 
