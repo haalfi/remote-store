@@ -131,6 +131,40 @@ jobs:
           timeout --kill-after=5 30 python examples/pyarrow_adapter.py || rc=$?
           if [ $rc -ne 0 ] && [ $rc -ne 124 ]; then exit $rc; fi
 
+  e2e:
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    services:
+      minio:
+        image: cgr.dev/chainguard/minio:latest-dev
+        ports:
+          - 9000:9000
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+        options: >-
+          --health-cmd "wget -qO /dev/null http://127.0.0.1:9000/minio/health/live 2>&1 || exit 1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+        ports:
+          - 10000:10000
+        options: >-
+          --health-cmd "nc -z 127.0.0.1 10000"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev]"
+      - run: pytest tests/e2e/ -v -o addopts=
+
   docs:
     needs: [changes]
     if: needs.changes.outputs.docs == 'true'
@@ -159,7 +193,7 @@ jobs:
       - run: python -c "import remote_store; print(remote_store.__version__)"
 
   gate:
-    needs: [changes, lint, typecheck, test, notebooks, examples, docs, package]
+    needs: [changes, lint, typecheck, test, notebooks, examples, e2e, docs, package]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -177,6 +211,7 @@ jobs:
             "${{ needs.test.result }}" \
             "${{ needs.notebooks.result }}" \
             "${{ needs.examples.result }}" \
+            "${{ needs.e2e.result }}" \
             "${{ needs.docs.result }}" \
             "${{ needs.package.result }}" \
           )
