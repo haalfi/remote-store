@@ -136,7 +136,10 @@ class MemoryCache:
         expiry = time.monotonic() + ttl
         with self._lock:
             if key in self._data:
-                # Update existing -- move to end for LRU.
+                # Update existing -- del + re-insert to move to end for LRU.
+                # Plain __setitem__ on an existing key does NOT change
+                # insertion order in CPython 3.7+ dicts.
+                del self._data[key]
                 self._data[key] = (value, expiry)
             else:
                 self._data[key] = (value, expiry)
@@ -345,7 +348,8 @@ class CachedStore(Store):
         recursive: bool = False,
         pattern: str | None = None,
     ) -> Iterator[FileInfo]:
-        key = ("list_files", path, str(recursive), str(pattern))
+        pattern_key = pattern if pattern is not None else "\x00"
+        key = ("list_files", path, str(recursive), pattern_key)
         cached = self._cache_get(key)
         if cached is not _MISSING:
             return iter(cached)

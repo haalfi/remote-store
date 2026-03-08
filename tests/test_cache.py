@@ -124,6 +124,19 @@ class TestMemoryCache:
             cache.get(("b",))
 
     @pytest.mark.spec("CACHE-002")
+    def test_max_entries_lru_set_refreshes(self) -> None:
+        """set() on an existing key moves it to end (LRU refresh)."""
+        cache = MemoryCache(max_entries=2)
+        cache.set(("a",), 1, ttl=10.0)
+        cache.set(("b",), 2, ttl=10.0)
+        cache.set(("a",), 10, ttl=10.0)  # refresh ("a",), making ("b",) the LRU
+        cache.set(("c",), 3, ttl=10.0)  # should evict ("b",)
+        assert cache.get(("a",)) == 10
+        assert cache.get(("c",)) == 3
+        with pytest.raises(KeyError):
+            cache.get(("b",))
+
+    @pytest.mark.spec("CACHE-002")
     def test_max_entries_invalid_raises(self) -> None:
         with pytest.raises(ValueError, match="max_entries must be positive"):
             MemoryCache(max_entries=0)
@@ -289,6 +302,14 @@ class TestCachedReads:
     def test_list_files_different_params_separate_keys(self, cached: CachedStore) -> None:
         list(cached.list_files("", recursive=True))
         list(cached.list_files("", recursive=False))
+        assert cached.stats.misses == 2
+        assert cached.stats.hits == 0
+
+    @pytest.mark.spec("CACHE-006")
+    def test_list_files_none_pattern_distinct_from_string_none(self, cached: CachedStore) -> None:
+        """pattern=None and pattern='None' must not share a cache key."""
+        list(cached.list_files("", pattern=None))
+        list(cached.list_files("", pattern="None"))
         assert cached.stats.misses == 2
         assert cached.stats.hits == 0
 
