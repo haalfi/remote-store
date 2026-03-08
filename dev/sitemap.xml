@@ -13,6 +13,10 @@
          <lastmod>2026-03-08</lastmod>
     </url>
     <url>
+         <loc>https://haalfi.github.io/remote-store/dev/cache/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
          <loc>https://haalfi.github.io/remote-store/dev/changelog/</loc>
          <lastmod>2026-03-08</lastmod>
     </url>
@@ -294,6 +298,10 @@
     </url>
     <url>
          <loc>https://haalfi.github.io/remote-store/dev/design/specs/022-streaming-atomic-writes/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://haalfi.github.io/remote-store/dev/design/specs/023-ext-cache/</loc>
          <lastmod>2026-03-08</lastmod>
     </url>
     <url>
