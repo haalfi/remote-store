@@ -35,6 +35,7 @@ from remote_store.ext.observe import (
     observe,
     set_correlation_id,
 )
+from remote_store.ext.partition import ParsedPartition, parse_partition, partition_path
 from remote_store.ext.transfer import download, transfer, upload
 
 __version__ = "0.14.0"
@@ -82,6 +83,10 @@ __all__ = [
     "cached_store",
     # Glob operations
     "glob_files",
+    # Partition helpers
+    "ParsedPartition",
+    "parse_partition",
+    "partition_path",
     # Observe operations
     "BufferedObserver",
     "ObservedStore",

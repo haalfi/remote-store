@@ -18,6 +18,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **`S3PyArrowBackend.unwrap()`** now accepts `pyarrow.fs.FileSystem` base class in addition to `pyarrow.fs.S3FileSystem`.
 - **Parallel batch operations** (ID-035) -- `batch_delete`, `batch_copy`, and `batch_exists` now accept `concurrent=True` and `max_workers=N` keyword arguments for parallel execution via `ThreadPoolExecutor`. Cloud backends benefit significantly from concurrent I/O over sequential execution. `stop_on_error` is incompatible with `concurrent=True` (raises `ValueError`). Spec: BATCH-020 through BATCH-025.
 - **`ext.cache` -- store-level caching middleware** (ID-025) -- `cached_store(store, ttl=300)` wraps a Store in a proxy that caches read-only operations (`exists`, `is_file`, `is_folder`, `read_bytes`, `get_file_info`, `get_folder_info`, `list_files`, `list_folders`, `glob`) with TTL-based expiration. All mutating operations automatically invalidate affected entries. `max_content_size` limits memory for large files. Thread-safe. Spec: CACHE-001 through CACHE-015.
+- **`ext.partition` -- Hive-style partition path helpers** (ID-036) -- `partition_path(filename, **partitions)` builds paths like `year=2026/month=03/data.parquet`, `parse_partition(path)` extracts the partition dict and filename. Pure Python, zero dependencies. Spec: PART-001 through PART-013.
 
 ## [0.14.0] - 2026-03-07
 

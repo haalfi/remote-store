@@ -25,12 +25,11 @@ Active work items, ordered by priority.
   `MemoryCache` default backend, thread-safe. `CacheStats` for monitoring.
   Spec: `023-ext-cache.md` (CACHE-001 through CACHE-015). 52 tests.
 
-- [ ] **ID-036 — Hive-style partition path helpers**
-  Thin utility for building and parsing Hive partition paths
-  (e.g., `year=2026/month=03/day=01/data.parquet`). Could live in `ext/` or
-  as a helper on `Store`. Scope: `partition_path(key, **parts) -> str` and
-  `parse_partition(path) -> dict`. Useful for Parquet lake workloads alongside
-  PyArrow datasets. No external dependencies.
+- [x] **ID-036 — Hive-style partition path helpers** (unreleased)
+  `partition_path(filename, **partitions)` and `parse_partition(path)` in
+  `ext/partition.py`. Builds and parses paths like
+  `year=2026/month=03/data.parquet`. Pure Python, zero dependencies.
+  Spec: `024-ext-partition.md` (PART-001 through PART-013). 23 tests.
 
 - [ ] **ID-049 — Enable GitHub Vigilant Mode**
   Commit signing with SSH/GPG for supply chain transparency. Soft enforcement
