@@ -4370,6 +4370,10 @@
 
 
         <p>Raised when a file or folder does not exist.</p>
+<p>Raised by <code>Store.read()</code>, <code>Store.read_bytes()</code>, <code>Store.delete()</code>,
+<code>Store.delete_folder()</code>, <code>Store.get_file_info()</code>,
+<code>Store.get_folder_info()</code>, <code>Store.move()</code>, and <code>Store.copy()</code>
+when the target path does not exist.</p>
 
 
 
@@ -4417,6 +4421,9 @@
 
 
         <p>Raised when a target already exists and overwrite is not allowed.</p>
+<p>Raised by <code>Store.write()</code>, <code>Store.write_atomic()</code>,
+<code>Store.open_atomic()</code>, <code>Store.move()</code>, and <code>Store.copy()</code>
+when <code>overwrite=False</code> (the default) and the destination exists.</p>
 
 
 
@@ -4464,6 +4471,9 @@
 
 
         <p>Raised when access is denied by the storage backend.</p>
+<p>Raised by any Store or Backend method when the underlying storage
+system denies access (e.g., missing credentials, insufficient
+permissions on the bucket or container).</p>
 
 
 
@@ -4511,6 +4521,9 @@
 
 
         <p>Raised for malformed, unsafe, or out-of-scope paths.</p>
+<p>Raised by any method that validates paths: empty strings in file-targeted
+operations, paths containing <code>..</code> or null bytes, and paths that fall
+outside the store's root scope.</p>
 
 
 
@@ -4558,6 +4571,10 @@
 
 
         <p>Raised when an operation requires an unsupported capability.</p>
+<p>Raised by capability-gated methods (<code>Store.glob()</code>,
+<code>Store.write_atomic()</code>, <code>Store.open_atomic()</code>, <code>Store.unwrap()</code>)
+and by <code>CapabilitySet.require()</code> when a backend does not declare
+the needed capability.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4636,6 +4653,9 @@
 
 
         <p>Raised when the backend cannot be reached or initialized.</p>
+<p>Raised during backend construction or first operation when the
+storage service is unreachable (e.g., network error, invalid
+endpoint, missing container).</p>
 
 
 

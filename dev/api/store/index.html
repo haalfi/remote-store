@@ -4727,7 +4727,7 @@ before being delegated to the backend.</p>
     <div class="doc doc-contents ">
 
         <p>Close the underlying backend, releasing any held resources.</p>
-<p>Child stores created via :meth:<code>child</code> do <strong>not</strong> close the shared
+<p>Child stores created via <code>child()</code> do <strong>not</strong> close the shared
 backend — only the owning store does.</p>
 
 
@@ -4822,7 +4822,11 @@ shared backend.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <em>subpath</em> is empty, contains <code>..</code>, or
-contains null bytes.</p>
+    contains null bytes.</p>
+<p>Example::</p>
+<div class="highlight"><pre><span></span><code>child = store.child(&quot;2026/03&quot;)
+child.write(&quot;report.csv&quot;, data)  # writes to &quot;2026/03/report.csv&quot;
+</code></pre></div>
               </div>
             </td>
           </tr>
@@ -4943,7 +4947,7 @@ store-root stripping (removes <code>root_path</code> prefix).</p>
     <div class="doc doc-contents ">
 
         <p>Return the backend's native handle if it matches the requested type.</p>
-<p>Delegates to :meth:<code>Backend.unwrap</code>.</p>
+<p>Delegates to <code>Backend.unwrap()</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4971,6 +4975,29 @@ store-root stripping (removes <code>root_path</code> prefix).</p>
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="remote_store._store.T">T</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The native handle cast to <em>type_hint</em>.</p>
+              </div>
             </td>
           </tr>
       </tbody>
@@ -5016,8 +5043,8 @@ store-root stripping (removes <code>root_path</code> prefix).</p>
     <div class="doc doc-contents ">
 
         <p>Convert a store-relative key to the backend-native path.</p>
-<p>Composes store root-path prefixing with :meth:<code>Backend.native_path</code>.
-The result is usable with the native handle returned by :meth:<code>unwrap</code>.</p>
+<p>Composes store root-path prefixing with <code>Backend.native_path()</code>.
+The result is usable with the native handle returned by <code>unwrap()</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5092,6 +5119,60 @@ The result is usable with the native handle returned by :meth:<code>unwrap</code
         <p>Check whether the backend supports a capability.</p>
 
 
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>capability</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Capability (remote_store._capabilities.Capability)" href="../capabilities/#remote_store.Capability">Capability</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The capability to check.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>True</code> if the backend declares this capability.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
     </div>
 
 </div>
@@ -5108,6 +5189,64 @@ The result is usable with the native handle returned by :meth:<code>unwrap</code
     <div class="doc doc-contents ">
 
         <p>Check if a file or folder exists.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative key, or <code>""</code> for the store root.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>True</code> if a file or folder exists at <em>path</em>.</p>
+<p>Example::</p>
+<div class="highlight"><pre><span></span><code>if store.exists(&quot;data/report.csv&quot;):
+    data = store.read_bytes(&quot;data/report.csv&quot;)
+</code></pre></div>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
@@ -5128,6 +5267,60 @@ The result is usable with the native handle returned by :meth:<code>unwrap</code
         <p>Check if path is an existing file.</p>
 
 
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>True</code> if <em>path</em> exists and is a file.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
     </div>
 
 </div>
@@ -5146,6 +5339,60 @@ The result is usable with the native handle returned by :meth:<code>unwrap</code
         <p>Check if path is an existing folder.</p>
 
 
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative key, or <code>""</code> for the store root.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>True</code> if <em>path</em> exists and is a folder.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
     </div>
 
 </div>
@@ -5162,9 +5409,41 @@ The result is usable with the native handle returned by :meth:<code>unwrap</code
     <div class="doc doc-contents ">
 
         <p>Open a file for reading.</p>
+<p>The caller is responsible for closing the returned stream.</p>
 
 
-<p><span class="doc-section-title">Raises:</span></p>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
     <table>
       <thead>
         <tr>
@@ -5175,34 +5454,16 @@ The result is usable with the native handle returned by :meth:<code>unwrap</code
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>NotFound</code>
+                  <code><span title="typing.BinaryIO">BinaryIO</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>If the file does not exist.</p>
+                <p>A readable binary stream. Must be closed by the caller.</p>
               </div>
             </td>
           </tr>
       </tbody>
     </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.Store.read_bytes" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">read_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
-
-<a href="#remote_store.Store.read_bytes" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Read full file content as bytes.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -5231,6 +5492,118 @@ The result is usable with the native handle returned by :meth:<code>unwrap</code
             <td>
               <div class="doc-md-description">
                 <p>If <code>path</code> is empty.</p>
+<p>Example::</p>
+<div class="highlight"><pre><span></span><code>with store.read(&quot;data/report.csv&quot;) as f:
+    content = f.read()
+</code></pre></div>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.Store.read_bytes" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">read_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+<a href="#remote_store.Store.read_bytes" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Read full file content as bytes.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bytes">bytes</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The file content as a <code>bytes</code> object.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>NotFound</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the file does not exist.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code>InvalidPath</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>path</code> is empty.</p>
+<p>Example::</p>
+<div class="highlight"><pre><span></span><code>data = store.read_bytes(&quot;config.json&quot;)
+</code></pre></div>
               </div>
             </td>
           </tr>
@@ -5254,6 +5627,69 @@ The result is usable with the native handle returned by :meth:<code>unwrap</code
     <div class="doc doc-contents ">
 
         <p>Write content to a file.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>content</code>
+            </td>
+            <td>
+                  <code><span title="remote_store._types.WritableContent">WritableContent</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Data to write (<code>bytes</code>, <code>str</code>, or readable binary stream).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>overwrite</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, replace any existing file.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -5282,6 +5718,10 @@ The result is usable with the native handle returned by :meth:<code>unwrap</code
             <td>
               <div class="doc-md-description">
                 <p>If <code>path</code> is empty.</p>
+<p>Example::</p>
+<div class="highlight"><pre><span></span><code>store.write(&quot;greeting.txt&quot;, b&quot;hello world&quot;)
+store.write(&quot;greeting.txt&quot;, b&quot;updated&quot;, overwrite=True)
+</code></pre></div>
               </div>
             </td>
           </tr>
@@ -5305,6 +5745,71 @@ The result is usable with the native handle returned by :meth:<code>unwrap</code
     <div class="doc doc-contents ">
 
         <p>Write content atomically.</p>
+<p>Content is staged in a temporary location and promoted in one step.
+Readers never see a partial file.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>content</code>
+            </td>
+            <td>
+                  <code><span title="remote_store._types.WritableContent">WritableContent</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Data to write (<code>bytes</code>, <code>str</code>, or readable binary stream).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>overwrite</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, replace any existing file.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -5419,6 +5924,29 @@ artifact is removed and <em>path</em> is never modified.</p>
     </table>
 
 
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="collections.abc.Iterator">Iterator</span>[<span title="typing.BinaryIO">BinaryIO</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A writable binary stream (via <code>yield</code>).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
 <p><span class="doc-section-title">Raises:</span></p>
     <table>
       <thead>
@@ -5455,6 +5983,11 @@ artifact is removed and <em>path</em> is never modified.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <em>path</em> is empty.</p>
+<p>Example::</p>
+<div class="highlight"><pre><span></span><code>with store.open_atomic(&quot;output.csv&quot;, overwrite=True) as f:
+    f.write(b&quot;col1,col2\n&quot;)
+    f.write(b&quot;a,1\n&quot;)
+</code></pre></div>
               </div>
             </td>
           </tr>
@@ -5478,6 +6011,53 @@ artifact is removed and <em>path</em> is never modified.</p>
     <div class="doc doc-contents ">
 
         <p>Delete a file.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>missing_ok</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, do not raise when the file is absent.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -5506,6 +6086,10 @@ artifact is removed and <em>path</em> is never modified.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <code>path</code> is empty.</p>
+<p>Example::</p>
+<div class="highlight"><pre><span></span><code>store.delete(&quot;old-report.csv&quot;)
+store.delete(&quot;maybe-gone.csv&quot;, missing_ok=True)
+</code></pre></div>
               </div>
             </td>
           </tr>
@@ -5529,6 +6113,69 @@ artifact is removed and <em>path</em> is never modified.</p>
     <div class="doc doc-contents ">
 
         <p>Delete a folder.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative key (must not be empty).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>recursive</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, delete all contents first.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>missing_ok</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, do not raise when the folder is absent.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -5557,6 +6204,17 @@ artifact is removed and <em>path</em> is never modified.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <code>path</code> is empty (cannot delete the store root).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code>DirectoryNotEmpty</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the folder is non-empty and <code>recursive</code>
+is <code>False</code>.</p>
               </div>
             </td>
           </tr>
@@ -5595,6 +6253,22 @@ is stripped), so they can be fed directly back into other Store methods.</p>
         </tr>
       </thead>
       <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative folder key, or <code>""</code> for the store root.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
           <tr class="doc-section-item">
             <td>
                 <code>recursive</code>
@@ -5636,6 +6310,38 @@ backend.</p>
     </table>
 
 
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="FileInfo(path, name, size, modified_at, checksum=None, content_type=None, extra=dict())
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>An iterator of <code>FileInfo</code> objects with store-relative
+    paths.</p>
+<p>Example::</p>
+<div class="highlight"><pre><span></span><code>for info in store.list_files(&quot;data&quot;, recursive=True, pattern=&quot;*.csv&quot;):
+    print(info.name, info.size)
+</code></pre></div>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
     </div>
 
 </div>
@@ -5652,7 +6358,7 @@ backend.</p>
     <div class="doc doc-contents ">
 
         <p>Match files against a glob pattern using native backend support.</p>
-<p>Like :meth:<code>unwrap</code>, this gives direct access to a backend-specific
+<p>Like <code>unwrap()</code>, this gives direct access to a backend-specific
 capability.  For portable pattern matching that works on every
 backend, use <code>list_files(pattern=...)</code> for simple name filters
 or <code>ext.glob.glob_files()</code> for full recursive glob patterns.</p>
@@ -5686,6 +6392,34 @@ or <code>ext.glob.glob_files()</code> for full recursive glob patterns.</p>
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="FileInfo(path, name, size, modified_at, checksum=None, content_type=None, extra=dict())
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>An iterator of <code>FileInfo</code> objects with store-relative
+paths.</p>
+              </div>
             </td>
           </tr>
       </tbody>
@@ -5733,6 +6467,60 @@ or <code>ext.glob.glob_files()</code> for full recursive glob patterns.</p>
         <p>List immediate subfolder names.</p>
 
 
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative folder key, or <code>""</code> for the store root.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="collections.abc.Iterator">Iterator</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>An iterator of subfolder name strings (not full paths).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
     </div>
 
 </div>
@@ -5749,6 +6537,65 @@ or <code>ext.glob.glob_files()</code> for full recursive glob patterns.</p>
     <div class="doc doc-contents ">
 
         <p>Get file metadata.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="FileInfo(path, name, size, modified_at, checksum=None, content_type=None, extra=dict())
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A <code>FileInfo</code> with size, modification time, and other
+backend-provided metadata.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -5777,6 +6624,10 @@ or <code>ext.glob.glob_files()</code> for full recursive glob patterns.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <code>path</code> is empty.</p>
+<p>Example::</p>
+<div class="highlight"><pre><span></span><code>info = store.get_file_info(&quot;report.csv&quot;)
+print(info.size, info.modified_at)
+</code></pre></div>
               </div>
             </td>
           </tr>
@@ -5800,6 +6651,65 @@ or <code>ext.glob.glob_files()</code> for full recursive glob patterns.</p>
     <div class="doc doc-contents ">
 
         <p>Get folder metadata.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative folder key, or <code>""</code> for the store root.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="FolderInfo(path, file_count, total_size, modified_at=None, extra=dict())
+
+  
+      dataclass
+   (remote_store._models.FolderInfo)" href="../models/#remote_store.FolderInfo">FolderInfo</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A <code>FolderInfo</code> with file count, total size, and other
+backend-provided metadata.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -5840,7 +6750,72 @@ or <code>ext.glob.glob_files()</code> for full recursive glob patterns.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Move/rename a file.</p>
+        <p>Move or rename a file.</p>
+<p>If <em>src</em> and <em>dst</em> resolve to the same path, the method verifies that
+the source exists and returns without error.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>src</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source store-relative key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>dst</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Destination store-relative key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>overwrite</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, replace any existing file at <em>dst</em>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -5879,6 +6854,9 @@ or <code>ext.glob.glob_files()</code> for full recursive glob patterns.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <code>src</code> or <code>dst</code> is empty.</p>
+<p>Example::</p>
+<div class="highlight"><pre><span></span><code>store.move(&quot;draft.txt&quot;, &quot;final.txt&quot;)
+</code></pre></div>
               </div>
             </td>
           </tr>
@@ -5902,6 +6880,71 @@ or <code>ext.glob.glob_files()</code> for full recursive glob patterns.</p>
     <div class="doc doc-contents ">
 
         <p>Copy a file.</p>
+<p>If <em>src</em> and <em>dst</em> resolve to the same path, the method verifies that
+the source exists and returns without error.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>src</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source store-relative key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>dst</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Destination store-relative key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>overwrite</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, replace any existing file at <em>dst</em>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 <p><span class="doc-section-title">Raises:</span></p>

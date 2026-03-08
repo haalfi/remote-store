@@ -4207,6 +4207,31 @@
 
 
         <p>Operations a backend may support.</p>
+<p>Each value gates one or more <code>Store</code> methods.
+Use <code>Store.supports()</code> to query at runtime.</p>
+<p>Values:</p>
+<ul>
+<li><code>READ</code> -- Stream or bulk-read file content.
+  Gates <code>Store.read()</code> and <code>Store.read_bytes()</code>.</li>
+<li><code>WRITE</code> -- Create or overwrite files.
+  Gates <code>Store.write()</code>.</li>
+<li><code>DELETE</code> -- Remove files and folders.
+  Gates <code>Store.delete()</code> and <code>Store.delete_folder()</code>.</li>
+<li><code>LIST</code> -- Enumerate files and subfolders.
+  Gates <code>Store.list_files()</code> and <code>Store.list_folders()</code>.</li>
+<li><code>MOVE</code> -- Rename or relocate a file within the same backend.
+  Gates <code>Store.move()</code>.</li>
+<li><code>COPY</code> -- Duplicate a file within the same backend.
+  Gates <code>Store.copy()</code>.</li>
+<li><code>ATOMIC_WRITE</code> -- Write via temp-file-and-rename so readers never
+  see partial content. Gates <code>Store.write_atomic()</code> and
+  <code>Store.open_atomic()</code>.</li>
+<li><code>METADATA</code> -- Retrieve file or folder metadata.
+  Gates <code>Store.get_file_info()</code> and <code>Store.get_folder_info()</code>.</li>
+<li><code>GLOB</code> -- Native pattern matching against file paths.
+  Gates <code>Store.glob()</code>. Not all backends support this -- use
+  <code>ext.glob.glob_files()</code> as a portable fallback.</li>
+</ul>
 
 
 
