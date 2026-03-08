@@ -35,7 +35,7 @@ Properties:
 
 ### BATCH-003: batch_delete Sequential Execution
 
-**Invariant:** `batch_delete` calls `store.delete(path, missing_ok=missing_ok)` for each path in order. Each call is independent — no batching or parallelism.
+**Invariant:** When `concurrent=False` (default), `batch_delete` calls `store.delete(path, missing_ok=missing_ok)` for each path in order. Each call is independent — no batching or parallelism. See BATCH-020 for concurrent execution.
 
 ### BATCH-004: batch_delete Error Collection
 
@@ -59,7 +59,7 @@ Properties:
 
 ### BATCH-009: batch_copy Sequential Execution
 
-**Invariant:** `batch_copy` calls `store.copy(src, dst, overwrite=overwrite)` for each pair in order. Each call is independent.
+**Invariant:** When `concurrent=False` (default), `batch_copy` calls `store.copy(src, dst, overwrite=overwrite)` for each pair in order. Each call is independent. See BATCH-020 for concurrent execution.
 
 ### BATCH-010: batch_copy Error Collection
 
@@ -83,7 +83,7 @@ Properties:
 
 ### BATCH-015: batch_exists Sequential Execution
 
-**Invariant:** `batch_exists` calls `store.exists(path)` for each path in order.
+**Invariant:** When `concurrent=False` (default), `batch_exists` calls `store.exists(path)` for each path in order. See BATCH-020 for concurrent execution.
 
 ### BATCH-016: batch_exists Error Propagation
 
@@ -127,4 +127,4 @@ Properties:
 
 ### BATCH-025: Concurrent Empty Input
 
-**Invariant:** When input is empty and `concurrent=True`, no `ThreadPoolExecutor` is created — the function returns the same empty result as sequential mode. (Implementation note: the executor is created but submits no futures, which is functionally equivalent.)
+**Invariant:** When input is empty and `concurrent=True`, the function returns the same empty result as sequential mode. The executor is created but submits no futures.
