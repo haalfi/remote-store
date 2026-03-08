@@ -386,7 +386,7 @@ The published documentation site must meet these accessibility standards:
 
 ---
 
-## 14. Definition of Done
+## 11. Definition of Done
 
 Documentation is considered complete when:
 
