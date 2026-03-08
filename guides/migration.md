@@ -2,9 +2,9 @@
 
 Breaking changes and upgrade paths between `remote-store` versions.
 
-`remote-store` is currently in **Beta** (since v0.11.0). The core Store API is
-stable, but extensions may evolve. This page documents changes that require
-action when upgrading.
+`remote-store` has been published on PyPI since v0.11.0 (first Beta release).
+The core Store API is stable, but extensions may evolve. This page documents
+changes that require action when upgrading.
 
 ## v0.13.0 to v0.14.0
 
@@ -35,20 +35,6 @@ action when upgrading.
 - `Store.glob()` now requires `Capability.GLOB`. Backends that do not support
   it (Memory, SFTP) will raise `CapabilityNotSupported`.
 - Use `ext.glob.glob_files()` as a portable fallback for all backends.
-
-## v0.10.0 to v0.11.0
-
-**Beta status:**
-
-- Project moved from Alpha to Beta. No API changes, but the stability
-  commitment is now stronger for core APIs.
-
-## v0.7.0 to v0.8.0
-
-**Store.child():**
-
-- `Store.child()` creates a sub-scoped store. The child does **not** own the
-  backend -- closing the child does not close the parent's backend.
 
 ## General upgrade advice
 
