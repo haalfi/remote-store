@@ -1,19 +1,23 @@
 - Home: index.md
-- Getting Started: getting-started.md
-- Examples: examples/
-- API Reference: api/
-- Backends: backends/
-- Extensions: extensions.md
-- Performance: performance.md
-- Concurrency: concurrency.md
-- Data Lake Patterns: data-lake-patterns.md
-- PyArrow Adapter: pyarrow-adapter.md
-- Batch Operations: batch-operations.md
-- Glob Pattern Matching: glob-pattern-matching.md
-- Transfer Operations: transfer-operations.md
-- Observability Hooks: observe.md
-- Caching: cache.md
-- Design: design/
+- Getting Started:
+    - Tutorial: getting-started.md
+    - Examples: examples/
+- Guides:
+    - Backends: backends/
+    - Extensions: extensions.md
+    - PyArrow Adapter: pyarrow-adapter.md
+    - Batch Operations: batch-operations.md
+    - Glob Pattern Matching: glob-pattern-matching.md
+    - Transfer Operations: transfer-operations.md
+    - Observability Hooks: observe.md
+    - Caching: cache.md
+    - Data Lake Patterns: data-lake-patterns.md
+- Reference:
+    - API: api/
+    - Changelog: changelog.md
+- Explanation:
+    - Performance: performance.md
+    - Concurrency: concurrency.md
+    - Design: design/
 - Contributing: contributing.md
-- Changelog: changelog.md
 - Development Story: development-story.md

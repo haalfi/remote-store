@@ -85,6 +85,42 @@
          <lastmod>2026-03-08</lastmod>
     </url>
     <url>
+         <loc>https://haalfi.github.io/remote-store/dev/api/ext-arrow/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://haalfi.github.io/remote-store/dev/api/ext-batch/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://haalfi.github.io/remote-store/dev/api/ext-cache/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://haalfi.github.io/remote-store/dev/api/ext-glob/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://haalfi.github.io/remote-store/dev/api/ext-observe/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://haalfi.github.io/remote-store/dev/api/ext-otel/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://haalfi.github.io/remote-store/dev/api/ext-partition/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://haalfi.github.io/remote-store/dev/api/ext-pydantic/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://haalfi.github.io/remote-store/dev/api/ext-transfer/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
          <loc>https://haalfi.github.io/remote-store/dev/api/models/</loc>
          <lastmod>2026-03-08</lastmod>
     </url>
