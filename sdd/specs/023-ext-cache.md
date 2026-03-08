@@ -48,8 +48,10 @@ the expiry timestamp from `time.monotonic()`.
 - Thread-safe via `threading.Lock`.
 - Lazy eviction: expired entries are removed on `get` (miss path) and
   during `clear_prefix` / `size` traversals. No background reaper.
-- No maximum size limit (the `max_content_size` guard on `CachedStore`
-  prevents unbounded content caching).
+- Optional `max_entries: int | None` parameter. When set, least-recently-used
+  entries are evicted on `set` when the count exceeds the limit. When `None`
+  (default), entries are only bounded by TTL expiry.
+- `max_entries` must be positive; `ValueError` is raised on `<= 0`.
 
 ---
 
@@ -65,6 +67,7 @@ def cached_store(
     *,
     ttl: float = 300.0,
     max_content_size: int | None = None,
+    max_entries: int | None = None,
     cache_backend: CacheBackend | None = None,
 ) -> CachedStore: ...
 ```
@@ -72,9 +75,13 @@ def cached_store(
 **Parameters:**
 - `store`: The Store to wrap.
 - `ttl`: Time-to-live in seconds for cache entries. Default 300 (5 min).
+  Must be positive; `ValueError` on `<= 0`.
 - `max_content_size`: Maximum byte length for `read_bytes` caching.
   Files larger than this are returned without caching. `None` means
-  unlimited.
+  unlimited. Must be positive when set; `ValueError` on `<= 0`.
+- `max_entries`: Maximum number of cache entries for the default
+  `MemoryCache`. Least-recently-used entries are evicted when exceeded.
+  `None` means no limit. Ignored when `cache_backend` is provided.
 - `cache_backend`: Optional custom cache backend. When `None`, a
   `MemoryCache` is created.
 

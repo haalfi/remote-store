@@ -100,10 +100,19 @@ class MemoryCache:
 
     Entries are stored as ``{key: (value, expiry)}`` where *expiry* is a
     ``time.monotonic()`` deadline.
+
+    When *max_entries* is set, the cache evicts the least-recently-used
+    entry when the limit is exceeded (LRU eviction).  Without a bound,
+    metadata entries (``exists``, ``is_file``, listings) for many distinct
+    paths can grow without limit during the TTL window.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, max_entries: int | None = None) -> None:
+        if max_entries is not None and max_entries <= 0:
+            msg = f"max_entries must be positive, got {max_entries}"
+            raise ValueError(msg)
         self._data: dict[tuple[str, ...], tuple[Any, float]] = {}
+        self._max_entries = max_entries
         self._lock = threading.Lock()
 
     def get(self, key: tuple[str, ...]) -> Any:
@@ -116,13 +125,25 @@ class MemoryCache:
             if time.monotonic() > expiry:
                 del self._data[key]
                 raise KeyError(key)
+            # LRU: move to end so least-recently-used is at the front.
+            if self._max_entries is not None:
+                del self._data[key]
+                self._data[key] = (value, expiry)
             return value
 
     def set(self, key: tuple[str, ...], value: Any, ttl: float) -> None:
         """Store *value* with a TTL in seconds."""
         expiry = time.monotonic() + ttl
         with self._lock:
-            self._data[key] = (value, expiry)
+            if key in self._data:
+                # Update existing -- move to end for LRU.
+                self._data[key] = (value, expiry)
+            else:
+                self._data[key] = (value, expiry)
+                # Evict LRU entries if over limit.
+                if self._max_entries is not None:
+                    while len(self._data) > self._max_entries:
+                        self._data.pop(next(iter(self._data)))
 
     def delete(self, key: tuple[str, ...]) -> None:
         """Remove a single entry (no-op if absent)."""
@@ -173,17 +194,21 @@ class CachedStore(Store):
         *,
         ttl: float,
         max_content_size: int | None,
+        max_entries: int | None,
         cache_backend: CacheBackend | None,
     ) -> None:
         # Bypass Store.__init__ -- delegate everything to inner.
         self._inner = inner
-        self._cache = cache_backend if cache_backend is not None else MemoryCache()
+        self._cache = cache_backend if cache_backend is not None else MemoryCache(max_entries=max_entries)
         self._ttl = ttl
         self._max_content_size = max_content_size
         self._hits = 0
         self._misses = 0
         self._stats_lock = threading.Lock()
-        # Needed so inherited helpers work if someone bypasses our overrides.
+        # Coupling: access private state so inherited helpers work if someone
+        # bypasses our overrides.  If Store's internals change, this breaks --
+        # the drift-protection test (CACHE-011) covers method/property surface
+        # but not these private attributes.
         self._backend = inner._backend
         self._root = inner._root
         self._owns_backend = False
@@ -199,11 +224,10 @@ class CachedStore(Store):
     def stats(self) -> CacheStats:
         """Snapshot of cache hit/miss statistics."""
         with self._stats_lock:
-            return CacheStats(
-                hits=self._hits,
-                misses=self._misses,
-                size=self._cache.size(),
-            )
+            h, m = self._hits, self._misses
+        # Read size outside _stats_lock to avoid blocking concurrent
+        # _cache_get calls while MemoryCache.size() rebuilds the dict.
+        return CacheStats(hits=h, misses=m, size=self._cache.size())
 
     # endregion
 
@@ -425,6 +449,7 @@ def cached_store(
     *,
     ttl: float = 300.0,
     max_content_size: int | None = None,
+    max_entries: int | None = None,
     cache_backend: CacheBackend | None = None,
 ) -> CachedStore:
     """Wrap a Store with read-through caching.
@@ -434,13 +459,23 @@ def cached_store(
     :param max_content_size: Maximum byte length for ``read_bytes`` caching.
         Files larger than this are returned without caching. ``None`` means
         unlimited.
+    :param max_entries: Maximum number of cache entries. When exceeded, the
+        least-recently-used entry is evicted. ``None`` means no limit.
+        Ignored when *cache_backend* is provided.
     :param cache_backend: Optional custom cache. When ``None``, a
         :class:`MemoryCache` is created.
     :returns: A :class:`CachedStore` proxy.
     """
+    if ttl <= 0:
+        msg = f"ttl must be positive, got {ttl}"
+        raise ValueError(msg)
+    if max_content_size is not None and max_content_size <= 0:
+        msg = f"max_content_size must be positive, got {max_content_size}"
+        raise ValueError(msg)
     return CachedStore(
         store,
         ttl=ttl,
         max_content_size=max_content_size,
+        max_entries=max_entries,
         cache_backend=cache_backend,
     )

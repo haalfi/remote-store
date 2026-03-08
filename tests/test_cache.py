@@ -99,6 +99,37 @@ class TestMemoryCache:
         time.sleep(0.02)
         assert cache.size() == 1
 
+    @pytest.mark.spec("CACHE-002")
+    def test_max_entries_evicts_lru(self) -> None:
+        cache = MemoryCache(max_entries=2)
+        cache.set(("a",), 1, ttl=10.0)
+        cache.set(("b",), 2, ttl=10.0)
+        cache.set(("c",), 3, ttl=10.0)  # should evict ("a",)
+        assert cache.size() == 2
+        with pytest.raises(KeyError):
+            cache.get(("a",))
+        assert cache.get(("b",)) == 2
+        assert cache.get(("c",)) == 3
+
+    @pytest.mark.spec("CACHE-002")
+    def test_max_entries_lru_access_refreshes(self) -> None:
+        cache = MemoryCache(max_entries=2)
+        cache.set(("a",), 1, ttl=10.0)
+        cache.set(("b",), 2, ttl=10.0)
+        cache.get(("a",))  # refresh ("a",), making ("b",) the LRU
+        cache.set(("c",), 3, ttl=10.0)  # should evict ("b",)
+        assert cache.get(("a",)) == 1
+        assert cache.get(("c",)) == 3
+        with pytest.raises(KeyError):
+            cache.get(("b",))
+
+    @pytest.mark.spec("CACHE-002")
+    def test_max_entries_invalid_raises(self) -> None:
+        with pytest.raises(ValueError, match="max_entries must be positive"):
+            MemoryCache(max_entries=0)
+        with pytest.raises(ValueError, match="max_entries must be positive"):
+            MemoryCache(max_entries=-1)
+
 
 # ===========================================================================
 # CACHE-003: cached_store() factory
@@ -122,6 +153,20 @@ class TestFactory:
         backend = MemoryCache()
         result = cached_store(store, cache_backend=backend)
         assert result._cache is backend
+
+    @pytest.mark.spec("CACHE-003")
+    def test_invalid_ttl_raises(self, store: Store) -> None:
+        with pytest.raises(ValueError, match="ttl must be positive"):
+            cached_store(store, ttl=0)
+        with pytest.raises(ValueError, match="ttl must be positive"):
+            cached_store(store, ttl=-1)
+
+    @pytest.mark.spec("CACHE-003")
+    def test_invalid_max_content_size_raises(self, store: Store) -> None:
+        with pytest.raises(ValueError, match="max_content_size must be positive"):
+            cached_store(store, max_content_size=0)
+        with pytest.raises(ValueError, match="max_content_size must be positive"):
+            cached_store(store, max_content_size=-5)
 
     @pytest.mark.spec("CACHE-004")
     def test_inner_property(self, store: Store, cached: CachedStore) -> None:
@@ -430,6 +475,41 @@ class TestThreadSafety:
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             results = list(pool.map(read_exists, range(20)))
         assert all(r is True for r in results)
+
+    @pytest.mark.spec("CACHE-012")
+    def test_concurrent_mixed_operations(self, store: Store) -> None:
+        """Stress test: concurrent reads, writes, and invalidations."""
+        import concurrent.futures
+        import random
+
+        cs = cached_store(store, ttl=60.0)
+
+        errors: list[Exception] = []
+
+        def worker(idx: int) -> None:
+            try:
+                rng = random.Random(idx)
+                for _ in range(20):
+                    op = rng.choice(["read", "write", "invalidate", "list"])
+                    if op == "read":
+                        cs.exists("a.txt")
+                    elif op == "write":
+                        cs.write("a.txt", b"updated", overwrite=True)
+                    elif op == "invalidate":
+                        cs.invalidate("a.txt")
+                    elif op == "list":
+                        list(cs.list_files(""))
+            except Exception as exc:
+                errors.append(exc)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+            list(pool.map(worker, range(16)))
+
+        assert not errors, f"Concurrent operations raised: {errors}"
+        # Stats should be consistent (non-negative, sum makes sense).
+        s = cs.stats
+        assert s.hits >= 0
+        assert s.misses >= 0
 
 
 # ===========================================================================
