@@ -126,7 +126,7 @@ class Store:
         Example::
 
             if store.exists("data/report.csv"):
-                stream = store.read("data/report.csv")
+                data = store.read_bytes("data/report.csv")
         """
         log.debug("exists path=%r", path, extra={"op": "exists", "path": path, "backend": self._backend.name})
         return self._backend.exists(self._full_path(path))
