@@ -19,9 +19,10 @@ Active work items, ordered by priority.
   modules), DOCUMENTATION.md updated to Sphinx-style docstrings, Phase 3
   (7 new content pages: capabilities matrix, choosing a backend,
   troubleshooting, migration guide, architecture overview, security model,
-  further reading).
-  Remaining: Phase 4 (research docs on site), Phase 5 (docstring audit),
-  Phase 6 (cross-links), Phase 7 (final polish).
+  further reading), Phase 4 (research docs on site -- 6 research docs
+  surfaced under Explanation > Design > Research with auto-generated index).
+  Remaining: Phase 5 (docstring audit), Phase 6 (cross-links),
+  Phase 7 (final polish).
 
 - [ ] **ID-049 — Enable GitHub Vigilant Mode**
   Commit signing with SSH/GPG for supply chain transparency. Soft enforcement
