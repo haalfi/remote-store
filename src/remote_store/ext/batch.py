@@ -261,9 +261,16 @@ def _batch_exists_concurrent(
     """Concurrent implementation of batch_exists."""
     paths_list = list(paths)
     result: dict[str, bool] = {}
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    executor = ThreadPoolExecutor(max_workers=max_workers)
+    try:
         future_to_path = {executor.submit(store.exists, p): p for p in paths_list}
         for future in as_completed(future_to_path):
             path = future_to_path[future]
-            result[path] = future.result()
+            try:
+                result[path] = future.result()
+            except Exception:
+                executor.shutdown(wait=False, cancel_futures=True)
+                raise
+    finally:
+        executor.shutdown(wait=True)
     return result
