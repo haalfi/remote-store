@@ -99,6 +99,7 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install -e ".[dev,arrow]"
+      - run: python tests/scripts/run_notebooks.py
       - run: python examples/quickstart.py
       - run: python examples/file_operations.py
       - run: python examples/streaming_io.py

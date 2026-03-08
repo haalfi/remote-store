@@ -116,11 +116,11 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
 - [~] **ID-048 — Verify notebook examples in CI (`hatch run notebooks`)**
   The 3 tutorial notebooks (`01_getting_started`, `02_file_operations`,
   `03_configuration`) were not executed by `hatch run all`. Added a
-  lightweight runner (`tests/run_notebooks.py`) that extracts
+  lightweight runner (`tests/scripts/run_notebooks.py`) that extracts
   code cells and runs them via `exec()` — no Jupyter dependency needed.
   `benchmark_analysis.ipynb` is skipped (needs pre-generated data).
-  `hatch run notebooks` added and wired into `hatch run all`.
-  Done: runner script, hatch wiring. Remaining: merge.
+  `hatch run notebooks` added and wired into `hatch run all` + CI `examples` job.
+  Done: runner script, hatch wiring, CI coverage. Remaining: merge.
 
 - [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
   Four specs have no dedicated example coverage:
