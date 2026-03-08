@@ -26,7 +26,7 @@ from remote_store._path import RemotePath
 from remote_store._registry import Registry, register_backend
 from remote_store._store import Store
 from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_exists
-from remote_store.ext.cache import CachedStore, CacheStats, MemoryCache, cached_store
+from remote_store.ext.cache import CacheBackend, CachedStore, CacheStats, MemoryCache, cached_store
 from remote_store.ext.glob import glob_files
 from remote_store.ext.observe import (
     BufferedObserver,
@@ -75,6 +75,7 @@ __all__ = [
     "batch_copy",
     "batch_exists",
     # Cache operations
+    "CacheBackend",
     "CachedStore",
     "CacheStats",
     "MemoryCache",

@@ -398,6 +398,20 @@ class TestDriftProtection:
         missing = store_public - cached_own
         assert not missing, f"CachedStore missing overrides for: {missing}"
 
+    @pytest.mark.spec("CACHE-011")
+    def test_all_store_properties_overridden(self) -> None:
+        """CachedStore must override every public property of Store."""
+        store_props = {
+            name for name in dir(Store) if not name.startswith("_") and isinstance(getattr(Store, name, None), property)
+        }
+        cached_props = {
+            name
+            for name in CachedStore.__dict__
+            if not name.startswith("_") and isinstance(CachedStore.__dict__.get(name), property)
+        }
+        missing = store_props - cached_props
+        assert not missing, f"CachedStore missing property overrides for: {missing}"
+
 
 # ===========================================================================
 # CACHE-012: Thread safety

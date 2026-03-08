@@ -21,7 +21,7 @@ import dataclasses
 import logging
 import threading
 import time
-from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
+from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 from remote_store._store import Store
 
@@ -37,6 +37,7 @@ T = TypeVar("T")
 log = logging.getLogger(__name__)
 
 __all__ = [
+    "CacheBackend",
     "CacheStats",
     "CachedStore",
     "MemoryCache",
@@ -70,6 +71,23 @@ class CacheStats:
     hits: int
     misses: int
     size: int
+
+
+# ---------------------------------------------------------------------------
+# CacheBackend protocol
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class CacheBackend(Protocol):
+    """Protocol for pluggable cache backends (CACHE-001)."""
+
+    def get(self, key: tuple[str, ...]) -> Any: ...
+    def set(self, key: tuple[str, ...], value: Any, ttl: float) -> None: ...
+    def delete(self, key: tuple[str, ...]) -> None: ...
+    def clear(self) -> None: ...
+    def clear_prefix(self, prefix: str) -> None: ...
+    def size(self) -> int: ...
 
 
 # ---------------------------------------------------------------------------
@@ -143,7 +161,7 @@ class CachedStore(Store):
     """
 
     _inner: Store
-    _cache: MemoryCache
+    _cache: CacheBackend
     _ttl: float
     _max_content_size: int | None
     _hits: int
@@ -155,7 +173,7 @@ class CachedStore(Store):
         *,
         ttl: float,
         max_content_size: int | None,
-        cache_backend: MemoryCache | None,
+        cache_backend: CacheBackend | None,
     ) -> None:
         # Bypass Store.__init__ -- delegate everything to inner.
         self._inner = inner
@@ -341,6 +359,7 @@ class CachedStore(Store):
         self._inner.close()
 
     def child(self, subpath: str) -> Store:
+        log.debug("CachedStore.child(%r) returns an unwrapped Store (no caching)", subpath)
         return self._inner.child(subpath)
 
     def to_key(self, path: str) -> str:
@@ -406,7 +425,7 @@ def cached_store(
     *,
     ttl: float = 300.0,
     max_content_size: int | None = None,
-    cache_backend: MemoryCache | None = None,
+    cache_backend: CacheBackend | None = None,
 ) -> CachedStore:
     """Wrap a Store with read-through caching.
 
