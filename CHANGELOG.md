@@ -6,6 +6,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+*(nothing yet)*
+
+## [0.15.0] - 2026-03-08
+
 ### Added
 
 - **`hatch run notebooks` smoke-test runner** (ID-048) -- lightweight script (`tests/scripts/run_notebooks.py`) that executes tutorial notebook code cells via `exec()` without requiring Jupyter. Wired into `hatch run all` and CI `examples` job. Skips `benchmark_analysis.ipynb` (needs pre-generated data).

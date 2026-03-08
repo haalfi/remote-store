@@ -333,7 +333,7 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
 
 ### Ideas shipped
 
-- [x] **ID-025 — `ext.cache` — store-level caching middleware** (unreleased)
+- [x] **ID-025 — `ext.cache` — store-level caching middleware** (v0.15.0)
   `cached_store(store, ttl=300)` wraps a Store in a caching proxy.
   Caches: `exists`, `is_file`, `is_folder`, `read_bytes`, `get_file_info`,
   `get_folder_info`, `list_files`, `list_folders`, `glob`. Auto-invalidates
@@ -341,13 +341,13 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   `MemoryCache` default backend, thread-safe. `CacheStats` for monitoring.
   Spec: `023-ext-cache.md` (CACHE-001 through CACHE-015). 52 tests.
 
-- [x] **ID-035 — Parallel batch operations** (unreleased)
+- [x] **ID-035 — Parallel batch operations** (v0.15.0)
   Added `concurrent=True` and `max_workers=N` keyword arguments to
   `batch_delete`, `batch_copy`, `batch_exists`. Uses `ThreadPoolExecutor`
   (stdlib). `stop_on_error=True` + `concurrent=True` raises `ValueError`.
   Spec: BATCH-020 through BATCH-025 in `016-ext-batch.md`. 20 new tests.
 
-- [x] **ID-036 — Hive-style partition path helpers** (unreleased)
+- [x] **ID-036 — Hive-style partition path helpers** (v0.15.0)
   `partition_path(filename, **partitions)` and `parse_partition(path)` in
   `ext/partition.py`. Builds and parses paths like
   `year=2026/month=03/data.parquet`. Pure Python, zero dependencies.
@@ -556,7 +556,7 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   for `tomli`, `tomllib`, `ruamel.yaml`, `pydantic`/`pydantic_settings`,
   plus `warn_unused_ignores = false` on `_config` module. No gaps found.
 
-- [x] **ID-026 — Streaming atomic writes**
+- [x] **ID-026 — Streaming atomic writes** (v0.15.0)
   `Store.open_atomic()` and `Backend.open_atomic()` — context manager yielding
   a writable file object backed by a temporary location. On success, atomically
   promoted; on exception, cleaned up. All 6 backends: `mkstemp`+`os.replace`
@@ -565,7 +565,7 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   (Memory). RFC-0004 accepted. Spec: `022-streaming-atomic-writes.md`
   (SAW-001 through SAW-015). `ext.observe` maps to `on_write` hook.
 
-- [x] **ID-037 — PyArrow adapter Phase 2 — Tier 1 native fast-path reads** (v0.14.0)
+- [x] **ID-037 — PyArrow adapter Phase 2 — Tier 1 native fast-path reads** (v0.15.0)
   Tier 1 native fast-path reads (PA-010) implemented: `Backend.native_path()`
   (BE-025), `Store.native_path()` (STORE-015), `S3PyArrowBackend.unwrap()`
   accepts `pyarrow.fs.FileSystem` base class, `StoreFileSystemHandler` probes
@@ -574,14 +574,14 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   Streaming error-mapping wrapper deferred — currently inert (cloud backends
   materialize via Tier 2, no mid-read exceptions on PythonFile possible).
 
-- [x] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix** (v0.14.0)
+- [x] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix** (v0.15.0)
   Re-ran quick + standard tier benchmarks with Docker backends (MinIO, Azurite,
   SFTP). Updated `benchmarks/results/comparative.md` with post-ID-032 data.
   Listing numbers now reflect real I/O without fsspec caching bias.
 
 ### Documentation
 
-- [x] **DOC-001 — Documentation overhaul per Documentation Master** (unreleased)
+- [x] **DOC-001 — Documentation overhaul per Documentation Master** (v0.15.0)
   Full Diataxis restructure of the docs site. Phase 1: nav restructure into
   Getting Started / Guides / Reference / Explanation. Phase 2: extension API
   reference pages for all 9 ext modules. Phase 3: 7 new content pages
