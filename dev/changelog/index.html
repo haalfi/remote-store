@@ -2416,6 +2416,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/024-ext-partition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    024: ext.partition — Hive-Style Partition Path Helpers Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4649,6 +4677,7 @@
 <li><strong><code>S3PyArrowBackend.unwrap()</code></strong> now accepts <code>pyarrow.fs.FileSystem</code> base class in addition to <code>pyarrow.fs.S3FileSystem</code>.</li>
 <li><strong>Parallel batch operations</strong> (ID-035) -- <code>batch_delete</code>, <code>batch_copy</code>, and <code>batch_exists</code> now accept <code>concurrent=True</code> and <code>max_workers=N</code> keyword arguments for parallel execution via <code>ThreadPoolExecutor</code>. Cloud backends benefit significantly from concurrent I/O over sequential execution. <code>stop_on_error</code> is incompatible with <code>concurrent=True</code> (raises <code>ValueError</code>). Spec: BATCH-020 through BATCH-025.</li>
 <li><strong><code>ext.cache</code> -- store-level caching middleware</strong> (ID-025) -- <code>cached_store(store, ttl=300)</code> wraps a Store in a proxy that caches read-only operations (<code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>read_bytes</code>, <code>get_file_info</code>, <code>get_folder_info</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>) with TTL-based expiration. All mutating operations automatically invalidate affected entries. <code>max_content_size</code> limits memory for large files. Thread-safe. Spec: CACHE-001 through CACHE-015.</li>
+<li><strong><code>ext.partition</code> -- Hive-style partition path helpers</strong> (ID-036) -- <code>partition_path(filename, **partitions)</code> builds paths like <code>year=2026/month=03/data.parquet</code>, <code>parse_partition(path)</code> extracts the partition dict and filename. Pure Python, zero dependencies. Spec: PART-001 through PART-013.</li>
 </ul>
 <h2 id="0140-2026-03-07">[0.14.0] - 2026-03-07<a class="headerlink" href="#0140-2026-03-07" title="Permanent link">&para;</a></h2>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
