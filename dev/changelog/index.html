@@ -4556,6 +4556,7 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong><code>hatch run notebooks</code> smoke-test runner</strong> (ID-048) -- lightweight script (<code>tests/scripts/run_notebooks.py</code>) that executes tutorial notebook code cells via <code>exec()</code> without requiring Jupyter. Wired into <code>hatch run all</code> and CI <code>examples</code> job. Skips <code>benchmark_analysis.ipynb</code> (needs pre-generated data).</li>
 <li><strong><code>Store.native_path(key)</code></strong> -- converts a store-relative key to the backend-native path (STORE-015). Inverse of <code>to_key()</code>. Used by the PyArrow adapter for Tier 1 fast-path reads.</li>
 <li><strong><code>Backend.native_path(path)</code></strong> -- converts a backend-relative key to the backend-native path (BE-025). Default is identity; <code>S3PyArrowBackend</code> prepends bucket prefix.</li>
 <li><strong>PyArrow adapter Tier 1 native fast-path reads</strong> (ID-037, PA-010) -- <code>StoreFileSystemHandler</code> now probes for a native PyArrow filesystem at construction via <code>store.unwrap(pyarrow.fs.FileSystem)</code>. When available (e.g., <code>S3PyArrowBackend</code>), <code>open_input_file</code> delegates directly to the native FS, bypassing Python I/O for zero GIL overhead with C++ range requests and I/O coalescing.</li>
