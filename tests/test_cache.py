@@ -91,6 +91,16 @@ class TestMemoryCache:
         assert cache.size() == 1
         assert cache.get(("exists", "x")) is True
 
+    @pytest.mark.spec("CACHE-001")
+    def test_clear_prefixes_batch(self) -> None:
+        cache = MemoryCache()
+        cache.set(("list_files", "x"), 1, ttl=10.0)
+        cache.set(("glob", "*.txt"), 2, ttl=10.0)
+        cache.set(("exists", "x"), True, ttl=10.0)
+        cache.clear_prefixes(frozenset({"list_files", "glob"}))
+        assert cache.size() == 1
+        assert cache.get(("exists", "x")) is True
+
     @pytest.mark.spec("CACHE-002")
     def test_size_excludes_expired(self) -> None:
         cache = MemoryCache()

@@ -164,6 +164,15 @@ class MemoryCache:
         with self._lock:
             self._data = {k: v for k, v in self._data.items() if k[0] != prefix and v[1] > now}
 
+    def clear_prefixes(self, prefixes: frozenset[str]) -> None:
+        """Remove all entries whose first key element is in *prefixes*.
+
+        Single dict rebuild instead of one per prefix — O(n) vs O(k*n).
+        """
+        now = time.monotonic()
+        with self._lock:
+            self._data = {k: v for k, v in self._data.items() if k[0] not in prefixes and v[1] > now}
+
     def size(self) -> int:
         """Return count of non-expired entries."""
         now = time.monotonic()
@@ -238,11 +247,7 @@ class CachedStore(Store):
 
     def invalidate(self, path: str) -> None:
         """Remove all cached entries for *path*."""
-        for prefix in _PATH_PREFIXES:
-            self._cache.delete((prefix, path))
-        # Also clear listings since they may reference this path.
-        for prefix in _LISTING_PREFIXES:
-            self._cache.clear_prefix(prefix)
+        self._invalidate_path(path)
 
     def clear_cache(self) -> None:
         """Remove all cached entries."""
@@ -272,8 +277,12 @@ class CachedStore(Store):
 
     def _invalidate_listings(self) -> None:
         """Clear all listing/glob/folder-info cache entries."""
-        for prefix in _LISTING_PREFIXES:
-            self._cache.clear_prefix(prefix)
+        clear_batch = getattr(self._cache, "clear_prefixes", None)
+        if clear_batch is not None:
+            clear_batch(_LISTING_PREFIXES)
+        else:
+            for prefix in _LISTING_PREFIXES:
+                self._cache.clear_prefix(prefix)
 
     # endregion
 
