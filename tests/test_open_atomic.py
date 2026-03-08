@@ -164,7 +164,7 @@ class TestObserveOpenAtomic:
         assert events[0].error is None
 
     @pytest.mark.spec("SAW-014")
-    def test_on_write_does_not_fire_on_error(self, memory_store: Store) -> None:
+    def test_on_write_fires_with_error_on_failure(self, memory_store: Store) -> None:
         from remote_store.ext.observe import StoreEvent, observe
 
         events: list[StoreEvent] = []

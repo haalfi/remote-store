@@ -308,12 +308,14 @@ class AzureBackend(Backend):
                 tmp_name = f".~tmp.{basename}.{uuid.uuid4().hex[:8]}"
                 tmp_path = f"{parent}/{tmp_name}" if parent else tmp_name
 
-                buf_hns: tempfile.SpooledTemporaryFile[bytes] = tempfile.SpooledTemporaryFile(  # noqa: SIM115
-                    max_size=8 * 1024 * 1024,
-                )
-                try:
-                    yield cast("BinaryIO", buf_hns)
-                    buf_hns.seek(0)
+            # Yield outside _errors() so user exceptions aren't remapped
+            buf_hns: tempfile.SpooledTemporaryFile[bytes] = tempfile.SpooledTemporaryFile(  # noqa: SIM115
+                max_size=8 * 1024 * 1024,
+            )
+            try:  # pragma: no cover -- HNS only
+                yield cast("BinaryIO", buf_hns)
+                buf_hns.seek(0)
+                with self._errors(path):
                     tmp_fc = self._fs.get_file_client(tmp_path)
                     try:
                         tmp_fc.upload_data(buf_hns, overwrite=True)
@@ -323,8 +325,8 @@ class AzureBackend(Backend):
                         with contextlib.suppress(Exception):
                             tmp_fc.delete_file()
                         raise
-                finally:
-                    buf_hns.close()
+            finally:
+                buf_hns.close()
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._errors(path):
