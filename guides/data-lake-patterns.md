@@ -310,7 +310,7 @@ Several backlog items would strengthen this path:
 
 ## See also
 
-- [Data Lake Medallion notebook](../examples/notebooks/04_data_lake_medallion.ipynb) — runnable end-to-end Bronze/Silver/Gold pipeline
+- [Data Lake Medallion notebook](https://github.com/haalfi/remote-store/blob/master/examples/notebooks/04_data_lake_medallion.ipynb) — runnable end-to-end Bronze/Silver/Gold pipeline
 - [PyArrow FileSystem Adapter](pyarrow-adapter.md) — adapter configuration and tiered read strategy
 - [Transfer Operations](transfer-operations.md) — cross-store and local-path transfers
 - [Batch Operations](batch-operations.md) — bulk delete, copy, exists
