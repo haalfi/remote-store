@@ -2497,6 +2497,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/022-streaming-atomic-writes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    022: Streaming Atomic Writes Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3413,6 +3441,10 @@ use a Registry with declarative config:</p>
 <tr>
 <td><code>write_atomic(path, content)</code></td>
 <td>Write via temp file + rename</td>
+</tr>
+<tr>
+<td><code>open_atomic(path)</code></td>
+<td>Streaming write via temp + rename</td>
 </tr>
 </tbody>
 </table>

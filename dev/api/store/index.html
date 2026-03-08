@@ -1082,6 +1082,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.Store.open_atomic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        open_atomic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.Store.delete" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2639,6 +2650,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/specs/022-streaming-atomic-writes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    022: Streaming Atomic Writes Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3434,6 +3473,17 @@
     <span class="md-ellipsis">
       
         write_atomic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Store.open_atomic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        open_atomic
       
     </span>
   </a>
@@ -4281,6 +4331,118 @@ The result is usable with the native handle returned by :meth:<code>unwrap</code
             <td>
               <div class="doc-md-description">
                 <p>If <code>path</code> is empty.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.Store.open_atomic" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">open_atomic</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+<a href="#remote_store.Store.open_atomic" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Open a file for streaming atomic writing.</p>
+<p>Yields a writable file object. Content written to it is staged in a
+backend-specific temporary location. On successful context exit the
+file is atomically promoted to <em>path</em>. On exception the temporary
+artifact is removed and <em>path</em> is never modified.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Store-relative key for the target file.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>overwrite</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>False</code>, raise if the file already exists.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>AlreadyExists</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <em>path</em> exists and <em>overwrite</em> is <code>False</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code>CapabilityNotSupported</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the backend lacks <code>ATOMIC_WRITE</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code>InvalidPath</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <em>path</em> is empty.</p>
               </div>
             </td>
           </tr>

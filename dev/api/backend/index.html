@@ -1094,6 +1094,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.Backend.open_atomic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        open_atomic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.Backend.delete" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2639,6 +2650,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/specs/022-streaming-atomic-writes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    022: Streaming Atomic Writes Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3397,6 +3436,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.Backend.open_atomic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        open_atomic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.Backend.delete" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3931,6 +3981,63 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
             <td>
               <div class="doc-md-description">
                 <p>If the file exists and <code>overwrite</code> is <code>False</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.Backend.open_atomic" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">open_atomic</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+  </span>
+
+<a href="#remote_store.Backend.open_atomic" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Yield a writable file object backed by a temporary location.</p>
+<p>On successful exit the temp file is atomically promoted to <em>path</em>.
+On exception the temp file is removed and <em>path</em> is untouched.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>AlreadyExists</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <em>path</em> exists and <em>overwrite</em> is <code>False</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code>CapabilityNotSupported</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the backend lacks <code>ATOMIC_WRITE</code>.</p>
               </div>
             </td>
           </tr>
