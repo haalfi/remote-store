@@ -2468,6 +2468,89 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#concurrent-execution-id-035" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrent Execution (ID-035)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concurrent Execution (ID-035)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#batch-020-concurrent-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BATCH-020: concurrent Parameter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-021-max_workers-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BATCH-021: max_workers Parameter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-022-stop_on_error-concurrent-incompatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BATCH-022: stop_on_error + concurrent Incompatibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-023-concurrent-result-ordering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BATCH-023: Concurrent Result Ordering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-024-concurrent-error-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BATCH-024: Concurrent Error Semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-025-concurrent-empty-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BATCH-025: Concurrent Empty Input
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3528,6 +3611,89 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#concurrent-execution-id-035" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrent Execution (ID-035)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concurrent Execution (ID-035)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#batch-020-concurrent-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BATCH-020: concurrent Parameter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-021-max_workers-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BATCH-021: max_workers Parameter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-022-stop_on_error-concurrent-incompatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BATCH-022: stop_on_error + concurrent Incompatibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-023-concurrent-result-ordering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BATCH-023: Concurrent Result Ordering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-024-concurrent-error-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BATCH-024: Concurrent Error Semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-025-concurrent-empty-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BATCH-025: Concurrent Empty Input
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3549,12 +3715,15 @@
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p><code>ext.batch</code> provides convenience functions for operating on collections of paths:
 batch delete, batch copy, and batch existence checks. All functions call Store
-methods one-by-one (sequential execution) and collect errors instead of failing
-on first error. No backend-specific fast-paths (e.g., S3 native batch delete)
-are used — the value is a clean convenience API with error aggregation.</p>
+methods one-by-one by default (sequential execution) and collect errors instead
+of failing on first error. Optional parallel execution via <code>concurrent=True</code>
+uses <code>concurrent.futures.ThreadPoolExecutor</code> for cloud backends that benefit
+from concurrent I/O. No backend-specific fast-paths (e.g., S3 native batch
+delete) are used — the value is a clean convenience API with error aggregation
+and optional parallelism.</p>
 <p><strong>Module:</strong> <code>src/remote_store/ext/batch.py</code>
-<strong>Dependencies:</strong> None (pure Python, always available)
-<strong>Related:</strong> <a href="../001-store-api/">001-store-api.md</a> (Store API), ID-022.</p>
+<strong>Dependencies:</strong> None (pure Python, stdlib only, always available)
+<strong>Related:</strong> <a href="../001-store-api/">001-store-api.md</a> (Store API), ID-022, ID-035.</p>
 <hr />
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <h3 id="batch-001-batchresult-dataclass">BATCH-001: BatchResult Dataclass<a class="headerlink" href="#batch-001-batchresult-dataclass" title="Permanent link">&para;</a></h3>
@@ -3565,9 +3734,9 @@ are used — the value is a clean convenience API with error aggregation.</p>
 - <code>all_succeeded: bool</code> — <code>True</code> when <code>failed</code> is empty.
 - <code>total: int</code> — <code>len(succeeded) + len(failed)</code>.</p>
 <h3 id="batch-002-batch_delete-signature">BATCH-002: batch_delete Signature<a class="headerlink" href="#batch-002-batch_delete-signature" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>batch_delete(store, paths, *, missing_ok=False, stop_on_error=False) -&gt; BatchResult</code>. <code>store</code> is a <code>Store</code> instance. <code>paths</code> is an iterable of <code>str</code>.</p>
+<p><strong>Invariant:</strong> <code>batch_delete(store, paths, *, missing_ok=False, stop_on_error=False, concurrent=False, max_workers=None) -&gt; BatchResult</code>. <code>store</code> is a <code>Store</code> instance. <code>paths</code> is an iterable of <code>str</code>.</p>
 <h3 id="batch-003-batch_delete-sequential-execution">BATCH-003: batch_delete Sequential Execution<a class="headerlink" href="#batch-003-batch_delete-sequential-execution" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>batch_delete</code> calls <code>store.delete(path, missing_ok=missing_ok)</code> for each path in order. Each call is independent — no batching or parallelism.</p>
+<p><strong>Invariant:</strong> When <code>concurrent=False</code> (default), <code>batch_delete</code> calls <code>store.delete(path, missing_ok=missing_ok)</code> for each path in order. Each call is independent — no batching or parallelism. See BATCH-020 for concurrent execution.</p>
 <h3 id="batch-004-batch_delete-error-collection">BATCH-004: batch_delete Error Collection<a class="headerlink" href="#batch-004-batch_delete-error-collection" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> When <code>stop_on_error=False</code> (default), if <code>store.delete()</code> raises a <code>RemoteStoreError</code> subclass, the path is recorded in <code>failed</code> and processing continues with the next path.</p>
 <h3 id="batch-005-batch_delete-stop_on_error">BATCH-005: batch_delete stop_on_error<a class="headerlink" href="#batch-005-batch_delete-stop_on_error" title="Permanent link">&para;</a></h3>
@@ -3577,9 +3746,9 @@ are used — the value is a clean convenience API with error aggregation.</p>
 <h3 id="batch-007-batch_delete-empty-input">BATCH-007: batch_delete Empty Input<a class="headerlink" href="#batch-007-batch_delete-empty-input" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> When <code>paths</code> is empty, <code>batch_delete</code> returns a <code>BatchResult</code> with <code>succeeded=()</code> and <code>failed={}</code>.</p>
 <h3 id="batch-008-batch_copy-signature">BATCH-008: batch_copy Signature<a class="headerlink" href="#batch-008-batch_copy-signature" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>batch_copy(store, pairs, *, overwrite=False, stop_on_error=False) -&gt; BatchResult</code>. <code>store</code> is a <code>Store</code> instance. <code>pairs</code> is an iterable of <code>(src, dst)</code> string tuples.</p>
+<p><strong>Invariant:</strong> <code>batch_copy(store, pairs, *, overwrite=False, stop_on_error=False, concurrent=False, max_workers=None) -&gt; BatchResult</code>. <code>store</code> is a <code>Store</code> instance. <code>pairs</code> is an iterable of <code>(src, dst)</code> string tuples.</p>
 <h3 id="batch-009-batch_copy-sequential-execution">BATCH-009: batch_copy Sequential Execution<a class="headerlink" href="#batch-009-batch_copy-sequential-execution" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>batch_copy</code> calls <code>store.copy(src, dst, overwrite=overwrite)</code> for each pair in order. Each call is independent.</p>
+<p><strong>Invariant:</strong> When <code>concurrent=False</code> (default), <code>batch_copy</code> calls <code>store.copy(src, dst, overwrite=overwrite)</code> for each pair in order. Each call is independent. See BATCH-020 for concurrent execution.</p>
 <h3 id="batch-010-batch_copy-error-collection">BATCH-010: batch_copy Error Collection<a class="headerlink" href="#batch-010-batch_copy-error-collection" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> When <code>stop_on_error=False</code> (default), if <code>store.copy()</code> raises a <code>RemoteStoreError</code> subclass, the source path is recorded in <code>failed</code> and processing continues.</p>
 <h3 id="batch-011-batch_copy-stop_on_error">BATCH-011: batch_copy stop_on_error<a class="headerlink" href="#batch-011-batch_copy-stop_on_error" title="Permanent link">&para;</a></h3>
@@ -3589,9 +3758,9 @@ are used — the value is a clean convenience API with error aggregation.</p>
 <h3 id="batch-013-batch_copy-empty-input">BATCH-013: batch_copy Empty Input<a class="headerlink" href="#batch-013-batch_copy-empty-input" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> When <code>pairs</code> is empty, <code>batch_copy</code> returns a <code>BatchResult</code> with <code>succeeded=()</code> and <code>failed={}</code>.</p>
 <h3 id="batch-014-batch_exists-signature">BATCH-014: batch_exists Signature<a class="headerlink" href="#batch-014-batch_exists-signature" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>batch_exists(store, paths) -&gt; dict[str, bool]</code>. <code>store</code> is a <code>Store</code> instance. <code>paths</code> is an iterable of <code>str</code>. Returns a dict mapping each path to its existence status.</p>
+<p><strong>Invariant:</strong> <code>batch_exists(store, paths, *, concurrent=False, max_workers=None) -&gt; dict[str, bool]</code>. <code>store</code> is a <code>Store</code> instance. <code>paths</code> is an iterable of <code>str</code>. Returns a dict mapping each path to its existence status.</p>
 <h3 id="batch-015-batch_exists-sequential-execution">BATCH-015: batch_exists Sequential Execution<a class="headerlink" href="#batch-015-batch_exists-sequential-execution" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>batch_exists</code> calls <code>store.exists(path)</code> for each path in order.</p>
+<p><strong>Invariant:</strong> When <code>concurrent=False</code> (default), <code>batch_exists</code> calls <code>store.exists(path)</code> for each path in order. See BATCH-020 for concurrent execution.</p>
 <h3 id="batch-016-batch_exists-error-propagation">BATCH-016: batch_exists Error Propagation<a class="headerlink" href="#batch-016-batch_exists-error-propagation" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>batch_exists</code> does <strong>not</strong> catch errors. If <code>store.exists()</code> raises, the exception propagates immediately. There is no <code>stop_on_error</code> parameter. Rationale: <code>exists()</code> should never raise under normal conditions; an exception indicates a backend failure that the caller must handle.</p>
 <h3 id="batch-017-batch_exists-empty-input">BATCH-017: batch_exists Empty Input<a class="headerlink" href="#batch-017-batch_exists-empty-input" title="Permanent link">&para;</a></h3>
@@ -3600,6 +3769,20 @@ are used — the value is a clean convenience API with error aggregation.</p>
 <p><strong>Invariant:</strong> All batch functions operate exclusively through the public <code>Store</code> API. They never access <code>store._backend</code> or any backend internals. This ensures they work correctly with <code>Store.child()</code>, capability gating, path rebasing, and any future Store wrapper.</p>
 <h3 id="batch-019-capability-gating-propagation">BATCH-019: Capability Gating Propagation<a class="headerlink" href="#batch-019-capability-gating-propagation" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Capability errors (<code>CapabilityNotSupported</code>) raised by Store methods are <strong>not</strong> caught by error collection. They propagate immediately regardless of <code>stop_on_error</code>. Rationale: a missing capability is a configuration error, not a per-path issue.</p>
+<hr />
+<h2 id="concurrent-execution-id-035">Concurrent Execution (ID-035)<a class="headerlink" href="#concurrent-execution-id-035" title="Permanent link">&para;</a></h2>
+<h3 id="batch-020-concurrent-parameter">BATCH-020: concurrent Parameter<a class="headerlink" href="#batch-020-concurrent-parameter" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> All three batch functions accept a <code>concurrent: bool = False</code> keyword argument. When <code>True</code>, operations execute in a <code>concurrent.futures.ThreadPoolExecutor</code> instead of sequentially. The default (<code>False</code>) preserves the original sequential behavior.</p>
+<h3 id="batch-021-max_workers-parameter">BATCH-021: max_workers Parameter<a class="headerlink" href="#batch-021-max_workers-parameter" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> All three batch functions accept a <code>max_workers: int | None = None</code> keyword argument, forwarded to <code>ThreadPoolExecutor(max_workers=...)</code>. When <code>None</code>, the executor uses its default (typically <code>min(32, os.cpu_count() + 4)</code>). Ignored when <code>concurrent=False</code>.</p>
+<h3 id="batch-022-stop_on_error-concurrent-incompatibility">BATCH-022: stop_on_error + concurrent Incompatibility<a class="headerlink" href="#batch-022-stop_on_error-concurrent-incompatibility" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>batch_delete</code> and <code>batch_copy</code> raise <code>ValueError</code> when both <code>stop_on_error=True</code> and <code>concurrent=True</code> are passed. Rationale: concurrent execution has non-deterministic ordering, so "stop on first error" has no well-defined semantics.</p>
+<h3 id="batch-023-concurrent-result-ordering">BATCH-023: Concurrent Result Ordering<a class="headerlink" href="#batch-023-concurrent-result-ordering" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> When <code>concurrent=True</code>, the order of paths in <code>BatchResult.succeeded</code> is non-deterministic (determined by thread completion order). Callers must not rely on insertion order. When <code>concurrent=False</code>, the original sequential order is preserved.</p>
+<h3 id="batch-024-concurrent-error-semantics">BATCH-024: Concurrent Error Semantics<a class="headerlink" href="#batch-024-concurrent-error-semantics" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Error collection in concurrent mode follows the same rules as sequential mode: <code>RemoteStoreError</code> subclasses are recorded in <code>failed</code>, <code>CapabilityNotSupported</code> propagates immediately, and <code>batch_exists</code> does not catch errors.</p>
+<h3 id="batch-025-concurrent-empty-input">BATCH-025: Concurrent Empty Input<a class="headerlink" href="#batch-025-concurrent-empty-input" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> When input is empty and <code>concurrent=True</code>, the function returns the same empty result as sequential mode. The executor is created but submits no futures.</p>
 
 
 

@@ -1612,6 +1612,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#parallel-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parallel Execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#works-with-storechild" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3232,6 +3243,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#parallel-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parallel Execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#works-with-storechild" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3265,10 +3287,11 @@
 <h1 id="batch-operations">Batch Operations<a class="headerlink" href="#batch-operations" title="Permanent link">&para;</a></h1>
 <p>The <code>ext.batch</code> module provides convenience functions for operating on
 collections of paths: batch delete, batch copy, and batch existence checks.</p>
-<p>All functions call Store methods one-by-one (sequential, no parallelism) and
-collect errors into a <code>BatchResult</code> instead of failing on the first error.
-No extra dependencies are required — the module is pure Python and always
-available.</p>
+<p>By default, all functions call Store methods sequentially and collect errors
+into a <code>BatchResult</code> instead of failing on the first error. Pass
+<code>concurrent=True</code> for parallel execution via <code>ThreadPoolExecutor</code> — cloud
+backends benefit significantly from concurrent I/O. No extra dependencies
+are required — the module is pure Python (stdlib only) and always available.</p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span><span class="p">,</span> <span class="n">batch_delete</span><span class="p">,</span> <span class="n">batch_copy</span><span class="p">,</span> <span class="n">batch_exists</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryBackend</span>
@@ -3313,41 +3336,68 @@ that separates successes from failures:</p>
 <code>stop_on_error</code>. These indicate a configuration problem (wrong backend for
 the operation), not a per-path issue.</p>
 <h2 id="batch_delete">batch_delete<a class="headerlink" href="#batch_delete" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">batch_delete</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">paths</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">missing_ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stop_on_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchResult</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">batch_delete</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">paths</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">missing_ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stop_on_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>             <span class="n">concurrent</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchResult</span>
 </code></pre></div>
 <p>Deletes each path via <code>store.delete(path, missing_ok=missing_ok)</code>.</p>
 <ul>
 <li><code>missing_ok=True</code>: silently skip files that don't exist.</li>
-<li><code>stop_on_error=True</code>: stop on first failure.</li>
+<li><code>stop_on_error=True</code>: stop on first failure (sequential only).</li>
+<li><code>concurrent=True</code>: execute deletes in parallel via <code>ThreadPoolExecutor</code>.</li>
+<li><code>max_workers=N</code>: limit thread pool size (default: executor default).</li>
 </ul>
 <h2 id="batch_copy">batch_copy<a class="headerlink" href="#batch_copy" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">batch_copy</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">pairs</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stop_on_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchResult</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">batch_copy</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">pairs</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stop_on_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>           <span class="n">concurrent</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchResult</span>
 </code></pre></div>
 <p>Copies each <code>(src, dst)</code> pair via <code>store.copy(src, dst, overwrite=overwrite)</code>.</p>
 <ul>
 <li><code>overwrite=True</code>: overwrite existing destinations.</li>
-<li><code>stop_on_error=True</code>: stop on first failure.</li>
+<li><code>stop_on_error=True</code>: stop on first failure (sequential only).</li>
+<li><code>concurrent=True</code>: execute copies in parallel via <code>ThreadPoolExecutor</code>.</li>
+<li><code>max_workers=N</code>: limit thread pool size (default: executor default).</li>
 </ul>
 <p>The source path is used as the key in both <code>succeeded</code> and <code>failed</code>.</p>
 <h2 id="batch_exists">batch_exists<a class="headerlink" href="#batch_exists" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">batch_exists</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">paths</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">batch_exists</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">paths</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">concurrent</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span>
 </code></pre></div>
 <p>Checks each path via <code>store.exists(path)</code>. Returns a dict mapping each path
 to <code>True</code> or <code>False</code>.</p>
+<ul>
+<li><code>concurrent=True</code>: execute checks in parallel via <code>ThreadPoolExecutor</code>.</li>
+<li><code>max_workers=N</code>: limit thread pool size (default: executor default).</li>
+</ul>
 <p>Unlike the other batch functions, <code>batch_exists</code> does <strong>not</strong> catch errors.
 If <code>store.exists()</code> raises (e.g., due to a backend failure), the exception
 propagates immediately. This is intentional — <code>exists()</code> should never fail
 under normal conditions.</p>
+<h2 id="parallel-execution">Parallel Execution<a class="headerlink" href="#parallel-execution" title="Permanent link">&para;</a></h2>
+<p>Cloud backends benefit significantly from concurrent I/O — sequential
+execution over hundreds of partition files is a bottleneck. Pass
+<code>concurrent=True</code> to use a thread pool:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Delete 500 partition files in parallel</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;data/year=2025/month=</span><span class="si">{</span><span class="n">m</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">/part.parquet&quot;</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">13</span><span class="p">)]</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">result</span> <span class="o">=</span> <span class="n">batch_delete</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">keys</span><span class="p">,</span> <span class="n">concurrent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="c1"># Check existence of many files concurrently</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">exists_map</span> <span class="o">=</span> <span class="n">batch_exists</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">keys</span><span class="p">,</span> <span class="n">concurrent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Notes:</strong>
+- <code>stop_on_error=True</code> is incompatible with <code>concurrent=True</code> (raises <code>ValueError</code>).
+  Concurrent execution has non-deterministic ordering, so "stop on first error"
+  has no well-defined semantics.
+- The order of <code>succeeded</code> paths is non-deterministic in concurrent mode.
+- Error collection and capability gating work identically in both modes.</p>
 <h2 id="works-with-storechild">Works with Store.child()<a class="headerlink" href="#works-with-storechild" title="Permanent link">&para;</a></h2>
 <p>All batch functions operate through the public Store API. They work correctly
 with <code>Store.child()</code>, capability gating, and path rebasing:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">MemoryBackend</span><span class="p">())</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;reports/q1.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;reports/q2.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">reports</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;reports&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">result</span> <span class="o">=</span> <span class="n">batch_delete</span><span class="p">(</span><span class="n">reports</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;q1.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;q2.csv&quot;</span><span class="p">])</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">all_succeeded</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">MemoryBackend</span><span class="p">())</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;reports/q1.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;reports/q2.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">reports</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;reports&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">result</span> <span class="o">=</span> <span class="n">batch_delete</span><span class="p">(</span><span class="n">reports</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;q1.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;q2.csv&quot;</span><span class="p">])</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">all_succeeded</span>
 </code></pre></div>
 
 
