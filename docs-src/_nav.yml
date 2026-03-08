@@ -12,6 +12,7 @@
 - Glob Pattern Matching: glob-pattern-matching.md
 - Transfer Operations: transfer-operations.md
 - Observability Hooks: observe.md
+- Caching: cache.md
 - Design: design/
 - Contributing: contributing.md
 - Changelog: changelog.md
