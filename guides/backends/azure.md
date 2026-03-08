@@ -166,3 +166,10 @@ backend = AzureBackend(
 ```
 
 Note: Azurite does not support Hierarchical Namespace. HNS-specific features (atomic rename, real directories) are tested with mocked SDK objects.
+
+---
+
+**See also:**
+[Capabilities matrix](../capabilities-matrix.md) --
+[API reference](../api/store.md) --
+[Example script](https://github.com/haalfi/remote-store/blob/master/examples/backends/azure_backend.py)

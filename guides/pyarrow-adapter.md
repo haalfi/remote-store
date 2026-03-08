@@ -145,3 +145,9 @@ Store errors are translated to standard Python exceptions:
 
 No `RemoteStoreError` leaks to PyArrow callers -- all exceptions are mapped
 with `from` chaining for debuggability.
+
+---
+
+**See also:**
+[API reference](api/ext-arrow.md) --
+[Example script](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py)

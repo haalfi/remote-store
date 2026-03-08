@@ -80,3 +80,10 @@ s3_fs = backend.unwrap(s3fs.S3FileSystem)
 - **`overwrite=False` has a TOCTOU race.** The exists-check and write are separate API calls. Concurrent writers can both pass the check and overwrite each other.
 
 See the [Concurrency and Atomicity Guarantees](../concurrency.md) guide for details and workarounds.
+
+---
+
+**See also:**
+[Capabilities matrix](../capabilities-matrix.md) --
+[API reference](../api/store.md) --
+[Example script](https://github.com/haalfi/remote-store/blob/master/examples/backends/s3_pyarrow_backend.py)

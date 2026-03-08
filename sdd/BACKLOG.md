@@ -11,19 +11,6 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [~] **DOC-001 — Documentation overhaul per Documentation Master**
-  `sdd/DOCUMENTATION.md` defines the authoritative standard (Diataxis
-  structure, docstring quality bar, cross-linking rules, nav restructure).
-  Done: master document, ripple-check table updates, Phase 1 (Diataxis nav
-  restructure), Phase 2 (extension API reference pages for all 9 ext
-  modules), DOCUMENTATION.md updated to Sphinx-style docstrings, Phase 3
-  (7 new content pages: capabilities matrix, choosing a backend,
-  troubleshooting, migration guide, architecture overview, security model,
-  further reading), Phase 4 (research docs on site -- 6 research docs
-  surfaced under Explanation > Design > Research with auto-generated index),
-  Phase 5 (docstring audit -- Store, Backend, errors, models).
-  Remaining: Phase 6 (cross-links), Phase 7 (final polish).
-
 - [ ] **ID-049 — Enable GitHub Vigilant Mode**
   Commit signing with SSH/GPG for supply chain transparency. Soft enforcement
   (visual badges, no blocking of unsigned commits). Ops-only, no code changes.
@@ -591,6 +578,21 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   Re-ran quick + standard tier benchmarks with Docker backends (MinIO, Azurite,
   SFTP). Updated `benchmarks/results/comparative.md` with post-ID-032 data.
   Listing numbers now reflect real I/O without fsspec caching bias.
+
+### Documentation
+
+- [x] **DOC-001 — Documentation overhaul per Documentation Master** (unreleased)
+  Full Diataxis restructure of the docs site. Phase 1: nav restructure into
+  Getting Started / Guides / Reference / Explanation. Phase 2: extension API
+  reference pages for all 9 ext modules. Phase 3: 7 new content pages
+  (capabilities matrix, choosing a backend, troubleshooting, migration,
+  architecture overview, security model, further reading). Phase 4: research
+  docs surfaced under Explanation > Design > Research with auto-generated
+  index. Phase 5: docstring audit for Store, Backend, errors, and
+  capabilities with complete `:param:`/`:returns:`/`:raises:` and examples.
+  Phase 6: cross-links between guides, API reference, and example scripts.
+  Phase 7: final polish (broken link fixes, Secret/SecretRedactionFilter
+  added to config API page, CHANGELOG entry).
 
 ### Other completed work
 

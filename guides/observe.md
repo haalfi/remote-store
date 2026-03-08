@@ -279,3 +279,9 @@ trace.get_tracer_provider().add_span_processor(
 # Now otel_observe() spans flow to your collector
 observed = otel_observe(store)
 ```
+
+---
+
+**See also:**
+[API reference](api/ext-observe.md) --
+[Example script](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py)
