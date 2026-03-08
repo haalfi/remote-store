@@ -407,6 +407,24 @@ Three more research documents were added to the `sdd/research/` collection: unif
 
 The data lake patterns guide (ID-034) demonstrated that existing features could combine into something greater than the sum of their parts. `Store.child()` + `ext.arrow` + `ext.transfer` already supported Bronze/Silver/Gold medallion architectures -- the guide just documented the patterns. No new code was needed; the API surface was already sufficient.
 
+### Phase 23: Extensions and Documentation (v0.15.0)
+
+This release was the most extension-heavy yet -- three new extensions and major enhancements to an existing one, all backed by specs and full test suites.
+
+**Streaming atomic writes** (`Store.open_atomic()`, ID-026) extended the existing `write_atomic()` with a context manager that yields a writable file object, eliminating the need to buffer large files in memory before writing. The implementation required careful attention to error mapping boundaries: SFTP's context manager had to yield *outside* the `_errors()` scope so user exceptions wouldn't get remapped as storage errors. RFC-0004 documented the design, and all six backends got per-backend temp-path strategies.
+
+**Store-level caching** (`ext.cache`, ID-025) added TTL-based read caching with automatic invalidation on mutations. A subtle CPython dict behavior bit us: `dict.__setitem__` on an existing key does *not* move it to the end, breaking LRU eviction. The fix -- `del` then re-insert -- was simple but the bug was invisible in unit tests and only appeared under specific access patterns.
+
+**Parallel batch operations** (ID-035) added `concurrent=True` to `batch_delete`, `batch_copy`, and `batch_exists`, using `ThreadPoolExecutor` from stdlib. The design explicitly made `stop_on_error` incompatible with concurrency -- a `ValueError` rather than silent misbehavior.
+
+**Hive-style partition helpers** (`ext.partition`, ID-036) provided pure-Python path builders and parsers for partition schemes like `year=2026/month=03/data.parquet`. A review caught that `=` in partition values would break round-trip parsing -- rejected at construction time.
+
+**PyArrow Tier 1 native fast-path** (ID-037) completed the PyArrow adapter's Phase 2: `StoreFileSystemHandler` now probes for a native PyArrow filesystem at construction and dispatches reads directly to C++ for zero-GIL overhead. Benchmarks showed 1.6-2x improvement on S3-PyArrow.
+
+**The documentation overhaul** (DOC-001) was the largest non-code effort yet: full Diataxis restructure, 9 extension API reference pages, 7 new content pages, docstring audit for Store/Backend/errors, and cross-links throughout. Lesson #16 emerged: adopt a documentation framework early. Retrofitting Diataxis onto an existing flat site required reclassifying every page and rebuilding navigation.
+
+**E2E integration tests** (ID-050) validated six extensions working together in a full data lake pipeline against Docker backends (MinIO, Azurite). A cross-layer assertion lesson: don't assert `gold_bytes < silver_bytes` -- aggregation adds computed columns that can make Gold larger despite fewer rows. Use row counts for aggregation invariants.
+
 ## What Worked Well
 
 ### Specs as a shared contract

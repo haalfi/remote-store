@@ -274,6 +274,9 @@ All extensions live in `remote_store.ext` and are optional -- import only what y
 |Observability hooks  |*(none)*                    |Callback-based instrumentation for logging, metrics, and tracing ([guide](https://remote-store.readthedocs.io/en/latest/observe/), [example](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py)) |
 |OpenTelemetry bridge |`remote-store[otel]`        |Pre-built OTel spans and metrics for Store operations ([guide](https://remote-store.readthedocs.io/en/latest/observe/), [example](https://github.com/haalfi/remote-store/blob/master/examples/otel_tracing.py)) |
 |Glob helpers         |*(none)*                    |Portable glob fallback for backends without native glob support ([guide](https://remote-store.readthedocs.io/en/latest/glob-pattern-matching/), [example](https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py)) |
+|Caching middleware   |*(none)*                    |TTL-based read cache with automatic invalidation on mutations ([guide](https://remote-store.readthedocs.io/en/latest/cache/), [API](https://remote-store.readthedocs.io/en/latest/api/ext-cache/)) |
+|Partition helpers    |*(none)*                    |Hive-style partition path builder and parser ([API](https://remote-store.readthedocs.io/en/latest/api/ext-partition/)) |
+|Pydantic adapter     |`remote-store[pydantic]`    |Convert Pydantic BaseSettings to RegistryConfig ([API](https://remote-store.readthedocs.io/en/latest/api/ext-pydantic/)) |
 
 ## Examples
 
@@ -321,7 +324,7 @@ There are several excellent Python libraries for file I/O across backends. Here 
 
 | | fsspec | smart_open | cloudpathlib | obstore | **remote-store** |
 |---|---|---|---|---|---|
-| API surface | ~56 methods | `open()` only | pathlib-style | ~10 methods | 22 methods |
+| API surface | ~56 methods | `open()` only | pathlib-style | ~10 methods | 23 methods |
 | Backends | 30+ filesystems | S3, GCS, Az, SFTP | S3, GCS, Azure | S3, GCS, Azure | Local, S3, SFTP, Az, Memory |
 | SFTP | via sshfs | Yes | No | No | Built-in |
 | Streaming I/O | Yes | Yes | No (downloads) | Bytes-oriented | Yes (BinaryIO) |
