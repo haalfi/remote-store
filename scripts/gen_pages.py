@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DOCS_SRC = ROOT / "docs-src"
 
 # ---------------------------------------------------------------------------
-# 1. Scan sdd/ for specs, ADRs, RFCs
+# 1. Scan sdd/ for specs, ADRs, RFCs, and research docs
 # ---------------------------------------------------------------------------
 
 
@@ -104,7 +104,7 @@ with mkdocs_gen_files.open("design/rfcs/index.md", "w") as f:
     f.write(tmpl.replace("{{ rfc_rows }}", rfc_rows))
 
 # --- design/research/index.md ---
-research_rows = "\n".join(f"| {title} | [{slug}]({slug}.md) |" for _num, slug, title in research_entries)
+research_rows = "\n".join(f"| {title} | [{title}]({slug}.md) |" for _num, slug, title in research_entries)
 tmpl = (DOCS_SRC / "design" / "research" / "_index.tmpl").read_text(encoding="utf-8")
 with mkdocs_gen_files.open("design/research/index.md", "w") as f:
     f.write(tmpl.replace("{{ research_rows }}", research_rows))
