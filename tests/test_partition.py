@@ -47,6 +47,11 @@ class TestPartitionPath:
             partition_path("f.parquet", year="")
 
     @pytest.mark.spec("PART-006")
+    def test_value_with_equals_raises(self) -> None:
+        with pytest.raises(ValueError, match="must not contain '='"):
+            partition_path("f.parquet", key="a=b")
+
+    @pytest.mark.spec("PART-006")
     def test_empty_key_in_kwargs_impossible(self) -> None:
         # Python syntax prevents empty-string kwargs, but we guard anyway.
         # Use **dict to bypass syntax restriction.
@@ -79,6 +84,13 @@ class TestParsePartition:
         parsed = parse_partition("=value/data.csv")
         assert parsed.partitions == {}
         assert parsed.filename == "=value/data.csv"
+
+    @pytest.mark.spec("PART-008")
+    def test_segment_with_empty_value_is_valid(self) -> None:
+        # "key=" has one '=' and non-empty key -- valid partition, empty value
+        parsed = parse_partition("key=/data.csv")
+        assert parsed.partitions == {"key": ""}
+        assert parsed.filename == "data.csv"
 
     @pytest.mark.spec("PART-009")
     def test_kv_after_non_partition_is_filename(self) -> None:

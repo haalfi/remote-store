@@ -63,6 +63,9 @@ def partition_path(filename: str, /, **partitions: str | int) -> str:
         if not str_value:
             msg = f"partition value for {key!r} must be non-empty"
             raise ValueError(msg)
+        if "=" in str_value:
+            msg = f"partition value for {key!r} must not contain '=': {str_value!r}"
+            raise ValueError(msg)
         segments.append(f"{key}={str_value}")
 
     segments.append(filename)
