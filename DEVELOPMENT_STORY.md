@@ -7,7 +7,7 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Metric | Value |
 |--------|-------|
 | Source code | ~6,200 lines (6 backends) |
-| Tests | ~1,430 tests, ~11,300 lines |
+| Tests | ~1,600 tests, ~11,300 lines |
 | Specs & docs | 24 specs, 10 ADRs, 4 RFCs |
 | Examples | 16 core + 4 cloud + 4 notebooks |
 | Extensions | 9 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.glob`, `ext.observe`, `ext.otel`, `ext.partition`, `ext.pydantic`, `ext.transfer`) |
