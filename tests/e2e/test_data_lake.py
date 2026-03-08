@@ -453,12 +453,13 @@ class TestDataLakeMedallion:
         _test_atomic_writes(lake)
 
         # --- Cross-layer verification ---
-        # Gold should be smaller than Silver (aggregation)
-        silver_files = list(silver.list_files("", recursive=True))
-        gold_files = list(gold.list_files("", recursive=True))
-        silver_bytes = sum(f.size for f in silver_files)
-        gold_bytes = sum(f.size for f in gold_files)
-        assert gold_bytes < silver_bytes, "Gold (aggregated) should be smaller than Silver"
+        # Gold aggregation reduces rows (group-by), even if wider columns
+        # make file sizes larger.  Verify row count reduction instead of
+        # byte size, which depends on schema width.
+        gold_total_rows = hourly_count + daily_count
+        assert gold_total_rows < len(silver_df), (
+            f"Gold rows ({gold_total_rows}) should be fewer than Silver rows ({len(silver_df)}) after aggregation"
+        )
 
         # Lake should see all three layers
         top_folders = set(lake.list_folders(""))
