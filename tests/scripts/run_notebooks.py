@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import sys
+import traceback
 from pathlib import Path
 
 SKIP = {"benchmark_analysis.ipynb"}
@@ -56,6 +57,7 @@ def main() -> int:
             _run_notebook(nb_path)
             print("OK")
         except Exception:
+            traceback.print_exc()
             failed += 1
 
     if failed:
