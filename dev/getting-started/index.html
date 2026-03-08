@@ -4853,6 +4853,21 @@ use a Registry with declarative config:</p>
 <td><em>(none)</em></td>
 <td>Portable glob fallback for backends without native glob support (<a href="https://remote-store.readthedocs.io/en/latest/glob-pattern-matching/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py">example</a>)</td>
 </tr>
+<tr>
+<td>Caching middleware</td>
+<td><em>(none)</em></td>
+<td>TTL-based read cache with automatic invalidation on mutations (<a href="https://remote-store.readthedocs.io/en/latest/cache/">guide</a>, <a href="https://remote-store.readthedocs.io/en/latest/api/ext-cache/">API</a>)</td>
+</tr>
+<tr>
+<td>Partition helpers</td>
+<td><em>(none)</em></td>
+<td>Hive-style partition path builder and parser (<a href="https://remote-store.readthedocs.io/en/latest/api/ext-partition/">API</a>)</td>
+</tr>
+<tr>
+<td>Pydantic adapter</td>
+<td><code>remote-store[pydantic]</code></td>
+<td>Convert Pydantic BaseSettings to RegistryConfig (<a href="https://remote-store.readthedocs.io/en/latest/api/ext-pydantic/">API</a>)</td>
+</tr>
 </tbody>
 </table>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
@@ -4978,7 +4993,7 @@ use a Registry with declarative config:</p>
 <td><code>open()</code> only</td>
 <td>pathlib-style</td>
 <td>~10 methods</td>
-<td>22 methods</td>
+<td>23 methods</td>
 </tr>
 <tr>
 <td>Backends</td>

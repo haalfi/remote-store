@@ -4529,6 +4529,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-23-extensions-and-documentation-v0150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 23: Extensions and Documentation (v0.15.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5098,6 +5109,17 @@
     <span class="md-ellipsis">
       
         Phase 22: Config Loaders and Consolidation (v0.14.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-23-extensions-and-documentation-v0150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 23: Extensions and Documentation (v0.15.0)
       
     </span>
   </a>
@@ -5771,6 +5793,15 @@
 <p>A design-compliance audit (AF-016 through AF-021) swept the codebase for spec drift: glob capabilities missing from three backend specs, method ordering violations in <code>_store.py</code> and all six backends, an unlinked TODO in <code>ext/arrow.py</code>. These were individually minor but collectively represented the kind of slow rot that compounds across releases.</p>
 <p>Three more research documents were added to the <code>sdd/research/</code> collection: unified retry policy (ID-010), v1 communication strategy, and example testing patterns across language ecosystems. The research-first pattern from Phase 20 was becoming habitual -- map the space on paper before committing to implementation.</p>
 <p>The data lake patterns guide (ID-034) demonstrated that existing features could combine into something greater than the sum of their parts. <code>Store.child()</code> + <code>ext.arrow</code> + <code>ext.transfer</code> already supported Bronze/Silver/Gold medallion architectures -- the guide just documented the patterns. No new code was needed; the API surface was already sufficient.</p>
+<h3 id="phase-23-extensions-and-documentation-v0150">Phase 23: Extensions and Documentation (v0.15.0)<a class="headerlink" href="#phase-23-extensions-and-documentation-v0150" title="Permanent link">&para;</a></h3>
+<p>This release was the most extension-heavy yet -- three new extensions and major enhancements to an existing one, all backed by specs and full test suites.</p>
+<p><strong>Streaming atomic writes</strong> (<code>Store.open_atomic()</code>, ID-026) extended the existing <code>write_atomic()</code> with a context manager that yields a writable file object, eliminating the need to buffer large files in memory before writing. The implementation required careful attention to error mapping boundaries: SFTP's context manager had to yield <em>outside</em> the <code>_errors()</code> scope so user exceptions wouldn't get remapped as storage errors. RFC-0004 documented the design, and all six backends got per-backend temp-path strategies.</p>
+<p><strong>Store-level caching</strong> (<code>ext.cache</code>, ID-025) added TTL-based read caching with automatic invalidation on mutations. A subtle CPython dict behavior bit us: <code>dict.__setitem__</code> on an existing key does <em>not</em> move it to the end, breaking LRU eviction. The fix -- <code>del</code> then re-insert -- was simple but the bug was invisible in unit tests and only appeared under specific access patterns.</p>
+<p><strong>Parallel batch operations</strong> (ID-035) added <code>concurrent=True</code> to <code>batch_delete</code>, <code>batch_copy</code>, and <code>batch_exists</code>, using <code>ThreadPoolExecutor</code> from stdlib. The design explicitly made <code>stop_on_error</code> incompatible with concurrency -- a <code>ValueError</code> rather than silent misbehavior.</p>
+<p><strong>Hive-style partition helpers</strong> (<code>ext.partition</code>, ID-036) provided pure-Python path builders and parsers for partition schemes like <code>year=2026/month=03/data.parquet</code>. A review caught that <code>=</code> in partition values would break round-trip parsing -- rejected at construction time.</p>
+<p><strong>PyArrow Tier 1 native fast-path</strong> (ID-037) completed the PyArrow adapter's Phase 2: <code>StoreFileSystemHandler</code> now probes for a native PyArrow filesystem at construction and dispatches reads directly to C++ for zero-GIL overhead. Benchmarks showed 1.6-2x improvement on S3-PyArrow.</p>
+<p><strong>The documentation overhaul</strong> (DOC-001) was the largest non-code effort yet: full Diataxis restructure, 9 extension API reference pages, 7 new content pages, docstring audit for Store/Backend/errors, and cross-links throughout. Lesson #16 emerged: adopt a documentation framework early. Retrofitting Diataxis onto an existing flat site required reclassifying every page and rebuilding navigation.</p>
+<p><strong>E2E integration tests</strong> (ID-050) validated six extensions working together in a full data lake pipeline against Docker backends (MinIO, Azurite). A cross-layer assertion lesson: don't assert <code>gold_bytes &lt; silver_bytes</code> -- aggregation adds computed columns that can make Gold larger despite fewer rows. Use row counts for aggregation invariants.</p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
