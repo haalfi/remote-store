@@ -3,10 +3,11 @@
 The `ext.batch` module provides convenience functions for operating on
 collections of paths: batch delete, batch copy, and batch existence checks.
 
-All functions call Store methods one-by-one (sequential, no parallelism) and
-collect errors into a `BatchResult` instead of failing on the first error.
-No extra dependencies are required — the module is pure Python and always
-available.
+By default, all functions call Store methods sequentially and collect errors
+into a `BatchResult` instead of failing on the first error. Pass
+`concurrent=True` for parallel execution via `ThreadPoolExecutor` — cloud
+backends benefit significantly from concurrent I/O. No extra dependencies
+are required — the module is pure Python (stdlib only) and always available.
 
 ## Quick Start
 
@@ -70,40 +71,71 @@ the operation), not a per-path issue.
 ## batch_delete
 
 ```python
-batch_delete(store, paths, *, missing_ok=False, stop_on_error=False) -> BatchResult
+batch_delete(store, paths, *, missing_ok=False, stop_on_error=False,
+             concurrent=False, max_workers=None) -> BatchResult
 ```
 
 Deletes each path via `store.delete(path, missing_ok=missing_ok)`.
 
 - `missing_ok=True`: silently skip files that don't exist.
-- `stop_on_error=True`: stop on first failure.
+- `stop_on_error=True`: stop on first failure (sequential only).
+- `concurrent=True`: execute deletes in parallel via `ThreadPoolExecutor`.
+- `max_workers=N`: limit thread pool size (default: executor default).
 
 ## batch_copy
 
 ```python
-batch_copy(store, pairs, *, overwrite=False, stop_on_error=False) -> BatchResult
+batch_copy(store, pairs, *, overwrite=False, stop_on_error=False,
+           concurrent=False, max_workers=None) -> BatchResult
 ```
 
 Copies each `(src, dst)` pair via `store.copy(src, dst, overwrite=overwrite)`.
 
 - `overwrite=True`: overwrite existing destinations.
-- `stop_on_error=True`: stop on first failure.
+- `stop_on_error=True`: stop on first failure (sequential only).
+- `concurrent=True`: execute copies in parallel via `ThreadPoolExecutor`.
+- `max_workers=N`: limit thread pool size (default: executor default).
 
 The source path is used as the key in both `succeeded` and `failed`.
 
 ## batch_exists
 
 ```python
-batch_exists(store, paths) -> dict[str, bool]
+batch_exists(store, paths, *, concurrent=False, max_workers=None) -> dict[str, bool]
 ```
 
 Checks each path via `store.exists(path)`. Returns a dict mapping each path
 to `True` or `False`.
 
+- `concurrent=True`: execute checks in parallel via `ThreadPoolExecutor`.
+- `max_workers=N`: limit thread pool size (default: executor default).
+
 Unlike the other batch functions, `batch_exists` does **not** catch errors.
 If `store.exists()` raises (e.g., due to a backend failure), the exception
 propagates immediately. This is intentional — `exists()` should never fail
 under normal conditions.
+
+## Parallel Execution
+
+Cloud backends benefit significantly from concurrent I/O — sequential
+execution over hundreds of partition files is a bottleneck. Pass
+`concurrent=True` to use a thread pool:
+
+```python
+# Delete 500 partition files in parallel
+keys = [f"data/year=2025/month={m:02d}/part.parquet" for m in range(1, 13)]
+result = batch_delete(store, keys, concurrent=True, max_workers=16)
+
+# Check existence of many files concurrently
+exists_map = batch_exists(store, keys, concurrent=True)
+```
+
+**Notes:**
+- `stop_on_error=True` is incompatible with `concurrent=True` (raises `ValueError`).
+  Concurrent execution has non-deterministic ordering, so "stop on first error"
+  has no well-defined semantics.
+- The order of `succeeded` paths is non-deterministic in concurrent mode.
+- Error collection and capability gating work identically in both modes.
 
 ## Works with Store.child()
 

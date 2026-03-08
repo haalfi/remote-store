@@ -11,12 +11,11 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [ ] **ID-035 — Parallel batch operations**
-  Add `concurrent=True` (or `max_workers=N`) option to `ext.batch` functions
-  (`batch_delete`, `batch_copy`, `batch_exists`). Cloud backends benefit
-  significantly from concurrent I/O — sequential execution over hundreds of
-  partition files is a bottleneck. Use `concurrent.futures.ThreadPoolExecutor`
-  (stdlib). Needs spec update to `016-ext-batch.md`. Related: ID-013 (async).
+- [x] **ID-035 — Parallel batch operations**
+  Added `concurrent=True` and `max_workers=N` keyword arguments to
+  `batch_delete`, `batch_copy`, `batch_exists`. Uses `ThreadPoolExecutor`
+  (stdlib). `stop_on_error=True` + `concurrent=True` raises `ValueError`.
+  Spec: BATCH-020 through BATCH-025 in `016-ext-batch.md`. 20 new tests.
 
 - [ ] **ID-025 — `ext.cache` — store-level caching middleware**
   Wraps a Store and caches reads, folder stats, existence checks with TTL.

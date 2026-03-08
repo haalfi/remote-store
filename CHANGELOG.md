@@ -16,6 +16,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **`Backend.native_path(path)`** -- converts a backend-relative key to the backend-native path (BE-025). Default is identity; `S3PyArrowBackend` prepends bucket prefix.
 - **PyArrow adapter Tier 1 native fast-path reads** (ID-037, PA-010) -- `StoreFileSystemHandler` now probes for a native PyArrow filesystem at construction via `store.unwrap(pyarrow.fs.FileSystem)`. When available (e.g., `S3PyArrowBackend`), `open_input_file` delegates directly to the native FS, bypassing Python I/O for zero GIL overhead with C++ range requests and I/O coalescing.
 - **`S3PyArrowBackend.unwrap()`** now accepts `pyarrow.fs.FileSystem` base class in addition to `pyarrow.fs.S3FileSystem`.
+- **Parallel batch operations** (ID-035) -- `batch_delete`, `batch_copy`, and `batch_exists` now accept `concurrent=True` and `max_workers=N` keyword arguments for parallel execution via `ThreadPoolExecutor`. Cloud backends benefit significantly from concurrent I/O over sequential execution. `stop_on_error` is incompatible with `concurrent=True` (raises `ValueError`). Spec: BATCH-020 through BATCH-025.
 
 ## [0.14.0] - 2026-03-07
 
