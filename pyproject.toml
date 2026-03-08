@@ -168,6 +168,7 @@ examples = [
   "python examples/observe_hooks.py",
   "python examples/pyarrow_adapter.py",
 ]
+notebooks = "python tests/scripts/run_notebooks.py"
 bench = 'pytest benchmarks/ -v --benchmark-sort=mean -m "not standard and not full"'
 bench-standard = 'pytest benchmarks/ -v --benchmark-sort=mean -m "not full"'
 bench-full = "pytest benchmarks/ -v --benchmark-sort=mean"
@@ -185,7 +186,7 @@ bench-report-comparative-md = "python benchmarks/report.py --comparative --markd
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"
-all = ["lint", "format-check", "typecheck", "test-cov", "examples"]
+all = ["lint", "format-check", "typecheck", "test-cov", "examples", "notebooks"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/remote_store"]

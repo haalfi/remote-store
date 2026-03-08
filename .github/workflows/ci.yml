@@ -89,6 +89,18 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: pytest --cov=remote_store --cov-report=term-missing --cov-fail-under=95
 
+  notebooks:
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev]"
+      - run: python tests/scripts/run_notebooks.py
+
   examples:
     needs: [changes]
     if: needs.changes.outputs.code == 'true'
@@ -147,7 +159,7 @@ jobs:
       - run: python -c "import remote_store; print(remote_store.__version__)"
 
   gate:
-    needs: [changes, lint, typecheck, test, examples, docs, package]
+    needs: [changes, lint, typecheck, test, notebooks, examples, docs, package]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -163,6 +175,7 @@ jobs:
             "${{ needs.lint.result }}" \
             "${{ needs.typecheck.result }}" \
             "${{ needs.test.result }}" \
+            "${{ needs.notebooks.result }}" \
             "${{ needs.examples.result }}" \
             "${{ needs.docs.result }}" \
             "${{ needs.package.result }}" \

@@ -113,6 +113,15 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Done: refactored all 14 examples, created 14 test classes in `test_examples.py`.
   Remaining: branch `claude/review-example-tests-GiVnG` not yet merged.
 
+- [~] **ID-048 — Verify notebook examples in CI (`hatch run notebooks`)**
+  The 3 tutorial notebooks (`01_getting_started`, `02_file_operations`,
+  `03_configuration`) were not executed by `hatch run all`. Added a
+  lightweight runner (`tests/scripts/run_notebooks.py`) that extracts
+  code cells and runs them via `exec()` — no Jupyter dependency needed.
+  `benchmark_analysis.ipynb` is skipped (needs pre-generated data).
+  `hatch run notebooks` added and wired into `hatch run all` + CI `examples` job.
+  Done: runner script, hatch wiring, CI coverage. Remaining: merge.
+
 - [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
   Four specs have no dedicated example coverage:
   • **003 — Backend adapter contract**: capability system (`CapabilitySet`,
