@@ -17,11 +17,13 @@ Active work items, ordered by priority.
   (stdlib). `stop_on_error=True` + `concurrent=True` raises `ValueError`.
   Spec: BATCH-020 through BATCH-025 in `016-ext-batch.md`. 20 new tests.
 
-- [ ] **ID-025 — `ext.cache` — store-level caching middleware**
-  Wraps a Store and caches reads, folder stats, existence checks with TTL.
-  `cached = CachedStore(store, ttl=300)`. Auto-invalidates on writes.
-  Reduces round-trips for read-heavy or metadata-heavy workloads.
-  In-memory by default, pluggable cache backend for distributed use.
+- [x] **ID-025 — `ext.cache` — store-level caching middleware** (unreleased)
+  `cached_store(store, ttl=300)` wraps a Store in a caching proxy.
+  Caches: `exists`, `is_file`, `is_folder`, `read_bytes`, `get_file_info`,
+  `get_folder_info`, `list_files`, `list_folders`, `glob`. Auto-invalidates
+  on writes/deletes/moves/copies. `max_content_size` guard for large files.
+  `MemoryCache` default backend, thread-safe. `CacheStats` for monitoring.
+  Spec: `023-ext-cache.md` (CACHE-001 through CACHE-015). 52 tests.
 
 - [ ] **ID-036 — Hive-style partition path helpers**
   Thin utility for building and parsing Hive partition paths
@@ -29,6 +31,16 @@ Active work items, ordered by priority.
   as a helper on `Store`. Scope: `partition_path(key, **parts) -> str` and
   `parse_partition(path) -> dict`. Useful for Parquet lake workloads alongside
   PyArrow datasets. No external dependencies.
+
+- [ ] **DOC-001 — Documentation overhaul per Documentation Master**
+  `sdd/DOCUMENTATION.md` defines the authoritative standard (Diataxis
+  structure, docstring quality bar, cross-linking rules, nav restructure).
+  Done: master document, ripple-check table updates.
+  Remaining: nav restructure (section 3), docstring audit (section 5),
+  cross-links (section 6), new pages — troubleshooting, capabilities
+  matrix, choosing a backend, migration guide, architecture overview,
+  security model, extension API reference pages (section 7 missing pages),
+  research docs on site, further reading page.
 
 ---
 
@@ -85,14 +97,13 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Done: refactored all 14 examples, created 14 test classes in `test_examples.py`.
   Remaining: branch `claude/review-example-tests-GiVnG` not yet merged.
 
-- [~] **ID-048 — Verify notebook examples in CI (`hatch run notebooks`)**
+- [x] **ID-048 — Verify notebook examples in CI (`hatch run notebooks`)**
   The 3 tutorial notebooks (`01_getting_started`, `02_file_operations`,
   `03_configuration`) were not executed by `hatch run all`. Added a
   lightweight runner (`tests/scripts/run_notebooks.py`) that extracts
   code cells and runs them via `exec()` — no Jupyter dependency needed.
   `benchmark_analysis.ipynb` is skipped (needs pre-generated data).
   `hatch run notebooks` added and wired into `hatch run all` + CI `examples` job.
-  Done: runner script, hatch wiring, CI coverage. Remaining: merge.
 
 - [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
   Four specs have no dedicated example coverage:
@@ -110,16 +121,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   scenarios, no `PermissionDenied`/`BackendUnavailable` error paths, no
   empty-input edge cases (`batch_delete([])`, `glob("")`), no resource-cleanup
   verification.
-
-- [~] **DOC-001 — Documentation overhaul per Documentation Master**
-  `sdd/DOCUMENTATION.md` defines the authoritative standard (Diataxis
-  structure, docstring quality bar, cross-linking rules, nav restructure).
-  Done: master document, ripple-check table updates.
-  Remaining: nav restructure (section 3), docstring audit (section 5),
-  cross-links (section 6), new pages -- troubleshooting, capabilities
-  matrix, choosing a backend, migration guide, architecture overview,
-  security model, extension API reference pages (section 7 missing pages),
-  research docs on site, further reading page.
 
 ---
 
