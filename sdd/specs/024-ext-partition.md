@@ -53,8 +53,9 @@ characters. Raises `ValueError` if empty or contains `/`.
 ### PART-006: partition_path() Validation — keys
 
 **Invariant:** Partition keys must be non-empty strings. Partition values
-must be non-empty after `str()` coercion. Raises `ValueError` on empty key
-or empty value.
+must be non-empty after `str()` coercion and must not contain `=` (breaks
+round-trip parsing per PART-011 / PART-008). Raises `ValueError` on empty
+key, empty value, or value containing `=`.
 
 ### PART-007: parse_partition() Signature
 
