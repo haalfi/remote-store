@@ -68,7 +68,7 @@ config = {
             "host": "sftp.example.com",
             "username": "user",
             "password": "pass",
-            "host_key_policy": "auto",  # or path to known_hosts
+            "host_key_policy": "tofu",  # or "auto" for dev/testing only
         }
     },
     "stores": {"default": {"backend": "my-sftp"}},

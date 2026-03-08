@@ -13,10 +13,10 @@ This guide helps you pick the right `remote-store` backend for your use case.
    caches. Lacks native glob (use `ext.glob` fallback).
 
 3. **S3-compatible object store (AWS S3, MinIO, Ceph, etc.)?**
-   - Need **maximum throughput** or PyArrow/Parquet integration? Use **S3-PyArrow**.
-     C++ I/O via PyArrow, zero-copy reads, native `FileSystem` escape hatch.
-   - Otherwise use **S3** (fsspec-based). Lighter dependency footprint, same
-     API surface.
+    - Need **maximum throughput** or PyArrow/Parquet integration? Use **S3-PyArrow**.
+      C++ I/O via PyArrow, zero-copy reads, native `FileSystem` escape hatch.
+    - Otherwise use **S3** (fsspec-based). Lighter dependency footprint, same
+      API surface.
 
 4. **Azure Blob Storage or ADLS Gen2?** Use **Azure**.
    Supports both flat and HNS (hierarchical namespace) accounts. Connection
