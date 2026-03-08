@@ -2,7 +2,7 @@
 
 Runs the full Bronze / Silver / Gold pipeline against real Docker backends,
 exercising extension interplay: ext.arrow, ext.partition, ext.batch,
-ext.cache, ext.observe, and ext.transfer working together.
+ext.cache, and ext.observe working together.
 
 Requires: ``docker compose -f benchmarks/infra/docker-compose.yml up -d``
 
@@ -32,7 +32,7 @@ from remote_store.ext.batch import batch_delete, batch_exists  # noqa: E402
 from remote_store.ext.cache import cached_store  # noqa: E402
 from remote_store.ext.observe import observe  # noqa: E402
 from remote_store.ext.partition import parse_partition, partition_path  # noqa: E402
-from tests.e2e.conftest import minio_skip, s3_pyarrow_skip  # noqa: E402
+from tests.e2e.conftest import azurite_skip, minio_skip, s3_pyarrow_skip  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Shared test data generator
@@ -479,6 +479,7 @@ class TestDataLakeMedallion:
         """Full pipeline on S3PyArrowBackend via MinIO Docker."""
         self._run_pipeline(s3_pyarrow_lake)
 
+    @azurite_skip
     def test_azurite(self, azurite_lake: Store) -> None:
         """Full pipeline on AzureBackend via Azurite Docker."""
         self._run_pipeline(azurite_lake)
