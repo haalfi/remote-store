@@ -22,15 +22,19 @@ rules.
 
 ## Research Documents
 
-Exploratory studies done before features were specified. These are historical
-records showing what was considered and why alternatives were rejected.
+Before specifying a feature we explore the design space -- compare libraries,
+evaluate trade-offs, and document findings. These studies may be helpful if you
+face similar decisions in your own projects.
 
-- [Async Store API](https://github.com/haalfi/remote-store/blob/master/sdd/research/research-async-store-api.md)
-- [Store Config Design](https://github.com/haalfi/remote-store/blob/master/sdd/research/research-store-config.md)
-- [Example Testing](https://github.com/haalfi/remote-store/blob/master/sdd/research/research-example-testing.md)
-- [Logging, Monitoring, Tracing](https://github.com/haalfi/remote-store/blob/master/sdd/research/research-logging-monitoring-tracing.md)
-- [Retry Policy](https://github.com/haalfi/remote-store/blob/master/sdd/research/research-retry-policy.md)
-- [V1 Communication Plan](https://github.com/haalfi/remote-store/blob/master/sdd/research/research-v1-communication-plan.md)
+Browse the full collection on the [Research](design/research/index.md) page, or
+jump to a specific topic:
+
+- [Async Store API](design/research/research-async-store-api.md)
+- [Store Config Design](design/research/research-store-config.md)
+- [Example Testing](design/research/research-example-testing.md)
+- [Logging, Monitoring, Tracing](design/research/research-logging-monitoring-tracing.md)
+- [Retry Policy](design/research/research-retry-policy.md)
+- [V1 Communication Plan](design/research/research-v1-communication-plan.md)
 
 ## Documentation Master
 
