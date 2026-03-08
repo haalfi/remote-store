@@ -157,6 +157,7 @@ class Store:
         :param path: Store-relative key.
         :returns: A readable binary stream. Must be closed by the caller.
         :raises NotFound: If the file does not exist.
+        :raises InvalidPath: If ``path`` is empty.
 
         Example::
 
