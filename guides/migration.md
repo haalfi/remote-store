@@ -22,8 +22,7 @@ changes that require action when upgrading.
 
 - Backend config values for keys named `key`, `secret`, `password`,
   `account_key`, `sas_token`, and `connection_string` are now automatically
-  wrapped in `Secret` objects by `from_dict()`, `from_toml()`, and
-  `from_yaml()`.
+  wrapped in `Secret` objects by `from_dict()`.
 - If you were accessing these values directly as strings, use
   `secret.reveal()` to get the plain-text value.
 - `repr()` and `str()` of config objects now mask credentials with `***`.

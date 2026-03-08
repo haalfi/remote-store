@@ -2,7 +2,7 @@
 
 This page explains *why* `remote-store` is structured the way it is.
 For API details, see the [API Reference](api/index.md). For how-to
-instructions, see the [Guides](extensions.md).
+instructions, see the Guides section in the sidebar.
 
 ## Three-layer design
 
