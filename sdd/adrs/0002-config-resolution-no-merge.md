@@ -1,4 +1,4 @@
-# ADR-0002: Configuration Resolution — No Merging
+# ADR-0002: Configuration Resolution - No Merging
 
 ## Status
 

@@ -1,4 +1,4 @@
-# ext.cache — Store-Level Caching Middleware Specification
+# ext.cache - Store-Level Caching Middleware Specification
 
 ## Overview
 

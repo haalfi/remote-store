@@ -1,4 +1,4 @@
-# ADR-0001: Architecture — Store, Registry, Backends
+# ADR-0001: Architecture - Store, Registry, Backends
 
 ## Status
 

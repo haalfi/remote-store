@@ -11,15 +11,17 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [~] **ID-050 — End-to-end integration tests against Docker backends**
-  Full data lake medallion pipeline (Bronze/Silver/Gold) running against
-  real Docker services (MinIO, Azurite). Exercises extension interplay:
-  `ext.arrow` (PyArrow adapter), `ext.partition` (Hive paths),
-  `ext.batch` (concurrent delete/exists), `ext.cache` (TTL + invalidation),
-  `ext.observe` (hooks), and `open_atomic()` — all against real backends.
-  Reuses `benchmarks/infra/docker-compose.yml`. Tests in `tests/e2e/`.
-  Done: `test_data_lake.py` with Memory, S3, S3-PyArrow, Azure backends.
-  Remaining: SFTP backend test, `ext.transfer` cross-backend scenario.
+- [~] **DOC-001 — Documentation overhaul per Documentation Master**
+  `sdd/DOCUMENTATION.md` defines the authoritative standard (Diataxis
+  structure, docstring quality bar, cross-linking rules, nav restructure).
+  Done: master document, ripple-check table updates, Phase 1 (Diataxis nav
+  restructure — Getting Started / Guides / Reference / Explanation), Phase 2
+  (extension API reference pages for all 9 ext modules), DOCUMENTATION.md
+  updated to Sphinx-style docstrings (section 5).
+  Remaining: new pages (troubleshooting, capabilities matrix, choosing a
+  backend, migration guide, architecture overview, security model, further
+  reading), research docs on site, docstring audit, cross-links, final
+  polish.
 
 - [ ] **ID-049 — Enable GitHub Vigilant Mode**
   Commit signing with SSH/GPG for supply chain transparency. Soft enforcement
@@ -34,16 +36,6 @@ Active work items, ordered by priority.
   3. Add CONTRIBUTING.md § Code Signing with SSH/GPG setup instructions.
   4. Consider a SIGNING.md verification guide if moving to hard enforcement.
 
-- [ ] **DOC-001 — Documentation overhaul per Documentation Master**
-  `sdd/DOCUMENTATION.md` defines the authoritative standard (Diataxis
-  structure, docstring quality bar, cross-linking rules, nav restructure).
-  Done: master document, ripple-check table updates.
-  Remaining: nav restructure (section 3), docstring audit (section 5),
-  cross-links (section 6), new pages — troubleshooting, capabilities
-  matrix, choosing a backend, migration guide, architecture overview,
-  security model, extension API reference pages (section 7 missing pages),
-  research docs on site, further reading page.
-
 ---
 
 ## Known Bugs
@@ -55,6 +47,16 @@ Active work items, ordered by priority.
 ## Ideas (Unprioritized)
 
 Parking lot. Not evaluated, not committed to. Pick up when relevant.
+
+- [~] **ID-050 — End-to-end integration tests against Docker backends**
+  Full data lake medallion pipeline (Bronze/Silver/Gold) running against
+  real Docker services (MinIO, Azurite). Exercises extension interplay:
+  `ext.arrow` (PyArrow adapter), `ext.partition` (Hive paths),
+  `ext.batch` (concurrent delete/exists), `ext.cache` (TTL + invalidation),
+  `ext.observe` (hooks), and `open_atomic()` — all against real backends.
+  Reuses `benchmarks/infra/docker-compose.yml`. Tests in `tests/e2e/`.
+  Done: `test_data_lake.py` with Memory, S3, S3-PyArrow, Azure backends.
+  Remaining: SFTP backend test, `ext.transfer` cross-backend scenario.
 
 - [ ] **ID-006 — Progress callbacks for large transfers**
   Add an optional `callback: Callable[[int], None]` parameter to `read()` and

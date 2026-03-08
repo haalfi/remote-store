@@ -1,4 +1,4 @@
-# ADR-0009: Glob — Three-Tier Design
+# ADR-0009: Glob - Three-Tier Design
 
 ## Status
 

@@ -187,7 +187,7 @@ docstring that mkdocstrings can extract into useful reference docs.
 
 ### Format
 
-Google-style docstrings (configured in mkdocstrings).
+Sphinx-style docstrings (configured in mkdocstrings via ``docstring_style: sphinx``).
 
 ```python
 def read(self, path: str) -> BinaryIO:
@@ -195,30 +195,24 @@ def read(self, path: str) -> BinaryIO:
 
     The caller is responsible for closing the returned stream.
 
-    Args:
-        path: Logical path relative to the store root.
-            Must not be empty or contain path traversal (``..``).
+    :param path: Logical path relative to the store root.
+        Must not be empty or contain path traversal (``..``).
+    :returns: A readable binary stream positioned at the start.
+    :raises NotFound: If the file does not exist.
+    :raises InvalidPath: If *path* is empty or invalid.
+    :raises BackendUnavailable: If the backend cannot be reached.
 
-    Returns:
-        A readable binary stream positioned at the start.
+    Example::
 
-    Raises:
-        NotFound: If the file does not exist.
-        InvalidPath: If *path* is empty or invalid.
-        BackendUnavailable: If the backend cannot be reached.
-
-    Example:
-        ```python
         stream = store.read("data/report.csv")
         content = stream.read()
         stream.close()
-        ```
     """
 ```
 
 ### Required sections by symbol type
 
-| Symbol | Args | Returns | Raises | Example | Notes |
+| Symbol | `:param:` | `:returns:` | `:raises:` | Example | Notes |
 |---|---|---|---|---|---|
 | Public method | Yes | Yes | Yes | Yes (short) | |
 | Property | -- | Yes (in summary) | If applicable | Optional | |
@@ -230,9 +224,9 @@ def read(self, path: str) -> BinaryIO:
 ### Minimum quality bar
 
 - Every parameter has a type annotation in the signature (enforced by mypy)
-- Every parameter is described in Args
-- Return type is annotated and described
-- All exceptions that the method can raise are listed in Raises
+- Every parameter is described with `:param name:`
+- Return type is annotated and described with `:returns:`
+- All exceptions that the method can raise are listed with `:raises:`
 - At least one example for methods users call directly
 - No TODOs or placeholders in published docstrings
 

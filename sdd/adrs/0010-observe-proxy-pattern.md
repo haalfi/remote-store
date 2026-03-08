@@ -1,4 +1,4 @@
-# ADR-0010: Observe — Proxy Subclass Pattern
+# ADR-0010: Observe - Proxy Subclass Pattern
 
 ## Status
 

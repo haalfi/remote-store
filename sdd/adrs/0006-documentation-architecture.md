@@ -1,4 +1,4 @@
-# ADR-0006: Documentation Architecture — Source of Truth and Audiences
+# ADR-0006: Documentation Architecture - Source of Truth and Audiences
 
 ## Status
 
