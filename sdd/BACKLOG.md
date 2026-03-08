@@ -11,25 +11,15 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [x] **ID-035 — Parallel batch operations** (unreleased)
-  Added `concurrent=True` and `max_workers=N` keyword arguments to
-  `batch_delete`, `batch_copy`, `batch_exists`. Uses `ThreadPoolExecutor`
-  (stdlib). `stop_on_error=True` + `concurrent=True` raises `ValueError`.
-  Spec: BATCH-020 through BATCH-025 in `016-ext-batch.md`. 20 new tests.
-
-- [x] **ID-025 — `ext.cache` — store-level caching middleware** (unreleased)
-  `cached_store(store, ttl=300)` wraps a Store in a caching proxy.
-  Caches: `exists`, `is_file`, `is_folder`, `read_bytes`, `get_file_info`,
-  `get_folder_info`, `list_files`, `list_folders`, `glob`. Auto-invalidates
-  on writes/deletes/moves/copies. `max_content_size` guard for large files.
-  `MemoryCache` default backend, thread-safe. `CacheStats` for monitoring.
-  Spec: `023-ext-cache.md` (CACHE-001 through CACHE-015). 52 tests.
-
-- [x] **ID-036 — Hive-style partition path helpers** (unreleased)
-  `partition_path(filename, **partitions)` and `parse_partition(path)` in
-  `ext/partition.py`. Builds and parses paths like
-  `year=2026/month=03/data.parquet`. Pure Python, zero dependencies.
-  Spec: `024-ext-partition.md` (PART-001 through PART-013). 23 tests.
+- [~] **ID-050 — End-to-end integration tests against Docker backends**
+  Full data lake medallion pipeline (Bronze/Silver/Gold) running against
+  real Docker services (MinIO, Azurite). Exercises extension interplay:
+  `ext.arrow` (PyArrow adapter), `ext.partition` (Hive paths),
+  `ext.batch` (concurrent delete/exists), `ext.cache` (TTL + invalidation),
+  `ext.observe` (hooks), and `open_atomic()` — all against real backends.
+  Reuses `benchmarks/infra/docker-compose.yml`. Tests in `tests/e2e/`.
+  Done: `test_data_lake.py` with Memory, S3, S3-PyArrow, Azure backends.
+  Remaining: SFTP backend test, `ext.transfer` cross-backend scenario.
 
 - [ ] **ID-049 — Enable GitHub Vigilant Mode**
   Commit signing with SSH/GPG for supply chain transparency. Soft enforcement
@@ -352,6 +342,26 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   `ruamel.yaml.YAMLError` in config loader spec.
 
 ### Ideas shipped
+
+- [x] **ID-025 — `ext.cache` — store-level caching middleware** (unreleased)
+  `cached_store(store, ttl=300)` wraps a Store in a caching proxy.
+  Caches: `exists`, `is_file`, `is_folder`, `read_bytes`, `get_file_info`,
+  `get_folder_info`, `list_files`, `list_folders`, `glob`. Auto-invalidates
+  on writes/deletes/moves/copies. `max_content_size` guard for large files.
+  `MemoryCache` default backend, thread-safe. `CacheStats` for monitoring.
+  Spec: `023-ext-cache.md` (CACHE-001 through CACHE-015). 52 tests.
+
+- [x] **ID-035 — Parallel batch operations** (unreleased)
+  Added `concurrent=True` and `max_workers=N` keyword arguments to
+  `batch_delete`, `batch_copy`, `batch_exists`. Uses `ThreadPoolExecutor`
+  (stdlib). `stop_on_error=True` + `concurrent=True` raises `ValueError`.
+  Spec: BATCH-020 through BATCH-025 in `016-ext-batch.md`. 20 new tests.
+
+- [x] **ID-036 — Hive-style partition path helpers** (unreleased)
+  `partition_path(filename, **partitions)` and `parse_partition(path)` in
+  `ext/partition.py`. Builds and parses paths like
+  `year=2026/month=03/data.parquet`. Pure Python, zero dependencies.
+  Spec: `024-ext-partition.md` (PART-001 through PART-013). 23 tests.
 
 - [x] **ID-002 — YAML config support** (v0.14.0)
   `RegistryConfig.from_yaml(path)` — optional `pyyaml` or `ruamel.yaml`.
