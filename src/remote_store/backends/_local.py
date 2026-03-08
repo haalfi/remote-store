@@ -138,16 +138,20 @@ class LocalBackend(Backend):
         try:
             full.parent.mkdir(parents=True, exist_ok=True)
             fd, tmp_path = tempfile.mkstemp(dir=str(full.parent))
-            try:
-                with os.fdopen(fd, "wb") as f:
-                    yield f
-                os.replace(tmp_path, str(full))
-            except BaseException:
-                if os.path.exists(tmp_path):
-                    os.unlink(tmp_path)
-                raise
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+
+        try:
+            with os.fdopen(fd, "wb") as f:
+                yield f
+            try:
+                os.replace(tmp_path, str(full))
+            except PermissionError:
+                raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        except BaseException:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+            raise
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         full = self._resolve(path)
