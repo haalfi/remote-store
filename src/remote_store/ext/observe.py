@@ -106,6 +106,7 @@ _OP_HOOK_MAP: dict[str, str] = {
     "read_bytes": "on_read",
     "write": "on_write",
     "write_atomic": "on_write",
+    "open_atomic": "on_write",
     "delete": "on_delete",
     "delete_folder": "on_delete",
     "copy": "on_copy",
@@ -285,6 +286,14 @@ class ObservedStore(Store):
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         with self._observe_op("write_atomic", path, {"overwrite": overwrite}):
             self._inner.write_atomic(path, content, overwrite=overwrite)
+
+    @contextlib.contextmanager
+    def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+        with (
+            self._observe_op("open_atomic", path, {"overwrite": overwrite}),
+            self._inner.open_atomic(path, overwrite=overwrite) as f,
+        ):
+            yield f
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._observe_op("delete", path, {"missing_ok": missing_ok}):

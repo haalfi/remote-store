@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import shutil
@@ -123,11 +124,36 @@ class LocalBackend(Backend):
                         shutil.copyfileobj(content, f)
                 os.replace(tmp_path, str(full))
             except BaseException:
-                if os.path.exists(tmp_path):
-                    os.unlink(tmp_path)
+                with contextlib.suppress(OSError):
+                    if os.path.exists(tmp_path):
+                        os.unlink(tmp_path)
                 raise
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+
+    @contextlib.contextmanager
+    def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+        full = self._resolve(path)
+        if not overwrite and full.exists():
+            raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+        try:
+            full.parent.mkdir(parents=True, exist_ok=True)
+            fd, tmp_path = tempfile.mkstemp(dir=str(full.parent))
+        except PermissionError:
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+
+        try:
+            with os.fdopen(fd, "wb") as f:
+                yield f
+            try:
+                os.replace(tmp_path, str(full))
+            except PermissionError:
+                raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        except BaseException:
+            with contextlib.suppress(OSError):
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+            raise
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         full = self._resolve(path)

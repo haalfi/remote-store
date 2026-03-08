@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import io
 import logging
 import threading
@@ -143,6 +144,20 @@ class MemoryBackend(Backend):
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         self.write(path, content, overwrite=overwrite)
+
+    @contextlib.contextmanager
+    def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+        segments = self._split_path(path)
+        if not segments:
+            raise InvalidPath("Path must not be empty for file operations", path=path, backend="memory")
+        if not overwrite:
+            with self._lock:
+                if isinstance(self._traverse(segments), _FileEntry):
+                    raise AlreadyExists(f"File already exists: {path}", path=path, backend="memory")
+        buf = io.BytesIO()
+        yield buf
+        buf.seek(0)
+        self.write(path, buf.getvalue(), overwrite=overwrite)
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         segments = self._split_path(path)

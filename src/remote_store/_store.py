@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import fnmatch
 import logging
@@ -169,6 +170,37 @@ class Store:
         self._backend.capabilities.require(Capability.ATOMIC_WRITE, backend=_bk)
         self._backend.write_atomic(self._require_file_path(path), content, overwrite=overwrite)
         log.info("write_atomic complete path=%r", path, extra={"op": "write_atomic", "path": path, "backend": _bk})
+
+    @contextlib.contextmanager
+    def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+        """Open a file for streaming atomic writing.
+
+        Yields a writable file object. Content written to it is staged in a
+        backend-specific temporary location. On successful context exit the
+        file is atomically promoted to *path*. On exception the temporary
+        artifact is removed and *path* is never modified.
+
+        :param path: Store-relative key for the target file.
+        :param overwrite: If ``False``, raise if the file already exists.
+        :raises AlreadyExists: If *path* exists and *overwrite* is ``False``.
+        :raises CapabilityNotSupported: If the backend lacks ``ATOMIC_WRITE``.
+        :raises InvalidPath: If *path* is empty.
+        """
+        _bk = self._backend.name
+        log.debug(
+            "open_atomic path=%r overwrite=%r",
+            path,
+            overwrite,
+            extra={"op": "open_atomic", "path": path, "backend": _bk},
+        )
+        self._backend.capabilities.require(Capability.ATOMIC_WRITE, backend=_bk)
+        with self._backend.open_atomic(self._require_file_path(path), overwrite=overwrite) as f:
+            yield f
+        log.info(
+            "open_atomic complete path=%r",
+            path,
+            extra={"op": "open_atomic", "path": path, "backend": _bk},
+        )
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file.
