@@ -32,6 +32,7 @@ from remote_store.ext.batch import batch_delete, batch_exists  # noqa: E402
 from remote_store.ext.cache import cached_store  # noqa: E402
 from remote_store.ext.observe import observe  # noqa: E402
 from remote_store.ext.partition import parse_partition, partition_path  # noqa: E402
+from tests.e2e.conftest import minio_skip, s3_pyarrow_skip  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Shared test data generator
@@ -250,7 +251,7 @@ def _aggregate_to_gold(silver_df: pl.DataFrame, gold: Store) -> tuple[int, int]:
 # ---------------------------------------------------------------------------
 
 
-def _assert_bronze(bronze: Store, total_rows: int, raw_rows: list[dict[str, object]]) -> None:
+def _assert_bronze(bronze: Store, total_rows: int) -> None:
     """Verify Bronze layer contents."""
     files = list(bronze.list_files("readings", recursive=True))
     assert len(files) == DAYS, f"Expected {DAYS} daily files, got {len(files)}"
@@ -419,6 +420,7 @@ def _test_atomic_writes(lake: Store) -> None:
 
 
 @pytest.mark.integration
+@pytest.mark.spec("ID-050")
 class TestDataLakeMedallion:
     """Full medallion pipeline against each backend."""
 
@@ -432,7 +434,7 @@ class TestDataLakeMedallion:
 
         # --- Bronze: ingest ---
         total_rows = _write_bronze(bronze, raw_rows)
-        _assert_bronze(bronze, total_rows, raw_rows)
+        _assert_bronze(bronze, total_rows)
 
         # --- Silver: clean ---
         silver_df = _clean_to_silver(bronze, silver)
@@ -466,18 +468,12 @@ class TestDataLakeMedallion:
         """Baseline: full pipeline on MemoryBackend (always runs)."""
         self._run_pipeline(memory_lake)
 
-    @pytest.mark.skipif(
-        not pytest.importorskip("s3fs", reason="s3fs not installed"),
-        reason="s3fs not installed",
-    )
+    @minio_skip
     def test_s3_minio(self, s3_lake: Store) -> None:
         """Full pipeline on S3Backend via MinIO Docker."""
         self._run_pipeline(s3_lake)
 
-    @pytest.mark.skipif(
-        not pytest.importorskip("pyarrow", reason="pyarrow not installed"),
-        reason="pyarrow not installed",
-    )
+    @s3_pyarrow_skip
     def test_s3_pyarrow_minio(self, s3_pyarrow_lake: Store) -> None:
         """Full pipeline on S3PyArrowBackend via MinIO Docker."""
         self._run_pipeline(s3_pyarrow_lake)

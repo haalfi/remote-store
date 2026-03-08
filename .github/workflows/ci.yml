@@ -135,30 +135,26 @@ jobs:
     needs: [changes]
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    services:
-      minio:
-        image: cgr.dev/chainguard/minio:latest-dev
-        ports:
-          - 9000:9000
-        env:
-          MINIO_ROOT_USER: minioadmin
-          MINIO_ROOT_PASSWORD: minioadmin
-        options: >-
-          --health-cmd "wget -qO /dev/null http://127.0.0.1:9000/minio/health/live 2>&1 || exit 1"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
-      azurite:
-        image: mcr.microsoft.com/azure-storage/azurite:3.35.0
-        ports:
-          - 10000:10000
-        options: >-
-          --health-cmd "nc -z 127.0.0.1 10000"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - uses: actions/checkout@v6
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio-e2e -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
+            cgr.dev/chainguard/minio:latest-dev server /data
+          for i in $(seq 1 30); do
+            wget -qO /dev/null http://127.0.0.1:9000/minio/health/live && break || sleep 1
+          done
+          wget -qO /dev/null http://127.0.0.1:9000/minio/health/live || { echo "::error::MinIO failed to start"; exit 1; }
+      - name: Start Azurite
+        run: |
+          docker run -d --name azurite-e2e -p 10000:10000 \
+            mcr.microsoft.com/azure-storage/azurite:3.35.0 \
+            azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
+          for i in $(seq 1 30); do
+            nc -z 127.0.0.1 10000 && break || sleep 1
+          done
+          nc -z 127.0.0.1 10000 || { echo "::error::Azurite failed to start"; exit 1; }
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
