@@ -35,23 +35,59 @@ class RemoteStoreError(Exception):
 
 
 class NotFound(RemoteStoreError):
-    """Raised when a file or folder does not exist."""
+    """Raised when a file or folder does not exist.
+
+    Raised by :meth:`~remote_store.Store.read`,
+    :meth:`~remote_store.Store.read_bytes`,
+    :meth:`~remote_store.Store.delete`,
+    :meth:`~remote_store.Store.delete_folder`,
+    :meth:`~remote_store.Store.get_file_info`,
+    :meth:`~remote_store.Store.get_folder_info`,
+    :meth:`~remote_store.Store.move`, and
+    :meth:`~remote_store.Store.copy`
+    when the target path does not exist.
+    """
 
 
 class AlreadyExists(RemoteStoreError):
-    """Raised when a target already exists and overwrite is not allowed."""
+    """Raised when a target already exists and overwrite is not allowed.
+
+    Raised by :meth:`~remote_store.Store.write`,
+    :meth:`~remote_store.Store.write_atomic`,
+    :meth:`~remote_store.Store.open_atomic`,
+    :meth:`~remote_store.Store.move`, and
+    :meth:`~remote_store.Store.copy`
+    when ``overwrite=False`` (the default) and the destination exists.
+    """
 
 
 class PermissionDenied(RemoteStoreError):
-    """Raised when access is denied by the storage backend."""
+    """Raised when access is denied by the storage backend.
+
+    Raised by any Store or Backend method when the underlying storage
+    system denies access (e.g., missing credentials, insufficient
+    permissions on the bucket or container).
+    """
 
 
 class InvalidPath(RemoteStoreError):
-    """Raised for malformed, unsafe, or out-of-scope paths."""
+    """Raised for malformed, unsafe, or out-of-scope paths.
+
+    Raised by any method that validates paths: empty strings in file-targeted
+    operations, paths containing ``..`` or null bytes, and paths that fall
+    outside the store's root scope.
+    """
 
 
 class CapabilityNotSupported(RemoteStoreError):
     """Raised when an operation requires an unsupported capability.
+
+    Raised by capability-gated methods (:meth:`~remote_store.Store.glob`,
+    :meth:`~remote_store.Store.write_atomic`,
+    :meth:`~remote_store.Store.open_atomic`,
+    :meth:`~remote_store.Store.unwrap`) and by
+    :meth:`~remote_store._capabilities.CapabilitySet.require` when a
+    backend does not declare the needed capability.
 
     :param capability: The name of the unsupported capability.
     """
@@ -88,8 +124,18 @@ class CapabilityNotSupported(RemoteStoreError):
 
 
 class DirectoryNotEmpty(RemoteStoreError):
-    """Raised when a non-recursive delete targets a non-empty folder."""
+    """Raised when a non-recursive delete targets a non-empty folder.
+
+    Raised by :meth:`~remote_store.Store.delete_folder` when
+    ``recursive=False`` (the default) and the folder contains files or
+    subfolders.
+    """
 
 
 class BackendUnavailable(RemoteStoreError):
-    """Raised when the backend cannot be reached or initialized."""
+    """Raised when the backend cannot be reached or initialized.
+
+    Raised during backend construction or first operation when the
+    storage service is unreachable (e.g., network error, invalid
+    endpoint, missing container).
+    """

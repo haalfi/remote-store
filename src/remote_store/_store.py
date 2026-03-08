@@ -62,6 +62,11 @@ class Store:
             shared backend.
         :raises InvalidPath: If *subpath* is empty, contains ``..``, or
             contains null bytes.
+
+        Example::
+
+            child = store.child("2026/03")
+            child.write("report.csv", data)  # writes to "2026/03/report.csv"
         """
         validated = str(RemotePath(subpath))
         new_root = f"{self._root}/{validated}" if self._root else validated
@@ -88,6 +93,7 @@ class Store:
         Delegates to :meth:`Backend.unwrap`.
 
         :param type_hint: The expected type (e.g., ``pyarrow.fs.FileSystem``).
+        :returns: The native handle cast to *type_hint*.
         :raises CapabilityNotSupported: If the backend cannot provide the requested type.
         """
         return self._backend.unwrap(type_hint)
@@ -104,28 +110,58 @@ class Store:
         return self._backend.native_path(self._full_path(key))
 
     def supports(self, capability: Capability) -> bool:
-        """Check whether the backend supports a capability."""
+        """Check whether the backend supports a capability.
+
+        :param capability: The capability to check.
+        :returns: ``True`` if the backend declares this capability.
+        """
         return self._backend.capabilities.supports(capability)
 
     def exists(self, path: str) -> bool:
-        """Check if a file or folder exists."""
+        """Check if a file or folder exists.
+
+        :param path: Store-relative key, or ``""`` for the store root.
+        :returns: ``True`` if a file or folder exists at *path*.
+
+        Example::
+
+            if store.exists("data/report.csv"):
+                stream = store.read("data/report.csv")
+        """
         log.debug("exists path=%r", path, extra={"op": "exists", "path": path, "backend": self._backend.name})
         return self._backend.exists(self._full_path(path))
 
     def is_file(self, path: str) -> bool:
-        """Check if path is an existing file."""
+        """Check if path is an existing file.
+
+        :param path: Store-relative key.
+        :returns: ``True`` if *path* exists and is a file.
+        """
         log.debug("is_file path=%r", path, extra={"op": "is_file", "path": path, "backend": self._backend.name})
         return self._backend.is_file(self._full_path(path))
 
     def is_folder(self, path: str) -> bool:
-        """Check if path is an existing folder."""
+        """Check if path is an existing folder.
+
+        :param path: Store-relative key, or ``""`` for the store root.
+        :returns: ``True`` if *path* exists and is a folder.
+        """
         log.debug("is_folder path=%r", path, extra={"op": "is_folder", "path": path, "backend": self._backend.name})
         return self._backend.is_folder(self._full_path(path))
 
     def read(self, path: str) -> BinaryIO:
         """Open a file for reading.
 
+        The caller is responsible for closing the returned stream.
+
+        :param path: Store-relative key.
+        :returns: A readable binary stream. Must be closed by the caller.
         :raises NotFound: If the file does not exist.
+
+        Example::
+
+            with store.read("data/report.csv") as f:
+                content = f.read()
         """
         log.debug("read path=%r", path, extra={"op": "read", "path": path, "backend": self._backend.name})
         self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
@@ -134,8 +170,14 @@ class Store:
     def read_bytes(self, path: str) -> bytes:
         """Read full file content as bytes.
 
+        :param path: Store-relative key.
+        :returns: The file content as a ``bytes`` object.
         :raises NotFound: If the file does not exist.
         :raises InvalidPath: If ``path`` is empty.
+
+        Example::
+
+            data = store.read_bytes("config.json")
         """
         log.debug("read_bytes path=%r", path, extra={"op": "read_bytes", "path": path, "backend": self._backend.name})
         self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
@@ -144,8 +186,16 @@ class Store:
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         """Write content to a file.
 
+        :param path: Store-relative key.
+        :param content: Data to write (``bytes``, ``str``, or readable binary stream).
+        :param overwrite: If ``True``, replace any existing file.
         :raises AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         :raises InvalidPath: If ``path`` is empty.
+
+        Example::
+
+            store.write("greeting.txt", b"hello world")
+            store.write("greeting.txt", b"updated", overwrite=True)
         """
         _bk = self._backend.name
         log.debug("write path=%r overwrite=%r", path, overwrite, extra={"op": "write", "path": path, "backend": _bk})
@@ -156,6 +206,12 @@ class Store:
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         """Write content atomically.
 
+        Content is staged in a temporary location and promoted in one step.
+        Readers never see a partial file.
+
+        :param path: Store-relative key.
+        :param content: Data to write (``bytes``, ``str``, or readable binary stream).
+        :param overwrite: If ``True``, replace any existing file.
         :raises CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
         :raises AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         :raises InvalidPath: If ``path`` is empty.
@@ -182,9 +238,16 @@ class Store:
 
         :param path: Store-relative key for the target file.
         :param overwrite: If ``False``, raise if the file already exists.
+        :returns: A writable binary stream (via ``yield``).
         :raises AlreadyExists: If *path* exists and *overwrite* is ``False``.
         :raises CapabilityNotSupported: If the backend lacks ``ATOMIC_WRITE``.
         :raises InvalidPath: If *path* is empty.
+
+        Example::
+
+            with store.open_atomic("output.csv", overwrite=True) as f:
+                f.write(b"col1,col2\\n")
+                f.write(b"a,1\\n")
         """
         _bk = self._backend.name
         log.debug(
@@ -205,8 +268,15 @@ class Store:
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file.
 
+        :param path: Store-relative key.
+        :param missing_ok: If ``True``, do not raise when the file is absent.
         :raises NotFound: If the file is missing and ``missing_ok`` is ``False``.
         :raises InvalidPath: If ``path`` is empty.
+
+        Example::
+
+            store.delete("old-report.csv")
+            store.delete("maybe-gone.csv", missing_ok=True)
         """
         _bk = self._backend.name
         log.debug(
@@ -219,8 +289,13 @@ class Store:
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         """Delete a folder.
 
+        :param path: Store-relative key (must not be empty).
+        :param recursive: If ``True``, delete all contents first.
+        :param missing_ok: If ``True``, do not raise when the folder is absent.
         :raises NotFound: If the folder is missing and ``missing_ok`` is ``False``.
         :raises InvalidPath: If ``path`` is empty (cannot delete the store root).
+        :raises DirectoryNotEmpty: If the folder is non-empty and ``recursive``
+            is ``False``.
         """
         _bk = self._backend.name
         log.debug(
@@ -241,6 +316,7 @@ class Store:
         Returned ``FileInfo.path`` values are store-relative keys (``root_path``
         is stripped), so they can be fed directly back into other Store methods.
 
+        :param path: Store-relative folder key, or ``""`` for the store root.
         :param recursive: Include files in all subdirectories.
         :param pattern: Optional ``fnmatch`` pattern matched against each file's
             **name** (basename only, e.g., ``"*.csv"``, ``"report.*"``).
@@ -248,6 +324,13 @@ class Store:
             ``ext.glob.glob_files()`` for full path-based pattern matching.
             Filtering is applied at the Store level so it works with every
             backend.
+        :returns: An iterator of :class:`FileInfo` objects with store-relative
+            paths.
+
+        Example::
+
+            for info in store.list_files("data", recursive=True, pattern="*.csv"):
+                print(info.name, info.size)
         """
         _bk = self._backend.name
         log.debug(
@@ -277,6 +360,8 @@ class Store:
 
         :param pattern: Glob pattern relative to the store root
             (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
+        :returns: An iterator of :class:`FileInfo` objects with store-relative
+            paths.
         :raises CapabilityNotSupported: If the backend lacks ``GLOB``.
         """
         log.debug("glob pattern=%r", pattern, extra={"op": "glob", "path": pattern, "backend": self._backend.name})
@@ -286,7 +371,11 @@ class Store:
             yield self._rebase_file_info(info)
 
     def list_folders(self, path: str) -> Iterator[str]:
-        """List immediate subfolder names."""
+        """List immediate subfolder names.
+
+        :param path: Store-relative folder key, or ``""`` for the store root.
+        :returns: An iterator of subfolder name strings (not full paths).
+        """
         _bk = self._backend.name
         log.debug("list_folders path=%r", path, extra={"op": "list_folders", "path": path, "backend": _bk})
         self._backend.capabilities.require(Capability.LIST, backend=_bk)
@@ -295,8 +384,16 @@ class Store:
     def get_file_info(self, path: str) -> FileInfo:
         """Get file metadata.
 
+        :param path: Store-relative key.
+        :returns: A :class:`FileInfo` with size, modification time, and other
+            backend-provided metadata.
         :raises NotFound: If the file does not exist.
         :raises InvalidPath: If ``path`` is empty.
+
+        Example::
+
+            info = store.get_file_info("report.csv")
+            print(info.size, info.modified_at)
         """
         _bk = self._backend.name
         log.debug("get_file_info path=%r", path, extra={"op": "get_file_info", "path": path, "backend": _bk})
@@ -307,6 +404,9 @@ class Store:
     def get_folder_info(self, path: str) -> FolderInfo:
         """Get folder metadata.
 
+        :param path: Store-relative folder key, or ``""`` for the store root.
+        :returns: A :class:`FolderInfo` with file count, total size, and other
+            backend-provided metadata.
         :raises NotFound: If the folder does not exist.
         """
         _bk = self._backend.name
@@ -316,11 +416,21 @@ class Store:
         return self._rebase_folder_info(info)
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        """Move/rename a file.
+        """Move or rename a file.
 
+        If *src* and *dst* resolve to the same path, the method verifies that
+        the source exists and returns without error.
+
+        :param src: Source store-relative key.
+        :param dst: Destination store-relative key.
+        :param overwrite: If ``True``, replace any existing file at *dst*.
         :raises NotFound: If ``src`` does not exist.
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         :raises InvalidPath: If ``src`` or ``dst`` is empty.
+
+        Example::
+
+            store.move("draft.txt", "final.txt")
         """
         _bk = self._backend.name
         log.debug(
@@ -339,6 +449,12 @@ class Store:
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Copy a file.
 
+        If *src* and *dst* resolve to the same path, the method verifies that
+        the source exists and returns without error.
+
+        :param src: Source store-relative key.
+        :param dst: Destination store-relative key.
+        :param overwrite: If ``True``, replace any existing file at *dst*.
         :raises NotFound: If ``src`` does not exist.
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         :raises InvalidPath: If ``src`` or ``dst`` is empty.
