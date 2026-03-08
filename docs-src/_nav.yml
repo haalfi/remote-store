@@ -4,13 +4,14 @@
     - Examples: examples/
 - Guides:
     - Backends: backends/
-    - Extensions: extensions.md
-    - PyArrow Adapter: pyarrow-adapter.md
-    - Batch Operations: batch-operations.md
-    - Glob Pattern Matching: glob-pattern-matching.md
-    - Transfer Operations: transfer-operations.md
-    - Observability Hooks: observe.md
-    - Caching: cache.md
+    - Extensions:
+        - Overview: extensions.md
+        - PyArrow Adapter: pyarrow-adapter.md
+        - Batch Operations: batch-operations.md
+        - Glob Pattern Matching: glob-pattern-matching.md
+        - Transfer Operations: transfer-operations.md
+        - Observability Hooks: observe.md
+        - Caching: cache.md
     - Data Lake Patterns: data-lake-patterns.md
     - Troubleshooting: troubleshooting.md
     - Choosing a Backend: choosing-a-backend.md
