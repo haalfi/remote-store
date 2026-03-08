@@ -160,7 +160,8 @@ config = RegistryConfig.from_toml("remote-store.toml")
 config = RegistryConfig.from_toml("pyproject.toml", table=("tool", "remote-store"))
 
 # From YAML (requires pyyaml or ruamel.yaml):
-config = RegistryConfig.from_yaml("remote-store.yaml")
+from remote_store.ext.yaml import from_yaml
+config = from_yaml("remote-store.yaml")
 
 # From Pydantic BaseSettings (requires pydantic-settings):
 from remote_store.ext.pydantic import pydantic_to_registry_config

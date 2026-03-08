@@ -52,8 +52,10 @@ zero runtime dependencies. On Python 3.10, the `tomli` backport is required
 
 ### CFG-010: `from_yaml()`
 
-**Invariant:** `RegistryConfig.from_yaml(path)` reads a YAML file and returns
-a `RegistryConfig`.
+**Invariant:** `from_yaml(path)` (in `ext/yaml.py`) reads a YAML file and
+returns a `RegistryConfig`.
+
+**Location:** `remote_store/ext/yaml.py`
 
 **Parameters:**
 - `path: str | Path` — Path to the YAML file.
@@ -181,7 +183,7 @@ User's Pydantic model (merges env + .env + files)
 | Component | Location |
 |-----------|----------|
 | `from_toml()` | `_config.py` classmethod on `RegistryConfig` |
-| `from_yaml()` | `_config.py` classmethod on `RegistryConfig` |
+| `from_yaml()` | `ext/yaml.py` standalone function |
 | Unknown-key warning | `_config.py` inside `from_dict()` |
 | Pydantic adapter | `ext/pydantic.py` |
 | Optional extras | `pyproject.toml` `[project.optional-dependencies]` |
@@ -235,7 +237,9 @@ stores:
 ```
 
 ```python
-config = RegistryConfig.from_yaml("remote-store.yaml")
+from remote_store.ext.yaml import from_yaml
+
+config = from_yaml("remote-store.yaml")
 ```
 
 ## Example Pydantic
