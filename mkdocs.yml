@@ -28,7 +28,6 @@ theme:
   features:
     - content.code.copy
     - navigation.instant
-    - navigation.sections
     - navigation.top
     - toc.follow
 
