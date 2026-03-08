@@ -202,16 +202,20 @@ _scanned_sections: dict[str, list[tuple[str, str]]] = {
 nav = mkdocs_gen_files.Nav()
 
 
-def _load_nav_section(
-    nav_file: Path,
+def _process_entries(
+    entries: list[dict[str, object]],
     section_dir: str,
     nav_path: tuple[str, ...],
 ) -> None:
-    """Read a _nav.yml and add its entries to *nav*, recursing into subsections."""
-    entries = yaml.safe_load(nav_file.read_text()) or []
+    """Process a list of nav entries, handling leaves, directories, and groups."""
     for entry in entries:
         for label, target in entry.items():
-            if target.endswith("/"):
+            if isinstance(target, list):
+                # Virtual group — label is a nav heading, target is child entries.
+                # No corresponding directory; children resolve against same section_dir.
+                child_path = nav_path + (label,)
+                _process_entries(target, section_dir, child_path)
+            elif isinstance(target, str) and target.endswith("/"):
                 # Subsection — resolve its directory and recurse
                 subdir_name = target.rstrip("/")
                 full_dir = f"{section_dir}/{subdir_name}" if section_dir else subdir_name
@@ -233,6 +237,16 @@ def _load_nav_section(
                     nav[nav_path + (label,)] = full_path
                 else:
                     nav[(label,)] = full_path
+
+
+def _load_nav_section(
+    nav_file: Path,
+    section_dir: str,
+    nav_path: tuple[str, ...],
+) -> None:
+    """Read a _nav.yml and add its entries to *nav*, recursing into subsections."""
+    entries = yaml.safe_load(nav_file.read_text()) or []
+    _process_entries(entries, section_dir, nav_path)
 
 
 _load_nav_section(DOCS_SRC / "_nav.yml", "", ())

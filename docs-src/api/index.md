@@ -50,3 +50,17 @@ Complete reference for all public exports of `remote-store`.
 | Function | Description |
 |----------|-------------|
 | [register_backend](registry.md#remote_store.register_backend) | Register a custom backend type |
+
+## Extensions
+
+| Module | Description |
+|--------|-------------|
+| [ext.arrow](ext-arrow.md) | PyArrow `FileSystemHandler` adapter for Store |
+| [ext.batch](ext-batch.md) | Batch delete, copy, and exists operations |
+| [ext.cache](ext-cache.md) | Store-level caching middleware with TTL |
+| [ext.glob](ext-glob.md) | Portable glob pattern matching fallback |
+| [ext.observe](ext-observe.md) | Callback hooks for store operations |
+| [ext.otel](ext-otel.md) | OpenTelemetry bridge for ext.observe |
+| [ext.partition](ext-partition.md) | Hive-style partition path helpers |
+| [ext.pydantic](ext-pydantic.md) | Pydantic model to RegistryConfig adapter |
+| [ext.transfer](ext-transfer.md) | Upload, download, and cross-store transfer |
