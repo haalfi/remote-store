@@ -124,8 +124,9 @@ class LocalBackend(Backend):
                         shutil.copyfileobj(content, f)
                 os.replace(tmp_path, str(full))
             except BaseException:
-                if os.path.exists(tmp_path):
-                    os.unlink(tmp_path)
+                with contextlib.suppress(OSError):
+                    if os.path.exists(tmp_path):
+                        os.unlink(tmp_path)
                 raise
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
@@ -149,8 +150,9 @@ class LocalBackend(Backend):
             except PermissionError:
                 raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
         except BaseException:
-            if os.path.exists(tmp_path):
-                os.unlink(tmp_path)
+            with contextlib.suppress(OSError):
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
             raise
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
