@@ -109,6 +109,8 @@ dev = [
   "bump-my-version>=0.28",
   "twine",
   "python-dotenv",
+  "polars>=0.20",
+  "duckdb>=0.9",
 ]
 
 [tool.hatch.envs.default]
@@ -142,6 +144,8 @@ dependencies = [
   "mkdocs-literate-nav>=0.6",
   "mkdocs-section-index>=0.3",
   "mike>=2.0",
+  "polars>=0.20",
+  "duckdb>=0.9",
 ]
 
 [tool.hatch.envs.default.scripts]
