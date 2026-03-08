@@ -117,18 +117,22 @@ def _batch_delete_concurrent(
     paths_list = list(paths)
     succeeded: list[str] = []
     failed: dict[str, RemoteStoreError] = {}
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    executor = ThreadPoolExecutor(max_workers=max_workers)
+    try:
         future_to_path = {executor.submit(store.delete, p, missing_ok=missing_ok): p for p in paths_list}
         for future in as_completed(future_to_path):
             path = future_to_path[future]
             try:
                 future.result()
             except CapabilityNotSupported:
+                executor.shutdown(wait=False, cancel_futures=True)
                 raise
             except RemoteStoreError as exc:
                 failed[path] = exc
             else:
                 succeeded.append(path)
+    finally:
+        executor.shutdown(wait=True)
     result = BatchResult(succeeded=tuple(succeeded), failed=failed)
     log.info(
         "batch_delete complete: %d succeeded, %d failed",
@@ -199,18 +203,22 @@ def _batch_copy_concurrent(
     pairs_list = list(pairs)
     succeeded: list[str] = []
     failed: dict[str, RemoteStoreError] = {}
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    executor = ThreadPoolExecutor(max_workers=max_workers)
+    try:
         future_to_src = {executor.submit(store.copy, src, dst, overwrite=overwrite): src for src, dst in pairs_list}
         for future in as_completed(future_to_src):
             src = future_to_src[future]
             try:
                 future.result()
             except CapabilityNotSupported:
+                executor.shutdown(wait=False, cancel_futures=True)
                 raise
             except RemoteStoreError as exc:
                 failed[src] = exc
             else:
                 succeeded.append(src)
+    finally:
+        executor.shutdown(wait=True)
     result = BatchResult(succeeded=tuple(succeeded), failed=failed)
     log.info(
         "batch_copy complete: %d succeeded, %d failed",

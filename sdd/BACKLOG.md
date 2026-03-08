@@ -11,7 +11,7 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [x] **ID-035 — Parallel batch operations**
+- [x] **ID-035 — Parallel batch operations** (unreleased)
   Added `concurrent=True` and `max_workers=N` keyword arguments to
   `batch_delete`, `batch_copy`, `batch_exists`. Uses `ThreadPoolExecutor`
   (stdlib). `stop_on_error=True` + `concurrent=True` raises `ValueError`.
