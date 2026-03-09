@@ -4656,8 +4656,9 @@ thread-safe.</p>
 <li><strong>Write buffering.</strong> Writes are buffered until <code>close()</code> -- data is not
   visible in the Store during the write. This is inherent to the Store's
   single-shot <code>write()</code> API.</li>
-<li><strong>Tier 1 only for S3-PyArrow.</strong> Currently only <code>S3PyArrowBackend</code> exposes
-  a native PyArrow filesystem. Other backends use Tier 2/3.</li>
+<li><strong>Tier 1 limited to S3-PyArrow.</strong> <code>S3PyArrowBackend</code> exposes a native PyArrow
+  filesystem for zero-copy Tier 1 reads. Other backends provide
+  <code>native_path()</code> but use Tier 2/3 for data transfer.</li>
 <li><strong>Process exit on Linux.</strong> PyArrow's C++ atexit handlers can deadlock
   during interpreter shutdown when a <code>PyFileSystem</code> is still alive. If your
   script hangs after completing, explicitly <code>del</code> the PyArrow filesystem and
