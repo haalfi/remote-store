@@ -40,6 +40,7 @@ The operation must be **non-destructive** (no side effects), **lightweight** (mi
 - Success = backend is reachable and credentials work
 - Raises exception on any connectivity or credential issue
 - **Does not** return a `bool` or status enum — follows remote-store convention of raising exceptions for error conditions
+- **Note:** `LocalBackend.__init__` calls `self._root.mkdir(parents=True, exist_ok=True)`, so the root always exists after construction. A `NotFound` for Local would only occur if the directory is deleted between construction and `ping()` — an unusual but valid edge case to handle
 
 ---
 
@@ -63,13 +64,13 @@ The operation must be **non-destructive** (no side effects), **lightweight** (mi
 
 - Lightweight metadata call, no data transfer via s3fs
 - Validates bucket exists and credentials have permission
-- s3fs wraps boto3/botocore; can access via `self._fs.s3.head_bucket()`
-- Or use `self._fs.info(bucket_name)` for direct stat-like metadata
+- s3fs wraps boto3/botocore; access underlying client via `self._fs.s3.head_bucket()`
+- Or use `self._fs.info(self._bucket)` for direct stat-like metadata
 
 **Implementation Notes:**
-- S3Backend uses `s3fs.S3FileSystem`, not raw boto3 client
-- Access underlying boto3 client: `self._fs.s3.head_bucket(Bucket=self._bucket_name)`
-- Or lightweight info call: `self._fs.info(self._bucket_name)` returns metadata
+- S3Backend uses `self._fs` (`s3fs.S3FileSystem`), not a raw boto3 client
+- Access underlying client: `self._fs.s3.head_bucket(Bucket=self._bucket)`
+- Or lightweight info call: `self._fs.info(self._bucket)` returns metadata
 - Preferred over checking for root path existence (which would require listing)
 
 **Error Mapping:**
@@ -436,10 +437,10 @@ def check_health(self) -> None:
 def check_health(self) -> None:
     """Verify root path exists and is readable."""
     try:
-        if not os.path.exists(self.root_path):
-            raise NotFound(f"Root path does not exist: {self.root_path}")
-        if not os.access(self.root_path, os.R_OK):
-            raise PermissionDenied(f"No read access to {self.root_path}")
+        if not self._root.exists():
+            raise NotFound(f"Root path does not exist: {self._root}")
+        if not os.access(self._root, os.R_OK):
+            raise PermissionDenied(f"No read access to {self._root}")
     except OSError as e:
         # Refine based on errno or re-raise as BackendUnavailable
 ```
@@ -449,19 +450,11 @@ def check_health(self) -> None:
 ```python
 def check_health(self) -> None:
     """Verify bucket exists and credentials work via HeadBucket."""
-    try:
-        self._client.head_bucket(Bucket=self._bucket_name)
-    except ClientError as e:
-        code = e.response['Error']['Code']
-        if code == '403':
-            raise PermissionDenied(f"S3 access denied: {e}")
-        elif code == '404':
-            raise NotFound(f"S3 bucket not found: {self._bucket_name}")
-        else:
-            raise BackendUnavailable(f"S3 unavailable: {e}")
-    except Exception as e:
-        # Timeout, connection, etc.
-        raise BackendUnavailable(f"S3 unavailable: {e}")
+    with self._errors():
+        # Option A: underlying botocore client
+        self._fs.s3.head_bucket(Bucket=self._bucket)
+        # Option B: s3fs info call
+        # self._fs.info(self._bucket)
 ```
 
 ---
