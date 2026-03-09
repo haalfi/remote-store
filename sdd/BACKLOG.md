@@ -11,13 +11,17 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [~] **ID-050 — End-to-end integration tests against Docker backends**
+- [x] **ID-050 — End-to-end integration tests against Docker backends**
   Full data lake medallion pipeline (Bronze/Silver/Gold) against real Docker
-  services (MinIO, Azurite). Exercises 6 extensions together.
-  - Done: `test_data_lake.py` with Memory, S3, S3-PyArrow, Azure backends.
-  - Remaining: SFTP backend test (typical SFTP flow: check for new files,
-    fetch them, place daily files if not exists), `ext.transfer`
-    cross-backend scenario.
+  services (MinIO, Azurite, SFTP). Exercises 6 extensions together.
+  - `test_data_lake.py`: Medallion pipeline on Memory, S3, S3-PyArrow, Azure.
+  - `test_sftp_workflow.py`: Typical SFTP flow (check inbox, fetch, place if
+    not exists, incremental pickup, folders, atomic write, overwrite).
+  - `test_transfer.py`: Cross-backend `ext.transfer` (S3/SFTP/Azure pairs),
+    progress tracking, overwrite guard.
+  - Bug fix: `_ErrorMappingStream.seek()`/`tell()` crashed on paramiko
+    SFTPFile (returns `None` from `seek()`). All backend combinations work.
+  - CI: MinIO, Azurite, and SFTP Docker containers in `e2e` job.
 
 - [ ] **ID-010 — Retry policy configuration**
   Expose a `RetryPolicy` dataclass in `BackendConfig.options` for tuning
@@ -580,6 +584,12 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
 - [x] **ID-049 — Enable GitHub Vigilant Mode** (post-v0.15.0)
   Commit signing with SSH for supply chain transparency. Soft enforcement
   (visual badges, no blocking of unsigned commits). Ops-only, no code changes.
+
+- [x] **ID-050 — End-to-end integration tests against Docker backends** (post-v0.15.0)
+  19 e2e tests: medallion pipeline (4 backends), SFTP workflow (5 tests:
+  check/fetch/place, incremental pickup, folders, atomic write, overwrite),
+  cross-backend transfer (10 tests: S3/SFTP/Azure pairs with progress +
+  overwrite guard; SFTP-to-Azure xfail). CI: MinIO + Azurite + SFTP Docker.
   - Done: Vigilant Mode enabled on maintainer GitHub account. Local SSH signing
     configured. CONTRIBUTING.md § Code Signing added with setup instructions.
     Master merge commits show "Verified" badge.
