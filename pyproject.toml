@@ -220,7 +220,7 @@ module = "tomllib"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = "ruamel.yaml"
+module = ["ruamel", "ruamel.yaml"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

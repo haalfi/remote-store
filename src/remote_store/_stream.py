@@ -68,7 +68,11 @@ class _ErrorMappingStream(io.RawIOBase):
 
     def seek(self, offset: int, whence: int = 0) -> int:
         try:
-            return int(self._inner.seek(offset, whence))
+            result = self._inner.seek(offset, whence)
+            # paramiko SFTPFile.seek() returns None
+            if result is None:
+                return self._inner.tell() or 0
+            return int(result)
         except OSError as exc:
             raise self._mapper(exc, self._path) from exc
 
@@ -77,7 +81,9 @@ class _ErrorMappingStream(io.RawIOBase):
 
     def tell(self) -> int:
         try:
-            return int(self._inner.tell())
+            result = self._inner.tell()
+            # paramiko SFTPFile.tell() should return int, but guard anyway
+            return int(result) if result is not None else 0
         except OSError as exc:
             raise self._mapper(exc, self._path) from exc
 

@@ -23,7 +23,7 @@ try:
     import yaml  # type: ignore[import-untyped]  # noqa: F401
 except ModuleNotFoundError:
     try:
-        import ruamel.yaml  # type: ignore[import-not-found]  # noqa: F401
+        import ruamel.yaml  # noqa: F401
     except ModuleNotFoundError as _exc:  # pragma: no cover
         raise ModuleNotFoundError(
             "YAML support requires pyyaml or ruamel.yaml. Install with: pip install 'remote-store[yaml]'"

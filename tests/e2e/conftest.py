@@ -93,6 +93,45 @@ def _sftp_available() -> bool:
 
 
 # ---------------------------------------------------------------------------
+# SFTP cleanup helpers
+# ---------------------------------------------------------------------------
+
+
+def _sftp_rmtree(sftp: Any, path: str) -> None:
+    """Recursively remove a directory tree via paramiko SFTP."""
+    import stat
+
+    try:
+        entries = sftp.listdir_attr(path)
+    except FileNotFoundError:
+        return
+    for entry in entries:
+        child = f"{path}/{entry.filename}"
+        if stat.S_ISDIR(entry.st_mode):  # type: ignore[arg-type]
+            _sftp_rmtree(sftp, child)
+        else:
+            sftp.remove(child)
+    sftp.rmdir(path)
+
+
+def _sftp_cleanup(host: str, port: int, username: str, base_path: str, password: str) -> None:
+    """Remove the SFTP test directory using a fresh transport."""
+    import paramiko
+
+    transport = paramiko.Transport((host, port))
+    try:
+        transport.connect(username=username, password=password)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        assert sftp is not None
+        try:
+            _sftp_rmtree(sftp, base_path)
+        finally:
+            sftp.close()
+    finally:
+        transport.close()
+
+
+# ---------------------------------------------------------------------------
 # S3 cleanup helper
 # ---------------------------------------------------------------------------
 
@@ -229,3 +268,45 @@ def azurite_lake() -> Iterator[Store]:
     store.close()
     service.delete_container(container)
     service.close()
+
+
+@pytest.fixture()
+def sftp_lake() -> Iterator[Store]:
+    """SFTP lake store backed by atmoz/sftp Docker."""
+    pytest.importorskip("paramiko")
+    if not _sftp_available():
+        pytest.skip("SFTP not reachable")
+
+    from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
+
+    tag = uuid.uuid4().hex[:8]
+    base_path = f"/upload/e2e-lake-{tag}"
+
+    # Create the base_path directory before the backend connects.
+    # _ensure_parent_dirs skips when parent == base_path, so root-level
+    # writes would fail without this.
+    import paramiko
+
+    transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
+    transport.connect(username=SFTP_USER, password=SFTP_PASS)
+    sftp = paramiko.SFTPClient.from_transport(transport)
+    assert sftp is not None
+    try:
+        sftp.mkdir(base_path)
+    finally:
+        sftp.close()
+        transport.close()
+
+    backend = SFTPBackend(
+        host=SFTP_HOST,
+        port=SFTP_PORT,
+        username=SFTP_USER,
+        password=SFTP_PASS,
+        base_path=base_path,
+        host_key_policy=HostKeyPolicy.AUTO_ADD,
+        connect_kwargs={"allow_agent": False, "look_for_keys": False},
+    )
+    store = Store(backend=backend)
+    yield store
+    store.close()
+    _sftp_cleanup(SFTP_HOST, SFTP_PORT, SFTP_USER, base_path, SFTP_PASS)
