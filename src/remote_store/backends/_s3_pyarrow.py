@@ -468,10 +468,16 @@ class S3PyArrowBackend(Backend):
             if self._retry is not None:
                 import botocore.config  # type: ignore[import-untyped]
 
+                rp = self._retry
+                if rp.backoff_base != 1.0 or rp.backoff_max != 60.0 or rp.jitter != 1.0 or rp.timeout is not None:
+                    log.debug(
+                        "S3-PyArrow s3fs retry: backoff_base, backoff_max, jitter, timeout "
+                        "are not mappable to botocore; only max_attempts is used",
+                    )
                 client_kwargs = opts.setdefault("client_kwargs", {})
                 existing_config = client_kwargs.get("config")
                 retry_config = botocore.config.Config(
-                    retries={"max_attempts": self._retry.max_attempts, "mode": "standard"},
+                    retries={"max_attempts": rp.max_attempts, "mode": "standard"},
                 )
                 if existing_config is not None:
                     client_kwargs["config"] = existing_config.merge(retry_config)

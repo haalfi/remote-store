@@ -593,7 +593,7 @@ class AzureBackend(Backend):
         from azure.storage.blob import ExponentialRetry
 
         rp = self._retry
-        if rp.backoff_max > 0 or rp.timeout is not None:
+        if rp.backoff_max != 60.0 or rp.timeout is not None:
             log.debug(
                 "Azure retry: backoff_max=%.1f and timeout=%s are not mappable "
                 "to ExponentialRetry; only max_attempts, backoff_base, jitter are used",

@@ -849,6 +849,23 @@ class TestRetryBackendMapping:
         assert config.retries["mode"] == "standard"
         backend.close()
 
+    @pytest.mark.spec("RET-013")
+    def test_s3_pyarrow_retry_strategy(self) -> None:
+        pytest.importorskip("pyarrow")
+        from unittest.mock import patch
+
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        rp = RetryPolicy(max_attempts=9)
+        backend = S3PyArrowBackend(bucket="b", retry=rp)
+        with patch("pyarrow.fs.S3FileSystem") as mock_s3fs:
+            mock_s3fs.return_value = mock_s3fs
+            _ = backend._pa_fs
+            call_kwargs = mock_s3fs.call_args[1]
+            strategy = call_kwargs["retry_strategy"]
+            assert strategy.max_attempts == 9
+        backend.close()
+
 
 # endregion
 
