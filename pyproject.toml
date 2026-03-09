@@ -170,6 +170,8 @@ examples = [
   "python examples/glob_pattern_matching.py",
   "python examples/transfer_operations.py",
   "python examples/observe_hooks.py",
+  "python examples/capabilities_and_errors.py",
+  "python examples/path_model.py",
   "python examples/pyarrow_adapter.py",
 ]
 notebooks = "python tests/scripts/run_notebooks.py"
