@@ -11,16 +11,8 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [~] **ID-010 — Retry policy configuration**
-  Expose a `RetryPolicy` dataclass for tuning retry attempts, backoff,
-  and jitter per-backend.
-  - Done: research (`sdd/research/research-retry-policy.md`, PR #113),
-    ADR-0011, spec `025-retry-policy.md`, `RetryPolicy` dataclass in
-    `_config.py`, `BackendConfig.retry` field, `from_dict()` parsing,
-    backend constructors (SFTP/S3/Azure/S3-PyArrow accept `retry`),
-    Registry passthrough, SFTP tenacity integration, S3 botocore mapping,
-    Azure ExponentialRetry mapping, S3-PyArrow dual mapping, 34 tests.
-  - Remaining: user guide, configuration example, docs.
+- [x] **ID-010 — Retry policy configuration** (post-v0.15.0)
+  Moved to Done.
 
 - [ ] **ID-054 — `store.ping()` / backend health check**
   A lightweight method (`store.ping()` or `backend.check_health()`) that
@@ -582,6 +574,14 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
     configured. CONTRIBUTING.md § Code Signing added with setup instructions.
     Master merge commits show "Verified" badge.
   - Future: Consider SIGNING.md verification guide if moving to hard enforcement.
+
+- [x] **ID-010 — Retry policy configuration** (post-v0.15.0)
+  `RetryPolicy` frozen dataclass for unified retry configuration. Per-backend
+  native mapping: SFTP (tenacity), S3 (botocore), Azure (ExponentialRetry),
+  S3-PyArrow (AwsStandardS3RetryStrategy + botocore). ADR-0011, spec
+  `025-retry-policy.md`, `BackendConfig.retry` field, `from_dict()` parsing,
+  Registry passthrough. User guide (`guides/retry.md`), example
+  (`examples/retry_policy.py`), docs page. 39 tests.
 
 - [x] **ID-050 — End-to-end integration tests against Docker backends** (post-v0.15.0)
   19 e2e tests: medallion pipeline (4 backends), SFTP workflow (5 tests:

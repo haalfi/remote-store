@@ -526,3 +526,17 @@ class TestPyArrowAdapter:
         # Dataset discovery
         assert results["dataset_rows"] == 15  # 3 partitions * 5 rows
         assert results["dataset_files"] == 3
+
+
+# ---------------------------------------------------------------------------
+# Retry policy
+# ---------------------------------------------------------------------------
+
+
+class TestRetryPolicy:
+    @pytest.mark.spec("RET-001")
+    def test_demo(self):
+        from examples.retry_policy import demo
+
+        # Smoke test -- demo prints output and exercises validation
+        demo()
