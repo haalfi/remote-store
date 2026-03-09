@@ -249,6 +249,10 @@
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0011-retry-per-backend-native/</loc>
+         <lastmod>2026-03-09</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/design/research/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
@@ -402,6 +406,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/024-ext-partition/</loc>
+         <lastmod>2026-03-09</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/specs/025-retry-policy/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>

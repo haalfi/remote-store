@@ -3500,6 +3500,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/specs/025-retry-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    025: Retry Policy Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3832,6 +3860,34 @@
     
   
     0010: Observe - Proxy Subclass Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Retry - Per-Backend Native Configuration
   
 
     
@@ -4584,7 +4640,7 @@
                 <code>backends</code>
             </td>
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="BackendConfig(type, options=dict())
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="BackendConfig(type, options=dict(), retry=None)
 
   
       dataclass
@@ -4854,7 +4910,7 @@ For <code>pyproject.toml</code> use <code>table=("tool", "remote-store")</code>.
 
 
 <h2 id="remote_store.BackendConfig" class="doc doc-heading">
-              <code class="highlight language-python"><span class="n">BackendConfig</span><span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="nb">dict</span><span class="p">())</span></code>
+              <code class="highlight language-python"><span class="n">BackendConfig</span><span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span> <span class="n">retry</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
@@ -4911,6 +4967,22 @@ For <code>pyproject.toml</code> use <code>table=("tool", "remote-store")</code>.
             </td>
             <td>
                   <code><span title="dict">dict</span>()</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>retry</code>
+            </td>
+            <td>
+                  <code><span title="remote_store._config.RetryPolicy">RetryPolicy</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional retry policy for transient errors.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
             </td>
           </tr>
       </tbody>

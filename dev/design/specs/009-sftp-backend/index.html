@@ -3801,6 +3801,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../025-retry-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    025: Retry Policy Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4133,6 +4161,34 @@
     
   
     0010: Observe - Proxy Subclass Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Retry - Per-Backend Native Configuration
   
 
     
@@ -5220,8 +5276,13 @@ Key Vault quirk where newlines may be replaced with spaces or other characters.
 <strong>Postconditions:</strong> The sanitized PEM string has standard <code>\n</code> line separators within
 the Base64 payload. Invalid PEM structures (not 5 parts) raise <code>ValueError</code>.</p>
 <h3 id="sftp-009-tenacity-retry-on-connect">SFTP-009: Tenacity Retry on Connect<a class="headerlink" href="#sftp-009-tenacity-retry-on-connect" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>_connect()</code> method retries on transient SSH errors using tenacity:
-3 attempts, exponential backoff (2s min, 10s max).
+<p><strong>Invariant:</strong> The <code>_connect()</code> method retries on transient SSH errors using tenacity.
+When no <code>RetryPolicy</code> is provided, uses defaults: 3 attempts, exponential backoff
+(2s min, 10s max). When a <code>RetryPolicy</code> is provided via the <code>retry</code> constructor
+parameter, maps its fields to tenacity: <code>max_attempts</code> -&gt; <code>stop_after_attempt</code>,
+<code>backoff_base</code> -&gt; <code>wait_exponential(min=)</code>, <code>backoff_max</code> -&gt; <code>wait_exponential(max=)</code>,
+<code>jitter</code> -&gt; <code>wait_random(0, jitter)</code>, <code>timeout</code> -&gt; <code>stop_after_delay</code>.
+See also: spec <code>025-retry-policy.md</code> (RET-010).
 <strong>Retried exceptions:</strong> <code>paramiko.SSHException</code>, <code>OSError</code>, <code>EOFError</code>.
 <strong>Postconditions:</strong> After all retries are exhausted, the original exception is reraised.</p>
 <h3 id="sftp-010-staleness-detection-and-reconnect">SFTP-010: Staleness Detection and Reconnect<a class="headerlink" href="#sftp-010-staleness-detection-and-reconnect" title="Permanent link">&para;</a></h3>
