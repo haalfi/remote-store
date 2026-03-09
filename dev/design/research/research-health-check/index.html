@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/011-s3-pyarrow-backend/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-health-check/">
       
       
-        <link rel="prev" href="../010-native-path-resolution/">
+        <link rel="prev" href="../research-example-testing/">
       
       
-        <link rel="next" href="../012-azure-backend/">
+        <link rel="next" href="../research-logging-monitoring-tracing/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>011: S3-PyArrow Hybrid Backend Specification - remote-store</title>
+        <title>Backend Health Check (store.ping() / backend.check_health()) - remote-store</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#s3-pyarrow-hybrid-backend-specification" class="md-skip">
+        <a href="#research-backend-health-check-storeping-backendcheck_health" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              011: S3-PyArrow Hybrid Backend Specification
+              Backend Health Check (store.ping() / backend.check_health())
             
           </span>
         </div>
@@ -2617,8 +2617,6 @@
                 
   
   
-    
-  
   
   
     
@@ -2629,15 +2627,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_3" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -2661,7 +2659,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2679,7 +2677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -2707,7 +2705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -2735,7 +2733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -2763,7 +2761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -2791,7 +2789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../005-error-model/" class="md-nav__link">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -2819,7 +2817,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -2847,7 +2845,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -2875,7 +2873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../008-s3-backend/" class="md-nav__link">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -2903,7 +2901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -2931,7 +2929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -2956,37 +2954,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    011: S3-PyArrow Hybrid Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -3002,398 +2973,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Construction
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Construction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-001-constructor-parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-001: Constructor Parameters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-002-backend-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-004-lazy-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-005: Construction Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#library-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Library Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Library Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-006-dual-library-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-006: Dual-Library Architecture
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-007-credential-translation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-007: Credential Translation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#s3-object-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3 Object Model
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="S3 Object Model">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-008-virtual-folder-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-008: Virtual Folder Semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-009-folder-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-009: Folder Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-010-write-does-not-create-folder-markers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-010: Write Does Not Create Folder Markers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-011-folder-lifecycle-tied-to-contents" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-011: Folder Lifecycle Tied to Contents
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-012-read-via-pyarrow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-012: Read Via PyArrow
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-013-write-via-pyarrow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-013: Write Via PyArrow
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-014-copy-via-pyarrow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-014: Copy Via PyArrow
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-015-move-via-hybrid" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-015: Move Via Hybrid
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-016-delete-via-s3fs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-016: Delete Via s3fs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-017-listing-via-s3fs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-017: Listing Via s3fs
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-018-dual-error-context-managers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-018: Dual Error Context Managers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-019-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-019: No Native Exception Leakage
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resource Management
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Resource Management">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-020-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-020: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-021-dual-unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-021: Dual unwrap()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-022-client-options-passthrough" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-022: Client Options Passthrough
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3406,7 +2985,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../012-azure-backend/" class="md-nav__link">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -3434,7 +3013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -3462,7 +3041,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -3490,7 +3069,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -3518,7 +3097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -3546,7 +3125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -3574,7 +3153,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -3602,7 +3181,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -3630,7 +3209,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -3658,7 +3237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -3686,7 +3265,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -3714,7 +3293,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -3742,7 +3321,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -4297,6 +3876,8 @@
                 
   
   
+    
+  
   
   
     
@@ -4307,15 +3888,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_6" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -4339,7 +3920,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_5_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4357,7 +3938,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -4385,7 +3966,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
+      <a href="../research-example-testing/" class="md-nav__link">
         
   
   
@@ -4410,10 +3991,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend Health Check (store.ping() / backend.check_health())
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4429,6 +4037,658 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-overview-and-motivation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Overview and Motivation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-design-constraints-and-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Design Constraints and Principles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Design Constraints and Principles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-non-destructive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Non-Destructive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-lightweight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Lightweight
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-portable-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Portable Semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-clear-failure-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Clear Failure Semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-backend-specific-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Backend-Specific Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Backend-Specific Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-local-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Local Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-s3-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 S3 Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-s3-pyarrow-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 S3-PyArrow Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-sftp-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 SFTP Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-azure-blob-storage-data-lake-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Azure Blob Storage / Data Lake Storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-memory-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Memory Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-api-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. API Design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. API Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-storeping-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option A: store.ping() (Recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-backendcheck_health-alternative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option B: backend.check_health() (Alternative)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#design-decision-both" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Decision: Both
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-error-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Error Mapping
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-integration-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Integration Points
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Integration Points">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-store-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Store Lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-registry-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Registry Health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-observability-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Observability Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-no-tight-coupling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 No Tight Coupling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-testing-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Testing Strategy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Testing Strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-unit-tests-per-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Unit Tests per Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-conformance-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Conformance Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-integration-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Integration Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-specification-outline-for-adr-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Specification Outline (for ADR / Spec)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Specification Outline (for ADR / Spec)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spec-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spec Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-implementation-roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Implementation Roadmap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Implementation Roadmap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Core
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Observability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-registry-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Registry Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-known-considerations-and-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Known Considerations and Open Questions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Known Considerations and Open Questions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-should-health-checks-be-capability-gated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Should health checks be capability-gated?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-should-health-checks-cache-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Should health checks cache results?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-what-about-timeout-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 What about timeout configuration?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#104-should-health-checks-verify-read-or-write-capability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.4 Should health checks verify read or write capability?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#105-return-type-void-none-vs-bool-vs-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.5 Return type: void (None) vs. bool vs. object?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-comparison-with-other-libraries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Comparison with Other Libraries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Comparison with Other Libraries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-sdk-boto3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AWS SDK (boto3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#google-cloud-google-cloud-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google Cloud (google-cloud-storage)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#azure-sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Azure SDK
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fsspec-via-s3fs-adlfs-paramiko" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fsspec (via s3fs, adlfs, paramiko)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-summary-and-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Summary and Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appendix-pseudocode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Appendix: Pseudocode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Appendix: Pseudocode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#storeping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Store.ping()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backendcheck_health-abc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend.check_health() (ABC)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#localbackendcheck_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LocalBackend.check_health()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3backendcheck_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3Backend.check_health()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3pyarrowbackendcheck_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3PyArrowBackend.check_health()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4441,7 +4701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -4469,7 +4729,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
+      <a href="../research-retry-policy/" class="md-nav__link">
         
   
   
@@ -4497,7 +4757,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
+      <a href="../research-store-config/" class="md-nav__link">
         
   
   
@@ -4525,7 +4785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -4677,10 +4937,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#1-overview-and-motivation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        1. Overview and Motivation
       
     </span>
   </a>
@@ -4688,22 +4948,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
+  <a href="#2-design-constraints-and-principles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Construction
+        2. Design Constraints and Principles
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Construction">
+    <nav class="md-nav" aria-label="2. Design Constraints and Principles">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3pa-001-constructor-parameters" class="md-nav__link">
+  <a href="#21-non-destructive" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-001: Constructor Parameters
+        2.1 Non-Destructive
       
     </span>
   </a>
@@ -4711,10 +4971,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3pa-002-backend-name" class="md-nav__link">
+  <a href="#22-lightweight" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-002: Backend Name
+        2.2 Lightweight
       
     </span>
   </a>
@@ -4722,10 +4982,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3pa-003-capability-declaration" class="md-nav__link">
+  <a href="#23-portable-semantics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-003: Capability Declaration
+        2.3 Portable Semantics
       
     </span>
   </a>
@@ -4733,21 +4993,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3pa-004-lazy-connection" class="md-nav__link">
+  <a href="#24-clear-failure-semantics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-005: Construction Validation
+        2.4 Clear Failure Semantics
       
     </span>
   </a>
@@ -4760,22 +5009,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#library-mapping" class="md-nav__link">
+  <a href="#3-backend-specific-strategies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Library Mapping
+        3. Backend-Specific Strategies
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Library Mapping">
+    <nav class="md-nav" aria-label="3. Backend-Specific Strategies">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3pa-006-dual-library-architecture" class="md-nav__link">
+  <a href="#31-local-backend" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-006: Dual-Library Architecture
+        3.1 Local Backend
       
     </span>
   </a>
@@ -4783,10 +5032,54 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3pa-007-credential-translation" class="md-nav__link">
+  <a href="#32-s3-backend" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-007: Credential Translation
+        3.2 S3 Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-s3-pyarrow-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 S3-PyArrow Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-sftp-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 SFTP Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-azure-blob-storage-data-lake-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Azure Blob Storage / Data Lake Storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-memory-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Memory Backend
       
     </span>
   </a>
@@ -4799,22 +5092,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#s3-object-model" class="md-nav__link">
+  <a href="#4-api-design" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3 Object Model
+        4. API Design
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="S3 Object Model">
+    <nav class="md-nav" aria-label="4. API Design">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3pa-008-virtual-folder-semantics" class="md-nav__link">
+  <a href="#option-a-storeping-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-008: Virtual Folder Semantics
+        Option A: store.ping() (Recommended)
       
     </span>
   </a>
@@ -4822,10 +5115,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3pa-009-folder-detection" class="md-nav__link">
+  <a href="#option-b-backendcheck_health-alternative" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-009: Folder Detection
+        Option B: backend.check_health() (Alternative)
       
     </span>
   </a>
@@ -4833,21 +5126,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3pa-010-write-does-not-create-folder-markers" class="md-nav__link">
+  <a href="#design-decision-both" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-010: Write Does Not Create Folder Markers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-011-folder-lifecycle-tied-to-contents" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-011: Folder Lifecycle Tied to Contents
+        Design Decision: Both
       
     </span>
   </a>
@@ -4860,22 +5142,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
+  <a href="#5-error-mapping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operations
+        5. Error Mapping
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Operations">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-integration-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Integration Points
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Integration Points">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3pa-012-read-via-pyarrow" class="md-nav__link">
+  <a href="#61-store-lifecycle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-012: Read Via PyArrow
+        6.1 Store Lifecycle
       
     </span>
   </a>
@@ -4883,10 +5176,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3pa-013-write-via-pyarrow" class="md-nav__link">
+  <a href="#62-registry-health" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-013: Write Via PyArrow
+        6.2 Registry Health
       
     </span>
   </a>
@@ -4894,10 +5187,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3pa-014-copy-via-pyarrow" class="md-nav__link">
+  <a href="#63-observability-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-014: Copy Via PyArrow
+        6.3 Observability Integration
       
     </span>
   </a>
@@ -4905,32 +5198,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3pa-015-move-via-hybrid" class="md-nav__link">
+  <a href="#64-no-tight-coupling" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-015: Move Via Hybrid
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-016-delete-via-s3fs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-016: Delete Via s3fs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-017-listing-via-s3fs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-017: Listing Via s3fs
+        6.4 No Tight Coupling
       
     </span>
   </a>
@@ -4943,22 +5214,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
+  <a href="#7-testing-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error Mapping
+        7. Testing Strategy
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Error Mapping">
+    <nav class="md-nav" aria-label="7. Testing Strategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3pa-018-dual-error-context-managers" class="md-nav__link">
+  <a href="#71-unit-tests-per-backend" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-018: Dual Error Context Managers
+        7.1 Unit Tests per Backend
       
     </span>
   </a>
@@ -4966,10 +5237,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3pa-019-no-native-exception-leakage" class="md-nav__link">
+  <a href="#72-conformance-tests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-019: No Native Exception Leakage
+        7.2 Conformance Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-integration-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Integration Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Examples
       
     </span>
   </a>
@@ -4982,33 +5275,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
+  <a href="#8-specification-outline-for-adr-spec" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resource Management
+        8. Specification Outline (for ADR / Spec)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Resource Management">
+    <nav class="md-nav" aria-label="8. Specification Outline (for ADR / Spec)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3pa-020-close" class="md-nav__link">
+  <a href="#spec-structure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-020: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3pa-021-dual-unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3PA-021: Dual unwrap()
+        Spec Structure
       
     </span>
   </a>
@@ -5021,22 +5303,260 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#9-implementation-roadmap" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        9. Implementation Roadmap
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Configuration">
+    <nav class="md-nav" aria-label="9. Implementation Roadmap">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3pa-022-client-options-passthrough" class="md-nav__link">
+  <a href="#phase-1-core" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3PA-022: Client Options Passthrough
+        Phase 1: Core
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Observability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-registry-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Registry Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-known-considerations-and-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Known Considerations and Open Questions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Known Considerations and Open Questions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-should-health-checks-be-capability-gated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Should health checks be capability-gated?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-should-health-checks-cache-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Should health checks cache results?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-what-about-timeout-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 What about timeout configuration?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#104-should-health-checks-verify-read-or-write-capability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.4 Should health checks verify read or write capability?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#105-return-type-void-none-vs-bool-vs-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.5 Return type: void (None) vs. bool vs. object?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-comparison-with-other-libraries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Comparison with Other Libraries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Comparison with Other Libraries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-sdk-boto3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AWS SDK (boto3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#google-cloud-google-cloud-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google Cloud (google-cloud-storage)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#azure-sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Azure SDK
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fsspec-via-s3fs-adlfs-paramiko" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fsspec (via s3fs, adlfs, paramiko)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-summary-and-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Summary and Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appendix-pseudocode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Appendix: Pseudocode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Appendix: Pseudocode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#storeping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Store.ping()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backendcheck_health-abc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend.check_health() (ABC)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#localbackendcheck_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LocalBackend.check_health()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3backendcheck_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3Backend.check_health()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3pyarrowbackendcheck_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3PyArrowBackend.check_health()
       
     </span>
   </a>
@@ -5065,130 +5585,426 @@
 
 
 
-<h1 id="s3-pyarrow-hybrid-backend-specification">S3-PyArrow Hybrid Backend Specification<a class="headerlink" href="#s3-pyarrow-hybrid-backend-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>S3PyArrowBackend</code> implements the <code>Backend</code> ABC for S3-compatible object storage using a hybrid approach: <strong>PyArrow's C++ S3 filesystem</strong> for data-path operations (read, write, copy) and <strong>s3fs</strong> for control-path operations (listing, metadata, deletion). This combines PyArrow's high-throughput C++ I/O with s3fs's mature listing and metadata APIs.</p>
-<p>This is a drop-in alternative to <code>S3Backend</code> with the same constructor signature. Users who need maximum read/write throughput for large files should prefer this backend.</p>
-<p><strong>Dependencies:</strong> <code>s3fs</code>, <code>pyarrow</code> (optional extra: <code>pip install "remote-store[s3-pyarrow]"</code>)</p>
+<h1 id="research-backend-health-check-storeping-backendcheck_health">Research: Backend Health Check (<code>store.ping()</code> / <code>backend.check_health()</code>)<a class="headerlink" href="#research-backend-health-check-storeping-backendcheck_health" title="Permanent link">&para;</a></h1>
+<p><strong>Item ID:</strong> ID-054
+<strong>Date:</strong> 2026-03-09
+<strong>Context:</strong> Lightweight, non-destructive health verification for backends; startup gates and liveness probes.</p>
 <hr />
-<h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
-<h3 id="s3pa-001-constructor-parameters">S3PA-001: Constructor Parameters<a class="headerlink" href="#s3pa-001-constructor-parameters" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>S3PyArrowBackend</code> is constructed with the same signature as <code>S3Backend</code>: a required <code>bucket</code> name and optional connection parameters.
-<strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">S3PyArrowBackend</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">bucket</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">endpoint_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">secret</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">region_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span>
+<h2 id="1-overview-and-motivation">1. Overview and Motivation<a class="headerlink" href="#1-overview-and-motivation" title="Permanent link">&para;</a></h2>
+<p>A <strong>health check</strong> method verifies that a backend is reachable and credentials are valid without performing any data operations. This enables:</p>
+<ul>
+<li><strong>Startup gates:</strong> Fail fast if credentials are invalid before accepting traffic</li>
+<li><strong>Liveness probes:</strong> Kubernetes, container orchestrators, monitoring systems</li>
+<li><strong>Connection validation:</strong> Application initialization / bootstrap logic</li>
+<li><strong>Operational hygiene:</strong> Verify before critical operations</li>
+</ul>
+<p>The operation must be <strong>non-destructive</strong> (no side effects), <strong>lightweight</strong> (minimal I/O), and <strong>portable</strong> across all backends.</p>
+<hr />
+<h2 id="2-design-constraints-and-principles">2. Design Constraints and Principles<a class="headerlink" href="#2-design-constraints-and-principles" title="Permanent link">&para;</a></h2>
+<h3 id="21-non-destructive">2.1 Non-Destructive<a class="headerlink" href="#21-non-destructive" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Must not create, modify, or delete any data</li>
+<li>Must not have observable side effects on the backend</li>
+<li>Read-only or pure metadata operations only</li>
+</ul>
+<h3 id="22-lightweight">2.2 Lightweight<a class="headerlink" href="#22-lightweight" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Should complete in under 1–2 seconds on a healthy backend</li>
+<li>Minimal network round-trips (preferably a single call)</li>
+<li>No listing, streaming, or enumeration</li>
+</ul>
+<h3 id="23-portable-semantics">2.3 Portable Semantics<a class="headerlink" href="#23-portable-semantics" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Uniform API across all backends (Store + all 6 backends)</li>
+<li>Failure modes standardized: success (healthy), exception (unhealthy)</li>
+<li>Credential validation implicit (failures = bad credentials or connectivity)</li>
+</ul>
+<h3 id="24-clear-failure-semantics">2.4 Clear Failure Semantics<a class="headerlink" href="#24-clear-failure-semantics" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Success = backend is reachable and credentials work</li>
+<li>Raises exception on any connectivity or credential issue</li>
+<li><strong>Does not</strong> return a <code>bool</code> or status enum — follows remote-store convention of raising exceptions for error conditions</li>
+<li><strong>Note:</strong> <code>LocalBackend.__init__</code> calls <code>self._root.mkdir(parents=True, exist_ok=True)</code>, so the root always exists after construction. A <code>NotFound</code> for Local would only occur if the directory is deleted between construction and <code>ping()</code> — an unusual but valid edge case to handle</li>
+</ul>
+<hr />
+<h2 id="3-backend-specific-strategies">3. Backend-Specific Strategies<a class="headerlink" href="#3-backend-specific-strategies" title="Permanent link">&para;</a></h2>
+<h3 id="31-local-backend">3.1 Local Backend<a class="headerlink" href="#31-local-backend" title="Permanent link">&para;</a></h3>
+<p><strong>Method:</strong> <code>os.access(root_path, os.R_OK)</code></p>
+<ul>
+<li>Verifies the root path exists and is readable</li>
+<li>Non-destructive, instant</li>
+<li>Raises <code>PermissionDenied</code> if path not readable, <code>NotFound</code> if path missing</li>
+</ul>
+<p><strong>Implementation Notes:</strong>
+- Works for any root path (file or folder)
+- Natural fit for how Local backend validates paths</p>
+<hr />
+<h3 id="32-s3-backend">3.2 S3 Backend<a class="headerlink" href="#32-s3-backend" title="Permanent link">&para;</a></h3>
+<p><strong>Method:</strong> <code>head_bucket()</code> via s3fs' underlying botocore client</p>
+<ul>
+<li>Lightweight metadata call, no data transfer via s3fs</li>
+<li>Validates bucket exists and credentials have permission</li>
+<li>s3fs wraps boto3/botocore; access underlying client via <code>self._fs.s3.head_bucket()</code></li>
+<li>Or use <code>self._fs.info(self._bucket)</code> for direct stat-like metadata</li>
+</ul>
+<p><strong>Implementation Notes:</strong>
+- S3Backend uses <code>self._fs</code> (<code>s3fs.S3FileSystem</code>), not a raw boto3 client
+- Access underlying client: <code>self._fs.s3.head_bucket(Bucket=self._bucket)</code>
+- Or lightweight info call: <code>self._fs.info(self._bucket)</code> returns metadata
+- Preferred over checking for root path existence (which would require listing)</p>
+<p><strong>Error Mapping:</strong>
+- 403 / AccessDenied → <code>PermissionDenied</code>
+- 404 / NoSuchBucket → <code>NotFound</code>
+- Timeout / connection → <code>BackendUnavailable</code></p>
+<hr />
+<h3 id="33-s3-pyarrow-backend">3.3 S3-PyArrow Backend<a class="headerlink" href="#33-s3-pyarrow-backend" title="Permanent link">&para;</a></h3>
+<p><strong>Method:</strong> PyArrow <code>S3FileSystem.get_file_info()</code> on bucket root</p>
+<ul>
+<li>Uses PyArrow's native <code>S3FileSystem</code>, not boto3</li>
+<li><code>self._pa_fs.get_file_info(self._bucket)</code> returns lightweight metadata</li>
+<li>Validates bucket exists and credentials work</li>
+</ul>
+<p><strong>Implementation Notes:</strong>
+- S3-PyArrow wraps PyArrow's <code>S3FileSystem</code>, not boto3
+- Lightweight metadata call via <code>get_file_info()</code> on bucket name or root path
+- Error handling consistent with S3 Backend (map to same exception types)</p>
+<hr />
+<h3 id="34-sftp-backend">3.4 SFTP Backend<a class="headerlink" href="#34-sftp-backend" title="Permanent link">&para;</a></h3>
+<p><strong>Method:</strong> <code>stat(root_path)</code> or equivalent</p>
+<ul>
+<li>Checks if root path exists via <code>os.stat()</code>-like call</li>
+<li>Paramiko provides <code>sftp.stat(path)</code> — returns stat info</li>
+<li>Also validates SSH connectivity and credentials</li>
+</ul>
+<p><strong>Implementation Notes:</strong>
+- <code>sftp.stat(root_path)</code> already used in existence checks
+- Non-destructive: just metadata lookup
+- Error mapping: EIO / connection → <code>BackendUnavailable</code>, EACCES → <code>PermissionDenied</code>, ENOENT → <code>NotFound</code></p>
+<hr />
+<h3 id="35-azure-blob-storage-data-lake-storage">3.5 Azure Blob Storage / Data Lake Storage<a class="headerlink" href="#35-azure-blob-storage-data-lake-storage" title="Permanent link">&para;</a></h3>
+<p><strong>Method:</strong> HNS-aware container/filesystem properties lookup</p>
+<p><strong>Non-HNS (standard Blob):</strong>
+- <code>get_container_properties()</code> or equivalent (<code>ContainerClient.exists()</code>)
+- Non-destructive metadata call
+- Validates container exists and credentials work</p>
+<p><strong>HNS (Data Lake):</strong>
+- <code>DataLakeFileSystemClient.get_file_system_properties()</code> or equivalent (<code>exists()</code>)
+- Similar lightweight metadata call
+- Validates filesystem exists and credentials work</p>
+<p><strong>Implementation Notes:</strong>
+- <code>AzureBackend</code> detects HNS mode via <code>self._hns</code> flag and branches accordingly
+- Non-HNS: <code>ContainerClient.get_container_properties()</code> is lightweight
+- HNS: <code>DataLakeFileSystemClient.get_file_system_properties()</code> (reuses existing folder stat logic)
+- Error mapping (both modes): 403 → <code>PermissionDenied</code>, 404 → <code>NotFound</code>, connection → <code>BackendUnavailable</code></p>
+<hr />
+<h3 id="36-memory-backend">3.6 Memory Backend<a class="headerlink" href="#36-memory-backend" title="Permanent link">&para;</a></h3>
+<p><strong>Method:</strong> Always succeeds</p>
+<ul>
+<li>In-memory backend is always "healthy" by definition</li>
+<li>Return immediately without any checks</li>
+<li>Could optionally verify that root path exists in the tree, but not required</li>
+</ul>
+<p><strong>Implementation Notes:</strong>
+- Safe to always return success — no external resources to validate</p>
+<hr />
+<h2 id="4-api-design">4. API Design<a class="headerlink" href="#4-api-design" title="Permanent link">&para;</a></h2>
+<h3 id="option-a-storeping-recommended">Option A: <code>store.ping()</code> (Recommended)<a class="headerlink" href="#option-a-storeping-recommended" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Store level</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="sd">    Verify the backend is reachable and credentials are valid.</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="sd">    Non-destructive: performs no data operations, creates no side effects.</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">    Lightweight: single metadata call per backend.</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">    Raises</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="sd">    ------</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="sd">    PermissionDenied</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="sd">        If credentials are invalid or insufficient.</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="sd">    NotFound</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="sd">        If the backend root path / container / filesystem does not exist.</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="sd">    BackendUnavailable</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="sd">        If the backend is unreachable (network, timeout, etc.).</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="sd">    Examples</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="sd">    &gt;&gt;&gt; store = Store(s3_backend, root_path=&quot;data&quot;)</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="sd">    &gt;&gt;&gt; store.ping()  # Raises on error, succeeds silently</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="sd">    &gt;&gt;&gt; try:</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="sd">    ...     store.ping()</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="sd">    ... except (PermissionDenied, NotFound, BackendUnavailable) as e:</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="sd">    ...     print(f&quot;Backend unhealthy: {e}&quot;)</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="sd">    &quot;&quot;&quot;</span>
 </code></pre></div>
-<strong>Postconditions:</strong> The backend stores configuration but does not connect to S3 during construction (see S3PA-004). Constructor arguments are translated to each library's conventions internally.</p>
-<h3 id="s3pa-002-backend-name">S3PA-002: Backend Name<a class="headerlink" href="#s3pa-002-backend-name" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>name</code> property returns <code>"s3-pyarrow"</code>.</p>
-<h3 id="s3pa-003-capability-declaration">S3PA-003: Capability Declaration<a class="headerlink" href="#s3pa-003-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>S3PyArrowBackend</code> declares capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>GLOB</code>. Native glob via prefix-optimized listing (see <a href="../018-glob/">018-glob.md</a> GLOB-019).
-<strong>Rationale:</strong> Same as S3Backend -- S3 PUT is inherently atomic, move via copy+delete, copy via server-side copy. <code>GLOB</code>: native prefix-optimized glob since v0.12.0 (BK-002).</p>
-<h3 id="s3pa-004-lazy-connection">S3PA-004: Lazy Connection<a class="headerlink" href="#s3pa-004-lazy-connection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. Both the PyArrow and s3fs filesystem instances are created lazily on first use.
-<strong>Rationale:</strong> Same as S3-004.</p>
-<h3 id="s3pa-005-construction-validation">S3PA-005: Construction Validation<a class="headerlink" href="#s3pa-005-construction-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>bucket</code> must be a non-empty string. Passing an empty or whitespace-only bucket raises <code>ValueError</code> at construction time.</p>
+<p><strong>Rationale:</strong>
+- Familiar terminology from web/API health checks
+- Short, memorable method name
+- Consistent with Unix/network convention</p>
+<h3 id="option-b-backendcheck_health-alternative">Option B: <code>backend.check_health()</code> (Alternative)<a class="headerlink" href="#option-b-backendcheck_health-alternative" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Backend ABC level</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="sd">    Verify the backend is healthy (reachable, credentials valid).</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+<p><strong>Tradeoff:</strong>
+- More explicit about intent
+- Longer name
+- Less standard in Python ecosystem</p>
+<h3 id="design-decision-both">Design Decision: Both<a class="headerlink" href="#design-decision-both" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Expose at <strong>Store level</strong> as <code>ping()</code> (user-facing)</li>
+<li>Implement at <strong>Backend ABC level</strong> as <code>check_health()</code> (backend contract)</li>
+<li>Store delegates to backend</li>
+</ul>
 <hr />
-<h2 id="library-mapping">Library Mapping<a class="headerlink" href="#library-mapping" title="Permanent link">&para;</a></h2>
-<h3 id="s3pa-006-dual-library-architecture">S3PA-006: Dual-Library Architecture<a class="headerlink" href="#s3pa-006-dual-library-architecture" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Operations are split between two libraries based on their strengths:</p>
+<h2 id="5-error-mapping">5. Error Mapping<a class="headerlink" href="#5-error-mapping" title="Permanent link">&para;</a></h2>
+<p>Health checks should raise existing error types from the error model (<code>005-error-model.md</code>):</p>
 <table>
 <thead>
 <tr>
-<th>PyArrow (C++ data path)</th>
-<th>s3fs (control path)</th>
+<th>Condition</th>
+<th>Exception Type</th>
+<th>Details</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>read</code>, <code>read_bytes</code></td>
-<td><code>exists</code>, <code>is_file</code>, <code>is_folder</code></td>
+<td>Credentials invalid</td>
+<td><code>PermissionDenied</code></td>
+<td>Backend explicitly rejects credentials</td>
 </tr>
 <tr>
-<td><code>write</code>, <code>write_atomic</code></td>
-<td><code>list_files</code>, <code>list_folders</code></td>
+<td>Root path missing</td>
+<td><code>NotFound</code></td>
+<td>Bucket, container, FS, or directory does not exist</td>
 </tr>
 <tr>
-<td><code>copy</code></td>
-<td><code>get_file_info</code>, <code>get_folder_info</code></td>
+<td>Network unreachable</td>
+<td><code>BackendUnavailable</code></td>
+<td>Timeout, connection refused, DNS failure</td>
 </tr>
 <tr>
-<td></td>
-<td><code>delete</code>, <code>delete_folder</code></td>
-</tr>
-<tr>
-<td></td>
-<td><code>move</code> (s3fs checks + pyarrow copy + s3fs delete)</td>
+<td>Other backend error</td>
+<td><code>BackendUnavailable</code></td>
+<td>Generic fallback for unmapped errors</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Rationale:</strong> PyArrow's C++ S3 implementation offers superior throughput for bulk data transfer. s3fs (built on aiobotocore) has more mature and flexible listing, metadata, and deletion APIs.</p>
-<h3 id="s3pa-007-credential-translation">S3PA-007: Credential Translation<a class="headerlink" href="#s3pa-007-credential-translation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Constructor credentials are translated per library:
-- <strong>PyArrow:</strong> <code>access_key</code>, <code>secret_key</code>, <code>region</code>, <code>endpoint_override</code>, <code>scheme</code>
-- <strong>s3fs:</strong> <code>key</code>, <code>secret</code>, <code>client_kwargs.region_name</code>, <code>endpoint_url</code></p>
-<p><strong>Postconditions:</strong> Both libraries authenticate with the same credentials to the same endpoint.</p>
+<p><strong>No new error types needed</strong> — existing error model covers all scenarios.</p>
 <hr />
-<h2 id="s3-object-model">S3 Object Model<a class="headerlink" href="#s3-object-model" title="Permanent link">&para;</a></h2>
-<h3 id="s3pa-008-virtual-folder-semantics">S3PA-008: Virtual Folder Semantics<a class="headerlink" href="#s3pa-008-virtual-folder-semantics" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as S3-006. S3 has no native directories; folders are logical constructs from key prefixes.</p>
-<h3 id="s3pa-009-folder-detection">S3PA-009: Folder Detection<a class="headerlink" href="#s3pa-009-folder-detection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as S3-007. <code>is_folder(path)</code> returns <code>True</code> if any objects exist with prefix <code>{path}/</code>.</p>
-<h3 id="s3pa-010-write-does-not-create-folder-markers">S3PA-010: Write Does Not Create Folder Markers<a class="headerlink" href="#s3pa-010-write-does-not-create-folder-markers" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as S3-008. No folder marker objects are created.</p>
-<h3 id="s3pa-011-folder-lifecycle-tied-to-contents">S3PA-011: Folder Lifecycle Tied to Contents<a class="headerlink" href="#s3pa-011-folder-lifecycle-tied-to-contents" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as S3-009. Folders vanish when the last object under a prefix is deleted.</p>
+<h2 id="6-integration-points">6. Integration Points<a class="headerlink" href="#6-integration-points" title="Permanent link">&para;</a></h2>
+<h3 id="61-store-lifecycle">6.1 Store Lifecycle<a class="headerlink" href="#61-store-lifecycle" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Optional in <code>__init__()</code> or shortly after for fail-fast bootstrap</li>
+<li>Separate call — not automatic (user controls when to verify)</li>
+<li>No dependency on Registry — Store can call <code>ping()</code> independently</li>
+</ul>
+<h3 id="62-registry-health">6.2 Registry Health<a class="headerlink" href="#62-registry-health" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Could add <code>Registry.ping()</code> to verify all registered backends</li>
+<li>Iterates all backends, calls <code>store.ping()</code> on each</li>
+<li>Returns first error or succeeds silently</li>
+</ul>
+<h3 id="63-observability-integration">6.3 Observability Integration<a class="headerlink" href="#63-observability-integration" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ext.observe</code> hooks can wrap health checks for monitoring</li>
+<li>OpenTelemetry span for <code>ping()</code> call</li>
+<li>Metrics: health check latency, failure rate</li>
+<li>Logging: debug-level entry/exit, info-level on failure</li>
+</ul>
+<h3 id="64-no-tight-coupling">6.4 No Tight Coupling<a class="headerlink" href="#64-no-tight-coupling" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Health check is independent of existing Store/Backend methods</li>
+<li>Does not affect caching (<code>ext.cache</code>)</li>
+<li>Does not interact with batch operations</li>
+<li>Does not require capabilities (not capability-gated)</li>
+</ul>
 <hr />
-<h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
-<h3 id="s3pa-012-read-via-pyarrow">S3PA-012: Read Via PyArrow<a class="headerlink" href="#s3pa-012-read-via-pyarrow" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>read()</code> uses <code>open_input_file()</code> (seekable <code>RandomAccessFile</code>) and returns the stream wrapped in <code>_ErrorMappingStream</code> without <code>BufferedReader</code>. <code>read_bytes()</code> uses <code>open_input_stream()</code> and reads all bytes directly. <code>readline()</code> uses a chunked scan (<code>_READLINE_CHUNK</code>-sized reads) with seek-back for over-read bytes, requiring a seekable stream from <code>open_input_file</code>.
-<strong>Rationale:</strong> PyArrow's C++ I/O path provides higher throughput than s3fs for large files. Removing the <code>BufferedReader</code> eliminates a double-copy per chunk on the streaming read path (RFC-0003). The chunked <code>readline()</code> avoids the pathological byte-at-a-time fallback from <code>RawIOBase</code>.
-<strong>Note:</strong> Unlike other backends which return <code>io.BufferedReader</code>, S3-PyArrow returns a raw <code>_ErrorMappingStream(RawIOBase)</code>. This means <code>io.TextIOWrapper(stream)</code> requires wrapping in <code>io.BufferedReader</code> first. The spec (SIO-001 in 008-streaming-io.md) only requires <code>BinaryIO</code>, so this is valid, but callers should not assume <code>BufferedIOBase</code>.</p>
-<h3 id="s3pa-013-write-via-pyarrow">S3PA-013: Write Via PyArrow<a class="headerlink" href="#s3pa-013-write-via-pyarrow" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write()</code> and <code>write_atomic()</code> use <code>pyarrow.fs.S3FileSystem.open_output_stream()</code> for data transfer. Existence checks use s3fs.
-<strong>Postconditions:</strong> Same as S3-010 -- S3 PUT is inherently atomic, so <code>write_atomic</code> delegates to <code>write</code>.</p>
-<h3 id="s3pa-014-copy-via-pyarrow">S3PA-014: Copy Via PyArrow<a class="headerlink" href="#s3pa-014-copy-via-pyarrow" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>copy(src, dst)</code> uses <code>pyarrow.fs.S3FileSystem.copy_file()</code> for server-side copy. Existence checks use s3fs.</p>
-<h3 id="s3pa-015-move-via-hybrid">S3PA-015: Move Via Hybrid<a class="headerlink" href="#s3pa-015-move-via-hybrid" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>move(src, dst)</code> uses s3fs for existence checks, PyArrow for the copy step, and s3fs for the delete step.
-<strong>Postconditions:</strong> Same as S3-013 -- not atomic; if copy succeeds but delete fails, both objects exist.</p>
-<h3 id="s3pa-016-delete-via-s3fs">S3PA-016: Delete Via s3fs<a class="headerlink" href="#s3pa-016-delete-via-s3fs" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>delete()</code> and <code>delete_folder()</code> use s3fs, same as S3Backend.</p>
-<h3 id="s3pa-017-listing-via-s3fs">S3PA-017: Listing Via s3fs<a class="headerlink" href="#s3pa-017-listing-via-s3fs" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>list_files()</code>, <code>list_folders()</code>, <code>get_file_info()</code>, <code>get_folder_info()</code> use s3fs, same as S3Backend.</p>
+<h2 id="7-testing-strategy">7. Testing Strategy<a class="headerlink" href="#7-testing-strategy" title="Permanent link">&para;</a></h2>
+<h3 id="71-unit-tests-per-backend">7.1 Unit Tests per Backend<a class="headerlink" href="#71-unit-tests-per-backend" title="Permanent link">&para;</a></h3>
+<p>For each backend, test:
+- <strong>Success case:</strong> Healthy backend → no exception
+- <strong>PermissionDenied:</strong> Invalid credentials → raises <code>PermissionDenied</code>
+- <strong>NotFound:</strong> Missing bucket/path → raises <code>NotFound</code>
+- <strong>BackendUnavailable:</strong> Mock network failure → raises <code>BackendUnavailable</code></p>
+<h3 id="72-conformance-tests">7.2 Conformance Tests<a class="headerlink" href="#72-conformance-tests" title="Permanent link">&para;</a></h3>
+<p>In <code>test_conformance.py</code>, add:
+- <code>test_check_health_success()</code> — all backends pass when healthy
+- <code>test_check_health_missing_root()</code> — NotFound when root missing (skip Memory)
+- Error injection tests per backend via mock</p>
+<h3 id="73-integration-tests">7.3 Integration Tests<a class="headerlink" href="#73-integration-tests" title="Permanent link">&para;</a></h3>
+<ul>
+<li>DockerBackend fixtures: real MinIO, Azurite, SFTP</li>
+<li>Verify actual latency / performance (should be &lt; 1 second)</li>
+</ul>
+<h3 id="74-examples">7.4 Examples<a class="headerlink" href="#74-examples" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Simple script: <code>examples/health_check.py</code> or section in existing example</li>
+<li>Shows Store + health check pattern for startup validation</li>
+</ul>
 <hr />
-<h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<h3 id="s3pa-018-dual-error-context-managers">S3PA-018: Dual Error Context Managers<a class="headerlink" href="#s3pa-018-dual-error-context-managers" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Two error-mapping context managers exist:
-- <code>_pyarrow_errors(path)</code>: catches <code>OSError</code> / <code>ArrowInvalid</code> from PyArrow operations and maps to remote_store errors.
-- <code>_s3fs_errors(path)</code>: catches s3fs/botocore exceptions, same mapping as S3Backend.</p>
-<p><strong>Postconditions:</strong> <code>backend</code> attribute is set to <code>"s3-pyarrow"</code> on all mapped errors.</p>
-<h3 id="s3pa-019-no-native-exception-leakage">S3PA-019: No Native Exception Leakage<a class="headerlink" href="#s3pa-019-no-native-exception-leakage" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No PyArrow, s3fs, botocore, or aiobotocore exceptions propagate to callers. All are mapped to <code>remote_store</code> error types per BE-021.</p>
+<h2 id="8-specification-outline-for-adr-spec">8. Specification Outline (for ADR / Spec)<a class="headerlink" href="#8-specification-outline-for-adr-spec" title="Permanent link">&para;</a></h2>
+<h3 id="spec-structure">Spec Structure<a class="headerlink" href="#spec-structure" title="Permanent link">&para;</a></h3>
+<p><strong>Spec:</strong> <code>sdd/specs/025-health-check.md</code> (tentative number)</p>
+<p><strong>Sections:</strong></p>
+<ol>
+<li>Overview — use cases and design constraints</li>
+<li>Store API — <code>store.ping()</code> signature and semantics</li>
+<li>Backend ABC — <code>Backend.check_health()</code> contract</li>
+<li>Per-backend implementation — strategies and error mapping</li>
+<li>Error Handling — detailed error types and conditions</li>
+<li>Integration — observability, Registry, lifecycle</li>
+<li>Non-requirements — what health checks do NOT do</li>
+<li>Testing — unit, conformance, integration, examples</li>
+</ol>
+<p><strong>Traceability Markers:</strong>
+- PING-001 through PING-NNN for spec requirements
+- Store method: STORE-016 (verify at spec authoring; note: STORE-015 is duplicated in spec 001-store-api.md — assigned to both <code>native_path()</code> and <code>glob()</code>)
+- Backend method: BE-026 (next available; BE-025 is <code>native_path()</code>)</p>
 <hr />
-<h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
-<h3 id="s3pa-020-close">S3PA-020: close()<a class="headerlink" href="#s3pa-020-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>close()</code> releases both the PyArrow and s3fs filesystem instances.
-<strong>Postconditions:</strong> Safe to call multiple times.</p>
-<h3 id="s3pa-021-dual-unwrap">S3PA-021: Dual unwrap()<a class="headerlink" href="#s3pa-021-dual-unwrap" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>unwrap()</code> supports two type hints:
-- <code>unwrap(pyarrow.fs.S3FileSystem)</code> returns the PyArrow filesystem.
-- <code>unwrap(s3fs.S3FileSystem)</code> returns the s3fs filesystem.
-<strong>Raises:</strong> <code>CapabilityNotSupported</code> for any other type hint.
-<strong>Rationale:</strong> Escape hatch for users who need library-specific features.</p>
+<h2 id="9-implementation-roadmap">9. Implementation Roadmap<a class="headerlink" href="#9-implementation-roadmap" title="Permanent link">&para;</a></h2>
+<h3 id="phase-1-core">Phase 1: Core<a class="headerlink" href="#phase-1-core" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Add <code>Backend.check_health()</code> ABC method (all 6 backends implement)</li>
+<li>Implement per-backend logic (Local, S3, S3-PyArrow, SFTP, Azure)</li>
+<li>Add <code>Store.ping()</code> delegation</li>
+<li>Unit tests per backend + conformance suite</li>
+<li>Spec + ADR</li>
+</ol>
+<h3 id="phase-2-observability">Phase 2: Observability<a class="headerlink" href="#phase-2-observability" title="Permanent link">&para;</a></h3>
+<ol>
+<li><code>ext.observe</code> wiring (hooks for health checks)</li>
+<li>OpenTelemetry span support</li>
+<li>Example: <code>examples/health_check.py</code></li>
+</ol>
+<h3 id="phase-3-registry-integration">Phase 3: Registry Integration<a class="headerlink" href="#phase-3-registry-integration" title="Permanent link">&para;</a></h3>
+<ol>
+<li><code>Registry.ping_all()</code> or similar (optional convenience method)</li>
+<li>Docs integration</li>
+</ol>
 <hr />
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<h3 id="s3pa-022-client-options-passthrough">S3PA-022: Client Options Passthrough<a class="headerlink" href="#s3pa-022-client-options-passthrough" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as S3-021. The <code>client_options</code> dict is merged into the s3fs configuration.
-<strong>Postconditions:</strong> <code>client_options</code> applies to s3fs only. PyArrow configuration is derived from the explicit constructor parameters.</p>
+<h2 id="10-known-considerations-and-open-questions">10. Known Considerations and Open Questions<a class="headerlink" href="#10-known-considerations-and-open-questions" title="Permanent link">&para;</a></h2>
+<h3 id="101-should-health-checks-be-capability-gated">10.1 Should health checks be capability-gated?<a class="headerlink" href="#101-should-health-checks-be-capability-gated" title="Permanent link">&para;</a></h3>
+<p><strong>Decision:</strong> No.</p>
+<p><strong>Rationale:</strong>
+- Health checks are orthogonal to data operations
+- All backends can provide some form of health verification
+- Failure should never be due to missing capability, only backend unavailability</p>
+<h3 id="102-should-health-checks-cache-results">10.2 Should health checks cache results?<a class="headerlink" href="#102-should-health-checks-cache-results" title="Permanent link">&para;</a></h3>
+<p><strong>Decision:</strong> No, always make a live call.</p>
+<p><strong>Rationale:</strong>
+- Health checks are meant to detect transient failures
+- Caching would defeat the purpose
+- Caller can implement their own caching if needed
+- <code>ext.cache</code> applies to data operations, not health checks</p>
+<h3 id="103-what-about-timeout-configuration">10.3 What about timeout configuration?<a class="headerlink" href="#103-what-about-timeout-configuration" title="Permanent link">&para;</a></h3>
+<p><strong>Decision:</strong> Deferred; use backend's default timeout.</p>
+<p><strong>Rationale:</strong>
+- Adding timeout parameters complicates the API
+- Backends already have timeout configuration
+- Can revisit if customers need tunable timeouts</p>
+<h3 id="104-should-health-checks-verify-read-or-write-capability">10.4 Should health checks verify read or write capability?<a class="headerlink" href="#104-should-health-checks-verify-read-or-write-capability" title="Permanent link">&para;</a></h3>
+<p><strong>Decision:</strong> Read only (minimal verification).</p>
+<p><strong>Rationale:</strong>
+- Write verification would require creating/deleting test files (side effects)
+- Read (existence, permissions) is sufficient for startup gates and liveness probes
+- Users can test write capability separately if needed</p>
+<h3 id="105-return-type-void-none-vs-bool-vs-object">10.5 Return type: void (None) vs. bool vs. object?<a class="headerlink" href="#105-return-type-void-none-vs-bool-vs-object" title="Permanent link">&para;</a></h3>
+<p><strong>Decision:</strong> <code>None</code> (void).</p>
+<p><strong>Rationale:</strong>
+- Consistent with remote-store error convention: success = return silently, failure = raise
+- Boolean return would require catch-all exception for unhealthy state
+- <code>None</code> is idiomatic Python for "operation succeeded"</p>
+<hr />
+<h2 id="11-comparison-with-other-libraries">11. Comparison with Other Libraries<a class="headerlink" href="#11-comparison-with-other-libraries" title="Permanent link">&para;</a></h2>
+<h3 id="aws-sdk-boto3">AWS SDK (<code>boto3</code>)<a class="headerlink" href="#aws-sdk-boto3" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>s3_client.head_bucket()</code> — validates bucket access</li>
+<li>Returns response metadata; no exception = success</li>
+<li>remote-store aligns with this pattern</li>
+</ul>
+<h3 id="google-cloud-google-cloud-storage">Google Cloud (<code>google-cloud-storage</code>)<a class="headerlink" href="#google-cloud-google-cloud-storage" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>bucket.exists()</code> — checks bucket existence</li>
+<li>Similar lightweight metadata call</li>
+</ul>
+<h3 id="azure-sdk">Azure SDK<a class="headerlink" href="#azure-sdk" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ContainerClient.exists()</code> / <code>get_container_properties()</code></li>
+<li>Both lightweight, non-destructive</li>
+</ul>
+<h3 id="fsspec-via-s3fs-adlfs-paramiko">fsspec (via s3fs, adlfs, paramiko)<a class="headerlink" href="#fsspec-via-s3fs-adlfs-paramiko" title="Permanent link">&para;</a></h3>
+<ul>
+<li>No standard health check interface</li>
+<li>Each provider has its own validation mechanism</li>
+<li>remote-store standardizing across backends is an improvement</li>
+</ul>
+<hr />
+<h2 id="12-summary-and-recommendations">12. Summary and Recommendations<a class="headerlink" href="#12-summary-and-recommendations" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Method names:</strong> <code>Store.ping()</code> (user-facing), <code>Backend.check_health()</code> (implementation)</li>
+<li><strong>Error types:</strong> Use existing <code>PermissionDenied</code>, <code>NotFound</code>, <code>BackendUnavailable</code></li>
+<li><strong>Implementation:</strong> Per-backend lightweight checks (HeadBucket, stat, exists calls)</li>
+<li><strong>No new capabilities:</strong> Health checks are always available</li>
+<li><strong>Non-destructive:</strong> Verify without side effects</li>
+<li><strong>Testing:</strong> Unit + conformance + integration against real backends</li>
+<li><strong>Spec:</strong> Separate spec document (025-health-check.md)</li>
+<li><strong>Integration:</strong> Optional observability hooks via <code>ext.observe</code></li>
+<li><strong>No caching, no timeouts, no return value</strong> — keep API minimal and idiomatic</li>
+</ol>
+<hr />
+<h2 id="appendix-pseudocode">Appendix: Pseudocode<a class="headerlink" href="#appendix-pseudocode" title="Permanent link">&para;</a></h2>
+<h3 id="storeping">Store.ping()<a class="headerlink" href="#storeping" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify backend is reachable and credentials work.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backend</span><span class="o">.</span><span class="n">check_health</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="backendcheck_health-abc">Backend.check_health() (ABC)<a class="headerlink" href="#backendcheck_health-abc" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@abstractmethod</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="sd">    Verify the backend is healthy (reachable, credentials valid).</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="sd">    Raises</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="sd">    ------</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="sd">    PermissionDenied</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="sd">        Credentials invalid or insufficient.</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="sd">    NotFound</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="sd">        Root path / container / filesystem does not exist.</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="sd">    BackendUnavailable</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="sd">        Backend unreachable (network, timeout, etc.).</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+<h3 id="localbackendcheck_health">LocalBackend.check_health()<a class="headerlink" href="#localbackendcheck_health" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify root path exists and is readable.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>            <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Root path does not exist: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">R_OK</span><span class="p">):</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>            <span class="k">raise</span> <span class="n">PermissionDenied</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No read access to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>        <span class="c1"># Refine based on errno or re-raise as BackendUnavailable</span>
+</code></pre></div>
+<h3 id="s3backendcheck_health">S3Backend.check_health()<a class="headerlink" href="#s3backendcheck_health" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify bucket exists and credentials work via HeadBucket.&quot;&quot;&quot;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="p">():</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="c1"># Option A: underlying botocore client</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_fs</span><span class="o">.</span><span class="n">s3</span><span class="o">.</span><span class="n">head_bucket</span><span class="p">(</span><span class="n">Bucket</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_bucket</span><span class="p">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="c1"># Option B: s3fs info call</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>        <span class="c1"># self._fs.info(self._bucket)</span>
+</code></pre></div>
+<h3 id="s3pyarrowbackendcheck_health">S3PyArrowBackend.check_health()<a class="headerlink" href="#s3pyarrowbackendcheck_health" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify bucket exists and credentials work via PyArrow metadata.&quot;&quot;&quot;</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="p">():</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_pa_fs</span><span class="o">.</span><span class="n">get_file_info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_bucket</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<p><strong>Author notes:</strong> This research provides a complete blueprint for implementing health checks. The design is minimal, portable, and consistent with the existing architecture. No blocking issues identified.</p>
 
 
 
