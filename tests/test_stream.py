@@ -72,6 +72,54 @@ class TestErrorMappingStreamPassthrough:
         assert buf == b"hello"
 
 
+class _ParamikoLikeStream(io.RawIOBase):
+    """A stream that returns None from seek() like paramiko SFTPFile."""
+
+    def __init__(self, data: bytes) -> None:
+        super().__init__()
+        self._buf = io.BytesIO(data)
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
+        return self._buf.readinto(b)  # type: ignore[arg-type]
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        self._buf.seek(offset, whence)
+        return None  # type: ignore[return-value]  # paramiko behavior
+
+    def tell(self) -> int:
+        return self._buf.tell()
+
+
+class TestSeekTellNoneFallback:
+    """seek()/tell() None-fallback for paramiko-style streams."""
+
+    def test_seek_returns_position_when_inner_returns_none(self) -> None:
+        inner = _ParamikoLikeStream(b"hello world")
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
+        stream.read(5)
+        pos = stream.seek(0)
+        assert pos == 0
+        assert stream.tell() == 0
+
+    def test_seek_returns_position_for_nonzero_offset(self) -> None:
+        inner = _ParamikoLikeStream(b"hello world")
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
+        pos = stream.seek(3)
+        assert pos == 3
+
+    def test_tell_returns_int_when_inner_returns_none(self) -> None:
+        """tell() guards against None even though paramiko returns int."""
+        inner = io.BytesIO(b"hello")
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
+        stream.read(3)
+        # Patch tell to return None to exercise the guard
+        inner.tell = lambda: None  # type: ignore[assignment]
+        assert stream.tell() == 0
+
+
 class _FailingStream(io.RawIOBase):
     """A stream that raises an OSError on every operation."""
 

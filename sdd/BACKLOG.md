@@ -584,16 +584,16 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
 - [x] **ID-049 — Enable GitHub Vigilant Mode** (post-v0.15.0)
   Commit signing with SSH for supply chain transparency. Soft enforcement
   (visual badges, no blocking of unsigned commits). Ops-only, no code changes.
+  - Done: Vigilant Mode enabled on maintainer GitHub account. Local SSH signing
+    configured. CONTRIBUTING.md § Code Signing added with setup instructions.
+    Master merge commits show "Verified" badge.
+  - Future: Consider SIGNING.md verification guide if moving to hard enforcement.
 
 - [x] **ID-050 — End-to-end integration tests against Docker backends** (post-v0.15.0)
   19 e2e tests: medallion pipeline (4 backends), SFTP workflow (5 tests:
   check/fetch/place, incremental pickup, folders, atomic write, overwrite),
   cross-backend transfer (10 tests: S3/SFTP/Azure pairs with progress +
-  overwrite guard; SFTP-to-Azure xfail). CI: MinIO + Azurite + SFTP Docker.
-  - Done: Vigilant Mode enabled on maintainer GitHub account. Local SSH signing
-    configured. CONTRIBUTING.md § Code Signing added with setup instructions.
-    Master merge commits show "Verified" badge.
-  - Future: Consider SIGNING.md verification guide if moving to hard enforcement.
+  overwrite guard). CI: MinIO + Azurite + SFTP Docker.
 
 - [x] **ID-051 — Sweep stale backlog references in docs and guides** (post-v0.15.0)
   Swept all docs-src, guides, and examples for stale backlog references.
