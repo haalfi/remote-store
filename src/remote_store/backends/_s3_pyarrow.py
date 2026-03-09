@@ -436,8 +436,15 @@ class S3PyArrowBackend(Backend):
             if self._retry is not None:
                 from pyarrow.fs import AwsStandardS3RetryStrategy
 
+                rp = self._retry
+                if rp.backoff_base != 1.0 or rp.backoff_max != 60.0 or rp.jitter != 1.0 or rp.timeout is not None:
+                    log.debug(
+                        "S3-PyArrow retry: backoff_base, backoff_max, jitter, timeout "
+                        "are not mappable to AwsStandardS3RetryStrategy; "
+                        "only max_attempts is used",
+                    )
                 kwargs["retry_strategy"] = AwsStandardS3RetryStrategy(
-                    max_attempts=self._retry.max_attempts,
+                    max_attempts=rp.max_attempts,
                 )
             self._pa_fs_instance = PyArrowS3(**kwargs)
         return self._pa_fs_instance

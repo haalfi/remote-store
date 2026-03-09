@@ -794,6 +794,65 @@ class TestRetryBackendConstructors:
 # endregion
 
 
+# region: RetryPolicy backend mapping (RET-011, RET-012)
+
+
+class TestRetryBackendMapping:
+    """RET-011, RET-012: Backends correctly translate RetryPolicy to native config."""
+
+    @pytest.mark.spec("RET-012")
+    def test_azure_build_retry_mapping(self) -> None:
+        from remote_store.backends._azure import AzureBackend
+
+        rp = RetryPolicy(max_attempts=5, backoff_base=2.0, jitter=3.0)
+        backend = AzureBackend(
+            container="c", connection_string="DefaultEndpointsProtocol=http;AccountName=a;", retry=rp
+        )
+        azure_retry = backend._build_azure_retry()
+        assert azure_retry.total_retries == 4  # max_attempts - 1
+        assert azure_retry.initial_backoff == 2
+        assert azure_retry.random_jitter_range == 3
+
+    @pytest.mark.spec("RET-012")
+    def test_azure_build_retry_rounds_fractional(self) -> None:
+        """Fractional backoff_base is rounded, not truncated to zero."""
+        from remote_store.backends._azure import AzureBackend
+
+        rp = RetryPolicy(max_attempts=3, backoff_base=0.5, jitter=0.7)
+        backend = AzureBackend(
+            container="c", connection_string="DefaultEndpointsProtocol=http;AccountName=a;", retry=rp
+        )
+        azure_retry = backend._build_azure_retry()
+        # 0.5 rounds to 0, but max(1, ...) ensures at least 1
+        assert azure_retry.initial_backoff == 1
+        # 0.7 rounds to 1
+        assert azure_retry.random_jitter_range == 1
+
+    @pytest.mark.spec("RET-012")
+    def test_azure_build_retry_none(self) -> None:
+        from remote_store.backends._azure import AzureBackend
+
+        backend = AzureBackend(container="c", connection_string="DefaultEndpointsProtocol=http;AccountName=a;")
+        assert backend._build_azure_retry() is None
+
+    @pytest.mark.spec("RET-011")
+    def test_s3_retry_botocore_config(self) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        rp = RetryPolicy(max_attempts=7)
+        backend = S3Backend(bucket="b", retry=rp)
+        # Force lazy init to build the config
+        fs = backend._fs
+        config = fs.client_kwargs.get("config")
+        assert config is not None
+        assert config.retries["max_attempts"] == 7
+        assert config.retries["mode"] == "standard"
+        backend.close()
+
+
+# endregion
+
+
 # region: RetryPolicy top-level export (RET-020)
 
 

@@ -116,8 +116,9 @@ in backend config sections into a `RetryPolicy` instance.
 **Invariant:** `AzureBackend` accepts `retry: RetryPolicy | None = None`.
 **Mapping:**
 - `max_attempts` -> `ExponentialRetry(retry_total=max_attempts - 1)`
-- `backoff_base` -> `ExponentialRetry(initial_backoff=backoff_base)`
-- `jitter` -> `ExponentialRetry(random_jitter_range=jitter)`
+- `backoff_base` -> `ExponentialRetry(initial_backoff=max(1, round(backoff_base)))`
+  (Azure expects integer seconds; sub-second values are rounded up to 1)
+- `jitter` -> `ExponentialRetry(random_jitter_range=round(jitter))`
 **Postconditions:**
 - When `retry is None`, uses Azure SDK defaults.
 - When `retry` is provided, creates an `ExponentialRetry` policy and
