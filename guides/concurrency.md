@@ -6,7 +6,7 @@ remote-store wraps multiple storage backends behind a single API, but each backe
 
 When you call `store.write(path, data, overwrite=False)`, the backend checks whether the file exists and then writes it. These are two separate operations -- a classic **Time-Of-Check-to-Time-Of-Use (TOCTOU)** race window:
 
-```
+```text
 Thread A: exists("report.csv") -> False
 Thread B: exists("report.csv") -> False    # concurrent check
 Thread A: write("report.csv", data_a)      # succeeds

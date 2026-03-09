@@ -151,7 +151,7 @@ def to_key(self, path: str) -> str:
 ```
 
 **Sequence:**
-```
+```text
 native_path  →  backend.to_key()  →  strip root_path prefix  →  store-relative key
 ```
 

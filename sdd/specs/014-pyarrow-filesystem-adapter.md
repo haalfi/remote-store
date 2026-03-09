@@ -258,7 +258,7 @@ a small number of known paths.
 
 **Mapping:**
 
-```
+```text
 selector.base_dir     → store path (after leading-slash strip)
 selector.recursive    → list_files(path, recursive=True/False)
 selector.allow_not_found → if True, return [] for missing dir; else raise

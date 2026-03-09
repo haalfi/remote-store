@@ -32,7 +32,7 @@ its 0.82x ratio reflects a different bottleneck (not addressed here).
 
 ### Current chain (2 extra copies per chunk)
 
-```
+```text
 BufferedReader.read(n)
   -> readinto(8 KB internal buffer)
     -> _ErrorMappingStream.readinto(b)
@@ -47,7 +47,7 @@ caller.
 
 ### Target chain (1 copy)
 
-```
+```text
 _ErrorMappingStream.read(n)
   -> _PyArrowBinaryIO.read(n)
     -> self._pa.read(n)                   # returns bytes directly from C++
