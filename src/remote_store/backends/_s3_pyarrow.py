@@ -154,6 +154,10 @@ class S3PyArrowBackend(Backend):
 
     # region: public methods
 
+    def check_health(self) -> None:
+        with self._pyarrow_errors():
+            self._pa_fs.get_file_info(self._bucket)
+
     def to_key(self, native_path: str) -> str:
         prefix = f"{self._bucket}/"
         if native_path.startswith(prefix):

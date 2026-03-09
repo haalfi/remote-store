@@ -11,14 +11,6 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [ ] **ID-054 — `store.ping()` / backend health check**
-  A lightweight method (`store.ping()` or `backend.check_health()`) that
-  verifies the backend is reachable and credentials are valid. Enables
-  startup gates ("fail before accepting traffic") and liveness probes
-  (Kubernetes, etc.). Per-backend: S3 HeadBucket, SFTP stat, local
-  os.access, Azure GetProperties, Memory always-ok.
-  - Done: research complete (`sdd/research/research-health-check.md`, PR #155).
-
 - [ ] **ID-055 — `iter_children()` — combined file + folder listing**
   A single call returning both files and subfolders in one pass, avoiding
   two round-trips. Most backends (S3 `list_objects_v2` with `Delimiter`,
@@ -579,6 +571,14 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   `025-retry-policy.md`, `BackendConfig.retry` field, `from_dict()` parsing,
   Registry passthrough. User guide (`guides/retry.md`), example
   (`examples/retry_policy.py`), docs page. 39 tests.
+
+- [x] **ID-054 — `store.ping()` / backend health check** (post-v0.15.0)
+  `Store.ping()` delegates to `Backend.check_health()` -- lightweight,
+  non-destructive connectivity verification. Per-backend: Local
+  (`exists` + `os.access`), S3 (`head_bucket`), S3-PyArrow
+  (`get_file_info`), SFTP (`stat`), Azure (`get_container_properties`),
+  Memory (no-op). `ext.observe` `on_ping` hook. Spec `026-health-check.md`
+  (PING-001 through PING-010). Guide, example, docs page.
 
 - [x] **ID-050 — End-to-end integration tests against Docker backends** (post-v0.15.0)
   19 e2e tests: medallion pipeline (4 backends), SFTP workflow (5 tests:

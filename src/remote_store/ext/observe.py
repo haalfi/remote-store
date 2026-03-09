@@ -119,6 +119,7 @@ _OP_HOOK_MAP: dict[str, str] = {
     "exists": "on_list",
     "is_file": "on_list",
     "is_folder": "on_list",
+    "ping": "on_ping",
 }
 
 
@@ -233,6 +234,11 @@ class ObservedStore(Store):
     # endregion
 
     # region: public method overrides
+    def ping(self) -> None:  # noqa: D401
+        """Delegate ping to inner store."""
+        with self._observe_op("ping", "", {}):
+            self._inner.ping()
+
     def close(self) -> None:  # noqa: D401
         """Delegate close to inner store."""
         with self._observe_op("close", "", {}):
@@ -359,6 +365,7 @@ def observe(
     on_copy: Callable[[StoreEvent], None] | None = None,
     on_move: Callable[[StoreEvent], None] | None = None,
     on_list: Callable[[StoreEvent], None] | None = None,
+    on_ping: Callable[[StoreEvent], None] | None = None,
     on_error: Callable[[StoreEvent], None] | None = None,
     on_any: Callable[[StoreEvent], None] | None = None,
     around: Callable[[str, str, str], AbstractContextManager[None]] | None = None,
@@ -373,6 +380,7 @@ def observe(
     :param on_move: Fires after move.
     :param on_list: Fires after list_files/list_folders/glob/get_file_info/
         get_folder_info/exists/is_file/is_folder.
+    :param on_ping: Fires after ping.
     :param on_error: Fires on any operation that raises an exception.
     :param on_any: Fires after every operation (catch-all).
     :param around: Context-manager factory ``(op, path, backend) -> CM``
@@ -386,6 +394,7 @@ def observe(
         "on_copy": on_copy,
         "on_move": on_move,
         "on_list": on_list,
+        "on_ping": on_ping,
         "on_error": on_error,
         "on_any": on_any,
     }

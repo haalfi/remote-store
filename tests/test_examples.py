@@ -540,3 +540,11 @@ class TestRetryPolicy:
 
         # Smoke test -- demo prints output and exercises validation
         demo()
+
+
+class TestHealthCheck:
+    @pytest.mark.spec("PING-001")
+    def test_demo(self, memory_store: Store):
+        from examples.health_check import demo
+
+        demo(memory_store)

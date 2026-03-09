@@ -230,6 +230,18 @@ class Backend(abc.ABC):
         """
         return path
 
+    def check_health(self) -> None:  # noqa: B027
+        """Verify the backend is reachable and credentials are valid.
+
+        The default implementation is a no-op (always succeeds). Backends
+        override this to perform a lightweight, non-destructive connectivity
+        check using the cheapest possible read-only operation.
+
+        :raises PermissionDenied: If credentials are invalid.
+        :raises NotFound: If the bucket, container, or root path does not exist.
+        :raises BackendUnavailable: If the backend cannot be reached.
+        """
+
     def close(self) -> None:  # noqa: B027
         """Release resources. Default is a no-op."""
 

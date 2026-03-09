@@ -51,6 +51,20 @@ class LocalBackend(Backend):
 
     # region: public methods
 
+    def check_health(self) -> None:
+        if not self._root.exists():
+            raise NotFound(
+                f"Root directory not found: {self._root}",
+                path=str(self._root),
+                backend=self.name,
+            )
+        if not os.access(self._root, os.R_OK):
+            raise PermissionDenied(
+                f"Root directory not readable: {self._root}",
+                path=str(self._root),
+                backend=self.name,
+            )
+
     def to_key(self, native_path: str) -> str:
         root_str = str(self._root)
         # Normalize the input to use forward slashes for comparison
