@@ -84,7 +84,7 @@ The operation must be **non-destructive** (no side effects), **lightweight** (mi
 **Method:** PyArrow `S3FileSystem.get_file_info()` on bucket root
 
 - Uses PyArrow's native `S3FileSystem`, not boto3
-- `self._fs.get_file_info(self._bucket_name)` returns lightweight metadata
+- `self._fs.get_file_info(self._bucket)` returns lightweight metadata
 - Validates bucket exists and credentials work
 
 **Implementation Notes:**
