@@ -1,467 +1,467 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/</loc>
+         <loc>https://docs.remotestore.dev/dev/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/SUMMARY/</loc>
+         <loc>https://docs.remotestore.dev/dev/SUMMARY/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/architecture/</loc>
+         <loc>https://docs.remotestore.dev/dev/architecture/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/batch-operations/</loc>
+         <loc>https://docs.remotestore.dev/dev/batch-operations/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/cache/</loc>
+         <loc>https://docs.remotestore.dev/dev/cache/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/capabilities-matrix/</loc>
+         <loc>https://docs.remotestore.dev/dev/capabilities-matrix/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/changelog/</loc>
+         <loc>https://docs.remotestore.dev/dev/changelog/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/choosing-a-backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/choosing-a-backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/concurrency/</loc>
+         <loc>https://docs.remotestore.dev/dev/concurrency/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/contributing/</loc>
+         <loc>https://docs.remotestore.dev/dev/contributing/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/data-lake-patterns/</loc>
+         <loc>https://docs.remotestore.dev/dev/data-lake-patterns/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/development-story/</loc>
+         <loc>https://docs.remotestore.dev/dev/development-story/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/extensions/</loc>
+         <loc>https://docs.remotestore.dev/dev/extensions/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/further-reading/</loc>
+         <loc>https://docs.remotestore.dev/dev/further-reading/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/getting-started/</loc>
+         <loc>https://docs.remotestore.dev/dev/getting-started/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/glob-pattern-matching/</loc>
+         <loc>https://docs.remotestore.dev/dev/glob-pattern-matching/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/migration/</loc>
+         <loc>https://docs.remotestore.dev/dev/migration/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/observe/</loc>
+         <loc>https://docs.remotestore.dev/dev/observe/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/performance/</loc>
+         <loc>https://docs.remotestore.dev/dev/performance/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/pyarrow-adapter/</loc>
+         <loc>https://docs.remotestore.dev/dev/pyarrow-adapter/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/security-model/</loc>
+         <loc>https://docs.remotestore.dev/dev/security-model/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/transfer-operations/</loc>
+         <loc>https://docs.remotestore.dev/dev/transfer-operations/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/troubleshooting/</loc>
+         <loc>https://docs.remotestore.dev/dev/troubleshooting/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/capabilities/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/capabilities/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/config/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/config/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/errors/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/errors/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/ext-arrow/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/ext-arrow/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/ext-batch/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/ext-batch/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/ext-cache/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/ext-cache/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/ext-glob/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/ext-glob/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/ext-observe/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/ext-observe/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/ext-otel/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/ext-otel/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/ext-partition/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/ext-partition/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/ext-pydantic/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/ext-pydantic/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/ext-transfer/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/ext-transfer/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/models/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/models/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/path/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/path/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/registry/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/registry/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/api/store/</loc>
+         <loc>https://docs.remotestore.dev/dev/api/store/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/backends/</loc>
+         <loc>https://docs.remotestore.dev/dev/backends/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/backends/azure/</loc>
+         <loc>https://docs.remotestore.dev/dev/backends/azure/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/backends/local/</loc>
+         <loc>https://docs.remotestore.dev/dev/backends/local/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/backends/memory/</loc>
+         <loc>https://docs.remotestore.dev/dev/backends/memory/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/backends/s3-pyarrow/</loc>
+         <loc>https://docs.remotestore.dev/dev/backends/s3-pyarrow/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/backends/s3/</loc>
+         <loc>https://docs.remotestore.dev/dev/backends/s3/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/backends/sftp/</loc>
+         <loc>https://docs.remotestore.dev/dev/backends/sftp/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/design-spec/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/design-spec/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/process/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/process/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/adrs/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0001-architecture-store-registry-backends/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0001-architecture-store-registry-backends/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0002-config-resolution-no-merge/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0002-config-resolution-no-merge/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0003-fsspec-is-implementation-detail/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0003-fsspec-is-implementation-detail/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0004-empty-path-semantics/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0004-empty-path-semantics/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0005-native-path-resolution/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0005-native-path-resolution/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0006-documentation-architecture/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0006-documentation-architecture/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0007-docs-src-literate-nav/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0007-docs-src-literate-nav/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0008-extension-architecture/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0008-extension-architecture/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0009-glob-three-tier-design/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0009-glob-three-tier-design/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/adrs/0010-observe-proxy-pattern/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0010-observe-proxy-pattern/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/research/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/research/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/research/research-async-store-api/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/research/research-async-store-api/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/research/research-example-testing/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/research/research-example-testing/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/research/research-logging-monitoring-tracing/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/research/research-logging-monitoring-tracing/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/research/research-retry-policy/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/research/research-retry-policy/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/research/research-store-config/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/research/research-store-config/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/research/research-v1-communication-plan/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/research/research-v1-communication-plan/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/rfcs/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/rfcs/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/rfcs/rfc-0001-azure-backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0001-azure-backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/rfcs/rfc-0002-pyarrow-filesystem-adapter/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0002-pyarrow-filesystem-adapter/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/rfcs/rfc-0003-s3-pyarrow-read-optimization/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0003-s3-pyarrow-read-optimization/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/rfcs/rfc-0004-streaming-atomic-writes/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0004-streaming-atomic-writes/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/rfcs/rfc-template/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-template/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/001-store-api/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/001-store-api/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/002-registry-config/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/002-registry-config/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/003-backend-adapter-contract/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/003-backend-adapter-contract/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/004-path-model/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/004-path-model/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/005-error-model/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/005-error-model/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/006-streaming-io/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/006-streaming-io/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/007-atomic-writes/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/007-atomic-writes/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/008-s3-backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/008-s3-backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/009-sftp-backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/009-sftp-backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/010-native-path-resolution/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/010-native-path-resolution/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/011-s3-pyarrow-backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/011-s3-pyarrow-backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/012-azure-backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/012-azure-backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/013-memory-backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/013-memory-backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/014-pyarrow-filesystem-adapter/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/014-pyarrow-filesystem-adapter/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/015-store-child/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/015-store-child/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/016-ext-batch/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/016-ext-batch/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/017-ext-transfer/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/017-ext-transfer/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/018-glob/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/018-glob/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/019-ext-observe/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/019-ext-observe/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/020-credential-hygiene/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/020-credential-hygiene/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/021-config-loaders/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/021-config-loaders/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/022-streaming-atomic-writes/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/022-streaming-atomic-writes/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/023-ext-cache/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/023-ext-cache/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/design/specs/024-ext-partition/</loc>
+         <loc>https://docs.remotestore.dev/dev/design/specs/024-ext-partition/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/atomic-writes/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/atomic-writes/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/azure-backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/azure-backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/batch-operations/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/batch-operations/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/config-loaders/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/config-loaders/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/configuration/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/configuration/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/error-handling/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/error-handling/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/file-operations/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/file-operations/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/memory-backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/memory-backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/quickstart/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/quickstart/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/s3-backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/s3-backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/s3-pyarrow-backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/s3-pyarrow-backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/sftp-backend/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/sftp-backend/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/store-child/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/store-child/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/streaming-io/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/streaming-io/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
-         <loc>https://haalfi.github.io/remote-store/dev/examples/transfer-operations/</loc>
+         <loc>https://docs.remotestore.dev/dev/examples/transfer-operations/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
 </urlset>
