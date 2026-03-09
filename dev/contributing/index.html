@@ -4274,6 +4274,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#commit-signing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commit Signing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Commit Signing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup-ssh-signing-one-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup (SSH signing, one-time)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssh-agent-avoid-passphrase-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH agent (avoid passphrase prompts)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#code-style" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4661,6 +4711,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#commit-signing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commit Signing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Commit Signing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup-ssh-signing-one-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup (SSH signing, one-time)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssh-agent-avoid-passphrase-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH agent (avoid passphrase prompts)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#code-style" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5010,6 +5110,31 @@
 <a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>hatch<span class="w"> </span>run<span class="w"> </span>examples
 </code></pre></div>
 <p>All dev scripts are defined in <code>pyproject.toml</code> under <code>[tool.hatch.envs.default.scripts]</code>. Run <code>hatch run</code> to see available commands.</p>
+<h2 id="commit-signing">Commit Signing<a class="headerlink" href="#commit-signing" title="Permanent link">&para;</a></h2>
+<p>All commits should be signed for supply chain transparency. GitHub Vigilant
+Mode is enabled on the repository -- unsigned commits show as "Unverified".</p>
+<h3 id="setup-ssh-signing-one-time">Setup (SSH signing, one-time)<a class="headerlink" href="#setup-ssh-signing-one-time" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Tell Git to use SSH for signing</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>gpg.format<span class="w"> </span>ssh
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>user.signingkey<span class="w"> </span>~/.ssh/id_ed25519.pub
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>commit.gpgSign<span class="w"> </span><span class="nb">true</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>tag.gpgSign<span class="w"> </span><span class="nb">true</span>
+</code></pre></div>
+<p>Then upload your public key to GitHub as a <strong>Signing Key</strong> (not Authentication):
+Settings &gt; SSH and GPG keys &gt; New SSH key &gt; Key type: <strong>Signing Key</strong>.</p>
+<h3 id="ssh-agent-avoid-passphrase-prompts">SSH agent (avoid passphrase prompts)<a class="headerlink" href="#ssh-agent-avoid-passphrase-prompts" title="Permanent link">&para;</a></h3>
+<p>If your key has a passphrase, start the SSH agent so signing happens silently:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>ssh-agent<span class="w"> </span>-s<span class="k">)</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>ssh-add<span class="w"> </span>~/.ssh/id_ed25519
+</code></pre></div>
+<p>On Windows, you can also enable the OpenSSH Authentication Agent service
+(via <code>Set-Service ssh-agent -StartupType Automatic</code> in an elevated PowerShell)
+for persistence across sessions.</p>
+<h3 id="verification">Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;test&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>git<span class="w"> </span>commit-tree<span class="w"> </span>HEAD^<span class="o">{</span>tree<span class="o">}</span><span class="w"> </span>-S
+</code></pre></div>
+<p>If this returns a commit hash without prompting for a passphrase, signing is
+configured correctly.</p>
 <h2 id="code-style">Code Style<a class="headerlink" href="#code-style" title="Permanent link">&para;</a></h2>
 <p>See <a href="../design/design-spec/#11-code-style"><code>sdd/DESIGN.md</code> Section 11</a> for the full code style conventions.</p>
 <ul>
@@ -5092,9 +5217,9 @@
 <h3 id="how-to-bump">How to bump<a class="headerlink" href="#how-to-bump" title="Permanent link">&para;</a></h3>
 <p>Version is managed with <a href="https://github.com/callowayproject/bump-my-version"><code>bump-my-version</code></a>. It modifies <code>pyproject.toml</code>, <code>src/remote_store/__init__.py</code>, and <code>CITATION.cff</code> in-place without committing or tagging (configured in <code>pyproject.toml</code>). The release checklist below handles the commit and tag lifecycle.</p>
 <p>Quick reference for the command syntax:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w">   </span><span class="c1"># 0.4.1 → 0.4.2</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w">   </span><span class="c1"># 0.4.1 → 0.5.0</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w">   </span><span class="c1"># 0.4.1 → 1.0.0</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w">   </span><span class="c1"># 0.4.1 → 0.4.2</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w">   </span><span class="c1"># 0.4.1 → 0.5.0</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w">   </span><span class="c1"># 0.4.1 → 1.0.0</span>
 </code></pre></div>
 <h2 id="consistency-checklists">Consistency Checklists<a class="headerlink" href="#consistency-checklists" title="Permanent link">&para;</a></h2>
 <p>Documentation, examples, and metadata live in many places. Use these checklists to keep them in sync.</p>
