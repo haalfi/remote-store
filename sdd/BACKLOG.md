@@ -11,54 +11,7 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [x] **ID-051 — Sweep stale backlog references in docs and guides** (post-v0.15.0)
-  Swept all docs-src, guides, and examples for stale backlog references.
-  One stale item found and fixed: `guides/pyarrow-adapter.md` Limitations
-  section claimed Tier 1 was "only for S3-PyArrow" (stale since ID-037
-  shipped `native_path()` for all backends in v0.15.0). Data lake guide
-  "What comes next" section was already fixed in PR #146.
-
-- [x] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021** (post-v0.15.0)
-  Added `capabilities_and_errors.py` (spec 003: Capability enum, CapabilitySet,
-  supports/require, CapabilityNotSupported, error hierarchy with structured
-  attributes, to_key/native_path round-trip) and `path_model.py` (spec 004:
-  normalization rules, properties, / operator, ROOT sentinel, InvalidPath
-  exceptions, immutability, FileInfo.path usage). Specs 020 and 021 were
-  already covered by `configuration.py` and `config_loaders.py`.
-
-- [x] **ID-053 — Fix code block highlighting in docs** (post-v0.15.0)
-  Audited all markdown in docs-src, guides, specs, ADRs, and RFCs for bare
-  opening code fences (` ``` ` without language tag). Found 13 actual bare
-  openers across 11 files (original estimate of ~135 was inflated by counting
-  closing fences). All 13 fixed with explicit `text` tags (ASCII diagrams,
-  flow sequences, directory trees, output examples). No bare fences in Python
-  source docstrings. All Python code blocks in docs already had `python` tags.
-
-- [x] **ID-052 — Custom domain: remotestore.dev** (post-v0.15.0)
-  Registered `remotestore.dev` with redirect to GitHub project home.
-  DNS CNAME points `docs.remotestore.dev` to `remote-store.readthedocs.io`.
-  **Step 1 [x]:** Updated all user-facing URLs across the repo: `pyproject.toml`
-  Homepage/Documentation, `CITATION.cff`, conda recipe, README (badge + 14 deep
-  links), CONTRIBUTING release checklist, release skill, DOCUMENTATION.md
-  canonical URL policy, data lake guide, repo_stats.py label. Historical
-  references (CHANGELOG, BACKLOG done items, research docs) left as-is.
-  **Step 2 [x]:** Configured `docs.remotestore.dev` as canonical docs URL.
-  RTD custom domain admin done. `mkdocs.yml` `site_url` updated from
-  GitHub Pages to `https://docs.remotestore.dev/`. Old RTD URL
-  (`remote-store.readthedocs.io`) 302-redirects to custom domain.
-
-- [ ] **ID-049 — Enable GitHub Vigilant Mode**
-  Commit signing with SSH/GPG for supply chain transparency. Soft enforcement
-  (visual badges, no blocking of unsigned commits). Ops-only, no code changes.
-  **Steps when pulling this item:**
-  1. Enable Vigilant Mode on maintainer GitHub accounts (Settings > SSH
-     and GPG keys > "Flag unsigned commits as unverified").
-  2. Configure local signing: `git config --global gpg.format ssh`,
-     `git config --global user.signingkey ~/.ssh/id_ed25519`,
-     `git config --global commit.gpgSign true`,
-     `git config --global tag.gpgSign true`.
-  3. Add CONTRIBUTING.md § Code Signing with SSH/GPG setup instructions.
-  4. Consider a SIGNING.md verification guide if moving to hard enforcement.
+*(none — pick from Ideas or add new items)*
 
 ---
 
@@ -591,6 +544,48 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   Re-ran quick + standard tier benchmarks with Docker backends (MinIO, Azurite,
   SFTP). Updated `benchmarks/results/comparative.md` with post-ID-032 data.
   Listing numbers now reflect real I/O without fsspec caching bias.
+
+### Post-v0.15.0 housekeeping
+
+- [x] **ID-049 — Enable GitHub Vigilant Mode** (post-v0.15.0)
+  Enabled Vigilant Mode on maintainer GitHub account. Configured local SSH
+  signing (`gpg.format ssh`, `commit.gpgSign true`, `tag.gpgSign true`).
+  Added CONTRIBUTING.md § Commit Signing with setup instructions, SSH agent
+  guidance, and verification steps. Soft enforcement only (visual badges,
+  no blocking of unsigned commits).
+
+- [x] **ID-051 — Sweep stale backlog references in docs and guides** (post-v0.15.0)
+  Swept all docs-src, guides, and examples for stale backlog references.
+  One stale item found and fixed: `guides/pyarrow-adapter.md` Limitations
+  section claimed Tier 1 was "only for S3-PyArrow" (stale since ID-037
+  shipped `native_path()` for all backends in v0.15.0). Data lake guide
+  "What comes next" section was already fixed in PR #146.
+
+- [x] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021** (post-v0.15.0)
+  Added `capabilities_and_errors.py` (spec 003: Capability enum, CapabilitySet,
+  supports/require, CapabilityNotSupported, error hierarchy with structured
+  attributes, to_key/native_path round-trip) and `path_model.py` (spec 004:
+  normalization rules, properties, / operator, ROOT sentinel, InvalidPath
+  exceptions, immutability, FileInfo.path usage). Specs 020 and 021 were
+  already covered by `configuration.py` and `config_loaders.py`.
+
+- [x] **ID-053 — Fix code block highlighting in docs** (post-v0.15.0)
+  Audited all markdown in docs-src, guides, specs, ADRs, and RFCs for bare
+  opening code fences (` ``` ` without language tag). Found 13 actual bare
+  openers across 11 files (original estimate of ~135 was inflated by counting
+  closing fences). All 13 fixed with explicit `text` tags (ASCII diagrams,
+  flow sequences, directory trees, output examples). No bare fences in Python
+  source docstrings. All Python code blocks in docs already had `python` tags.
+
+- [x] **ID-052 — Custom domain: remotestore.dev** (post-v0.15.0)
+  Registered `remotestore.dev` with redirect to GitHub project home.
+  DNS CNAME points `docs.remotestore.dev` to `remote-store.readthedocs.io`.
+  Step 1: Updated all user-facing URLs across the repo (`pyproject.toml`,
+  `CITATION.cff`, conda recipe, README, CONTRIBUTING, release skill,
+  DOCUMENTATION.md, data lake guide, repo_stats.py). Historical references
+  left as-is. Step 2: Configured `docs.remotestore.dev` as canonical docs URL
+  (RTD custom domain admin + `mkdocs.yml` `site_url`). Old RTD URL
+  302-redirects to custom domain.
 
 ### Documentation
 
