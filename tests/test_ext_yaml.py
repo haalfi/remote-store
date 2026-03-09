@@ -60,6 +60,22 @@ class TestFromYaml:
         opts = rc.backends["s3"].options
         assert isinstance(opts["key"], Secret) and isinstance(opts["secret"], Secret)
 
+    @pytest.mark.spec("CFG-012")
+    def test_from_yaml_unknown_key_warning_stacklevel(self, tmp_path: Path) -> None:
+        """Unknown keys in YAML should warn pointing at the caller, not internals."""
+        import warnings
+
+        yaml_file = tmp_path / "extra.yaml"
+        yaml_file.write_text("backends: {}\nstores: {}\nbogus_key: 42\n")
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            from_yaml(yaml_file)  # this is the line the warning should point at
+
+        unknown_warns = [w for w in caught if "Unknown" in str(w.message)]
+        assert len(unknown_warns) == 1
+        # The warning should point at THIS file (the caller), not at _config.py
+        assert unknown_warns[0].filename == __file__
+
     @pytest.mark.spec("CFG-013")
     def test_from_yaml_equivalence_with_from_dict(self, tmp_path: Path) -> None:
         yaml_file = tmp_path / "eq.yaml"

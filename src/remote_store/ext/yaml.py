@@ -19,6 +19,16 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
+try:
+    import yaml  # type: ignore[import-untyped]  # noqa: F401
+except ModuleNotFoundError:
+    try:
+        import ruamel.yaml  # type: ignore[import-not-found]  # noqa: F401
+    except ModuleNotFoundError as _exc:  # pragma: no cover
+        raise ModuleNotFoundError(
+            "YAML support requires pyyaml or ruamel.yaml. Install with: pip install 'remote-store[yaml]'"
+        ) from _exc
+
 from remote_store._config import RegistryConfig
 
 __all__ = [
@@ -67,4 +77,4 @@ def from_yaml(path: str | Path) -> RegistryConfig:
         msg = f"Expected YAML mapping at top level, got {type(data).__name__}"
         raise TypeError(msg)
 
-    return RegistryConfig.from_dict(data)
+    return RegistryConfig._from_dict(data, stacklevel=3)
