@@ -11,14 +11,12 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [ ] **ID-051 — Sweep stale backlog references in docs and guides**
-  Post-v0.15.0, several guides and doc pages reference backlog items as
-  "upcoming" or "planned" that have since shipped. Sweep all docs, guides,
-  and examples for stale `ID-NNN` references pointing to completed work.
-  Replace with links to the actual shipped features (guides, API pages).
-  Known instance: `guides/data-lake-patterns.md` "What comes next" section
-  (fixed in this commit). May affect other guides written before their
-  referenced features shipped.
+- [x] **ID-051 — Sweep stale backlog references in docs and guides** (v0.15.1)
+  Swept all docs-src, guides, and examples for stale backlog references.
+  One stale item found and fixed: `guides/pyarrow-adapter.md` Limitations
+  section claimed Tier 1 was "only for S3-PyArrow" (stale since ID-037
+  shipped `native_path()` for all backends in v0.15.0). Data lake guide
+  "What comes next" section was already fixed in PR #146.
 
 - [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
   Four specs have no dedicated example coverage:
