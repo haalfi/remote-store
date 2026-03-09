@@ -1,5 +1,5 @@
 site_name: remote-store
-site_url: https://haalfi.github.io/remote-store/
+site_url: https://docs.remotestore.dev/
 site_description: Write file storage code once. Run it against local files, S3, SFTP, or Azure.
 repo_url: https://github.com/haalfi/remote-store
 repo_name: haalfi/remote-store
