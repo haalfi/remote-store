@@ -59,16 +59,17 @@ The operation must be **non-destructive** (no side effects), **lightweight** (mi
 ---
 
 ### 3.2 S3 Backend
-**Method:** `s3.head_bucket()` or equivalent
+**Method:** `head_bucket()` via s3fs' underlying botocore client
 
-- Lightweight metadata call, no data transfer
+- Lightweight metadata call, no data transfer via s3fs
 - Validates bucket exists and credentials have permission
-- AWS API: `HeadBucket` operation
-- Returns 200 OK on success, 403 on permission denied, 404 on missing bucket
+- s3fs wraps boto3/botocore; can access via `self._fs.s3.head_bucket()`
+- Or use `self._fs.info(bucket_name)` for direct stat-like metadata
 
 **Implementation Notes:**
-- s3fs may use `s3.meta.client.head_bucket()`
-- boto3: `s3_client.head_bucket(Bucket=bucket_name)`
+- S3Backend uses `s3fs.S3FileSystem`, not raw boto3 client
+- Access underlying boto3 client: `self._fs.s3.head_bucket(Bucket=self._bucket_name)`
+- Or lightweight info call: `self._fs.info(self._bucket_name)` returns metadata
 - Preferred over checking for root path existence (which would require listing)
 
 **Error Mapping:**
@@ -79,15 +80,16 @@ The operation must be **non-destructive** (no side effects), **lightweight** (mi
 ---
 
 ### 3.3 S3-PyArrow Backend
-**Method:** Same as S3 or PyArrow FS stat on bucket root
+**Method:** PyArrow `S3FileSystem.get_file_info()` on bucket root
 
-- If using boto3 client underneath: `head_bucket()`
-- If using PyArrow FS: `fs.get_file_info()` on bucket root path
-- Both should be lightweight
+- Uses PyArrow's native `S3FileSystem`, not boto3
+- `self._fs.get_file_info(self._bucket_name)` returns lightweight metadata
+- Validates bucket exists and credentials work
 
 **Implementation Notes:**
-- Consistency with S3 Backend preferred for maintainability
-- May need to unwrap underlying boto3 client for `head_bucket()` call
+- S3-PyArrow wraps PyArrow's `S3FileSystem`, not boto3
+- Lightweight metadata call via `get_file_info()` on bucket name or root path
+- Error handling consistent with S3 Backend (map to same exception types)
 
 ---
 
@@ -126,7 +128,7 @@ The operation must be **non-destructive** (no side effects), **lightweight** (mi
 
 ---
 
-### 3.7 Memory Backend
+### 3.6 Memory Backend
 **Method:** Always succeeds
 
 - In-memory backend is always "healthy" by definition
@@ -288,7 +290,7 @@ In `test_conformance.py`, add:
 
 **Traceability Markers:**
 - PING-001 through PING-NNN for spec requirements
-- Store method: STORE-016 (verify at spec authoring; STORE-015 is `glob()`)
+- Store method: STORE-016 (verify at spec authoring; note: STORE-015 is duplicated in spec 001-store-api.md — assigned to both `native_path()` and `glob()`)
 - Backend method: BE-026 (next available; BE-025 is `native_path()`)
 
 ---
