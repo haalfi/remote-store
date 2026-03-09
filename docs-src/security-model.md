@@ -16,8 +16,8 @@ The `Secret` class provides:
 
 ### Automatic wrapping
 
-`RegistryConfig.from_dict()`, `from_toml()`, and `from_yaml()` automatically
-wrap values for these config keys in `Secret`:
+`RegistryConfig.from_dict()`, `from_toml()`, and `ext.yaml.from_yaml()`
+automatically wrap values for these config keys in `Secret`:
 
 - `key`, `secret`, `password`
 - `account_key`, `sas_token`, `connection_string`
