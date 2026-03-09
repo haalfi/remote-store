@@ -18,11 +18,13 @@ Active work items, ordered by priority.
   shipped `native_path()` for all backends in v0.15.0). Data lake guide
   "What comes next" section was already fixed in PR #146.
 
-- [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
-  Four specs have no dedicated example coverage:
-  003 (Backend adapter contract), 004 (Path model), 020 (Credential hygiene),
-  021 (Config loaders). Additionally, systemic gaps across existing examples:
-  no capability-missing scenarios, no error paths, no empty-input edge cases.
+- [x] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021** (post-v0.15.0)
+  Added `capabilities_and_errors.py` (spec 003: Capability enum, CapabilitySet,
+  supports/require, CapabilityNotSupported, error hierarchy with structured
+  attributes, to_key/native_path round-trip) and `path_model.py` (spec 004:
+  normalization rules, properties, / operator, ROOT sentinel, InvalidPath
+  exceptions, immutability, FileInfo.path usage). Specs 020 and 021 were
+  already covered by `configuration.py` and `config_loaders.py`.
 
 - [x] **ID-053 — Fix code block highlighting in docs** (post-v0.15.0)
   Audited all markdown in docs-src, guides, specs, ADRs, and RFCs for bare
