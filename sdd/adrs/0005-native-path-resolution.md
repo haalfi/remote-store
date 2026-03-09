@@ -56,7 +56,7 @@ single, consistent hook.
 
 Public method. Composes backend conversion with store-root stripping:
 
-```
+```text
 backend.to_key(native_path)  →  strip root_path prefix  →  store-relative key
 ```
 

@@ -161,7 +161,7 @@ Pydantic's source merging (env vars, `.env` files, config files) happens
 `RegistryConfig` is immutable and subject to ADR-0002 (no further merging).
 
 **Flow:**
-```
+```text
 User's Pydantic model (merges env + .env + files)
     → pydantic_to_registry_config() → from_dict()
         → RegistryConfig (immutable, ADR-0002 applies)

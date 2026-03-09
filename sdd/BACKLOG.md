@@ -11,14 +11,36 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [ ] **ID-051 — Sweep stale backlog references in docs and guides**
-  Post-v0.15.0, several guides and doc pages reference backlog items as
-  "upcoming" or "planned" that have since shipped. Sweep all docs, guides,
-  and examples for stale `ID-NNN` references pointing to completed work.
-  Replace with links to the actual shipped features (guides, API pages).
-  Known instance: `guides/data-lake-patterns.md` "What comes next" section
-  (fixed in this commit). May affect other guides written before their
-  referenced features shipped.
+- [x] **ID-051 — Sweep stale backlog references in docs and guides** (post-v0.15.0)
+  Swept all docs-src, guides, and examples for stale backlog references.
+  One stale item found and fixed: `guides/pyarrow-adapter.md` Limitations
+  section claimed Tier 1 was "only for S3-PyArrow" (stale since ID-037
+  shipped `native_path()` for all backends in v0.15.0). Data lake guide
+  "What comes next" section was already fixed in PR #146.
+
+- [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
+  Four specs have no dedicated example coverage:
+  003 (Backend adapter contract), 004 (Path model), 020 (Credential hygiene),
+  021 (Config loaders). Additionally, systemic gaps across existing examples:
+  no capability-missing scenarios, no error paths, no empty-input edge cases.
+
+- [x] **ID-053 — Fix code block highlighting in docs** (post-v0.15.0)
+  Audited all markdown in docs-src, guides, specs, ADRs, and RFCs for bare
+  opening code fences (` ``` ` without language tag). Found 13 actual bare
+  openers across 11 files (original estimate of ~135 was inflated by counting
+  closing fences). All 13 fixed with explicit `text` tags (ASCII diagrams,
+  flow sequences, directory trees, output examples). No bare fences in Python
+  source docstrings. All Python code blocks in docs already had `python` tags.
+
+- [ ] **ID-052 — Custom domain: remotestore.dev**
+  Registered `remotestore.dev` with redirect to GitHub project home.
+  DNS CNAME points `docs.remotestore.dev` to `remote-store.readthedocs.io`.
+  **Step 1:** Update `homepage` and `documentation` URLs in `pyproject.toml`
+  to `https://remotestore.dev` and `https://docs.remotestore.dev` respectively.
+  This also makes the documentation URL an approved/verified link on PyPI.
+  **Step 2:** Configure `docs.remotestore.dev` as the canonical docs URL
+  (RTD custom domain, `mkdocs.yml` `site_url`, canonical meta tags) while
+  continuing to host on Read the Docs.
 
 - [ ] **ID-049 — Enable GitHub Vigilant Mode**
   Commit signing with SSH/GPG for supply chain transparency. Soft enforcement
@@ -41,19 +63,45 @@ Active work items, ordered by priority.
 
 ---
 
-## Ideas (Unprioritized)
+## Ideas
 
-Parking lot. Not evaluated, not committed to. Pick up when relevant.
+### In Progress
+
+Started but not yet prioritized for completion.
 
 - [~] **ID-050 — End-to-end integration tests against Docker backends**
-  Full data lake medallion pipeline (Bronze/Silver/Gold) running against
-  real Docker services (MinIO, Azurite). Exercises extension interplay:
-  `ext.arrow` (PyArrow adapter), `ext.partition` (Hive paths),
-  `ext.batch` (concurrent delete/exists), `ext.cache` (TTL + invalidation),
-  `ext.observe` (hooks), and `open_atomic()` — all against real backends.
-  Reuses `benchmarks/infra/docker-compose.yml`. Tests in `tests/e2e/`.
-  Done: `test_data_lake.py` with Memory, S3, S3-PyArrow, Azure backends.
-  Remaining: SFTP backend test, `ext.transfer` cross-backend scenario.
+  Full data lake medallion pipeline (Bronze/Silver/Gold) against real Docker
+  services (MinIO, Azurite). Exercises 6 extensions together.
+  - Done: `test_data_lake.py` with Memory, S3, S3-PyArrow, Azure backends.
+  - Remaining: SFTP backend test, `ext.transfer` cross-backend scenario.
+
+- [~] **ID-044 — Harden examples into assertion-based expectation tests**
+  Examples expose `demo(store)` functions; `tests/test_examples.py` imports
+  each and wraps with assertions. Examples stay print-based and user-friendly.
+  - Done: refactored all 14 examples, created 14 test classes in `test_examples.py`.
+  - Remaining: branch `claude/review-example-tests-GiVnG` not yet merged.
+
+- [~] **ID-018 — conda-forge publishing**
+  Recipe, CI validation, release checklist steps all done.
+  - Done: `packaging/conda-forge/recipe.yaml`, `conda-recipe.yml` workflow,
+    staged-recipes PR `conda-forge/staged-recipes#32401` (CI green).
+  - Remaining: waiting for conda-forge reviewer approval.
+
+- [~] **ID-013 — Async Store / Backend API**
+  Async version of Store and Backend for async frameworks (FastAPI, aiohttp).
+  - Done: research complete (`sdd/research/research-async-store-api.md`).
+  - Remaining: ADR, spec, implementation (Phase 1: core async surface,
+    Phase 2: native async backends, Phase 3: async extensions).
+
+- [~] **ID-010 — Retry policy configuration**
+  Expose a `RetryPolicy` dataclass in `BackendConfig.options` for tuning
+  attempts, backoff, and jitter per-backend.
+  - Done: research complete (`sdd/research/research-retry-policy.md`, PR #113).
+  - Remaining: ADR, spec, implementation.
+
+### Parking Lot
+
+Not evaluated, not committed to. Pick up when relevant.
 
 - [ ] **ID-006 — Progress callbacks for large transfers**
   Add an optional `callback: Callable[[int], None]` parameter to `read()` and
@@ -66,62 +114,6 @@ Parking lot. Not evaluated, not committed to. Pick up when relevant.
   Add a `verify_checksum=True` option to `read()` / `write()`. Populate
   `FileInfo.checksum` consistently across backends (S3 ETag, local SHA-256).
   Gives users data-integrity guarantees with a single flag.
-
-- [~] **ID-010 — Retry policy configuration**
-  Research complete: `sdd/research/research-retry-policy.md` (PR #113).
-  Remaining: ADR, spec, implementation.
-  SFTP has hardcoded retry logic (3 attempts, 2-10 s backoff via `tenacity`).
-  Expose a `RetryPolicy` dataclass in `BackendConfig.options` so users can tune
-  attempts, backoff, and jitter per-backend.
-
-- [~] **ID-013 — Async Store / Backend API**
-  Research complete: `sdd/research/research-async-store-api.md`.
-  Remaining: ADR, spec, implementation (Phase 1: core async surface,
-  Phase 2: native async backends, Phase 3: async extensions).
-  Async version of `Store` and `Backend` for use in async frameworks (FastAPI,
-  aiohttp, etc.). Could be a parallel `AsyncStore` class or an async mode on
-  the existing `Store`. Needs design decision on whether to wrap sync backends
-  with `asyncio.to_thread` or require native async backends.
-
-- [~] **ID-018 — conda-forge publishing**
-  Recipe created in `packaging/conda-forge/recipe.yaml` (v1 format,
-  `noarch: python`, zero core deps, `run_constraints` for optional backends).
-  CI validation via `conda-recipe.yml` workflow (rattler-build `--render-only`).
-  Release checklist updated with conda version/sha256 steps (Phase 2, 3, 5).
-  Staged-recipes PR submitted: `conda-forge/staged-recipes#32401` (CI green).
-  Remaining: waiting for conda-forge reviewer approval.
-
-- [~] **ID-044 — Harden examples into assertion-based expectation tests**
-  Approach: examples expose `demo(store)` functions; `tests/test_examples.py`
-  imports each demo and wraps it with assertions. Examples stay print-based
-  and user-friendly; tests add spec verification — no duplicated setup.
-  Done: refactored all 14 examples, created 14 test classes in `test_examples.py`.
-  Remaining: branch `claude/review-example-tests-GiVnG` not yet merged.
-
-- [x] **ID-048 — Verify notebook examples in CI (`hatch run notebooks`)**
-  The 3 tutorial notebooks (`01_getting_started`, `02_file_operations`,
-  `03_configuration`) were not executed by `hatch run all`. Added a
-  lightweight runner (`tests/scripts/run_notebooks.py`) that extracts
-  code cells and runs them via `exec()` — no Jupyter dependency needed.
-  `benchmark_analysis.ipynb` is skipped (needs pre-generated data).
-  `hatch run notebooks` added and wired into `hatch run all` + CI `examples` job.
-
-- [ ] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
-  Four specs have no dedicated example coverage:
-  • **003 — Backend adapter contract**: capability system (`CapabilitySet`,
-    `require()`, `supports()`), `unwrap()`, error-mapping guarantees.
-  • **004 — Path model**: `RemotePath` validation (backslash normalization,
-    `..` rejection, null bytes), `ROOT` sentinel, `/` operator, `parent`/
-    `name`/`parts` properties.
-  • **020 — Credential hygiene**: `SecretRedactionFilter`, `Secret`
-    immutability, pickle/deepcopy safety (partially in `configuration.py`
-    but no dedicated example).
-  • **021 — Config loaders**: `from_toml()`, `from_yaml()`, pydantic
-    integration via `pydantic_to_registry_config()`.
-  Additionally, systemic gaps across existing examples: no capability-missing
-  scenarios, no `PermissionDenied`/`BackendUnavailable` error paths, no
-  empty-input edge cases (`batch_delete([])`, `glob("")`), no resource-cleanup
-  verification.
 
 ---
 
@@ -361,6 +353,11 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   `ext/partition.py`. Builds and parses paths like
   `year=2026/month=03/data.parquet`. Pure Python, zero dependencies.
   Spec: `024-ext-partition.md` (PART-001 through PART-013). 23 tests.
+
+- [x] **ID-048 — Verify notebook examples in CI** (v0.15.0)
+  `tests/scripts/run_notebooks.py` executes notebook code cells via `exec()`.
+  Wired into `hatch run notebooks`, `hatch run all`, and CI `notebooks` job.
+  Skips `benchmark_analysis.ipynb`. PR #130.
 
 - [x] **ID-002 — YAML config support** (v0.14.0, moved to `ext/yaml.py` post-v0.15.0)
   `from_yaml(path)` in `ext/yaml.py` — optional `pyyaml` or `ruamel.yaml`.

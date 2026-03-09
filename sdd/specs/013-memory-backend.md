@@ -45,7 +45,7 @@ lookups that evaporates the moment any hierarchical query is needed.
 
 ### MEM-DS-002: Tree Structure
 
-```
+```text
 _root (_DirNode)
 ├── "data" (_DirNode)
 │   ├── "images" (_DirNode)
@@ -199,7 +199,7 @@ side effects.
 ### MEM-004: Repr
 
 **Invariant:** `repr(backend)` returns a string of the form:
-```
+```text
 MemoryBackend(files=42, folders=7)
 ```
 No secrets to mask.

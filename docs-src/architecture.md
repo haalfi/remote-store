@@ -6,7 +6,7 @@ instructions, see the Guides section in the sidebar.
 
 ## Three-layer design
 
-```
+```text
 +-----------+     +-----------+     +-----------+
 |   Store   |---->|  Registry |---->|  Backend  |
 | (user API)|     | (lifecycle|     | (storage  |
@@ -59,7 +59,7 @@ backends directly (except via `Store.unwrap()` for escape-hatch access).
 All backend-specific exceptions are normalized into a small set of errors.
 Backend exceptions **never leak** to user code.
 
-```
+```text
 RemoteStoreError
   +-- NotFound
   +-- AlreadyExists

@@ -23,7 +23,7 @@ Three-layer architecture:
 
 3. **Backend (ABC)** — encapsulates all storage-specific behavior. Declares capabilities. Maps native errors to normalized types. Never exposed directly to end users.
 
-```
+```text
 User → Store → Backend (ABC) → Local/S3/Azure/SFTP
          ↑
       Registry (lifecycle, config, factory)

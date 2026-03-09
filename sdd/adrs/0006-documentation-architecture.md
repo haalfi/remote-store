@@ -70,7 +70,7 @@ by the build script. `docs/` is gitignored.
 Top-level directory for all user-facing guide content — any topic that helps
 a package user accomplish something. Organized by subject:
 
-```
+```text
 guides/
   backends/
     index.md          # comparison table, pluggable architecture
