@@ -46,7 +46,7 @@ extra first:
 pip install "remote-store[arrow]"     # PyArrow filesystem adapter
 pip install "remote-store[otel]"      # OpenTelemetry tracing and metrics
 pip install "remote-store[pydantic]"  # Pydantic BaseSettings adapter
-pip install "remote-store[yaml]"     # YAML config file loader
+pip install "remote-store[yaml]"      # YAML config file loader
 ```
 
 Then import from the top-level package or the extension module directly:

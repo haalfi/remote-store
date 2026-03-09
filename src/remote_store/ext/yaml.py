@@ -51,7 +51,7 @@ def _get_yaml_loader() -> Callable[..., Any]:
         return _yaml.load  # type: ignore[no-any-return]
     except ImportError:
         pass
-    raise ModuleNotFoundError(
+    raise ModuleNotFoundError(  # pragma: no cover
         "YAML support requires pyyaml or ruamel.yaml. Install with: pip install 'remote-store[yaml]'"
     )
 
