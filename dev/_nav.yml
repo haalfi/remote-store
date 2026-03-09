@@ -12,6 +12,7 @@
         - Transfer Operations: transfer-operations.md
         - Observability Hooks: observe.md
         - Caching: cache.md
+        - Retry Policy: retry.md
     - Data Lake Patterns: data-lake-patterns.md
     - Troubleshooting: troubleshooting.md
     - Choosing a Backend: choosing-a-backend.md

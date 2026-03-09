@@ -81,6 +81,10 @@
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/retry/</loc>
+         <lastmod>2026-03-09</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/security-model/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
@@ -450,6 +454,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/quickstart/</loc>
+         <lastmod>2026-03-09</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/examples/retry-policy/</loc>
          <lastmod>2026-03-09</lastmod>
     </url>
     <url>
