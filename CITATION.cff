@@ -9,7 +9,7 @@ version: 0.15.0
 date-released: 2026-03-08
 license: MIT
 repository-code: https://github.com/haalfi/remote-store
-url: https://remote-store.readthedocs.io/
+url: https://docs.remotestore.dev/
 authors:
   - family-names: Alferi
     given-names: Harald

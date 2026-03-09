@@ -44,8 +44,8 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/haalfi/remote-store"
-Documentation = "https://remote-store.readthedocs.io/"
+Homepage = "https://remotestore.dev"
+Documentation = "https://docs.remotestore.dev/"
 Repository = "https://github.com/haalfi/remote-store"
 Changelog = "https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md"
 Issues = "https://github.com/haalfi/remote-store/issues"
