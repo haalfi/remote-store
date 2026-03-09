@@ -14,6 +14,7 @@ on top of the core Store API.
 | `ext.otel` | `otel` | OpenTelemetry tracing and metrics bridge |
 | `ext.arrow` | `arrow` | PyArrow FileSystem adapter |
 | `ext.pydantic` | `pydantic` | Pydantic BaseModel/BaseSettings adapter |
+| `ext.yaml` | `yaml` | YAML config file loader |
 
 ## Using Extensions
 
@@ -45,6 +46,7 @@ extra first:
 pip install "remote-store[arrow]"     # PyArrow filesystem adapter
 pip install "remote-store[otel]"      # OpenTelemetry tracing and metrics
 pip install "remote-store[pydantic]"  # Pydantic BaseSettings adapter
+pip install "remote-store[yaml]"      # YAML config file loader
 ```
 
 Then import from the top-level package or the extension module directly:
@@ -53,10 +55,12 @@ Then import from the top-level package or the extension module directly:
 from remote_store import pyarrow_fs                  # ext.arrow
 from remote_store import otel_hooks                  # ext.otel
 from remote_store import pydantic_to_registry_config # ext.pydantic
+from remote_store import from_yaml                   # ext.yaml
 # or
 from remote_store.ext.arrow import pyarrow_fs
 from remote_store.ext.otel import otel_hooks
 from remote_store.ext.pydantic import pydantic_to_registry_config
+from remote_store.ext.yaml import from_yaml
 ```
 
 If the required dependency is not installed, the top-level import

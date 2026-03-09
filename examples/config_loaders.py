@@ -57,7 +57,7 @@ if __name__ == "__main__":
             cache.write("data.bin", b"\x00\x01\x02")
             print(f"  wrote {len(cache.read_bytes('data.bin'))} bytes to cache")
 
-        # --- from_yaml() ---
+        # --- from_yaml() (ext.yaml) ---
         yaml_file = root / "remote-store.yaml"
         yaml_file.write_text(
             "backends:\n"
@@ -71,7 +71,9 @@ if __name__ == "__main__":
             "    root_path: logs\n"
         )
 
-        config = RegistryConfig.from_yaml(yaml_file)
+        from remote_store.ext.yaml import from_yaml
+
+        config = from_yaml(yaml_file)
         print(f"\nfrom_yaml(): {len(config.backends)} backend(s), {len(config.stores)} store(s)")
 
         with Registry(config) as reg:

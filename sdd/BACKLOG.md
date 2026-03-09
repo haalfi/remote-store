@@ -362,8 +362,10 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   `year=2026/month=03/data.parquet`. Pure Python, zero dependencies.
   Spec: `024-ext-partition.md` (PART-001 through PART-013). 23 tests.
 
-- [x] **ID-002 — YAML config support** (v0.14.0)
-  `RegistryConfig.from_yaml(path)` — optional `pyyaml` or `ruamel.yaml`.
+- [x] **ID-002 — YAML config support** (v0.14.0, moved to `ext/yaml.py` post-v0.15.0)
+  `from_yaml(path)` in `ext/yaml.py` — optional `pyyaml` or `ruamel.yaml`.
+  Originally shipped as `RegistryConfig.from_yaml()` classmethod in v0.14.0;
+  moved to extension for consistency (YAML requires optional deps, same as Pydantic).
   Spec: `sdd/specs/021-config-loaders.md` (CFG-010/CFG-011).
 
 - [x] **ID-003 — Pydantic BaseSettings integration** (v0.14.0)

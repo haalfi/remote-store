@@ -127,3 +127,12 @@ try:
 except ImportError:
     # pydantic not installed — don't crash the core package.
     pass
+
+# Optional YAML extension (available when pyyaml or ruamel.yaml is installed)
+try:
+    from remote_store.ext.yaml import from_yaml
+
+    __all__ += ["from_yaml"]
+except ImportError:
+    # pyyaml/ruamel.yaml not installed — don't crash the core package.
+    pass

@@ -6,7 +6,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-*(nothing yet)*
+### Changed
+
+- **`from_yaml()` moved from `RegistryConfig` classmethod to `ext/yaml.py`** (ID-002)
+  YAML config loading requires an optional dependency (`pyyaml` or `ruamel.yaml`),
+  same as the Pydantic adapter. Moved to `ext.yaml` for consistency with the
+  extension architecture (ADR-0008). Import changes:
+  `from remote_store.ext.yaml import from_yaml` (or `from remote_store import from_yaml`
+  when pyyaml is installed).
 
 ## [0.15.0] - 2026-03-08
 
