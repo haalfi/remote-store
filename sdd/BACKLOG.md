@@ -34,14 +34,16 @@ Active work items, ordered by priority.
   flow sequences, directory trees, output examples). No bare fences in Python
   source docstrings. All Python code blocks in docs already had `python` tags.
 
-- [ ] **ID-052 — Custom domain: remotestore.dev**
+- [~] **ID-052 — Custom domain: remotestore.dev** (post-v0.15.0)
   Registered `remotestore.dev` with redirect to GitHub project home.
   DNS CNAME points `docs.remotestore.dev` to `remote-store.readthedocs.io`.
-  **Step 1:** Update `homepage` and `documentation` URLs in `pyproject.toml`
-  to `https://remotestore.dev` and `https://docs.remotestore.dev` respectively.
-  This also makes the documentation URL an approved/verified link on PyPI.
-  **Step 2:** Configure `docs.remotestore.dev` as the canonical docs URL
-  (RTD custom domain, `mkdocs.yml` `site_url`, canonical meta tags) while
+  **Step 1 [x]:** Updated all user-facing URLs across the repo: `pyproject.toml`
+  Homepage/Documentation, `CITATION.cff`, conda recipe, README (badge + 14 deep
+  links), CONTRIBUTING release checklist, release skill, DOCUMENTATION.md
+  canonical URL policy, data lake guide, repo_stats.py label. Historical
+  references (CHANGELOG, BACKLOG done items, research docs) left as-is.
+  **Step 2 [ ]:** Configure `docs.remotestore.dev` as the canonical docs URL
+  (RTD custom domain admin, `mkdocs.yml` `site_url`, canonical meta tags) while
   continuing to host on Read the Docs.
 
 - [ ] **ID-049 — Enable GitHub Vigilant Mode**

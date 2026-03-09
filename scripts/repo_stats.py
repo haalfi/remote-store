@@ -539,7 +539,7 @@ def print_report(
         print("   https://pepy.tech/projects/remote-store )")
 
     # Read the Docs
-    print(_sep("Read the Docs  —  remote-store.readthedocs.io"))
+    print(_sep("Read the Docs  —  docs.remotestore.dev"))
     print(f"  Project          : {rtd.name}")
     print(f"  URL              : {rtd.url}")
     print(f"  Default version  : {rtd.default_version}")

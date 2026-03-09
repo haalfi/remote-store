@@ -242,7 +242,7 @@ to search instead of navigate.
 Two published sites exist. Use the right one depending on what you link to:
 
 - **Documentation** (guides, API reference, explanation pages):
-  link to ReadTheDocs (`https://remote-store.readthedocs.io/`).
+  link to ReadTheDocs (`https://docs.remotestore.dev/`).
   RTD is the canonical documentation URL. GitHub Pages mirrors the same
   content but RTD is what PyPI, README badges, and external references
   should point to.
