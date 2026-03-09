@@ -150,6 +150,46 @@ hatch run examples
 
 All dev scripts are defined in `pyproject.toml` under `[tool.hatch.envs.default.scripts]`. Run `hatch run` to see available commands.
 
+## Commit Signing
+
+All commits should be signed for supply chain transparency. GitHub Vigilant
+Mode is enabled on the repository -- unsigned commits show as "Unverified".
+
+### Setup (SSH signing, one-time)
+
+```bash
+# Tell Git to use SSH for signing
+git config --global gpg.format ssh
+git config --global user.signingkey ~/.ssh/id_ed25519.pub
+git config --global commit.gpgSign true
+git config --global tag.gpgSign true
+```
+
+Then upload your public key to GitHub as a **Signing Key** (not Authentication):
+Settings > SSH and GPG keys > New SSH key > Key type: **Signing Key**.
+
+### SSH agent (avoid passphrase prompts)
+
+If your key has a passphrase, start the SSH agent so signing happens silently:
+
+```bash
+eval $(ssh-agent -s)
+ssh-add ~/.ssh/id_ed25519
+```
+
+On Windows, you can also enable the OpenSSH Authentication Agent service
+(via `Set-Service ssh-agent -StartupType Automatic` in an elevated PowerShell)
+for persistence across sessions.
+
+### Verification
+
+```bash
+echo "test" | git commit-tree HEAD^{tree} -S
+```
+
+If this returns a commit hash without prompting for a passphrase, signing is
+configured correctly.
+
 ## Code Style
 
 See [`sdd/DESIGN.md` Section 11](sdd/DESIGN.md#11-code-style) for the full code style conventions.
