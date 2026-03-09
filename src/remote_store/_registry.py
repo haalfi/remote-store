@@ -119,12 +119,15 @@ class Registry:
                     f"Unknown backend type '{cfg.type}'. Registered types: {sorted(_BACKEND_FACTORIES.keys())}"
                 )
             factory = _BACKEND_FACTORIES[cfg.type]
+            kwargs = dict(cfg.options)
+            if cfg.retry is not None:
+                kwargs["retry"] = cfg.retry
             try:
-                self._backends[name] = factory(**cfg.options)
+                self._backends[name] = factory(**kwargs)
             except TypeError as exc:
                 raise ValueError(
                     f"Invalid options for backend '{name}' (type={cfg.type!r}): {exc}. "
-                    f"Provided options: {sorted(cfg.options.keys())}"
+                    f"Provided options: {sorted(kwargs.keys())}"
                 ) from exc
         return self._backends[name]
 

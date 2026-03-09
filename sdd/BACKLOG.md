@@ -11,23 +11,16 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [x] **ID-050 — End-to-end integration tests against Docker backends**
-  Full data lake medallion pipeline (Bronze/Silver/Gold) against real Docker
-  services (MinIO, Azurite, SFTP). Exercises 6 extensions together.
-  - `test_data_lake.py`: Medallion pipeline on Memory, S3, S3-PyArrow, Azure.
-  - `test_sftp_workflow.py`: Typical SFTP flow (check inbox, fetch, place if
-    not exists, incremental pickup, folders, atomic write, overwrite).
-  - `test_transfer.py`: Cross-backend `ext.transfer` (S3/SFTP/Azure pairs),
-    progress tracking, overwrite guard.
-  - Bug fix: `_ErrorMappingStream.seek()`/`tell()` crashed on paramiko
-    SFTPFile (returns `None` from `seek()`). All backend combinations work.
-  - CI: MinIO, Azurite, and SFTP Docker containers in `e2e` job.
-
-- [ ] **ID-010 — Retry policy configuration**
-  Expose a `RetryPolicy` dataclass in `BackendConfig.options` for tuning
-  attempts, backoff, and jitter per-backend.
-  - Done: research complete (`sdd/research/research-retry-policy.md`, PR #113).
-  - Remaining: ADR, spec, implementation.
+- [~] **ID-010 — Retry policy configuration**
+  Expose a `RetryPolicy` dataclass for tuning retry attempts, backoff,
+  and jitter per-backend.
+  - Done: research (`sdd/research/research-retry-policy.md`, PR #113),
+    ADR-0011, spec `025-retry-policy.md`, `RetryPolicy` dataclass in
+    `_config.py`, `BackendConfig.retry` field, `from_dict()` parsing,
+    backend constructors (SFTP/S3/Azure/S3-PyArrow accept `retry`),
+    Registry passthrough, SFTP tenacity integration, S3 botocore mapping,
+    Azure ExponentialRetry mapping, S3-PyArrow dual mapping, 34 tests.
+  - Remaining: user guide, configuration example, docs.
 
 - [ ] **ID-054 — `store.ping()` / backend health check**
   A lightweight method (`store.ping()` or `backend.check_health()`) that
@@ -35,6 +28,7 @@ Active work items, ordered by priority.
   startup gates ("fail before accepting traffic") and liveness probes
   (Kubernetes, etc.). Per-backend: S3 HeadBucket, SFTP stat, local
   os.access, Azure GetProperties, Memory always-ok.
+  - Done: research complete (`sdd/research/research-health-check.md`, PR #155).
 
 - [ ] **ID-055 — `iter_children()` — combined file + folder listing**
   A single call returning both files and subfolders in one pass, avoiding

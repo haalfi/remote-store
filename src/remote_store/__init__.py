@@ -7,6 +7,7 @@ from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import (
     BackendConfig,
     RegistryConfig,
+    RetryPolicy,
     Secret,
     SecretRedactionFilter,
     StoreProfile,
@@ -59,6 +60,7 @@ __all__ = [
     "BackendConfig",
     "StoreProfile",
     "RegistryConfig",
+    "RetryPolicy",
     "Secret",
     "SecretRedactionFilter",
     # Errors
