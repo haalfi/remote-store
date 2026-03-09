@@ -103,7 +103,7 @@ def demo(store):
     store.write("a.txt", b"data")
     info = store.get_folder_info("")
     results["root_folder_path"] = str(info.path)
-    is_root = info.path == RemotePath.ROOT
+    is_root = info.path is RemotePath.ROOT
     results["is_root"] = is_root
     print(f"get_folder_info('').path == ROOT: {is_root}")
 
