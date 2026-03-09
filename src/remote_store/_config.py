@@ -105,16 +105,65 @@ class SecretRedactionFilter(logging.Filter):
 # endregion
 
 
+# region: retry policy
+
+
+@dataclasses.dataclass(frozen=True)
+class RetryPolicy:
+    """Retry configuration for transient backend errors.
+
+    Backends map these parameters to their native retry mechanisms.
+    Backends that don't support a parameter silently ignore it.
+
+    :param max_attempts: Maximum number of attempts (including the initial).
+        Set to 1 to disable retry.
+    :param backoff_base: Base delay in seconds for exponential backoff.
+    :param backoff_max: Maximum delay between retries in seconds.
+    :param jitter: Maximum random jitter added to each delay in seconds.
+        Set to 0.0 to disable jitter.
+    :param timeout: Total wall-clock timeout in seconds for all attempts
+        combined. ``None`` means no total timeout.
+    """
+
+    max_attempts: int = 3
+    backoff_base: float = 1.0
+    backoff_max: float = 60.0
+    jitter: float = 1.0
+    timeout: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.max_attempts < 1:
+            raise ValueError("max_attempts must be >= 1")
+        if self.backoff_base < 0:
+            raise ValueError("backoff_base must be >= 0")
+        if self.backoff_max < 0:
+            raise ValueError("backoff_max must be >= 0")
+        if self.jitter < 0:
+            raise ValueError("jitter must be >= 0")
+        if self.timeout is not None and self.timeout <= 0:
+            raise ValueError("timeout must be > 0 or None")
+
+    @classmethod
+    def disabled(cls) -> RetryPolicy:
+        """Return a policy that disables retry (single attempt, no backoff)."""
+        return cls(max_attempts=1)
+
+
+# endregion
+
+
 @dataclasses.dataclass(frozen=True)
 class BackendConfig:
     """Describes a backend instance.
 
     :param type: Backend type identifier (e.g. ``"local"``, ``"s3"``).
     :param options: Backend-specific configuration options.
+    :param retry: Optional retry policy for transient errors.
     """
 
     type: str
     options: dict[str, object] = dataclasses.field(default_factory=dict)
+    retry: RetryPolicy | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -185,9 +234,16 @@ class RegistryConfig:
             for k in _SENSITIVE_KEYS:
                 if k in options and isinstance(options[k], str):
                     options[k] = Secret(options[k])
+            raw_retry = cfg.get("retry")
+            retry: RetryPolicy | None = None
+            if isinstance(raw_retry, dict):
+                retry = RetryPolicy(**raw_retry)
+            elif isinstance(raw_retry, RetryPolicy):
+                retry = raw_retry
             backends[str(name)] = BackendConfig(
                 type=str(cfg["type"]),
                 options=options,
+                retry=retry,
             )
 
         stores: dict[str, StoreProfile] = {}

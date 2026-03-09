@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
-from remote_store._config import Secret, _reveal
+from remote_store._config import RetryPolicy, Secret, _reveal
 from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
@@ -58,6 +58,7 @@ class S3Backend(Backend):
         secret: str | Secret | None = None,
         region_name: str | None = None,
         client_options: dict[str, Any] | None = None,
+        retry: RetryPolicy | None = None,
     ) -> None:
         if not bucket or not bucket.strip():
             raise ValueError("bucket must be a non-empty string")
@@ -67,6 +68,7 @@ class S3Backend(Backend):
         self._secret = _reveal(secret)
         self._region_name = region_name
         self._client_options = client_options or {}
+        self._retry = retry
         self._fs_instance: Any = None
 
     # region: properties
@@ -342,6 +344,24 @@ class S3Backend(Backend):
             if self._region_name is not None:
                 client_kwargs: dict[str, Any] = opts.setdefault("client_kwargs", {})
                 client_kwargs["region_name"] = self._region_name
+            if self._retry is not None:
+                import botocore.config  # type: ignore[import-untyped]
+
+                rp = self._retry
+                if rp.backoff_base != 1.0 or rp.backoff_max != 60.0 or rp.jitter != 1.0 or rp.timeout is not None:
+                    log.debug(
+                        "S3 retry: backoff_base, backoff_max, jitter, timeout are not "
+                        "mappable to botocore; only max_attempts is used",
+                    )
+                client_kwargs = opts.setdefault("client_kwargs", {})
+                existing_config = client_kwargs.get("config")
+                retry_config = botocore.config.Config(
+                    retries={"max_attempts": rp.max_attempts, "mode": "standard"},
+                )
+                if existing_config is not None:
+                    client_kwargs["config"] = existing_config.merge(retry_config)
+                else:
+                    client_kwargs["config"] = retry_config
             opts.setdefault("anon", False)
             self._fs_instance = s3fs.S3FileSystem(**opts)
         return self._fs_instance

@@ -106,8 +106,13 @@ the Base64 payload. Invalid PEM structures (not 5 parts) raise `ValueError`.
 
 ### SFTP-009: Tenacity Retry on Connect
 
-**Invariant:** The `_connect()` method retries on transient SSH errors using tenacity:
-3 attempts, exponential backoff (2s min, 10s max).
+**Invariant:** The `_connect()` method retries on transient SSH errors using tenacity.
+When no `RetryPolicy` is provided, uses defaults: 3 attempts, exponential backoff
+(2s min, 10s max). When a `RetryPolicy` is provided via the `retry` constructor
+parameter, maps its fields to tenacity: `max_attempts` -> `stop_after_attempt`,
+`backoff_base` -> `wait_exponential(min=)`, `backoff_max` -> `wait_exponential(max=)`,
+`jitter` -> `wait_random(0, jitter)`, `timeout` -> `stop_after_delay`.
+See also: spec `025-retry-policy.md` (RET-010).
 **Retried exceptions:** `paramiko.SSHException`, `OSError`, `EOFError`.
 **Postconditions:** After all retries are exhausted, the original exception is reraised.
 

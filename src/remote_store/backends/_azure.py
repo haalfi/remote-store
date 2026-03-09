@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
-from remote_store._config import Secret, _reveal
+from remote_store._config import RetryPolicy, Secret, _reveal
 from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
@@ -99,6 +99,7 @@ class AzureBackend(Backend):
         connection_string: str | Secret | None = None,
         credential: Any | None = None,
         client_options: dict[str, Any] | None = None,
+        retry: RetryPolicy | None = None,
     ) -> None:
         if not container or not container.strip():
             raise ValueError("container must be a non-empty string")
@@ -112,6 +113,7 @@ class AzureBackend(Backend):
         self._connection_string = _reveal(connection_string)
         self._credential = credential
         self._client_options = client_options or {}
+        self._retry = retry
         # Lazy instances
         self._blob_service_instance: Any = None
         self._cc_instance: Any = None
@@ -584,6 +586,26 @@ class AzureBackend(Backend):
                 ) from None
         return cred
 
+    def _build_azure_retry(self) -> Any | None:
+        """Build an Azure ExponentialRetry from the retry policy, or None."""
+        if self._retry is None:
+            return None
+        from azure.storage.blob import ExponentialRetry
+
+        rp = self._retry
+        if rp.backoff_max != 60.0 or rp.timeout is not None:
+            log.debug(
+                "Azure retry: backoff_max=%.1f and timeout=%s are not mappable "
+                "to ExponentialRetry; only max_attempts, backoff_base, jitter are used",
+                rp.backoff_max,
+                rp.timeout,
+            )
+        return ExponentialRetry(
+            retry_total=max(rp.max_attempts - 1, 0),
+            initial_backoff=max(1, round(rp.backoff_base)),
+            random_jitter_range=round(rp.jitter),
+        )
+
     @property
     def _blob_service(self) -> Any:
         """Lazy BlobServiceClient."""
@@ -591,6 +613,9 @@ class AzureBackend(Backend):
             from azure.storage.blob import BlobServiceClient
 
             opts: dict[str, Any] = dict(self._client_options)
+            azure_retry = self._build_azure_retry()
+            if azure_retry is not None and "retry_policy" not in opts:
+                opts["retry_policy"] = azure_retry
             if self._connection_string:
                 self._blob_service_instance = BlobServiceClient.from_connection_string(self._connection_string, **opts)
             else:  # pragma: no cover -- only reached without connection_string
@@ -616,6 +641,9 @@ class AzureBackend(Backend):
             from azure.storage.filedatalake import DataLakeServiceClient
 
             opts: dict[str, Any] = dict(self._client_options)
+            azure_retry = self._build_azure_retry()
+            if azure_retry is not None and "retry_policy" not in opts:
+                opts["retry_policy"] = azure_retry
             if self._connection_string:
                 self._datalake_service_instance = DataLakeServiceClient.from_connection_string(
                     self._connection_string, **opts

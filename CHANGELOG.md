@@ -6,6 +6,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **`RetryPolicy` dataclass** (ID-010) -- unified retry configuration for transient
+  backend errors. Frozen dataclass with `max_attempts`, `backoff_base`, `backoff_max`,
+  `jitter`, and `timeout` fields. Each backend maps the policy to its native retry
+  mechanism: SFTP (tenacity), S3 (botocore), Azure (ExponentialRetry), S3-PyArrow
+  (PyArrow C++ + botocore). `RetryPolicy.disabled()` factory for single-attempt
+  mode. Configurable via constructor (`retry=RetryPolicy(...)`) or dict config
+  (`"retry": {"max_attempts": 5}`). ADR-0011, spec `025-retry-policy.md`.
+
 ### Changed
 
 - **`from_yaml()` moved from `RegistryConfig` classmethod to `ext/yaml.py`** (ID-002)

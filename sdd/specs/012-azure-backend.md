@@ -28,6 +28,7 @@ AzureBackend(
     connection_string: str | None = None,
     credential: Any | None = None,  # e.g. DefaultAzureCredential()
     client_options: dict[str, Any] | None = None,
+    retry: RetryPolicy | None = None,  # see spec 025
 )
 ```
 **Postconditions:** The backend stores configuration but does not connect to Azure during construction (see AZ-004). At least one of `account_name`, `account_url`, or `connection_string` must be provided — otherwise `ValueError` is raised at construction time.

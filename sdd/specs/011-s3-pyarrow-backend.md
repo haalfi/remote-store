@@ -25,6 +25,7 @@ S3PyArrowBackend(
     secret: str | None = None,
     region_name: str | None = None,
     client_options: dict[str, Any] | None = None,
+    retry: RetryPolicy | None = None,  # see spec 025
 )
 ```
 **Postconditions:** The backend stores configuration but does not connect to S3 during construction (see S3PA-004). Constructor arguments are translated to each library's conventions internally.

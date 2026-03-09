@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 from remote_store._config import (
     BackendConfig,
     RegistryConfig,
+    RetryPolicy,
     Secret,
     SecretRedactionFilter,
     StoreProfile,
@@ -528,6 +529,364 @@ class TestFromTomlFallbacks:
         toml_file.write_text('[tool]\nremote-store = "not a table"\n')
         with pytest.raises(TypeError, match="Expected a TOML table"):
             RegistryConfig.from_toml(toml_file, table=("tool", "remote-store"))
+
+
+# endregion
+
+
+# region: RetryPolicy tests (RET-001 through RET-006)
+
+
+class TestRetryPolicy:
+    """RET-001, RET-002, RET-003: RetryPolicy dataclass."""
+
+    @pytest.mark.spec("RET-001")
+    def test_defaults(self) -> None:
+        rp = RetryPolicy()
+        assert rp.max_attempts == 3
+        assert rp.backoff_base == 1.0
+        assert rp.backoff_max == 60.0
+        assert rp.jitter == 1.0
+        assert rp.timeout is None
+
+    @pytest.mark.spec("RET-001")
+    def test_custom_values(self) -> None:
+        rp = RetryPolicy(max_attempts=5, backoff_base=2.0, backoff_max=30.0, jitter=0.5, timeout=120.0)
+        assert rp.max_attempts == 5
+        assert rp.backoff_base == 2.0
+        assert rp.backoff_max == 30.0
+        assert rp.jitter == 0.5
+        assert rp.timeout == 120.0
+
+    @pytest.mark.spec("RET-001")
+    def test_frozen(self) -> None:
+        rp = RetryPolicy()
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            rp.max_attempts = 5  # type: ignore[misc]
+
+    @pytest.mark.spec("RET-002")
+    @pytest.mark.parametrize(
+        "kwargs,match",
+        [
+            ({"max_attempts": 0}, "max_attempts must be >= 1"),
+            ({"max_attempts": -1}, "max_attempts must be >= 1"),
+            ({"backoff_base": -0.1}, "backoff_base must be >= 0"),
+            ({"backoff_max": -1}, "backoff_max must be >= 0"),
+            ({"jitter": -0.5}, "jitter must be >= 0"),
+            ({"timeout": 0}, "timeout must be > 0"),
+            ({"timeout": -1.0}, "timeout must be > 0"),
+        ],
+        ids=[
+            "max_attempts_zero",
+            "max_attempts_negative",
+            "backoff_base_negative",
+            "backoff_max_negative",
+            "jitter_negative",
+            "timeout_zero",
+            "timeout_negative",
+        ],
+    )
+    def test_validation_rejects(self, kwargs: dict[str, Any], match: str) -> None:
+        with pytest.raises(ValueError, match=match):
+            RetryPolicy(**kwargs)
+
+    @pytest.mark.spec("RET-002")
+    def test_validation_accepts_edge_values(self) -> None:
+        rp = RetryPolicy(max_attempts=1, backoff_base=0, backoff_max=0, jitter=0, timeout=0.001)
+        assert rp.max_attempts == 1
+        assert rp.backoff_base == 0
+
+    @pytest.mark.spec("RET-003")
+    def test_disabled_factory(self) -> None:
+        rp = RetryPolicy.disabled()
+        assert rp.max_attempts == 1
+
+    @pytest.mark.spec("RET-021")
+    def test_equality(self) -> None:
+        a = RetryPolicy(max_attempts=5)
+        b = RetryPolicy(max_attempts=5)
+        c = RetryPolicy(max_attempts=3)
+        assert a == b
+        assert a != c
+
+    @pytest.mark.spec("RET-021")
+    def test_hash(self) -> None:
+        a = RetryPolicy(max_attempts=5)
+        b = RetryPolicy(max_attempts=5)
+        assert hash(a) == hash(b)
+        assert {a, b} == {a}
+
+
+class TestBackendConfigRetry:
+    """RET-004: BackendConfig.retry field."""
+
+    @pytest.mark.spec("RET-004")
+    def test_default_none(self) -> None:
+        bc = BackendConfig(type="s3")
+        assert bc.retry is None
+
+    @pytest.mark.spec("RET-004")
+    def test_with_policy(self) -> None:
+        rp = RetryPolicy(max_attempts=5)
+        bc = BackendConfig(type="sftp", retry=rp)
+        assert bc.retry is rp
+        assert bc.retry.max_attempts == 5
+
+
+class TestFromDictRetryParsing:
+    """RET-006: from_dict() parses retry config."""
+
+    @pytest.mark.spec("RET-006")
+    def test_retry_dict_parsed(self) -> None:
+        data = {
+            "backends": {
+                "sftp": {
+                    "type": "sftp",
+                    "options": {"host": "h"},
+                    "retry": {"max_attempts": 5, "backoff_base": 2.0},
+                },
+            },
+            "stores": {},
+        }
+        rc = RegistryConfig.from_dict(data)
+        assert rc.backends["sftp"].retry is not None
+        assert rc.backends["sftp"].retry.max_attempts == 5
+        assert rc.backends["sftp"].retry.backoff_base == 2.0
+
+    @pytest.mark.spec("RET-006")
+    def test_retry_missing_is_none(self) -> None:
+        data = {
+            "backends": {"local": {"type": "local", "options": {}}},
+            "stores": {},
+        }
+        rc = RegistryConfig.from_dict(data)
+        assert rc.backends["local"].retry is None
+
+    @pytest.mark.spec("RET-006")
+    def test_retry_policy_passthrough(self) -> None:
+        rp = RetryPolicy(max_attempts=10)
+        data = {
+            "backends": {"sftp": {"type": "sftp", "options": {"host": "h"}, "retry": rp}},
+            "stores": {},
+        }
+        rc = RegistryConfig.from_dict(data)
+        assert rc.backends["sftp"].retry is rp
+
+    @pytest.mark.spec("RET-006")
+    def test_retry_invalid_field_raises_type_error(self) -> None:
+        data = {
+            "backends": {
+                "sftp": {
+                    "type": "sftp",
+                    "options": {"host": "h"},
+                    "retry": {"max_attempts": 5, "unknown_field": True},
+                },
+            },
+            "stores": {},
+        }
+        with pytest.raises(TypeError):
+            RegistryConfig.from_dict(data)
+
+
+# endregion
+
+
+# region: Registry retry passthrough (RET-005)
+
+
+class TestRegistryRetryPassthrough:
+    """RET-005: Registry passes retry from BackendConfig to backend constructors."""
+
+    @pytest.mark.spec("RET-005")
+    def test_retry_passed_to_backend(self) -> None:
+        from remote_store._registry import Registry
+
+        rp = RetryPolicy(max_attempts=7)
+        config_sftp = RegistryConfig(
+            backends={"sftp": BackendConfig(type="sftp", options={"host": "h"}, retry=rp)},
+            stores={"s": StoreProfile(backend="sftp")},
+        )
+        registry = Registry(config_sftp)
+        backend = registry._get_backend("sftp")
+        assert backend._retry is rp  # type: ignore[union-attr]
+        registry.close()
+
+    @pytest.mark.spec("RET-005")
+    def test_no_retry_when_none(self) -> None:
+        from remote_store._registry import Registry
+
+        config = RegistryConfig(
+            backends={"sftp": BackendConfig(type="sftp", options={"host": "h"})},
+            stores={"s": StoreProfile(backend="sftp")},
+        )
+        registry = Registry(config)
+        backend = registry._get_backend("sftp")
+        assert backend._retry is None  # type: ignore[union-attr]
+        registry.close()
+
+
+# endregion
+
+
+# region: RetryPolicy backend constructor acceptance (RET-010 through RET-014)
+
+
+class TestRetryBackendConstructors:
+    """RET-010 through RET-014: Backends accept or reject retry parameter."""
+
+    @pytest.mark.spec("RET-010")
+    def test_sftp_accepts_retry(self) -> None:
+        from remote_store.backends._sftp import SFTPBackend
+
+        rp = RetryPolicy(max_attempts=5)
+        backend = SFTPBackend(host="h", retry=rp)
+        assert backend._retry is rp
+
+    @pytest.mark.spec("RET-010")
+    def test_sftp_default_none(self) -> None:
+        from remote_store.backends._sftp import SFTPBackend
+
+        backend = SFTPBackend(host="h")
+        assert backend._retry is None
+
+    @pytest.mark.spec("RET-011")
+    def test_s3_accepts_retry(self) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        rp = RetryPolicy(max_attempts=10)
+        backend = S3Backend(bucket="b", retry=rp)
+        assert backend._retry is rp
+
+    @pytest.mark.spec("RET-012")
+    def test_azure_accepts_retry(self) -> None:
+        from remote_store.backends._azure import AzureBackend
+
+        rp = RetryPolicy(max_attempts=7)
+        backend = AzureBackend(
+            container="c", connection_string="DefaultEndpointsProtocol=http;AccountName=a;", retry=rp
+        )
+        assert backend._retry is rp
+
+    @pytest.mark.spec("RET-013")
+    def test_s3_pyarrow_accepts_retry(self) -> None:
+        pytest.importorskip("pyarrow")
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        rp = RetryPolicy(max_attempts=4)
+        backend = S3PyArrowBackend(bucket="b", retry=rp)
+        assert backend._retry is rp
+
+    @pytest.mark.spec("RET-014")
+    def test_local_rejects_retry(self) -> None:
+        from remote_store.backends._local import LocalBackend
+
+        with pytest.raises(TypeError):
+            LocalBackend(root="/tmp", retry=RetryPolicy())  # type: ignore[call-arg]
+
+    @pytest.mark.spec("RET-014")
+    def test_memory_rejects_retry(self) -> None:
+        from remote_store.backends._memory import MemoryBackend
+
+        with pytest.raises(TypeError):
+            MemoryBackend(retry=RetryPolicy())  # type: ignore[call-arg]
+
+
+# endregion
+
+
+# region: RetryPolicy backend mapping (RET-011, RET-012)
+
+
+class TestRetryBackendMapping:
+    """RET-011, RET-012: Backends correctly translate RetryPolicy to native config."""
+
+    @pytest.mark.spec("RET-012")
+    def test_azure_build_retry_mapping(self) -> None:
+        from remote_store.backends._azure import AzureBackend
+
+        rp = RetryPolicy(max_attempts=5, backoff_base=2.0, jitter=3.0)
+        backend = AzureBackend(
+            container="c", connection_string="DefaultEndpointsProtocol=http;AccountName=a;", retry=rp
+        )
+        azure_retry = backend._build_azure_retry()
+        assert azure_retry.total_retries == 4  # max_attempts - 1
+        assert azure_retry.initial_backoff == 2
+        assert azure_retry.random_jitter_range == 3
+
+    @pytest.mark.spec("RET-012")
+    def test_azure_build_retry_rounds_fractional(self) -> None:
+        """Fractional backoff_base is rounded, not truncated to zero."""
+        from remote_store.backends._azure import AzureBackend
+
+        rp = RetryPolicy(max_attempts=3, backoff_base=0.5, jitter=0.7)
+        backend = AzureBackend(
+            container="c", connection_string="DefaultEndpointsProtocol=http;AccountName=a;", retry=rp
+        )
+        azure_retry = backend._build_azure_retry()
+        # 0.5 rounds to 0, but max(1, ...) ensures at least 1
+        assert azure_retry.initial_backoff == 1
+        # 0.7 rounds to 1
+        assert azure_retry.random_jitter_range == 1
+
+    @pytest.mark.spec("RET-012")
+    def test_azure_build_retry_none(self) -> None:
+        from remote_store.backends._azure import AzureBackend
+
+        backend = AzureBackend(container="c", connection_string="DefaultEndpointsProtocol=http;AccountName=a;")
+        assert backend._build_azure_retry() is None
+
+    @pytest.mark.spec("RET-011")
+    def test_s3_retry_botocore_config(self) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        rp = RetryPolicy(max_attempts=7)
+        backend = S3Backend(bucket="b", retry=rp)
+        # Force lazy init to build the config
+        fs = backend._fs
+        config = fs.client_kwargs.get("config")
+        assert config is not None
+        assert config.retries["max_attempts"] == 7
+        assert config.retries["mode"] == "standard"
+        backend.close()
+
+    @pytest.mark.spec("RET-013")
+    def test_s3_pyarrow_retry_strategy(self) -> None:
+        pytest.importorskip("pyarrow")
+        from unittest.mock import patch
+
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        rp = RetryPolicy(max_attempts=9)
+        backend = S3PyArrowBackend(bucket="b", retry=rp)
+        with patch("pyarrow.fs.S3FileSystem") as mock_s3fs:
+            mock_s3fs.return_value = mock_s3fs
+            _ = backend._pa_fs
+            call_kwargs = mock_s3fs.call_args[1]
+            strategy = call_kwargs["retry_strategy"]
+            assert strategy.max_attempts == 9
+        backend.close()
+
+
+# endregion
+
+
+# region: RetryPolicy top-level export (RET-020)
+
+
+class TestRetryPolicyExport:
+    """RET-020: RetryPolicy is exported from remote_store."""
+
+    @pytest.mark.spec("RET-020")
+    def test_importable(self) -> None:
+        from remote_store import RetryPolicy as RP
+
+        assert RP is RetryPolicy
+
+    @pytest.mark.spec("RET-020")
+    def test_in_all(self) -> None:
+        import remote_store
+
+        assert "RetryPolicy" in remote_store.__all__
 
 
 # endregion

@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
-from remote_store._config import Secret, _reveal
+from remote_store._config import RetryPolicy, Secret, _reveal
 from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
@@ -160,6 +160,7 @@ class SFTPBackend(Backend):
         config: dict[str, Any] | None = None,
         timeout: int = 10,
         connect_kwargs: dict[str, Any] | None = None,
+        retry: RetryPolicy | None = None,
     ) -> None:
         if not host or not host.strip():
             raise ValueError("host must be a non-empty string")
@@ -175,6 +176,7 @@ class SFTPBackend(Backend):
         self._host_keys_path = host_keys_path
         self._timeout = timeout
         self._connect_kwargs = connect_kwargs or {}
+        self._retry = retry
         self._resolved_host_keys = self._resolve_host_keys(known_host_keys, config)
 
         self._ssh_client: Any = None
@@ -565,7 +567,9 @@ class SFTPBackend(Backend):
             retry,
             retry_if_exception_type,
             stop_after_attempt,
+            stop_after_delay,
             wait_exponential,
+            wait_random,
         )
 
         # Close any existing stale connection
@@ -573,10 +577,23 @@ class SFTPBackend(Backend):
 
         ssh = self._create_ssh_client()
 
+        # Build tenacity parameters from retry policy (or use defaults)
+        rp = self._retry
+        stop_cond: Any = stop_after_attempt(rp.max_attempts if rp else 3)
+        if rp and rp.timeout is not None:
+            stop_cond = stop_cond | stop_after_delay(rp.timeout)
+        wait_cond: Any = wait_exponential(
+            multiplier=1,
+            min=rp.backoff_base if rp else 2,
+            max=rp.backoff_max if rp else 10,
+        )
+        if rp and rp.jitter > 0:
+            wait_cond = wait_cond + wait_random(0, rp.jitter)
+
         @retry(
             retry=retry_if_exception_type((paramiko.SSHException, OSError, EOFError)),
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=2, max=10),
+            stop=stop_cond,
+            wait=wait_cond,
             before_sleep=before_sleep_log(log, logging.WARNING),  # type: ignore[arg-type,unused-ignore]
             reraise=True,
         )
