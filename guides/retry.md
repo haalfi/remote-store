@@ -8,7 +8,7 @@ retry multiplication.
 
 ```python
 from remote_store import RetryPolicy, Store
-from remote_store.backends._sftp import SFTPBackend
+from remote_store.backends import SFTPBackend
 
 # Custom retry: 5 attempts, 2s base backoff, 30s max, 0.5s jitter
 policy = RetryPolicy(

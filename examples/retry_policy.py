@@ -6,8 +6,7 @@ and config-driven retry via TOML-style dicts.
 
 from __future__ import annotations
 
-from remote_store import RetryPolicy
-from remote_store._config import BackendConfig, RegistryConfig
+from remote_store import BackendConfig, RegistryConfig, RetryPolicy
 
 
 def demo() -> None:
