@@ -84,7 +84,7 @@ The operation must be **non-destructive** (no side effects), **lightweight** (mi
 **Method:** PyArrow `S3FileSystem.get_file_info()` on bucket root
 
 - Uses PyArrow's native `S3FileSystem`, not boto3
-- `self._fs.get_file_info(self._bucket)` returns lightweight metadata
+- `self._pa_fs.get_file_info(self._bucket)` returns lightweight metadata
 - Validates bucket exists and credentials work
 
 **Implementation Notes:**
@@ -455,6 +455,15 @@ def check_health(self) -> None:
         self._fs.s3.head_bucket(Bucket=self._bucket)
         # Option B: s3fs info call
         # self._fs.info(self._bucket)
+```
+
+### S3PyArrowBackend.check_health()
+
+```python
+def check_health(self) -> None:
+    """Verify bucket exists and credentials work via PyArrow metadata."""
+    with self._errors():
+        self._pa_fs.get_file_info(self._bucket)
 ```
 
 ---
