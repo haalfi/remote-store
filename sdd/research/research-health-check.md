@@ -105,30 +105,24 @@ The operation must be **non-destructive** (no side effects), **lightweight** (mi
 
 ---
 
-### 3.5 Azure Blob Storage
-**Method:** Container properties lookup
+### 3.5 Azure Blob Storage / Data Lake Storage
+**Method:** HNS-aware container/filesystem properties lookup
 
-- `get_container_properties()` or equivalent
+**Non-HNS (standard Blob):**
+- `get_container_properties()` or equivalent (`ContainerClient.exists()`)
 - Non-destructive metadata call
 - Validates container exists and credentials work
 
-**Implementation Notes:**
-- `ContainerClient.get_container_properties()` is lightweight
-- Or use `BlobServiceClient.get_container_client().exists()`
-- Error mapping: 403 → `PermissionDenied`, 404 → `NotFound`, connection → `BackendUnavailable`
-
----
-
-### 3.6 Azure Data Lake Storage (HNS)
-**Method:** File system properties or root directory stat
-
-- Similar to non-HNS but may use `DataLakeFileSystemClient.get_file_system_properties()`
-- Or `DataLakeFileSystemClient.exists()` check on filesystem
+**HNS (Data Lake):**
+- `DataLakeFileSystemClient.get_file_system_properties()` or equivalent (`exists()`)
+- Similar lightweight metadata call
 - Validates filesystem exists and credentials work
 
 **Implementation Notes:**
-- May reuse `get_file_system_properties()` already used for folder stats
-- Or parallel to container check in non-HNS mode
+- `AzureBackend` detects HNS mode via `self._hns` flag and branches accordingly
+- Non-HNS: `ContainerClient.get_container_properties()` is lightweight
+- HNS: `DataLakeFileSystemClient.get_file_system_properties()` (reuses existing folder stat logic)
+- Error mapping (both modes): 403 → `PermissionDenied`, 404 → `NotFound`, connection → `BackendUnavailable`
 
 ---
 
@@ -294,8 +288,8 @@ In `test_conformance.py`, add:
 
 **Traceability Markers:**
 - PING-001 through PING-NNN for spec requirements
-- Store method: STORE-016 (tentative)
-- Backend method: BE-023 (tentative)
+- Store method: STORE-016 (verify at spec authoring; STORE-015 is `glob()`)
+- Backend method: BE-026 (next available; BE-025 is `native_path()`)
 
 ---
 
@@ -440,10 +434,10 @@ def check_health(self) -> None:
 def check_health(self) -> None:
     """Verify root path exists and is readable."""
     try:
-        if not os.access(self.root_path, os.R_OK):
-            raise PermissionDenied(f"No read access to {self.root_path}")
         if not os.path.exists(self.root_path):
             raise NotFound(f"Root path does not exist: {self.root_path}")
+        if not os.access(self.root_path, os.R_OK):
+            raise PermissionDenied(f"No read access to {self.root_path}")
     except OSError as e:
         # Refine based on errno or re-raise as BackendUnavailable
 ```
