@@ -4796,8 +4796,9 @@ zero runtime dependencies. On Python 3.10, the <code>tomli</code> backport is re
 <hr />
 <h2 id="yaml-loader">YAML Loader<a class="headerlink" href="#yaml-loader" title="Permanent link">&para;</a></h2>
 <h3 id="cfg-010-from_yaml">CFG-010: <code>from_yaml()</code><a class="headerlink" href="#cfg-010-from_yaml" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>RegistryConfig.from_yaml(path)</code> reads a YAML file and returns
-a <code>RegistryConfig</code>.</p>
+<p><strong>Invariant:</strong> <code>from_yaml(path)</code> (in <code>ext/yaml.py</code>) reads a YAML file and
+returns a <code>RegistryConfig</code>.</p>
+<p><strong>Location:</strong> <code>remote_store/ext/yaml.py</code></p>
 <p><strong>Parameters:</strong>
 - <code>path: str | Path</code> — Path to the YAML file.</p>
 <p><strong>Behavior:</strong>
@@ -4901,7 +4902,7 @@ Pydantic's source merging (env vars, <code>.env</code> files, config files) happ
 </tr>
 <tr>
 <td><code>from_yaml()</code></td>
-<td><code>_config.py</code> classmethod on <code>RegistryConfig</code></td>
+<td><code>ext/yaml.py</code> standalone function</td>
 </tr>
 <tr>
 <td>Unknown-key warning</td>
@@ -4956,7 +4957,9 @@ Pydantic's source merging (env vars, <code>.env</code> files, config files) happ
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-prod</span>
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">root_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">events/raw</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="s2">&quot;remote-store.yaml&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.yaml</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_yaml</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">from_yaml</span><span class="p">(</span><span class="s2">&quot;remote-store.yaml&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="example-pydantic">Example Pydantic<a class="headerlink" href="#example-pydantic" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
