@@ -11,9 +11,6 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [x] **ID-010 — Retry policy configuration** (post-v0.15.0)
-  Moved to Done.
-
 - [ ] **ID-054 — `store.ping()` / backend health check**
   A lightweight method (`store.ping()` or `backend.check_health()`) that
   verifies the backend is reachable and credentials are valid. Enables

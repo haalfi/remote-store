@@ -79,9 +79,13 @@ rm pr-review-$PR_NUMBER.json
 
 **Critical rules:**
 - **`"event": "COMMENT"`** always — never APPROVE/REQUEST_CHANGES (owner token)
-- **`"line"` not `"position"`** — must be a line visible in the diff; if the
-  finding is outside diff hunks, attach to nearest changed line and reference
-  the actual location in the body
+- **`"line"` must be an added/modified line** (`+` line in the diff). Context
+  lines (unchanged lines shown for surrounding context) are NOT valid targets
+  and will cause a 422 "Line could not be resolved" error. To verify: parse
+  `gh pr diff` output and confirm the target line number corresponds to a `+`
+  line in the new file. If your finding is on a context line or outside diff
+  hunks, attach the comment to the **nearest `+` line** in the same hunk and
+  reference the actual location in the body.
 - **Deleted lines** need `"side": "LEFT"` with the base-branch line number
 - **Tag each comment:** `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Security:`
 - Be terse — state problem and fix, no preamble
