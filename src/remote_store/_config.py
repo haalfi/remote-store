@@ -250,4 +250,3 @@ class RegistryConfig:
             raise TypeError(msg)
 
         return cls._from_dict(data, stacklevel=3)
-

@@ -530,5 +530,4 @@ class TestFromTomlFallbacks:
             RegistryConfig.from_toml(toml_file, table=("tool", "remote-store"))
 
 
-
 # endregion
