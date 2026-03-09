@@ -11,7 +11,7 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-- [x] **ID-051 — Sweep stale backlog references in docs and guides** (v0.15.1)
+- [x] **ID-051 — Sweep stale backlog references in docs and guides** (post-v0.15.0)
   Swept all docs-src, guides, and examples for stale backlog references.
   One stale item found and fixed: `guides/pyarrow-adapter.md` Limitations
   section claimed Tier 1 was "only for S3-PyArrow" (stale since ID-037
@@ -24,7 +24,7 @@ Active work items, ordered by priority.
   021 (Config loaders). Additionally, systemic gaps across existing examples:
   no capability-missing scenarios, no error paths, no empty-input edge cases.
 
-- [x] **ID-053 — Fix code block highlighting in docs** (v0.15.1)
+- [x] **ID-053 — Fix code block highlighting in docs** (post-v0.15.0)
   Audited all markdown in docs-src, guides, specs, ADRs, and RFCs for bare
   opening code fences (` ``` ` without language tag). Found 13 actual bare
   openers across 11 files (original estimate of ~135 was inflated by counting
@@ -353,6 +353,11 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
   `ext/partition.py`. Builds and parses paths like
   `year=2026/month=03/data.parquet`. Pure Python, zero dependencies.
   Spec: `024-ext-partition.md` (PART-001 through PART-013). 23 tests.
+
+- [x] **ID-048 — Verify notebook examples in CI** (v0.15.0)
+  `tests/scripts/run_notebooks.py` executes notebook code cells via `exec()`.
+  Wired into `hatch run notebooks`, `hatch run all`, and CI `notebooks` job.
+  Skips `benchmark_analysis.ipynb`. PR #130.
 
 - [x] **ID-002 — YAML config support** (v0.14.0, moved to `ext/yaml.py` post-v0.15.0)
   `from_yaml(path)` in `ext/yaml.py` — optional `pyyaml` or `ruamel.yaml`.
