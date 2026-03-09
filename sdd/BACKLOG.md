@@ -11,7 +11,38 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
-*(none — pick from Ideas or add new items)*
+- [~] **ID-050 — End-to-end integration tests against Docker backends**
+  Full data lake medallion pipeline (Bronze/Silver/Gold) against real Docker
+  services (MinIO, Azurite). Exercises 6 extensions together.
+  - Done: `test_data_lake.py` with Memory, S3, S3-PyArrow, Azure backends.
+  - Remaining: SFTP backend test (typical SFTP flow: check for new files,
+    fetch them, place daily files if not exists), `ext.transfer`
+    cross-backend scenario.
+
+- [ ] **ID-010 — Retry policy configuration**
+  Expose a `RetryPolicy` dataclass in `BackendConfig.options` for tuning
+  attempts, backoff, and jitter per-backend.
+  - Done: research complete (`sdd/research/research-retry-policy.md`, PR #113).
+  - Remaining: ADR, spec, implementation.
+
+- [ ] **ID-054 — `store.ping()` / backend health check**
+  A lightweight method (`store.ping()` or `backend.check_health()`) that
+  verifies the backend is reachable and credentials are valid. Enables
+  startup gates ("fail before accepting traffic") and liveness probes
+  (Kubernetes, etc.). Per-backend: S3 HeadBucket, SFTP stat, local
+  os.access, Azure GetProperties, Memory always-ok.
+
+- [ ] **ID-055 — `iter_children()` — combined file + folder listing**
+  A single call returning both files and subfolders in one pass, avoiding
+  two round-trips. Most backends (S3 `list_objects_v2` with `Delimiter`,
+  local `os.scandir`, SFTP `listdir_attr`) already return both in a single
+  response. Core `Store` method.
+
+- [ ] **ID-056 — `read_text()` convenience method**
+  `store.read_text(path, encoding="utf-8") -> str` — thin wrapper around
+  `open_read()`. Matches `pathlib.Path.read_text()` expectations. Citizen
+  developers reach for this naturally. No format-specific readers (CSV,
+  JSON, etc.) — those belong in application code, not the storage layer.
 
 ---
 
@@ -27,35 +58,18 @@ Active work items, ordered by priority.
 
 Started but not yet prioritized for completion.
 
-- [~] **ID-050 — End-to-end integration tests against Docker backends**
-  Full data lake medallion pipeline (Bronze/Silver/Gold) against real Docker
-  services (MinIO, Azurite). Exercises 6 extensions together.
-  - Done: `test_data_lake.py` with Memory, S3, S3-PyArrow, Azure backends.
-  - Remaining: SFTP backend test, `ext.transfer` cross-backend scenario.
-
-- [~] **ID-044 — Harden examples into assertion-based expectation tests**
-  Examples expose `demo(store)` functions; `tests/test_examples.py` imports
-  each and wraps with assertions. Examples stay print-based and user-friendly.
-  - Done: refactored all 14 examples, created 14 test classes in `test_examples.py`.
-  - Remaining: branch `claude/review-example-tests-GiVnG` not yet merged.
-
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.
   - Done: `packaging/conda-forge/recipe.yaml`, `conda-recipe.yml` workflow,
     staged-recipes PR `conda-forge/staged-recipes#32401` (CI green).
-  - Remaining: waiting for conda-forge reviewer approval.
+  - Remaining: waiting for conda-forge reviewer approval. Update recipe to
+    v0.15.0 when approved.
 
 - [~] **ID-013 — Async Store / Backend API**
   Async version of Store and Backend for async frameworks (FastAPI, aiohttp).
   - Done: research complete (`sdd/research/research-async-store-api.md`).
   - Remaining: ADR, spec, implementation (Phase 1: core async surface,
     Phase 2: native async backends, Phase 3: async extensions).
-
-- [~] **ID-010 — Retry policy configuration**
-  Expose a `RetryPolicy` dataclass in `BackendConfig.options` for tuning
-  attempts, backoff, and jitter per-backend.
-  - Done: research complete (`sdd/research/research-retry-policy.md`, PR #113).
-  - Remaining: ADR, spec, implementation.
 
 ### Parking Lot
 
@@ -67,6 +81,16 @@ Not evaluated, not committed to. Pick up when relevant.
   without adding dependencies. Note: `ext.transfer` (ID-023) provides
   `on_progress` for upload/download/transfer; this item covers the lower-level
   Store API.
+
+- [ ] **ID-057 — Tested code snippets in docs (single-source snippets)**
+  All code snippets in the docs site should come from real, tested Python
+  source files — not hand-written markdown fences. One or more "snippet
+  scripts" (e.g. `examples/snippets/`) contain named regions
+  (`# snippet: quickstart-read` / `# end-snippet`). A mkdocs hook or
+  `pymdownx.snippets` pulls regions into docs at build time. CI runs the
+  snippet scripts as part of `hatch run all` to guarantee they stay valid.
+  Inspired by Rust rustdoc, Go Example functions, Java `@snippet` tags.
+  Research: `sdd/research/research-example-testing.md`.
 
 - [ ] **ID-008 — Checksum verification on read/write**
   Add a `verify_checksum=True` option to `read()` / `write()`. Populate
@@ -547,12 +571,19 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
 
 ### Post-v0.15.0 housekeeping
 
+- [x] **ID-044 — Harden examples into assertion-based expectation tests** (post-v0.15.0)
+  Examples expose `demo(store)` functions; `tests/test_examples.py` imports
+  each and wraps with assertions. Examples stay print-based and user-friendly.
+  14 examples refactored, 14 test classes in `test_examples.py`. Research:
+  `sdd/research/research-example-testing.md` (cross-language ecosystem survey).
+
 - [x] **ID-049 — Enable GitHub Vigilant Mode** (post-v0.15.0)
-  Enabled Vigilant Mode on maintainer GitHub account. Configured local SSH
-  signing (`gpg.format ssh`, `commit.gpgSign true`, `tag.gpgSign true`).
-  Added CONTRIBUTING.md § Commit Signing with setup instructions, SSH agent
-  guidance, and verification steps. Soft enforcement only (visual badges,
-  no blocking of unsigned commits).
+  Commit signing with SSH for supply chain transparency. Soft enforcement
+  (visual badges, no blocking of unsigned commits). Ops-only, no code changes.
+  - Done: Vigilant Mode enabled on maintainer GitHub account. Local SSH signing
+    configured. CONTRIBUTING.md § Code Signing added with setup instructions.
+    Master merge commits show "Verified" badge.
+  - Future: Consider SIGNING.md verification guide if moving to hard enforcement.
 
 - [x] **ID-051 — Sweep stale backlog references in docs and guides** (post-v0.15.0)
   Swept all docs-src, guides, and examples for stale backlog references.
@@ -580,12 +611,15 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
 - [x] **ID-052 — Custom domain: remotestore.dev** (post-v0.15.0)
   Registered `remotestore.dev` with redirect to GitHub project home.
   DNS CNAME points `docs.remotestore.dev` to `remote-store.readthedocs.io`.
-  Step 1: Updated all user-facing URLs across the repo (`pyproject.toml`,
-  `CITATION.cff`, conda recipe, README, CONTRIBUTING, release skill,
-  DOCUMENTATION.md, data lake guide, repo_stats.py). Historical references
-  left as-is. Step 2: Configured `docs.remotestore.dev` as canonical docs URL
-  (RTD custom domain admin + `mkdocs.yml` `site_url`). Old RTD URL
-  302-redirects to custom domain.
+  **Step 1 [x]:** Updated all user-facing URLs across the repo: `pyproject.toml`
+  Homepage/Documentation, `CITATION.cff`, conda recipe, README (badge + 14 deep
+  links), CONTRIBUTING release checklist, release skill, DOCUMENTATION.md
+  canonical URL policy, data lake guide, repo_stats.py label. Historical
+  references (CHANGELOG, BACKLOG done items, research docs) left as-is.
+  **Step 2 [x]:** Configured `docs.remotestore.dev` as canonical docs URL.
+  RTD custom domain admin done. `mkdocs.yml` `site_url` updated from
+  GitHub Pages to `https://docs.remotestore.dev/`. Old RTD URL
+  (`remote-store.readthedocs.io`) 302-redirects to custom domain.
 
 ### Documentation
 
