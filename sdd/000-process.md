@@ -17,30 +17,22 @@ This repository follows **Spec-Driven Development (SDD)**: every feature, contra
 
 ```
 sdd/
-  000-process.md              # This file — how specs work
-  BACKLOG.md                  # Tiered work tracker (blockers → backlog → ideas → done)
+  000-process.md              # This file -- how specs work
+  BACKLOG.md                  # Tiered work tracker (blockers -> backlog -> ideas -> done)
   DESIGN.md                   # Overall design document & conventions
+  DOCUMENTATION.md            # Documentation standards & Diataxis structure
   specs/
-    001-store-api.md          # Store API + metadata models
-    002-registry-config.md    # Registry lifecycle + configuration
-    003-backend-adapter-contract.md  # Backend ABC + capabilities
-    004-path-model.md         # RemotePath value object
-    005-error-model.md        # Error hierarchy
-    006-streaming-io.md       # Streaming I/O semantics
-    007-atomic-writes.md      # Atomic write contract
-    008-s3-backend.md         # S3 backend
-    009-sftp-backend.md       # SFTP backend
-    010-native-path-resolution.md  # Native path resolution
-    011-s3-pyarrow-backend.md # S3-PyArrow hybrid backend
-    012-azure-backend.md      # Azure backend (planned)
+    NNN-<topic>.md            # Feature/contract specifications (numbered sequentially)
   adrs/
-    0001-*.md                 # Architecture Decision Records
+    NNNN-<short-title>.md     # Architecture Decision Records (immutable once accepted)
   rfcs/
+    rfc-NNNN-<short-title>.md # Proposals (graduate to specs/ when accepted)
     rfc-template.md           # Template for new proposals
-guides/
-  backends/                   # User-facing backend configuration guides
-    index.md, local.md, s3.md, s3-pyarrow.md, sftp.md
 ```
+
+Browse `sdd/specs/` for the full list of specifications. Each spec file
+covers one domain (e.g. Store API, backend contract, error model, a specific
+backend, or an extension).
 
 ## Spec Format
 
@@ -63,21 +55,12 @@ One-paragraph purpose statement.
 
 ### ID Prefixes
 
-| Prefix | Module | Spec File |
-|--------|--------|-----------|
-| `STORE` | Store API | `001-store-api.md` |
-| `MOD` | Metadata models | `001-store-api.md` |
-| `REG` | Registry | `002-registry-config.md` |
-| `CFG` | Configuration | `002-registry-config.md` |
-| `BE` | Backend contract | `003-backend-adapter-contract.md` |
-| `CAP` | Capabilities | `003-backend-adapter-contract.md` |
-| `PATH` | RemotePath | `004-path-model.md` |
-| `ERR` | Errors | `005-error-model.md` |
-| `SIO` | Streaming I/O | `006-streaming-io.md` |
-| `AW` | Atomic writes | `007-atomic-writes.md` |
-| `S3` | S3 backend | `008-s3-backend.md` |
-| `SFTP` | SFTP backend | `009-sftp-backend.md` |
-| `NPR` | Native path resolution | `010-native-path-resolution.md` |
+Each spec defines a short prefix for its section IDs (e.g. `STORE`, `PATH`,
+`ERR`, `S3`, `CACHE`). The prefix is declared at the top of each spec file.
+A test referencing `STORE-005` traces back to section 005 in the Store API spec.
+
+Browse `sdd/specs/` for all current prefixes -- each spec's header declares its
+prefix and the file name indicates the domain.
 
 ## Test ↔ Spec Traceability
 
