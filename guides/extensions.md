@@ -7,16 +7,16 @@ on top of the core Store API.
 
 | Module | Extra | Description | Guide | Example |
 |--------|-------|-------------|-------|---------|
-| `ext.batch` | -- | Bulk delete, copy, and exists operations | [Guide](batch-operations.md) | [Example](../examples/batch_operations.py) |
-| `ext.cache` | -- | Store-level caching with TTL and auto-invalidation | [Guide](cache.md) | [Example](../examples/caching.py) |
-| `ext.glob` | -- | Portable glob pattern matching for file listing | [Guide](glob-pattern-matching.md) | [Example](../examples/glob_pattern_matching.py) |
-| `ext.observe` | -- | Callback-based observability hooks for Store operations | [Guide](observe.md) | [Example](../examples/observe_hooks.py) |
+| `ext.batch` | -- | Bulk delete, copy, and exists operations | [Guide](batch-operations.md) | [Example](examples/batch-operations.md) |
+| `ext.cache` | -- | Store-level caching with TTL and auto-invalidation | [Guide](cache.md) | [Example](examples/caching.md) |
+| `ext.glob` | -- | Portable glob pattern matching for file listing | [Guide](glob-pattern-matching.md) | [Example](examples/glob-pattern-matching.md) |
+| `ext.observe` | -- | Callback-based observability hooks for Store operations | [Guide](observe.md) | [Example](examples/observe-hooks.md) |
 | `ext.partition` | -- | Hive-style partition path helpers | -- | -- |
-| `ext.transfer` | -- | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](../examples/transfer_operations.py) |
-| `ext.arrow` | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](../examples/pyarrow_adapter.py) |
-| `ext.otel` | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](../examples/otel_tracing.py) |
-| `ext.pydantic` | `pydantic` | Pydantic BaseModel/BaseSettings adapter | -- | [Example](../examples/config_loaders.py) |
-| `ext.yaml` | `yaml` | YAML config file loader | -- | [Example](../examples/config_loaders.py) |
+| `ext.transfer` | -- | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](examples/transfer-operations.md) |
+| `ext.arrow` | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](examples/pyarrow-adapter.md) |
+| `ext.otel` | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](examples/otel-tracing.md) |
+| `ext.pydantic` | `pydantic` | Pydantic BaseModel/BaseSettings adapter | -- | [Example](examples/config-loaders.md) |
+| `ext.yaml` | `yaml` | YAML config file loader | -- | [Example](examples/config-loaders.md) |
 
 ## Using Extensions
 
