@@ -56,7 +56,7 @@ No TODOs or placeholders in published docstrings.
 
 Two published sites exist. Use the right one depending on what you link to:
 
-- **Documentation** (guides, API reference, explanation pages): link to ReadTheDocs (`https://docs.remotestore.dev/`).
+- **Documentation** (guides, API reference, explanation pages): link to ReadTheDocs (`https://docs.remotestore.dev/stable/`). Use `/stable/` (not `/latest/`) so links always point to the most recent release, not unreleased master. The `/en/` language prefix is omitted (single-language project, configured in RTD URL scheme).
 - **Source files** (specs, ADRs, examples, source code, CHANGELOG): link to the GitHub repository (`https://github.com/haalfi/remote-store/`).
 
 Within the docs site, always use relative links.

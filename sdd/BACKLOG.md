@@ -77,6 +77,12 @@ Not evaluated, not committed to. Pick up when relevant.
   Each generated wrapper should also include links to relevant API reference
   pages at the bottom (e.g. caching example links to `ext.cache` reference).
 
+- [ ] **ID-063 — `write_text()` convenience method**
+  Symmetric to `read_text()`. `Store.write_text(path, text, encoding="utf-8",
+  errors="strict", *, overwrite=False)` — thin wrapper around `.encode()` +
+  `write()`. Lower priority since `store.write(path, text.encode())` is a
+  trivial one-liner. Add if users request it.
+
 - [ ] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**
   `list_files`, `list_folders`, and `iter_children` in S3Backend and
   S3PyArrowBackend call `self._fs.exists()` before `self._fs.ls()`, adding

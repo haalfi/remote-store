@@ -43,11 +43,28 @@ Check the diff against these concerns (priority order):
 2. **Spec compliance** — code vs `sdd/specs/`, missing `@pytest.mark.spec("ID")`
 3. **Test coverage** — untested behavior, missing edge cases, untested branches
 4. **Consistency** — breaks established codebase patterns
-5. **Ripple gaps** — cross-refs not updated (see `sdd/CLAUDE-REFERENCE.md` table)
+5. **Ripple gaps** — run the ripple check below, then flag missing updates
 6. **Security** — injection, traversal, credential exposure
 
 **Skip:** style (ruff handles it), docstrings on unchanged code, "consider X"
 without reason, praise, logging suggestions.
+
+### Ripple check (mandatory for step 5)
+
+Read `sdd/CLAUDE-REFERENCE.md` § Ripple-check table. For each row whose trigger
+matches something in the diff, verify the "also check / update" targets are
+addressed. Common misses to look for explicitly:
+
+- **New/changed Store method?** → README API table row present? Comparison
+  table method count still correct? CHANGELOG entry?
+- **New extension or extension moved?** → README extensions table row? API
+  reference page (`docs-src/api/ext-*.md`)? Nav entries (`_nav.yml`,
+  `api/index.md`)?
+- **New example script?** → README examples table row? Docs wrapper page
+  (`docs-src/examples/*.md`)? `tests/test_examples.py` import?
+
+If any target is missing from the diff **and** not already up-to-date in the
+repo, file a `Ripple:` comment.
 
 ## Step 3: Post review
 
