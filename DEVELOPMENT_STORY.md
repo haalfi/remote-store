@@ -6,15 +6,15 @@ This document chronicles how `remote-store` was built as a collaboration between
 
 | Metric | Value |
 |--------|-------|
-| Source code | ~6,200 lines (6 backends) |
-| Tests | ~1,600 tests, ~11,300 lines |
-| Specs & docs | 24 specs, 10 ADRs, 4 RFCs |
-| Examples | 16 core + 4 cloud + 4 notebooks |
-| Extensions | 9 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.glob`, `ext.observe`, `ext.otel`, `ext.partition`, `ext.pydantic`, `ext.transfer`) |
+| Source code | ~8,100 lines (6 backends) |
+| Tests | ~1,710 tests, ~14,900 lines |
+| Specs & docs | 28 specs, 11 ADRs, 4 RFCs |
+| Examples | 21 core + 4 cloud + 5 notebooks |
+| Extensions | 10 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.glob`, `ext.observe`, `ext.otel`, `ext.partition`, `ext.pydantic`, `ext.transfer`, `ext.yaml`) |
 | Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
 | Coverage | >= 95% CI floor (actual in README badge) |
 | Co-work sessions | Spread across ~3.5 calendar weeks (since Feb 14) |
-| Commits | ~315 |
+| Commits | ~346 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
@@ -424,6 +424,20 @@ This release was the most extension-heavy yet -- three new extensions and major 
 **The documentation overhaul** (DOC-001) was the largest non-code effort yet: full Diataxis restructure, 9 extension API reference pages, 7 new content pages, docstring audit for Store/Backend/errors, and cross-links throughout. Lesson #16 emerged: adopt a documentation framework early. Retrofitting Diataxis onto an existing flat site required reclassifying every page and rebuilding navigation.
 
 **E2E integration tests** (ID-050) validated six extensions working together in a full data lake pipeline against Docker backends (MinIO, Azurite). A cross-layer assertion lesson: don't assert `gold_bytes < silver_bytes` -- aggregation adds computed columns that can make Gold larger despite fewer rows. Use row counts for aggregation invariants.
+
+### Phase 24: Developer Experience and Tooling (post-v0.15.0)
+
+Four PRs (#170--#173) landed in a single day, each small but collectively shaping the developer experience story.
+
+**API ergonomics through convention** (ID-056, ID-055). `read_text()` and `iter_children()` followed pathlib's API conventions deliberately -- same parameter names (`encoding`, `errors`), same return semantics. The lesson: when your audience is citizen developers, matching stdlib patterns reduces the API surface they need to learn to zero.
+
+**Learning from other projects' toolchains** (#171, #173). A research pass on FastAPI's documentation setup (PR #171) revealed that mkdocstrings already supported colored, cross-linked type annotations -- just not enabled. A 4-line config change (`separate_signature`, `signature_crossrefs`, `show_symbol_type_heading`, `show_symbol_type_toc`) in PR #173 gave the API reference the same visual quality that FastAPI is known for. Lesson: before building, check if your existing tools already support the feature.
+
+**uv adoption, incrementally** (#173). CI moved from pip to uv across three workflows (ci.yml, publish.yml, then docs.yml). The key insight: uv replaces pip *for installation speed in CI*, not hatch for local development. Locally, `hatch run` remains the interface -- it manages environments, scripts, and matrix testing. uv is a CI concern only, cutting install steps from ~45s to ~8s.
+
+**Cross-platform as a first-class constraint.** The Win/macOS/Linux test matrix surfaced patterns that became project conventions: errno codes instead of string matching (German locale breaks English error messages), closing streams before `shutil.rmtree()` (Windows file locking), ASCII-only `print()` (cp1252 codec), and em-dash avoidance in Markdown titles (mojibake via MkDocs). These aren't edge cases -- they're the default experience for half the target audience.
+
+**Ripple-check strengthening** (#172). The CLAUDE-REFERENCE.md ripple-check table gained more specific verification targets: Store method changes now explicitly require README API table + method count updates, extension changes require docs nav + API reference pages. The README audit in the same PR caught 3 missing examples and a stale method count -- exactly the kind of drift the table is designed to prevent.
 
 ## What Worked Well
 
