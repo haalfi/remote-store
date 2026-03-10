@@ -45,8 +45,10 @@ Started but not yet prioritized for completion.
 
 - [~] **ID-013 — Async Store / Backend API**
   Async version of Store and Backend for async frameworks (FastAPI, aiohttp).
-  - Done: research complete (`sdd/research/research-async-store-api.md`).
-  - Remaining: ADR, spec, implementation (Phase 1: core async surface,
+  - Done: research complete (`sdd/research/research-async-store-api.md`),
+    ADR-0012 (`sdd/adrs/0012-async-store-backend-api.md`),
+    spec 029 (`sdd/specs/029-async-store-backend-api.md`).
+  - Remaining: implementation (Phase 1: core async surface,
     Phase 2: native async backends, Phase 3: async extensions).
 
 ### Parking Lot
