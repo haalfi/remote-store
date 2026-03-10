@@ -391,6 +391,10 @@ class CachedStore(Store):
     def read(self, path: str) -> BinaryIO:
         return self._inner.read(path)
 
+    def ping(self) -> None:  # noqa: D401
+        """Delegate ping to inner store (not cached)."""
+        self._inner.ping()
+
     def close(self) -> None:  # noqa: D401
         """Delegate close to inner store."""
         self._inner.close()

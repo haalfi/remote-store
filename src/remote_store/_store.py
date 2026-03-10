@@ -42,6 +42,28 @@ class Store:
 
     # region: public methods
 
+    def ping(self) -> None:
+        """Verify the backend is reachable and credentials are valid.
+
+        A lightweight, non-destructive health check. Returns silently on
+        success; raises on failure.
+
+        :raises PermissionDenied: If credentials are invalid.
+        :raises NotFound: If the bucket, container, or root path does not exist.
+        :raises BackendUnavailable: If the backend cannot be reached.
+
+        Example::
+
+            try:
+                store.ping()
+            except Exception as exc:
+                print(f"Backend unreachable: {exc}")
+        """
+        _bk = self._backend.name
+        log.debug("ping", extra={"op": "ping", "backend": _bk})
+        self._backend.check_health()
+        log.info("ping OK", extra={"op": "ping", "backend": _bk})
+
     def close(self) -> None:
         """Close the underlying backend, releasing any held resources.
 

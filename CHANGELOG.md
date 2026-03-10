@@ -8,6 +8,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`Store.ping()` health check** (ID-054) -- lightweight, non-destructive
+  backend connectivity verification. Delegates to `Backend.check_health()`.
+  Per-backend strategies: Local (`exists` + `os.access`), S3 (`head_bucket`),
+  S3-PyArrow (`get_file_info`), SFTP (`stat`), Azure
+  (`get_container_properties`), Memory (no-op). `ext.observe` `on_ping` hook.
+  Spec `026-health-check.md` (PING-001 through PING-010).
+
 - **`RetryPolicy` dataclass** (ID-010) -- unified retry configuration for transient
   backend errors. Frozen dataclass with `max_attempts`, `backoff_base`, `backoff_max`,
   `jitter`, and `timeout` fields. Each backend maps the policy to its native retry

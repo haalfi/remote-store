@@ -244,6 +244,7 @@ secret.reveal()  # → 'my-secret-key'
 |`to_key(path)`       |Convert native/absolute path to store-relative key|
 |`native_path(key)`   |Convert store-relative key to backend-native path |
 |`unwrap(type_hint)`  |Get backend's native handle (e.g., `pyarrow.fs.FileSystem`)|
+|`ping()`             |Verify backend connectivity (health check)    |
 |`close()`            |Close the underlying backend                  |
 
 All write/move/copy methods accept `overwrite=True` to replace existing files.
@@ -301,6 +302,7 @@ Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/ma
 | [transfer_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py) | Upload, download, cross-store transfer with progress |
 | [observe_hooks.py](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py) | Callback hooks, around spans, buffered observer |
 | [otel_tracing.py](https://github.com/haalfi/remote-store/blob/master/examples/otel_tracing.py) | OpenTelemetry tracing and metrics bridge |
+| [health_check.py](https://github.com/haalfi/remote-store/blob/master/examples/health_check.py) | Startup gate pattern with `Store.ping()` |
 
 **Backend** -- require a running service and credentials ([`examples/backends/`](https://github.com/haalfi/remote-store/tree/master/examples/backends)):
 

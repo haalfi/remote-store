@@ -196,6 +196,10 @@ class SFTPBackend(Backend):
 
     # region: public methods
 
+    def check_health(self) -> None:
+        with self._errors():
+            self._sftp.stat(self._base_path)
+
     def to_key(self, native_path: str) -> str:
         if self._base_path == "/":
             # Strip leading slash

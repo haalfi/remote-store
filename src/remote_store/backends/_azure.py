@@ -135,6 +135,13 @@ class AzureBackend(Backend):
 
     # region: public methods
 
+    def check_health(self) -> None:
+        with self._errors():
+            if self._hns:  # pragma: no cover -- HNS only
+                self._fs.get_file_system_properties()
+            else:
+                self._cc.get_container_properties()
+
     def to_key(self, native_path: str) -> str:
         prefix = f"{self._container}/"
         if native_path.startswith(prefix):

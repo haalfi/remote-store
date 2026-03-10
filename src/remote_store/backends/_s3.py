@@ -85,6 +85,10 @@ class S3Backend(Backend):
 
     # region: public methods
 
+    def check_health(self) -> None:
+        with self._errors():
+            self._fs.s3.head_bucket(Bucket=self._bucket)
+
     def to_key(self, native_path: str) -> str:
         prefix = f"{self._bucket}/"
         if native_path.startswith(prefix):
