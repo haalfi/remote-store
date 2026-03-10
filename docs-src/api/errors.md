@@ -12,4 +12,6 @@
 
 ::: remote_store.CapabilityNotSupported
 
+::: remote_store.DirectoryNotEmpty
+
 ::: remote_store.BackendUnavailable

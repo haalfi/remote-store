@@ -4,6 +4,8 @@
 
 ::: remote_store.BackendConfig
 
+::: remote_store.RetryPolicy
+
 ::: remote_store.StoreProfile
 
 ::: remote_store.Secret
