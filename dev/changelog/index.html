@@ -6369,12 +6369,23 @@
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>from_yaml()</code> moved from <code>RegistryConfig</code> classmethod to <code>ext/yaml.py</code></strong> (ID-002)
+<li>
+<p><strong>Authoritative docs restructured to ADF standard</strong> (ID-059) -- <code>sdd/DESIGN.md</code>
+  trimmed to code style conventions only (sections 1-10 removed, duplicated specs).
+  <code>sdd/DOCUMENTATION.md</code> condensed to rules + guides (~130 lines from ~456).
+  <code>sdd/000-process.md</code> restructured to Intent/Rules/Guides (~75 lines from ~152).
+  Audit files moved to <code>sdd/audits/</code>. <code>CONTRIBUTING.md</code> spec format section
+  replaced with cross-ref to <code>000-process.md</code>. <code>CLAUDE.md</code> environment note removed,
+  gh CLI <code>Forbidden operations</code> denylist replaced with ask-gated confirmation.</p>
+</li>
+<li>
+<p><strong><code>from_yaml()</code> moved from <code>RegistryConfig</code> classmethod to <code>ext/yaml.py</code></strong> (ID-002)
   YAML config loading requires an optional dependency (<code>pyyaml</code> or <code>ruamel.yaml</code>),
   same as the Pydantic adapter. Moved to <code>ext.yaml</code> for consistency with the
   extension architecture (ADR-0008). Import changes:
   <code>from remote_store.ext.yaml import from_yaml</code> (or <code>from remote_store import from_yaml</code>
-  when pyyaml is installed).</li>
+  when pyyaml is installed).</p>
+</li>
 </ul>
 <h3 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h3>
 <ul>

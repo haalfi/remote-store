@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#remote-store-package-design-specification-v1" class="md-skip">
+        <a href="#code-style-conventions" class="md-skip">
           Skip to content
         </a>
       
@@ -2932,10 +2932,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-purpose" class="md-nav__link">
+  <a href="#intent-scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Purpose
+        Intent &amp; Scope
       
     </span>
   </a>
@@ -2943,50 +2943,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-core-design-principles" class="md-nav__link">
+  <a href="#rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Core Design Principles
+        Rules
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. Core Design Principles">
+    <nav class="md-nav" aria-label="Rules">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#21-dependency-policy" class="md-nav__link">
+  <a href="#1-formatting-linting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.1 Dependency Policy
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-core-abstractions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Core Abstractions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Core Abstractions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#31-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.1 Store
+        1. Formatting &amp; Linting
       
     </span>
   </a>
@@ -2994,50 +2966,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-path-identity-objects" class="md-nav__link">
+  <a href="#2-module-package-descriptions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2 Path &amp; Identity Objects
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3.2 Path &amp; Identity Objects">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#remotepath-internal-semi-public" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RemotePath (internal / semi-public)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#33-metadata-objects" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.3 Metadata Objects
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3.3 Metadata Objects">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#fileinfo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        FileInfo
+        2. Module &amp; Package Descriptions
       
     </span>
   </a>
@@ -3045,43 +2977,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#folderinfo" class="md-nav__link">
+  <a href="#3-type-annotations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FolderInfo
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-backend-adapter-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Backend Adapter Contract
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. Backend Adapter Contract">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#41-backend-identity-capabilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.1 Backend Identity &amp; Capabilities
+        3. Type Annotations
       
     </span>
   </a>
@@ -3089,10 +2988,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#42-path-handling" class="md-nav__link">
+  <a href="#4-docstrings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.2 Path Handling
+        4. Docstrings
       
     </span>
   </a>
@@ -3100,10 +2999,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#43-io-operations" class="md-nav__link">
+  <a href="#5-code-organisation-comments" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.3 I/O Operations
+        5. Code Organisation Comments
       
     </span>
   </a>
@@ -3111,10 +3010,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#44-atomic-writes" class="md-nav__link">
+  <a href="#6-method-ordering" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.4 Atomic Writes
+        6. Method Ordering
       
     </span>
   </a>
@@ -3122,10 +3021,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#45-metadata-listing" class="md-nav__link">
+  <a href="#7-comments" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.5 Metadata &amp; Listing
+        7. Comments
       
     </span>
   </a>
@@ -3133,10 +3032,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#46-move-copy" class="md-nav__link">
+  <a href="#8-constants" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.6 Move &amp; Copy
+        8. Constants
       
     </span>
   </a>
@@ -3144,49 +3043,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#47-error-model" class="md-nav__link">
+  <a href="#9-__all__" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.7 Error Model
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-streaming-cancellation-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Streaming &amp; Cancellation Semantics
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-configuration-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Configuration Model
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. Configuration Model">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#61-configuration-as-description" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.1 Configuration as Description
+        9. __all__
       
     </span>
   </a>
@@ -3194,10 +3054,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#62-store-profiles-primary-unit" class="md-nav__link">
+  <a href="#10-error-messages" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6.2 Store Profiles (Primary Unit)
+        10. Error Messages
       
     </span>
   </a>
@@ -3205,264 +3065,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#63-backend-configuration" class="md-nav__link">
+  <a href="#11-test-style" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6.3 Backend Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#64-credential-resolution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.4 Credential Resolution
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#65-configuration-resolution-rules-locked" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.5 Configuration Resolution Rules (Locked)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-registry" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Registry
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="7. Registry">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#71-purpose" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.1 Purpose
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#72-registry-behavior" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.2 Registry Behavior
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#73-backend-lifecycle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.3 Backend Lifecycle
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#74-store-lifecycle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.4 Store Lifecycle
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#8-concurrency-lifecycle-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. Concurrency &amp; Lifecycle Integration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#9-explicitly-out-of-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        9. Explicitly Out of Scope
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#10-role-of-fsspec" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        10. Role of fsspec
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#11-code-style" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11. Code Style
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="11. Code Style">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#111-formatting-linting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.1 Formatting &amp; Linting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#112-module-package-descriptions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.2 Module &amp; Package Descriptions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#113-type-annotations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.3 Type Annotations
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#114-docstrings" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.4 Docstrings
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#115-code-organisation-comments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.5 Code Organisation Comments
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#116-method-ordering" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.6 Method Ordering
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#117-comments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.7 Comments
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#118-constants" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.8 Constants
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#119-__all__" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.9 __all__
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1110-error-messages" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.10 Error Messages
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1111-test-style" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.11 Test Style
+        11. Test Style
       
     </span>
   </a>
@@ -5238,10 +4844,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-purpose" class="md-nav__link">
+  <a href="#intent-scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Purpose
+        Intent &amp; Scope
       
     </span>
   </a>
@@ -5249,50 +4855,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-core-design-principles" class="md-nav__link">
+  <a href="#rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Core Design Principles
+        Rules
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. Core Design Principles">
+    <nav class="md-nav" aria-label="Rules">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#21-dependency-policy" class="md-nav__link">
+  <a href="#1-formatting-linting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.1 Dependency Policy
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-core-abstractions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Core Abstractions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Core Abstractions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#31-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.1 Store
+        1. Formatting &amp; Linting
       
     </span>
   </a>
@@ -5300,50 +4878,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-path-identity-objects" class="md-nav__link">
+  <a href="#2-module-package-descriptions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2 Path &amp; Identity Objects
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3.2 Path &amp; Identity Objects">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#remotepath-internal-semi-public" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RemotePath (internal / semi-public)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#33-metadata-objects" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.3 Metadata Objects
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3.3 Metadata Objects">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#fileinfo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        FileInfo
+        2. Module &amp; Package Descriptions
       
     </span>
   </a>
@@ -5351,43 +4889,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#folderinfo" class="md-nav__link">
+  <a href="#3-type-annotations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FolderInfo
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-backend-adapter-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Backend Adapter Contract
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. Backend Adapter Contract">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#41-backend-identity-capabilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.1 Backend Identity &amp; Capabilities
+        3. Type Annotations
       
     </span>
   </a>
@@ -5395,10 +4900,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#42-path-handling" class="md-nav__link">
+  <a href="#4-docstrings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.2 Path Handling
+        4. Docstrings
       
     </span>
   </a>
@@ -5406,10 +4911,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#43-io-operations" class="md-nav__link">
+  <a href="#5-code-organisation-comments" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.3 I/O Operations
+        5. Code Organisation Comments
       
     </span>
   </a>
@@ -5417,10 +4922,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#44-atomic-writes" class="md-nav__link">
+  <a href="#6-method-ordering" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.4 Atomic Writes
+        6. Method Ordering
       
     </span>
   </a>
@@ -5428,10 +4933,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#45-metadata-listing" class="md-nav__link">
+  <a href="#7-comments" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.5 Metadata &amp; Listing
+        7. Comments
       
     </span>
   </a>
@@ -5439,10 +4944,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#46-move-copy" class="md-nav__link">
+  <a href="#8-constants" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.6 Move &amp; Copy
+        8. Constants
       
     </span>
   </a>
@@ -5450,49 +4955,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#47-error-model" class="md-nav__link">
+  <a href="#9-__all__" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.7 Error Model
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-streaming-cancellation-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Streaming &amp; Cancellation Semantics
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-configuration-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Configuration Model
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. Configuration Model">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#61-configuration-as-description" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.1 Configuration as Description
+        9. __all__
       
     </span>
   </a>
@@ -5500,10 +4966,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#62-store-profiles-primary-unit" class="md-nav__link">
+  <a href="#10-error-messages" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6.2 Store Profiles (Primary Unit)
+        10. Error Messages
       
     </span>
   </a>
@@ -5511,264 +4977,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#63-backend-configuration" class="md-nav__link">
+  <a href="#11-test-style" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6.3 Backend Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#64-credential-resolution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.4 Credential Resolution
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#65-configuration-resolution-rules-locked" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.5 Configuration Resolution Rules (Locked)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-registry" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Registry
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="7. Registry">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#71-purpose" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.1 Purpose
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#72-registry-behavior" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.2 Registry Behavior
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#73-backend-lifecycle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.3 Backend Lifecycle
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#74-store-lifecycle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.4 Store Lifecycle
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#8-concurrency-lifecycle-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. Concurrency &amp; Lifecycle Integration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#9-explicitly-out-of-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        9. Explicitly Out of Scope
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#10-role-of-fsspec" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        10. Role of fsspec
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#11-code-style" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11. Code Style
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="11. Code Style">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#111-formatting-linting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.1 Formatting &amp; Linting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#112-module-package-descriptions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.2 Module &amp; Package Descriptions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#113-type-annotations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.3 Type Annotations
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#114-docstrings" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.4 Docstrings
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#115-code-organisation-comments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.5 Code Organisation Comments
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#116-method-ordering" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.6 Method Ordering
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#117-comments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.7 Comments
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#118-constants" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.8 Constants
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#119-__all__" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.9 __all__
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1110-error-messages" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.10 Error Messages
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1111-test-style" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.11 Test Style
+        11. Test Style
       
     </span>
   </a>
@@ -5800,339 +5012,24 @@
   
 
 
-<h1 id="remote-store-package-design-specification-v1">Remote Store Package — Design Specification (v1)<a class="headerlink" href="#remote-store-package-design-specification-v1" title="Permanent link">&para;</a></h1>
-<p>This document is the <strong>authoritative design reference</strong> for the Remote Store Package.<br />
-It defines the final, agreed architecture and semantics and is intended to be used as a
-continuous validation checklist during implementation and review.</p>
-<hr />
-<h2 id="1-purpose">1. Purpose<a class="headerlink" href="#1-purpose" title="Permanent link">&para;</a></h2>
-<p>The package provides a <strong>professional, production-grade, backend-agnostic abstraction for remote storage</strong> that allows applications and citizen developers to interact with remote folders and files <strong>without caring about the underlying storage technology</strong>.</p>
-<p>Initial target backends:</p>
-<ul>
-<li>S3 / MinIO</li>
-<li>Azure Storage (Blob / ADLS)</li>
-<li>SFTP / SSH-based filesystems</li>
-</ul>
-<p>The package is designed to be:</p>
-<ul>
-<li>Easy to use</li>
-<li>Safe by default</li>
-<li>Streaming-first</li>
-<li>Extensible</li>
-<li>Framework-agnostic</li>
-</ul>
-<hr />
-<h2 id="2-core-design-principles">2. Core Design Principles<a class="headerlink" href="#2-core-design-principles" title="Permanent link">&para;</a></h2>
-<ol>
-<li>Folder-scoped access is the primary abstraction  </li>
-<li>Streaming is the default for all I/O  </li>
-<li>Atomic writes are first-class  </li>
-<li>Explicit configuration always wins  </li>
-<li>Backend capabilities are declared, not assumed  </li>
-<li>Fail early and explicitly  </li>
-<li>No framework or event-loop dependencies</li>
-<li>Minimal, rock-solid dependencies (see §2.1)</li>
-<li>Compatible with structured concurrency</li>
-<li>Citizen-dev friendly, senior-dev capable</li>
-<li>fsspec is an implementation detail, not the API</li>
-</ol>
-<h3 id="21-dependency-policy">2.1 Dependency Policy<a class="headerlink" href="#21-dependency-policy" title="Permanent link">&para;</a></h3>
-<p><strong>Runtime dependencies</strong> — keep absolute minimal:
-- The core package has <strong>zero</strong> runtime dependencies (<code>dependencies = []</code>).
-- Backend extras pull in only what they need; each dependency must be well-known, battle-tested, and best-in-class for its purpose.
-- Minimum versions are always pinned (<code>&gt;=X.Y</code>) to guarantee the features we rely on.</p>
-<p><strong>Dev dependencies</strong> — keep minimal and non-overlapping:
-- Every dev dependency must bring a clear, distinct benefit (no two tools covering the same job).
-- Prefer established, single-purpose tools (ruff over pylint+isort+black, pytest over unittest, etc.).
-- Pin minimum versions the same way as runtime extras.</p>
-<hr />
-<h2 id="3-core-abstractions">3. Core Abstractions<a class="headerlink" href="#3-core-abstractions" title="Permanent link">&para;</a></h2>
-<h3 id="31-store">3.1 Store<a class="headerlink" href="#31-store" title="Permanent link">&para;</a></h3>
-<p>A <strong>Store</strong> represents a <em>logical remote folder</em> and is the <strong>primary user-facing abstraction</strong>.</p>
-<p>Characteristics:</p>
-<ul>
-<li>Always scoped to a root path</li>
-<li>All operations use <strong>relative paths</strong></li>
-<li>Immutable and cheap to create</li>
-<li>Safe to share across threads or tasks</li>
-</ul>
-<p>Responsibilities:</p>
-<ul>
-<li>Read, write, list, move, copy, delete files</li>
-<li>Provide metadata</li>
-<li>Enforce safe defaults</li>
-</ul>
-<p>No backend-specific terminology is exposed.</p>
-<hr />
-<h3 id="32-path-identity-objects">3.2 Path &amp; Identity Objects<a class="headerlink" href="#32-path-identity-objects" title="Permanent link">&para;</a></h3>
-<h4 id="remotepath-internal-semi-public">RemotePath (internal / semi-public)<a class="headerlink" href="#remotepath-internal-semi-public" title="Permanent link">&para;</a></h4>
-<ul>
-<li>Immutable, validated path reference</li>
-<li>Normalization delegated to backend</li>
-<li>Provides parent / name resolution</li>
-</ul>
-<hr />
-<h3 id="33-metadata-objects">3.3 Metadata Objects<a class="headerlink" href="#33-metadata-objects" title="Permanent link">&para;</a></h3>
-<h4 id="fileinfo">FileInfo<a class="headerlink" href="#fileinfo" title="Permanent link">&para;</a></h4>
-<p>Immutable snapshot of file metadata.</p>
-<p>Backend-agnostic fields:</p>
-<ul>
-<li><code>path</code></li>
-<li><code>name</code></li>
-<li><code>size</code></li>
-<li><code>modified_at</code></li>
-</ul>
-<p>Optional:</p>
-<ul>
-<li><code>checksum</code> (e.g. ETag, MD5)</li>
-<li><code>content_type</code></li>
-<li>backend-specific <code>extra</code> metadata</li>
-</ul>
-<hr />
-<h4 id="folderinfo">FolderInfo<a class="headerlink" href="#folderinfo" title="Permanent link">&para;</a></h4>
-<p>Aggregated folder metadata.</p>
-<p>Fields:</p>
-<ul>
-<li><code>path</code></li>
-<li><code>file_count</code></li>
-<li><code>total_size</code></li>
-<li><code>modified_at</code></li>
-<li>backend-specific <code>extra</code> metadata</li>
-</ul>
-<p>Folder metadata may be:</p>
-<ul>
-<li>computed</li>
-<li>cached</li>
-<li>backend-provided</li>
-</ul>
-<p>Policy is explicit and configurable.</p>
-<hr />
-<h2 id="4-backend-adapter-contract">4. Backend Adapter Contract<a class="headerlink" href="#4-backend-adapter-contract" title="Permanent link">&para;</a></h2>
-<p>Backends encapsulate <strong>all storage-specific behavior</strong>.</p>
-<h3 id="41-backend-identity-capabilities">4.1 Backend Identity &amp; Capabilities<a class="headerlink" href="#41-backend-identity-capabilities" title="Permanent link">&para;</a></h3>
-<p>Each backend declares:</p>
-<ul>
-<li>name (e.g. <code>s3</code>, <code>azure</code>, <code>sftp</code>)</li>
-<li>scheme</li>
-<li>supported features (atomic writes, copy, move, glob, recursion, metadata)</li>
-<li>case sensitivity</li>
-<li>path constraints</li>
-</ul>
-<p>Capabilities are <strong>queried, not inferred</strong>.</p>
-<hr />
-<h3 id="42-path-handling">4.2 Path Handling<a class="headerlink" href="#42-path-handling" title="Permanent link">&para;</a></h3>
-<p>Backends define:</p>
-<ul>
-<li>path normalization rules</li>
-<li>validation logic</li>
-<li>canonical representation</li>
-<li>reverse resolution via <code>to_key()</code> (native/absolute path → backend-relative key)</li>
-</ul>
-<p>The Store composes <code>Backend.to_key()</code> with its own <code>root_path</code> stripping to
-provide a full native-to-store-relative conversion. Listing methods apply this
-automatically so that returned paths are directly usable as input (round-trip
-invariant). No implicit path rewriting occurs in the core.</p>
-<hr />
-<h3 id="43-io-operations">4.3 I/O Operations<a class="headerlink" href="#43-io-operations" title="Permanent link">&para;</a></h3>
-<p>All backends must support:</p>
-<ul>
-<li>Streaming reads</li>
-<li>Streaming writes</li>
-<li>Existence checks</li>
-<li>File vs folder distinction</li>
-<li>Deletion</li>
-</ul>
-<p>Internal buffering is allowed, but the exposed API is always streaming.</p>
-<hr />
-<h3 id="44-atomic-writes">4.4 Atomic Writes<a class="headerlink" href="#44-atomic-writes" title="Permanent link">&para;</a></h3>
-<p>Atomic writes are capability-driven.</p>
-<ul>
-<li>If supported:</li>
-<li>Writes go to a temporary location</li>
-<li>Commit is atomic from the reader’s perspective</li>
-<li>If not supported:</li>
-<li>Backend raises a capability error</li>
-<li>Core decides fallback behavior</li>
-</ul>
-<p>Atomicity is <strong>never assumed</strong>.</p>
-<hr />
-<h3 id="45-metadata-listing">4.5 Metadata &amp; Listing<a class="headerlink" href="#45-metadata-listing" title="Permanent link">&para;</a></h3>
-<p>Backends must provide:</p>
-<ul>
-<li>File metadata</li>
-<li>Folder metadata</li>
-<li>Iteration over children</li>
-</ul>
-<p>Optional features:</p>
-<ul>
-<li>Recursive listing</li>
-<li>Globbing</li>
-</ul>
-<p>Unsupported features fail <strong>explicitly</strong>.</p>
-<hr />
-<h3 id="46-move-copy">4.6 Move &amp; Copy<a class="headerlink" href="#46-move-copy" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Guaranteed only within the same backend</li>
-<li>Overwrite behavior is explicit</li>
-<li>Cross-backend operations are handled outside the backend layer</li>
-</ul>
-<hr />
-<h3 id="47-error-model">4.7 Error Model<a class="headerlink" href="#47-error-model" title="Permanent link">&para;</a></h3>
-<p>Backends must map native errors into normalized errors:</p>
-<ul>
-<li>NotFound</li>
-<li>AlreadyExists</li>
-<li>PermissionDenied</li>
-<li>InvalidPath</li>
-<li>CapabilityNotSupported</li>
-<li>BackendUnavailable</li>
-</ul>
-<p>Backend-specific exceptions never leak upward.</p>
-<hr />
-<h2 id="5-streaming-cancellation-semantics">5. Streaming &amp; Cancellation Semantics<a class="headerlink" href="#5-streaming-cancellation-semantics" title="Permanent link">&para;</a></h2>
-<ul>
-<li>All I/O is streaming-first</li>
-<li>Cancellation propagates naturally</li>
-<li>Cancellation is never swallowed or remapped</li>
-<li>Partially opened resources are cleaned up where possible</li>
-</ul>
-<hr />
-<h2 id="6-configuration-model">6. Configuration Model<a class="headerlink" href="#6-configuration-model" title="Permanent link">&para;</a></h2>
-<h3 id="61-configuration-as-description">6.1 Configuration as Description<a class="headerlink" href="#61-configuration-as-description" title="Permanent link">&para;</a></h3>
-<p>Configuration <strong>describes</strong>, it does not instantiate.</p>
-<p>It defines:</p>
-<ul>
-<li>backends</li>
-<li>credentials</li>
-<li>stores (folder-scoped entry points)</li>
-</ul>
-<hr />
-<h3 id="62-store-profiles-primary-unit">6.2 Store Profiles (Primary Unit)<a class="headerlink" href="#62-store-profiles-primary-unit" title="Permanent link">&para;</a></h3>
-<p>A <strong>store profile</strong> defines:</p>
-<ul>
-<li>backend reference</li>
-<li>root path</li>
-<li>credential reference</li>
-<li>optional store-specific policies</li>
-</ul>
-<p>Citizen developers interact with stores <strong>by name</strong>.</p>
-<hr />
-<h3 id="63-backend-configuration">6.3 Backend Configuration<a class="headerlink" href="#63-backend-configuration" title="Permanent link">&para;</a></h3>
-<p>Backend configuration contains:</p>
-<ul>
-<li>connection options</li>
-<li>shared backend defaults</li>
-</ul>
-<p>Credentials are not embedded by default.</p>
-<hr />
-<h3 id="64-credential-resolution">6.4 Credential Resolution<a class="headerlink" href="#64-credential-resolution" title="Permanent link">&para;</a></h3>
-<p>Credentials are:</p>
-<ul>
-<li>referenced by name</li>
-<li>resolved via environment variables or external providers</li>
-<li>never hardcoded</li>
-</ul>
-<p>Secrets are separated from non-secrets.</p>
-<hr />
-<h3 id="65-configuration-resolution-rules-locked">6.5 Configuration Resolution Rules (Locked)<a class="headerlink" href="#65-configuration-resolution-rules-locked" title="Permanent link">&para;</a></h3>
-<ol>
-<li>Config-as-code has absolute priority  </li>
-<li>Environment variables are used only if no config is provided  </li>
-<li>No merging, no overrides  </li>
-<li>Backend defaults apply last  </li>
-</ol>
-<p>This ensures deterministic, test-safe behavior.</p>
-<hr />
-<h2 id="7-registry">7. Registry<a class="headerlink" href="#7-registry" title="Permanent link">&para;</a></h2>
-<h3 id="71-purpose">7.1 Purpose<a class="headerlink" href="#71-purpose" title="Permanent link">&para;</a></h3>
-<p>The <strong>Registry</strong>:</p>
-<ul>
-<li>loads configuration</li>
-<li>validates it</li>
-<li>instantiates backend adapters lazily</li>
-<li>provides access to stores</li>
-<li>manages backend lifecycle hooks</li>
-</ul>
-<p>It does <strong>not</strong>:</p>
-<ul>
-<li>manage application lifecycle</li>
-<li>spawn background tasks</li>
-<li>depend on async frameworks</li>
-</ul>
-<hr />
-<h3 id="72-registry-behavior">7.2 Registry Behavior<a class="headerlink" href="#72-registry-behavior" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Created with optional config</li>
-<li>If config is provided → environment ignored</li>
-<li>If config is absent → environment used</li>
-<li>Validation happens immediately</li>
-</ul>
-<hr />
-<h3 id="73-backend-lifecycle">7.3 Backend Lifecycle<a class="headerlink" href="#73-backend-lifecycle" title="Permanent link">&para;</a></h3>
-<ul>
-<li>One backend adapter instance per backend config</li>
-<li>Shared across stores</li>
-<li>Lazy initialization</li>
-<li>Optional lifecycle hooks (<code>close</code>, <code>aclose</code>)</li>
-</ul>
-<hr />
-<h3 id="74-store-lifecycle">7.4 Store Lifecycle<a class="headerlink" href="#74-store-lifecycle" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Stores are immutable views</li>
-<li>Cheap to create</li>
-<li>May be cached by the registry</li>
-<li>Safe for concurrent use</li>
-</ul>
-<hr />
-<h2 id="8-concurrency-lifecycle-integration">8. Concurrency &amp; Lifecycle Integration<a class="headerlink" href="#8-concurrency-lifecycle-integration" title="Permanent link">&para;</a></h2>
-<ul>
-<li>No dependency on anyio / asyncio / trio</li>
-<li>No background tasks</li>
-<li>Explicit lifecycle hooks only</li>
-<li>Compatible with structured concurrency</li>
-<li>Task groups own execution and cancellation</li>
-</ul>
-<p>Registry and backends are <strong>passive resources</strong>.</p>
-<hr />
-<h2 id="9-explicitly-out-of-scope">9. Explicitly Out of Scope<a class="headerlink" href="#9-explicitly-out-of-scope" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Global singleton registries</li>
-<li>Implicit environment overrides</li>
-<li>Framework-specific integrations</li>
-<li>Async-only APIs</li>
-<li>Pandas-specific helpers in core</li>
-<li>Cross-backend copy/move in core</li>
-<li>Implicit background cleanup</li>
-</ul>
-<hr />
-<h2 id="10-role-of-fsspec">10. Role of fsspec<a class="headerlink" href="#10-role-of-fsspec" title="Permanent link">&para;</a></h2>
-<ul>
-<li>fsspec is used <strong>internally</strong> by backend adapters</li>
-<li>It is never exposed in the public API</li>
-<li>Backend adapters decide how to combine:</li>
-<li>fsspec</li>
-<li>boto3</li>
-<li>pyarrow</li>
-<li>adlfs</li>
-<li>sshfs</li>
-</ul>
-<hr />
-<h2 id="11-code-style">11. Code Style<a class="headerlink" href="#11-code-style" title="Permanent link">&para;</a></h2>
-<p>This section defines the coding conventions for the project. All code must pass <code>ruff check</code>, <code>ruff format</code>, and <code>mypy --strict</code>.</p>
-<h3 id="111-formatting-linting">11.1 Formatting &amp; Linting<a class="headerlink" href="#111-formatting-linting" title="Permanent link">&para;</a></h3>
+<h1 id="code-style-conventions">Code Style &amp; Conventions<a class="headerlink" href="#code-style-conventions" title="Permanent link">&para;</a></h1>
+<h2 id="intent-scope">Intent &amp; Scope<a class="headerlink" href="#intent-scope" title="Permanent link">&para;</a></h2>
+<p>Coding conventions for all <code>src/</code>, <code>tests/</code>, and <code>examples/</code> code. All code must pass <code>ruff check</code>, <code>ruff format</code>, and <code>mypy --strict</code>.</p>
+<h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
+<h3 id="1-formatting-linting">1. Formatting &amp; Linting<a class="headerlink" href="#1-formatting-linting" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Formatter/linter:</strong> ruff (line-length 120)</li>
 <li><strong>Type checking:</strong> mypy strict mode</li>
 <li><strong><code>from __future__ import annotations</code></strong> in every module</li>
 </ul>
-<h3 id="112-module-package-descriptions">11.2 Module &amp; Package Descriptions<a class="headerlink" href="#112-module-package-descriptions" title="Permanent link">&para;</a></h3>
-<p>Every module starts with a 1–2 sentence docstring explaining <em>why it exists</em>:</p>
+<h3 id="2-module-package-descriptions">2. Module &amp; Package Descriptions<a class="headerlink" href="#2-module-package-descriptions" title="Permanent link">&para;</a></h3>
+<p>Every module starts with a 1-2 sentence docstring explaining <em>why it exists</em>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="sd">&quot;&quot;&quot;Normalized error hierarchy for remote_store.&quot;&quot;&quot;</span>
 </code></pre></div>
 <p>Package <code>__init__.py</code> files follow the same rule:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="sd">&quot;&quot;&quot;Backend implementations for remote_store.&quot;&quot;&quot;</span>
 </code></pre></div>
-<h3 id="113-type-annotations">11.3 Type Annotations<a class="headerlink" href="#113-type-annotations" title="Permanent link">&para;</a></h3>
+<h3 id="3-type-annotations">3. Type Annotations<a class="headerlink" href="#3-type-annotations" title="Permanent link">&para;</a></h3>
 <p>Public method signatures use PEP 604 union syntax (Python &gt;=3.10):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">RegistryConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n">BinaryIO</span> <span class="o">|</span> <span class="nb">bytes</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
@@ -6142,7 +5039,7 @@ invariant). No implicit path rewriting occurs in the core.</p>
 <li><code>X | None</code> replaces <code>Optional[X]</code>, <code>X | Y</code> replaces <code>Union[X, Y]</code> (PEP 604).</li>
 <li><code>typing</code> imports only for generics not yet built-in (<code>Callable</code>, <code>Iterator</code>, etc.).</li>
 </ul>
-<h3 id="114-docstrings">11.4 Docstrings<a class="headerlink" href="#114-docstrings" title="Permanent link">&para;</a></h3>
+<h3 id="4-docstrings">4. Docstrings<a class="headerlink" href="#4-docstrings" title="Permanent link">&para;</a></h3>
 <p>reST-style (<code>:param:</code>, <code>:returns:</code>, <code>:raises:</code>). Short and purpose-focused:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n">WritableContent</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Write content to a file.</span>
@@ -6151,9 +5048,13 @@ invariant). No implicit path rewriting occurs in the core.</p>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="sd">    :param content: Bytes or binary stream to write.</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="sd">    :param overwrite: If ``True``, replace existing file.</span>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="sd">    :raises AlreadyExists: If file exists and ``overwrite`` is ``False``.</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="sd">    ```python</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="sd">    store.write(&quot;data/report.csv&quot;, b&quot;hello&quot;, overwrite=True)</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="sd">    ```</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="sd">    &quot;&quot;&quot;</span>
 </code></pre></div>
-<h3 id="115-code-organisation-comments">11.5 Code Organisation Comments<a class="headerlink" href="#115-code-organisation-comments" title="Permanent link">&para;</a></h3>
+<h3 id="5-code-organisation-comments">5. Code Organisation Comments<a class="headerlink" href="#5-code-organisation-comments" title="Permanent link">&para;</a></h3>
 <p>Two styles for structuring large files, each with a distinct purpose.</p>
 <table>
 <thead>
@@ -6186,10 +5087,10 @@ invariant). No implicit path rewriting occurs in the core.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>Regions</strong> (<code># region:</code> / <code># endregion</code>) — group related items by concern.
+<p><strong>Regions</strong> (<code># region:</code> / <code># endregion</code>) -- group related items by concern.
 Paired markers that IDEs can fold. Use for items that are not individually
 collapsible as a group (e.g. several methods that together form "read
-operations"). <strong>Never</strong> wrap a single class or function — those are already
+operations"). <strong>Never</strong> wrap a single class or function -- those are already
 collapsible on their own.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># region: BE-006 through BE-007: read operations</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
@@ -6199,8 +5100,7 @@ collapsible on their own.</p>
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="o">...</span>
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># endregion</span>
 </code></pre></div>
-<p>One empty line before <code># region:</code> and after <code># endregion</code>.</p>
-<p><strong>Headlines</strong> (box dividers) — introduce a new section at module level.
+<p><strong>Headlines</strong> (box dividers) -- introduce a new section at module level.
 Single marker (not paired) before a top-level definition or group of
 definitions. Purely visual; no IDE folding behaviour.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># ---------------------------------------------------------------------------</span>
@@ -6211,9 +5111,9 @@ definitions. Purely visual; no IDE folding behaviour.</p>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="o">...</span>
 </code></pre></div>
 <p>Use headlines in modules with multiple top-level classes or logical sections
-(extensions, tests, benchmarks, scripts). Do not use inside classes — use
+(extensions, tests, benchmarks, scripts). Do not use inside classes -- use
 regions there instead.</p>
-<h3 id="116-method-ordering">11.6 Method Ordering<a class="headerlink" href="#116-method-ordering" title="Permanent link">&para;</a></h3>
+<h3 id="6-method-ordering">6. Method Ordering<a class="headerlink" href="#6-method-ordering" title="Permanent link">&para;</a></h3>
 <p>Within a class, methods are ordered by logical grouping:</p>
 <ol>
 <li>Class variables / constants</li>
@@ -6223,20 +5123,20 @@ regions there instead.</p>
 <li>Dunder methods (<code>__eq__</code>, <code>__hash__</code>, <code>__repr__</code>)</li>
 <li>Private helpers</li>
 </ol>
-<h3 id="117-comments">11.7 Comments<a class="headerlink" href="#117-comments" title="Permanent link">&para;</a></h3>
-<p>Minimal, long-term value only. Do not comment <em>what</em> the code does — comment <em>why</em> when the reason is non-obvious. No TODO comments without a linked issue.</p>
-<h3 id="118-constants">11.8 Constants<a class="headerlink" href="#118-constants" title="Permanent link">&para;</a></h3>
+<h3 id="7-comments">7. Comments<a class="headerlink" href="#7-comments" title="Permanent link">&para;</a></h3>
+<p>Minimal, long-term value only. Do not comment <em>what</em> the code does -- comment <em>why</em> when the reason is non-obvious. No TODO comments without a linked issue.</p>
+<h3 id="8-constants">8. Constants<a class="headerlink" href="#8-constants" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Public: <code>UPPER_SNAKE_CASE</code></li>
 <li>Private: <code>_UPPER_SNAKE_CASE</code></li>
 </ul>
-<h3 id="119-__all__">11.9 <code>__all__</code><a class="headerlink" href="#119-__all__" title="Permanent link">&para;</a></h3>
-<p>Declared only in public-facing <code>__init__.py</code> modules. Internal modules (<code>_errors.py</code>, etc.) do not need <code>__all__</code> — the underscore prefix signals "internal".</p>
-<h3 id="1110-error-messages">11.10 Error Messages<a class="headerlink" href="#1110-error-messages" title="Permanent link">&para;</a></h3>
-<p>f-strings with context for human-readable tracebacks. Structured attributes (<code>.path</code>, <code>.backend</code>, <code>.capability</code>) for programmatic access:</p>
+<h3 id="9-__all__">9. <code>__all__</code><a class="headerlink" href="#9-__all__" title="Permanent link">&para;</a></h3>
+<p>Declared only in public-facing <code>__init__.py</code> modules. Internal modules (<code>_errors.py</code>, etc.) do not need <code>__all__</code> -- the underscore prefix signals "internal".</p>
+<h3 id="10-error-messages">10. Error Messages<a class="headerlink" href="#10-error-messages" title="Permanent link">&para;</a></h3>
+<p>f-strings with context for human-readable tracebacks. Structured attributes for programmatic access:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="1111-test-style">11.11 Test Style<a class="headerlink" href="#1111-test-style" title="Permanent link">&para;</a></h3>
+<h3 id="11-test-style">11. Test Style<a class="headerlink" href="#11-test-style" title="Permanent link">&para;</a></h3>
 <p>Tests are grouped into classes by spec aspect. The class docstring references the spec IDs covered:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestRemotePathNormalization</span><span class="p">:</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;PATH-002 through PATH-006: normalization rules.&quot;&quot;&quot;</span>
@@ -6250,8 +5150,6 @@ regions there instead.</p>
 <a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a///b&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b&quot;</span>
 </code></pre></div>
 <p>Each test method carries a <code>@pytest.mark.spec("ID")</code> marker for traceability.</p>
-<hr />
-<p><strong>End of Design Specification</strong></p>
 
 
 
