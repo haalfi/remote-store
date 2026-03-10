@@ -276,6 +276,13 @@ class TestCachedReads:
         assert info1 == info2
         assert cached.stats.hits == 1
 
+    @pytest.mark.spec("ITER-007")
+    def test_iter_children_cached(self, cached: CachedStore) -> None:
+        children1 = list(cached.iter_children(""))
+        children2 = list(cached.iter_children(""))
+        assert children1 == children2
+        assert cached.stats.hits == 1
+
     @pytest.mark.spec("CACHE-006")
     def test_list_files_cached(self, cached: CachedStore) -> None:
         files1 = list(cached.list_files("", recursive=True))
@@ -375,6 +382,13 @@ class TestWriteInvalidation:
         list(cached.list_files(""))
         cached.write("new.txt", b"data")
         list(cached.list_files(""))
+        assert cached.stats.misses == 2
+
+    @pytest.mark.spec("ITER-007")
+    def test_write_invalidates_iter_children(self, cached: CachedStore) -> None:
+        list(cached.iter_children(""))
+        cached.write("new2.txt", b"data")
+        list(cached.iter_children(""))
         assert cached.stats.misses == 2
 
     @pytest.mark.spec("CACHE-008")

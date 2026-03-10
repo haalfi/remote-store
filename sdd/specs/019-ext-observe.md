@@ -22,7 +22,7 @@ ID-004 (superseded).
 **Invariant:** `StoreEvent` is a frozen dataclass with the following fields:
 
 - `operation: str` -- operation name (e.g., `"read"`, `"write"`, `"delete"`,
-  `"copy"`, `"move"`, `"list_files"`, `"list_folders"`, `"glob"`,
+  `"copy"`, `"move"`, `"iter_children"`, `"list_files"`, `"list_folders"`, `"glob"`,
   `"get_file_info"`, `"get_folder_info"`, `"exists"`, `"is_file"`,
   `"is_folder"`, `"read_bytes"`, `"write_atomic"`, `"delete_folder"`,
   `"to_key"`, `"unwrap"`, `"supports"`).
@@ -117,7 +117,7 @@ The `on_<op>` hooks map to operations as follows:
 | `on_delete` | `delete`, `delete_folder` |
 | `on_copy` | `copy` |
 | `on_move` | `move` |
-| `on_list` | `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `exists`, `is_file`, `is_folder` |
+| `on_list` | `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `exists`, `is_file`, `is_folder` |
 
 Operations not covered by a specific hook (`to_key`, `unwrap`, `supports`,
 `child`, `close`) still fire `on_any` and `on_error`.

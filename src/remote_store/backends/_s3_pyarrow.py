@@ -305,6 +305,29 @@ class S3PyArrowBackend(Backend):
         except Exception as exc:  # pragma: no cover -- defensive
             raise self._classify_error(exc, path) from None
 
+    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+        try:
+            s3_path = self._s3_path(path)
+            if not self._s3fs.exists(s3_path):
+                return
+            entries: list[dict[str, Any]] = self._s3fs.ls(s3_path, detail=True)
+            for info in entries:
+                if info.get("type") == "file":
+                    rel = self.to_key(info["name"])
+                    yield self._info_to_fileinfo(info, rel)
+                elif info.get("type") == "directory":
+                    folder_name = info["name"].rstrip("/")
+                    folder_name = folder_name.rsplit("/", 1)[-1]
+                    yield folder_name
+        except RemoteStoreError:  # pragma: no cover -- defensive
+            raise
+        except FileNotFoundError:  # pragma: no cover -- checked via exists()
+            return
+        except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        except Exception as exc:  # pragma: no cover -- defensive
+            raise self._classify_error(exc, path) from None
+
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 

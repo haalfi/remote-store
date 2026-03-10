@@ -188,6 +188,20 @@ class Backend(abc.ABC):
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
 
+    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+        """Yield both files and folders under ``path`` in a single pass.
+
+        Files are yielded as ``FileInfo`` objects, folders as ``str`` names.
+        The default implementation chains ``list_files()`` and
+        ``list_folders()``. Backends that can fetch both in a single I/O
+        call should override this for efficiency.
+
+        :param path: Backend-relative folder key, or ``""`` for the root.
+        :returns: An iterator of ``FileInfo`` (files) and ``str`` (folder names).
+        """
+        yield from self.list_files(path)
+        yield from self.list_folders(path)
+
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         """Match files against a glob pattern.
 

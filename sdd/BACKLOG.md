@@ -13,12 +13,6 @@ Active work items, ordered by priority.
 
 ### Feature work
 
-- [ ] **ID-055 — `iter_children()` — combined file + folder listing**
-  A single call returning both files and subfolders in one pass, avoiding
-  two round-trips. Most backends (S3 `list_objects_v2` with `Delimiter`,
-  local `os.scandir`, SFTP `listdir_attr`) already return both in a single
-  response. Core `Store` method.
-
 - [ ] **ID-056 — `read_text()` convenience method**
   `store.read_text(path, encoding="utf-8") -> str` — thin wrapper around
   `open_read()`. Matches `pathlib.Path.read_text()` expectations. Citizen
@@ -86,6 +80,14 @@ Not evaluated, not committed to. Pick up when relevant.
   The existing API reference pages are already auto-generated this way.
   Each generated wrapper should also include links to relevant API reference
   pages at the bottom (e.g. caching example links to `ext.cache` reference).
+
+- [ ] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**
+  `list_files`, `list_folders`, and `iter_children` in S3Backend and
+  S3PyArrowBackend call `self._fs.exists()` before `self._fs.ls()`, adding
+  an extra API round-trip. The `FileNotFoundError` handler already covers
+  the non-existent path case. Removing the `exists()` check would halve
+  the API calls for listing operations. Low priority — consistent across
+  all S3 listing methods today.
 
 ---
 
@@ -386,6 +388,14 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
   `ruamel.yaml.YAMLError` in config loader spec.
 
 ### Ideas shipped
+
+- [x] **ID-055 — `iter_children()` — combined file + folder listing** (post-v0.15.0)
+  `Store.iter_children(path)` yields both `FileInfo` (files) and `str` (folder
+  names) in a single pass. All 6 backends override with single-call
+  implementations (Local `iterdir`, S3/S3PA `ls`, SFTP `listdir_attr`, Azure
+  `walk_blobs`/`get_paths`, Memory single traversal). `ext.observe` `on_list`
+  hook, `ext.cache` caching. Spec: `027-iter-children.md` (ITER-001 through
+  ITER-008).
 
 - [x] **ID-025 — `ext.cache` — store-level caching middleware** (v0.15.0)
   `cached_store(store, ttl=300)` wraps a Store in a caching proxy.

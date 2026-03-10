@@ -274,6 +274,44 @@ class TestBackendListing:
         assert folders == {"sub1", "sub2"}
 
 
+class TestBackendIterChildren:
+    """ITER-004, ITER-005: iter_children() — combined file+folder listing."""
+
+    @pytest.mark.spec("ITER-004")
+    def test_iter_children(self, backend: Backend) -> None:
+        backend.write("ic/a.txt", b"a")
+        backend.write("ic/b.txt", b"b")
+        backend.write("ic/sub/c.txt", b"c")
+        children = list(backend.iter_children("ic"))
+        files = [c for c in children if isinstance(c, FileInfo)]
+        folders = [c for c in children if isinstance(c, str)]
+        assert {f.name for f in files} == {"a.txt", "b.txt"}
+        assert set(folders) == {"sub"}
+
+    @pytest.mark.spec("ITER-004")
+    def test_iter_children_empty_or_nonexistent(self, backend: Backend) -> None:
+        assert list(backend.iter_children("nonexistent")) == []
+
+    @pytest.mark.spec("ITER-004")
+    def test_iter_children_only_files(self, backend: Backend) -> None:
+        backend.write("icf/x.txt", b"x")
+        children = list(backend.iter_children("icf"))
+        files = [c for c in children if isinstance(c, FileInfo)]
+        folders = [c for c in children if isinstance(c, str)]
+        assert len(files) == 1
+        assert files[0].name == "x.txt"
+        assert folders == []
+
+    @pytest.mark.spec("ITER-004")
+    def test_iter_children_only_folders(self, backend: Backend) -> None:
+        backend.write("ico/sub/y.txt", b"y")
+        children = list(backend.iter_children("ico"))
+        files = [c for c in children if isinstance(c, FileInfo)]
+        folders = [c for c in children if isinstance(c, str)]
+        assert files == []
+        assert set(folders) == {"sub"}
+
+
 class TestBackendMetadata:
     """BE-016 through BE-017: metadata operations."""
 

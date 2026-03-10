@@ -8,6 +8,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`Store.iter_children()` combined listing** (ID-055) -- yields both files
+  (`FileInfo`) and folders (`str`) in a single pass, avoiding two round-trips.
+  All 6 backends override with single-call implementations. `ext.observe`
+  `on_list` hook, `ext.cache` caching and invalidation. Spec
+  `027-iter-children.md` (ITER-001 through ITER-008).
+
 - **`Store.ping()` health check** (ID-054) -- lightweight, non-destructive
   backend connectivity verification. Delegates to `Backend.check_health()`.
   Per-backend strategies: Local (`exists` + `os.access`), S3 (`head_bucket`),

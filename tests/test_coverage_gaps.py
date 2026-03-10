@@ -699,6 +699,7 @@ _CAPABILITY_GATING_CASES = [
     ),
     pytest.param(Capability.DELETE, lambda s: s.delete("test.txt"), "delete", id="delete"),
     pytest.param(Capability.DELETE, lambda s: s.delete_folder("folder"), "delete", id="delete_folder"),
+    pytest.param(Capability.LIST, lambda s: list(s.iter_children("")), "list", id="iter_children"),
     pytest.param(Capability.LIST, lambda s: list(s.list_files("")), "list", id="list_files"),
     pytest.param(Capability.LIST, lambda s: list(s.list_folders("")), "list", id="list_folders"),
     pytest.param(Capability.METADATA, lambda s: s.get_file_info("test.txt"), "metadata", id="get_file_info"),

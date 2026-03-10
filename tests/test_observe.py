@@ -143,8 +143,9 @@ class TestObservedStoreProxy:
             ("on_move", ["a.txt"], lambda o: o.move("a.txt", "b.txt"), "move"),
             ("on_list", [], lambda o: o.exists("a.txt"), "exists"),
             ("on_list", ["a.txt"], lambda o: list(o.list_files("")), "list_files"),
+            ("on_list", ["a.txt"], lambda o: list(o.iter_children("")), "iter_children"),
         ],
-        ids=["read", "read_bytes", "delete", "copy", "move", "exists", "list_files"],
+        ids=["read", "read_bytes", "delete", "copy", "move", "exists", "list_files", "iter_children"],
     )
     def test_hook_fires_for_operation(
         self,

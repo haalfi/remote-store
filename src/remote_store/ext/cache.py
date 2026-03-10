@@ -56,7 +56,7 @@ _MISSING = object()
 # Listing operation prefixes (cleared on any mutation)
 # ---------------------------------------------------------------------------
 
-_LISTING_PREFIXES = frozenset({"list_files", "list_folders", "glob", "get_folder_info"})
+_LISTING_PREFIXES = frozenset({"iter_children", "list_files", "list_folders", "glob", "get_folder_info"})
 
 # Per-path operation prefixes
 _PATH_PREFIXES = frozenset({"exists", "is_file", "is_folder", "read_bytes", "get_file_info"})
@@ -378,6 +378,15 @@ class CachedStore(Store):
         result = self._inner.get_folder_info(path)
         self._cache.set(key, result, self._ttl)
         return result
+
+    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+        key = ("iter_children", path)
+        cached = self._cache_get(key)
+        if cached is not _MISSING:
+            return iter(cached)
+        result = tuple(self._inner.iter_children(path))
+        self._cache.set(key, result, self._ttl)
+        return iter(result)
 
     def list_files(
         self,

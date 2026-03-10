@@ -141,12 +141,13 @@ class CacheStats:
 | `read_bytes(path)` | `("read_bytes", path)` | `bytes` |
 | `get_file_info(path)` | `("get_file_info", path)` | `FileInfo` |
 | `get_folder_info(path)` | `("get_folder_info", path)` | `FolderInfo` |
+| `iter_children(path)` | `("iter_children", path)` | `tuple[FileInfo \| str, ...]` |
 | `list_files(path, recursive, pattern)` | `("list_files", path, recursive, pattern)` | `tuple[FileInfo, ...]` |
 | `list_folders(path)` | `("list_folders", path)` | `tuple[str, ...]` |
 | `glob(pattern)` | `("glob", pattern)` | `tuple[FileInfo, ...]` |
 
 **Postconditions:**
-- Iterator-returning methods (`list_files`, `list_folders`, `glob`)
+- Iterator-returning methods (`iter_children`, `list_files`, `list_folders`, `glob`)
   materialize results into a tuple on first call and return
   `iter(cached_tuple)` on cache hits.
 - Only successful results are cached. Exceptions (e.g., `NotFound`) are
@@ -175,8 +176,8 @@ successful context exit) invalidate:
 1. All per-path cache entries for the written path (all operation
    prefixes: `exists`, `is_file`, `is_folder`, `read_bytes`,
    `get_file_info`).
-2. All listing cache entries (`list_files`, `list_folders`, `glob`,
-   `get_folder_info`).
+2. All listing cache entries (`iter_children`, `list_files`, `list_folders`,
+   `glob`, `get_folder_info`).
 
 ### CACHE-009: Delete Invalidation
 
