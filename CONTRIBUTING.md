@@ -1,13 +1,49 @@
 # Contributing to Remote Store
 
-Thank you for your interest in contributing! This project follows **Spec-Driven Development (SDD)**: every feature starts as a specification before any code is written. See [`sdd/000-process.md`](sdd/000-process.md) for the full methodology.
+Scope: contributor workflow, development setup, release process, and consistency checklists for `remote-store`.
+
+This project follows **Spec-Driven Development (SDD)**: every feature starts as a specification before any code is written. See [`sdd/000-process.md`](sdd/000-process.md) for the full methodology.
+
+## Authoritative Document Format
+
+Internal process and reference documents follow a fixed structure.
+
+### Principle
+
+Meaningful minimum. Each document covers one concern, states clear principles, and stops. No detailed instructions for every situation.
+
+### Structure
+
+1. **Intent & Scope**: What this document governs and who it is for. Max 5–10 lines. A reader must know: "this is THE source for topic X."
+2. **Rules**: Numbered, mandatory constraints.
+3. **Guides** *(optional)*: Heuristics, examples, lookup tables. Useful but not binding.
+
+Sections 1 and 2 alone must be sufficient to understand the document's purpose and obligations.
+
+### Scope
+
+Applies to root-level process documents in `sdd/` (000-process.md, DESIGN.md, DOCUMENTATION.md, CLAUDE-REFERENCE.md). Does not apply to specs, ADRs, RFCs, research, audits, BACKLOG.md, README, CHANGELOG, DEVELOPMENT_STORY, CLAUDE.md, or CONTRIBUTING.md (which follow their own formats).
+
+### Cross-check
+
+Every sentence and section must pass this test: *"this would force different behavior in situation X."* If it does not, it is decoration — rewrite as a rule or remove.
+
+### Exclusions
+
+Authoritative documents must not contain:
+
+1. Explanation or rationale (put in ADRs, specs, research docs, or `DEVELOPMENT_STORY.md`)
+2. History or changelog-style notes
+3. Meta-commentary about the document itself
 
 ## Spec-First Workflow
 
-1. **Propose** — Open a PR with an RFC in `sdd/rfcs/` (see [`rfc-template.md`](sdd/rfcs/rfc-template.md)). No code yet.
-2. **Review** — Maintainers and community review for design fit and completeness.
-3. **Accept** — The RFC graduates to a spec in `sdd/specs/`. It now defines the contract.
-4. **Implement** — Open a follow-up PR with tests (referencing spec IDs) and implementation.
+The full SDD pipeline is described in [`sdd/000-process.md`](sdd/000-process.md). For external contributions, start here:
+
+1. **Propose**: Open a PR with an RFC in `sdd/rfcs/` (see [`rfc-template.md`](sdd/rfcs/rfc-template.md)). No code yet.
+2. **Review**: Maintainers and community review for design fit and completeness.
+3. **Accept**: The RFC graduates to a spec in `sdd/specs/`. It now defines the contract.
+4. **Implement**: Open a follow-up PR with tests (referencing spec IDs) and implementation.
 
 ## Repository Structure
 
@@ -22,21 +58,7 @@ sdd/
 Browse `sdd/specs/` for the full list of specifications. Each spec file is
 numbered and named after the feature it describes (e.g. `008-s3-backend.md`).
 
-## Spec Format
-
-Each spec uses numbered section IDs with a module prefix:
-
-```markdown
-## <PREFIX>-NNN: <Rule Title>
-**Invariant:** <what must always be true>
-**Preconditions:** <what the caller must ensure>
-**Postconditions:** <what the callee guarantees>
-**Raises:** <error conditions>
-**Example:**
-    <short code example>
-```
-
-Prefixes: `STORE`, `MOD` (models), `CFG` (config), `REG` (registry), `BE` (backend), `CAP` (capabilities), `PATH`, `ERR`, `SIO` (streaming I/O), `AW` (atomic writes).
+For spec format and ID prefixes, see [`sdd/000-process.md`](sdd/000-process.md) § Spec format.
 
 ## Adding a New Backend
 
@@ -146,7 +168,7 @@ Mode is enabled on the repository -- unsigned commits show as "Unverified".
 ```bash
 # Tell Git to use SSH for signing
 git config --global gpg.format ssh
-git config --global user.signingkey ~/.ssh/id_ed25519.pub
+git config --global user.signingkey ~/.ssh/<your-key>.pub
 git config --global commit.gpgSign true
 git config --global tag.gpgSign true
 ```
@@ -160,25 +182,18 @@ If your key has a passphrase, start the SSH agent so signing happens silently:
 
 ```bash
 eval $(ssh-agent -s)
-ssh-add ~/.ssh/id_ed25519
+ssh-add ~/.ssh/<your-key>
 ```
 
 On Windows, you can also enable the OpenSSH Authentication Agent service
 (via `Set-Service ssh-agent -StartupType Automatic` in an elevated PowerShell)
 for persistence across sessions.
 
-### Verification
-
-```bash
-echo "test" | git commit-tree HEAD^{tree} -S
-```
-
-If this returns a commit hash without prompting for a passphrase, signing is
-configured correctly.
+Verify with `echo "test" | git commit-tree HEAD^{tree} -S` -- a commit hash without passphrase prompt means signing works.
 
 ## Code Style
 
-See [`sdd/DESIGN.md` Section 11](sdd/DESIGN.md#11-code-style) for the full code style conventions.
+See [`sdd/DESIGN.md`](sdd/DESIGN.md) for the full code style conventions.
 
 - **Formatter/linter:** ruff (line-length 120)
 - **Type checking:** mypy strict mode
@@ -236,27 +251,13 @@ bump-my-version bump major   # 0.4.1 → 1.0.0
 
 ## Consistency Checklists
 
-Documentation, examples, and metadata live in many places. Use these checklists to keep them in sync.
+Documentation, examples, and metadata live in many places. Use these to keep them in sync.
 
-### New backend
-
-- [ ] Spec in `sdd/specs/`
-- [ ] Implementation in `src/remote_store/backends/_<name>.py`
-- [ ] Conformance fixture in `tests/backends/conftest.py`
-- [ ] User guide in `guides/backends/<name>.md`
-- [ ] Added to `guides/backends/index.md` table
-- [ ] Added to `mkdocs.yml` nav under Backends
-- [ ] Added to README.md Supported Backends table
-- [ ] Added to README.md Installation extras (if applicable)
-- [ ] Backend config example in `examples/configuration.py`
-- [ ] Extra added to `pyproject.toml` `[project.optional-dependencies]` (if applicable)
-- [ ] CONTRIBUTING.md Repository Structure updated
-
-### New Store method
-
-- [ ] Added to `_store.py`
-- [ ] Added to README.md Store API table
-- [ ] Demonstrated in an `examples/` script (extend existing where possible)
+- **New backend**: use `/add-backend` skill (12-step checklist) or see § Adding a New Backend above.
+- **New extension**: use § Adding an Extension above (12-step checklist).
+- **New Store method**: use `/ripple-check` skill -- covers README API table, examples, specs, guides.
+- **Cross-reference validation**: use `/ripple-check` skill or the table in `sdd/CLAUDE-REFERENCE.md`.
+- **Pre-PR validation**: use `/pr-preflight` skill (11 checks).
 
 ### Release
 

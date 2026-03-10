@@ -252,7 +252,7 @@ The audit also found that thread safety (claimed by STORE-007) has zero implemen
 
 **The lesson: reviewing PRs catches local issues; adversarial auditing catches systemic ones.** PR review asks "is this change correct?" Adversarial auditing asks "does the whole thing hold together?" The TOCTOU race conditions, cross-backend semantic inconsistencies, and docs-to-code drift were invisible at the PR level because each PR was internally consistent. They only became visible when looking at the system as a whole.
 
-Full findings: `sdd/audit-001-adversarial-review.md`. Backlog items: `sdd/BACKLOG.md` section "Audit Findings (AUD-001)".
+Full findings: `sdd/audits/audit-001-adversarial-review.md`. Backlog items: `sdd/BACKLOG.md` section "Audit Findings (AUD-001)".
 
 ### Phase 13: Fixing the Audit (v0.6.0)
 

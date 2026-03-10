@@ -1,7 +1,7 @@
 # Claude Code Reference
 
-Lookup tables and detailed procedures extracted from `CLAUDE.md`.
-Consult when needed — not required reading for every session.
+Lookup tables and detailed procedures for Claude Code sessions.
+Scope: cross-file dependency checks, repo navigation, and layout.
 
 ---
 
@@ -40,7 +40,7 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | CHANGELOG, BACKLOG                                        |
 | **Docs navigation**        | Per-section `_nav.yml` files in `docs-src/`,              |
 |                            | `guides/backends/index.md`,                               |
-|                            | `sdd/DOCUMENTATION.md` § 3                                |
+|                            | `sdd/DOCUMENTATION.md` § Content homes                    |
 | **Source/test/spec counts**| `DEVELOPMENT_STORY.md` "The Numbers" table                |
 
 ---
@@ -57,7 +57,7 @@ Before committing, check whether your change has cross-file dependencies:
 | Log a bug or improvement idea            | Append to `sdd/BACKLOG.md` (Ideas section)           |
 | Document a user-facing change            | `CHANGELOG.md` — under `[Unreleased]` or version     |
 | Share a process insight or lesson learned | `DEVELOPMENT_STORY.md`                               |
-| Check or update project conventions      | `sdd/DESIGN.md`                                      |
+| Check or update code style conventions   | `sdd/DESIGN.md`                                      |
 | Understand the full SDD workflow         | `sdd/000-process.md`                                 |
 | Add or update a backend guide            | `guides/backends/` + docs nav                        |
 | Run a quick smoke test                   | `examples/` — pick one and run it                    |

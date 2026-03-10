@@ -89,15 +89,14 @@ class Test<TopicCamelCase>:
 Every spec section MUST have at least one test stub. This is a hard rule from
 `sdd/000-process.md`: "No spec without tests."
 
-## Step 4: Register the spec prefix
+## Step 4: Declare the spec prefix
 
-Update `sdd/000-process.md` to add the new prefix to the ID Prefixes table:
-
-```markdown
-| `PREFIX` | <Module> | `NNN-<topic>.md` |
+Each spec declares its own prefix in the file header. No central registry
+to update — `sdd/000-process.md` lists only a few examples. The prefix
+must be unique across all specs in `sdd/specs/`. Verify with:
 ```
-
-Also update `CONTRIBUTING.md` Spec Format section if it lists prefixes.
+grep -r "^## [A-Z]" sdd/specs/ | head -20
+```
 
 ## Step 5: Update BACKLOG.md
 

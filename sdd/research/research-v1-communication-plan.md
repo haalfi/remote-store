@@ -664,7 +664,7 @@ GitHub: https://github.com/haalfi/remote-store
 3. What spec-driven development means in practice
    - A spec before code — show a real spec excerpt
    - Tests against specs, not against implementation
-   - The adversarial audit (sdd/audit-001)
+   - The adversarial audit (sdd/audits/audit-001)
    - Backlog as living document
 4. The API design choices and why
    - Why 18 methods, not 56
