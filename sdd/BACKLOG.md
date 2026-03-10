@@ -83,6 +83,12 @@ Not evaluated, not committed to. Pick up when relevant.
   The existing API reference pages are already auto-generated this way.
   Each generated wrapper should also include links to relevant API reference
   pages at the bottom (e.g. caching example links to `ext.cache` reference).
+  Also: add a CI/build-time check that every symbol in `__all__` (both
+  `remote_store.__init__` and `remote_store.backends.__init__`) has a
+  matching `:::` directive in `docs-src/api/*.md` and a row in
+  `docs-src/api/index.md`. Prevents the class of miss where a public
+  export (e.g. `SFTPUtils`, `RetryPolicy`) ships without API docs
+  (see AF-037 follow-up).
 
 - [ ] **ID-063 — `write_text()` convenience method**
   Symmetric to `read_text()`. `Store.write_text(path, text, encoding="utf-8",
