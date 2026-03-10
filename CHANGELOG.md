@@ -8,6 +8,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`Store.read_text()` convenience method** (ID-056) -- reads a file and
+  decodes to string. Wraps `read_bytes()` with `encoding` and `errors`
+  parameters matching `pathlib.Path.read_text()`. Store-level only (no backend
+  changes). `ext.observe` `on_read` hook, `ext.cache` routes through cached
+  `read_bytes`. Spec `028-read-text.md` (RTXT-001 through RTXT-006).
+
 - **`Store.iter_children()` combined listing** (ID-055) -- yields both files
   (`FileInfo`) and folders (`str`) in a single pass, avoiding two round-trips.
   All 6 backends override with single-call implementations. `ext.observe`

@@ -216,6 +216,36 @@ class Store:
         self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
         return self._backend.read_bytes(self._require_file_path(path))
 
+    def read_text(self, path: str, *, encoding: str = "utf-8", errors: str = "strict") -> str:
+        """Read full file content as a string.
+
+        Convenience wrapper around ``read_bytes()`` -- reads the file and
+        decodes using the specified encoding.
+
+        :param path: Store-relative key.
+        :param encoding: Text encoding (default ``"utf-8"``).
+        :param errors: Error handling mode (default ``"strict"``).
+            See :func:`codecs.register` for valid values.
+        :returns: The file content as a ``str``.
+        :raises NotFound: If the file does not exist.
+        :raises InvalidPath: If ``path`` is empty.
+        :raises UnicodeDecodeError: If decoding fails with ``errors="strict"``.
+
+        Example:
+
+        ```python
+        store.write("greeting.txt", b"Hello!")
+        assert store.read_text("greeting.txt") == "Hello!"
+        ```
+        """
+        log.debug(
+            "read_text path=%r encoding=%r",
+            path,
+            encoding,
+            extra={"op": "read_text", "path": path, "backend": self._backend.name},
+        )
+        return self.read_bytes(path).decode(encoding, errors)
+
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         """Write content to a file.
 

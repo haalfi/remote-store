@@ -210,6 +210,7 @@ secret.reveal()  # → 'my-secret-key'
 |-----------------------------|----------------------------|
 |`read(path)`                 |Streaming read (`BinaryIO`) |
 |`read_bytes(path)`           |Full content as `bytes`     |
+|`read_text(path, encoding=)` |Full content as `str`       |
 |`write(path, content)`       |Write bytes or binary stream|
 |`write_atomic(path, content)`|Write via temp file + rename|
 |`open_atomic(path)`          |Streaming write via temp + rename|
