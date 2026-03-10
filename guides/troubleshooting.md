@@ -58,7 +58,24 @@ use `iter_rows(named=True)` with manual formatting instead of `print(df)`.
 
 **Cause:** Paramiko requires host-key verification by default.
 
-**Fix:** Configure the host-key policy in your backend config:
+**Fix:** Set the host-key policy via ``SFTPUtils.HostKeyPolicy`` or a config
+dict. Available policies: ``STRICT`` (default), ``TRUST_ON_FIRST_USE``,
+``AUTO_ADD`` (dev/testing only).
+
+Programmatic:
+
+```python
+from remote_store.backends import SFTPUtils, SFTPBackend
+
+backend = SFTPBackend(
+    host="sftp.example.com",
+    username="user",
+    password="pass",
+    host_key_policy=SFTPUtils.HostKeyPolicy.TRUST_ON_FIRST_USE,
+)
+```
+
+Dict config (for ``RegistryConfig``):
 
 ```python
 config = {
@@ -74,6 +91,8 @@ config = {
     "stores": {"default": {"backend": "my-sftp"}},
 }
 ```
+
+See the [SFTP backend guide](backends/sftp.md) for full configuration details.
 
 ## Azure: HNS vs flat namespace
 
