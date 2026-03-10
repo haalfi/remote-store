@@ -83,12 +83,12 @@ class CacheBackend(Protocol):
     """Protocol for pluggable cache backends (CACHE-001).
 
     Implement this protocol to provide a custom cache backend to
-    ``cached_store(store, cache=my_backend)``. The default implementation
+    ``cached_store(store, cache_backend=my_backend)``. The default implementation
     is ``MemoryCache``.
     """
 
     def get(self, key: tuple[str, ...]) -> Any:
-        """Return the cached value, or a sentinel indicating a miss."""
+        """Return the cached value, or raise ``KeyError`` on a cache miss."""
         ...
 
     def set(self, key: tuple[str, ...], value: Any, ttl: float) -> None:

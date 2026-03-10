@@ -118,7 +118,7 @@ class SFTPUtils:
 
     Example::
 
-        from remote_store import SFTPUtils, SFTPBackend
+        from remote_store.backends import SFTPUtils, SFTPBackend
 
         key = SFTPUtils.load_private_key("~/.ssh/id_rsa", from_file=True)
         backend = SFTPBackend(
