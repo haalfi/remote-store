@@ -4129,6 +4129,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../028-read-text/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    028: read_text Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5452,7 +5480,7 @@ ID-004 (superseded).</p>
 <li><code>operation: str</code> -- operation name (e.g., <code>"read"</code>, <code>"write"</code>, <code>"delete"</code>,
   <code>"copy"</code>, <code>"move"</code>, <code>"iter_children"</code>, <code>"list_files"</code>, <code>"list_folders"</code>, <code>"glob"</code>,
   <code>"get_file_info"</code>, <code>"get_folder_info"</code>, <code>"exists"</code>, <code>"is_file"</code>,
-  <code>"is_folder"</code>, <code>"read_bytes"</code>, <code>"write_atomic"</code>, <code>"delete_folder"</code>,
+  <code>"is_folder"</code>, <code>"read_bytes"</code>, <code>"read_text"</code>, <code>"write_atomic"</code>, <code>"delete_folder"</code>,
   <code>"to_key"</code>, <code>"unwrap"</code>, <code>"supports"</code>).</li>
 <li><code>path: str</code> -- store-relative key (first positional path argument). Empty
   string for operations that take no path (e.g., <code>supports</code>).</li>
@@ -5532,7 +5560,7 @@ overrides every public method of <code>Store</code>. Each override:</p>
 <tbody>
 <tr>
 <td><code>on_read</code></td>
-<td><code>read</code>, <code>read_bytes</code></td>
+<td><code>read</code>, <code>read_bytes</code>, <code>read_text</code></td>
 </tr>
 <tr>
 <td><code>on_write</code></td>

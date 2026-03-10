@@ -4081,6 +4081,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../028-read-text/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    028: read_text Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5345,7 +5373,7 @@
 <h3 id="store-001-construction">STORE-001: Construction<a class="headerlink" href="#store-001-construction" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Constructed with a <code>Backend</code> and <code>root_path</code> string. A non-empty <code>root_path</code> is validated and normalized via <code>RemotePath</code>. An empty <code>root_path</code> means the store root is the backend root.</p>
 <h3 id="store-002-path-validation">STORE-002: Path Validation<a class="headerlink" href="#store-002-path-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Non-empty path arguments are validated via <code>RemotePath</code>. Empty string <code>""</code> and <code>"."</code> are both accepted as root aliases by folder/query methods (<code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>list_files</code>, <code>list_folders</code>, <code>get_folder_info</code>) to mean "the store root." This ensures <code>str(RemotePath.ROOT)</code> round-trips through Store methods (see PATH-015). File-targeted methods (<code>read</code>, <code>read_bytes</code>, <code>write</code>, <code>write_atomic</code>, <code>delete</code>, <code>get_file_info</code>, <code>move</code>, <code>copy</code>) raise <code>InvalidPath</code> on empty path or <code>"."</code>. <code>delete_folder</code> also rejects root (<code>""</code> / <code>"."</code>) to prevent accidental root deletion. See ADR-0004.</p>
+<p><strong>Invariant:</strong> Non-empty path arguments are validated via <code>RemotePath</code>. Empty string <code>""</code> and <code>"."</code> are both accepted as root aliases by folder/query methods (<code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>list_files</code>, <code>list_folders</code>, <code>get_folder_info</code>) to mean "the store root." This ensures <code>str(RemotePath.ROOT)</code> round-trips through Store methods (see PATH-015). File-targeted methods (<code>read</code>, <code>read_bytes</code>, <code>read_text</code>, <code>write</code>, <code>write_atomic</code>, <code>delete</code>, <code>get_file_info</code>, <code>move</code>, <code>copy</code>) raise <code>InvalidPath</code> on empty path or <code>"."</code>. <code>delete_folder</code> also rejects root (<code>""</code> / <code>"."</code>) to prevent accidental root deletion. See ADR-0004.</p>
 <h3 id="store-003-root-path-scoping">STORE-003: Root Path Scoping<a class="headerlink" href="#store-003-root-path-scoping" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Store prepends <code>root_path</code> to all relative paths before delegating to the backend.</p>
 <h3 id="store-004-delegation">STORE-004: Delegation<a class="headerlink" href="#store-004-delegation" title="Permanent link">&para;</a></h3>
@@ -5357,7 +5385,7 @@
 <h3 id="store-007-thread-safety">STORE-007: Thread Safety<a class="headerlink" href="#store-007-thread-safety" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Store is immutable and safe to share across threads.</p>
 <h3 id="store-008-full-api-surface">STORE-008: Full API Surface<a class="headerlink" href="#store-008-full-api-surface" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Store exposes: <code>read</code>, <code>read_bytes</code>, <code>write</code>, <code>write_atomic</code>, <code>delete</code>, <code>delete_folder</code>, <code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>iter_children</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>, <code>get_file_info</code>, <code>get_folder_info</code>, <code>move</code>, <code>copy</code>, <code>close</code>, <code>supports</code>, <code>to_key</code>, <code>native_path</code>, <code>unwrap</code>, <code>child</code>.</p>
+<p><strong>Invariant:</strong> Store exposes: <code>read</code>, <code>read_bytes</code>, <code>read_text</code>, <code>write</code>, <code>write_atomic</code>, <code>delete</code>, <code>delete_folder</code>, <code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>iter_children</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>, <code>get_file_info</code>, <code>get_folder_info</code>, <code>move</code>, <code>copy</code>, <code>close</code>, <code>supports</code>, <code>to_key</code>, <code>native_path</code>, <code>unwrap</code>, <code>child</code>.</p>
 <h3 id="store-008a-same-path-move-and-copy">STORE-008a: Same-Path Move and Copy<a class="headerlink" href="#store-008a-same-path-move-and-copy" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move(src, dst)</code> or <code>copy(src, dst)</code> where <code>src</code> and <code>dst</code> resolve to the same path is a no-op (the file is not modified, copied, or deleted). The source must be an existing file (verified via <code>is_file()</code>); otherwise <code>NotFound</code> is raised even for same-path calls.</p>
 <h3 id="store-009-resource-management">STORE-009: Resource Management<a class="headerlink" href="#store-009-resource-management" title="Permanent link">&para;</a></h3>

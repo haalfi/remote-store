@@ -4061,6 +4061,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../028-read-text/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    028: read_text Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5473,6 +5501,8 @@ pattern (ADR-0010).</p>
 inner store without caching:</p>
 <ul>
 <li><code>read(path)</code> -- returns <code>BinaryIO</code> (not serializable/reusable).</li>
+<li><code>read_text(path)</code> -- delegates to <code>self.read_bytes()</code> (uses cached
+  <code>read_bytes</code> result). No separate cache key. See RTXT-005.</li>
 <li><code>close()</code>, <code>child()</code>, <code>to_key()</code>, <code>unwrap()</code>, <code>native_path()</code>,
   <code>supports()</code> -- no backend I/O worth caching.</li>
 </ul>

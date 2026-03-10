@@ -3263,6 +3263,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#sio-007-text-convenience-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIO-007: Text Convenience Reads
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3847,6 +3858,34 @@
     
   
     027: iter_children Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../028-read-text/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    028: read_text Specification
   
 
     
@@ -4878,6 +4917,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#sio-007-text-convenience-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIO-007: Text Convenience Reads
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4920,6 +4970,9 @@
 <h2 id="sio-006-no-framework-dependencies">SIO-006: No Framework Dependencies<a class="headerlink" href="#sio-006-no-framework-dependencies" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Streaming I/O uses only <code>typing.BinaryIO</code> (stdlib). No dependency on anyio, asyncio, or trio.
 <strong>Rationale:</strong> See <a href="../../adrs/0001-architecture-store-registry-backends/">ADR-0001</a>.</p>
+<h2 id="sio-007-text-convenience-reads">SIO-007: Text Convenience Reads<a class="headerlink" href="#sio-007-text-convenience-reads" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>Store.read_text(path, *, encoding="utf-8", errors="strict")</code> reads the full content via <code>read_bytes()</code> and decodes it to <code>str</code>.
+<strong>Postconditions:</strong> This is a Store-level convenience -- no backend changes. Raises <code>UnicodeDecodeError</code> on decode failure with <code>errors="strict"</code>. See <a href="../028-read-text/">028-read-text.md</a> (RTXT-001).</p>
 
 
 
