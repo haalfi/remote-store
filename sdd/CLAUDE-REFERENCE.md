@@ -31,13 +31,19 @@ Before committing, check whether your change has cross-file dependencies:
 | **Store or Backend ABC**   | All backend implementations, conformance tests            |
 | **A public method signature** | Docstring (Args, Returns, Raises), examples that       |
 |                            | call it, guides that reference it                         |
-| **A Store method**         | README Store API table, `__init__.py` `__all__`,          |
-|                            | `examples/`, spec in `sdd/specs/`, guides, CHANGELOG      |
+| **A Store method**         | README Store API table + comparison method count,         |
+|                            | `__init__.py` `__all__`, README examples table (if new    |
+|                            | example added), `examples/`, spec in `sdd/specs/`,        |
+|                            | guides, CHANGELOG                                         |
 | **Public API** (`__all__`) | README Store API table, `examples/`, user guides          |
 | **An extension**           | `__init__.py` exports (if pure Python),                   |
 |                            | `pyproject.toml` extras (if optional dep),                |
-|                            | `guides/`, `docs-src/` + `_nav.yml`, `examples/`,         |
+|                            | README extensions table, `docs-src/api/ext-*.md` +        |
+|                            | `api/index.md` + `api/_nav.yml`, `guides/`,               |
+|                            | `docs-src/` + `_nav.yml`, `examples/`,                    |
 |                            | CHANGELOG, BACKLOG                                        |
+| **An example script**      | README examples table, `docs-src/examples/*.md` wrapper,  |
+|                            | `tests/test_examples.py` import                           |
 | **Docs navigation**        | Per-section `_nav.yml` files in `docs-src/`,              |
 |                            | `guides/backends/index.md`,                               |
 |                            | `sdd/DOCUMENTATION.md` § Content homes                    |
