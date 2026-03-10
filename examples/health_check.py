@@ -6,8 +6,12 @@ before accepting traffic.
 
 from __future__ import annotations
 
-from remote_store import Store
-from remote_store._errors import BackendUnavailable, NotFound, PermissionDenied
+from remote_store import (
+    BackendUnavailable,
+    NotFound,
+    PermissionDenied,
+    Store,
+)
 from remote_store.backends._memory import MemoryBackend
 
 

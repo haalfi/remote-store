@@ -31,7 +31,7 @@ store.ping()  # raises on failure, silent on success
 | `BackendUnavailable` | Network error, DNS failure, or timeout |
 
 ```python
-from remote_store._errors import BackendUnavailable, NotFound, PermissionDenied
+from remote_store import BackendUnavailable, NotFound, PermissionDenied
 
 try:
     store.ping()
