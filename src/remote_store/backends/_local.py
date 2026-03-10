@@ -232,6 +232,17 @@ class LocalBackend(Backend):
             if item.is_dir():
                 yield item.name
 
+    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+        full = self._resolve(path)
+        if not full.is_dir():
+            return
+        for item in full.iterdir():
+            if item.is_file():
+                rel = self.to_key(str(item))
+                yield self._stat_to_fileinfo(rel, item)
+            elif item.is_dir():
+                yield item.name
+
     def get_file_info(self, path: str) -> FileInfo:
         full = self._resolve(path)
         if not full.is_file():

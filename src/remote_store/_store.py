@@ -411,6 +411,36 @@ class Store:
         for info in self._backend.glob(full_pattern):
             yield self._rebase_file_info(info)
 
+    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+        """List both files and folders under path in a single pass.
+
+        Avoids the two round-trips of calling ``list_files()`` and
+        ``list_folders()`` separately. Files are yielded as ``FileInfo``
+        (with store-relative paths), folders as ``str`` names.
+
+        :param path: Store-relative folder key, or ``""`` for the store root.
+        :returns: An iterator of ``FileInfo`` (files) and ``str`` (folder names).
+            Ordering is backend-defined; callers must not depend on it.
+
+        Example:
+
+        ```python
+        for child in store.iter_children("data"):
+            if isinstance(child, FileInfo):
+                print(f"File: {child.name} ({child.size} bytes)")
+            else:
+                print(f"Folder: {child}")
+        ```
+        """
+        _bk = self._backend.name
+        log.debug("iter_children path=%r", path, extra={"op": "iter_children", "path": path, "backend": _bk})
+        self._backend.capabilities.require(Capability.LIST, backend=_bk)
+        for entry in self._backend.iter_children(self._full_path(path)):
+            if isinstance(entry, str):
+                yield entry
+            else:
+                yield self._rebase_file_info(entry)
+
     def list_folders(self, path: str) -> Iterator[str]:
         """List immediate subfolder names.
 

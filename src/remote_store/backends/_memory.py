@@ -228,6 +228,30 @@ class MemoryBackend(Backend):
             results = [name for name, child in node.children.items() if isinstance(child, _DirNode)]
         yield from results
 
+    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+        segments = self._split_path(path)
+        with self._lock:
+            node = self._traverse(segments)
+            if not isinstance(node, _DirNode):
+                return
+            prefix = "/".join(segments) if segments else ""
+            results: list[FileInfo | str] = []
+            for name, child in node.children.items():
+                if isinstance(child, _FileEntry):
+                    child_path = f"{prefix}/{name}" if prefix else name
+                    results.append(
+                        FileInfo(
+                            path=RemotePath(child_path),
+                            name=name,
+                            size=len(child.data),
+                            modified_at=child.modified_at,
+                            content_type=child.content_type,
+                        )
+                    )
+                elif isinstance(child, _DirNode):
+                    results.append(name)
+        yield from results
+
     def get_file_info(self, path: str) -> FileInfo:
         segments = self._split_path(path)
         if not segments:

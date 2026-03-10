@@ -115,6 +115,7 @@ _OP_HOOK_MAP: dict[str, str] = {
     "delete_folder": "on_delete",
     "copy": "on_copy",
     "move": "on_move",
+    "iter_children": "on_list",
     "list_files": "on_list",
     "list_folders": "on_list",
     "glob": "on_list",
@@ -317,6 +318,11 @@ class ObservedStore(Store):
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         with self._observe_op("delete_folder", path, {"recursive": recursive, "missing_ok": missing_ok}):
             self._inner.delete_folder(path, recursive=recursive, missing_ok=missing_ok)
+
+    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+        # Materialize: see list_files comment.
+        with self._observe_op("iter_children", path, {}):
+            return iter(list(self._inner.iter_children(path)))
 
     def list_files(
         self,

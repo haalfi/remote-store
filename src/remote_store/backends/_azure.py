@@ -433,6 +433,34 @@ class AzureBackend(Backend):
                         folder_name = item.prefix.rstrip("/").rsplit("/", 1)[-1]
                         yield folder_name
 
+    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+        with self._errors(path):
+            azure_path = self._azure_path(path)
+            prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
+
+            if self._hns:  # pragma: no cover -- HNS only
+                try:
+                    paths = self._fs.get_paths(path=azure_path or "/", recursive=False)
+                    for p in paths:
+                        if getattr(p, "is_directory", False):
+                            folder_name = str(p.name).rstrip("/").rsplit("/", 1)[-1]
+                            yield folder_name
+                        else:
+                            yield self._props_to_fileinfo(p, str(p.name))
+                except Exception as exc:
+                    mapped = self._classify(exc, path)
+                    if isinstance(mapped, NotFound):
+                        return
+                    raise mapped from None
+            else:
+                blobs = self._cc.walk_blobs(name_starts_with=prefix)
+                for item in blobs:
+                    if getattr(item, "prefix", None):
+                        folder_name = item.prefix.rstrip("/").rsplit("/", 1)[-1]
+                        yield folder_name
+                    else:
+                        yield self._props_to_fileinfo(item, item.name)
+
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 

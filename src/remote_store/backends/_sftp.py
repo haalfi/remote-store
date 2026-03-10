@@ -449,6 +449,24 @@ class SFTPBackend(Backend):
         except Exception as exc:
             raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
 
+    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+        try:
+            sftp_path = self._sftp_path(path)
+            try:
+                entries = self._sftp.listdir_attr(sftp_path)
+            except OSError:
+                return
+            for attr in entries:
+                if stat.S_ISREG(attr.st_mode):
+                    rel = f"{path}/{attr.filename}" if path else attr.filename
+                    yield self._stat_to_fileinfo(rel, attr)
+                elif stat.S_ISDIR(attr.st_mode):
+                    yield attr.filename
+        except RemoteStoreError:
+            raise
+        except Exception as exc:
+            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
+
     def get_file_info(self, path: str) -> FileInfo:
         with self._errors(path):
             sftp_path = self._sftp_path(path)

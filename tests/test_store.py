@@ -169,6 +169,41 @@ class TestStoreFullAPI:
         folders = set(store.list_folders("lfd"))
         assert folders == {"sub1", "sub2"}
 
+    @pytest.mark.spec("ITER-001")
+    def test_iter_children(self, store: Store) -> None:
+        store.write("ic/a.txt", b"a")
+        store.write("ic/b.txt", b"b")
+        store.write("ic/sub/c.txt", b"c")
+        children = list(store.iter_children("ic"))
+        files = [c for c in children if isinstance(c, FileInfo)]
+        folders = [c for c in children if isinstance(c, str)]
+        assert {f.name for f in files} == {"a.txt", "b.txt"}
+        assert set(folders) == {"sub"}
+
+    @pytest.mark.spec("ITER-001")
+    def test_iter_children_empty_dir(self, store: Store) -> None:
+        assert list(store.iter_children("nonexistent")) == []
+
+    @pytest.mark.spec("ITER-001")
+    def test_iter_children_root(self, store: Store) -> None:
+        store.write("root.txt", b"r")
+        store.write("sub/nested.txt", b"n")
+        children = list(store.iter_children(""))
+        files = [c for c in children if isinstance(c, FileInfo)]
+        folders = [c for c in children if isinstance(c, str)]
+        assert {f.name for f in files} == {"root.txt"}
+        assert "sub" in folders
+
+    @pytest.mark.spec("ITER-001")
+    def test_iter_children_file_paths_are_store_relative(self, store: Store) -> None:
+        store.write("ic2/f.txt", b"x")
+        children = list(store.iter_children("ic2"))
+        files = [c for c in children if isinstance(c, FileInfo)]
+        assert len(files) == 1
+        assert str(files[0].path) == "ic2/f.txt"
+        # Round-trip: path should work as input
+        assert store.read_bytes(str(files[0].path)) == b"x"
+
     @pytest.mark.spec("STORE-008")
     def test_get_file_info(self, store: Store) -> None:
         store.write("info.txt", b"hello")
