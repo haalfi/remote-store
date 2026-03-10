@@ -5,34 +5,41 @@ on top of the core Store API.
 
 ## Available Extensions
 
-| Module | Extra | Description |
-|--------|-------|-------------|
-| `ext.batch` | -- | Bulk delete, copy, and exists operations |
-| `ext.glob` | -- | Portable glob pattern matching for file listing |
-| `ext.observe` | -- | Callback-based observability hooks for Store operations |
-| `ext.transfer` | -- | Upload, download, and cross-store transfer |
-| `ext.otel` | `otel` | OpenTelemetry tracing and metrics bridge |
-| `ext.arrow` | `arrow` | PyArrow FileSystem adapter |
-| `ext.pydantic` | `pydantic` | Pydantic BaseModel/BaseSettings adapter |
-| `ext.yaml` | `yaml` | YAML config file loader |
+| Module | Extra | Description | Guide | Example |
+|--------|-------|-------------|-------|---------|
+| `ext.batch` | -- | Bulk delete, copy, and exists operations | [Guide](batch-operations.md) | [Example](../examples/batch_operations.py) |
+| `ext.cache` | -- | Store-level caching with TTL and auto-invalidation | [Guide](cache.md) | [Example](../examples/caching.py) |
+| `ext.glob` | -- | Portable glob pattern matching for file listing | [Guide](glob-pattern-matching.md) | [Example](../examples/glob_pattern_matching.py) |
+| `ext.observe` | -- | Callback-based observability hooks for Store operations | [Guide](observe.md) | [Example](../examples/observe_hooks.py) |
+| `ext.partition` | -- | Hive-style partition path helpers | -- | -- |
+| `ext.transfer` | -- | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](../examples/transfer_operations.py) |
+| `ext.arrow` | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](../examples/pyarrow_adapter.py) |
+| `ext.otel` | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](../examples/otel_tracing.py) |
+| `ext.pydantic` | `pydantic` | Pydantic BaseModel/BaseSettings adapter | -- | [Example](../examples/config_loaders.py) |
+| `ext.yaml` | `yaml` | YAML config file loader | -- | [Example](../examples/config_loaders.py) |
 
 ## Using Extensions
 
 ### Always-available extensions (pure Python)
 
-`ext.batch`, `ext.glob`, `ext.observe`, and `ext.transfer` have no extra
-dependencies. They are re-exported from the top-level package:
+`ext.batch`, `ext.cache`, `ext.glob`, `ext.observe`, `ext.partition`,
+and `ext.transfer` have no extra dependencies. They are re-exported from
+the top-level package:
 
 ```python
 from remote_store import batch_delete, glob_files, observe, upload, download
+from remote_store import cached_store           # ext.cache
+from remote_store import partition_path, parse_partition  # ext.partition
 ```
 
 Or import from the extension module directly:
 
 ```python
 from remote_store.ext.batch import batch_delete
+from remote_store.ext.cache import cached_store
 from remote_store.ext.glob import glob_files
 from remote_store.ext.observe import observe
+from remote_store.ext.partition import partition_path, parse_partition
 from remote_store.ext.transfer import upload
 ```
 
@@ -77,16 +84,6 @@ All extensions follow the same contract (ADR-0008):
   caller owns the Store's lifecycle.
 - **CapabilityNotSupported propagates** -- if a backend lacks a required
   capability, the error reaches the caller immediately.
-
-## Individual Guides
-
-- [PyArrow Adapter](pyarrow-adapter.md)
-- [Batch Operations](batch-operations.md)
-- [Glob Pattern Matching](glob-pattern-matching.md)
-- [Transfer Operations](transfer-operations.md)
-- [Observability Hooks](observe.md) (includes Layer 3 OTel bridge)
-- [Caching](cache.md)
-- [Retry Policy](retry.md)
 
 ## Writing Your Own Extension
 
