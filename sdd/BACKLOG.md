@@ -29,6 +29,13 @@ Active work items, ordered by priority.
 
 Started but not yet prioritized for completion.
 
+- [~] **ID-064 -- Docs site enhancements (colored types, Material features, Fira Code)**
+  Apply findings from `sdd/research/research-fastapi-docs.md`.
+  - Done: P1 -- added `separate_signature`, `signature_crossrefs`,
+    `show_symbol_type_heading`, `show_symbol_type_toc` to mkdocstrings config.
+  - Remaining: P3 (Fira Code font via `extra_css`), P4 (`navigation.tabs.sticky`,
+    `search.suggest`, `search.highlight`).
+
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.
   - Done: `packaging/conda-forge/recipe.yaml`, `conda-recipe.yml` workflow,
@@ -82,6 +89,16 @@ Not evaluated, not committed to. Pick up when relevant.
   errors="strict", *, overwrite=False)` — thin wrapper around `.encode()` +
   `write()`. Lower priority since `store.write(path, text.encode())` is a
   trivial one-liner. Add if users request it.
+
+- [ ] **ID-066 -- PR preview deployments**
+  Deploy PR previews to Cloudflare Pages, Netlify, or GitHub Pages artifacts.
+  Inspired by FastAPI's Cloudflare Pages pattern. Infrastructure decision needed.
+  Research: `sdd/research/research-fastapi-docs.md` P6.
+
+- [ ] **ID-067 -- griffe-typingdoc for `Annotated[T, Doc("...")]` docstrings**
+  Only relevant if migrating from Sphinx-style docstrings to PEP 727
+  `Annotated[T, Doc("...")]`. Not recommended near-term.
+  Research: `sdd/research/research-fastapi-docs.md` P5.
 
 - [ ] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**
   `list_files`, `list_folders`, and `iter_children` in S3Backend and
@@ -660,6 +677,10 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
   Listing numbers now reflect real I/O without fsspec caching bias.
 
 ### Post-v0.15.0 housekeeping
+
+- [x] **ID-065 -- Use uv in docs deployment workflow** (post-v0.15.0)
+  Switched `docs.yml` from `pip install` to `astral-sh/setup-uv@v6` + `uv pip install`
+  for consistency with `ci.yml` and `publish.yml`. Added `UV_SYSTEM_PYTHON: 1` env var.
 
 - [x] **ID-061 — Use uv for CI dependency installs** (post-v0.15.0)
   Replace `pip install` with `uv pip install` in `ci.yml` and `publish.yml`.
