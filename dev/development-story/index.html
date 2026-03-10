@@ -5072,6 +5072,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-24-developer-experience-and-tooling-post-v0150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 24: Developer Experience and Tooling (post-v0.15.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5658,6 +5669,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-24-developer-experience-and-tooling-post-v0150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 24: Developer Experience and Tooling (post-v0.15.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5934,23 +5956,23 @@
 <tbody>
 <tr>
 <td>Source code</td>
-<td>~6,200 lines (6 backends)</td>
+<td>~8,100 lines (6 backends)</td>
 </tr>
 <tr>
 <td>Tests</td>
-<td>~1,600 tests, ~11,300 lines</td>
+<td>~1,710 tests, ~14,900 lines</td>
 </tr>
 <tr>
 <td>Specs &amp; docs</td>
-<td>24 specs, 10 ADRs, 4 RFCs</td>
+<td>28 specs, 11 ADRs, 4 RFCs</td>
 </tr>
 <tr>
 <td>Examples</td>
-<td>16 core + 4 cloud + 4 notebooks</td>
+<td>21 core + 4 cloud + 5 notebooks</td>
 </tr>
 <tr>
 <td>Extensions</td>
-<td>9 (<code>ext.arrow</code>, <code>ext.batch</code>, <code>ext.cache</code>, <code>ext.glob</code>, <code>ext.observe</code>, <code>ext.otel</code>, <code>ext.partition</code>, <code>ext.pydantic</code>, <code>ext.transfer</code>)</td>
+<td>10 (<code>ext.arrow</code>, <code>ext.batch</code>, <code>ext.cache</code>, <code>ext.glob</code>, <code>ext.observe</code>, <code>ext.otel</code>, <code>ext.partition</code>, <code>ext.pydantic</code>, <code>ext.transfer</code>, <code>ext.yaml</code>)</td>
 </tr>
 <tr>
 <td>Documentation site</td>
@@ -5966,7 +5988,7 @@
 </tr>
 <tr>
 <td>Commits</td>
-<td>~315</td>
+<td>~346</td>
 </tr>
 </tbody>
 </table>
@@ -6334,6 +6356,13 @@
 <p><strong>PyArrow Tier 1 native fast-path</strong> (ID-037) completed the PyArrow adapter's Phase 2: <code>StoreFileSystemHandler</code> now probes for a native PyArrow filesystem at construction and dispatches reads directly to C++ for zero-GIL overhead. Benchmarks showed 1.6-2x improvement on S3-PyArrow.</p>
 <p><strong>The documentation overhaul</strong> (DOC-001) was the largest non-code effort yet: full Diataxis restructure, 9 extension API reference pages, 7 new content pages, docstring audit for Store/Backend/errors, and cross-links throughout. Lesson #16 emerged: adopt a documentation framework early. Retrofitting Diataxis onto an existing flat site required reclassifying every page and rebuilding navigation.</p>
 <p><strong>E2E integration tests</strong> (ID-050) validated six extensions working together in a full data lake pipeline against Docker backends (MinIO, Azurite). A cross-layer assertion lesson: don't assert <code>gold_bytes &lt; silver_bytes</code> -- aggregation adds computed columns that can make Gold larger despite fewer rows. Use row counts for aggregation invariants.</p>
+<h3 id="phase-24-developer-experience-and-tooling-post-v0150">Phase 24: Developer Experience and Tooling (post-v0.15.0)<a class="headerlink" href="#phase-24-developer-experience-and-tooling-post-v0150" title="Permanent link">&para;</a></h3>
+<p>Four PRs (#170--#173) landed in a single day, each small but collectively shaping the developer experience story.</p>
+<p><strong>API ergonomics through convention</strong> (ID-056, ID-055). <code>read_text()</code> and <code>iter_children()</code> followed pathlib's API conventions deliberately -- same parameter names (<code>encoding</code>, <code>errors</code>), same return semantics. The lesson: when your audience is citizen developers, matching stdlib patterns reduces the API surface they need to learn to zero.</p>
+<p><strong>Learning from other projects' toolchains</strong> (#171, #173). A research pass on FastAPI's documentation setup (PR #171) revealed that mkdocstrings already supported colored, cross-linked type annotations -- just not enabled. A 4-line config change (<code>separate_signature</code>, <code>signature_crossrefs</code>, <code>show_symbol_type_heading</code>, <code>show_symbol_type_toc</code>) in PR #173 gave the API reference the same visual quality that FastAPI is known for. Lesson: before building, check if your existing tools already support the feature.</p>
+<p><strong>uv adoption, incrementally</strong> (#173). CI moved from pip to uv across three workflows (ci.yml, publish.yml, then docs.yml). The key insight: uv replaces pip <em>for installation speed in CI</em>, not hatch for local development. Locally, <code>hatch run</code> remains the interface -- it manages environments, scripts, and matrix testing. uv is a CI concern only, cutting install steps from ~45s to ~8s.</p>
+<p><strong>Cross-platform as a first-class constraint.</strong> The Win/macOS/Linux test matrix surfaced patterns that became project conventions: errno codes instead of string matching (German locale breaks English error messages), closing streams before <code>shutil.rmtree()</code> (Windows file locking), ASCII-only <code>print()</code> (cp1252 codec), and em-dash avoidance in Markdown titles (mojibake via MkDocs). These aren't edge cases -- they're the default experience for half the target audience.</p>
+<p><strong>Ripple-check strengthening</strong> (#172). The CLAUDE-REFERENCE.md ripple-check table gained more specific verification targets: Store method changes now explicitly require README API table + method count updates, extension changes require docs nav + API reference pages. The README audit in the same PR caught 3 missing examples and a stale method count -- exactly the kind of drift the table is designed to prevent.</p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
