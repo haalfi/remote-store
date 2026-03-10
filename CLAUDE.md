@@ -50,17 +50,17 @@ See `sdd/DESIGN.md` for the full code style rules. Key points:
 - New features require a spec in `sdd/specs/`. Ops changes (CI, docs) skip specs.
 - Run `hatch run lint` before committing.
 
-## GitHub CLI (`gh`) — restricted usage
+## GitHub CLI (`gh`): restricted usage
 
 The `gh` CLI is installed via a SessionStart hook (`.claude/setup-gh.sh`).
 It requires a `GITHUB_TOKEN` environment variable with PR read/write scope.
 
 **Allowed operations** (only when the user explicitly asks):
 
-- `gh pr view` — read PR metadata
-- `gh pr diff` — read PR diffs
-- `gh pr review` — submit a review with comments
-- `gh api` — post review comments on specific lines
+- `gh pr view`: read PR metadata
+- `gh pr diff`: read PR diffs
+- `gh pr review`: submit a review with comments
+- `gh api`: post review comments on specific lines
 
 All other `gh` operations (creating/closing/merging PRs, pushing code, commenting on issues, etc.) require explicit user request. If you believe one would be beneficial, ask the user and wait for confirmation before proceeding.
 

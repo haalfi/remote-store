@@ -39,11 +39,6 @@ Active work items, ordered by priority.
 
 Started but not yet prioritized for completion.
 
-- [x] **ID-059 — Restructure authoritative docs to ADF standard**
-  Restructure SDD root-level and repo root-level docs to Authoritative Document
-  Format (Intent & Scope, Rules, Guides). Move audit files to `sdd/audits/`.
-  Trim DESIGN.md to code style only, condense DOCUMENTATION.md and 000-process.md.
-
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.
   - Done: `packaging/conda-forge/recipe.yaml`, `conda-recipe.yml` workflow,
@@ -640,6 +635,11 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
   Listing numbers now reflect real I/O without fsspec caching bias.
 
 ### Post-v0.15.0 housekeeping
+
+- [x] **ID-059 — Restructure authoritative docs to ADF standard** (post-v0.15.0)
+  Restructure SDD root-level and repo root-level docs to Authoritative Document
+  Format (Intent & Scope, Rules, Guides). Move audit files to `sdd/audits/`.
+  Trim DESIGN.md to code style only, condense DOCUMENTATION.md and 000-process.md.
 
 - [x] **ID-044 — Harden examples into assertion-based expectation tests** (post-v0.15.0)
   Examples expose `demo(store)` functions; `tests/test_examples.py` imports

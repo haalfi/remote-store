@@ -31,7 +31,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - **Authoritative docs restructured to ADF standard** (ID-059) -- `sdd/DESIGN.md`
   trimmed to code style conventions only (sections 1-10 removed, duplicated specs).
-  `sdd/DOCUMENTATION.md` condensed to rules + guides (~250 lines from ~456).
+  `sdd/DOCUMENTATION.md` condensed to rules + guides (~130 lines from ~456).
   `sdd/000-process.md` restructured to Intent/Rules/Guides (~75 lines from ~152).
   Audit files moved to `sdd/audits/`. `CONTRIBUTING.md` spec format section
   replaced with cross-ref to `000-process.md`. `CLAUDE.md` environment note removed.
