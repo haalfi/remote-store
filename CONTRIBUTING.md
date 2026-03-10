@@ -315,7 +315,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 - [ ] PyPI: `pip install remote-store==X.Y.Z` in a fresh venv, verify version and README renders on pypi.org
 - [ ] GitHub Pages: check version switcher shows new version as "latest"
-- [ ] ReadTheDocs: check https://docs.remotestore.dev/ shows correct version (requires RTD automation rule for tag-based builds)
+- [ ] ReadTheDocs: check https://docs.remotestore.dev/stable/ shows the new version (RTD automation rule activates tag-based builds; `stable` is the default version)
 - [ ] Conda recipe: fetch sha256 from PyPI (`curl -s https://pypi.org/pypi/remote-store/X.Y.Z/json | python -c "import sys,json; d=json.load(sys.stdin); print([f['digests']['sha256'] for f in d['urls'] if f['filename'].endswith('.tar.gz')][0])"`) and update `source.sha256` in `packaging/conda-forge/recipe.yaml`
 - [ ] Commit recipe sha256 update via a branch and PR (branch protection requires PRs even for metadata-only changes)
 - [ ] Conda-forge: if feedstock exists, verify bot opened a version-bump PR

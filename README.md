@@ -251,7 +251,7 @@ secret.reveal()  # → 'my-secret-key'
 
 All write/move/copy methods accept `overwrite=True` to replace existing files.
 
-For full details, see the [API reference](https://docs.remotestore.dev/en/latest/api/store/).
+For full details, see the [API reference](https://docs.remotestore.dev/stable/api/store/).
 
 ## Supported Backends
 
@@ -264,7 +264,7 @@ For full details, see the [API reference](https://docs.remotestore.dev/en/latest
 |SFTP / SSH           |Built-in  |`remote-store[sftp]`        |
 |Azure Blob / ADLS    |Built-in  |`remote-store[azure]`       |
 
-Detailed configuration guides for each backend are in [`guides/backends/`](https://docs.remotestore.dev/en/latest/backends/).
+Detailed configuration guides for each backend are in [`guides/backends/`](https://docs.remotestore.dev/stable/backends/).
 
 ### Extensions
 
@@ -272,16 +272,16 @@ All extensions live in `remote_store.ext` and are optional -- import only what y
 
 |Extension            |Extra                       |Description                 |
 |---------------------|----------------------------|----------------------------|
-|PyArrow adapter      |`remote-store[arrow]`       |Use any Store as a `pyarrow.fs.FileSystem` for Parquet, datasets, Pandas, Polars, DuckDB ([guide](https://docs.remotestore.dev/en/latest/pyarrow-adapter/), [example](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py)) |
-|Batch operations     |*(none)*                    |Bulk delete, copy, and exists with error aggregation ([guide](https://docs.remotestore.dev/en/latest/batch-operations/), [example](https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py)) |
-|Transfer operations  |*(none)*                    |Upload, download, and cross-store transfer with streaming and progress ([guide](https://docs.remotestore.dev/en/latest/transfer-operations/), [example](https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py)) |
-|Observability hooks  |*(none)*                    |Callback-based instrumentation for logging, metrics, and tracing ([guide](https://docs.remotestore.dev/en/latest/observe/), [example](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py)) |
-|OpenTelemetry bridge |`remote-store[otel]`        |Pre-built OTel spans and metrics for Store operations ([guide](https://docs.remotestore.dev/en/latest/observe/), [example](https://github.com/haalfi/remote-store/blob/master/examples/otel_tracing.py)) |
-|Glob helpers         |*(none)*                    |Portable glob fallback for backends without native glob support ([guide](https://docs.remotestore.dev/en/latest/glob-pattern-matching/), [example](https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py)) |
-|Caching middleware   |*(none)*                    |TTL-based read cache with automatic invalidation on mutations ([guide](https://docs.remotestore.dev/en/latest/cache/), [API](https://docs.remotestore.dev/en/latest/api/ext-cache/)) |
-|Partition helpers    |*(none)*                    |Hive-style partition path builder and parser ([API](https://docs.remotestore.dev/en/latest/api/ext-partition/)) |
-|YAML config loader   |`remote-store[yaml]`        |Load RegistryConfig from YAML files via PyYAML or ruamel.yaml ([API](https://docs.remotestore.dev/en/latest/api/ext-yaml/)) |
-|Pydantic adapter     |`remote-store[pydantic]`    |Convert Pydantic BaseSettings to RegistryConfig ([API](https://docs.remotestore.dev/en/latest/api/ext-pydantic/)) |
+|PyArrow adapter      |`remote-store[arrow]`       |Use any Store as a `pyarrow.fs.FileSystem` for Parquet, datasets, Pandas, Polars, DuckDB ([guide](https://docs.remotestore.dev/stable/pyarrow-adapter/), [example](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py)) |
+|Batch operations     |*(none)*                    |Bulk delete, copy, and exists with error aggregation ([guide](https://docs.remotestore.dev/stable/batch-operations/), [example](https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py)) |
+|Transfer operations  |*(none)*                    |Upload, download, and cross-store transfer with streaming and progress ([guide](https://docs.remotestore.dev/stable/transfer-operations/), [example](https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py)) |
+|Observability hooks  |*(none)*                    |Callback-based instrumentation for logging, metrics, and tracing ([guide](https://docs.remotestore.dev/stable/observe/), [example](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py)) |
+|OpenTelemetry bridge |`remote-store[otel]`        |Pre-built OTel spans and metrics for Store operations ([guide](https://docs.remotestore.dev/stable/observe/), [example](https://github.com/haalfi/remote-store/blob/master/examples/otel_tracing.py)) |
+|Glob helpers         |*(none)*                    |Portable glob fallback for backends without native glob support ([guide](https://docs.remotestore.dev/stable/glob-pattern-matching/), [example](https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py)) |
+|Caching middleware   |*(none)*                    |TTL-based read cache with automatic invalidation on mutations ([guide](https://docs.remotestore.dev/stable/cache/), [API](https://docs.remotestore.dev/stable/api/ext-cache/)) |
+|Partition helpers    |*(none)*                    |Hive-style partition path builder and parser ([API](https://docs.remotestore.dev/stable/api/ext-partition/)) |
+|YAML config loader   |`remote-store[yaml]`        |Load RegistryConfig from YAML files via PyYAML or ruamel.yaml ([API](https://docs.remotestore.dev/stable/api/ext-yaml/)) |
+|Pydantic adapter     |`remote-store[pydantic]`    |Convert Pydantic BaseSettings to RegistryConfig ([API](https://docs.remotestore.dev/stable/api/ext-pydantic/)) |
 
 ## Examples
 

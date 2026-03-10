@@ -58,6 +58,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Docs
 
+- **RTD docs now default to stable release** -- changed all docs deep links in
+  user-facing files (README, guides) from `/en/latest/` to `/stable/`, dropping
+  the `/en/` language prefix (single-language project) and pointing to the most
+  recent PyPI release instead of unreleased master. Updated DOCUMENTATION.md
+  canonical URL policy and CONTRIBUTING.md release checklist. Requires RTD admin:
+  default version = `stable`, URL versioning scheme = `/version/path/`.
+
 - **README API table audit** -- added missing `iter_children()` to Browse &
   Inspect section, added 5 missing example scripts to Examples table
   (`caching`, `config_loaders`, `capabilities_and_errors`, `path_model`,
