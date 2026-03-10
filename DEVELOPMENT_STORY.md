@@ -13,7 +13,7 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Extensions | 9 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.glob`, `ext.observe`, `ext.otel`, `ext.partition`, `ext.pydantic`, `ext.transfer`) |
 | Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
 | Coverage | >= 95% CI floor (actual in README badge) |
-| Co-work sessions | Spread across ~11 calendar weeks |
+| Co-work sessions | Spread across ~3.5 calendar weeks (since Feb 14) |
 | Commits | ~315 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
