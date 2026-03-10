@@ -253,11 +253,10 @@ bump-my-version bump major   # 0.4.1 → 1.0.0
 
 Documentation, examples, and metadata live in many places. Use these to keep them in sync.
 
-- **New backend**: use `/add-backend` skill (12-step checklist) or see § Adding a New Backend above.
-- **New extension**: use § Adding an Extension above (12-step checklist).
-- **New Store method**: use `/ripple-check` skill -- covers README API table, examples, specs, guides.
-- **Cross-reference validation**: use `/ripple-check` skill or the table in `sdd/CLAUDE-REFERENCE.md`.
-- **Pre-PR validation**: use `/pr-preflight` skill (11 checks).
+- **New backend**: see § Adding a New Backend above.
+- **New extension**: see § Adding an Extension above (12-step checklist).
+- **New Store method / cross-reference validation**: see the ripple-check table in `sdd/CLAUDE-REFERENCE.md`.
+- **Pre-PR validation**: run `hatch run all`, verify CHANGELOG and BACKLOG are updated, then check the ripple-check table in `sdd/CLAUDE-REFERENCE.md`.
 
 ### Release
 
