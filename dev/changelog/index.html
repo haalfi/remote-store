@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
@@ -4564,6 +4564,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/027-iter-children/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    027: iter_children Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6344,6 +6372,13 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong><code>Store.iter_children()</code> combined listing</strong> (ID-055) -- yields both files
+  (<code>FileInfo</code>) and folders (<code>str</code>) in a single pass, avoiding two round-trips.
+  All 6 backends override with single-call implementations. <code>ext.observe</code>
+  <code>on_list</code> hook, <code>ext.cache</code> caching and invalidation. Spec
+  <code>027-iter-children.md</code> (ITER-001 through ITER-008).</p>
+</li>
 <li>
 <p><strong><code>Store.ping()</code> health check</strong> (ID-054) -- lightweight, non-destructive
   backend connectivity verification. Delegates to <code>Backend.check_health()</code>.

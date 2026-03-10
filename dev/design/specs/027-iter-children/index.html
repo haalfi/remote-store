@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/021-config-loaders/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/027-iter-children/">
       
       
-        <link rel="prev" href="../020-credential-hygiene/">
+        <link rel="prev" href="../026-health-check/">
       
       
-        <link rel="next" href="../022-streaming-atomic-writes/">
+        <link rel="next" href="../../adrs/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>021: Config Loaders Specification - remote-store</title>
+        <title>027: iter_children Specification - remote-store</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#config-loaders-specification" class="md-skip">
+        <a href="#iter_children-specification" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              021: Config Loaders Specification
+              027: iter_children Specification
             
           </span>
         </div>
@@ -3544,37 +3544,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    021: Config Loaders Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../021-config-loaders/" class="md-nav__link">
         
   
   
@@ -3590,259 +3563,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#toml-loader" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        TOML Loader
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="TOML Loader">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#cfg-008-from_toml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-008: from_toml()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cfg-009-toml-dependency-shim" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-009: TOML Dependency Shim
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#yaml-loader" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        YAML Loader
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="YAML Loader">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#cfg-010-from_yaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-010: from_yaml()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cfg-011-yaml-library-precedence" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-011: YAML Library Precedence
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cross-cutting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cross-Cutting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Cross-Cutting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#cfg-012-unknown-top-level-keys-warning" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-012: Unknown Top-Level Keys Warning
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cfg-013-loader-equivalence" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-013: Loader Equivalence
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cfg-014-optional-extras" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-014: Optional Extras
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pydantic-adapter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pydantic Adapter
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Pydantic Adapter">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#cfg-015-pydantic_to_registry_config" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-015: pydantic_to_registry_config()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cfg-016-adr-0002-compatibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-016: ADR-0002 Compatibility
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cfg-017-extension-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-017: Extension Contract
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#file-placement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        File Placement
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-toml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example TOML
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-yaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example YAML
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-pydantic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Pydantic
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3992,10 +3712,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../027-iter-children/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    027: iter_children Specification
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4011,6 +3758,193 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#store-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Store API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Store API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iter-001-storeiter_children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ITER-001: Store.iter_children()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iter-002-capability-gating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ITER-002: Capability Gating
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iter-003-store-008-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ITER-003: STORE-008 Update
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backend-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Backend API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iter-004-backenditer_children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ITER-004: Backend.iter_children()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iter-005-backend-overrides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ITER-005: Backend Overrides
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extension-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extension Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extension Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iter-006-extobserve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ITER-006: ext.observe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iter-007-extcache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ITER-007: ext.cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spec-cross-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spec Cross-References
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Spec Cross-References">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iter-008-spec-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ITER-008: Spec Updates
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4969,22 +4903,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#toml-loader" class="md-nav__link">
+  <a href="#store-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        TOML Loader
+        Store API
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="TOML Loader">
+    <nav class="md-nav" aria-label="Store API">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cfg-008-from_toml" class="md-nav__link">
+  <a href="#iter-001-storeiter_children" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CFG-008: from_toml()
+        ITER-001: Store.iter_children()
       
     </span>
   </a>
@@ -4992,10 +4926,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cfg-009-toml-dependency-shim" class="md-nav__link">
+  <a href="#iter-002-capability-gating" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CFG-009: TOML Dependency Shim
+        ITER-002: Capability Gating
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iter-003-store-008-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ITER-003: STORE-008 Update
       
     </span>
   </a>
@@ -5008,22 +4953,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#yaml-loader" class="md-nav__link">
+  <a href="#backend-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        YAML Loader
+        Backend API
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="YAML Loader">
+    <nav class="md-nav" aria-label="Backend API">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cfg-010-from_yaml" class="md-nav__link">
+  <a href="#iter-004-backenditer_children" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CFG-010: from_yaml()
+        ITER-004: Backend.iter_children()
       
     </span>
   </a>
@@ -5031,10 +4976,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cfg-011-yaml-library-precedence" class="md-nav__link">
+  <a href="#iter-005-backend-overrides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CFG-011: YAML Library Precedence
+        ITER-005: Backend Overrides
       
     </span>
   </a>
@@ -5047,22 +4992,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cross-cutting" class="md-nav__link">
+  <a href="#extension-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cross-Cutting
+        Extension Integration
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Cross-Cutting">
+    <nav class="md-nav" aria-label="Extension Integration">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cfg-012-unknown-top-level-keys-warning" class="md-nav__link">
+  <a href="#iter-006-extobserve" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CFG-012: Unknown Top-Level Keys Warning
+        ITER-006: ext.observe
       
     </span>
   </a>
@@ -5070,21 +5015,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cfg-013-loader-equivalence" class="md-nav__link">
+  <a href="#iter-007-extcache" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CFG-013: Loader Equivalence
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cfg-014-optional-extras" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-014: Optional Extras
+        ITER-007: ext.cache
       
     </span>
   </a>
@@ -5097,44 +5031,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pydantic-adapter" class="md-nav__link">
+  <a href="#spec-cross-references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pydantic Adapter
+        Spec Cross-References
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Pydantic Adapter">
+    <nav class="md-nav" aria-label="Spec Cross-References">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cfg-015-pydantic_to_registry_config" class="md-nav__link">
+  <a href="#iter-008-spec-updates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CFG-015: pydantic_to_registry_config()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cfg-016-adr-0002-compatibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-016: ADR-0002 Compatibility
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cfg-017-extension-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CFG-017: Extension Contract
+        ITER-008: Spec Updates
       
     </span>
   </a>
@@ -5143,50 +5055,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#file-placement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        File Placement
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-toml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example TOML
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-yaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example YAML
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-pydantic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Pydantic
-      
-    </span>
-  </a>
   
 </li>
       
@@ -5207,234 +5075,124 @@
 
 
 
-<h1 id="config-loaders-specification">Config Loaders Specification<a class="headerlink" href="#config-loaders-specification" title="Permanent link">&para;</a></h1>
+<h1 id="iter_children-specification">iter_children Specification<a class="headerlink" href="#iter_children-specification" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>RegistryConfig</code> gains two file-based loaders — <code>from_toml()</code> and <code>from_yaml()</code> —
-that are thin translation layers over <code>from_dict()</code>. Both produce identical
-<code>RegistryConfig</code> objects for equivalent input. The core config model does not change.</p>
-<p><strong>Backlog items:</strong> ID-005 (<code>from_toml</code>), ID-002 (<code>from_yaml</code>), ID-003 (Pydantic adapter)
-<strong>Research:</strong> <code>sdd/research/research-store-config.md</code>
-<strong>Constraint:</strong> ADR-0002 (no merging) — loaders are pre-processing steps that
-produce a single immutable <code>RegistryConfig</code>.</p>
+<p><code>iter_children()</code> returns both files and subfolders under a path in a single
+pass, avoiding the two round-trips required by calling <code>list_files()</code> and
+<code>list_folders()</code> separately. Most backends (S3 <code>ls</code>, local <code>iterdir</code>, SFTP
+<code>listdir_attr</code>) already fetch both in a single response — this API exposes
+that efficiency to callers.</p>
+<p>Non-recursive only (immediate children). For recursive file listing, use
+<code>list_files(recursive=True)</code>. For pattern filtering, use
+<code>list_files(pattern=...)</code> or <code>ext.glob.glob_files()</code>.</p>
 <hr />
-<h2 id="toml-loader">TOML Loader<a class="headerlink" href="#toml-loader" title="Permanent link">&para;</a></h2>
-<h3 id="cfg-008-from_toml">CFG-008: <code>from_toml()</code><a class="headerlink" href="#cfg-008-from_toml" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>RegistryConfig.from_toml(path, *, table=())</code> reads a TOML file
-and returns a <code>RegistryConfig</code>.</p>
-<p><strong>Parameters:</strong>
-- <code>path: str | Path</code> — Path to the TOML file.
-- <code>table: tuple[str, ...] = ()</code> — Dotted table path to extract. For
-  <code>pyproject.toml</code>, use <code>table=("tool", "remote-store")</code>.</p>
-<p><strong>Behavior:</strong>
-1. Parse the file via <code>tomllib</code> (3.11+) or <code>tomli</code> (3.10 backport).
-2. If <code>table</code> is non-empty, traverse into the nested table.
-3. Delegate to <code>from_dict()</code> (inherits Secret wrapping, validation).</p>
-<p><strong>Raises:</strong>
-- <code>ModuleNotFoundError</code> if <code>tomllib</code> is unavailable and <code>tomli</code> is not installed.
-  Message includes install instructions: <code>pip install 'remote-store[toml]'</code>.
-- <code>KeyError</code> if a <code>table</code> key is not found in the parsed data.
-- <code>FileNotFoundError</code> if <code>path</code> does not exist.
-- <code>tomllib.TOMLDecodeError</code> if the file is not valid TOML.</p>
-<p><strong>Postconditions:</strong> The returned <code>RegistryConfig</code> is identical to calling
-<code>from_dict()</code> on the parsed TOML dict (after table traversal).</p>
-<h3 id="cfg-009-toml-dependency-shim">CFG-009: TOML Dependency Shim<a class="headerlink" href="#cfg-009-toml-dependency-shim" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> On Python 3.11+, <code>from_toml()</code> uses the stdlib <code>tomllib</code> with
-zero runtime dependencies. On Python 3.10, the <code>tomli</code> backport is required
-(available via the <code>toml</code> optional extra).</p>
-<hr />
-<h2 id="yaml-loader">YAML Loader<a class="headerlink" href="#yaml-loader" title="Permanent link">&para;</a></h2>
-<h3 id="cfg-010-from_yaml">CFG-010: <code>from_yaml()</code><a class="headerlink" href="#cfg-010-from_yaml" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>from_yaml(path)</code> (in <code>ext/yaml.py</code>) reads a YAML file and
-returns a <code>RegistryConfig</code>.</p>
-<p><strong>Location:</strong> <code>remote_store/ext/yaml.py</code></p>
-<p><strong>Parameters:</strong>
-- <code>path: str | Path</code> — Path to the YAML file.</p>
-<p><strong>Behavior:</strong>
-1. Parse the file via <code>yaml.safe_load</code> (pyyaml) or <code>ruamel.yaml</code> safe parser.
-2. Validate the top-level value is a dict.
-3. Delegate to <code>from_dict()</code> (inherits Secret wrapping, validation).</p>
-<p><strong>Raises:</strong>
-- <code>ModuleNotFoundError</code> if neither <code>pyyaml</code> nor <code>ruamel.yaml</code> is installed.
-  Message includes install instructions: <code>pip install 'remote-store[yaml]'</code>.
-- <code>FileNotFoundError</code> if <code>path</code> does not exist.
-- <code>TypeError</code> if the top-level YAML value is not a mapping.
-- <code>yaml.YAMLError</code> (pyyaml) or <code>ruamel.yaml.YAMLError</code> (ruamel) if the file
-  is not valid YAML.</p>
-<p><strong>Design note:</strong> No <code>key</code>/<code>table</code> parameter. YAML has no shared-file convention
-like <code>pyproject.toml</code>. Users with nested YAML use
-<code>yaml.safe_load(f)["key"] → from_dict()</code>. A <code>key</code> parameter can be added later
-without breaking changes if demand emerges.</p>
-<h3 id="cfg-011-yaml-library-precedence">CFG-011: YAML Library Precedence<a class="headerlink" href="#cfg-011-yaml-library-precedence" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>from_yaml()</code> prefers <code>pyyaml</code> (<code>yaml.safe_load</code>). If <code>pyyaml</code>
-is not installed, it falls back to <code>ruamel.yaml</code> (safe mode). If neither is
-available, <code>ModuleNotFoundError</code> is raised.</p>
-<p><strong>Rationale:</strong> <code>pyyaml</code> is ubiquitous (~300M downloads/month) and simpler.
-<code>ruamel.yaml</code> is a viable alternative but heavier. Accepting both avoids
-forcing a specific library on users who already have one installed.</p>
-<hr />
-<h2 id="cross-cutting">Cross-Cutting<a class="headerlink" href="#cross-cutting" title="Permanent link">&para;</a></h2>
-<h3 id="cfg-012-unknown-top-level-keys-warning">CFG-012: Unknown Top-Level Keys Warning<a class="headerlink" href="#cfg-012-unknown-top-level-keys-warning" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>from_dict()</code> emits a <code>UserWarning</code> for top-level keys other
-than <code>"backends"</code> and <code>"stores"</code>. This catches typos like <code>"backend"</code> (singular)
-or <code>"store"</code> that would otherwise silently produce an empty config.</p>
-<p><strong>Behavior:</strong> Uses <code>warnings.warn()</code> with <code>stacklevel</code> adjusted so the
-warning source points to user code. Direct <code>from_dict()</code> calls use
-<code>stacklevel=2</code>; indirect calls via <code>from_toml()</code>, <code>from_yaml()</code>, and
-<code>pydantic_to_registry_config()</code> use <code>stacklevel=3</code>. Does not raise.</p>
-<h3 id="cfg-013-loader-equivalence">CFG-013: Loader Equivalence<a class="headerlink" href="#cfg-013-loader-equivalence" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>from_toml()</code>, <code>from_yaml()</code>, <code>from_dict()</code>, and
-<code>pydantic_to_registry_config()</code> produce identical <code>RegistryConfig</code> objects for
-semantically equivalent input. All Secret wrapping, type coercion, and
-validation happens in <code>from_dict()</code> — the loaders/adapters are pure
-format-to-dict translators.</p>
-<h3 id="cfg-014-optional-extras">CFG-014: Optional Extras<a class="headerlink" href="#cfg-014-optional-extras" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>pyproject.toml</code> declares optional extras:
-- <code>toml</code>: <code>["tomli&gt;=1.1.0; python_version &lt; '3.11'"]</code>
-- <code>yaml</code>: <code>["pyyaml&gt;=5.1"]</code>
-- <code>pydantic</code>: <code>["pydantic-settings&gt;=2.0.0"]</code></p>
-<hr />
-<h2 id="pydantic-adapter">Pydantic Adapter<a class="headerlink" href="#pydantic-adapter" title="Permanent link">&para;</a></h2>
-<h3 id="cfg-015-pydantic_to_registry_config">CFG-015: <code>pydantic_to_registry_config()</code><a class="headerlink" href="#cfg-015-pydantic_to_registry_config" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>pydantic_to_registry_config(model)</code> converts any Pydantic
-<code>BaseModel</code> instance to a <code>RegistryConfig</code>.</p>
-<p><strong>Location:</strong> <code>remote_store/ext/pydantic.py</code></p>
-<p><strong>Parameters:</strong>
-- <code>model: BaseModel</code> — A Pydantic model whose <code>model_dump()</code> output conforms
-  to the <code>RegistryConfig</code> schema (i.e. has <code>backends</code> and <code>stores</code> keys).</p>
-<p><strong>Behavior:</strong>
-1. Call <code>model.model_dump()</code> to produce a plain dict.
-2. Delegate to <code>RegistryConfig.from_dict()</code> (inherits Secret wrapping,
-   unknown-key warning, validation).</p>
-<p><strong>Raises:</strong>
-- <code>ModuleNotFoundError</code> if <code>pydantic</code> is not installed. Message includes
-  install instructions: <code>pip install 'remote-store[pydantic]'</code>.
-- Any exception from <code>from_dict()</code> (e.g. <code>TypeError</code>, <code>KeyError</code>).</p>
-<p><strong>Postconditions:</strong> The returned <code>RegistryConfig</code> is identical to calling
-<code>RegistryConfig.from_dict(model.model_dump())</code>.</p>
-<p><strong>SecretStr note:</strong> Pydantic <code>SecretStr</code> fields are <strong>not</strong> auto-unwrapped.
-<code>model_dump()</code> returns <code>SecretStr</code> objects (not plain strings), which bypass
-<code>from_dict()</code>'s <code>isinstance(v, str)</code> check and are <strong>not</strong> re-wrapped in
-<code>Secret</code>. Users should use plain <code>str</code> for credential values in their
-model's <code>options</code> dicts — <code>from_dict()</code> handles Secret wrapping at the
-config→registry boundary.</p>
-<h3 id="cfg-016-adr-0002-compatibility">CFG-016: ADR-0002 Compatibility<a class="headerlink" href="#cfg-016-adr-0002-compatibility" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The Pydantic adapter operates entirely on the user side.
-Pydantic's source merging (env vars, <code>.env</code> files, config files) happens
-<em>before</em> <code>pydantic_to_registry_config()</code> is called. The resulting
-<code>RegistryConfig</code> is immutable and subject to ADR-0002 (no further merging).</p>
-<p><strong>Flow:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>User&#39;s Pydantic model (merges env + .env + files)
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    → pydantic_to_registry_config() → from_dict()
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        → RegistryConfig (immutable, ADR-0002 applies)
+<h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
+<h3 id="iter-001-storeiter_children">ITER-001: <code>Store.iter_children()</code><a class="headerlink" href="#iter-001-storeiter_children" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>Store.iter_children(path)</code> delegates to
+<code>Backend.iter_children()</code> and yields both files and folders under <code>path</code>.</p>
+<p><strong>Signature:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">iter_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="o">...</span>
 </code></pre></div></p>
-<h3 id="cfg-017-extension-contract">CFG-017: Extension Contract<a class="headerlink" href="#cfg-017-extension-contract" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>ext/pydantic.py</code> follows the extension architecture (ADR-0008):
-- Defines <code>__all__</code>.
-- Uses only the public <code>RegistryConfig.from_dict()</code> API.
-- Conditionally re-exported from <code>remote_store.__init__</code> (silent
-  <code>try/except ImportError</code>).
-- Import of <code>pydantic</code> is guarded at module level with a clear error message.</p>
+<p><strong>Postconditions:</strong>
+- Files are yielded as <code>FileInfo</code> with store-relative paths (same rebasing as
+  <code>list_files</code> — see STORE-012).
+- Folders are yielded as <code>str</code> folder names (same format as <code>list_folders</code>).
+- Ordering within a single type is backend-defined. Files and folders may be
+  interleaved or grouped — callers must not depend on ordering.
+- Empty directories yield nothing.
+- Non-existent paths yield nothing (no exception).
+- <code>path</code> accepts <code>""</code> and <code>"."</code> as root aliases (same as <code>list_files</code>).</p>
+<h3 id="iter-002-capability-gating">ITER-002: Capability Gating<a class="headerlink" href="#iter-002-capability-gating" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>iter_children()</code> is gated on <code>Capability.LIST</code>. Raises
+<code>CapabilityNotSupported</code> if the backend lacks <code>LIST</code>.</p>
+<h3 id="iter-003-store-008-update">ITER-003: STORE-008 Update<a class="headerlink" href="#iter-003-store-008-update" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>iter_children</code> is added to the Store API surface in STORE-008.</p>
 <hr />
-<h2 id="file-placement">File Placement<a class="headerlink" href="#file-placement" title="Permanent link">&para;</a></h2>
+<h2 id="backend-api">Backend API<a class="headerlink" href="#backend-api" title="Permanent link">&para;</a></h2>
+<h3 id="iter-004-backenditer_children">ITER-004: <code>Backend.iter_children()</code><a class="headerlink" href="#iter-004-backenditer_children" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>Backend.iter_children(path)</code> is a concrete (non-abstract)
+method with a default implementation that chains <code>list_files()</code> and
+<code>list_folders()</code>.</p>
+<p><strong>Signature:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">iter_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="o">...</span>
+</code></pre></div></p>
+<p><strong>Default implementation:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">iter_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_folders</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div></p>
+<p><strong>Postconditions:</strong>
+- Returns an iterator of <code>FileInfo</code> (for files) and <code>str</code> (for folder names).
+- Backends may override to perform a single I/O call instead of two.
+- Non-existent paths yield nothing.</p>
+<h3 id="iter-005-backend-overrides">ITER-005: Backend Overrides<a class="headerlink" href="#iter-005-backend-overrides" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Backends that can fetch files and folders in a single I/O
+operation override <code>iter_children()</code> for efficiency.</p>
 <table>
 <thead>
 <tr>
-<th>Component</th>
-<th>Location</th>
+<th>Backend</th>
+<th>Override strategy</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>from_toml()</code></td>
-<td><code>_config.py</code> classmethod on <code>RegistryConfig</code></td>
+<td>Local</td>
+<td>Single <code>iterdir()</code>, yield <code>FileInfo</code> or folder name</td>
 </tr>
 <tr>
-<td><code>from_yaml()</code></td>
-<td><code>ext/yaml.py</code> standalone function</td>
+<td>S3</td>
+<td>Single <code>ls(detail=True)</code>, partition by <code>type</code></td>
 </tr>
 <tr>
-<td>Unknown-key warning</td>
-<td><code>_config.py</code> inside <code>from_dict()</code></td>
+<td>S3-PyArrow</td>
+<td>Single <code>ls(detail=True)</code>, partition by <code>type</code></td>
 </tr>
 <tr>
-<td>Pydantic adapter</td>
-<td><code>ext/pydantic.py</code></td>
+<td>SFTP</td>
+<td>Single <code>listdir_attr()</code>, partition by <code>st_mode</code></td>
 </tr>
 <tr>
-<td>Optional extras</td>
-<td><code>pyproject.toml</code> <code>[project.optional-dependencies]</code></td>
+<td>Azure non-HNS</td>
+<td>Single <code>walk_blobs()</code>, partition by <code>prefix</code> attribute</td>
+</tr>
+<tr>
+<td>Azure HNS</td>
+<td>Single <code>get_paths(recursive=False)</code>, partition by <code>is_directory</code></td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>Single tree traversal under lock</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="example-toml">Example TOML<a class="headerlink" href="#example-toml" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># remote-store.toml</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">[backends.local]</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;local&quot;</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">options</span><span class="p">.</span><span class="n">root</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/data/store&quot;</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">[backends.s3-prod]</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3&quot;</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">options</span><span class="p">.</span><span class="n">bucket</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;prod-data&quot;</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">options</span><span class="p">.</span><span class="n">region_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;eu-central-1&quot;</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">[stores.raw-events]</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3-prod&quot;</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;events/raw&quot;</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="k">[stores.local-cache]</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;local&quot;</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cache&quot;</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_toml</span><span class="p">(</span><span class="s2">&quot;remote-store.toml&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># From pyproject.toml:</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_toml</span><span class="p">(</span><span class="s2">&quot;pyproject.toml&quot;</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;tool&quot;</span><span class="p">,</span> <span class="s2">&quot;remote-store&quot;</span><span class="p">))</span>
-</code></pre></div>
-<h2 id="example-yaml">Example YAML<a class="headerlink" href="#example-yaml" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># remote-store.yaml</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">backends</span><span class="p">:</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">s3-prod</span><span class="p">:</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod-data</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="nt">region_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="nt">stores</span><span class="p">:</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nt">raw-events</span><span class="p">:</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-prod</span>
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">root_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">events/raw</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.yaml</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_yaml</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">from_yaml</span><span class="p">(</span><span class="s2">&quot;remote-store.yaml&quot;</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="example-pydantic">Example Pydantic<a class="headerlink" href="#example-pydantic" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">SettingsConfigDict</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">pydantic_to_registry_config</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">BackendEntry</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">StoreEntry</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="n">root_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="k">class</span><span class="w"> </span><span class="nc">RemoteStoreSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span>
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>        <span class="n">env_prefix</span><span class="o">=</span><span class="s2">&quot;RS_&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>        <span class="n">env_nested_delimiter</span><span class="o">=</span><span class="s2">&quot;__&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>    <span class="p">)</span>
-<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>
-<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>    <span class="n">backends</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BackendEntry</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>    <span class="n">stores</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StoreEntry</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>
-<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="n">settings</span> <span class="o">=</span> <span class="n">RemoteStoreSettings</span><span class="p">()</span>
-<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="n">config</span> <span class="o">=</span> <span class="n">pydantic_to_registry_config</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
-</code></pre></div>
+<h2 id="extension-integration">Extension Integration<a class="headerlink" href="#extension-integration" title="Permanent link">&para;</a></h2>
+<h3 id="iter-006-extobserve">ITER-006: ext.observe<a class="headerlink" href="#iter-006-extobserve" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>iter_children()</code> fires the <code>on_list</code> hook (same as
+<code>list_files</code> and <code>list_folders</code>). The operation name in the hook context is
+<code>"iter_children"</code>.</p>
+<p><strong>ObservedStore implementation:</strong> Materializes results into a list (same
+pattern as <code>list_files</code> / <code>list_folders</code>) to ensure timing covers actual I/O.</p>
+<h3 id="iter-007-extcache">ITER-007: ext.cache<a class="headerlink" href="#iter-007-extcache" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>CachedStore</code> caches <code>iter_children()</code> results under the key
+<code>("iter_children", path)</code>. Invalidated by the same mutation operations that
+invalidate <code>list_files</code> and <code>list_folders</code> (writes, deletes, moves, copies).</p>
+<p>The <code>"iter_children"</code> prefix is added to <code>_LISTING_PREFIXES</code>.</p>
+<hr />
+<h2 id="spec-cross-references">Spec Cross-References<a class="headerlink" href="#spec-cross-references" title="Permanent link">&para;</a></h2>
+<h3 id="iter-008-spec-updates">ITER-008: Spec Updates<a class="headerlink" href="#iter-008-spec-updates" title="Permanent link">&para;</a></h3>
+<p>The following specs are updated to reflect <code>iter_children</code>:</p>
+<ul>
+<li><strong>001-store-api.md</strong>: Add <code>iter_children</code> to STORE-008 surface list.</li>
+<li><strong>003-backend-adapter-contract.md</strong>: Add <code>iter_children</code> to backend method
+  table (concrete with default, not abstract).</li>
+<li><strong>019-ext-observe.md</strong>: Add <code>iter_children</code> to <code>on_list</code> hook table.</li>
+<li><strong>023-ext-cache.md</strong>: Add <code>iter_children</code> to cached operations table and
+  <code>_LISTING_PREFIXES</code>.</li>
+</ul>
 
 
 

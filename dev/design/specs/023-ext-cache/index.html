@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
@@ -4033,6 +4033,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../027-iter-children/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    027: iter_children Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5411,6 +5439,11 @@ pattern (ADR-0010).</p>
 <td><code>FolderInfo</code></td>
 </tr>
 <tr>
+<td><code>iter_children(path)</code></td>
+<td><code>("iter_children", path)</code></td>
+<td><code>tuple[FileInfo \| str, ...]</code></td>
+</tr>
+<tr>
 <td><code>list_files(path, recursive, pattern)</code></td>
 <td><code>("list_files", path, recursive, pattern)</code></td>
 <td><code>tuple[FileInfo, ...]</code></td>
@@ -5428,7 +5461,7 @@ pattern (ADR-0010).</p>
 </tbody>
 </table>
 <p><strong>Postconditions:</strong>
-- Iterator-returning methods (<code>list_files</code>, <code>list_folders</code>, <code>glob</code>)
+- Iterator-returning methods (<code>iter_children</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>)
   materialize results into a tuple on first call and return
   <code>iter(cached_tuple)</code> on cache hits.
 - Only successful results are cached. Exceptions (e.g., <code>NotFound</code>) are
@@ -5452,8 +5485,8 @@ successful context exit) invalidate:</p>
 <li>All per-path cache entries for the written path (all operation
    prefixes: <code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>read_bytes</code>,
    <code>get_file_info</code>).</li>
-<li>All listing cache entries (<code>list_files</code>, <code>list_folders</code>, <code>glob</code>,
-   <code>get_folder_info</code>).</li>
+<li>All listing cache entries (<code>iter_children</code>, <code>list_files</code>, <code>list_folders</code>,
+   <code>glob</code>, <code>get_folder_info</code>).</li>
 </ol>
 <h3 id="cache-009-delete-invalidation">CACHE-009: Delete Invalidation<a class="headerlink" href="#cache-009-delete-invalidation" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>delete()</code> invalidates:</p>

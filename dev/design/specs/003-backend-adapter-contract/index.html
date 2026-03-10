@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
@@ -3473,6 +3473,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#be-026-iter_children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BE-026: iter_children()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#be-024-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4128,6 +4139,34 @@
     
   
     026: Health Check Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../027-iter-children/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    027: iter_children Specification
   
 
     
@@ -5453,6 +5492,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#be-026-iter_children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BE-026: iter_children()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#be-024-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5584,6 +5634,10 @@
 <strong>Overrides:</strong> <code>LocalBackend</code> (prepends root dir), <code>S3Backend</code> (prepends bucket), <code>S3PyArrowBackend</code> (prepends bucket), <code>SFTPBackend</code> (prepends base_path), <code>AzureBackend</code> (prepends container).
 <strong>Example:</strong> <code>S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")</code> returns <code>"lake/data/file.parquet"</code>.
 <strong>See also:</strong> <a href="../001-store-api/">001-store-api.md</a> (STORE-015), <a href="../014-pyarrow-filesystem-adapter/">014-pyarrow-filesystem-adapter.md</a> (PA-010 Tier 1).</p>
+<h3 id="be-026-iter_children">BE-026: iter_children()<a class="headerlink" href="#be-026-iter_children" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>iter_children(path)</code> returns <code>Iterator[FileInfo | str]</code> — files as <code>FileInfo</code>, folders as <code>str</code> names. Concrete method with a default implementation that chains <code>list_files(path)</code> and <code>list_folders(path)</code>. Backends that can fetch both in a single I/O call override for efficiency.
+<strong>Postconditions:</strong> Non-recursive (immediate children only). Non-existent paths yield nothing.
+<strong>See also:</strong> <a href="../027-iter-children/">027-iter-children.md</a> (ITER-004, ITER-005).</p>
 <h3 id="be-024-glob">BE-024: glob()<a class="headerlink" href="#be-024-glob" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>glob(pattern)</code> matches files against a glob pattern. Non-abstract — the default implementation raises <code>CapabilityNotSupported</code>. Backends with native glob support override this and declare <code>Capability.GLOB</code>.
 <strong>Postconditions:</strong> Returns only files (not folders). Paths in returned <code>FileInfo</code> objects are backend-relative (same convention as <code>list_files</code>).
