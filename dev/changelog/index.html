@@ -2573,6 +2573,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ext-yaml/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.yaml
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6459,13 +6487,31 @@
 </ul>
 <h3 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Audit 003 fixes</strong> (AF-022 through AF-040) -- documentation quality audit
+<li>
+<p><strong>RTD docs now default to stable release</strong> -- changed all docs deep links in
+  user-facing files (README, guides) from <code>/en/latest/</code> to <code>/stable/</code>, dropping
+  the <code>/en/</code> language prefix (single-language project) and pointing to the most
+  recent PyPI release instead of unreleased master. Updated DOCUMENTATION.md
+  canonical URL policy and CONTRIBUTING.md release checklist. Requires RTD admin:
+  default version = <code>stable</code>, URL versioning scheme = <code>/version/path/</code>.</p>
+</li>
+<li>
+<p><strong>README API table audit</strong> -- added missing <code>iter_children()</code> to Browse &amp;
+  Inspect section, added 5 missing example scripts to Examples table
+  (<code>caching</code>, <code>config_loaders</code>, <code>capabilities_and_errors</code>, <code>path_model</code>,
+  <code>retry_policy</code>), added <code>ext.yaml</code> to Extensions table, updated method count
+  from 23 to 26 in comparison table, fixed stale PyArrow <code>native_path()</code>
+  limitation note. Added <code>ext-yaml.md</code> API reference page and nav entry.</p>
+</li>
+<li>
+<p><strong>Audit 003 fixes</strong> (AF-022 through AF-040) -- documentation quality audit
   follow-up. 16 findings fixed, 3 closed as non-defects. Key changes:
   7 missing example doc pages added, observe hook table completed (<code>on_ping</code>,
   <code>open_atomic</code>), private imports replaced with public API in 4 guides,
   <code>CacheBackend</code> protocol docstrings added, CONTRIBUTING.md spec listing
   simplified (no longer goes stale), mkdocstrings <code>show_if_no_docstring: false</code>
-  for proxy class overrides.</li>
+  for proxy class overrides.</p>
+</li>
 </ul>
 <h2 id="0150-2026-03-08">[0.15.0] - 2026-03-08<a class="headerlink" href="#0150-2026-03-08" title="Permanent link">&para;</a></h2>
 <h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>

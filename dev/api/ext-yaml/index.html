@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/backends/s3/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/api/ext-yaml/">
       
       
-        <link rel="prev" href="../memory/">
+        <link rel="prev" href="../ext-transfer/">
       
       
-        <link rel="next" href="../s3-pyarrow/">
+        <link rel="next" href="../../capabilities-matrix/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>S3 - remote-store</title>
+        <title>ext.yaml - remote-store</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#s3-backend" class="md-skip">
+        <a href="#extyaml" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              S3
+              ext.yaml
             
           </span>
         </div>
@@ -265,13 +265,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../backends/" class="md-tabs__link">
           
   
   
@@ -287,11 +285,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../api/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -1277,29 +1277,24 @@
       
   
   
-    
   
   
-  
     
     
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -1317,7 +1312,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1332,8 +1327,6 @@
                 
   
   
-    
-  
   
   
     
@@ -1344,15 +1337,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../backends/" class="md-nav__link ">
               
   
   
@@ -1376,7 +1369,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1394,7 +1387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../local/" class="md-nav__link">
+      <a href="../../backends/local/" class="md-nav__link">
         
   
   
@@ -1422,7 +1415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../memory/" class="md-nav__link">
+      <a href="../../backends/memory/" class="md-nav__link">
         
   
   
@@ -1447,37 +1440,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    S3
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../backends/s3/" class="md-nav__link">
         
   
   
@@ -1493,92 +1459,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Installation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Usage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#caveats" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Caveats
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#api-reference" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        API Reference
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.backends.S3Backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3Backend
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1591,7 +1471,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../s3-pyarrow/" class="md-nav__link">
+      <a href="../../backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -1619,7 +1499,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sftp/" class="md-nav__link">
+      <a href="../../backends/sftp/" class="md-nav__link">
         
   
   
@@ -1647,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../azure/" class="md-nav__link">
+      <a href="../../backends/azure/" class="md-nav__link">
         
   
   
@@ -2109,24 +1989,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -2144,7 +2029,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2159,6 +2044,8 @@
                 
   
   
+    
+  
   
   
     
@@ -2169,15 +2056,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -2201,7 +2088,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2219,7 +2106,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/" class="md-nav__link">
+      <a href="../store/" class="md-nav__link">
         
   
   
@@ -2247,7 +2134,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/registry/" class="md-nav__link">
+      <a href="../registry/" class="md-nav__link">
         
   
   
@@ -2275,7 +2162,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/backend/" class="md-nav__link">
+      <a href="../backend/" class="md-nav__link">
         
   
   
@@ -2303,7 +2190,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/config/" class="md-nav__link">
+      <a href="../config/" class="md-nav__link">
         
   
   
@@ -2331,7 +2218,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/models/" class="md-nav__link">
+      <a href="../models/" class="md-nav__link">
         
   
   
@@ -2359,7 +2246,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/path/" class="md-nav__link">
+      <a href="../path/" class="md-nav__link">
         
   
   
@@ -2387,7 +2274,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/capabilities/" class="md-nav__link">
+      <a href="../capabilities/" class="md-nav__link">
         
   
   
@@ -2415,7 +2302,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/errors/" class="md-nav__link">
+      <a href="../errors/" class="md-nav__link">
         
   
   
@@ -2443,7 +2330,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-arrow/" class="md-nav__link">
+      <a href="../ext-arrow/" class="md-nav__link">
         
   
   
@@ -2471,7 +2358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-batch/" class="md-nav__link">
+      <a href="../ext-batch/" class="md-nav__link">
         
   
   
@@ -2499,7 +2386,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-cache/" class="md-nav__link">
+      <a href="../ext-cache/" class="md-nav__link">
         
   
   
@@ -2527,7 +2414,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-glob/" class="md-nav__link">
+      <a href="../ext-glob/" class="md-nav__link">
         
   
   
@@ -2555,7 +2442,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-observe/" class="md-nav__link">
+      <a href="../ext-observe/" class="md-nav__link">
         
   
   
@@ -2583,7 +2470,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-otel/" class="md-nav__link">
+      <a href="../ext-otel/" class="md-nav__link">
         
   
   
@@ -2611,7 +2498,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-partition/" class="md-nav__link">
+      <a href="../ext-partition/" class="md-nav__link">
         
   
   
@@ -2639,7 +2526,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-pydantic/" class="md-nav__link">
+      <a href="../ext-pydantic/" class="md-nav__link">
         
   
   
@@ -2667,7 +2554,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-transfer/" class="md-nav__link">
+      <a href="../ext-transfer/" class="md-nav__link">
         
   
   
@@ -2692,10 +2579,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../api/ext-yaml/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.yaml
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2711,6 +2625,54 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#remote_store.ext.yaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        yaml
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="yaml">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.ext.yaml.from_yaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        from_yaml
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4845,68 +4807,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
+  <a href="#remote_store.ext.yaml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installation
+        yaml
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="yaml">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.ext.yaml.from_yaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        from_yaml
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Usage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#caveats" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Caveats
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#api-reference" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        API Reference
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.backends.S3Backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3Backend
-      
-    </span>
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -4930,218 +4854,29 @@
   
 
 
-<h1 id="s3-backend">S3 Backend<a class="headerlink" href="#s3-backend" title="Permanent link">&para;</a></h1>
-<p>The S3 backend stores files on Amazon S3 or any S3-compatible service (MinIO, DigitalOcean Spaces, etc.).</p>
-<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[s3]&quot;</span>
-</code></pre></div>
-<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">BackendConfig</span><span class="p">,</span> <span class="n">RegistryConfig</span><span class="p">,</span> <span class="n">Registry</span><span class="p">,</span> <span class="n">StoreProfile</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="p">(</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">backends</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="s2">&quot;s3&quot;</span><span class="p">:</span> <span class="n">BackendConfig</span><span class="p">(</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>            <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>            <span class="n">options</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>                <span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>                <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;AWS_ACCESS_KEY_ID&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>                <span class="s2">&quot;secret&quot;</span><span class="p">:</span> <span class="s2">&quot;AWS_SECRET_ACCESS_KEY&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>                <span class="s2">&quot;endpoint_url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://s3.amazonaws.com&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>            <span class="p">},</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="p">),</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="p">},</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">stores</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">StoreProfile</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)},</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="p">)</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="k">with</span> <span class="n">Registry</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="k">as</span> <span class="n">registry</span><span class="p">:</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;col1,col2</span><span class="se">\n</span><span class="s2">1,2</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>bucket</code></td>
-<td><code>str</code></td>
-<td>S3 bucket name (required)</td>
-</tr>
-<tr>
-<td><code>key</code></td>
-<td><code>str</code></td>
-<td>AWS access key ID</td>
-</tr>
-<tr>
-<td><code>secret</code></td>
-<td><code>str</code></td>
-<td>AWS secret access key</td>
-</tr>
-<tr>
-<td><code>region_name</code></td>
-<td><code>str</code></td>
-<td>AWS region name</td>
-</tr>
-<tr>
-<td><code>endpoint_url</code></td>
-<td><code>str</code></td>
-<td>Custom endpoint for S3-compatible services</td>
-</tr>
-<tr>
-<td><code>client_options</code></td>
-<td><code>dict</code></td>
-<td>Additional options passed to s3fs</td>
-</tr>
-</tbody>
-</table>
-<h2 id="caveats">Caveats<a class="headerlink" href="#caveats" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong><code>move()</code> is not atomic.</strong> S3 has no native rename operation. <code>move()</code> is implemented as copy + delete. If the process crashes between the two steps, both source and destination will exist.</li>
-<li><strong><code>overwrite=False</code> has a TOCTOU race.</strong> The exists-check and write are separate API calls. Concurrent writers can both pass the check and overwrite each other.</li>
-</ul>
-<p>See the <a href="../../concurrency/">Concurrency and Atomicity Guarantees</a> guide for details and workarounds.</p>
-<hr />
-<p><strong>See also:</strong>
-<a href="../../capabilities-matrix/">Capabilities matrix</a> --
-<a href="../../api/store/">API reference</a> --
-<a href="https://github.com/haalfi/remote-store/blob/master/examples/backends/s3_backend.py">Example script</a></p>
-<h2 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
+<h1 id="extyaml">ext.yaml<a class="headerlink" href="#extyaml" title="Permanent link">&para;</a></h1>
 
 
-<div class="doc doc-object doc-class">
+<div class="doc doc-object doc-module">
 
 
 
-<h2 id="remote_store.backends.S3Backend" class="doc doc-heading">
-              <code class="highlight language-python"><span class="n">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">endpoint_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">secret</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">region_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">client_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+<h2 id="remote_store.ext.yaml" class="doc doc-heading">
+            <code>yaml</code>
 
-<a href="#remote_store.backends.S3Backend" class="headerlink" title="Permanent link">&para;</a></h2>
 
+<a href="#remote_store.ext.yaml" class="headerlink" title="Permanent link">&para;</a></h2>
 
     <div class="doc doc-contents first">
-            <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="Backend (remote_store._backend.Backend)" href="../../api/backend/#remote_store.Backend">Backend</a></code></p>
 
-
-
-        <p>S3-compatible object storage backend using s3fs.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>bucket</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>S3 bucket name (required, non-empty).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>endpoint_url</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Custom endpoint URL (e.g. for MinIO).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>key</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="Secret(value) (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>AWS access key ID.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>secret</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="Secret(value) (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>AWS secret access key.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>region_name</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>AWS region name.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>client_options</code>
-            </td>
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Additional options passed to s3fs.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
+        <p>YAML config loader — load RegistryConfig from a YAML file.</p>
+<p>Install with <code>pip install "remote-store[yaml]"</code>.</p>
+<p>Usage:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.yaml</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_yaml</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">from_yaml</span><span class="p">(</span><span class="s2">&quot;remote-store.yaml&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Accepts either <code>pyyaml</code> or <code>ruamel.yaml</code> as the parser.</p>
 
 
 
@@ -5162,6 +4897,127 @@
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.ext.yaml.from_yaml" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">from_yaml</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+<a href="#remote_store.ext.yaml.from_yaml" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Load config from a YAML file.</p>
+<p>Accepts either <code>pyyaml</code> or <code>ruamel.yaml</code> as the parser.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> | <span title="pathlib.Path">Path</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Path to the YAML file.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="RegistryConfig(backends=dict(), stores=dict())
+
+  
+      dataclass
+   (remote_store._config.RegistryConfig)" href="../config/#remote_store.RegistryConfig">RegistryConfig</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>An immutable <code>RegistryConfig</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>ModuleNotFoundError</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If neither <code>pyyaml</code> nor <code>ruamel.yaml</code>
+is installed.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code>FileNotFoundError</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <em>path</em> does not exist.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code>TypeError</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the top-level YAML value is not a mapping.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
 
 
 

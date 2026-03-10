@@ -2811,6 +2811,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api/ext-yaml/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.yaml
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5384,6 +5412,10 @@ use a Registry with declarative config:</p>
 <td>Iterate subfolder names</td>
 </tr>
 <tr>
+<td><code>iter_children(path)</code></td>
+<td>Iterate files and folders in one pass</td>
+</tr>
+<tr>
 <td><code>glob(pattern)</code></td>
 <td>Native glob (capability-gated)</td>
 </tr>
@@ -5472,7 +5504,7 @@ use a Registry with declarative config:</p>
 </tbody>
 </table>
 <p>All write/move/copy methods accept <code>overwrite=True</code> to replace existing files.</p>
-<p>For full details, see the <a href="https://docs.remotestore.dev/en/latest/api/store/">API reference</a>.</p>
+<p>For full details, see the <a href="https://docs.remotestore.dev/stable/api/store/">API reference</a>.</p>
 <h2 id="supported-backends">Supported Backends<a class="headerlink" href="#supported-backends" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -5515,7 +5547,7 @@ use a Registry with declarative config:</p>
 </tr>
 </tbody>
 </table>
-<p>Detailed configuration guides for each backend are in <a href="https://docs.remotestore.dev/en/latest/backends/"><code>guides/backends/</code></a>.</p>
+<p>Detailed configuration guides for each backend are in <a href="https://docs.remotestore.dev/stable/backends/"><code>guides/backends/</code></a>.</p>
 <h3 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">&para;</a></h3>
 <p>All extensions live in <code>remote_store.ext</code> and are optional -- import only what you need.</p>
 <table>
@@ -5530,47 +5562,52 @@ use a Registry with declarative config:</p>
 <tr>
 <td>PyArrow adapter</td>
 <td><code>remote-store[arrow]</code></td>
-<td>Use any Store as a <code>pyarrow.fs.FileSystem</code> for Parquet, datasets, Pandas, Polars, DuckDB (<a href="https://docs.remotestore.dev/en/latest/pyarrow-adapter/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py">example</a>)</td>
+<td>Use any Store as a <code>pyarrow.fs.FileSystem</code> for Parquet, datasets, Pandas, Polars, DuckDB (<a href="https://docs.remotestore.dev/stable/pyarrow-adapter/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py">example</a>)</td>
 </tr>
 <tr>
 <td>Batch operations</td>
 <td><em>(none)</em></td>
-<td>Bulk delete, copy, and exists with error aggregation (<a href="https://docs.remotestore.dev/en/latest/batch-operations/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py">example</a>)</td>
+<td>Bulk delete, copy, and exists with error aggregation (<a href="https://docs.remotestore.dev/stable/batch-operations/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py">example</a>)</td>
 </tr>
 <tr>
 <td>Transfer operations</td>
 <td><em>(none)</em></td>
-<td>Upload, download, and cross-store transfer with streaming and progress (<a href="https://docs.remotestore.dev/en/latest/transfer-operations/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py">example</a>)</td>
+<td>Upload, download, and cross-store transfer with streaming and progress (<a href="https://docs.remotestore.dev/stable/transfer-operations/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py">example</a>)</td>
 </tr>
 <tr>
 <td>Observability hooks</td>
 <td><em>(none)</em></td>
-<td>Callback-based instrumentation for logging, metrics, and tracing (<a href="https://docs.remotestore.dev/en/latest/observe/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py">example</a>)</td>
+<td>Callback-based instrumentation for logging, metrics, and tracing (<a href="https://docs.remotestore.dev/stable/observe/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py">example</a>)</td>
 </tr>
 <tr>
 <td>OpenTelemetry bridge</td>
 <td><code>remote-store[otel]</code></td>
-<td>Pre-built OTel spans and metrics for Store operations (<a href="https://docs.remotestore.dev/en/latest/observe/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/otel_tracing.py">example</a>)</td>
+<td>Pre-built OTel spans and metrics for Store operations (<a href="https://docs.remotestore.dev/stable/observe/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/otel_tracing.py">example</a>)</td>
 </tr>
 <tr>
 <td>Glob helpers</td>
 <td><em>(none)</em></td>
-<td>Portable glob fallback for backends without native glob support (<a href="https://docs.remotestore.dev/en/latest/glob-pattern-matching/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py">example</a>)</td>
+<td>Portable glob fallback for backends without native glob support (<a href="https://docs.remotestore.dev/stable/glob-pattern-matching/">guide</a>, <a href="https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py">example</a>)</td>
 </tr>
 <tr>
 <td>Caching middleware</td>
 <td><em>(none)</em></td>
-<td>TTL-based read cache with automatic invalidation on mutations (<a href="https://docs.remotestore.dev/en/latest/cache/">guide</a>, <a href="https://docs.remotestore.dev/en/latest/api/ext-cache/">API</a>)</td>
+<td>TTL-based read cache with automatic invalidation on mutations (<a href="https://docs.remotestore.dev/stable/cache/">guide</a>, <a href="https://docs.remotestore.dev/stable/api/ext-cache/">API</a>)</td>
 </tr>
 <tr>
 <td>Partition helpers</td>
 <td><em>(none)</em></td>
-<td>Hive-style partition path builder and parser (<a href="https://docs.remotestore.dev/en/latest/api/ext-partition/">API</a>)</td>
+<td>Hive-style partition path builder and parser (<a href="https://docs.remotestore.dev/stable/api/ext-partition/">API</a>)</td>
+</tr>
+<tr>
+<td>YAML config loader</td>
+<td><code>remote-store[yaml]</code></td>
+<td>Load RegistryConfig from YAML files via PyYAML or ruamel.yaml (<a href="https://docs.remotestore.dev/stable/api/ext-yaml/">API</a>)</td>
 </tr>
 <tr>
 <td>Pydantic adapter</td>
 <td><code>remote-store[pydantic]</code></td>
-<td>Convert Pydantic BaseSettings to RegistryConfig (<a href="https://docs.remotestore.dev/en/latest/api/ext-pydantic/">API</a>)</td>
+<td>Convert Pydantic BaseSettings to RegistryConfig (<a href="https://docs.remotestore.dev/stable/api/ext-pydantic/">API</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -5645,6 +5682,26 @@ use a Registry with declarative config:</p>
 <td><a href="https://github.com/haalfi/remote-store/blob/master/examples/health_check.py">health_check.py</a></td>
 <td>Startup gate pattern with <code>Store.ping()</code></td>
 </tr>
+<tr>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/examples/retry_policy.py">retry_policy.py</a></td>
+<td>Retry policy configuration for transient failures</td>
+</tr>
+<tr>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/examples/caching.py">caching.py</a></td>
+<td>TTL-based read caching with automatic invalidation</td>
+</tr>
+<tr>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/examples/config_loaders.py">config_loaders.py</a></td>
+<td>TOML, YAML, and Pydantic config loaders</td>
+</tr>
+<tr>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/examples/capabilities_and_errors.py">capabilities_and_errors.py</a></td>
+<td>Capability checks, error hierarchy, path round-trip</td>
+</tr>
+<tr>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/examples/path_model.py">path_model.py</a></td>
+<td>RemotePath normalization, operators, ROOT sentinel</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Backend</strong> -- require a running service and credentials (<a href="https://github.com/haalfi/remote-store/tree/master/examples/backends"><code>examples/backends/</code></a>):</p>
@@ -5679,7 +5736,7 @@ use a Registry with declarative config:</p>
 <ul>
 <li><strong>Sync only</strong> -- all operations are synchronous. For async frameworks, wrap calls with <code>asyncio.to_thread()</code>.</li>
 <li><strong>Glob</strong> -- <code>list_files(pattern=)</code> and <code>ext.glob.glob_files()</code> work on all backends. Native <code>Store.glob()</code> is supported by Local, S3, S3-PyArrow, and Azure backends.</li>
-<li><strong>PyArrow adapter</strong> -- Tier 1 native fast-path reads (S3-PyArrow), Tier 2/3 reads, and writes are complete. Remaining backends for <code>native_path()</code> are tracked in the <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">backlog</a>.</li>
+<li><strong>PyArrow adapter</strong> -- Tier 1 native fast-path reads, Tier 2/3 reads, and writes are complete. <code>native_path()</code> is implemented for all backends.</li>
 </ul>
 <h2 id="how-it-compares">How it compares<a class="headerlink" href="#how-it-compares" title="Permanent link">&para;</a></h2>
 <p>There are several excellent Python libraries for file I/O across backends. Here is where <code>remote-store</code> sits:</p>
@@ -5701,7 +5758,7 @@ use a Registry with declarative config:</p>
 <td><code>open()</code> only</td>
 <td>pathlib-style</td>
 <td>~10 methods</td>
-<td>23 methods</td>
+<td>26 methods</td>
 </tr>
 <tr>
 <td>Backends</td>
