@@ -177,10 +177,11 @@ All v1.0 release blockers were resolved across v0.3.0–v0.4.1.
   `from __future__ import annotations` everywhere and performs no runtime
   annotation inspection, so PEP 649 is a non-issue.
 
-### Audit findings (v0.6.0–v0.9.0, v0.13.0)
+### Audit findings (v0.6.0–v0.9.0, v0.13.0, v0.15.0)
 
 From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-review.md`.
 Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
+Documentation audit of v0.15.0. Full report: `sdd/audit-003-documentation.md`.
 
 - [x] **AF-001 — Auto-register S3/SFTP/S3-PyArrow in Registry** (v0.6.0)
   `_register_builtin_backends()` only registered `local` and `azure`. Now
@@ -278,6 +279,67 @@ Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
 
 - [x] **AF-021 — Add backlog ID to unlinked TODO in `ext/arrow.py`** (v0.14.0)
   Changed `# TODO(Phase 2):` to `# TODO(ID-037 Phase 2):`.
+
+- [ ] **AF-022 — 7 example scripts missing from docs-site nav** (Critical)
+  `caching.py`, `glob_pattern_matching.py`, `pyarrow_adapter.py`,
+  `observe_hooks.py`, `otel_tracing.py`, `path_model.py`,
+  `capabilities_and_errors.py` have no `docs-src/examples/*.md` wrapper.
+
+- [ ] **AF-023 — ObservedStore: 24 method overrides lack docstrings** (Moderate)
+  Class-level docstring exists but is terse. Per-method docstrings missing
+  on all 24 overrides. mkdocstrings renders undocumented methods.
+
+- [ ] **AF-024 — CachedStore: 20+ method overrides lack docstrings** (Moderate)
+  Same pattern as AF-023.
+
+- [ ] **AF-025 — CacheBackend protocol: 6 methods undocumented** (Moderate)
+  `get`, `set`, `delete`, `clear`, `clear_prefix`, `size` have no docstrings.
+
+- [ ] **AF-026 — 6 guides missing API reference links, 4 missing example links** (Moderate)
+  backends/index, choosing-a-backend, concurrency, extensions, retry,
+  troubleshooting.
+
+- [ ] **AF-027 — `guides/retry.md` missing "See also" section** (Moderate)
+  No link to example, API reference, or related guides.
+
+- [ ] **AF-028 — `guides/backends/index.md` sparse** (Minor)
+  Missing API refs, examples, and next steps.
+
+- [ ] **AF-029 — `guides/performance.md` guide-style violations** (Minor)
+  Reads as Explanation, not How-To. Consider reclassifying.
+
+- [ ] **AF-030 — Research nested 3 levels deep in nav** (Minor)
+  Currently Explanation > Design > Research instead of top-level Explanation entry.
+
+- [ ] **AF-031 — `transfer()` missing `:returns:` docstring** (Low)
+  Returns `None` but undocumented.
+
+- [ ] **AF-032 — `guides/observe.md` on_write hook table omits `open_atomic`** (Medium)
+  `open_atomic` triggers `on_write` but is not listed in the hook table.
+
+- [ ] **AF-033 — `guides/observe.md` on_ping hook row missing** (Medium)
+  `ping()` fires `on_ping` but the hook is absent from the table.
+
+- [ ] **AF-034 — `observe()` docstring on_write omits `open_atomic`** (Low)
+  Says "Fires after write/write_atomic" but `open_atomic` also triggers it.
+
+- [ ] **AF-035 — `guides/cache.md` private import** (Low)
+  Imports from `remote_store.backends._memory`.
+
+- [ ] **AF-036 — `guides/health-check.md` private import** (Low)
+  Imports from `remote_store.backends._local`.
+
+- [ ] **AF-037 — `guides/backends/sftp.md` private imports** (Medium)
+  Imports from `remote_store.backends._sftp` without disclaimer.
+
+- [ ] **AF-038 — `CONTRIBUTING.md` stale counts** (High)
+  States 9 ADRs (actual 11) and 3 RFCs (actual 4).
+
+- [ ] **AF-039 — `sdd/CLAUDE-REFERENCE.md` wrong path** (High)
+  Line 77 references `docs/` directory, should be `docs-src/`.
+
+- [ ] **AF-040 — `guides/migration.md` documents unreleased v0.16.0** (Medium)
+  Migration section for a version that does not exist yet.
 
 ### Known bugs
 
