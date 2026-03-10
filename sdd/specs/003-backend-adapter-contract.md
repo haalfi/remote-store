@@ -166,6 +166,12 @@ for cap in cs:
 **Example:** `S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")` returns `"lake/data/file.parquet"`.
 **See also:** [001-store-api.md](001-store-api.md) (STORE-015), [014-pyarrow-filesystem-adapter.md](014-pyarrow-filesystem-adapter.md) (PA-010 Tier 1).
 
+### BE-026: iter_children()
+
+**Invariant:** `iter_children(path)` returns `Iterator[FileInfo | str]` — files as `FileInfo`, folders as `str` names. Concrete method with a default implementation that chains `list_files(path)` and `list_folders(path)`. Backends that can fetch both in a single I/O call override for efficiency.
+**Postconditions:** Non-recursive (immediate children only). Non-existent paths yield nothing.
+**See also:** [027-iter-children.md](027-iter-children.md) (ITER-004, ITER-005).
+
 ### BE-024: glob()
 
 **Invariant:** `glob(pattern)` matches files against a glob pattern. Non-abstract — the default implementation raises `CapabilityNotSupported`. Backends with native glob support override this and declare `Capability.GLOB`.
