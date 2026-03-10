@@ -25,11 +25,25 @@ Active work items, ordered by priority.
   developers reach for this naturally. No format-specific readers (CSV,
   JSON, etc.) — those belong in application code, not the storage layer.
 
+### Infrastructure
+
+- [~] **ID-060 — Multi-platform CI (Linux, Windows, macOS)**
+  Run unit tests on Windows and macOS to catch OS-specific bugs (path handling,
+  file locking, encoding). Latest stable Python only, no Docker services.
+  - Done: `requires_docker` pytest marker, `test-cross-platform` CI job
+    (Windows + macOS, py3.13, `-m "not requires_docker"`), wired into gate.
+  - Remaining: validate first CI run, consider adding macOS to publish.yml
+    pre-release gate.
+
 ---
 
 ## Known Bugs
 
-*(none open)*
+- [ ] **BUG-002 — Windows drive letter case mismatch in `warnings` module**
+  `warnings.warn()` normalizes file paths to lowercase drive letter (`f:\`)
+  while `__file__` preserves the original case (`F:\`). Causes
+  `test_from_yaml_unknown_key_warning_stacklevel` to fail on Windows.
+  Fix: `os.path.normcase()` on the path comparison in the test assertion.
 
 ---
 

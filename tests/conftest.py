@@ -14,6 +14,7 @@ def pytest_configure(config: object) -> None:
     if isinstance(config, pytest.Config):
         config.addinivalue_line("markers", "spec(id): links test to a spec section ID")
         config.addinivalue_line("markers", "integration: requires external services")
+        config.addinivalue_line("markers", "requires_docker: test needs Docker services (e.g. Azurite)")
 
 
 # region: shared fixtures

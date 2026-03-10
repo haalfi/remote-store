@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
@@ -250,9 +251,10 @@ class TestBackendRepr:
 
     def test_local_repr(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
+            real_tmp = str(Path(tmp).resolve())
             backend = LocalBackend(root=tmp)
             r = repr(backend)
-            assert "LocalBackend(" in r and repr(tmp) in r
+            assert "LocalBackend(" in r and repr(real_tmp) in r
 
     def test_local_repr_no_secrets(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

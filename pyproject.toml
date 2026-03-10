@@ -240,6 +240,7 @@ addopts = "--ignore=tests/e2e"
 markers = [
   "spec(id): links test to a spec section ID",
   "integration: requires external services",
+  "requires_docker: test needs Docker services (e.g. Azurite)",
   "standard: medium-tier benchmark (10MB payload, deep hierarchy, ~5 min/backend)",
   "full: heavy-tier benchmark (100MB payload, 10k listing, ~20-30 min/backend)",
 ]
