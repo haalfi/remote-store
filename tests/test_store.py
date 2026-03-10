@@ -463,3 +463,50 @@ class TestStoreNativePath:
         backend = MemoryBackend()
         store = Store(backend=backend, root_path="data")
         assert store.native_path("") == "data"
+
+
+class TestStoreReadText:
+    """RTXT-001: read_text() convenience method."""
+
+    @pytest.mark.spec("RTXT-001")
+    def test_read_text_utf8_default(self, store: Store) -> None:
+        store.write("greet.txt", b"Hello, world!")
+        assert store.read_text("greet.txt") == "Hello, world!"
+
+    @pytest.mark.spec("RTXT-001")
+    def test_read_text_custom_encoding(self, store: Store) -> None:
+        text = "caf\u00e9"
+        store.write("latin.txt", text.encode("latin-1"))
+        assert store.read_text("latin.txt", encoding="latin-1") == text
+
+    @pytest.mark.spec("RTXT-001")
+    def test_read_text_errors_strict(self, store: Store) -> None:
+        store.write("bad.bin", b"\xff\xfe")
+        with pytest.raises(UnicodeDecodeError):
+            store.read_text("bad.bin")
+
+    @pytest.mark.spec("RTXT-001")
+    def test_read_text_errors_replace(self, store: Store) -> None:
+        store.write("bad.bin", b"\xff\xfe")
+        result = store.read_text("bad.bin", errors="replace")
+        assert "\ufffd" in result
+
+    @pytest.mark.spec("RTXT-001")
+    def test_read_text_errors_ignore(self, store: Store) -> None:
+        store.write("bad.bin", b"hello\xffworld")
+        assert store.read_text("bad.bin", errors="ignore") == "helloworld"
+
+    @pytest.mark.spec("RTXT-001")
+    def test_read_text_not_found(self, store: Store) -> None:
+        with pytest.raises(NotFound):
+            store.read_text("missing.txt")
+
+    @pytest.mark.spec("RTXT-001")
+    def test_read_text_empty_path(self, store: Store) -> None:
+        with pytest.raises(InvalidPath):
+            store.read_text("")
+
+    @pytest.mark.spec("RTXT-001")
+    def test_read_text_dot_path(self, store: Store) -> None:
+        with pytest.raises(InvalidPath):
+            store.read_text(".")

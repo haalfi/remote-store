@@ -24,7 +24,7 @@ ID-004 (superseded).
 - `operation: str` -- operation name (e.g., `"read"`, `"write"`, `"delete"`,
   `"copy"`, `"move"`, `"iter_children"`, `"list_files"`, `"list_folders"`, `"glob"`,
   `"get_file_info"`, `"get_folder_info"`, `"exists"`, `"is_file"`,
-  `"is_folder"`, `"read_bytes"`, `"write_atomic"`, `"delete_folder"`,
+  `"is_folder"`, `"read_bytes"`, `"read_text"`, `"write_atomic"`, `"delete_folder"`,
   `"to_key"`, `"unwrap"`, `"supports"`).
 - `path: str` -- store-relative key (first positional path argument). Empty
   string for operations that take no path (e.g., `supports`).
@@ -112,7 +112,7 @@ The `on_<op>` hooks map to operations as follows:
 
 | Hook | Operations |
 |------|-----------|
-| `on_read` | `read`, `read_bytes` |
+| `on_read` | `read`, `read_bytes`, `read_text` |
 | `on_write` | `write`, `write_atomic` |
 | `on_delete` | `delete`, `delete_folder` |
 | `on_copy` | `copy` |

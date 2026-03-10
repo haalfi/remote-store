@@ -38,3 +38,8 @@ chunk = stream.read(4096)
 
 **Invariant:** Streaming I/O uses only `typing.BinaryIO` (stdlib). No dependency on anyio, asyncio, or trio.
 **Rationale:** See [ADR-0001](../adrs/0001-architecture-store-registry-backends.md).
+
+## SIO-007: Text Convenience Reads
+
+**Invariant:** `Store.read_text(path, *, encoding="utf-8", errors="strict")` reads the full content via `read_bytes()` and decodes it to `str`.
+**Postconditions:** This is a Store-level convenience -- no backend changes. Raises `UnicodeDecodeError` on decode failure with `errors="strict"`. See [028-read-text.md](028-read-text.md) (RTXT-001).

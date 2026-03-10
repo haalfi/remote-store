@@ -13,11 +13,7 @@ Active work items, ordered by priority.
 
 ### Feature work
 
-- [ ] **ID-056 — `read_text()` convenience method**
-  `store.read_text(path, encoding="utf-8") -> str` — thin wrapper around
-  `open_read()`. Matches `pathlib.Path.read_text()` expectations. Citizen
-  developers reach for this naturally. No format-specific readers (CSV,
-  JSON, etc.) — those belong in application code, not the storage layer.
+*(none)*
 
 ---
 
@@ -388,6 +384,13 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
   `ruamel.yaml.YAMLError` in config loader spec.
 
 ### Ideas shipped
+
+- [x] **ID-056 — `read_text()` convenience method** (post-v0.15.0)
+  `Store.read_text(path, encoding="utf-8", errors="strict")` -- thin wrapper
+  around `read_bytes()` + `.decode()`. Store-level only (no backend changes).
+  `ext.observe` `on_read` hook, `ext.cache` routes through cached `read_bytes`.
+  Spec: `028-read-text.md` (RTXT-001 through RTXT-006). 8 Store tests,
+  1 observe parametrized case, 1 cache test.
 
 - [x] **ID-055 — `iter_children()` — combined file + folder listing** (post-v0.15.0)
   `Store.iter_children(path)` yields both `FileInfo` (files) and `str` (folder

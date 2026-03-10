@@ -426,6 +426,9 @@ class CachedStore(Store):
 
     # region: public method overrides -- non-cached (direct delegation)
 
+    def read_text(self, path: str, *, encoding: str = "utf-8", errors: str = "strict") -> str:
+        return self.read_bytes(path).decode(encoding, errors)
+
     def read(self, path: str) -> BinaryIO:
         return self._inner.read(path)
 

@@ -161,6 +161,8 @@ class CacheStats:
 inner store without caching:
 
 - `read(path)` -- returns `BinaryIO` (not serializable/reusable).
+- `read_text(path)` -- delegates to `self.read_bytes()` (uses cached
+  `read_bytes` result). No separate cache key. See RTXT-005.
 - `close()`, `child()`, `to_key()`, `unwrap()`, `native_path()`,
   `supports()` -- no backend I/O worth caching.
 

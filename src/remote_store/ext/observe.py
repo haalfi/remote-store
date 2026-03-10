@@ -108,6 +108,7 @@ class StoreEvent:
 _OP_HOOK_MAP: dict[str, str] = {
     "read": "on_read",
     "read_bytes": "on_read",
+    "read_text": "on_read",
     "write": "on_write",
     "write_atomic": "on_write",
     "open_atomic": "on_write",
@@ -295,6 +296,10 @@ class ObservedStore(Store):
         with self._observe_op("read_bytes", path, {}):
             return self._inner.read_bytes(path)
 
+    def read_text(self, path: str, *, encoding: str = "utf-8", errors: str = "strict") -> str:
+        with self._observe_op("read_text", path, {"encoding": encoding}):
+            return self._inner.read_text(path, encoding=encoding, errors=errors)
+
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         with self._observe_op("write", path, {"overwrite": overwrite}):
             self._inner.write(path, content, overwrite=overwrite)
@@ -388,7 +393,7 @@ def observe(
     """Wrap a Store with observation hooks.
 
     :param store: The Store to observe.
-    :param on_read: Fires after read/read_bytes.
+    :param on_read: Fires after read/read_bytes/read_text.
     :param on_write: Fires after write/write_atomic/open_atomic.
     :param on_delete: Fires after delete/delete_folder.
     :param on_copy: Fires after copy.

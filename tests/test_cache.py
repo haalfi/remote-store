@@ -262,6 +262,16 @@ class TestCachedReads:
         assert cached.read_bytes("a.txt") == b"alpha"
         assert cached.stats.hits == 1
 
+    @pytest.mark.spec("RTXT-005")
+    def test_read_text_uses_cached_read_bytes(self, cached: CachedStore) -> None:
+        # Prime read_bytes cache
+        cached.read_bytes("a.txt")
+        assert cached.stats.misses == 1
+        # read_text should use cached read_bytes (no new miss)
+        assert cached.read_text("a.txt") == "alpha"
+        assert cached.stats.hits == 1
+        assert cached.stats.misses == 1
+
     @pytest.mark.spec("CACHE-006")
     def test_get_file_info_cached(self, cached: CachedStore) -> None:
         info1 = cached.get_file_info("a.txt")
