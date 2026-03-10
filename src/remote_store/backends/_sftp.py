@@ -108,6 +108,30 @@ def load_private_key(source: str, *, from_file: bool = False) -> Any:  # pragma:
         return paramiko.RSAKey.from_private_key(buf)
 
 
+class SFTPUtils:
+    """SFTP setup utilities for key loading and host verification.
+
+    Groups helpers that assist with SFTP backend configuration:
+
+    - ``SFTPUtils.load_private_key(...)`` -- load RSA keys from file or PEM string
+    - ``SFTPUtils.HostKeyPolicy`` -- enum controlling unknown host key behavior
+
+    Example::
+
+        from remote_store import SFTPUtils, SFTPBackend
+
+        key = SFTPUtils.load_private_key("~/.ssh/id_rsa", from_file=True)
+        backend = SFTPBackend(
+            host="sftp.example.com",
+            pkey=key,
+            host_key_policy=SFTPUtils.HostKeyPolicy.AUTO_ADD,
+        )
+    """
+
+    HostKeyPolicy = HostKeyPolicy
+    load_private_key = staticmethod(load_private_key)
+
+
 # endregion
 
 # region: host key helpers

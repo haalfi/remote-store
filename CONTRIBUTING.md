@@ -11,31 +11,16 @@ Thank you for your interest in contributing! This project follows **Spec-Driven 
 
 ## Repository Structure
 
-```
+```text
 sdd/
   000-process.md              # How specs work in this repo
   specs/                      # Accepted specifications (source of truth)
-    001-store-api.md
-    002-registry-config.md
-    003-backend-adapter-contract.md
-    004-path-model.md
-    005-error-model.md
-    006-streaming-io.md
-    007-atomic-writes.md
-    008-s3-backend.md
-    009-sftp-backend.md
-    010-native-path-resolution.md
-    011-s3-pyarrow-backend.md
-    012-azure-backend.md
-    013-memory-backend.md
-    014-pyarrow-filesystem-adapter.md
-    015-store-child.md
-    016-ext-batch.md
-    017-ext-transfer.md
-    018-glob.md
-  adrs/                       # Architecture Decision Records (9 ADRs)
-  rfcs/                       # Proposals under discussion (3 RFCs)
+  adrs/                       # Architecture Decision Records
+  rfcs/                       # Proposals under discussion
 ```
+
+Browse `sdd/specs/` for the full list of specifications. Each spec file is
+numbered and named after the feature it describes (e.g. `008-s3-backend.md`).
 
 ## Spec Format
 
@@ -79,7 +64,8 @@ Extensions live in `src/remote_store/ext/` and follow the contract in [ADR-0008]
 8. Add an `include-markdown` wrapper in `docs-src/<name>.md`
 9. Add the page to `docs-src/_nav.yml`
 10. Add a runnable example in `examples/`
-11. Update `CHANGELOG.md` and `sdd/BACKLOG.md` in the same commit
+11. Add an example docs wrapper in `docs-src/examples/<name>.md` and add it to `docs-src/examples/_nav.yml`
+12. Update `CHANGELOG.md` and `sdd/BACKLOG.md` in the same commit
 
 ### Export patterns
 
@@ -209,7 +195,10 @@ See [`sdd/DESIGN.md` Section 11](sdd/DESIGN.md#11-code-style) for the full code 
 
 The `examples/` directory contains runnable Python scripts that are validated in CI. Example scripts must remain self-contained and use `tempfile.TemporaryDirectory` for cleanup.
 
-Jupyter notebooks in `examples/notebooks/` are for interactive exploration and are **not** run in CI. They require manual testing when the API changes. This is intentional: notebooks depend on visual output and interactive workflows that don't translate well to automated checks.
+Jupyter notebooks in `examples/notebooks/` are validated in CI via
+`hatch run notebooks` (code cells executed with `exec()`, no Jupyter needed).
+Visual output is not checked -- the runner validates that cells execute without
+errors.
 
 ## Versioning
 

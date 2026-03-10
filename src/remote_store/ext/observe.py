@@ -126,7 +126,12 @@ _OP_HOOK_MAP: dict[str, str] = {
 class ObservedStore(Store):
     """Proxy Store that fires observation hooks on every public method.
 
-    Do not construct directly -- use :func:`observe`.
+    All ``Store`` methods are delegated to the inner store. Only methods
+    with additional behavior (``ping``, ``close``, ``child``) are
+    documented individually below; the remaining overrides add hook
+    dispatch and are otherwise transparent.
+
+    Do not construct directly -- use ``observe()``.
     """
 
     _inner: Store
@@ -374,7 +379,7 @@ def observe(
 
     :param store: The Store to observe.
     :param on_read: Fires after read/read_bytes.
-    :param on_write: Fires after write/write_atomic.
+    :param on_write: Fires after write/write_atomic/open_atomic.
     :param on_delete: Fires after delete/delete_folder.
     :param on_copy: Fires after copy.
     :param on_move: Fires after move.

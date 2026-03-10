@@ -23,6 +23,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   mode. Configurable via constructor (`retry=RetryPolicy(...)`) or dict config
   (`"retry": {"max_attempts": 5}`). ADR-0011, spec `025-retry-policy.md`.
 
+- **`SFTPUtils` utility class** -- groups `load_private_key` and `HostKeyPolicy`
+  into a public re-export (`from remote_store.backends import SFTPUtils`).
+  Replaces private `backends._sftp` imports in user-facing code.
+
 ### Changed
 
 - **`from_yaml()` moved from `RegistryConfig` classmethod to `ext/yaml.py`** (ID-002)
@@ -31,6 +35,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   extension architecture (ADR-0008). Import changes:
   `from remote_store.ext.yaml import from_yaml` (or `from remote_store import from_yaml`
   when pyyaml is installed).
+
+### Docs
+
+- **Audit 003 fixes** (AF-022 through AF-040) -- documentation quality audit
+  follow-up. 16 findings fixed, 3 closed as non-defects. Key changes:
+  7 missing example doc pages added, observe hook table completed (`on_ping`,
+  `open_atomic`), private imports replaced with public API in 4 guides,
+  `CacheBackend` protocol docstrings added, CONTRIBUTING.md spec listing
+  simplified (no longer goes stale), mkdocstrings `show_if_no_docstring: false`
+  for proxy class overrides.
 
 ## [0.15.0] - 2026-03-08
 

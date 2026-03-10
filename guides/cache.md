@@ -7,7 +7,7 @@ round-trips for read-heavy and metadata-heavy workloads.
 
 ```python
 from remote_store import Store, cached_store
-from remote_store.backends._memory import MemoryBackend
+from remote_store.backends import MemoryBackend
 
 store = Store(MemoryBackend())
 store.write("config.json", b'{"key": "value"}')

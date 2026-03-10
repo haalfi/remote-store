@@ -80,14 +80,36 @@ class CacheStats:
 
 @runtime_checkable
 class CacheBackend(Protocol):
-    """Protocol for pluggable cache backends (CACHE-001)."""
+    """Protocol for pluggable cache backends (CACHE-001).
 
-    def get(self, key: tuple[str, ...]) -> Any: ...
-    def set(self, key: tuple[str, ...], value: Any, ttl: float) -> None: ...
-    def delete(self, key: tuple[str, ...]) -> None: ...
-    def clear(self) -> None: ...
-    def clear_prefix(self, prefix: str) -> None: ...
-    def size(self) -> int: ...
+    Implement this protocol to provide a custom cache backend to
+    ``cached_store(store, cache=my_backend)``. The default implementation
+    is ``MemoryCache``.
+    """
+
+    def get(self, key: tuple[str, ...]) -> Any:
+        """Return the cached value, or a sentinel indicating a miss."""
+        ...
+
+    def set(self, key: tuple[str, ...], value: Any, ttl: float) -> None:
+        """Store *value* under *key* with a time-to-live in seconds."""
+        ...
+
+    def delete(self, key: tuple[str, ...]) -> None:
+        """Remove *key* from the cache (no-op if absent)."""
+        ...
+
+    def clear(self) -> None:
+        """Remove all entries from the cache."""
+        ...
+
+    def clear_prefix(self, prefix: str) -> None:
+        """Remove all entries whose first key component matches *prefix*."""
+        ...
+
+    def size(self) -> int:
+        """Return the number of entries currently in the cache."""
+        ...
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +212,12 @@ class MemoryCache:
 class CachedStore(Store):
     """Proxy Store that caches read operations with TTL-based expiration.
 
-    Do not construct directly -- use :func:`cached_store`.
+    All ``Store`` methods are delegated to the inner store. Read-only
+    methods use the cache; mutating methods invalidate affected entries.
+    Only methods with additional behavior (``invalidate``, ``clear_cache``,
+    ``ping``, ``close``, ``child``) are documented individually below.
+
+    Do not construct directly -- use ``cached_store()``.
     """
 
     _inner: Store

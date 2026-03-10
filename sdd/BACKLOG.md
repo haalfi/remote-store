@@ -11,6 +11,8 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` done
 
 Active work items, ordered by priority.
 
+### Feature work
+
 - [ ] **ID-055 — `iter_children()` — combined file + folder listing**
   A single call returning both files and subfolders in one pass, avoiding
   two round-trips. Most backends (S3 `list_objects_v2` with `Delimiter`,
@@ -75,6 +77,13 @@ Not evaluated, not committed to. Pick up when relevant.
   Add a `verify_checksum=True` option to `read()` / `write()`. Populate
   `FileInfo.checksum` consistently across backends (S3 ETag, local SHA-256).
   Gives users data-integrity guarantees with a single flag.
+
+- [ ] **ID-058 — Auto-generate example docs wrappers via mkdocs-gen-files**
+  Extend `docs-src/scripts/gen_pages.py` to scan `examples/*.py`, extract
+  the module docstring, and generate `docs-src/examples/<name>.md` wrappers
+  automatically. Eliminates the class of "forgot to add a wrapper" bugs
+  (see AF-022). The existing API reference pages are already auto-generated
+  this way.
 
 ---
 
@@ -177,11 +186,85 @@ All v1.0 release blockers were resolved across v0.3.0–v0.4.1.
   `from __future__ import annotations` everywhere and performs no runtime
   annotation inspection, so PEP 649 is a non-issue.
 
-### Audit findings (v0.6.0–v0.9.0, v0.13.0, v0.15.0)
+### Audit findings (v0.6.0–v0.9.0, v0.13.0–v0.14.0, post-v0.15.0)
 
 From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-review.md`.
 Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
-Documentation audit of v0.15.0. Full report: `sdd/audit-003-documentation.md`.
+Documentation audit of v0.15.0: `sdd/audit-003-documentation.md`.
+
+- [x] **AF-022 — 7 example scripts missing from docs-site nav** (post-v0.15.0)
+  Created `docs-src/examples/*.md` wrappers and nav entries for `caching`,
+  `glob_pattern_matching`, `pyarrow_adapter`, `observe_hooks`, `otel_tracing`,
+  `path_model`, `capabilities_and_errors`. Added "example docs wrapper" step
+  to CONTRIBUTING.md extension checklist.
+
+- [x] **AF-023 — ObservedStore: 24 method overrides lack docstrings** (post-v0.15.0)
+  Resolved via `show_if_no_docstring: false` in mkdocstrings config. Enhanced
+  class-level docstring to explain delegation pattern. Adding 40+ boilerplate
+  "Delegate to inner store." docstrings would be noise.
+
+- [x] **AF-024 — CachedStore: 20+ method overrides lack docstrings** (post-v0.15.0)
+  Same approach as AF-023. Enhanced class-level docstring to describe
+  caching vs delegation vs invalidation behavior.
+
+- [x] **AF-025 — CacheBackend protocol: 6 methods undocumented** (post-v0.15.0)
+  Added docstrings to all 6 protocol methods (`get`, `set`, `delete`,
+  `clear`, `clear_prefix`, `size`). These are a public extension point.
+
+- [x] **AF-026 — 6 guides missing API reference links** (post-v0.15.0)
+  Closed — not a defect. 3 of 6 guides already have proper cross-links
+  (`choosing-a-backend`, `troubleshooting`, `concurrency`). Remaining gaps
+  are covered by AF-027 (retry) and AF-028 (backends/index).
+
+- [x] **AF-027 — `guides/retry.md` missing "See also" section** (post-v0.15.0)
+  Added "See also" with links to retry policy example and backend guides.
+
+- [x] **AF-028 — `guides/backends/index.md` sparse** (post-v0.15.0)
+  Added intro paragraph and "See also" with links to choosing-a-backend
+  guide and capabilities matrix.
+
+- [x] **AF-031 — `transfer()` missing `:returns:` docstring** (post-v0.15.0)
+  Added `:returns: None` to `upload()`, `download()`, and `transfer()`.
+
+- [x] **AF-032 — `guides/observe.md` on_write hook table omits `open_atomic`** (post-v0.15.0)
+  Added `open_atomic` to the `on_write` row in the hook table.
+
+- [x] **AF-033 — `guides/observe.md` on_ping hook row missing** (post-v0.15.0)
+  Added `on_ping` row to the hook table.
+
+- [x] **AF-034 — `observe()` docstring on_write omits `open_atomic`** (post-v0.15.0)
+  Updated `:param on_write:` to include `open_atomic`.
+
+- [x] **AF-035 — `guides/cache.md` private import** (post-v0.15.0)
+  Changed `from remote_store.backends._memory` to `from remote_store.backends`.
+
+- [x] **AF-036 — `guides/health-check.md` private import** (post-v0.15.0)
+  Changed `from remote_store.backends._local` to `from remote_store.backends`.
+
+- [x] **AF-037 — `guides/backends/sftp.md` private imports** (post-v0.15.0)
+  Created `SFTPUtils` utility class grouping `load_private_key` (staticmethod)
+  and `HostKeyPolicy` (class attribute). Re-exported from `backends/__init__.py`.
+  Guide imports updated to `from remote_store.backends import SFTPUtils`.
+
+- [x] **AF-038 — `CONTRIBUTING.md` stale counts** (post-v0.15.0)
+  Root cause: hand-maintained spec file listing and hardcoded ADR/RFC counts
+  go stale on every addition. Replaced exhaustive listing with descriptive
+  tree structure. Also fixed stale "notebooks not run in CI" statement.
+
+- [x] **AF-039 — `sdd/CLAUDE-REFERENCE.md` wrong path** (post-v0.15.0)
+  Changed `docs/` to `docs-src/` in repository layout section.
+
+- [x] **AF-040 — `guides/migration.md` documents unreleased v0.16.0** (post-v0.15.0)
+  Changed "v0.15.0 to v0.16.0" to "v0.15.0 to next release (unreleased)"
+  since the YAML loader move hasn't shipped yet.
+
+- [x] **AF-029 — `guides/performance.md` guide-style violations** (post-v0.15.0)
+  Closed — not a defect. The guide is already placed under Explanation in
+  the nav, which matches its explanatory content style.
+
+- [x] **AF-030 — Research nested 3 levels deep in nav** (post-v0.15.0)
+  Closed — not a defect. The Explanation > Design > Research nesting is
+  intentional Diataxis structure.
 
 - [x] **AF-001 — Auto-register S3/SFTP/S3-PyArrow in Registry** (v0.6.0)
   `_register_builtin_backends()` only registered `local` and `azure`. Now
@@ -279,67 +362,6 @@ Documentation audit of v0.15.0. Full report: `sdd/audit-003-documentation.md`.
 
 - [x] **AF-021 — Add backlog ID to unlinked TODO in `ext/arrow.py`** (v0.14.0)
   Changed `# TODO(Phase 2):` to `# TODO(ID-037 Phase 2):`.
-
-- [ ] **AF-022 — 7 example scripts missing from docs-site nav** (Critical)
-  `caching.py`, `glob_pattern_matching.py`, `pyarrow_adapter.py`,
-  `observe_hooks.py`, `otel_tracing.py`, `path_model.py`,
-  `capabilities_and_errors.py` have no `docs-src/examples/*.md` wrapper.
-
-- [ ] **AF-023 — ObservedStore: 24 method overrides lack docstrings** (Moderate)
-  Class-level docstring exists but is terse. Per-method docstrings missing
-  on all 24 overrides. mkdocstrings renders undocumented methods.
-
-- [ ] **AF-024 — CachedStore: 20+ method overrides lack docstrings** (Moderate)
-  Same pattern as AF-023.
-
-- [ ] **AF-025 — CacheBackend protocol: 6 methods undocumented** (Moderate)
-  `get`, `set`, `delete`, `clear`, `clear_prefix`, `size` have no docstrings.
-
-- [ ] **AF-026 — 6 guides missing API reference links, 4 missing example links** (Moderate)
-  backends/index, choosing-a-backend, concurrency, extensions, retry,
-  troubleshooting.
-
-- [ ] **AF-027 — `guides/retry.md` missing "See also" section** (Moderate)
-  No link to example, API reference, or related guides.
-
-- [ ] **AF-028 — `guides/backends/index.md` sparse** (Minor)
-  Missing API refs, examples, and next steps.
-
-- [ ] **AF-029 — `guides/performance.md` guide-style violations** (Minor)
-  Reads as Explanation, not How-To. Consider reclassifying.
-
-- [ ] **AF-030 — Research nested 3 levels deep in nav** (Minor)
-  Currently Explanation > Design > Research instead of top-level Explanation entry.
-
-- [ ] **AF-031 — `transfer()` missing `:returns:` docstring** (Low)
-  Returns `None` but undocumented.
-
-- [ ] **AF-032 — `guides/observe.md` on_write hook table omits `open_atomic`** (Medium)
-  `open_atomic` triggers `on_write` but is not listed in the hook table.
-
-- [ ] **AF-033 — `guides/observe.md` on_ping hook row missing** (Medium)
-  `ping()` fires `on_ping` but the hook is absent from the table.
-
-- [ ] **AF-034 — `observe()` docstring on_write omits `open_atomic`** (Low)
-  Says "Fires after write/write_atomic" but `open_atomic` also triggers it.
-
-- [ ] **AF-035 — `guides/cache.md` private import** (Low)
-  Imports from `remote_store.backends._memory`.
-
-- [ ] **AF-036 — `guides/health-check.md` private import** (Low)
-  Imports from `remote_store.backends._local`.
-
-- [ ] **AF-037 — `guides/backends/sftp.md` private imports** (Medium)
-  Imports from `remote_store.backends._sftp` without disclaimer.
-
-- [ ] **AF-038 — `CONTRIBUTING.md` stale counts** (High)
-  States 9 ADRs (actual 11) and 3 RFCs (actual 4).
-
-- [ ] **AF-039 — `sdd/CLAUDE-REFERENCE.md` wrong path** (High)
-  Line 77 references `docs/` directory, should be `docs-src/`.
-
-- [ ] **AF-040 — `guides/migration.md` documents unreleased v0.16.0** (Medium)
-  Migration section for a version that does not exist yet.
 
 ### Known bugs
 

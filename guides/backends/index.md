@@ -1,6 +1,9 @@
 # Backends
 
-`remote-store` uses a pluggable backend system. Each backend implements the `Backend` abstract class and declares its capabilities.
+`remote-store` uses a pluggable backend system. Each backend implements the
+`Backend` abstract class and declares its capabilities. Pick a backend based
+on where your files live, install the optional extra, and everything else
+stays the same -- the `Store` API is identical across all backends.
 
 ## Supported Backends
 
@@ -26,4 +29,10 @@ class MyBackend(Backend):
 register_backend("my-backend", MyBackend)
 ```
 
-See the `Backend` class in `src/remote_store/_backend.py` for the full interface to implement.
+See the `Backend` class in `src/remote_store/_backend.py` for the full
+interface to implement.
+
+## See also
+
+- [Choosing a Backend](../choosing-a-backend.md) -- decision guide with trade-offs
+- [Capabilities Matrix](../capabilities-matrix.md) -- full backend x capability table

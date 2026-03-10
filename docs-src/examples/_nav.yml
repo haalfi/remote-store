@@ -5,6 +5,8 @@
 - Configuration: configuration.md
 - Config Loaders: config-loaders.md
 - Error Handling: error-handling.md
+- Capabilities & Errors: capabilities-and-errors.md
+- Path Model: path-model.md
 - Memory Backend: memory-backend.md
 - Store.child(): store-child.md
 - S3 Backend: s3-backend.md
@@ -13,5 +15,10 @@
 - Azure Backend: azure-backend.md
 - Batch Operations: batch-operations.md
 - Transfer Operations: transfer-operations.md
+- Glob Pattern Matching: glob-pattern-matching.md
+- Caching: caching.md
+- Observe Hooks: observe-hooks.md
+- OpenTelemetry Tracing: otel-tracing.md
+- PyArrow Adapter: pyarrow-adapter.md
 - Retry Policy: retry-policy.md
 - Health Check: health-check.md

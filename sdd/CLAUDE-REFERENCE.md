@@ -74,7 +74,7 @@ examples/                  # Core runnable examples (run locally, no credentials
 examples/backends/         # Cloud backend examples (need services + credentials)
 sdd/                       # Specs, ADRs, RFCs, backlog, design docs
 guides/backends/           # User-facing backend configuration guides
-docs/                      # Sphinx/MkDocs documentation source
+docs-src/                  # MkDocs Material documentation source
 ```
 
 For backlog process, SDD workflow, and `sdd/` subtree details see `sdd/000-process.md`.
