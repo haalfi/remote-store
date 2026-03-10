@@ -2428,6 +2428,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#remote_store.DirectoryNotEmpty" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;DirectoryNotEmpty
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#remote_store.BackendUnavailable" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4950,6 +4961,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#remote_store.DirectoryNotEmpty" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;DirectoryNotEmpty
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#remote_store.BackendUnavailable" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5358,6 +5380,57 @@ the needed capability.</p>
           </tr>
       </tbody>
     </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="remote_store.DirectoryNotEmpty" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">DirectoryNotEmpty</span>
+
+
+<a href="#remote_store.DirectoryNotEmpty" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DirectoryNotEmpty</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="            RemoteStoreError (remote_store._errors.RemoteStoreError)" href="#remote_store.RemoteStoreError">RemoteStoreError</a></code></p>
+
+
+
+        <p>Raised when a non-recursive delete targets a non-empty folder.</p>
+<p>Raised by <code>Store.delete_folder()</code> when <code>recursive=False</code> (the
+default) and the folder contains files or subfolders.</p>
 
 
 
