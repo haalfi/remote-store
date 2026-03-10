@@ -5083,6 +5083,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-25-api-conveniences-and-documentation-quality-v0160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 25: API Conveniences and Documentation Quality (v0.16.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5680,6 +5691,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-25-api-conveniences-and-documentation-quality-v0160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 25: API Conveniences and Documentation Quality (v0.16.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5988,7 +6010,7 @@
 </tr>
 <tr>
 <td>Commits</td>
-<td>~346</td>
+<td>~350</td>
 </tr>
 </tbody>
 </table>
@@ -6363,6 +6385,9 @@
 <p><strong>uv adoption, incrementally</strong> (#173). CI moved from pip to uv across three workflows (ci.yml, publish.yml, then docs.yml). The key insight: uv replaces pip <em>for installation speed in CI</em>, not hatch for local development. Locally, <code>hatch run</code> remains the interface -- it manages environments, scripts, and matrix testing. uv is a CI concern only, cutting install steps from ~45s to ~8s.</p>
 <p><strong>Cross-platform as a first-class constraint.</strong> The Win/macOS/Linux test matrix surfaced patterns that became project conventions: errno codes instead of string matching (German locale breaks English error messages), closing streams before <code>shutil.rmtree()</code> (Windows file locking), ASCII-only <code>print()</code> (cp1252 codec), and em-dash avoidance in Markdown titles (mojibake via MkDocs). These aren't edge cases -- they're the default experience for half the target audience.</p>
 <p><strong>Ripple-check strengthening</strong> (#172). The CLAUDE-REFERENCE.md ripple-check table gained more specific verification targets: Store method changes now explicitly require README API table + method count updates, extension changes require docs nav + API reference pages. The README audit in the same PR caught 3 missing examples and a stale method count -- exactly the kind of drift the table is designed to prevent.</p>
+<h3 id="phase-25-api-conveniences-and-documentation-quality-v0160">Phase 25: API Conveniences and Documentation Quality (v0.16.0)<a class="headerlink" href="#phase-25-api-conveniences-and-documentation-quality-v0160" title="Permanent link">&para;</a></h3>
+<p>The v0.16.0 release bundled the post-v0.15.0 work into a cohesive minor release: new convenience APIs (<code>read_text()</code>, <code>iter_children()</code>, <code>ping()</code>), the <code>RetryPolicy</code> configuration surface, the YAML config loader move to <code>ext.yaml</code>, and a documentation quality audit (Audit 003) that fixed 16 findings across guides, docstrings, and examples. The <code>SFTPUtils</code> public utility class replaced private imports in user-facing code, and <code>from_yaml()</code> moved to the extension layer for consistency with the Pydantic adapter.</p>
+<p>The release also shipped colored type annotations in the docs site (mkdocstrings config), uv-based CI installs across all workflows, and cross-platform CI (Windows + macOS). The documentation audit reinforced Principle 17 from the lessons section: audit findings are hypotheses, not prescriptions. Three of the 19 findings were closed as non-defects after investigation.</p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
