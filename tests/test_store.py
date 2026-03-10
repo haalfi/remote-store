@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tempfile
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -337,9 +338,7 @@ class TestGetFolderInfoRoot:
 
     def test_local_backend_get_folder_info_empty_string(self, tmp_path: object) -> None:
         """LocalBackend.get_folder_info('') should not raise InvalidPath."""
-        import pathlib
-
-        root = pathlib.Path(str(tmp_path))
+        root = Path(str(tmp_path))
         (root / "f.txt").write_bytes(b"hello")
         backend = LocalBackend(root=str(root))
         fi = backend.get_folder_info("")
@@ -356,26 +355,29 @@ class TestStoreToKey:
     @pytest.mark.spec("NPR-010")
     def test_to_key_strips_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
+            real_tmp = str(Path(tmp).resolve())
             backend = LocalBackend(root=tmp)
             store = Store(backend=backend, root_path="data")
-            native = f"{tmp}/data/reports/q1.csv"
+            native = f"{real_tmp}/data/reports/q1.csv"
             assert store.to_key(native) == "reports/q1.csv"
 
     @pytest.mark.spec("NPR-012")
     def test_to_key_no_root_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
+            real_tmp = str(Path(tmp).resolve())
             backend = LocalBackend(root=tmp)
             store = Store(backend=backend, root_path="")
-            native = f"{tmp}/reports/q1.csv"
+            native = f"{real_tmp}/reports/q1.csv"
             assert store.to_key(native) == "reports/q1.csv"
 
     @pytest.mark.spec("NPR-013")
     def test_to_key_unrelated_path_raises(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
+            real_tmp = str(Path(tmp).resolve())
             backend = LocalBackend(root=tmp)
             store = Store(backend=backend, root_path="data")
             with pytest.raises(InvalidPath):
-                store.to_key(f"{tmp}/other/file.txt")
+                store.to_key(f"{real_tmp}/other/file.txt")
 
 
 class TestStoreUnwrap:
