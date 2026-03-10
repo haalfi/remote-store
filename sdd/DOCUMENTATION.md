@@ -120,6 +120,19 @@ The README must contain:
 | Reference | Information | Precise lookup | Python docstrings in `src/`, extracted into `docs-src/api/` |
 | Explanation | Understanding | Help understand *why* | `docs-src/` for user-facing pages, `sdd/adrs/` for formal decisions |
 
+### Content drift prevention
+
+Each Diataxis category excludes specific content types. When a page accumulates excluded content, split it.
+
+| Category | Must exclude |
+|---|---|
+| Tutorial | Exhaustive option lists, edge cases, design rationale |
+| How-To Guide | Design rationale, install steps, API signatures |
+| Reference | Narrative explanation, step-by-step instructions |
+| Explanation | How-to instructions, API signatures, install steps |
+
+Cross-references replace duplication, but actionable checklists should be co-located with the rules they support. When condensing, keep lookup tables near the decision point.
+
 ### Cross-link example
 
 | From | To | Link pattern |

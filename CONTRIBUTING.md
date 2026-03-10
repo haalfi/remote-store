@@ -20,6 +20,10 @@ Meaningful minimum. Each document covers one concern, states clear principles, a
 
 Sections 1 and 2 alone must be sufficient to understand the document's purpose and obligations.
 
+### Scope
+
+Applies to all documents in `sdd/`. Does not apply to README, CHANGELOG, DEVELOPMENT_STORY, CLAUDE.md, or CONTRIBUTING.md (which follow their own conventional formats).
+
 ### Cross-check
 
 Every sentence and section must pass this test: *"this would force different behavior in situation X."* If it does not, it is decoration — rewrite as a rule or remove.

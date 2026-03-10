@@ -21,7 +21,7 @@ Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC form
 5. DOCS      → Write or update examples, guides, docstrings, CHANGELOG
 ```
 
-Operational items (CI config, docs, dependency pins) skip the spec step: tracked and closed directly in the backlog.
+Operational items (CI config, docs, dependency pins) skip the spec step: tracked and closed directly in the backlog. Backlog items track *what* needs doing; the RFC or spec tracks *how*.
 
 ## Guides
 
