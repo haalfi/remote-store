@@ -48,8 +48,15 @@ Started but not yet prioritized for completion.
   - Done: research complete (`sdd/research/research-async-store-api.md`),
     ADR-0012 (`sdd/adrs/0012-async-store-backend-api.md`),
     spec 029 (`sdd/specs/029-async-store-backend-api.md`).
-  - Remaining: implementation (Phase 1: core async surface,
-    Phase 2: native async backends, Phase 3: async extensions).
+  - Remaining:
+    - Spec 029 amendments: add `SyncBackendAdapter` streaming write
+      conversion (materialize `AsyncIterator[bytes]` → `bytes`), add
+      `AsyncMemoryBackend` section (ASYNC-060..063), add explicit
+      `open_atomic` deferral note, add `check_health()` / `ping()`
+      async equivalents.
+    - Implementation Phase 1: core async surface.
+    - Implementation Phase 2: native async backends.
+    - Implementation Phase 3: async extensions.
 
 ### Parking Lot
 
