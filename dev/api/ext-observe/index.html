@@ -1034,6 +1034,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Health Check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1609,6 +1637,34 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Health Check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2289,6 +2345,17 @@
     <span class="md-ellipsis">
       
         inner
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.ext.observe.ObservedStore.ping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ping
       
     </span>
   </a>
@@ -3623,6 +3690,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/specs/026-health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    026: Health Check Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4611,6 +4706,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.ext.observe.ObservedStore.ping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.ext.observe.ObservedStore.close" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4892,6 +4998,24 @@ observed.write(&quot;key.txt&quot;, b&quot;hello&quot;)
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="remote_store.ext.observe.ObservedStore.ping" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">ping</span><span class="p">()</span></code>
+
+<a href="#remote_store.ext.observe.ObservedStore.ping" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Delegate ping to inner store.</p>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
@@ -5185,7 +5309,7 @@ _correlation_id.reset(token)
 
 
 <h3 id="remote_store.ext.observe.observe" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">on_read</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_write</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_delete</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_copy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_move</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_error</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_any</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">around</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">on_read</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_write</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_delete</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_copy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_move</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_ping</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_error</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_any</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">around</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 <a href="#remote_store.ext.observe.observe" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -5337,6 +5461,26 @@ _correlation_id.reset(token)
               <div class="doc-md-description">
                 <p>Fires after list_files/list_folders/glob/get_file_info/
 get_folder_info/exists/is_file/is_folder.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>on_ping</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="StoreEvent(operation, path, backend, started_at, duration_ms, error, metadata, correlation_id)
+
+  
+      dataclass
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fires after ping.</p>
               </div>
             </td>
             <td>

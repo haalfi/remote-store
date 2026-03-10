@@ -14,3 +14,4 @@
 - Batch Operations: batch-operations.md
 - Transfer Operations: transfer-operations.md
 - Retry Policy: retry-policy.md
+- Health Check: health-check.md

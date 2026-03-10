@@ -1034,6 +1034,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Health Check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1621,6 +1649,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Health Check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../data-lake-patterns/" class="md-nav__link">
         
   
@@ -1924,6 +1980,17 @@
   
     <nav class="md-nav" aria-label="Store">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Store.ping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ping
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#remote_store.Store.close" class="md-nav__link">
@@ -3743,6 +3810,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/specs/026-health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    026: Health Check Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4697,6 +4792,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#remote_store.Store.ping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.Store.close" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5062,6 +5168,75 @@ before being delegated to the backend.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.Store.ping" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">ping</span><span class="p">()</span></code>
+
+<a href="#remote_store.Store.ping" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Verify the backend is reachable and credentials are valid.</p>
+<p>A lightweight, non-destructive health check. Returns silently on
+success; raises on failure.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>PermissionDenied</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If credentials are invalid.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code>NotFound</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the bucket, container, or root path does not exist.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code>BackendUnavailable</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the backend cannot be reached.</p>
+<p>Example::</p>
+<div class="highlight"><pre><span></span><code>try:
+    store.ping()
+except Exception as exc:
+    print(f&quot;Backend unreachable: {exc}&quot;)
+</code></pre></div>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 

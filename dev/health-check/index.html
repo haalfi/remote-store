@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/cache/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/health-check/">
       
       
-        <link rel="prev" href="../observe/">
+        <link rel="prev" href="../retry/">
       
       
-        <link rel="next" href="../retry/">
+        <link rel="next" href="../data-lake-patterns/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Caching - remote-store</title>
+        <title>Health Check - remote-store</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#caching-guide" class="md-skip">
+        <a href="#health-check" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Caching
+              Health Check
             
           </span>
         </div>
@@ -1369,8 +1369,6 @@
                 
   
   
-    
-  
   
   
     
@@ -1381,11 +1379,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
         
           
           <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
@@ -1406,7 +1404,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1589,37 +1587,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Caching
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../cache/" class="md-nav__link">
         
   
   
@@ -1635,125 +1606,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick Start
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-gets-cached" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Gets Cached
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#automatic-invalidation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Automatic Invalidation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#limiting-memory-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Limiting Memory Usage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cache-statistics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cache Statistics
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#manual-invalidation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Manual Invalidation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#stale-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Stale Data
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#composing-with-observability" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Composing with Observability
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#thread-safety" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Thread Safety
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1799,10 +1651,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../health-check/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Health Check
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1818,6 +1697,92 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-backend-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-backend strategies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observability
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4601,7 +4566,7 @@
   <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start
+        Quick start
       
     </span>
   </a>
@@ -4609,10 +4574,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-gets-cached" class="md-nav__link">
+  <a href="#use-cases" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What Gets Cached
+        Use cases
       
     </span>
   </a>
@@ -4620,10 +4585,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#automatic-invalidation" class="md-nav__link">
+  <a href="#error-handling" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Automatic Invalidation
+        Error handling
       
     </span>
   </a>
@@ -4631,10 +4596,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#limiting-memory-usage" class="md-nav__link">
+  <a href="#per-backend-strategies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Limiting Memory Usage
+        Per-backend strategies
       
     </span>
   </a>
@@ -4642,10 +4607,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cache-statistics" class="md-nav__link">
+  <a href="#observability" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cache Statistics
+        Observability
       
     </span>
   </a>
@@ -4653,43 +4618,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#manual-invalidation" class="md-nav__link">
+  <a href="#design-notes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Manual Invalidation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#stale-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Stale Data
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#composing-with-observability" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Composing with Observability
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#thread-safety" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Thread Safety
+        Design notes
       
     </span>
   </a>
@@ -4716,154 +4648,119 @@
   
 
 
-<h1 id="caching-guide">Caching Guide<a class="headerlink" href="#caching-guide" title="Permanent link">&para;</a></h1>
-<p><code>ext.cache</code> wraps a Store in a caching proxy that reduces backend
-round-trips for read-heavy and metadata-heavy workloads.</p>
-<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span><span class="p">,</span> <span class="n">cached_store</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends._memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryBackend</span>
+<h1 id="health-check">Health Check<a class="headerlink" href="#health-check" title="Permanent link">&para;</a></h1>
+<p>Verify backend connectivity and credentials before your application starts
+processing requests.</p>
+<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends._local</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalBackend</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">MemoryBackend</span><span class="p">())</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;config.json&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;{&quot;key&quot;: &quot;value&quot;}&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Wrap with a 5-minute cache</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">cached</span> <span class="o">=</span> <span class="n">cached_store</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># First call hits the backend</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">data</span> <span class="o">=</span> <span class="n">cached</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;config.json&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># Second call returns from cache (no backend I/O)</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">data</span> <span class="o">=</span> <span class="n">cached</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;config.json&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1"># Writes automatically invalidate the cache</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="n">cached</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;config.json&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;{&quot;key&quot;: &quot;new&quot;}&#39;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="c1"># Next read goes to the backend again</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="n">data</span> <span class="o">=</span> <span class="n">cached</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;config.json&quot;</span><span class="p">)</span>  <span class="c1"># b&#39;{&quot;key&quot;: &quot;new&quot;}&#39;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;/data/inbox&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>  <span class="c1"># raises on failure, silent on success</span>
 </code></pre></div>
-<h2 id="what-gets-cached">What Gets Cached<a class="headerlink" href="#what-gets-cached" title="Permanent link">&para;</a></h2>
+<h2 id="use-cases">Use cases<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Startup gates</strong> -- fail fast before accepting traffic if the backend is
+  unreachable or credentials are invalid.</li>
+<li><strong>Liveness probes</strong> -- Kubernetes <code>livenessProbe</code> or similar health endpoints.</li>
+<li><strong>Connection validation</strong> -- verify config after loading from TOML/YAML.</li>
+</ul>
+<h2 id="error-handling">Error handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
+<p><code>ping()</code> raises the same exceptions as other Store operations:</p>
 <table>
 <thead>
 <tr>
-<th>Operation</th>
-<th>Cached?</th>
-<th>Notes</th>
+<th>Exception</th>
+<th>Meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>exists()</code></td>
-<td>Yes</td>
-<td>Including <code>False</code> results</td>
+<td><code>PermissionDenied</code></td>
+<td>Invalid credentials or insufficient permissions</td>
 </tr>
 <tr>
-<td><code>is_file()</code></td>
-<td>Yes</td>
-<td></td>
+<td><code>NotFound</code></td>
+<td>Bucket, container, or root directory does not exist</td>
 </tr>
 <tr>
-<td><code>is_folder()</code></td>
-<td>Yes</td>
-<td></td>
-</tr>
-<tr>
-<td><code>read_bytes()</code></td>
-<td>Yes</td>
-<td>Subject to <code>max_content_size</code></td>
-</tr>
-<tr>
-<td><code>get_file_info()</code></td>
-<td>Yes</td>
-<td></td>
-</tr>
-<tr>
-<td><code>get_folder_info()</code></td>
-<td>Yes</td>
-<td></td>
-</tr>
-<tr>
-<td><code>list_files()</code></td>
-<td>Yes</td>
-<td>Materialized on first call</td>
-</tr>
-<tr>
-<td><code>list_folders()</code></td>
-<td>Yes</td>
-<td>Materialized on first call</td>
-</tr>
-<tr>
-<td><code>glob()</code></td>
-<td>Yes</td>
-<td>Materialized on first call</td>
-</tr>
-<tr>
-<td><code>read()</code></td>
-<td><strong>No</strong></td>
-<td>Returns <code>BinaryIO</code> stream</td>
+<td><code>BackendUnavailable</code></td>
+<td>Network error, DNS failure, or timeout</td>
 </tr>
 </tbody>
 </table>
-<p><code>read()</code> is deliberately not cached because it returns a <code>BinaryIO</code>
-stream that may be lazily consumed. Use <code>read_bytes()</code> when you want
-cached content reads.</p>
-<h2 id="automatic-invalidation">Automatic Invalidation<a class="headerlink" href="#automatic-invalidation" title="Permanent link">&para;</a></h2>
-<p>Mutating operations automatically invalidate affected cache entries:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">BackendUnavailable</span><span class="p">,</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">PermissionDenied</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">except</span> <span class="n">PermissionDenied</span><span class="p">:</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Bad credentials for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">except</span> <span class="n">NotFound</span><span class="p">:</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Missing bucket/container for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="k">except</span> <span class="n">BackendUnavailable</span><span class="p">:</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Backend unreachable for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="per-backend-strategies">Per-backend strategies<a class="headerlink" href="#per-backend-strategies" title="Permanent link">&para;</a></h2>
+<p>Each backend uses the cheapest possible read-only operation:</p>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Operation</th>
+<th>What it validates</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local</td>
+<td><code>root.exists()</code> + <code>os.access(R_OK)</code></td>
+<td>Directory exists and is readable</td>
+</tr>
+<tr>
+<td>S3</td>
+<td><code>head_bucket</code></td>
+<td>Bucket exists, credentials valid</td>
+</tr>
+<tr>
+<td>S3-PyArrow</td>
+<td><code>get_file_info(bucket)</code></td>
+<td>Bucket accessible via PyArrow</td>
+</tr>
+<tr>
+<td>SFTP</td>
+<td><code>stat(base_path)</code></td>
+<td>SSH connection, path exists</td>
+</tr>
+<tr>
+<td>Azure</td>
+<td><code>get_container_properties()</code></td>
+<td>Container exists, credentials valid</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>No-op</td>
+<td>Always healthy</td>
+</tr>
+</tbody>
+</table>
+<h2 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h2>
+<p><code>ping()</code> integrates with <code>ext.observe</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.observe</span><span class="w"> </span><span class="kn">import</span> <span class="n">observe</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">on_ping</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ping took </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">duration_ms</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">on_ping</span><span class="o">=</span><span class="n">on_ping</span><span class="p">)</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">observed</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+</code></pre></div>
+<h2 id="design-notes">Design notes<a class="headerlink" href="#design-notes" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><code>write</code>, <code>write_atomic</code>, <code>open_atomic</code></strong> -- invalidate the written
-  path and all listing/folder caches.</li>
-<li><strong><code>delete</code></strong> -- invalidate the deleted path and all listings.</li>
-<li><strong><code>delete_folder</code></strong> -- clear the entire cache (folder deletion can
-  affect any cached path).</li>
-<li><strong><code>move</code></strong> -- invalidate both source and destination paths plus listings.</li>
-<li><strong><code>copy</code></strong> -- invalidate destination path plus listings.</li>
+<li><strong>No return value</strong> -- success is silent (<code>None</code>), failure raises. This
+  matches the Go convention of <code>Ping() error</code> and keeps the API minimal.</li>
+<li><strong>No caching</strong> -- every call performs a real connectivity check.</li>
+<li><strong>No timeout parameter</strong> -- use backend-level timeouts (e.g. <code>RetryPolicy</code>).</li>
+<li><strong>Not capability-gated</strong> -- all backends support health checks.</li>
 </ul>
-<h2 id="limiting-memory-usage">Limiting Memory Usage<a class="headerlink" href="#limiting-memory-usage" title="Permanent link">&para;</a></h2>
-<p>By default, <code>read_bytes()</code> caches files of any size. For workloads with
-large files, set <code>max_content_size</code> to prevent memory pressure:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Only cache files up to 1 MB</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">cached</span> <span class="o">=</span> <span class="n">cached_store</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">max_content_size</span><span class="o">=</span><span class="mi">1_048_576</span><span class="p">)</span>
-</code></pre></div>
-<p>Files larger than the limit are still returned correctly -- they just
-bypass the cache.</p>
-<h2 id="cache-statistics">Cache Statistics<a class="headerlink" href="#cache-statistics" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">cached</span><span class="o">.</span><span class="n">stats</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hits: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">hits</span><span class="si">}</span><span class="s2">, Misses: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">misses</span><span class="si">}</span><span class="s2">, Size: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="manual-invalidation">Manual Invalidation<a class="headerlink" href="#manual-invalidation" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Invalidate a specific path</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">cached</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">&quot;config.json&quot;</span><span class="p">)</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Clear the entire cache</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">cached</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
-</code></pre></div>
-<h2 id="stale-data">Stale Data<a class="headerlink" href="#stale-data" title="Permanent link">&para;</a></h2>
-<p>The cache cannot detect writes made by other processes or other Store
-instances sharing the same backend. If your workload involves external
-mutations, either:</p>
-<ol>
-<li>Set a short TTL (e.g., <code>ttl=10</code>).</li>
-<li>Call <code>invalidate(path)</code> or <code>clear_cache()</code> when you know external
-   writes occurred.</li>
-</ol>
-<h2 id="composing-with-observability">Composing with Observability<a class="headerlink" href="#composing-with-observability" title="Permanent link">&para;</a></h2>
-<p><code>CachedStore</code> composes with <code>ObservedStore</code>. The ordering determines
-what gets observed:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">observe</span><span class="p">,</span> <span class="n">cached_store</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Observe only cache misses (actual backend calls)</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">cached</span> <span class="o">=</span> <span class="n">cached_store</span><span class="p">(</span><span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">on_read</span><span class="o">=</span><span class="n">my_hook</span><span class="p">),</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># Observe all reads including cache hits</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">cached_store</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">),</span> <span class="n">on_read</span><span class="o">=</span><span class="n">my_hook</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="thread-safety">Thread Safety<a class="headerlink" href="#thread-safety" title="Permanent link">&para;</a></h2>
-<p><code>CachedStore</code> and <code>MemoryCache</code> are thread-safe. They work correctly
-with <code>batch_exists(concurrent=True)</code> and similar concurrent access
-patterns.</p>
-<hr />
-<p><strong>See also:</strong>
-<a href="../api/ext-cache/">API reference</a> --
-<a href="https://github.com/haalfi/remote-store/blob/master/examples/caching.py">Example script</a></p>
 
 
 

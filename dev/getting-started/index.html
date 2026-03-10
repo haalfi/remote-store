@@ -1203,6 +1203,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Health Check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1778,6 +1806,34 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Health Check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -3588,6 +3644,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/026-health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    026: Health Check Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4903,6 +4987,10 @@ use a Registry with declarative config:</p>
 <td>Get backend's native handle (e.g., <code>pyarrow.fs.FileSystem</code>)</td>
 </tr>
 <tr>
+<td><code>ping()</code></td>
+<td>Verify backend connectivity (health check)</td>
+</tr>
+<tr>
 <td><code>close()</code></td>
 <td>Close the underlying backend</td>
 </tr>
@@ -5077,6 +5165,10 @@ use a Registry with declarative config:</p>
 <tr>
 <td><a href="https://github.com/haalfi/remote-store/blob/master/examples/otel_tracing.py">otel_tracing.py</a></td>
 <td>OpenTelemetry tracing and metrics bridge</td>
+</tr>
+<tr>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/examples/health_check.py">health_check.py</a></td>
+<td>Startup gate pattern with <code>Store.ping()</code></td>
 </tr>
 </tbody>
 </table>

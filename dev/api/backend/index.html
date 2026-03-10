@@ -1034,6 +1034,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Health Check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1609,6 +1637,34 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Health Check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2206,6 +2262,17 @@
     <span class="md-ellipsis">
       
         native_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Backend.check_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_health
       
     </span>
   </a>
@@ -3743,6 +3810,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/specs/026-health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    026: Health Check Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4921,6 +5016,17 @@
     <span class="md-ellipsis">
       
         native_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Backend.check_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_health
       
     </span>
   </a>
@@ -6859,6 +6965,70 @@ override this to prepend their prefix.</p>
               <div class="doc-md-description">
                 <p>Backend-native path usable with the native handle from
 <code>unwrap()</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.Backend.check_health" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">check_health</span><span class="p">()</span></code>
+
+<a href="#remote_store.Backend.check_health" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Verify the backend is reachable and credentials are valid.</p>
+<p>The default implementation is a no-op (always succeeds). Backends
+override this to perform a lightweight, non-destructive connectivity
+check using the cheapest possible read-only operation.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>PermissionDenied</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If credentials are invalid.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code>NotFound</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the bucket, container, or root path does not exist.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code>BackendUnavailable</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the backend cannot be reached.</p>
               </div>
             </td>
           </tr>
