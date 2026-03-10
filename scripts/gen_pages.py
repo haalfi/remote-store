@@ -175,7 +175,7 @@ contributing_text = _rewrite_links(
     {
         "](sdd/000-process.md)": "](design/process.md)",
         "](sdd/rfcs/rfc-template.md)": "](design/rfcs/rfc-template.md)",
-        "](sdd/DESIGN.md#11-code-style)": "](design/design-spec.md#11-code-style)",
+        "](sdd/DESIGN.md)": "](design/design-spec.md)",
         "](sdd/adrs/0008-extension-architecture.md)": "](design/adrs/0008-extension-architecture.md)",
     },
 )

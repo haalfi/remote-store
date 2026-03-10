@@ -1,49 +1,35 @@
-# SDD Process — How Specs Work in This Repo
+# SDD Process
 
-## Overview
+## Intent & Scope
 
-This repository follows **Spec-Driven Development (SDD)**: every feature, contract, and design decision is captured in a written specification *before* code is written. Specs are the single source of truth.
+Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC formats, backlog tiers, and test traceability. Governs all `sdd/` content.
 
-## Workflow
+## Rules
 
-```
+1. **No code without a spec**: every testable contract must have a spec section ID.
+2. **No spec without tests**: every spec section must have at least one test with `@pytest.mark.spec("ID")`.
+3. **Specs are authoritative**: if code and spec disagree, the code is wrong.
+4. **ADRs are immutable**: supersede, don't edit.
+5. **IDs are stable**: once assigned, a section ID never changes meaning. Deprecated sections are marked `[DEPRECATED]`, not removed.
+6. **Workflow**: every feature follows this pipeline:
+
+```text
 1. SPEC      → Write sdd/specs/NNN-<topic>.md defining contracts, invariants, error behavior
 2. TEST      → Write tests derived from the spec, each referencing its section ID
 3. IMPLEMENT → Write code to satisfy the tests (and thus the spec)
 4. VALIDATE  → Verify spec ↔ test ↔ code traceability
+5. DOCS      → Write or update examples, guides, docstrings, CHANGELOG
 ```
 
-## Directory Structure
+Operational items (CI config, docs, dependency pins) skip the spec step: tracked and closed directly in the backlog.
 
-```
-sdd/
-  000-process.md              # This file -- how specs work
-  BACKLOG.md                  # Tiered work tracker (blockers -> backlog -> ideas -> done)
-  DESIGN.md                   # Overall design document & conventions
-  DOCUMENTATION.md            # Documentation standards & Diataxis structure
-  specs/
-    NNN-<topic>.md            # Feature/contract specifications (numbered sequentially)
-  adrs/
-    NNNN-<short-title>.md     # Architecture Decision Records (immutable once accepted)
-  rfcs/
-    rfc-NNNN-<short-title>.md # Proposals (graduate to specs/ when accepted)
-    rfc-template.md           # Template for new proposals
-```
+## Guides
 
-Browse `sdd/specs/` for the full list of specifications. Each spec file
-covers one domain (e.g. Store API, backend contract, error model, a specific
-backend, or an extension).
+### Spec format
 
-## Spec Format
-
-Each spec uses numbered section IDs with a module prefix:
+Each spec uses numbered section IDs with a module prefix declared at the top of each file:
 
 ```markdown
-# <Topic> Specification
-
-## Overview
-One-paragraph purpose statement.
-
 ## <PREFIX>-NNN: <Rule Title>
 **Invariant:** <what must always be true>
 **Preconditions:** <what the caller must ensure>
@@ -53,18 +39,9 @@ One-paragraph purpose statement.
     <short code example>
 ```
 
-### ID Prefixes
+Each spec declares its prefix (e.g. `STORE`, `PATH`, `ERR`, `CACHE`). A test referencing `STORE-005` traces back to section 005 in the Store API spec.
 
-Each spec defines a short prefix for its section IDs (e.g. `STORE`, `PATH`,
-`ERR`, `S3`, `CACHE`). The prefix is declared at the top of each spec file.
-A test referencing `STORE-005` traces back to section 005 in the Store API spec.
-
-Browse `sdd/specs/` for all current prefixes -- each spec's header declares its
-prefix and the file name indicates the domain.
-
-## Test ↔ Spec Traceability
-
-Tests reference their spec section via a `pytest.mark.spec` marker:
+### Test traceability
 
 ```python
 @pytest.mark.spec("PATH-003")
@@ -74,78 +51,27 @@ def test_double_dot_rejected():
         RemotePath("foo/../bar")
 ```
 
-This enables:
-- `pytest -m "spec"` — run all spec-derived tests
-- Traceability audits — every spec section has tests, every test traces to a spec
-- Living documentation — specs + passing tests = proven contracts
+`pytest -m "spec"` runs all spec-derived tests.
 
-## ADRs (Architecture Decision Records)
+### Backlog tiers
 
-ADRs capture *why* a design decision was made. They are immutable once accepted — if a decision is reversed, a new ADR supersedes the old one.
-
-Format: `sdd/adrs/NNNN-<short-title>.md`
-
-See any existing ADR for the template structure.
-
-## RFCs (Requests for Comments)
-
-RFCs are proposals for new features or significant changes. They follow the spec-first contribution model:
-
-1. Open a PR with an RFC in `sdd/rfcs/`
-2. Community discusses and iterates
-3. If accepted, the RFC graduates to a spec in `sdd/specs/`
-4. The RFC file is kept for historical reference
-
-Format: `sdd/rfcs/rfc-NNNN-<short-title>.md` — see `rfc-template.md`.
-
-## Backlog
-
-All work — from half-formed ideas to ship-blocking tasks — is tracked in
-`sdd/BACKLOG.md`. Items live in one of four tiers and graduate upward as they
-are evaluated and prioritized:
-
-```
-Ideas  →  Backlog (Prioritized)  →  Release Blockers  →  Done
-```
+All work is tracked in `sdd/BACKLOG.md`:
 
 | Tier | Prefix | Meaning |
 |------|--------|---------|
 | **Release Blockers** | `BL-NNN` | Must be resolved before the next PyPI publish. |
 | **Backlog** | `BK-NNN` | Committed work, queued behind blockers. |
-| **Ideas** | `ID-NNN` | Parking lot — not evaluated, not committed to. |
-| **Done** | `DONE-NNN` | Completed items kept for reference. |
+| **Known Bugs** | `BUG-NNN` | Confirmed defects with reproduction steps. |
+| **Ideas** | `ID-NNN` | Parking lot: not evaluated, not committed to. |
+| **Done** | (original prefix) | Completed items kept for reference. |
 
-### How items move
+### ADRs, RFCs, research, and audits
 
-- Anyone can add an **Idea** at any time — just append to the Ideas section.
-- An Idea is promoted to **Backlog** when it has a clear scope and someone
-  commits to writing an RFC or spec for it.
-- A Backlog item becomes a **Release Blocker** when it is required for the
-  upcoming release (e.g. missing docs, broken extras, CI gaps).
-- Once completed, items move to **Done** with their original description
-  preserved.
+- **ADRs** (`sdd/adrs/NNNN-<short-title>.md`): capture *why* a design decision was made. Immutable once accepted: if reversed, a new ADR supersedes the old one.
+- **RFCs** (`sdd/rfcs/rfc-NNNN-<short-title>.md`): proposals for new features. If accepted, the RFC graduates to a spec in `sdd/specs/`. Kept for historical reference.
+- **Research** (`sdd/research/research-<topic>.md`): exploratory analysis done before a feature is specified. Not edited after the related feature ships.
+- **Audits** (`sdd/audits/audit-NNN-<topic>.md`): systematic reviews (adversarial, compliance, documentation). Findings tracked as backlog items.
 
-### Relationship to specs
+### Versioning
 
-Backlog items that involve code changes must still go through the SDD pipeline:
-the item tracks *what* needs doing; the RFC/spec tracks *how*.
-
-```
-BACKLOG.md (what)  →  rfcs/rfc-NNNN.md (proposal)  →  specs/NNN-*.md (contract)  →  tests  →  code
-```
-
-Operational items (CI config, branch protection, dependency pins) skip the
-RFC/spec step — they are tracked and closed directly in the backlog.
-
-## Versioning
-
-See [CONTRIBUTING.md § Versioning](../CONTRIBUTING.md#versioning) for the canonical
-versioning policy, bump rules, and tooling.
-
-## Rules
-
-1. **No code without a spec** — every testable contract must have a spec section ID.
-2. **No spec without tests** — every spec section must have at least one test with `@pytest.mark.spec("ID")`.
-3. **Specs are authoritative** — if code and spec disagree, the code is wrong.
-4. **ADRs are immutable** — supersede, don't edit.
-5. **IDs are stable** — once assigned, a section ID never changes meaning. Deprecated sections are marked `[DEPRECATED]`, not removed.
+See [CONTRIBUTING.md § Versioning](../CONTRIBUTING.md#versioning).

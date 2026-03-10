@@ -39,6 +39,11 @@ Active work items, ordered by priority.
 
 Started but not yet prioritized for completion.
 
+- [x] **ID-059 — Restructure authoritative docs to ADF standard**
+  Restructure SDD root-level and repo root-level docs to Authoritative Document
+  Format (Intent & Scope, Rules, Guides). Move audit files to `sdd/audits/`.
+  Trim DESIGN.md to code style only, condense DOCUMENTATION.md and 000-process.md.
+
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.
   - Done: `packaging/conda-forge/recipe.yaml`, `conda-recipe.yml` workflow,
@@ -190,9 +195,9 @@ All v1.0 release blockers were resolved across v0.3.0–v0.4.1.
 
 ### Audit findings (v0.6.0–v0.9.0, v0.13.0–v0.14.0, post-v0.15.0)
 
-From adversarial review of v0.5.0. Full report: `sdd/audit-001-adversarial-review.md`.
-Design-compliance audit of v0.13.0: `sdd/audit-002-design-compliance.md`.
-Documentation audit of v0.15.0: `sdd/audit-003-documentation.md`.
+From adversarial review of v0.5.0. Full report: `sdd/audits/audit-001-adversarial-review.md`.
+Design-compliance audit of v0.13.0: `sdd/audits/audit-002-design-compliance.md`.
+Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
 
 - [x] **AF-022 — 7 example scripts missing from docs-site nav** (post-v0.15.0)
   Created `docs-src/examples/*.md` wrappers and nav entries for `caching`,

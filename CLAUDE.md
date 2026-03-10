@@ -7,26 +7,30 @@ Spec-Driven Development (SDD).
 
 ## Principles
 
-1. **Ship complete** — a change is finished when everything it touches is consistent: code, tests, docs, CHANGELOG, BACKLOG. Track gaps as `[~]`. For releases, follow the full checklist in `CONTRIBUTING.md` § Release.
-2. **Verify beyond the diff** — search for what references the thing you changed. You MUST read `sdd/CLAUDE-REFERENCE.md` for the ripple-check table before committing changes that touch backends, errors, capabilities, versions, specs, or dependencies.
-3. **Repo describes reality at every commit** — docs, backlog, and CHANGELOG reflect current state, not future intent. Same commit, or mark `[~]`.
-4. **Specs are source of truth** — code vs spec conflict: code is wrong. Backlog vs history conflict: backlog is wrong. Fix the less authoritative side.
-5. **Run it, don't just type-check it** — verify behavior, not signatures. Reproduce bugs before claiming fixes. Test what matters, not just what type-checks.
-6. **Be critical, not agreeable** — challenge assumptions, question completeness, flag what's missing. Especially in reviews: a rubber-stamp is worse than no review. Ask what's untested, what could break, what's absent from the checklist.
+1. **Ship complete**: a change is finished when everything it touches is consistent: code, tests, docs, CHANGELOG, BACKLOG. Track gaps as `[~]`. For releases, follow the full checklist in `CONTRIBUTING.md` § Release.
+2. **Verify beyond the diff**: search for what references the thing you changed. You MUST read `sdd/CLAUDE-REFERENCE.md` for the ripple-check table before committing changes that touch backends, errors, capabilities, versions, specs, or dependencies.
+3. **Repo describes reality at every commit**: docs, backlog, and CHANGELOG reflect current state, not future intent. Same commit, or mark `[~]`.
+4. **Specs are source of truth**: code vs spec conflict: code is wrong. Backlog vs history conflict: backlog is wrong. Fix the less authoritative side.
+5. **Run it, don't just type-check it**: verify behavior, not signatures. Reproduce bugs before claiming fixes. Test what matters, not just what type-checks.
+6. **Be critical, not agreeable**: challenge assumptions, question completeness, flag what's missing. Especially in reviews: a rubber-stamp is worse than no review. Ask what's untested, what could break, what's absent from the checklist.
 
 ## Backlog (mandatory)
 
 - Read `sdd/BACKLOG.md` before starting. Note relevant item IDs (AF-NNN, BK-NNN, BL-NNN, ID-NNN).
-- After work: mark items `[x]` (with version) or `[~]` (with what remains). Same commit as the code change.
+- After work: mark items `[x]` (with version) or `[~]` (with what remains). Move completed items to the matching section under Done. Same commit as the code change.
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
 ## Dev commands
+
+All scripts are defined in `pyproject.toml` under `[tool.hatch.envs.default.scripts]`. Run `hatch run` to see available commands. Key ones:
 
 ```bash
 hatch run test              # pytest, 95% coverage required
 hatch run lint              # ruff check + format
 hatch run typecheck         # mypy strict on src/
-hatch run notebooks          # execute tutorial notebooks (no Jupyter needed)
+hatch run notebooks         # execute tutorial notebooks (no Jupyter needed)
+hatch run docs              # serve docs locally
+hatch run docs-build        # build docs (strict mode)
 hatch run all               # lint + format-check + typecheck + test-cov + examples + notebooks
 ```
 
@@ -40,6 +44,8 @@ hatch run all               # lint + format-check + typecheck + test-cov + examp
 
 ## Code conventions
 
+See `sdd/DESIGN.md` for the full code style rules. Key points:
+
 - Tests: `@pytest.mark.spec("ID")` for spec traceability.
 - New features require a spec in `sdd/specs/`. Ops changes (CI, docs) skip specs.
 - Run `hatch run lint` before committing.
@@ -49,12 +55,6 @@ hatch run all               # lint + format-check + typecheck + test-cov + examp
 The `gh` CLI is installed via a SessionStart hook (`.claude/setup-gh.sh`).
 It requires a `GITHUB_TOKEN` environment variable with PR read/write scope.
 
-> **Environment note:** These restrictions exist primarily for web/iOS sessions
-> (Code on Mobile, claude.ai) where Claude operates with less interactive
-> oversight. In the VS Code extension on your local machine, every tool call
-> requires your explicit approval, so the guardrails are enforced interactively.
-> The rules below apply to **both** environments for consistency.
-
 **Allowed operations** (only when the user explicitly asks):
 
 - `gh pr view` — read PR metadata
@@ -62,15 +62,12 @@ It requires a `GITHUB_TOKEN` environment variable with PR read/write scope.
 - `gh pr review` — submit a review with comments
 - `gh api` — post review comments on specific lines
 
-**Forbidden operations** (never do these):
-
-- Creating, closing, or merging PRs
-- Pushing code or creating branches via `gh`
-- Creating, closing, or commenting on issues
-- Any `gh` operation not listed above
-- Any `gh` operation without the user explicitly requesting it
+All other `gh` operations (creating/closing/merging PRs, pushing code, commenting on issues, etc.) require explicit user request. If you believe one would be beneficial, ask the user and wait for confirmation before proceeding.
 
 For lookup tables, detailed procedures, and repo layout see `sdd/CLAUDE-REFERENCE.md`.
 
-## Miscellaneous
 Ignore AGENTS.md; this file defines Claude Code behavior for this repo.
+
+---
+
+For document structure rules see `CONTRIBUTING.md` § Authoritative Document Format.
