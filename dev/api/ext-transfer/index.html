@@ -4832,12 +4832,12 @@
         <p>Transfer operations -- upload, download, and cross-store transfer.</p>
 <p>All functions stream data and never load full files into memory.
 An optional <code>on_progress</code> callback fires per chunk with the byte count.</p>
-<p>Usage::</p>
-<div class="highlight"><pre><span></span><code>from remote_store.ext.transfer import upload, download, transfer
-
-upload(store, &quot;local/file.txt&quot;, &quot;remote/key.txt&quot;, overwrite=True)
-download(store, &quot;remote/key.txt&quot;, &quot;local/file.txt&quot;, overwrite=True)
-transfer(src_store, &quot;src.txt&quot;, dst_store, &quot;dst.txt&quot;, overwrite=True)
+<p>Usage:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.transfer</span><span class="w"> </span><span class="kn">import</span> <span class="n">upload</span><span class="p">,</span> <span class="n">download</span><span class="p">,</span> <span class="n">transfer</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">upload</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;local/file.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;remote/key.txt&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">download</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;remote/key.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;local/file.txt&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">transfer</span><span class="p">(</span><span class="n">src_store</span><span class="p">,</span> <span class="s2">&quot;src.txt&quot;</span><span class="p">,</span> <span class="n">dst_store</span><span class="p">,</span> <span class="s2">&quot;dst.txt&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 
 

@@ -5603,8 +5603,8 @@ Call <code>.reveal()</code> to obtain the plain-text credential.</p>
 
         <p>Logging filter that replaces <code>Secret</code> instances in log record args with <code>'***'</code>.</p>
 <p>Attach to any handler or logger to prevent credential leakage through
-%-style formatting::</p>
-<div class="highlight"><pre><span></span><code>handler.addFilter(SecretRedactionFilter())
+%-style formatting:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">handler</span><span class="o">.</span><span class="n">addFilter</span><span class="p">(</span><span class="n">SecretRedactionFilter</span><span class="p">())</span>
 </code></pre></div>
 
 

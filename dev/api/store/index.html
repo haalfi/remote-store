@@ -5417,11 +5417,11 @@ success; raises on failure.</p>
             <td>
               <div class="doc-md-description">
                 <p>If the backend cannot be reached.</p>
-<p>Example::</p>
-<div class="highlight"><pre><span></span><code>try:
-    store.ping()
-except Exception as exc:
-    print(f&quot;Backend unreachable: {exc}&quot;)
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Backend unreachable: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
               </div>
             </td>
@@ -5542,9 +5542,9 @@ shared backend.</p>
               <div class="doc-md-description">
                 <p>If <em>subpath</em> is empty, contains <code>..</code>, or
     contains null bytes.</p>
-<p>Example::</p>
-<div class="highlight"><pre><span></span><code>child = store.child(&quot;2026/03&quot;)
-child.write(&quot;report.csv&quot;, data)  # writes to &quot;2026/03/report.csv&quot;
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">child</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;2026/03&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">child</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>  <span class="c1"># writes to &quot;2026/03/report.csv&quot;</span>
 </code></pre></div>
               </div>
             </td>
@@ -5957,9 +5957,9 @@ The result is usable with the native handle returned by <code>unwrap()</code>.</
             <td>
               <div class="doc-md-description">
                 <p><code>True</code> if a file or folder exists at <em>path</em>.</p>
-<p>Example::</p>
-<div class="highlight"><pre><span></span><code>if store.exists(&quot;data/report.csv&quot;):
-    data = store.read_bytes(&quot;data/report.csv&quot;)
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;data/report.csv&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;data/report.csv&quot;</span><span class="p">)</span>
 </code></pre></div>
               </div>
             </td>
@@ -6211,9 +6211,9 @@ The result is usable with the native handle returned by <code>unwrap()</code>.</
             <td>
               <div class="doc-md-description">
                 <p>If <code>path</code> is empty.</p>
-<p>Example::</p>
-<div class="highlight"><pre><span></span><code>with store.read(&quot;data/report.csv&quot;) as f:
-    content = f.read()
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;data/report.csv&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 </code></pre></div>
               </div>
             </td>
@@ -6320,8 +6320,8 @@ The result is usable with the native handle returned by <code>unwrap()</code>.</
             <td>
               <div class="doc-md-description">
                 <p>If <code>path</code> is empty.</p>
-<p>Example::</p>
-<div class="highlight"><pre><span></span><code>data = store.read_bytes(&quot;config.json&quot;)
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;config.json&quot;</span><span class="p">)</span>
 </code></pre></div>
               </div>
             </td>
@@ -6437,9 +6437,9 @@ The result is usable with the native handle returned by <code>unwrap()</code>.</
             <td>
               <div class="doc-md-description">
                 <p>If <code>path</code> is empty.</p>
-<p>Example::</p>
-<div class="highlight"><pre><span></span><code>store.write(&quot;greeting.txt&quot;, b&quot;hello world&quot;)
-store.write(&quot;greeting.txt&quot;, b&quot;updated&quot;, overwrite=True)
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;greeting.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;hello world&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;greeting.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;updated&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
               </div>
             </td>
@@ -6702,10 +6702,10 @@ artifact is removed and <em>path</em> is never modified.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <em>path</em> is empty.</p>
-<p>Example::</p>
-<div class="highlight"><pre><span></span><code>with store.open_atomic(&quot;output.csv&quot;, overwrite=True) as f:
-    f.write(b&quot;col1,col2\n&quot;)
-    f.write(b&quot;a,1\n&quot;)
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open_atomic</span><span class="p">(</span><span class="s2">&quot;output.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;col1,col2</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;a,1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
               </div>
             </td>
@@ -6805,9 +6805,9 @@ artifact is removed and <em>path</em> is never modified.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <code>path</code> is empty.</p>
-<p>Example::</p>
-<div class="highlight"><pre><span></span><code>store.delete(&quot;old-report.csv&quot;)
-store.delete(&quot;maybe-gone.csv&quot;, missing_ok=True)
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;old-report.csv&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;maybe-gone.csv&quot;</span><span class="p">,</span> <span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
               </div>
             </td>
@@ -7050,9 +7050,9 @@ backend.</p>
               <div class="doc-md-description">
                 <p>An iterator of <code>FileInfo</code> objects with store-relative
     paths.</p>
-<p>Example::</p>
-<div class="highlight"><pre><span></span><code>for info in store.list_files(&quot;data&quot;, recursive=True, pattern=&quot;*.csv&quot;):
-    print(info.name, info.size)
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;*.csv&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">info</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
 </code></pre></div>
               </div>
             </td>
@@ -7343,9 +7343,9 @@ backend-provided metadata.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <code>path</code> is empty.</p>
-<p>Example::</p>
-<div class="highlight"><pre><span></span><code>info = store.get_file_info(&quot;report.csv&quot;)
-print(info.size, info.modified_at)
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">info</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_file_info</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">info</span><span class="o">.</span><span class="n">modified_at</span><span class="p">)</span>
 </code></pre></div>
               </div>
             </td>
@@ -7573,8 +7573,8 @@ the source exists and returns without error.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <code>src</code> or <code>dst</code> is empty.</p>
-<p>Example::</p>
-<div class="highlight"><pre><span></span><code>store.move(&quot;draft.txt&quot;, &quot;final.txt&quot;)
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="s2">&quot;draft.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;final.txt&quot;</span><span class="p">)</span>
 </code></pre></div>
               </div>
             </td>

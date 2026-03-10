@@ -5846,11 +5846,11 @@
 </tr>
 <tr>
 <td>Coverage</td>
-<td>95%</td>
+<td>&gt;= 95% CI floor (actual in README badge)</td>
 </tr>
 <tr>
-<td>Calendar time</td>
-<td>~11 weeks of sessions</td>
+<td>Co-work sessions</td>
+<td>Spread across ~3.5 calendar weeks (since Feb 14)</td>
 </tr>
 <tr>
 <td>Commits</td>
@@ -6356,6 +6356,9 @@ prioritization scheme each session.</p>
 </li>
 <li>
 <p><strong>Audit findings are hypotheses, not facts -- verify before fixing.</strong> Our third audit (documentation quality) produced 19 findings. Blindly implementing them would have meant updating hardcoded counts that would go stale again, adding 40+ boilerplate docstrings that add zero information, and "fixing" three items that weren't defects at all. The real value came from treating each finding as a hypothesis and investigating the root cause: a stale count revealed a hand-maintained listing that should be structural; missing proxy docstrings revealed a mkdocstrings config gap (one line fix vs 40 boilerplate edits); private imports in guides revealed missing public re-exports. Three findings were closed as non-defects after verifying the code was already correct. <strong>Completeness (fix every finding) is not the same as correctness (fix the right thing). An audit tells you where to look, not what to do.</strong></p>
+</li>
+<li>
+<p><strong>Systematic pattern errors are invisible because they look intentional.</strong> Every docstring in the project used RST <code>Example::</code> literal blocks — the standard Python convention. They rendered without syntax highlighting in mkdocstrings, but because <em>every</em> docstring was wrong in the same way, it looked like a deliberate style choice. No linter, type checker, or test caught it — all operated on source, not rendered output. It took a human browsing the actual docs site to notice that code examples were plain monospace text instead of highlighted Python. The fix was mechanical (replace <code>Example::</code> + indented code with markdown fenced blocks across 13 files), but finding it required looking at what users see, not what CI checks. <strong>If a pattern is applied uniformly, review can't distinguish "consistently correct" from "consistently wrong." Only the rendered artifact reveals which one it is.</strong></p>
 </li>
 </ol>
 <h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>

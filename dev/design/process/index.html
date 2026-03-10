@@ -5032,30 +5032,21 @@
 </code></pre></div>
 <h2 id="directory-structure">Directory Structure<a class="headerlink" href="#directory-structure" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>sdd/
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  000-process.md              # This file — how specs work
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  BACKLOG.md                  # Tiered work tracker (blockers → backlog → ideas → done)
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  000-process.md              # This file -- how specs work
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  BACKLOG.md                  # Tiered work tracker (blockers -&gt; backlog -&gt; ideas -&gt; done)
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  DESIGN.md                   # Overall design document &amp; conventions
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  specs/
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    001-store-api.md          # Store API + metadata models
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    002-registry-config.md    # Registry lifecycle + configuration
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    003-backend-adapter-contract.md  # Backend ABC + capabilities
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    004-path-model.md         # RemotePath value object
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    005-error-model.md        # Error hierarchy
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    006-streaming-io.md       # Streaming I/O semantics
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    007-atomic-writes.md      # Atomic write contract
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    008-s3-backend.md         # S3 backend
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    009-sftp-backend.md       # SFTP backend
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    010-native-path-resolution.md  # Native path resolution
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    011-s3-pyarrow-backend.md # S3-PyArrow hybrid backend
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    012-azure-backend.md      # Azure backend (planned)
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>  adrs/
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    0001-*.md                 # Architecture Decision Records
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>  rfcs/
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    rfc-template.md           # Template for new proposals
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>guides/
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>  backends/                   # User-facing backend configuration guides
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>    index.md, local.md, s3.md, s3-pyarrow.md, sftp.md
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  DOCUMENTATION.md            # Documentation standards &amp; Diataxis structure
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>  specs/
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    NNN-&lt;topic&gt;.md            # Feature/contract specifications (numbered sequentially)
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>  adrs/
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    NNNN-&lt;short-title&gt;.md     # Architecture Decision Records (immutable once accepted)
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>  rfcs/
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    rfc-NNNN-&lt;short-title&gt;.md # Proposals (graduate to specs/ when accepted)
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    rfc-template.md           # Template for new proposals
 </code></pre></div>
+<p>Browse <code>sdd/specs/</code> for the full list of specifications. Each spec file
+covers one domain (e.g. Store API, backend contract, error model, a specific
+backend, or an extension).</p>
 <h2 id="spec-format">Spec Format<a class="headerlink" href="#spec-format" title="Permanent link">&para;</a></h2>
 <p>Each spec uses numbered section IDs with a module prefix:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="gh"># &lt;Topic&gt; Specification</span>
@@ -5072,82 +5063,11 @@
 <a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    &lt;short code example&gt;
 </code></pre></div>
 <h3 id="id-prefixes">ID Prefixes<a class="headerlink" href="#id-prefixes" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Prefix</th>
-<th>Module</th>
-<th>Spec File</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>STORE</code></td>
-<td>Store API</td>
-<td><code>001-store-api.md</code></td>
-</tr>
-<tr>
-<td><code>MOD</code></td>
-<td>Metadata models</td>
-<td><code>001-store-api.md</code></td>
-</tr>
-<tr>
-<td><code>REG</code></td>
-<td>Registry</td>
-<td><code>002-registry-config.md</code></td>
-</tr>
-<tr>
-<td><code>CFG</code></td>
-<td>Configuration</td>
-<td><code>002-registry-config.md</code></td>
-</tr>
-<tr>
-<td><code>BE</code></td>
-<td>Backend contract</td>
-<td><code>003-backend-adapter-contract.md</code></td>
-</tr>
-<tr>
-<td><code>CAP</code></td>
-<td>Capabilities</td>
-<td><code>003-backend-adapter-contract.md</code></td>
-</tr>
-<tr>
-<td><code>PATH</code></td>
-<td>RemotePath</td>
-<td><code>004-path-model.md</code></td>
-</tr>
-<tr>
-<td><code>ERR</code></td>
-<td>Errors</td>
-<td><code>005-error-model.md</code></td>
-</tr>
-<tr>
-<td><code>SIO</code></td>
-<td>Streaming I/O</td>
-<td><code>006-streaming-io.md</code></td>
-</tr>
-<tr>
-<td><code>AW</code></td>
-<td>Atomic writes</td>
-<td><code>007-atomic-writes.md</code></td>
-</tr>
-<tr>
-<td><code>S3</code></td>
-<td>S3 backend</td>
-<td><code>008-s3-backend.md</code></td>
-</tr>
-<tr>
-<td><code>SFTP</code></td>
-<td>SFTP backend</td>
-<td><code>009-sftp-backend.md</code></td>
-</tr>
-<tr>
-<td><code>NPR</code></td>
-<td>Native path resolution</td>
-<td><code>010-native-path-resolution.md</code></td>
-</tr>
-</tbody>
-</table>
+<p>Each spec defines a short prefix for its section IDs (e.g. <code>STORE</code>, <code>PATH</code>,
+<code>ERR</code>, <code>S3</code>, <code>CACHE</code>). The prefix is declared at the top of each spec file.
+A test referencing <code>STORE-005</code> traces back to section 005 in the Store API spec.</p>
+<p>Browse <code>sdd/specs/</code> for all current prefixes -- each spec's header declares its
+prefix and the file name indicates the domain.</p>
 <h2 id="test-spec-traceability">Test ↔ Spec Traceability<a class="headerlink" href="#test-spec-traceability" title="Permanent link">&para;</a></h2>
 <p>Tests reference their spec section via a <code>pytest.mark.spec</code> marker:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">&quot;PATH-003&quot;</span><span class="p">)</span>

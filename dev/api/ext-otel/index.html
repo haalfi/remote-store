@@ -4812,15 +4812,15 @@
 emit OpenTelemetry traces and metrics.  Depends only on <code>opentelemetry-api</code>
 (not the SDK); if no SDK is configured at runtime, all OTel calls become
 zero-cost no-ops.</p>
-<p>Usage::</p>
-<div class="highlight"><pre><span></span><code>from remote_store import observe
-from remote_store.ext.otel import otel_hooks
-
-store = observe(store, **otel_hooks())
+<p>Usage:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">observe</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="o">**</span><span class="n">otel_hooks</span><span class="p">())</span>
 </code></pre></div>
-<p>Or as a one-liner::</p>
-<div class="highlight"><pre><span></span><code>from remote_store.ext.otel import otel_observe
-observed = otel_observe(store)
+<p>Or as a one-liner:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_observe</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">otel_observe</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
 </code></pre></div>
 <p>Requires: <code>pip install "remote-store[otel]"</code></p>
 
@@ -4857,8 +4857,8 @@ observed = otel_observe(store)
 
         <p>Return hook kwargs for :func:<code>~remote_store.ext.observe.observe</code>.</p>
 <p>The returned dict contains an <code>around</code> context-manager hook (tracing)
-and an <code>on_any</code> callback (metrics).  Unpack it into <code>observe()</code>::</p>
-<div class="highlight"><pre><span></span><code>observed = observe(store, **otel_hooks())
+and an <code>on_any</code> callback (metrics).  Unpack it into <code>observe()</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="o">**</span><span class="n">otel_hooks</span><span class="p">())</span>
 </code></pre></div>
 
 

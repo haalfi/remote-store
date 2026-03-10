@@ -4809,11 +4809,11 @@
 
         <p>PyArrow FileSystem adapter — wraps any Store into a pyarrow.fs.PyFileSystem.</p>
 <p>Install with <code>pip install "remote-store[arrow]"</code>.</p>
-<p>Usage::</p>
-<div class="highlight"><pre><span></span><code>from remote_store.ext.arrow import pyarrow_fs
-
-fs = pyarrow_fs(store)
-pq.write_table(table, &quot;data.parquet&quot;, filesystem=fs)
+<p>Usage:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">fs</span> <span class="o">=</span> <span class="n">pyarrow_fs</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">pq</span><span class="o">.</span><span class="n">write_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="s2">&quot;data.parquet&quot;</span><span class="p">,</span> <span class="n">filesystem</span><span class="o">=</span><span class="n">fs</span><span class="p">)</span>
 </code></pre></div>
 
 
