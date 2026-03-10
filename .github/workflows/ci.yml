@@ -47,7 +47,7 @@ jobs:
         with:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@v6
-      - run: uv pip install -e ".[dev]"
+      - run: uv pip install --system -e ".[dev]"
       - run: ruff check src/ tests/ examples/
       - run: ruff format --check src/ tests/ examples/
 
@@ -64,7 +64,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v6
-      - run: uv pip install -e ".[dev]"
+      - run: uv pip install --system -e ".[dev]"
       - run: mypy src/
 
   test:
@@ -89,7 +89,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v6
-      - run: uv pip install -e ".[dev]"
+      - run: uv pip install --system -e ".[dev]"
       - run: pytest --cov=remote_store --cov-report=term-missing --cov-fail-under=95
 
   test-cross-platform:
@@ -105,7 +105,7 @@ jobs:
         with:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@v6
-      - run: uv pip install -e ".[dev]"
+      - run: uv pip install --system -e ".[dev]"
       - name: Run unit tests (no Docker services)
         run: pytest -m "not requires_docker" --ignore=tests/e2e
 
@@ -119,7 +119,7 @@ jobs:
         with:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@v6
-      - run: uv pip install -e ".[dev]"
+      - run: uv pip install --system -e ".[dev]"
       - run: python tests/scripts/run_notebooks.py
 
   examples:
@@ -132,7 +132,7 @@ jobs:
         with:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@v6
-      - run: uv pip install -e ".[dev,arrow]"
+      - run: uv pip install --system -e ".[dev,arrow]"
       - run: python examples/quickstart.py
       - run: python examples/file_operations.py
       - run: python examples/streaming_io.py
@@ -192,7 +192,7 @@ jobs:
         with:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@v6
-      - run: uv pip install -e ".[dev]"
+      - run: uv pip install --system -e ".[dev]"
       - run: pytest tests/e2e/ -v -o addopts=
 
   docs:
@@ -205,7 +205,7 @@ jobs:
         with:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@v6
-      - run: uv pip install -e ".[docs]"
+      - run: uv pip install --system -e ".[docs]"
       - run: mkdocs build --strict
 
   package:
@@ -218,10 +218,10 @@ jobs:
         with:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@v6
-      - run: uv pip install build twine
+      - run: uv pip install --system build twine
       - run: python -m build
       - run: twine check dist/*
-      - run: uv pip install dist/*.whl
+      - run: uv pip install --system dist/*.whl
       - run: python -c "import remote_store; print(remote_store.__version__)"
 
   gate:
