@@ -22,7 +22,7 @@ Sections 1 and 2 alone must be sufficient to understand the document's purpose a
 
 ### Scope
 
-Applies to all documents in `sdd/`. Does not apply to README, CHANGELOG, DEVELOPMENT_STORY, CLAUDE.md, or CONTRIBUTING.md (which follow their own conventional formats).
+Applies to root-level process documents in `sdd/` (000-process.md, DESIGN.md, DOCUMENTATION.md, CLAUDE-REFERENCE.md). Does not apply to specs, ADRs, RFCs, research, audits, BACKLOG.md, README, CHANGELOG, DEVELOPMENT_STORY, CLAUDE.md, or CONTRIBUTING.md (which follow their own formats).
 
 ### Cross-check
 
@@ -255,7 +255,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 - **New backend**: use `/add-backend` skill (12-step checklist) or see § Adding a New Backend above.
 - **New extension**: use § Adding an Extension above (12-step checklist).
-- **New Store method**: use `/ripple-check` skill — covers README API table, examples, specs, guides.
+- **New Store method**: use `/ripple-check` skill -- covers README API table, examples, specs, guides.
 - **Cross-reference validation**: use `/ripple-check` skill or the table in `sdd/CLAUDE-REFERENCE.md`.
 - **Pre-PR validation**: use `/pr-preflight` skill (11 checks).
 

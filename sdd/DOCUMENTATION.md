@@ -127,7 +127,7 @@ Each Diataxis category excludes specific content types. When a page accumulates 
 | Category | Must exclude |
 |---|---|
 | Tutorial | Exhaustive option lists, edge cases, design rationale |
-| How-To Guide | Design rationale, install steps, API signatures |
+| How-To Guide | Design rationale, conceptual background, exhaustive option tables |
 | Reference | Narrative explanation, step-by-step instructions |
 | Explanation | How-to instructions, API signatures, install steps |
 

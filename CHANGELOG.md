@@ -34,7 +34,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `sdd/DOCUMENTATION.md` condensed to rules + guides (~130 lines from ~456).
   `sdd/000-process.md` restructured to Intent/Rules/Guides (~75 lines from ~152).
   Audit files moved to `sdd/audits/`. `CONTRIBUTING.md` spec format section
-  replaced with cross-ref to `000-process.md`. `CLAUDE.md` environment note removed.
+  replaced with cross-ref to `000-process.md`. `CLAUDE.md` environment note removed,
+  gh CLI `Forbidden operations` denylist replaced with ask-gated confirmation.
 
 - **`from_yaml()` moved from `RegistryConfig` classmethod to `ext/yaml.py`** (ID-002)
   YAML config loading requires an optional dependency (`pyyaml` or `ruamel.yaml`),
