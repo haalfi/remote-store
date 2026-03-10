@@ -20,10 +20,21 @@ docs and optimizes its GitHub workflows. Findings applicable to `remote-store`.
 | **mkdocs-redirects** | `>=1.2.1` | URL redirects for moved pages |
 | **cairosvg + pillow** | latest | Social card image generation |
 
+### Additional Docs Dependencies
+
+| Tool | Purpose |
+|------|---------|
+| **markdown-include-variants** | `>=0.0.8` — include external files/code snippets |
+| **mdx-include** | `>=1.4.1` — extended markdown includes |
+| **black** | `>=25.1.0` — used by mkdocstrings to format signatures |
+| **jieba** | `>=0.42.1` — Chinese text segmentation for CJK search |
+| **python-slugify** | `>=0.8.0` — custom slug generation for header permalinks |
+| **typer** | `>=0.21.1` — CLI framework for `scripts/docs.py` |
+
 ### How the Color-Highlighted Type Annotations Work
 
 The beautiful API reference pages (e.g. `/reference/apirouter/`) are produced by
-a **three-layer system**:
+a **four-layer system**:
 
 #### Layer 1: Markdown Source (minimal)
 
@@ -132,6 +143,24 @@ markdown_extensions:
 Plus custom terminal animation CSS (`termynal.css`) for the interactive
 terminal demos on the landing page.
 
+### Custom JavaScript
+
+- **`termynal.js`** — animated terminal output on landing page
+- **`custom.js`** — external link detection (adds arrow icons), announcement
+  bar rotation
+- **`init_kapa_widget.js`** — AI-powered docs search widget (Kapa.ai)
+
+### MkDocs Lifecycle Hooks (`scripts/mkdocs_hooks.py`)
+
+Custom hooks plugged into MkDocs build lifecycle:
+
+- **`on_config`**: Sets Material theme language from docs directory name
+- **`on_files`**: Resolves missing translations by falling back to English
+  source (`EnFile` class)
+- **`on_nav`**: Renames navigation sections based on `index.md` page titles
+- **`on_page_markdown`**: Injects "missing translation" banners for
+  untranslated pages
+
 ---
 
 ## 2. Build Scripts & Process
@@ -140,12 +169,18 @@ terminal demos on the landing page.
 
 A Typer-based CLI that orchestrates multi-language doc builds:
 
-- `docs.py langs-json` — outputs available languages as JSON (used by CI matrix)
-- `docs.py build-lang <lang>` — builds docs for one language
-- `docs.py serve` — local dev server
-- Supports parallel multi-CPU builds locally
-- Generates Python 3.9/3.10 variant code examples using Ruff
-- Handles header permalinks and content management
+| Command | Purpose |
+|---------|---------|
+| `build-lang <lang>` | Build docs for one language via `mkdocs build` |
+| `build-all` | Build all languages in parallel (`multiprocessing.Pool`, 4x CPU cores) |
+| `live [lang]` | Live-reload dev server (`mkdocs serve` on port 8008) |
+| `serve` | Simple HTTP server to preview full multi-language build |
+| `langs-json` | Output language codes as JSON (used by CI matrix) |
+| `new-lang <lang>` | Scaffold a new translation directory |
+| `update-languages` | Update `mkdocs.yml` with all language alternatives |
+| `generate-readme` | Generate README.md from `docs/en/docs/index.md` |
+| `add-permalinks` | Add/update header permalink slugs in markdown |
+| `generate-docs-src-versions` | Auto-generate Python 3.9/3.10 code variants using Ruff |
 
 ### Build Chain
 
