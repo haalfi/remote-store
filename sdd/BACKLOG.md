@@ -81,6 +81,14 @@ Not evaluated, not committed to. Pick up when relevant.
   Each generated wrapper should also include links to relevant API reference
   pages at the bottom (e.g. caching example links to `ext.cache` reference).
 
+- [ ] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**
+  `list_files`, `list_folders`, and `iter_children` in S3Backend and
+  S3PyArrowBackend call `self._fs.exists()` before `self._fs.ls()`, adding
+  an extra API round-trip. The `FileNotFoundError` handler already covers
+  the non-existent path case. Removing the `exists()` check would halve
+  the API calls for listing operations. Low priority — consistent across
+  all S3 listing methods today.
+
 ---
 
 ## Done
