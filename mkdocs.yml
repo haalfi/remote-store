@@ -56,6 +56,10 @@ plugins:
             show_root_full_path: false
             show_if_no_docstring: false
             heading_level: 2
+            separate_signature: true
+            signature_crossrefs: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
 
 markdown_extensions:
   - admonition

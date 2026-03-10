@@ -7,6 +7,9 @@ on:
     types: [published]
   workflow_dispatch:
 
+env:
+  UV_SYSTEM_PYTHON: 1
+
 permissions:
   contents: write
 
@@ -25,7 +28,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install -e ".[docs]"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install -e ".[docs]"
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
@@ -42,7 +46,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install -e ".[docs]"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install -e ".[docs]"
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
