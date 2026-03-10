@@ -280,8 +280,6 @@ Documentation audit of v0.15.0. Full report: `sdd/audit-003-documentation.md`.
 - [x] **AF-021 — Add backlog ID to unlinked TODO in `ext/arrow.py`** (v0.14.0)
   Changed `# TODO(Phase 2):` to `# TODO(ID-037 Phase 2):`.
 
-Documentation audit of v0.15.0. Full report: `sdd/audit-003-documentation.md`.
-
 - [ ] **AF-022 — 7 example scripts missing from docs-site nav** (Critical)
   `caching.py`, `glob_pattern_matching.py`, `pyarrow_adapter.py`,
   `observe_hooks.py`, `otel_tracing.py`, `path_model.py`,
