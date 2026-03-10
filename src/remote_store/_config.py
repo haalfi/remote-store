@@ -89,9 +89,11 @@ class SecretRedactionFilter(logging.Filter):
     """Logging filter that replaces ``Secret`` instances in log record args with ``'***'``.
 
     Attach to any handler or logger to prevent credential leakage through
-    %-style formatting::
+    %-style formatting:
 
-        handler.addFilter(SecretRedactionFilter())
+    ```python
+    handler.addFilter(SecretRedactionFilter())
+    ```
     """
 
     def filter(self, record: logging.LogRecord) -> bool:

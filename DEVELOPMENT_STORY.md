@@ -12,8 +12,8 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Examples | 16 core + 4 cloud + 4 notebooks |
 | Extensions | 9 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.glob`, `ext.observe`, `ext.otel`, `ext.partition`, `ext.pydantic`, `ext.transfer`) |
 | Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
-| Coverage | 95% |
-| Calendar time | ~11 weeks of sessions |
+| Coverage | >= 95% CI floor (actual in README badge) |
+| Co-work sessions | Spread across ~3.5 calendar weeks (since Feb 14) |
 | Commits | ~315 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
@@ -555,6 +555,8 @@ prioritization scheme each session.
 16. **Adopt a documentation framework early.** We retrofitted the [Diataxis](https://diataxis.fr/) framework (tutorials, how-to guides, reference, explanation) onto an existing flat docs site. Every existing page needed reclassification, the navigation had to be rebuilt, and pages that mixed guide content with reference material had to be split. If we had adopted Diataxis from the start, content would have landed in the right category naturally. The lesson applies beyond Diataxis: any structural decision (code architecture, test organization, docs layout) is cheapest when made before content accumulates, and most expensive when retrofitted after hundreds of pages exist. We also learned that Sphinx RST cross-reference syntax (`:meth:`, `:class:`) does not render in mkdocstrings -- a subtle trap when writing docstrings with IDE autocompletion trained on Sphinx projects.
 
 17. **Audit findings are hypotheses, not facts -- verify before fixing.** Our third audit (documentation quality) produced 19 findings. Blindly implementing them would have meant updating hardcoded counts that would go stale again, adding 40+ boilerplate docstrings that add zero information, and "fixing" three items that weren't defects at all. The real value came from treating each finding as a hypothesis and investigating the root cause: a stale count revealed a hand-maintained listing that should be structural; missing proxy docstrings revealed a mkdocstrings config gap (one line fix vs 40 boilerplate edits); private imports in guides revealed missing public re-exports. Three findings were closed as non-defects after verifying the code was already correct. **Completeness (fix every finding) is not the same as correctness (fix the right thing). An audit tells you where to look, not what to do.**
+
+18. **Systematic pattern errors are invisible because they look intentional.** Every docstring in the project used RST `Example::` literal blocks — the standard Python convention. They rendered without syntax highlighting in mkdocstrings, but because *every* docstring was wrong in the same way, it looked like a deliberate style choice. No linter, type checker, or test caught it — all operated on source, not rendered output. It took a human browsing the actual docs site to notice that code examples were plain monospace text instead of highlighted Python. The fix was mechanical (replace `Example::` + indented code with markdown fenced blocks across 13 files), but finding it required looking at what users see, not what CI checks. **If a pattern is applied uniformly, review can't distinguish "consistently correct" from "consistently wrong." Only the rendered artifact reveals which one it is.**
 
 ## Reproducing This Workflow
 
