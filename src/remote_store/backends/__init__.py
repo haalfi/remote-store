@@ -20,9 +20,9 @@ except ImportError:  # pragma: no cover
     pass
 
 try:
-    from remote_store.backends._sftp import SFTPBackend
+    from remote_store.backends._sftp import SFTPBackend, SFTPUtils
 
-    __all__ = [*__all__, "SFTPBackend"]
+    __all__ = [*__all__, "SFTPBackend", "SFTPUtils"]
 except ImportError:  # pragma: no cover
     pass
 

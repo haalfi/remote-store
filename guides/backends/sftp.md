@@ -39,10 +39,9 @@ with Registry(config) as registry:
 ### Key-based authentication
 
 ```python
-from remote_store.backends import SFTPBackend
-from remote_store.backends._sftp import load_private_key
+from remote_store.backends import SFTPBackend, SFTPUtils
 
-pkey = load_private_key("/path/to/id_rsa", from_file=True)
+pkey = SFTPUtils.load_private_key("/path/to/id_rsa", from_file=True)
 
 backend = SFTPBackend(
     host="files.example.com",
@@ -54,7 +53,7 @@ backend = SFTPBackend(
 Or load a PEM string directly (useful for secrets managers like Azure Key Vault):
 
 ```python
-pkey = load_private_key(pem_string)
+pkey = SFTPUtils.load_private_key(pem_string)
 ```
 
 ## Options
@@ -92,7 +91,7 @@ Known host keys are resolved in order (first match wins):
 4. `host_keys_path` file on disk (default: `~/.ssh/known_hosts`)
 
 ```python
-from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
+from remote_store.backends import SFTPBackend, SFTPUtils
 
 # Development / testing
 backend = SFTPBackend(
@@ -100,7 +99,7 @@ backend = SFTPBackend(
     port=2222,
     username="test",
     password="test",
-    host_key_policy=HostKeyPolicy.AUTO_ADD,
+    host_key_policy=SFTPUtils.HostKeyPolicy.AUTO_ADD,
 )
 ```
 

@@ -6,7 +6,7 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
-## v0.15.0 to v0.16.0
+## v0.15.0 to next release (unreleased)
 
 **YAML config loader moved to extension:**
 

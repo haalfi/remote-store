@@ -85,6 +85,8 @@ All extensions follow the same contract (ADR-0008):
 - [Glob Pattern Matching](glob-pattern-matching.md)
 - [Transfer Operations](transfer-operations.md)
 - [Observability Hooks](observe.md) (includes Layer 3 OTel bridge)
+- [Caching](cache.md)
+- [Retry Policy](retry.md)
 
 ## Writing Your Own Extension
 

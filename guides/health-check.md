@@ -7,7 +7,7 @@ processing requests.
 
 ```python
 from remote_store import Store
-from remote_store.backends._local import LocalBackend
+from remote_store.backends import LocalBackend
 
 store = Store(LocalBackend(root="/data/inbox"))
 store.ping()  # raises on failure, silent on success
