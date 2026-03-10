@@ -52,10 +52,15 @@ def _azurite_reachable() -> bool:
 # Re-use the connection string from conftest
 from tests.backends.conftest import _AZURITE_CONN_STR  # noqa: E402
 
-_needs_azurite = pytest.mark.skipif(
-    not _azurite_reachable(),
-    reason="Azurite not reachable at 127.0.0.1:10000",
-)
+
+def _needs_azurite(func_or_class):  # type: ignore[no-untyped-def]
+    """Apply both requires_docker marker and Azurite-reachability skip."""
+    decorated = pytest.mark.requires_docker(func_or_class)
+    decorated = pytest.mark.skipif(
+        not _azurite_reachable(),
+        reason="Azurite not reachable at 127.0.0.1:10000",
+    )(decorated)
+    return decorated
 
 
 @pytest.fixture()

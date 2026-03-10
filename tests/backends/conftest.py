@@ -137,10 +137,13 @@ _sftp_param = pytest.param(
 
 _azure_param = pytest.param(
     "azure",
-    marks=pytest.mark.skipif(
-        not _azure_available() or not _azurite_reachable(),
-        reason="azure SDK not installed or Azurite not reachable",
-    ),
+    marks=[
+        pytest.mark.requires_docker,
+        pytest.mark.skipif(
+            not _azure_available() or not _azurite_reachable(),
+            reason="azure SDK not installed or Azurite not reachable",
+        ),
+    ],
 )
 
 
