@@ -5698,11 +5698,10 @@ errors.</p>
 <h2 id="consistency-checklists">Consistency Checklists<a class="headerlink" href="#consistency-checklists" title="Permanent link">&para;</a></h2>
 <p>Documentation, examples, and metadata live in many places. Use these to keep them in sync.</p>
 <ul>
-<li><strong>New backend</strong>: use <code>/add-backend</code> skill (12-step checklist) or see § Adding a New Backend above.</li>
-<li><strong>New extension</strong>: use § Adding an Extension above (12-step checklist).</li>
-<li><strong>New Store method</strong>: use <code>/ripple-check</code> skill -- covers README API table, examples, specs, guides.</li>
-<li><strong>Cross-reference validation</strong>: use <code>/ripple-check</code> skill or the table in <code>sdd/CLAUDE-REFERENCE.md</code>.</li>
-<li><strong>Pre-PR validation</strong>: use <code>/pr-preflight</code> skill (11 checks).</li>
+<li><strong>New backend</strong>: see § Adding a New Backend above.</li>
+<li><strong>New extension</strong>: see § Adding an Extension above (12-step checklist).</li>
+<li><strong>New Store method / cross-reference validation</strong>: see the ripple-check table in <code>sdd/CLAUDE-REFERENCE.md</code>.</li>
+<li><strong>Pre-PR validation</strong>: run <code>hatch run all</code>, verify CHANGELOG and BACKLOG are updated, then check the ripple-check table in <code>sdd/CLAUDE-REFERENCE.md</code>.</li>
 </ul>
 <h3 id="release">Release<a class="headerlink" href="#release" title="Permanent link">&para;</a></h3>
 <h4 id="phase-0-pre-flight">Phase 0: Pre-flight<a class="headerlink" href="#phase-0-pre-flight" title="Permanent link">&para;</a></h4>
