@@ -789,6 +789,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/capabilities-and-errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Capabilities & Errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/path-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Path Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/memory-backend/" class="md-nav__link">
         
   
@@ -993,6 +1049,146 @@
     
   
     Transfer Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/glob-pattern-matching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glob Pattern Matching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/caching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/observe-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observe Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/otel-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pyarrow-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PyArrow Adapter
   
 
     
@@ -4473,6 +4669,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4494,7 +4701,10 @@
 
 
 <h1 id="backends">Backends<a class="headerlink" href="#backends" title="Permanent link">&para;</a></h1>
-<p><code>remote-store</code> uses a pluggable backend system. Each backend implements the <code>Backend</code> abstract class and declares its capabilities.</p>
+<p><code>remote-store</code> uses a pluggable backend system. Each backend implements the
+<code>Backend</code> abstract class and declares its capabilities. Pick a backend based
+on where your files live, install the optional extra, and everything else
+stays the same -- the <code>Store</code> API is identical across all backends.</p>
 <h2 id="supported-backends">Supported Backends<a class="headerlink" href="#supported-backends" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -4546,7 +4756,13 @@
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">register_backend</span><span class="p">(</span><span class="s2">&quot;my-backend&quot;</span><span class="p">,</span> <span class="n">MyBackend</span><span class="p">)</span>
 </code></pre></div>
-<p>See the <code>Backend</code> class in <code>src/remote_store/_backend.py</code> for the full interface to implement.</p>
+<p>See the <code>Backend</code> class in <code>src/remote_store/_backend.py</code> for the full
+interface to implement.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../choosing-a-backend/">Choosing a Backend</a> -- decision guide with trade-offs</li>
+<li><a href="../capabilities-matrix/">Capabilities Matrix</a> -- full backend x capability table</li>
+</ul>
 
 
 

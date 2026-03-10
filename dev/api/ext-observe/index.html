@@ -789,6 +789,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../examples/capabilities-and-errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Capabilities & Errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/path-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Path Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../examples/memory-backend/" class="md-nav__link">
         
   
@@ -993,6 +1049,146 @@
     
   
     Transfer Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/glob-pattern-matching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glob Pattern Matching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/caching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/observe-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observe Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/otel-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pyarrow-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PyArrow Adapter
   
 
     
@@ -4954,7 +5150,11 @@ observed.write(&quot;key.txt&quot;, b&quot;hello&quot;)
 
 
         <p>Proxy Store that fires observation hooks on every public method.</p>
-<p>Do not construct directly -- use :func:<code>observe</code>.</p>
+<p>All <code>Store</code> methods are delegated to the inner store. Only methods
+with additional behavior (<code>ping</code>, <code>close</code>, <code>child</code>) are
+documented individually below; the remaining overrides add hook
+dispatch and are otherwise transparent.</p>
+<p>Do not construct directly -- use <code>observe()</code>.</p>
 
 
 
@@ -5379,7 +5579,7 @@ _correlation_id.reset(token)
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Fires after write/write_atomic.</p>
+                <p>Fires after write/write_atomic/open_atomic.</p>
               </div>
             </td>
             <td>

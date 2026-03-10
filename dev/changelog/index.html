@@ -789,6 +789,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/capabilities-and-errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Capabilities & Errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/path-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Path Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/memory-backend/" class="md-nav__link">
         
   
@@ -993,6 +1049,146 @@
     
   
     Transfer Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/glob-pattern-matching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glob Pattern Matching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/caching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/observe-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observe Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/otel-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pyarrow-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PyArrow Adapter
   
 
     
@@ -2507,6 +2703,17 @@
     <span class="md-ellipsis">
       
         Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs
       
     </span>
   </a>
@@ -5332,6 +5539,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6143,6 +6361,11 @@
   mode. Configurable via constructor (<code>retry=RetryPolicy(...)</code>) or dict config
   (<code>"retry": {"max_attempts": 5}</code>). ADR-0011, spec <code>025-retry-policy.md</code>.</p>
 </li>
+<li>
+<p><strong><code>SFTPUtils</code> utility class</strong> -- groups <code>load_private_key</code> and <code>HostKeyPolicy</code>
+  into a public re-export (<code>from remote_store.backends import SFTPUtils</code>).
+  Replaces private <code>backends._sftp</code> imports in user-facing code.</p>
+</li>
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>
@@ -6152,6 +6375,16 @@
   extension architecture (ADR-0008). Import changes:
   <code>from remote_store.ext.yaml import from_yaml</code> (or <code>from remote_store import from_yaml</code>
   when pyyaml is installed).</li>
+</ul>
+<h3 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Audit 003 fixes</strong> (AF-022 through AF-040) -- documentation quality audit
+  follow-up. 16 findings fixed, 3 closed as non-defects. Key changes:
+  7 missing example doc pages added, observe hook table completed (<code>on_ping</code>,
+  <code>open_atomic</code>), private imports replaced with public API in 4 guides,
+  <code>CacheBackend</code> protocol docstrings added, CONTRIBUTING.md spec listing
+  simplified (no longer goes stale), mkdocstrings <code>show_if_no_docstring: false</code>
+  for proxy class overrides.</li>
 </ul>
 <h2 id="0150-2026-03-08">[0.15.0] - 2026-03-08<a class="headerlink" href="#0150-2026-03-08" title="Permanent link">&para;</a></h2>
 <h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>

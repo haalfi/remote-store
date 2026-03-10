@@ -441,6 +441,14 @@
          <lastmod>2026-03-10</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/examples/caching/</loc>
+         <lastmod>2026-03-10</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/examples/capabilities-and-errors/</loc>
+         <lastmod>2026-03-10</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/examples/config-loaders/</loc>
          <lastmod>2026-03-10</lastmod>
     </url>
@@ -457,11 +465,31 @@
          <lastmod>2026-03-10</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/examples/glob-pattern-matching/</loc>
+         <lastmod>2026-03-10</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/examples/health-check/</loc>
          <lastmod>2026-03-10</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/memory-backend/</loc>
+         <lastmod>2026-03-10</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/examples/observe-hooks/</loc>
+         <lastmod>2026-03-10</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/examples/otel-tracing/</loc>
+         <lastmod>2026-03-10</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/examples/path-model/</loc>
+         <lastmod>2026-03-10</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/examples/pyarrow-adapter/</loc>
          <lastmod>2026-03-10</lastmod>
     </url>
     <url>
