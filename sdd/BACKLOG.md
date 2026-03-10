@@ -25,6 +25,14 @@ Active work items, ordered by priority.
   developers reach for this naturally. No format-specific readers (CSV,
   JSON, etc.) — those belong in application code, not the storage layer.
 
+### Infrastructure
+
+- [x] **ID-061 — Use uv for CI dependency installs** (post-v0.15.0)
+  Replace `pip install` with `uv pip install` in `ci.yml` and `publish.yml`.
+  uv is 10-100x faster at dependency resolution and installation, cutting
+  per-job install time from ~1-2 min to seconds (worst case: Windows at ~2 min).
+  Drop-in replacement -- no changes to dev workflow or dependency specs.
+
 ---
 
 ## Known Bugs

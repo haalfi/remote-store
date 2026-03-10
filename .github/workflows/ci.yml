@@ -46,7 +46,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install -e ".[dev]"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install -e ".[dev]"
       - run: ruff check src/ tests/ examples/
       - run: ruff format --check src/ tests/ examples/
 
@@ -62,7 +63,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -e ".[dev]"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install -e ".[dev]"
       - run: mypy src/
 
   test:
@@ -86,7 +88,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -e ".[dev]"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install -e ".[dev]"
       - run: pytest --cov=remote_store --cov-report=term-missing --cov-fail-under=95
 
   test-cross-platform:
@@ -101,7 +104,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install -e ".[dev]"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install -e ".[dev]"
       - name: Run unit tests (no Docker services)
         run: pytest -m "not requires_docker" --ignore=tests/e2e
 
@@ -114,7 +118,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install -e ".[dev]"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install -e ".[dev]"
       - run: python tests/scripts/run_notebooks.py
 
   examples:
@@ -126,7 +131,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install -e ".[dev,arrow]"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install -e ".[dev,arrow]"
       - run: python examples/quickstart.py
       - run: python examples/file_operations.py
       - run: python examples/streaming_io.py
@@ -185,7 +191,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install -e ".[dev]"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install -e ".[dev]"
       - run: pytest tests/e2e/ -v -o addopts=
 
   docs:
@@ -197,7 +204,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install -e ".[docs]"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install -e ".[docs]"
       - run: mkdocs build --strict
 
   package:
@@ -209,10 +217,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install build twine
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install build twine
       - run: python -m build
       - run: twine check dist/*
-      - run: pip install dist/*.whl
+      - run: uv pip install dist/*.whl
       - run: python -c "import remote_store; print(remote_store.__version__)"
 
   gate:
