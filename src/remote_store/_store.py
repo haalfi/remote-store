@@ -52,12 +52,14 @@ class Store:
         :raises NotFound: If the bucket, container, or root path does not exist.
         :raises BackendUnavailable: If the backend cannot be reached.
 
-        Example::
+        Example:
 
-            try:
-                store.ping()
-            except Exception as exc:
-                print(f"Backend unreachable: {exc}")
+        ```python
+        try:
+            store.ping()
+        except Exception as exc:
+            print(f"Backend unreachable: {exc}")
+        ```
         """
         _bk = self._backend.name
         log.debug("ping", extra={"op": "ping", "backend": _bk})
@@ -85,10 +87,12 @@ class Store:
         :raises InvalidPath: If *subpath* is empty, contains ``..``, or
             contains null bytes.
 
-        Example::
+        Example:
 
-            child = store.child("2026/03")
-            child.write("report.csv", data)  # writes to "2026/03/report.csv"
+        ```python
+        child = store.child("2026/03")
+        child.write("report.csv", data)  # writes to "2026/03/report.csv"
+        ```
         """
         validated = str(RemotePath(subpath))
         new_root = f"{self._root}/{validated}" if self._root else validated
@@ -145,10 +149,12 @@ class Store:
         :param path: Store-relative key, or ``""`` for the store root.
         :returns: ``True`` if a file or folder exists at *path*.
 
-        Example::
+        Example:
 
-            if store.exists("data/report.csv"):
-                data = store.read_bytes("data/report.csv")
+        ```python
+        if store.exists("data/report.csv"):
+            data = store.read_bytes("data/report.csv")
+        ```
         """
         log.debug("exists path=%r", path, extra={"op": "exists", "path": path, "backend": self._backend.name})
         return self._backend.exists(self._full_path(path))
@@ -181,10 +187,12 @@ class Store:
         :raises NotFound: If the file does not exist.
         :raises InvalidPath: If ``path`` is empty.
 
-        Example::
+        Example:
 
-            with store.read("data/report.csv") as f:
-                content = f.read()
+        ```python
+        with store.read("data/report.csv") as f:
+            content = f.read()
+        ```
         """
         log.debug("read path=%r", path, extra={"op": "read", "path": path, "backend": self._backend.name})
         self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
@@ -198,9 +206,11 @@ class Store:
         :raises NotFound: If the file does not exist.
         :raises InvalidPath: If ``path`` is empty.
 
-        Example::
+        Example:
 
-            data = store.read_bytes("config.json")
+        ```python
+        data = store.read_bytes("config.json")
+        ```
         """
         log.debug("read_bytes path=%r", path, extra={"op": "read_bytes", "path": path, "backend": self._backend.name})
         self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
@@ -215,10 +225,12 @@ class Store:
         :raises AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         :raises InvalidPath: If ``path`` is empty.
 
-        Example::
+        Example:
 
-            store.write("greeting.txt", b"hello world")
-            store.write("greeting.txt", b"updated", overwrite=True)
+        ```python
+        store.write("greeting.txt", b"hello world")
+        store.write("greeting.txt", b"updated", overwrite=True)
+        ```
         """
         _bk = self._backend.name
         log.debug("write path=%r overwrite=%r", path, overwrite, extra={"op": "write", "path": path, "backend": _bk})
@@ -266,11 +278,13 @@ class Store:
         :raises CapabilityNotSupported: If the backend lacks ``ATOMIC_WRITE``.
         :raises InvalidPath: If *path* is empty.
 
-        Example::
+        Example:
 
-            with store.open_atomic("output.csv", overwrite=True) as f:
-                f.write(b"col1,col2\\n")
-                f.write(b"a,1\\n")
+        ```python
+        with store.open_atomic("output.csv", overwrite=True) as f:
+            f.write(b"col1,col2\\n")
+            f.write(b"a,1\\n")
+        ```
         """
         _bk = self._backend.name
         log.debug(
@@ -296,10 +310,12 @@ class Store:
         :raises NotFound: If the file is missing and ``missing_ok`` is ``False``.
         :raises InvalidPath: If ``path`` is empty.
 
-        Example::
+        Example:
 
-            store.delete("old-report.csv")
-            store.delete("maybe-gone.csv", missing_ok=True)
+        ```python
+        store.delete("old-report.csv")
+        store.delete("maybe-gone.csv", missing_ok=True)
+        ```
         """
         _bk = self._backend.name
         log.debug(
@@ -350,10 +366,12 @@ class Store:
         :returns: An iterator of ``FileInfo`` objects with store-relative
             paths.
 
-        Example::
+        Example:
 
-            for info in store.list_files("data", recursive=True, pattern="*.csv"):
-                print(info.name, info.size)
+        ```python
+        for info in store.list_files("data", recursive=True, pattern="*.csv"):
+            print(info.name, info.size)
+        ```
         """
         _bk = self._backend.name
         log.debug(
@@ -413,10 +431,12 @@ class Store:
         :raises NotFound: If the file does not exist.
         :raises InvalidPath: If ``path`` is empty.
 
-        Example::
+        Example:
 
-            info = store.get_file_info("report.csv")
-            print(info.size, info.modified_at)
+        ```python
+        info = store.get_file_info("report.csv")
+        print(info.size, info.modified_at)
+        ```
         """
         _bk = self._backend.name
         log.debug("get_file_info path=%r", path, extra={"op": "get_file_info", "path": path, "backend": _bk})
@@ -451,9 +471,11 @@ class Store:
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         :raises InvalidPath: If ``src`` or ``dst`` is empty.
 
-        Example::
+        Example:
 
-            store.move("draft.txt", "final.txt")
+        ```python
+        store.move("draft.txt", "final.txt")
+        ```
         """
         _bk = self._backend.name
         log.debug(

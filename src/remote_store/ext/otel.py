@@ -5,17 +5,21 @@ emit OpenTelemetry traces and metrics.  Depends only on ``opentelemetry-api``
 (not the SDK); if no SDK is configured at runtime, all OTel calls become
 zero-cost no-ops.
 
-Usage::
+Usage:
 
-    from remote_store import observe
-    from remote_store.ext.otel import otel_hooks
+```python
+from remote_store import observe
+from remote_store.ext.otel import otel_hooks
 
-    store = observe(store, **otel_hooks())
+store = observe(store, **otel_hooks())
+```
 
-Or as a one-liner::
+Or as a one-liner:
 
-    from remote_store.ext.otel import otel_observe
-    observed = otel_observe(store)
+```python
+from remote_store.ext.otel import otel_observe
+observed = otel_observe(store)
+```
 
 Requires: ``pip install "remote-store[otel]"``
 """
@@ -59,9 +63,11 @@ def otel_hooks(
     """Return hook kwargs for :func:`~remote_store.ext.observe.observe`.
 
     The returned dict contains an ``around`` context-manager hook (tracing)
-    and an ``on_any`` callback (metrics).  Unpack it into ``observe()``::
+    and an ``on_any`` callback (metrics).  Unpack it into ``observe()``:
 
-        observed = observe(store, **otel_hooks())
+    ```python
+    observed = observe(store, **otel_hooks())
+    ```
 
     :param tracer_name: OTel tracer name (default ``"remote_store"``).
         Ignored when *tracer* is provided.

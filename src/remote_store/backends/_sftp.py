@@ -116,16 +116,18 @@ class SFTPUtils:
     - ``SFTPUtils.load_private_key(...)`` -- load RSA keys from file or PEM string
     - ``SFTPUtils.HostKeyPolicy`` -- enum controlling unknown host key behavior
 
-    Example::
+    Example:
 
-        from remote_store.backends import SFTPUtils, SFTPBackend
+    ```python
+    from remote_store.backends import SFTPUtils, SFTPBackend
 
-        key = SFTPUtils.load_private_key("~/.ssh/id_rsa", from_file=True)
-        backend = SFTPBackend(
-            host="sftp.example.com",
-            pkey=key,
-            host_key_policy=SFTPUtils.HostKeyPolicy.AUTO_ADD,
-        )
+    key = SFTPUtils.load_private_key("~/.ssh/id_rsa", from_file=True)
+    backend = SFTPBackend(
+        host="sftp.example.com",
+        pkey=key,
+        host_key_policy=SFTPUtils.HostKeyPolicy.AUTO_ADD,
+    )
+    ```
     """
 
     HostKeyPolicy = HostKeyPolicy
