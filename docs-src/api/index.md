@@ -64,3 +64,4 @@ Complete reference for all public exports of `remote-store`.
 | [ext.partition](ext-partition.md) | Hive-style partition path helpers |
 | [ext.pydantic](ext-pydantic.md) | Pydantic model to RegistryConfig adapter |
 | [ext.transfer](ext-transfer.md) | Upload, download, and cross-store transfer |
+| [ext.yaml](ext-yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |

@@ -58,6 +58,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Docs
 
+- **README API table audit** -- added missing `iter_children()` to Browse &
+  Inspect section, added 5 missing example scripts to Examples table
+  (`caching`, `config_loaders`, `capabilities_and_errors`, `path_model`,
+  `retry_policy`), added `ext.yaml` to Extensions table, updated method count
+  from 23 to 26 in comparison table, fixed stale PyArrow `native_path()`
+  limitation note. Added `ext-yaml.md` API reference page and nav entry.
+
 - **Audit 003 fixes** (AF-022 through AF-040) -- documentation quality audit
   follow-up. 16 findings fixed, 3 closed as non-defects. Key changes:
   7 missing example doc pages added, observe hook table completed (`on_ping`,
