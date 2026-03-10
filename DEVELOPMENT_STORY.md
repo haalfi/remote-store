@@ -14,7 +14,7 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
 | Coverage | >= 95% CI floor (actual in README badge) |
 | Co-work sessions | Spread across ~3.5 calendar weeks (since Feb 14) |
-| Commits | ~346 |
+| Commits | ~350 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
@@ -438,6 +438,12 @@ Four PRs (#170--#173) landed in a single day, each small but collectively shapin
 **Cross-platform as a first-class constraint.** The Win/macOS/Linux test matrix surfaced patterns that became project conventions: errno codes instead of string matching (German locale breaks English error messages), closing streams before `shutil.rmtree()` (Windows file locking), ASCII-only `print()` (cp1252 codec), and em-dash avoidance in Markdown titles (mojibake via MkDocs). These aren't edge cases -- they're the default experience for half the target audience.
 
 **Ripple-check strengthening** (#172). The CLAUDE-REFERENCE.md ripple-check table gained more specific verification targets: Store method changes now explicitly require README API table + method count updates, extension changes require docs nav + API reference pages. The README audit in the same PR caught 3 missing examples and a stale method count -- exactly the kind of drift the table is designed to prevent.
+
+### Phase 25: API Conveniences and Documentation Quality (v0.16.0)
+
+The v0.16.0 release bundled the post-v0.15.0 work into a cohesive minor release: new convenience APIs (`read_text()`, `iter_children()`, `ping()`), the `RetryPolicy` configuration surface, the YAML config loader move to `ext.yaml`, and a documentation quality audit (Audit 003) that fixed 16 findings across guides, docstrings, and examples. The `SFTPUtils` public utility class replaced private imports in user-facing code, and `from_yaml()` moved to the extension layer for consistency with the Pydantic adapter.
+
+The release also shipped colored type annotations in the docs site (mkdocstrings config), uv-based CI installs across all workflows, and cross-platform CI (Windows + macOS). The documentation audit reinforced Principle 17 from the lessons section: audit findings are hypotheses, not prescriptions. Three of the 19 findings were closed as non-defects after investigation.
 
 ## What Worked Well
 

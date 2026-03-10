@@ -39,7 +39,7 @@ from remote_store.ext.observe import (
 from remote_store.ext.partition import ParsedPartition, parse_partition, partition_path
 from remote_store.ext.transfer import download, transfer, upload
 
-__version__ = "0.15.0"
+__version__ = "0.16.0"
 
 logging.getLogger("remote_store").addHandler(logging.NullHandler())
 

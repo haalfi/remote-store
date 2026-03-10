@@ -6,7 +6,7 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
-## v0.15.0 to next release (unreleased)
+## v0.15.0 to v0.16.0
 
 **YAML config loader moved to extension:**
 
@@ -47,7 +47,7 @@ changes that require action when upgrading.
 
 ## General upgrade advice
 
-1. Pin to a specific minor version in production: `remote-store>=0.15,<0.16`.
+1. Pin to a specific minor version in production: `remote-store>=0.16,<0.17`.
 2. Read the [CHANGELOG](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
    for each version you skip.
 3. Run your test suite after upgrading -- the library has 95%+ coverage and
