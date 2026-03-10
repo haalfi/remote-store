@@ -82,8 +82,8 @@ Not evaluated, not committed to. Pick up when relevant.
   Extend `docs-src/scripts/gen_pages.py` to scan `examples/*.py`, extract
   the module docstring, and generate `docs-src/examples/<name>.md` wrappers
   automatically. Eliminates the class of "forgot to add a wrapper" bugs
-  (see AF-022). The existing API reference pages are already auto-generated
-  this way.
+  (see AF-022, health-check.md used wrong include pattern).
+  The existing API reference pages are already auto-generated this way.
 
 ---
 
