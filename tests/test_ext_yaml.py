@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 import pytest
@@ -74,7 +75,7 @@ class TestFromYaml:
         unknown_warns = [w for w in caught if "Unknown" in str(w.message)]
         assert len(unknown_warns) == 1
         # The warning should point at THIS file (the caller), not at _config.py
-        assert unknown_warns[0].filename == __file__
+        assert os.path.normcase(unknown_warns[0].filename) == os.path.normcase(__file__)
 
     @pytest.mark.spec("CFG-013")
     def test_from_yaml_equivalence_with_from_dict(self, tmp_path: Path) -> None:

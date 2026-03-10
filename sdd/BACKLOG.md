@@ -25,25 +25,11 @@ Active work items, ordered by priority.
   developers reach for this naturally. No format-specific readers (CSV,
   JSON, etc.) — those belong in application code, not the storage layer.
 
-### Infrastructure
-
-- [~] **ID-060 — Multi-platform CI (Linux, Windows, macOS)**
-  Run unit tests on Windows and macOS to catch OS-specific bugs (path handling,
-  file locking, encoding). Latest stable Python only, no Docker services.
-  - Done: `requires_docker` pytest marker, `test-cross-platform` CI job
-    (Windows + macOS, py3.13, `-m "not requires_docker"`), wired into gate.
-  - Remaining: validate first CI run, consider adding macOS to publish.yml
-    pre-release gate.
-
 ---
 
 ## Known Bugs
 
-- [ ] **BUG-002 — Windows drive letter case mismatch in `warnings` module**
-  `warnings.warn()` normalizes file paths to lowercase drive letter (`f:\`)
-  while `__file__` preserves the original case (`F:\`). Causes
-  `test_from_yaml_unknown_key_warning_stacklevel` to fail on Windows.
-  Fix: `os.path.normcase()` on the path comparison in the test assertion.
+*(none)*
 
 ---
 
@@ -381,6 +367,12 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
 
 ### Known bugs
 
+- [x] **BUG-002 — Windows drive letter case mismatch in `warnings` module** (post-v0.15.0)
+  `warnings.warn()` normalizes file paths to lowercase drive letter (`f:\`)
+  while `__file__` preserves the original case (`F:\`). Fixed with
+  `os.path.normcase()` on both sides of the comparison in
+  `test_from_yaml_unknown_key_warning_stacklevel`.
+
 - [x] **BUG-001 — `get_folder_info("")` fails for empty-root stores** (v0.13.0)
   Fixed via `RemotePath.ROOT` sentinel (bypasses `__init__` validation,
   `str(ROOT) == "."`). All 6 backends + `_rebase_folder_info` updated.
@@ -649,6 +641,11 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
   Listing numbers now reflect real I/O without fsspec caching bias.
 
 ### Post-v0.15.0 housekeeping
+
+- [x] **ID-060 — Multi-platform CI (Linux, Windows, macOS)** (post-v0.15.0)
+  `requires_docker` pytest marker, `test-cross-platform` CI job (Windows +
+  macOS, py3.13, `-m "not requires_docker"`), wired into gate. Fixed macOS
+  `/var` → `/private/var` symlink resolution in tempdir-based tests. PR #166.
 
 - [x] **ID-059 — Restructure authoritative docs to ADF standard** (post-v0.15.0)
   Restructure SDD root-level and repo root-level docs to Authoritative Document
