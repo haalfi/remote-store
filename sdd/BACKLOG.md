@@ -642,6 +642,12 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
 
 ### Post-v0.15.0 housekeeping
 
+- [x] **ID-061 — Use uv for CI dependency installs** (post-v0.15.0)
+  Replace `pip install` with `uv pip install` in `ci.yml` and `publish.yml`.
+  uv is 10-100x faster at dependency resolution and installation, cutting
+  per-job install time from ~1-2 min to seconds (worst case: Windows at ~2 min).
+  Drop-in replacement -- no changes to dev workflow or dependency specs.
+
 - [x] **ID-060 — Multi-platform CI (Linux, Windows, macOS)** (post-v0.15.0)
   `requires_docker` pytest marker, `test-cross-platform` CI job (Windows +
   macOS, py3.13, `-m "not requires_docker"`), wired into gate. Fixed macOS
