@@ -268,6 +268,9 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
   Created `SFTPUtils` utility class grouping `load_private_key` (staticmethod)
   and `HostKeyPolicy` (class attribute). Re-exported from `backends/__init__.py`.
   Guide imports updated to `from remote_store.backends import SFTPUtils`.
+  Follow-up: added `SFTPUtils` to API reference (`docs-src/api/sftp-utils.md`,
+  `_nav.yml`, `index.md`). Also filled missing `RetryPolicy`, `Secret`,
+  `SecretRedactionFilter` rows in `api/index.md`.
 
 - [x] **AF-038 — `CONTRIBUTING.md` stale counts** (post-v0.15.0)
   Root cause: hand-maintained spec file listing and hardcoded ADR/RFC counts

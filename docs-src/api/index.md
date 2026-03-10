@@ -10,6 +10,12 @@ Complete reference for all public exports of `remote-store`.
 | [Registry](registry.md) | Creates and manages backend instances and stores |
 | [Backend](backend.md) | Abstract base class for storage backends |
 
+## Backend Utilities
+
+| Class | Description |
+|-------|-------------|
+| [SFTPUtils](sftp-utils.md) | Key loading and host-key verification helpers for SFTP |
+
 ## Configuration
 
 | Class | Description |
@@ -17,6 +23,9 @@ Complete reference for all public exports of `remote-store`.
 | [RegistryConfig](config.md#remote_store.RegistryConfig) | Top-level configuration holding backends and stores |
 | [BackendConfig](config.md#remote_store.BackendConfig) | Configuration for a single backend |
 | [StoreProfile](config.md#remote_store.StoreProfile) | Configuration for a single store |
+| [RetryPolicy](config.md#remote_store.RetryPolicy) | Retry policy for backend operations |
+| [Secret](config.md#remote_store.Secret) | Sensitive string wrapper with masked repr |
+| [SecretRedactionFilter](config.md#remote_store.SecretRedactionFilter) | Logging filter that redacts secrets |
 
 ## Path & Models
 

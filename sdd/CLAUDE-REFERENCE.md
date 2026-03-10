@@ -37,7 +37,12 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | guides, CHANGELOG                                         |
 | **Public API** (`__all__`) | README Store API table, `docs-src/api/*.md` directive     |
 |                            | (every `__all__` symbol needs a `:::` entry),             |
-|                            | `examples/`, user guides                                  |
+|                            | `docs-src/api/index.md` summary table (every public       |
+|                            | class/function needs a row), `docs-src/api/_nav.yml`,     |
+|                            | `examples/`, user guides.                                 |
+|                            | **Check**: `backends/__init__.py` `__all__` too —         |
+|                            | secondary public API (e.g. `SFTPUtils`) needs its own     |
+|                            | `api/*.md` page and index entry                           |
 | **An extension**           | `__init__.py` exports (if pure Python),                   |
 |                            | `pyproject.toml` extras (if optional dep),                |
 |                            | README extensions table, `docs-src/api/ext-*.md` +        |
