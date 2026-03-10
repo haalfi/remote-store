@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-03-10
+
 ### Added
 
 - **`Store.read_text()` convenience method** (ID-056) -- reads a file and
