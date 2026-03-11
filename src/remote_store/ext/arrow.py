@@ -1,4 +1,4 @@
-"""PyArrow FileSystem adapter — wraps any Store into a pyarrow.fs.PyFileSystem.
+"""PyArrow FileSystem adapter — wraps any Store into a [pyarrow.fs.PyFileSystem](https://arrow.apache.org/docs/python/generated/pyarrow.fs.PyFileSystem.html).
 
 Install with ``pip install "remote-store[arrow]"``.
 
