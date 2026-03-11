@@ -15,6 +15,15 @@ Active work items, ordered by priority.
 
 *(none)*
 
+### Ops / CI
+
+- [ ] **ID-068 — Update `dorny/paths-filter` to Node.js 24-compatible version**
+  CI warning: `dorny/paths-filter@v3` runs on Node.js 20, which is deprecated.
+  GitHub Actions will force Node.js 24 as default starting 2026-06-02.
+  Check for a release of `dorny/paths-filter` that supports Node.js 24 and
+  update the pinned version in all workflow files that reference it.
+  Reference: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+
 ---
 
 ## Known Bugs
