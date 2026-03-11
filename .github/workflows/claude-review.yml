@@ -27,5 +27,4 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          direct_prompt: "/review-pr ${{ github.event.pull_request.number }}"
-          use_claude_md: true
+          prompt: "/review-pr ${{ github.event.pull_request.number }}"
