@@ -1,5 +1,10 @@
 # Async Store and Backend API Specification
 
+## Status
+
+Draft -- pending second research round to validate design against current
+sync API surface before implementation proceeds.
+
 ## Overview
 
 `AsyncBackend` and `AsyncStore` are the async equivalents of `Backend` ([003](003-backend-adapter-contract.md)) and `Store` ([001](001-store-api.md)). `SyncBackendAdapter` bridges sync backends into the async world via `asyncio.to_thread()`. This spec covers Phase 1 scope only — native async backends and async extensions are future specs. See [ADR-0012](../adrs/0012-async-store-backend-api.md) for design rationale.
