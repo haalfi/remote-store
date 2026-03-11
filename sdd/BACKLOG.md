@@ -45,9 +45,23 @@ Started but not yet prioritized for completion.
 
 - [~] **ID-013 — Async Store / Backend API**
   Async version of Store and Backend for async frameworks (FastAPI, aiohttp).
-  - Done: research complete (`sdd/research/research-async-store-api.md`).
-  - Remaining: ADR, spec, implementation (Phase 1: core async surface,
-    Phase 2: native async backends, Phase 3: async extensions).
+  - Done: research complete (`sdd/research/research-async-store-api.md`),
+    ADR-0012 draft (`sdd/adrs/0012-async-store-backend-api.md`),
+    spec 029 draft (`sdd/specs/029-async-store-backend-api.md`).
+  - Remaining:
+    - **Second research round** (required before implementation):
+      sync API has evolved significantly since initial research; async
+      would nearly double codebase, package surface, and docs; unclear
+      if target audience (citizen developers) benefits; unclear if
+      sync + async belong in the same package.
+    - Spec 029 amendments: add `SyncBackendAdapter` streaming write
+      conversion (materialize `AsyncIterator[bytes]` → `bytes`), add
+      `AsyncMemoryBackend` section (ASYNC-060..063), add explicit
+      `open_atomic` deferral note, add `check_health()` / `ping()`
+      async equivalents.
+    - Implementation Phase 1: core async surface.
+    - Implementation Phase 2: native async backends.
+    - Implementation Phase 3: async extensions.
 
 ### Parking Lot
 
