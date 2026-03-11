@@ -1,4 +1,4 @@
-"""OpenTelemetry bridge -- pre-built hooks emitting OTel spans and metrics.
+"""[OpenTelemetry](https://opentelemetry.io/) bridge -- pre-built hooks emitting OTel spans and metrics.
 
 Provides ready-made ``around`` and ``on_any`` hooks for :func:`observe` that
 emit OpenTelemetry traces and metrics.  Depends only on ``opentelemetry-api``

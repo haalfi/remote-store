@@ -705,6 +705,10 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
 
 ### Post-v0.15.0 housekeeping
 
+- [x] **ID-070 — Add third-party doc links in extension module docstrings** (post-v0.16.0)
+  Added hyperlinks to upstream docs for `pyarrow.fs.PyFileSystem` (ext.arrow),
+  OpenTelemetry (ext.otel), and pyyaml/ruamel.yaml (ext.yaml).
+
 - [x] **ID-069 — Automated Claude PR review workflow** (post-v0.16.0, reverted)
   Shipped `claude-review.yml` using `anthropics/claude-code-action@v1` with
   `/review-pr` skill. Findings: action runs Claude Code in a sandboxed
