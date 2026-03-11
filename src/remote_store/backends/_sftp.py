@@ -93,12 +93,9 @@ def _sanitize_pem(pem_content: str) -> str:
 def load_private_key(source: str, *, from_file: bool = False) -> Any:  # pragma: no cover
     """Load an RSA private key from a file path or a PEM string.
 
-    Args:
-        source: File path (if from_file=True) or PEM-encoded string.
-        from_file: If True, treat source as a file path.
-
-    Returns:
-        paramiko.RSAKey
+    :param source: File path (if ``from_file=True``) or PEM-encoded string.
+    :param from_file: If ``True``, treat *source* as a file path.
+    :returns: ``paramiko.RSAKey``
     """
     import paramiko
 
@@ -163,7 +160,8 @@ class SFTPBackend(Backend):
     :param password: SSH password.
     :param pkey: paramiko.PKey instance for key-based auth.
     :param base_path: Root path on the remote server (default: ``/``).
-    :param host_key_policy: Host key verification policy.
+    :param host_key_policy: Host key verification policy
+        (see ``SFTPUtils.HostKeyPolicy``). Accepts enum value or string.
     :param known_host_keys: Known hosts string (code-level override).
     :param host_keys_path: Path to known_hosts file (default: ``~/.ssh/known_hosts``).
     :param config: Optional config dict (may contain ``known_host_keys``).
