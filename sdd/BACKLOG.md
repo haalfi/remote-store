@@ -17,12 +17,7 @@ Active work items, ordered by priority.
 
 ### Ops / CI
 
-- [ ] **ID-068 — Update `dorny/paths-filter` to Node.js 24-compatible version**
-  CI warning: `dorny/paths-filter@v3` runs on Node.js 20, which is deprecated.
-  GitHub Actions will force Node.js 24 as default starting 2026-06-02.
-  Check for a release of `dorny/paths-filter` that supports Node.js 24 and
-  update the pinned version in all workflow files that reference it.
-  Reference: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+*(none)*
 
 ---
 
@@ -709,6 +704,13 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
   Listing numbers now reflect real I/O without fsspec caching bias.
 
 ### Post-v0.15.0 housekeeping
+
+- [x] **ID-068 — Replace `dorny/paths-filter` with bash path filtering** (post-v0.15.0)
+  `dorny/paths-filter@v3` runs on Node.js 20 (deprecated on GitHub Actions from
+  2026-06-02; PR #294 updating to Node 24 was still open at fix time). Replaced
+  the action in `ci.yml` with a native bash step using `git diff`/`git ls-files`
+  and `grep -E` — no third-party action runtime required. Added `fetch-depth: 0`
+  to the `changes` job checkout for full history access.
 
 - [x] **ID-065 -- Use uv in docs deployment workflow** (post-v0.15.0)
   Switched `docs.yml` from `pip install` to `astral-sh/setup-uv@v6` + `uv pip install`

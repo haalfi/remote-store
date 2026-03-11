@@ -19,26 +19,24 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
-        id: filter
         with:
-          filters: |
-            code:
-              - 'src/**'
-              - 'tests/**'
-              - 'examples/**'
-              - 'pyproject.toml'
-              - '.github/workflows/ci.yml'
-            docs:
-              - 'docs-src/**'
-              - 'guides/**'
-              - 'mkdocs.yml'
-              - 'README.md'
-              - 'CHANGELOG.md'
-              - 'sdd/specs/**'
-              - 'sdd/adrs/**'
-              - 'sdd/rfcs/**'
-              - '.github/workflows/ci.yml'
+          fetch-depth: 0
+      - name: Detect changed files
+        id: filter
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FILES=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")
+          elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ] || [ -z "${{ github.event.before }}" ]; then
+            FILES=$(git ls-files)
+          else
+            FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
+          fi
+          CODE_PAT='^(src|tests|examples)/|^pyproject\.toml$|^\.github/workflows/ci\.yml$'
+          DOCS_PAT='^(docs-src|guides)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/(specs|adrs|rfcs)/|^\.github/workflows/ci\.yml$'
+          if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
+          else echo "code=false" >> "$GITHUB_OUTPUT"; fi
+          if echo "$FILES" | grep -qE "$DOCS_PAT"; then echo "docs=true" >> "$GITHUB_OUTPUT"
+          else echo "docs=false" >> "$GITHUB_OUTPUT"; fi
 
   lint:
     needs: [changes]
