@@ -2190,6 +2190,34 @@
   
   
     <li class="md-nav__item">
+      <a href="sftp-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTPUtils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="config/" class="md-nav__link">
         
   
@@ -4771,6 +4799,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#backend-utilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend Utilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4881,6 +4920,21 @@
 </tr>
 </tbody>
 </table>
+<h2 id="backend-utilities">Backend Utilities<a class="headerlink" href="#backend-utilities" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="sftp-utils/">SFTPUtils</a></td>
+<td>Key loading and host-key verification helpers for SFTP</td>
+</tr>
+</tbody>
+</table>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -4901,6 +4955,18 @@
 <tr>
 <td><a href="config/#remote_store.StoreProfile">StoreProfile</a></td>
 <td>Configuration for a single store</td>
+</tr>
+<tr>
+<td><a href="config/#remote_store.RetryPolicy">RetryPolicy</a></td>
+<td>Retry policy for backend operations</td>
+</tr>
+<tr>
+<td><a href="config/#remote_store.Secret">Secret</a></td>
+<td>Sensitive string wrapper with masked repr</td>
+</tr>
+<tr>
+<td><a href="config/#remote_store.SecretRedactionFilter">SecretRedactionFilter</a></td>
+<td>Logging filter that redacts secrets</td>
 </tr>
 </tbody>
 </table>
@@ -4982,6 +5048,10 @@
 <tr>
 <td><a href="errors/#remote_store.BackendUnavailable">BackendUnavailable</a></td>
 <td>Backend could not be reached</td>
+</tr>
+<tr>
+<td><a href="errors/#remote_store.DirectoryNotEmpty">DirectoryNotEmpty</a></td>
+<td>Non-recursive delete on non-empty folder</td>
 </tr>
 </tbody>
 </table>
