@@ -32,7 +32,7 @@ jobs:
             FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
           fi
           CODE_PAT='^(src|tests|examples)/|^pyproject\.toml$|^\.github/workflows/ci\.yml$'
-          DOCS_PAT='^(docs-src|guides)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/(specs|adrs|rfcs)/|^\.github/workflows/ci\.yml$'
+          DOCS_PAT='^(docs-src|src|guides)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/(specs|adrs|rfcs)/|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
           if echo "$FILES" | grep -qE "$DOCS_PAT"; then echo "docs=true" >> "$GITHUB_OUTPUT"
