@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/009-sftp-backend/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/029-async-store-backend-api/">
       
       
-        <link rel="prev" href="../008-s3-backend/">
+        <link rel="prev" href="../028-read-text/">
       
       
-        <link rel="next" href="../010-native-path-resolution/">
+        <link rel="next" href="../../adrs/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>009: SFTP Backend Specification - remote-store</title>
+        <title>029: Async Store and Backend API Specification - remote-store</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#sftp-backend-specification" class="md-skip">
+        <a href="#async-store-and-backend-api-specification" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              009: SFTP Backend Specification
+              029: Async Store and Backend API Specification
             
           </span>
         </div>
@@ -3264,37 +3264,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    009: SFTP Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -3310,436 +3283,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Construction
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Construction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-001-constructor-parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-001: Constructor Parameters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-002-backend-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-004-lazy-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-005: Construction Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Connection
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Connection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-006-hostkeypolicy-enum" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-006: HostKeyPolicy Enum
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-007-host-key-resolution-chain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-007: Host Key Resolution Chain
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-008-pem-key-sanitization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-008: PEM Key Sanitization
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-009-tenacity-retry-on-connect" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-009: Tenacity Retry on Connect
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-010-staleness-detection-and-reconnect" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-010: Staleness Detection and Reconnect
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#filesystem-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Filesystem Model
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Filesystem Model">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-011-real-directories" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-011: Real Directories
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-012-write-creates-intermediate-directories" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-012: Write Creates Intermediate Directories
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-013-empty-folders-persist" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-013: Empty Folders Persist
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-014-atomic-write-simulated" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-014: Atomic Write (Simulated)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-015-atomic-write-overwrite-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-015: Atomic Write Overwrite Semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-016-delete_folder-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-016: delete_folder Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-017-delete_folder-non-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-017: delete_folder Non-Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-018-move-via-posix_rename" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-018: Move Via posix_rename
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-019-copy-via-read-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-019: Copy Via Read + Write
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-020-notfound-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-020: NotFound Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-021-permissiondenied-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-021: PermissionDenied Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-022-alreadyexists-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-022: AlreadyExists Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-023-backendunavailable-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-023: BackendUnavailable Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-024-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-024: No Native Exception Leakage
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resource Management
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Resource Management">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-025-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-025: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-026-unwrapsftpclient" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-026: unwrap(SFTPClient)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-027-idempotent-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-027: Idempotent Close
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4281,10 +3824,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../029-async-store-backend-api/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    029: Async Store and Backend API Specification
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4300,6 +3870,682 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asyncbackend-abc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncBackend ABC
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AsyncBackend ABC">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#async-001-abstract-base-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-001: Abstract Base Class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-002-name-property" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-002: Name Property
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-003-capabilities-property" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-003: Capabilities Property
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-004-exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-004: exists()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-005-is_file-is_folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-005: is_file() / is_folder()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-006-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-006: read()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-007-read_bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-007: read_bytes()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-008-write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-008: write()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-009-write-creates-intermediate-directories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-009: write Creates Intermediate Directories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-010-write_atomic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-010: write_atomic()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-011-write_atomic-capability-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-011: write_atomic Capability Gate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-012-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-012: delete()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-013-delete_folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-013: delete_folder()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-014-list_files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-014: list_files()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-015-list_folders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-015: list_folders()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-016-get_file_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-016: get_file_info()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-017-get_folder_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-017: get_folder_info()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-018-move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-018: move()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-019-copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-019: copy()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-020-async-streaming-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-020: Async Streaming Reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-021-async-writable-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-021: Async Writable Content
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-022-aclose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-022: aclose()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-023-async-context-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-023: Async Context Manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-024-error-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-024: Error Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-025-unwrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-025: unwrap()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-026-to_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-026: to_key()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-027-native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-027: native_path()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-028-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-028: glob()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-029-iter_children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-029: iter_children()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#syncbackendadapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SyncBackendAdapter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SyncBackendAdapter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#async-030-adapter-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-030: Adapter Construction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-031-thread-delegation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-031: Thread Delegation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-032-iterator-materialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-032: Iterator Materialization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-033-streaming-read-bridging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-033: Streaming Read Bridging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-034-property-passthrough" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-034: Property Passthrough
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-035-aclose-delegation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-035: aclose() Delegation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asyncstore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncStore
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AsyncStore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#async-040-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-040: Construction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-041-path-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-041: Path Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-042-root-path-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-042: Root Path Scoping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-043-delegation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-043: Delegation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-044-capability-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-044: Capability Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-045-capability-gating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-045: Capability Gating
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-046-full-api-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-046: Full API Surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-047-same-path-move-and-copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-047: Same-Path Move and Copy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-048-resource-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-048: Resource Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-049-equality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-049: Equality
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-050-to_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-050: to_key()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-051-native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-051: native_path()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-052-list_filespattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-052: list_files(pattern=)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-053-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-053: glob()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-054-child" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-054: child()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-055-concurrency-safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-055: Concurrency Safety
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-056-no-new-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-056: No New Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deferred-out-of-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deferred (out of scope)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -5303,6 +5549,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5314,22 +5571,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
+  <a href="#asyncbackend-abc" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Construction
+        AsyncBackend ABC
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Construction">
+    <nav class="md-nav" aria-label="AsyncBackend ABC">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sftp-001-constructor-parameters" class="md-nav__link">
+  <a href="#async-001-abstract-base-class" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-001: Constructor Parameters
+        ASYNC-001: Abstract Base Class
       
     </span>
   </a>
@@ -5337,10 +5594,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-002-backend-name" class="md-nav__link">
+  <a href="#async-002-name-property" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-002: Backend Name
+        ASYNC-002: Name Property
       
     </span>
   </a>
@@ -5348,10 +5605,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-003-capability-declaration" class="md-nav__link">
+  <a href="#async-003-capabilities-property" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-003: Capability Declaration
+        ASYNC-003: Capabilities Property
       
     </span>
   </a>
@@ -5359,10 +5616,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-004-lazy-connection" class="md-nav__link">
+  <a href="#async-004-exists" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-004: Lazy Connection
+        ASYNC-004: exists()
       
     </span>
   </a>
@@ -5370,10 +5627,274 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-005-construction-validation" class="md-nav__link">
+  <a href="#async-005-is_file-is_folder" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-005: Construction Validation
+        ASYNC-005: is_file() / is_folder()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-006-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-006: read()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-007-read_bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-007: read_bytes()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-008-write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-008: write()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-009-write-creates-intermediate-directories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-009: write Creates Intermediate Directories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-010-write_atomic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-010: write_atomic()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-011-write_atomic-capability-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-011: write_atomic Capability Gate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-012-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-012: delete()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-013-delete_folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-013: delete_folder()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-014-list_files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-014: list_files()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-015-list_folders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-015: list_folders()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-016-get_file_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-016: get_file_info()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-017-get_folder_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-017: get_folder_info()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-018-move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-018: move()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-019-copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-019: copy()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-020-async-streaming-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-020: Async Streaming Reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-021-async-writable-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-021: Async Writable Content
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-022-aclose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-022: aclose()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-023-async-context-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-023: Async Context Manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-024-error-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-024: Error Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-025-unwrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-025: unwrap()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-026-to_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-026: to_key()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-027-native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-027: native_path()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-028-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-028: glob()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-029-iter_children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-029: iter_children()
       
     </span>
   </a>
@@ -5386,22 +5907,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#connection" class="md-nav__link">
+  <a href="#syncbackendadapter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Connection
+        SyncBackendAdapter
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Connection">
+    <nav class="md-nav" aria-label="SyncBackendAdapter">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sftp-006-hostkeypolicy-enum" class="md-nav__link">
+  <a href="#async-030-adapter-construction" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-006: HostKeyPolicy Enum
+        ASYNC-030: Adapter Construction
       
     </span>
   </a>
@@ -5409,10 +5930,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-007-host-key-resolution-chain" class="md-nav__link">
+  <a href="#async-031-thread-delegation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-007: Host Key Resolution Chain
+        ASYNC-031: Thread Delegation
       
     </span>
   </a>
@@ -5420,10 +5941,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-008-pem-key-sanitization" class="md-nav__link">
+  <a href="#async-032-iterator-materialization" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-008: PEM Key Sanitization
+        ASYNC-032: Iterator Materialization
       
     </span>
   </a>
@@ -5431,10 +5952,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-009-tenacity-retry-on-connect" class="md-nav__link">
+  <a href="#async-033-streaming-read-bridging" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-009: Tenacity Retry on Connect
+        ASYNC-033: Streaming Read Bridging
       
     </span>
   </a>
@@ -5442,10 +5963,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-010-staleness-detection-and-reconnect" class="md-nav__link">
+  <a href="#async-034-property-passthrough" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-010: Staleness Detection and Reconnect
+        ASYNC-034: Property Passthrough
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-035-aclose-delegation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-035: aclose() Delegation
       
     </span>
   </a>
@@ -5458,22 +5990,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#filesystem-model" class="md-nav__link">
+  <a href="#asyncstore" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Filesystem Model
+        AsyncStore
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Filesystem Model">
+    <nav class="md-nav" aria-label="AsyncStore">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sftp-011-real-directories" class="md-nav__link">
+  <a href="#async-040-construction" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-011: Real Directories
+        ASYNC-040: Construction
       
     </span>
   </a>
@@ -5481,10 +6013,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-012-write-creates-intermediate-directories" class="md-nav__link">
+  <a href="#async-041-path-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-012: Write Creates Intermediate Directories
+        ASYNC-041: Path Validation
       
     </span>
   </a>
@@ -5492,10 +6024,164 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sftp-013-empty-folders-persist" class="md-nav__link">
+  <a href="#async-042-root-path-scoping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP-013: Empty Folders Persist
+        ASYNC-042: Root Path Scoping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-043-delegation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-043: Delegation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-044-capability-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-044: Capability Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-045-capability-gating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-045: Capability Gating
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-046-full-api-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-046: Full API Surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-047-same-path-move-and-copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-047: Same-Path Move and Copy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-048-resource-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-048: Resource Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-049-equality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-049: Equality
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-050-to_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-050: to_key()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-051-native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-051: native_path()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-052-list_filespattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-052: list_files(pattern=)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-053-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-053: glob()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-054-child" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-054: child()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-055-concurrency-safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-055: Concurrency Safety
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-056-no-new-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-056: No New Dependencies
       
     </span>
   </a>
@@ -5508,207 +6194,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
+  <a href="#deferred-out-of-scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operations
+        Deferred (out of scope)
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-014-atomic-write-simulated" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-014: Atomic Write (Simulated)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-015-atomic-write-overwrite-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-015: Atomic Write Overwrite Semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-016-delete_folder-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-016: delete_folder Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-017-delete_folder-non-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-017: delete_folder Non-Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-018-move-via-posix_rename" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-018: Move Via posix_rename
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-019-copy-via-read-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-019: Copy Via Read + Write
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-020-notfound-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-020: NotFound Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-021-permissiondenied-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-021: PermissionDenied Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-022-alreadyexists-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-022: AlreadyExists Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-023-backendunavailable-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-023: BackendUnavailable Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-024-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-024: No Native Exception Leakage
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resource Management
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Resource Management">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp-025-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-025: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-026-unwrapsftpclient" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-026: unwrap(SFTPClient)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sftp-027-idempotent-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP-027: Idempotent Close
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5729,176 +6221,190 @@
 
 
 
-<h1 id="sftp-backend-specification">SFTP Backend Specification<a class="headerlink" href="#sftp-backend-specification" title="Permanent link">&para;</a></h1>
+<h1 id="async-store-and-backend-api-specification">Async Store and Backend API Specification<a class="headerlink" href="#async-store-and-backend-api-specification" title="Permanent link">&para;</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
+<p>Draft -- pending second research round to validate design against current
+sync API surface before implementation proceeds.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>SFTPBackend</code> implements the <code>Backend</code> ABC for SSH File Transfer Protocol (SFTP) servers
-using <strong>pure paramiko</strong> internally. It maps the Backend contract onto a real remote
-filesystem accessed over SSH/SFTP.</p>
-<p>Unlike fsspec's <code>SFTPFileSystem</code> (which hardcodes <code>AutoAddPolicy</code>), this backend
-provides explicit host key policy control via a <code>HostKeyPolicy</code> enum, PEM key
-sanitization for Azure Key Vault compatibility, and tenacity-based retry for
-transient SSH errors.</p>
-<p><strong>Dependencies:</strong> <code>paramiko</code>, <code>tenacity</code> (optional extra: <code>pip install "remote-store[sftp]"</code>)</p>
+<p><code>AsyncBackend</code> and <code>AsyncStore</code> are the async equivalents of <code>Backend</code> (<a href="../003-backend-adapter-contract/">003</a>) and <code>Store</code> (<a href="../001-store-api/">001</a>). <code>SyncBackendAdapter</code> bridges sync backends into the async world via <code>asyncio.to_thread()</code>. This spec covers Phase 1 scope only — native async backends and async extensions are future specs. See <a href="../../adrs/0012-async-store-backend-api/">ADR-0012</a> for design rationale.</p>
 <hr />
-<h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
-<h3 id="sftp-001-constructor-parameters">SFTP-001: Constructor Parameters<a class="headerlink" href="#sftp-001-constructor-parameters" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>SFTPBackend</code> is constructed with a required <code>host</code> and optional
-connection/authentication parameters.
-<strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">SFTPBackend</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">22</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">pkey</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>                   <span class="c1"># paramiko.PKey, lazy-typed</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>               <span class="c1"># root on remote server</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">host_key_policy</span><span class="p">:</span> <span class="n">HostKeyPolicy</span> <span class="o">=</span> <span class="n">HostKeyPolicy</span><span class="o">.</span><span class="n">STRICT</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">known_host_keys</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">host_keys_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># defaults to ~/.ssh/known_hosts</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>         <span class="c1"># may contain &quot;known_host_keys&quot;</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">connect_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="c1"># extra SSHClient.connect() kwargs</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">)</span>
-</code></pre></div>
-<strong>Postconditions:</strong> The backend stores configuration but does not connect during
-construction (see SFTP-004).</p>
-<h3 id="sftp-002-backend-name">SFTP-002: Backend Name<a class="headerlink" href="#sftp-002-backend-name" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>name</code> property returns <code>"sftp"</code>.</p>
-<h3 id="sftp-003-capability-declaration">SFTP-003: Capability Declaration<a class="headerlink" href="#sftp-003-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>SFTPBackend</code> declares capabilities:
-<code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>. Does not declare <code>GLOB</code> (no native pattern matching; use <code>list_files(pattern=…)</code> or <code>ext.glob</code> for client-side fallback).
-<strong>Rationale:</strong>
-- <code>ATOMIC_WRITE</code>: Simulated via temp file + rename (see SFTP-014). Orphan temp
-  files are possible on connection failure -- documented caveat.
-- <code>MOVE</code>: Implemented via <code>posix_rename</code> with fallback (see SFTP-018).
-- <code>COPY</code>: Implemented via read + write (no server-side copy in SFTP, see SFTP-019).</p>
-<h3 id="sftp-004-lazy-connection">SFTP-004: Lazy Connection<a class="headerlink" href="#sftp-004-lazy-connection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. The SSH/SFTP connection is
-established lazily on first operation.
-<strong>Rationale:</strong> Fail-fast at construction is undesirable -- the backend may be created
-during application wiring before the network is available. Automatic reconnection
-on staleness is also supported (see SFTP-010).</p>
-<h3 id="sftp-005-construction-validation">SFTP-005: Construction Validation<a class="headerlink" href="#sftp-005-construction-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>host</code> must be a non-empty string. Passing an empty or whitespace-only
-host raises <code>ValueError</code> at construction time.
-<strong>Postconditions:</strong> No network validation of host reachability at construction time.</p>
+<h2 id="asyncbackend-abc">AsyncBackend ABC<a class="headerlink" href="#asyncbackend-abc" title="Permanent link">&para;</a></h2>
+<h3 id="async-001-abstract-base-class">ASYNC-001: Abstract Base Class<a class="headerlink" href="#async-001-abstract-base-class" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>AsyncBackend</code> is an ABC. Subclasses must implement all abstract methods.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-001</a>.</p>
+<h3 id="async-002-name-property">ASYNC-002: Name Property<a class="headerlink" href="#async-002-name-property" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>name</code> property returns a unique identifier string for the backend type. Sync — no I/O.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-002</a>.</p>
+<h3 id="async-003-capabilities-property">ASYNC-003: Capabilities Property<a class="headerlink" href="#async-003-capabilities-property" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>capabilities</code> property returns a <code>CapabilitySet</code>. Sync — no I/O.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-003</a>.</p>
+<h3 id="async-004-exists">ASYNC-004: exists()<a class="headerlink" href="#async-004-exists" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def exists(path) -&gt; bool</code>. Returns <code>False</code> for missing paths — never raises <code>NotFound</code>.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-004</a>.</p>
+<h3 id="async-005-is_file-is_folder">ASYNC-005: is_file() / is_folder()<a class="headerlink" href="#async-005-is_file-is_folder" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def is_file(path) -&gt; bool</code> and <code>async def is_folder(path) -&gt; bool</code>. Both return <code>False</code> for non-existent paths.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-005</a>.</p>
+<h3 id="async-006-read">ASYNC-006: read()<a class="headerlink" href="#async-006-read" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def read(path) -&gt; AsyncIterator[bytes]</code>. Returns an async iterator of byte chunks for the file content.
+<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-006</a>, ASYNC-020.</p>
+<h3 id="async-007-read_bytes">ASYNC-007: read_bytes()<a class="headerlink" href="#async-007-read_bytes" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def read_bytes(path) -&gt; bytes</code>. Returns the full file content as bytes.
+<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-007</a>.</p>
+<h3 id="async-008-write">ASYNC-008: write()<a class="headerlink" href="#async-008-write" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def write(path, content, *, overwrite=False)</code> creates or overwrites a file.
+<strong>Preconditions:</strong> <code>content</code> is <code>bytes</code> or <code>AsyncIterator[bytes]</code> (see ASYNC-021).
+<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-008</a>.</p>
+<h3 id="async-009-write-creates-intermediate-directories">ASYNC-009: write Creates Intermediate Directories<a class="headerlink" href="#async-009-write-creates-intermediate-directories" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>write</code> creates any intermediate directories automatically.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-009</a>.</p>
+<h3 id="async-010-write_atomic">ASYNC-010: write_atomic()<a class="headerlink" href="#async-010-write_atomic" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def write_atomic(path, content, *, overwrite=False)</code> writes via a temporary file + atomic rename.
+<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-010</a>, <a href="../007-atomic-writes/">007-atomic-writes.md</a>.</p>
+<h3 id="async-011-write_atomic-capability-gate">ASYNC-011: write_atomic Capability Gate<a class="headerlink" href="#async-011-write_atomic-capability-gate" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>write_atomic</code> raises <code>CapabilityNotSupported</code> if the backend lacks <code>ATOMIC_WRITE</code>.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-011</a>.</p>
+<h3 id="async-012-delete">ASYNC-012: delete()<a class="headerlink" href="#async-012-delete" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def delete(path, *, missing_ok=False)</code> removes a file.
+<strong>Raises:</strong> <code>NotFound</code> if the file is missing and <code>missing_ok=False</code>.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-012</a>.</p>
+<h3 id="async-013-delete_folder">ASYNC-013: delete_folder()<a class="headerlink" href="#async-013-delete_folder" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def delete_folder(path, *, recursive=False, missing_ok=False)</code> removes a folder.
+<strong>Raises:</strong> <code>NotFound</code> if the folder is missing and <code>missing_ok=False</code>. Fails if folder is non-empty and <code>recursive=False</code>.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-013</a>.</p>
+<h3 id="async-014-list_files">ASYNC-014: list_files()<a class="headerlink" href="#async-014-list_files" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def list_files(path, *, recursive=False) -&gt; AsyncIterator[FileInfo]</code>.
+<strong>Postconditions:</strong> Returns only files, not folders. If <code>recursive=True</code>, includes files in all subdirectories.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-014</a>.</p>
+<h3 id="async-015-list_folders">ASYNC-015: list_folders()<a class="headerlink" href="#async-015-list_folders" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def list_folders(path) -&gt; AsyncIterator[str]</code> of immediate subfolder names.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-015</a>.</p>
+<h3 id="async-016-get_file_info">ASYNC-016: get_file_info()<a class="headerlink" href="#async-016-get_file_info" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def get_file_info(path) -&gt; FileInfo</code>.
+<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-016</a>.</p>
+<h3 id="async-017-get_folder_info">ASYNC-017: get_folder_info()<a class="headerlink" href="#async-017-get_folder_info" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def get_folder_info(path) -&gt; FolderInfo</code>.
+<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-017</a>.</p>
+<h3 id="async-018-move">ASYNC-018: move()<a class="headerlink" href="#async-018-move" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def move(src, dst, *, overwrite=False)</code> renames/moves a file.
+<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-018</a>.</p>
+<h3 id="async-019-copy">ASYNC-019: copy()<a class="headerlink" href="#async-019-copy" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def copy(src, dst, *, overwrite=False)</code> duplicates a file.
+<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-019</a>.</p>
+<h3 id="async-020-async-streaming-reads">ASYNC-020: Async Streaming Reads<a class="headerlink" href="#async-020-async-streaming-reads" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>read()</code> returns <code>AsyncIterator[bytes]</code>. Caller consumes with <code>async for chunk in stream</code>. The iterator is not seekable. Chunk size is backend-defined (typically 65536 bytes). <code>read_bytes()</code> is the convenience method for loading the full content into memory.
+<strong>Rationale:</strong> There is no standard <code>AsyncBinaryIO</code> in Python. <code>AsyncIterator[bytes]</code> is the idiomatic async streaming pattern (httpx, aiohttp).
+<strong>See also:</strong> <a href="../006-streaming-io/">006-streaming-io.md</a> (SIO-001), <a href="../../adrs/0012-async-store-backend-api/">ADR-0012</a>.</p>
+<h3 id="async-021-async-writable-content">ASYNC-021: Async Writable Content<a class="headerlink" href="#async-021-async-writable-content" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>AsyncWritableContent = bytes | AsyncIterator[bytes]</code>. Write operations accept either type. If <code>AsyncIterator[bytes]</code> is provided, the backend consumes it to EOF. If <code>bytes</code> is provided, the full byte string is written.
+<strong>See also:</strong> <a href="../006-streaming-io/">006-streaming-io.md</a> (SIO-003).</p>
+<h3 id="async-022-aclose">ASYNC-022: aclose()<a class="headerlink" href="#async-022-aclose" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def aclose()</code> is optional (default no-op). Called for resource cleanup. Named <code>aclose</code> per Python convention (async generators, <code>asyncio.StreamWriter</code>).
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-020</a>.</p>
+<h3 id="async-023-async-context-manager">ASYNC-023: Async Context Manager<a class="headerlink" href="#async-023-async-context-manager" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>AsyncBackend</code> supports <code>async with</code>. <code>__aenter__</code> returns <code>self</code>. <code>__aexit__</code> calls <code>aclose()</code>.</p>
+<h3 id="async-024-error-mapping">ASYNC-024: Error Mapping<a class="headerlink" href="#async-024-error-mapping" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Backend-native exceptions never leak. All exceptions are mapped to <code>remote_store</code> error types.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-021</a>, <a href="../005-error-model/">005-error-model.md</a>.</p>
+<h3 id="async-025-unwrap">ASYNC-025: unwrap()<a class="headerlink" href="#async-025-unwrap" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>unwrap(type_hint)</code> returns the native backend handle if it matches the requested type. <strong>Sync</strong> — returns a cached handle, no I/O.
+<strong>Raises:</strong> <code>CapabilityNotSupported</code> if the backend cannot provide the requested type.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-022</a>.</p>
+<h3 id="async-026-to_key">ASYNC-026: to_key()<a class="headerlink" href="#async-026-to_key" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>to_key(native_path)</code> converts a backend-native path to a backend-relative key. <strong>Sync</strong> — pure string manipulation, no I/O.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-023</a>.</p>
+<h3 id="async-027-native_path">ASYNC-027: native_path()<a class="headerlink" href="#async-027-native_path" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>native_path(path)</code> converts a backend-relative key to the backend-native path. <strong>Sync</strong> — pure string manipulation, no I/O.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-025</a>.</p>
+<h3 id="async-028-glob">ASYNC-028: glob()<a class="headerlink" href="#async-028-glob" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def glob(pattern) -&gt; AsyncIterator[FileInfo]</code>. Non-abstract — the default implementation raises <code>CapabilityNotSupported</code>. Backends with native glob support override and declare <code>Capability.GLOB</code>.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-024</a>, <a href="../018-glob/">018-glob.md</a>.</p>
+<h3 id="async-029-iter_children">ASYNC-029: iter_children()<a class="headerlink" href="#async-029-iter_children" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def iter_children(path) -&gt; AsyncIterator[FileInfo | str]</code> — files as <code>FileInfo</code>, folders as <code>str</code> names. Concrete method with a default implementation that chains <code>list_files(path)</code> and <code>list_folders(path)</code>.
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-026</a>, <a href="../027-iter-children/">027-iter-children.md</a>.</p>
 <hr />
-<h2 id="connection">Connection<a class="headerlink" href="#connection" title="Permanent link">&para;</a></h2>
-<h3 id="sftp-006-hostkeypolicy-enum">SFTP-006: HostKeyPolicy Enum<a class="headerlink" href="#sftp-006-hostkeypolicy-enum" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>HostKeyPolicy</code> controls how unknown remote host keys are handled:
-- <code>STRICT</code> (default): Reject unknown hosts. Requires host key in known_hosts.
-- <code>TRUST_ON_FIRST_USE</code>: Accept and save on first connect, verify on subsequent connects.
-- <code>AUTO_ADD</code>: Accept any key. <strong>Development/testing only -- not safe for production.</strong></p>
-<p>String values (<code>"strict"</code>, <code>"tofu"</code>, <code>"auto"</code>) passed from TOML/YAML config are
-coerced to the enum in <code>__init__</code> via <code>HostKeyPolicy(value)</code>. Invalid strings
-raise <code>ValueError</code>. See <a href="../020-credential-hygiene/">020-credential-hygiene.md</a>
-SEC-005.</p>
-<h3 id="sftp-007-host-key-resolution-chain">SFTP-007: Host Key Resolution Chain<a class="headerlink" href="#sftp-007-host-key-resolution-chain" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Known host keys are resolved with first-match precedence:
-1. <code>known_host_keys</code> constructor parameter (code-level override)
-2. <code>config["known_host_keys"]</code> dict value
-3. <code>SFTP_KNOWN_HOST_KEYS</code> environment variable
-4. <code>host_keys_path</code> file on disk (default: <code>~/.ssh/known_hosts</code>)</p>
-<p><strong>Postconditions:</strong> If none of the above yield keys and the policy is <code>STRICT</code>,
-connection will fail with a host key verification error.</p>
-<h3 id="sftp-008-pem-key-sanitization">SFTP-008: PEM Key Sanitization<a class="headerlink" href="#sftp-008-pem-key-sanitization" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>_sanitize_pem()</code> normalizes PEM line separators, handling the Azure
-Key Vault quirk where newlines may be replaced with spaces or other characters.
-<strong>Postconditions:</strong> The sanitized PEM string has standard <code>\n</code> line separators within
-the Base64 payload. Invalid PEM structures (not 5 parts) raise <code>ValueError</code>.</p>
-<h3 id="sftp-009-tenacity-retry-on-connect">SFTP-009: Tenacity Retry on Connect<a class="headerlink" href="#sftp-009-tenacity-retry-on-connect" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>_connect()</code> method retries on transient SSH errors using tenacity.
-When no <code>RetryPolicy</code> is provided, uses defaults: 3 attempts, exponential backoff
-(2s min, 10s max). When a <code>RetryPolicy</code> is provided via the <code>retry</code> constructor
-parameter, maps its fields to tenacity: <code>max_attempts</code> -&gt; <code>stop_after_attempt</code>,
-<code>backoff_base</code> -&gt; <code>wait_exponential(min=)</code>, <code>backoff_max</code> -&gt; <code>wait_exponential(max=)</code>,
-<code>jitter</code> -&gt; <code>wait_random(0, jitter)</code>, <code>timeout</code> -&gt; <code>stop_after_delay</code>.
-See also: spec <code>025-retry-policy.md</code> (RET-010).
-<strong>Retried exceptions:</strong> <code>paramiko.SSHException</code>, <code>OSError</code>, <code>EOFError</code>.
-<strong>Postconditions:</strong> After all retries are exhausted, the original exception is reraised.</p>
-<h3 id="sftp-010-staleness-detection-and-reconnect">SFTP-010: Staleness Detection and Reconnect<a class="headerlink" href="#sftp-010-staleness-detection-and-reconnect" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The lazy <code>_sftp</code> property checks connection liveness by calling
-<code>stat('.')</code>. If the connection is stale (e.g. server dropped it), the backend
-reconnects transparently.
-<strong>Postconditions:</strong> Callers do not need to handle connection drops explicitly.</p>
+<h2 id="syncbackendadapter">SyncBackendAdapter<a class="headerlink" href="#syncbackendadapter" title="Permanent link">&para;</a></h2>
+<h3 id="async-030-adapter-construction">ASYNC-030: Adapter Construction<a class="headerlink" href="#async-030-adapter-construction" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>SyncBackendAdapter(backend: Backend)</code> wraps any sync <code>Backend</code> as an <code>AsyncBackend</code>. The adapter is itself an <code>AsyncBackend</code> subclass.</p>
+<h3 id="async-031-thread-delegation">ASYNC-031: Thread Delegation<a class="headerlink" href="#async-031-thread-delegation" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> All I/O methods delegate to the wrapped sync backend via <code>asyncio.to_thread()</code>. Each call runs in the default executor's thread pool.</p>
+<h3 id="async-032-iterator-materialization">ASYNC-032: Iterator Materialization<a class="headerlink" href="#async-032-iterator-materialization" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>list_files()</code>, <code>list_folders()</code>, <code>glob()</code>, and <code>iter_children()</code> collect the sync iterator to a list in the thread, then yield items one by one from the async generator. This materializes the full result set in memory.
+<strong>Rationale:</strong> Python cannot yield values across a thread boundary. Native async backends (Phase 2) stream without materialization.</p>
+<h3 id="async-033-streaming-read-bridging">ASYNC-033: Streaming Read Bridging<a class="headerlink" href="#async-033-streaming-read-bridging" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>read()</code> opens the sync <code>BinaryIO</code> stream via <code>asyncio.to_thread()</code>, then reads fixed-size chunks (65536 bytes) via <code>asyncio.to_thread(stream.read, 65536)</code> in a loop, yielding each chunk. The stream is closed in a <code>finally</code> block via <code>asyncio.to_thread(stream.close)</code>.</p>
+<h3 id="async-034-property-passthrough">ASYNC-034: Property Passthrough<a class="headerlink" href="#async-034-property-passthrough" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>name</code>, <code>capabilities</code>, <code>to_key()</code>, <code>unwrap()</code>, and <code>native_path()</code> delegate directly to the wrapped backend without <code>asyncio.to_thread()</code> — they are sync, non-I/O properties/methods.</p>
+<h3 id="async-035-aclose-delegation">ASYNC-035: aclose() Delegation<a class="headerlink" href="#async-035-aclose-delegation" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>aclose()</code> calls <code>await asyncio.to_thread(self._sync.close)</code>.</p>
 <hr />
-<h2 id="filesystem-model">Filesystem Model<a class="headerlink" href="#filesystem-model" title="Permanent link">&para;</a></h2>
-<h3 id="sftp-011-real-directories">SFTP-011: Real Directories<a class="headerlink" href="#sftp-011-real-directories" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> SFTP operates on a real remote filesystem with actual directories,
-unlike S3's virtual prefix-based folders. <code>is_folder()</code> uses <code>stat()</code> + <code>S_ISDIR</code>.
-<strong>Postconditions:</strong> Folders exist independently of their contents.</p>
-<h3 id="sftp-012-write-creates-intermediate-directories">SFTP-012: Write Creates Intermediate Directories<a class="headerlink" href="#sftp-012-write-creates-intermediate-directories" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write("a/b/c.txt", content)</code> creates intermediate directories <code>a/</code>
-and <code>a/b/</code> if they do not exist.
-<strong>Rationale:</strong> SFTP servers reject writes to non-existent directories. Creating them
-automatically matches the convenience of local and S3 backends.</p>
-<h3 id="sftp-013-empty-folders-persist">SFTP-013: Empty Folders Persist<a class="headerlink" href="#sftp-013-empty-folders-persist" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Unlike S3 (where folders vanish when empty), empty directories on an
-SFTP server persist after their contents are deleted.
-<strong>Postconditions:</strong> <code>is_folder("dir")</code> returns <code>True</code> even after all files under
-<code>dir/</code> are deleted.</p>
+<h2 id="asyncstore">AsyncStore<a class="headerlink" href="#asyncstore" title="Permanent link">&para;</a></h2>
+<h3 id="async-040-construction">ASYNC-040: Construction<a class="headerlink" href="#async-040-construction" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>AsyncStore(backend: AsyncBackend | Backend, root_path: str = "")</code>. If <code>backend</code> is a sync <code>Backend</code> (and not an <code>AsyncBackend</code>), it is auto-wrapped via <code>SyncBackendAdapter</code>. A non-empty <code>root_path</code> is validated and normalized via <code>RemotePath</code>.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-001</a>, ASYNC-030.</p>
+<h3 id="async-041-path-validation">ASYNC-041: Path Validation<a class="headerlink" href="#async-041-path-validation" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Non-empty path arguments are validated via <code>RemotePath</code>. Empty string <code>""</code> and <code>"."</code> are both accepted as root aliases by folder/query methods. File-targeted methods reject empty path or <code>"."</code>.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-002</a>.</p>
+<h3 id="async-042-root-path-scoping">ASYNC-042: Root Path Scoping<a class="headerlink" href="#async-042-root-path-scoping" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>AsyncStore</code> prepends <code>root_path</code> to all relative paths before delegating to the async backend.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-003</a>.</p>
+<h3 id="async-043-delegation">ASYNC-043: Delegation<a class="headerlink" href="#async-043-delegation" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> All I/O is delegated to the <code>AsyncBackend</code>. <code>AsyncStore</code> adds no I/O logic of its own.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-004</a>.</p>
+<h3 id="async-044-capability-check">ASYNC-044: Capability Check<a class="headerlink" href="#async-044-capability-check" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>supports(capability)</code> checks whether the backend supports a capability. <strong>Sync</strong> — no I/O.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-005</a>.</p>
+<h3 id="async-045-capability-gating">ASYNC-045: Capability Gating<a class="headerlink" href="#async-045-capability-gating" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Capability-gated methods raise <code>CapabilityNotSupported</code> before delegating if the capability is missing.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-006</a>.</p>
+<h3 id="async-046-full-api-surface">ASYNC-046: Full API Surface<a class="headerlink" href="#async-046-full-api-surface" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>AsyncStore</code> exposes async equivalents of all <code>Store</code> methods: <code>read</code>, <code>read_bytes</code>, <code>read_text</code>, <code>write</code>, <code>write_atomic</code>, <code>delete</code>, <code>delete_folder</code>, <code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>iter_children</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>, <code>get_file_info</code>, <code>get_folder_info</code>, <code>move</code>, <code>copy</code>, <code>aclose</code>, <code>supports</code>, <code>to_key</code>, <code>native_path</code>, <code>unwrap</code>, <code>child</code>.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-008</a>.</p>
+<h3 id="async-047-same-path-move-and-copy">ASYNC-047: Same-Path Move and Copy<a class="headerlink" href="#async-047-same-path-move-and-copy" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>move(src, dst)</code> or <code>copy(src, dst)</code> where <code>src</code> and <code>dst</code> resolve to the same path is a no-op. The source must be an existing file; otherwise <code>NotFound</code> is raised.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-008a</a>.</p>
+<h3 id="async-048-resource-management">ASYNC-048: Resource Management<a class="headerlink" href="#async-048-resource-management" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>AsyncStore</code> supports the async context manager protocol (<code>__aenter__</code> / <code>__aexit__</code>). Exiting the context calls <code>aclose()</code>, which delegates to <code>AsyncBackend.aclose()</code> if the store owns the backend. Stores created via <code>child()</code> do not own the backend — their <code>aclose()</code> is a no-op.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-009</a>, <a href="../015-store-child/">CHILD-006</a>.</p>
+<h3 id="async-049-equality">ASYNC-049: Equality<a class="headerlink" href="#async-049-equality" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Two <code>AsyncStore</code> instances are equal if they share the same backend instance and have the same root path.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-010</a>.</p>
+<h3 id="async-050-to_key">ASYNC-050: to_key()<a class="headerlink" href="#async-050-to_key" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>to_key(path)</code> converts an absolute or backend-native path to a store-relative key. <strong>Sync</strong> — same composition as <code>Store.to_key()</code>.
+<strong>Raises:</strong> <code>InvalidPath</code> if the path does not belong to this store.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-011</a>.</p>
+<h3 id="async-051-native_path">ASYNC-051: native_path()<a class="headerlink" href="#async-051-native_path" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>native_path(key)</code> converts a store-relative key to the backend-native path. <strong>Sync</strong> — same composition as <code>Store.native_path()</code>.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-015</a>.</p>
+<h3 id="async-052-list_filespattern">ASYNC-052: list_files(pattern=)<a class="headerlink" href="#async-052-list_filespattern" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>list_files(path, *, recursive=False, pattern=None)</code> accepts an optional <code>pattern</code> keyword. Files whose name does not match the pattern (via <code>fnmatch.fnmatch</code>) are excluded. Filtering is applied at the AsyncStore level after path rebasing.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-014</a>, <a href="../018-glob/">018-glob.md</a> (GLOB-001).</p>
+<h3 id="async-053-glob">ASYNC-053: glob()<a class="headerlink" href="#async-053-glob" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>glob(pattern)</code> is capability-gated on <code>Capability.GLOB</code>. Pattern is relative to the store root; <code>AsyncStore</code> prepends <code>root_path</code> before delegating. Returned <code>FileInfo.path</code> values are store-relative.
+<strong>See also:</strong> <a href="../001-store-api/">STORE-015</a>, <a href="../018-glob/">018-glob.md</a>.</p>
+<h3 id="async-054-child">ASYNC-054: child()<a class="headerlink" href="#async-054-child" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>child(subpath) -&gt; AsyncStore</code>. Returns a new <code>AsyncStore</code> scoped to a subfolder. Same semantics as <code>Store.child()</code>: shared backend identity, composed root path, no-op <code>aclose()</code>, supports chaining.
+<strong>See also:</strong> <a href="../015-store-child/">015-store-child.md</a> (CHILD-001 through CHILD-011).</p>
+<h3 id="async-055-concurrency-safety">ASYNC-055: Concurrency Safety<a class="headerlink" href="#async-055-concurrency-safety" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>AsyncStore</code> is safe for concurrent coroutines on the same event loop. It is not safe across multiple event loops (each event loop requires its own <code>AsyncStore</code> instance).</p>
+<h3 id="async-056-no-new-dependencies">ASYNC-056: No New Dependencies<a class="headerlink" href="#async-056-no-new-dependencies" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Phase 1 uses only stdlib <code>asyncio</code>. No dependency on anyio, trio, or any third-party async library.
+<strong>See also:</strong> <a href="../006-streaming-io/">006-streaming-io.md</a> (SIO-006), <a href="../../adrs/0012-async-store-backend-api/">ADR-0012</a>.</p>
 <hr />
-<h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
-<h3 id="sftp-014-atomic-write-simulated">SFTP-014: Atomic Write (Simulated)<a class="headerlink" href="#sftp-014-atomic-write-simulated" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write_atomic</code> writes to a temporary file <code>.~tmp.&lt;name&gt;.&lt;uuid8&gt;</code> in
-the same directory as the target, then renames to the target via <code>posix_rename</code>.
-<strong>Caveat:</strong> If the connection drops between write and rename, the orphan temp file
-remains. This is <strong>simulated</strong> atomicity, not true atomicity -- the capability is
-declared to enable the write-then-rename pattern, but the caveat must be documented.
-<strong>Postconditions:</strong> On success, the temp file is gone and the target contains the
-new content. On failure, the backend attempts to clean up the temp file.</p>
-<h3 id="sftp-015-atomic-write-overwrite-semantics">SFTP-015: Atomic Write Overwrite Semantics<a class="headerlink" href="#sftp-015-atomic-write-overwrite-semantics" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write_atomic(path, content, overwrite=False)</code> raises <code>AlreadyExists</code>
-if the target already exists. With <code>overwrite=True</code>, the existing file is replaced.</p>
-<h3 id="sftp-016-delete_folder-recursive">SFTP-016: delete_folder Recursive<a class="headerlink" href="#sftp-016-delete_folder-recursive" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>delete_folder(path, recursive=True)</code> walks the directory tree
-bottom-up, deleting files then directories.
-<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist and <code>missing_ok=False</code>.</p>
-<h3 id="sftp-017-delete_folder-non-recursive">SFTP-017: delete_folder Non-Recursive<a class="headerlink" href="#sftp-017-delete_folder-non-recursive" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>delete_folder(path, recursive=False)</code> succeeds only if the directory
-is empty.
-<strong>Raises:</strong> <code>NotFound</code> if missing. <code>RemoteStoreError</code> if the directory is not empty.</p>
-<h3 id="sftp-018-move-via-posix_rename">SFTP-018: Move Via posix_rename<a class="headerlink" href="#sftp-018-move-via-posix_rename" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>move(src, dst)</code> attempts <code>posix_rename</code> (atomic overwrite), falls back
-to <code>rename</code>, and falls back to copy + delete if rename fails entirely.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and
-<code>overwrite=False</code>.</p>
-<h3 id="sftp-019-copy-via-read-write">SFTP-019: Copy Via Read + Write<a class="headerlink" href="#sftp-019-copy-via-read-write" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>copy(src, dst)</code> reads the source file and writes it to the destination.
-There is no server-side copy operation in SFTP -- data passes through the client.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and
-<code>overwrite=False</code>.</p>
-<hr />
-<h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<h3 id="sftp-020-notfound-mapping">SFTP-020: NotFound Mapping<a class="headerlink" href="#sftp-020-notfound-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>IOError</code> with <code>errno.ENOENT</code> (errno 2) and <code>FileNotFoundError</code> are
-mapped to <code>NotFound</code>.
-<strong>Postconditions:</strong> <code>path</code> and <code>backend</code> attributes are set on the error.</p>
-<h3 id="sftp-021-permissiondenied-mapping">SFTP-021: PermissionDenied Mapping<a class="headerlink" href="#sftp-021-permissiondenied-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>IOError</code> with <code>errno.EACCES</code> (errno 13) is mapped to <code>PermissionDenied</code>.</p>
-<h3 id="sftp-022-alreadyexists-mapping">SFTP-022: AlreadyExists Mapping<a class="headerlink" href="#sftp-022-alreadyexists-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>IOError</code> with <code>errno.EEXIST</code> (errno 17) is mapped to <code>AlreadyExists</code>.</p>
-<h3 id="sftp-023-backendunavailable-mapping">SFTP-023: BackendUnavailable Mapping<a class="headerlink" href="#sftp-023-backendunavailable-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>paramiko.SSHException</code> and its subclasses (authentication failures,
-channel errors, etc.) are mapped to <code>BackendUnavailable</code>.</p>
-<h3 id="sftp-024-no-native-exception-leakage">SFTP-024: No Native Exception Leakage<a class="headerlink" href="#sftp-024-no-native-exception-leakage" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No paramiko, socket, or OS exceptions propagate to callers. All are
-mapped to <code>remote_store</code> error types per BE-021.
-<strong>Postconditions:</strong> <code>backend</code> attribute is set to <code>"sftp"</code> on all mapped errors.</p>
-<hr />
-<h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
-<h3 id="sftp-025-close">SFTP-025: close()<a class="headerlink" href="#sftp-025-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>close()</code> closes both the SFTP client and the underlying SSH transport.
-<strong>Postconditions:</strong> Safe to call multiple times (idempotent). After close, further
-operations will trigger a new connection via lazy init.</p>
-<h3 id="sftp-026-unwrapsftpclient">SFTP-026: unwrap(SFTPClient)<a class="headerlink" href="#sftp-026-unwrapsftpclient" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>unwrap(paramiko.SFTPClient)</code> returns the underlying SFTP client.
-<strong>Raises:</strong> <code>CapabilityNotSupported</code> for any other type hint.
-<strong>Rationale:</strong> Escape hatch for users who need paramiko-specific features (per ADR-0003).</p>
-<h3 id="sftp-027-idempotent-close">SFTP-027: Idempotent Close<a class="headerlink" href="#sftp-027-idempotent-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Calling <code>close()</code> multiple times must not raise. Internal state is
-set to <code>None</code> after close, and the next operation will reconnect lazily.</p>
+<h2 id="deferred-out-of-scope">Deferred (out of scope)<a class="headerlink" href="#deferred-out-of-scope" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Native async backends (<code>AsyncS3Backend</code>, <code>AsyncAzureBackend</code>, <code>AsyncSFTPBackend</code>) — Phase 2, separate specs.</li>
+<li>Async extensions (<code>async_batch</code>, <code>async_transfer</code>, <code>AsyncObservedStore</code>) — Phase 3, separate specs.</li>
+<li>anyio / trio support — future ADR if demand materializes.</li>
+<li><code>AsyncRegistry</code> — Phase 3, if needed for coordinated async lifecycle.</li>
+</ul>
 
 
 
