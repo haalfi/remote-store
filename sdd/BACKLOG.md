@@ -17,10 +17,7 @@ Active work items, ordered by priority.
 
 ### Ops / CI
 
-- [~] **ID-069 — Automated Claude PR review workflow**
-  GitHub Actions workflow (`claude-review.yml`) that runs `/review-pr` via
-  `anthropics/claude-code-action@v1` on every PR. Advisory only (not a gate check).
-  Code shipped; needs `ANTHROPIC_API_KEY` secret configured in repo settings + verification.
+*(none)*
 
 ---
 
@@ -707,6 +704,13 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
   Listing numbers now reflect real I/O without fsspec caching bias.
 
 ### Post-v0.15.0 housekeeping
+
+- [x] **ID-069 — Automated Claude PR review workflow** (post-v0.16.0, reverted)
+  Shipped `claude-review.yml` using `anthropics/claude-code-action@v1` with
+  `/review-pr` skill. Findings: action runs Claude Code in a sandboxed
+  environment — 18 permission denials blocked `gh` CLI calls the skill depends
+  on, so no review was posted. Run took ~10 min and cost ~$2 (1M+ tokens) for
+  a trivial 3-file docstring PR. Not cost-effective; removed workflow.
 
 - [x] **ID-068 — Replace `dorny/paths-filter` with bash path filtering** (post-v0.15.0)
   `dorny/paths-filter@v3` runs on Node.js 20 (deprecated on GitHub Actions from
