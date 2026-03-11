@@ -17,10 +17,10 @@ Active work items, ordered by priority.
 
 ### Ops / CI
 
-- [ ] **ID-069 — Automated Claude PR review workflow**
+- [~] **ID-069 — Automated Claude PR review workflow**
   GitHub Actions workflow (`claude-review.yml`) that runs `/review-pr` via
   `anthropics/claude-code-action@v1` on every PR. Advisory only (not a gate check).
-  Requires `ANTHROPIC_API_KEY` secret in repo settings.
+  Code shipped; needs `ANTHROPIC_API_KEY` secret configured in repo settings + verification.
 
 ---
 
