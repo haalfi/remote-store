@@ -53,6 +53,7 @@ Complete reference for all public exports of `remote-store`.
 | [InvalidPath](errors.md#remote_store.InvalidPath) | Path validation failed |
 | [CapabilityNotSupported](errors.md#remote_store.CapabilityNotSupported) | Backend lacks required capability |
 | [BackendUnavailable](errors.md#remote_store.BackendUnavailable) | Backend could not be reached |
+| [DirectoryNotEmpty](errors.md#remote_store.DirectoryNotEmpty) | Non-recursive delete on non-empty folder |
 
 ## Functions
 
