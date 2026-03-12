@@ -124,19 +124,29 @@ Not evaluated, not committed to. Pick up when relevant.
   `Annotated[T, Doc("...")]`. Not recommended near-term.
   Research: `sdd/research/research-fastapi-docs.md` P5.
 
-- [ ] **ID-071 — Store API refinement: Phase 1 docstring fixes**
-  Fix misleading docstrings across Store methods identified by API audit.
+- [ ] **ID-071 — Store API refinement: Phase 1 docstring fixes, `write_text()`, docs gaps**
+  Fix misleading docstrings and document previously-unspecified behavior across
+  Store methods identified by API audit.
   Research: `sdd/research/research-store-api-refinement.md`.
-  Phase 1 items: fix `write()`/`write_atomic()` str claim, fix `read_text(errors=...)`
-  reference, add ordering/laziness notes to listing methods, add atomicity/metadata
-  notes to `move()`/`copy()`, add backend-specific warnings to escape hatches,
-  add thread-safety statement. No code changes, docstring-only.
+  Two categories of work:
+  - **Fix wrong docs**: `write()`/`write_atomic()` str claim, `read_text(errors=...)`
+    reference, README API table descriptions.
+  - **Document unspecified behavior** (establishes new guarantees — requires
+    verification against all backends): ordering/laziness for listing methods,
+    atomicity/metadata for `move()`/`copy()`, backend-specific escape-hatch
+    warnings, thread-safety statement, backend behavior matrix.
+  - **`write_text()` implementation**: design settled by ecosystem precedent;
+    ships alongside docstring fixes.
+  Note: the "document unspecified behavior" items are not just text fixes — they
+  establish API guarantees (ordering, atomicity, thread-safety) that users will
+  rely on.
 
-- [ ] **ID-072 — Store API refinement: Phase 2-3 design and implementation**
-  Design decisions and implementation for listing normalization (Option D preferred:
-  `PathEntry` protocol + `FolderEntry` dataclass) and optional `write_text()` addition.
-  Depends on ID-071 completion and owner sign-off on design choices.
-  Related: ID-063 (`write_text()` convenience method).
+- [ ] **ID-072 — Store API refinement: Phase 2-3 listing normalization**
+  Design decision and implementation for listing normalization (Option D preferred:
+  `PathEntry` protocol + `FolderEntry` dataclass — but see approachability
+  trade-off for citizen developers noted in research doc).
+  Depends on ID-071 completion and owner sign-off on design choice.
+  `write_text()` moved to ID-071 (Phase 1). Related: ID-063.
   Research: `sdd/research/research-store-api-refinement.md`.
 
 - [ ] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**

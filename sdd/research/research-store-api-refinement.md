@@ -49,7 +49,7 @@ Plus cross-cutting concerns surfaced during the audit:
 | `list_folders()` | `Iterator[str]` | bare name (not full path) |
 | `iter_children()` | `Iterator[FileInfo \| str]` | mixed: FileInfo for files, str name for folders |
 
-This is the most impactful asymmetry. Callers of `iter_children()` must `isinstance`-branch. Callers of `list_folders()` must manually reconstruct full paths. This is surprising when `list_files()` returns rich `FileInfo` objects with full store-relative paths.
+From a user's perspective: "I called `list_folders('data')` and got `['reports', 'archive']` — bare names I have to manually join back to paths. But `list_files('data')` gave me `FileInfo` objects with full paths. Why the asymmetry?" And `iter_children()` is worse — it yields `FileInfo` for files but plain `str` for folders, forcing an `isinstance` branch just to iterate a directory.
 
 ### Validation method
 
@@ -136,10 +136,10 @@ isinstance. Callers who need file-specific metadata (size, modified_at) narrow
 with `isinstance(entry, FileInfo)` — which is the correct semantic: "I want
 richer info that only files have."
 
-**Migration impact:** This is a **behavioral** breaking change for existing
-callers, not just a type-level one. Currently `iter_children()` yields bare
-`str` names for folders. Under Option D, folders become `FolderEntry` objects.
-Existing code like:
+**Migration impact:** This is a **behavioral** change requiring migration for
+existing callers, not just a type-level one. Currently `iter_children()` yields
+bare `str` names for folders. Under Option D, folders become `FolderEntry`
+objects. Existing code like:
 
 ```python
 for child in store.iter_children("data"):
@@ -147,12 +147,21 @@ for child in store.iter_children("data"):
         subfolder_path = f"data/{child}"  # child IS the name string
 ```
 
-will break at runtime — `isinstance(child, str)` returns `False` for
+will fail at runtime — `isinstance(child, str)` returns `False` for
 `FolderEntry`, so the folder branch never triggers. **All callers must change
 `child` → `child.name` (or `child.path`) for the folder branch.** Similarly,
 `list_folders()` callers that treat results as plain strings must update to
 access `.name` or `.path` on `FolderEntry` objects. Migration guidance must
 be included in the CHANGELOG and upgrade guide when this change ships.
+
+**Approachability trade-off:** `Protocol` + structural typing is less familiar to
+citizen developers than concrete classes. Users may see `PathEntry` in IDE
+completions and not know what a Protocol is. However, they don't *need* to know —
+they just use `.name` and `.path`. By contrast, Option C's union
+(`FileInfo | FolderEntry`) is arguably more discoverable: both types are concrete
+classes you can click through to in your IDE. The protocol's advantages
+(extensibility, no isinstance) are library-designer concerns. This trade-off
+should be weighed during the design decision.
 
 This is strictly better than Option C's `FileInfo | FolderEntry` union because:
 
@@ -177,7 +186,7 @@ This is strictly better than Option C's `FileInfo | FolderEntry` union because:
 | `FileInfo` unchanged | No (wrapped) | Yes | Yes | **Yes** |
 | Type-checker enforced contract | N/A | N/A | Duck-typed coincidence | **Protocol-enforced** |
 | Extensible to new entry kinds | Requires updating `ChildEntry.kind` | N/A | Requires union expansion | **Just satisfy protocol** |
-| Breaking change scope | `iter_children` return type | `list_folders` return values | `list_folders` + `iter_children` types | `list_folders` + `iter_children` types |
+| Migration scope | `iter_children` return type | `list_folders` return values | `list_folders` + `iter_children` types | `list_folders` + `iter_children` types |
 
 **Recommendation: Option D.** It gives the cleanest caller ergonomics, enforces
 the shared contract at the type level, and is the most extensible. The protocol
@@ -399,9 +408,11 @@ Docstring-only changes. Possibly also docs template changes.
 
 Beyond individual method docstrings, the audit surfaced three API documentation gaps that span the whole Store surface.
 
-### 9a. `write_text()` gap is user-visible in quickstart
+### 9a. `write_text()` gap is user-visible in quickstart — Phase 1 priority
 
-The first code example a new user encounters uses `b"Hello, world!"`. This is lower-level than pathlib-trained Python developers expect. A `write_text()`/`read_text()` hello-world would be more natural. This strengthens the case in §4 for adding `write_text()` pre-v1 — it's not just a symmetry concern, it affects first impressions.
+The first code example a new user encounters uses `b"Hello, world!"`. This is lower-level than pathlib-trained Python developers expect. A `write_text()`/`read_text()` hello-world would be more natural. This is the **#1 priority for the target audience**: forcing citizen developers into bytes-land before they've even stored a file contradicts the "just works" promise.
+
+The design decision is already made by every comparable library: pathlib (`write_text`), PyFilesystem2 (`writetext`), Java NIO (`Files.writeString`), .NET (`File.WriteAllText`) — all cited in §4. There's no ambiguity. `write_text()` should ship in Phase 1 alongside the docstring fixes, not wait for a separate design decision phase.
 
 ### 9b. README API table descriptions lag behind actual contracts
 
@@ -418,9 +429,9 @@ The README's API summary table has descriptions that are accurate but miss key c
 
 These descriptions should be updated **after** the docstring fixes in Phase 1, so they stay consistent with the source of truth.
 
-### 9c. Backend behavior matrix — API documentation gap
+### 9c. Backend behavior matrix — essential for the core promise (Phase 1)
 
-Users of `supports(capability)` can check **whether** a backend has a capability, but cannot tell **what** that capability means concretely on each backend. A per-backend behavior matrix belongs in the API docs:
+Users of `supports(capability)` can check **whether** a backend has a capability, but cannot tell **what** that capability means concretely on each backend. "Write once, run anywhere" implicitly promises predictable cross-backend behavior. When `move()` is atomic on Local but copy+delete on S3, users need to know *before* they deploy. This matrix is the honest version of the portability promise and should ship as documentation in Phase 1, not wait for Phase 3 implementation. A per-backend behavior matrix belongs in the API docs:
 
 | Behavior | Local | S3 | S3-PyArrow | SFTP | Azure | Memory |
 |---|---|---|---|---|---|---|
@@ -445,7 +456,7 @@ Backend thread safety depends on the underlying library.
 
 ## 10. Execution Plan
 
-### Phase 1: Docstring fixes (no code changes, no API surface change)
+### Phase 1: Docstring fixes, `write_text()`, and documentation gaps
 
 1. Fix `write()` / `write_atomic()` docstrings — remove `` ``str`` `` from content param description (§4)
 2. Fix `read_text(errors=...)` reference — `codecs.register` → correct pointer (§5)
@@ -453,19 +464,18 @@ Backend thread safety depends on the underlying library.
 4. Add atomicity/metadata/file-only notes to `move()` and `copy()` docstrings (§7)
 5. Add "advanced — backend-specific" notes to `unwrap()`, `native_path()`, `glob()` docstrings (§8)
 6. Add thread-safety statement to `Store` class docstring (§9d)
+7. Implement `write_text()` — design is settled by ecosystem precedent (§4, §9a)
+8. Build and verify backend behavior matrix as documentation (§9c) — audit each backend
+9. Update README API table descriptions to match improved docstrings (§9b)
 
-### Phase 2: API design decisions (requires choice before implementation)
+### Phase 2: API design decision (requires choice before implementation)
 
-7. Listing normalization approach — Option A, B, C, or D (§3) — **Option D preferred**
-8. `write_text()` addition — yes/no (§4, strengthened by §9a)
+10. Listing normalization approach — Option D preferred (§3), but see approachability trade-off
 
 ### Phase 3: Implementation
 
-9. Implement chosen listing normalization (§3)
-10. Implement `write_text()` if approved (§4)
-11. Build and verify backend behavior matrix (§9c) — audit each backend
-12. Update README API table descriptions to match improved docstrings (§9b)
-13. Update specs, tests, docs, examples, BACKLOG, CHANGELOG per ripple-check table
+11. Implement chosen listing normalization (§3)
+12. Update specs, tests, docs, examples, BACKLOG, CHANGELOG per ripple-check table
 
 ---
 
