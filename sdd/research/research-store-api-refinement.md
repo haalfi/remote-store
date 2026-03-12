@@ -73,7 +73,7 @@ This is the most impactful asymmetry. Callers of `iter_children()` must `isinsta
 
 ### Recommendation
 
-**Option A (preferred): Introduce `ChildEntry` dataclass**
+**Option A: Introduce `ChildEntry` dataclass**
 
 ```python
 @dataclasses.dataclass(frozen=True)
