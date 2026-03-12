@@ -1,25 +1,45 @@
-# Store API Refinement Plan
+# Research: Store API Refinement
 
-Pre-v1 review of the Store surface API based on external feedback.
-Date: 2026-03-12
+**Date:** 2026-03-12
+**Backlog items:** AF-005 (Store API refinement), related: BK-003 (write_text convenience)
+**Status:** Research complete — awaiting design decisions
 
 ---
 
-## Scope
+## 1. Motivation
 
-Five concerns raised in the review, ordered by impact:
+The `Store` public API is approaching v1 freeze. Before locking the surface, a
+systematic audit is needed to catch inconsistencies, misleading docstrings, and
+missing convenience methods that would be breaking to fix after v1.
 
-1. **Normalize child/listing return shapes** — `iter_children()` returns `FileInfo | str`; `list_folders()` returns bare names
-2. **Document string encoding for write/write_atomic** — docstrings claim `str` is accepted but `WritableContent = BinaryIO | bytes`
+This research applies two lenses:
+
+- **Internal consistency audit** — do return types, naming, and docstrings
+  match the actual type aliases and behavior across all Store methods?
+- **Cross-ecosystem comparison** — how do equivalent APIs (pathlib, fsspec,
+  PyFilesystem2, Go io/fs, Rust object_store, Java NIO, .NET System.IO) handle
+  the same problems? Where does `remote-store` diverge without good reason?
+
+## 2. Scope
+
+Six concerns identified by the audit, ordered by impact:
+
+1. **Normalize child/listing return shapes** — `iter_children()` returns `FileInfo | str`; `list_folders()` returns bare names while `list_files()` returns `FileInfo` with full paths
+2. **Fix misleading `write()` / `write_atomic()` docstrings** — docstrings claim `str` is accepted but `WritableContent = BinaryIO | bytes`; consider adding `write_text()` for symmetry with `read_text()`
 3. **Fix the `read_text(errors=...)` reference** — cites `codecs.register` instead of the correct pointer
-4. **Add explicit ordering/performance guarantees for listing methods**
-5. **Clarify atomicity/metadata guarantees for move and copy**
+4. **Add explicit ordering/performance guarantees for listing methods** — `iter_children()` documents backend-defined ordering but `list_files()`, `list_folders()`, `glob()` do not
+5. **Clarify atomicity/metadata guarantees for `move()` and `copy()`** — backend-dependent behavior is undocumented
+6. **Visually separate advanced escape hatches** — `unwrap()`, `native_path()`, and native `glob()` are backend-specific but not marked as such in docstrings
 
-Plus a secondary concern: visually separate advanced escape hatches (`unwrap`, `native_path`, native `glob`).
+Plus cross-cutting concerns surfaced during the audit:
+
+- **README API table descriptions** lag behind actual contracts (bare names, mixed types, file-only constraints)
+- **Backend behavior matrix** is missing — users of `supports()` cannot tell what a capability means per backend
+- **Thread-safety statement** is absent from the `Store` class docstring
 
 ---
 
-## 1. Normalize Child/Listing Return Shapes
+## 3. Normalize Child/Listing Return Shapes
 
 ### Problem
 
@@ -98,7 +118,7 @@ Which option to pursue? This is the most impactful change and affects Backend AB
 
 ---
 
-## 2. Document String Encoding for write/write_atomic
+## 4. Fix Misleading write/write_atomic Docstrings
 
 ### Problem
 
@@ -145,7 +165,7 @@ Furthermore, even if we wanted to accept `str`, the encoding contract is unspeci
 
 ---
 
-## 3. Fix the `read_text(errors=...)` Reference
+## 5. Fix the `read_text(errors=...)` Reference
 
 ### Problem
 
@@ -178,7 +198,7 @@ Docstring-only change. No code change needed.
 
 ---
 
-## 4. Add Explicit Ordering/Performance Guarantees for Listing Methods
+## 6. Add Explicit Ordering/Performance Guarantees for Listing Methods
 
 ### Problem
 
@@ -223,7 +243,7 @@ Document "no ordering guarantee" (recommended) vs add Store-level sorting?
 
 ---
 
-## 5. Clarify Atomicity/Metadata Guarantees for move and copy
+## 7. Clarify Atomicity/Metadata Guarantees for move and copy
 
 ### Problem
 
@@ -276,11 +296,11 @@ Docstring-only changes. Factual accuracy needs verification by checking each bac
 
 ---
 
-## 6. (Secondary) Visual Separation of Escape Hatches
+## 8. Visual Separation of Escape Hatches
 
 ### Problem
 
-`unwrap()`, `native_path()`, and `glob()` (native backend glob) are backend-specific escape hatches mixed in with the portable API. The reviewer suggests visually separating them.
+`unwrap()`, `native_path()`, and `glob()` (native backend glob) are backend-specific escape hatches mixed in with the portable API. Their docstrings don't warn callers that using them ties code to a specific backend.
 
 ### Recommendation
 
@@ -303,23 +323,21 @@ Docstring-only changes. Possibly also docs template changes.
 
 ---
 
-## 7. README Review — API-Relevant Insights Only
+## 9. Cross-Cutting Concerns
 
-A second external review (of the README) reinforces and adds to the Store API concerns:
+Beyond individual method docstrings, the audit surfaced three API documentation gaps that span the whole Store surface.
 
-### 7a. `write_text()` gap is user-visible
+### 9a. `write_text()` gap is user-visible in quickstart
 
-The reviewer noted that quickstart examples feel "a bit lower-level than many users expect" because the first interaction is `b"Hello, world!"`. This directly supports item §2's recommendation to add `write_text()` — it's not just a symmetry concern, it affects first impressions. A `write_text()`/`read_text()` hello-world is what pathlib-trained Python developers expect.
+The first code example a new user encounters uses `b"Hello, world!"`. This is lower-level than pathlib-trained Python developers expect. A `write_text()`/`read_text()` hello-world would be more natural. This strengthens the case in §4 for adding `write_text()` pre-v1 — it's not just a symmetry concern, it affects first impressions.
 
-**Strengthens the case for `write_text()` as a pre-v1 addition, not a deferral.**
+### 9b. README API table descriptions lag behind actual contracts
 
-### 7b. Store API table descriptions need sharpening
-
-The README's API table has descriptions that are accurate but miss key contracts:
+The README's API summary table has descriptions that are accurate but miss key contracts:
 
 | Current description | What's missing |
 |---|---|
-| `list_folders(path)` → "Iterate subfolder names" | Doesn't say these are bare names (not paths) — the exact asymmetry from §1 |
+| `list_folders(path)` → "Iterate subfolder names" | Doesn't say these are bare names (not paths) — the exact asymmetry from §3 |
 | `iter_children(path)` → "Iterate files and folders in one pass" | Doesn't hint at the mixed return type |
 | `move(src, dst)` → "Move or rename" | Doesn't say file-only |
 | `copy(src, dst)` → "Copy a file" | Good — already says "file" |
@@ -328,11 +346,9 @@ The README's API table has descriptions that are accurate but miss key contracts
 
 These descriptions should be updated **after** the docstring fixes in Phase 1, so they stay consistent with the source of truth.
 
-### 7c. Backend behavior matrix — API documentation gap
+### 9c. Backend behavior matrix — API documentation gap
 
-The reviewer asked for a compact table showing per-backend behavior: atomic writes, native glob, move semantics, metadata fidelity. This is an API documentation concern (not just README presentation). Users of `supports(capability)` still have to guess **what** a capability means on each backend.
-
-Proposed table (for docs, not necessarily README):
+Users of `supports(capability)` can check **whether** a backend has a capability, but cannot tell **what** that capability means concretely on each backend. A per-backend behavior matrix belongs in the API docs:
 
 | Behavior | Local | S3 | S3-PyArrow | SFTP | Azure | Memory |
 |---|---|---|---|---|---|---|
@@ -344,9 +360,9 @@ Proposed table (for docs, not necessarily README):
 
 This needs verification against actual backend implementations before publishing.
 
-### 7d. Thread safety statement
+### 9d. Thread-safety statement missing from Store class docstring
 
-The reviewer asked for one sentence on thread/process safety. The spec says Store is thread-safe (immutable), but the docstring doesn't mention it. Add to the class docstring:
+The spec says Store is thread-safe (immutable after construction), but the class docstring doesn't mention it. Add:
 
 ```
 Thread-safe: ``Store`` is immutable and can be shared across threads.
@@ -355,33 +371,33 @@ Backend thread safety depends on the underlying library.
 
 ---
 
-## Execution Plan
+## 10. Execution Plan
 
 ### Phase 1: Docstring fixes (no code changes, no API surface change)
 
-1. Fix `write()` / `write_atomic()` docstrings — remove `` ``str`` `` from content param description
-2. Fix `read_text(errors=...)` reference — `codecs.register` → correct pointer
-3. Add ordering/laziness guarantees to `list_files()`, `list_folders()`, `glob()` docstrings
-4. Add atomicity/metadata/file-only notes to `move()` and `copy()` docstrings
-5. Add "advanced — backend-specific" notes to `unwrap()`, `native_path()`, `glob()` docstrings
-6. Add thread-safety statement to `Store` class docstring (§7d)
+1. Fix `write()` / `write_atomic()` docstrings — remove `` ``str`` `` from content param description (§4)
+2. Fix `read_text(errors=...)` reference — `codecs.register` → correct pointer (§5)
+3. Add ordering/laziness guarantees to `list_files()`, `list_folders()`, `glob()` docstrings (§6)
+4. Add atomicity/metadata/file-only notes to `move()` and `copy()` docstrings (§7)
+5. Add "advanced — backend-specific" notes to `unwrap()`, `native_path()`, `glob()` docstrings (§8)
+6. Add thread-safety statement to `Store` class docstring (§9d)
 
 ### Phase 2: API design decisions (requires choice before implementation)
 
-7. Listing normalization approach — Option A, B, or C (§1)
-8. `write_text()` addition — yes/no (§2, strengthened by §7a)
+7. Listing normalization approach — Option A, B, or C (§3)
+8. `write_text()` addition — yes/no (§4, strengthened by §9a)
 
 ### Phase 3: Implementation
 
-9. Implement chosen listing normalization (§1)
-10. Implement `write_text()` if approved (§2)
-11. Build and verify backend behavior matrix (§7c) — audit each backend
-12. Update README API table descriptions to match improved docstrings (§7b)
+9. Implement chosen listing normalization (§3)
+10. Implement `write_text()` if approved (§4)
+11. Build and verify backend behavior matrix (§9c) — audit each backend
+12. Update README API table descriptions to match improved docstrings (§9b)
 13. Update specs, tests, docs, examples, BACKLOG, CHANGELOG per ripple-check table
 
 ---
 
-## Method Name Validation Summary
+## 11. Method Name Validation Summary
 
 Based on cross-ecosystem analysis, current names are well-chosen. Notes:
 
@@ -417,7 +433,7 @@ Based on cross-ecosystem analysis, current names are well-chosen. Notes:
 
 ---
 
-## Appendix: Verified Cross-Ecosystem Sources
+## 12. Appendix: Verified Cross-Ecosystem Sources
 
 Analysis based on verified API documentation from:
 - Python: pathlib, os, fsspec, PyFilesystem2, boto3 S3
