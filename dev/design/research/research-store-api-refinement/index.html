@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-v1-communication-plan/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-store-api-refinement/">
       
       
-        <link rel="prev" href="../research-store-config/">
+        <link rel="prev" href="../research-retry-policy/">
       
       
-        <link rel="next" href="../../../contributing/">
+        <link rel="next" href="../research-store-config/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>v1 Communication & Announcement Plan - remote-store</title>
+        <title>Store API Refinement - remote-store</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#research-v1-communication-announcement-plan" class="md-skip">
+        <a href="#research-store-api-refinement" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              v1 Communication & Announcement Plan
+              Store API Refinement
             
           </span>
         </div>
@@ -4663,10 +4663,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../research-store-api-refinement/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store API Refinement
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4682,6 +4709,536 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-motivation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Motivation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-normalize-childlisting-return-shapes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Normalize Child/Listing Return Shapes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Normalize Child/Listing Return Shapes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommendation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decision-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision needed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-fix-misleading-writewrite_atomic-docstrings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Fix Misleading write/write_atomic Docstrings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Fix Misleading write/write_atomic Docstrings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation-method_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommendation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decision-needed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision needed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-fix-the-read_texterrors-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Fix the read_text(errors=...) Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Fix the read_text(errors=...) Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommendation_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Impact
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-add-explicit-orderingperformance-guarantees-for-listing-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Add Explicit Ordering/Performance Guarantees for Listing Methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Add Explicit Ordering/Performance Guarantees for Listing Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation-method_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommendation_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decision-needed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision needed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-clarify-atomicitymetadata-guarantees-for-move-and-copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Clarify Atomicity/Metadata Guarantees for move and copy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Clarify Atomicity/Metadata Guarantees for move and copy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation-method_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommendation_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impact_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Impact
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-visual-separation-of-escape-hatches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Visual Separation of Escape Hatches
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Visual Separation of Escape Hatches">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommendation_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impact_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Impact
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-cross-cutting-concerns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Cross-Cutting Concerns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Cross-Cutting Concerns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#9a-write_text-gap-is-user-visible-in-quickstart-phase-1-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9a. write_text() gap is user-visible in quickstart — Phase 1 priority
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9b-readme-api-table-descriptions-lag-behind-actual-contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9b. README API table descriptions lag behind actual contracts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9c-backend-behavior-matrix-essential-for-the-core-promise-phase-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9c. Backend behavior matrix — essential for the core promise (Phase 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9d-thread-safety-statement-missing-from-store-class-docstring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9d. Thread-safety statement missing from Store class docstring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-execution-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Execution Plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Execution Plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-docstring-fixes-write_text-and-documentation-gaps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Docstring fixes, write_text(), and documentation gaps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-api-design-decision-requires-choice-before-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: API design decision (requires choice before implementation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-method-name-validation-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Method Name Validation Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-appendix-verified-cross-ecosystem-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Appendix: Verified Cross-Ecosystem Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4719,37 +5276,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    v1 Communication & Announcement Plan
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -4765,714 +5295,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-what-is-remote-store-and-who-is-it-for" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. What Is remote-store and Who Is It For
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. What Is remote-store and Who Is It For">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#the-one-liner" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The one-liner
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-it-actually-is" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What it actually is
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-it-is-not" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What it is not
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#primary-audiences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Primary audiences
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#secondary-audiences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Secondary audiences
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-the-landscape-where-remote-store-sits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. The Landscape — Where remote-store Sits
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. The Landscape — Where remote-store Sits">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#fsspec-filesystem-spec" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        fsspec (Filesystem Spec)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#obstore-by-development-seed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        obstore (by Development Seed)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#smart_open-by-rare-technologies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        smart_open (by RaRe Technologies)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cloudpathlib-by-drivendata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        cloudpathlib (by DrivenData)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#universal_pathlib-upath-by-fsspec" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        universal_pathlib (UPath, by fsspec)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#obspec-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        obspec (Protocol)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#raw-sdks-boto3-paramiko-azure-storage-" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Raw SDKs (boto3, paramiko, azure-storage-*)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-differentiators-for-messaging" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key differentiators for messaging
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#positioning-takeaway" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Positioning takeaway
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-core-messaging-what-to-say" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Core Messaging — What to Say
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Core Messaging — What to Say">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#principle-share-the-benefit-and-the-way-of-working-dont-sell" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Principle: share the benefit and the way of working, don't sell
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#message-pillars" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Message pillars
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#avoid" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Avoid
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-where-to-announce-channels-and-formats" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Where to Announce — Channels and Formats
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. Where to Announce — Channels and Formats">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#tier-1-high-signal-developer-communities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 1: High-signal developer communities
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tier 1: High-signal developer communities">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#reddit-rpython" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reddit r/Python
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#hacker-news-show-hn" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Hacker News — Show HN
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#python-discourse-discusspythonorg" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Python Discourse (discuss.python.org)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tier-2-where-citizen-developers-actually-hang-out" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 2: Where citizen developers actually hang out
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tier 2: Where citizen developers actually hang out">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#slack-communities-the-watercoolers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Slack communities (the watercoolers)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#discord-communities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Discord communities
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#kaggle-6m-data-scientists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kaggle (6M+ data scientists)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#reddit-domain-specific-subs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reddit (domain-specific subs)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#youtube-tutorial-platforms" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        YouTube / tutorial platforms
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#newsletters-that-reach-citizen-devs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Newsletters that reach citizen devs
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tier-3-startup-and-industry-segments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 3: Startup and industry segments
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tier 3: Startup and industry segments">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#startup-segments-that-benefit-directly" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Startup segments that benefit directly
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tool-specific-communities-where-users-have-the-problem-right-now" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tool-specific communities (where users have the problem right now)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tier-4-content-and-media" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 4: Content and media
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tier 4: Content and media">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#blog-posts-devto-medium-personal" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Blog posts (dev.to / Medium / personal)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#linkedin" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        LinkedIn
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#twitterx-bluesky-mastodon" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Twitter/X, Bluesky, Mastodon
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pythondata-podcasts-and-newsletters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Python/Data podcasts and newsletters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pycon-local-meetups" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PyCon / local meetups
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-content-calendar-suggested-sequence" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Content Calendar — Suggested Sequence
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="5. Content Calendar — Suggested Sequence">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#pre-launch-before-v10-tag" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pre-launch (before v1.0 tag)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#launch-week-v10-tag-developer-communities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Launch week (v1.0 tag) — developer communities
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#week-2-citizen-dev-and-data-communities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Week 2 — citizen-dev and data communities
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#week-3-industry-specific-outreach" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Week 3 — industry-specific outreach
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#week-4-sustain-and-expand" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Week 4+ — sustain and expand
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-concrete-draft-messages" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Concrete Draft Messages
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. Concrete Draft Messages">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#reddit-rpython-post-title-body" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reddit r/Python — post title + body
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#8-the-way-of-working-story" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. The "Way of Working" Story
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="8. The &#34;Way of Working&#34; Story">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#what-makes-remote-stores-process-unusual" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What makes remote-store's process unusual
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#where-to-tell-this-story" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where to tell this story
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#9-metrics-to-track" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        9. Metrics to Track
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#10-summary-recommended-approach" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        10. Summary — Recommended Approach
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="10. Summary — Recommended Approach">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#strategy-three-waves-not-one-splash" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Strategy: three waves, not one splash
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#principles" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Principles
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -5609,22 +5431,44 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-what-is-remote-store-and-who-is-it-for" class="md-nav__link">
+  <a href="#1-motivation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. What Is remote-store and Who Is It For
+        1. Motivation
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. What Is remote-store and Who Is It For">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-normalize-childlisting-return-shapes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Normalize Child/Listing Return Shapes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Normalize Child/Listing Return Shapes">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-one-liner" class="md-nav__link">
+  <a href="#problem" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The one-liner
+        Problem
       
     </span>
   </a>
@@ -5632,10 +5476,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#what-it-actually-is" class="md-nav__link">
+  <a href="#validation-method" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What it actually is
+        Validation method
       
     </span>
   </a>
@@ -5643,10 +5487,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#what-it-is-not" class="md-nav__link">
+  <a href="#recommendation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What it is not
+        Recommendation
       
     </span>
   </a>
@@ -5654,10 +5498,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#primary-audiences" class="md-nav__link">
+  <a href="#analysis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Primary audiences
+        Analysis
       
     </span>
   </a>
@@ -5665,10 +5509,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#secondary-audiences" class="md-nav__link">
+  <a href="#decision-needed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Secondary audiences
+        Decision needed
       
     </span>
   </a>
@@ -5681,22 +5525,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-the-landscape-where-remote-store-sits" class="md-nav__link">
+  <a href="#4-fix-misleading-writewrite_atomic-docstrings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. The Landscape — Where remote-store Sits
+        4. Fix Misleading write/write_atomic Docstrings
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. The Landscape — Where remote-store Sits">
+    <nav class="md-nav" aria-label="4. Fix Misleading write/write_atomic Docstrings">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fsspec-filesystem-spec" class="md-nav__link">
+  <a href="#problem_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        fsspec (Filesystem Spec)
+        Problem
       
     </span>
   </a>
@@ -5704,10 +5548,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#obstore-by-development-seed" class="md-nav__link">
+  <a href="#validation-method_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        obstore (by Development Seed)
+        Validation method
       
     </span>
   </a>
@@ -5715,10 +5559,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#smart_open-by-rare-technologies" class="md-nav__link">
+  <a href="#recommendation_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        smart_open (by RaRe Technologies)
+        Recommendation
       
     </span>
   </a>
@@ -5726,65 +5570,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cloudpathlib-by-drivendata" class="md-nav__link">
+  <a href="#decision-needed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        cloudpathlib (by DrivenData)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#universal_pathlib-upath-by-fsspec" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        universal_pathlib (UPath, by fsspec)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#obspec-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        obspec (Protocol)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#raw-sdks-boto3-paramiko-azure-storage-" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Raw SDKs (boto3, paramiko, azure-storage-*)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-differentiators-for-messaging" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key differentiators for messaging
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#positioning-takeaway" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Positioning takeaway
+        Decision needed
       
     </span>
   </a>
@@ -5797,22 +5586,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-core-messaging-what-to-say" class="md-nav__link">
+  <a href="#5-fix-the-read_texterrors-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Core Messaging — What to Say
+        5. Fix the read_text(errors=...) Reference
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. Core Messaging — What to Say">
+    <nav class="md-nav" aria-label="5. Fix the read_text(errors=...) Reference">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#principle-share-the-benefit-and-the-way-of-working-dont-sell" class="md-nav__link">
+  <a href="#problem_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Principle: share the benefit and the way of working, don't sell
+        Problem
       
     </span>
   </a>
@@ -5820,10 +5609,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#message-pillars" class="md-nav__link">
+  <a href="#recommendation_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Message pillars
+        Recommendation
       
     </span>
   </a>
@@ -5831,10 +5620,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#avoid" class="md-nav__link">
+  <a href="#impact" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Avoid
+        Impact
       
     </span>
   </a>
@@ -5847,34 +5636,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-where-to-announce-channels-and-formats" class="md-nav__link">
+  <a href="#6-add-explicit-orderingperformance-guarantees-for-listing-methods" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Where to Announce — Channels and Formats
+        6. Add Explicit Ordering/Performance Guarantees for Listing Methods
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="4. Where to Announce — Channels and Formats">
+    <nav class="md-nav" aria-label="6. Add Explicit Ordering/Performance Guarantees for Listing Methods">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#tier-1-high-signal-developer-communities" class="md-nav__link">
+  <a href="#problem_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tier 1: High-signal developer communities
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tier 1: High-signal developer communities">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#reddit-rpython" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reddit r/Python
+        Problem
       
     </span>
   </a>
@@ -5882,10 +5659,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#hacker-news-show-hn" class="md-nav__link">
+  <a href="#validation-method_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Hacker News — Show HN
+        Validation method
       
     </span>
   </a>
@@ -5893,38 +5670,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#python-discourse-discusspythonorg" class="md-nav__link">
+  <a href="#recommendation_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Python Discourse (discuss.python.org)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tier-2-where-citizen-developers-actually-hang-out" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 2: Where citizen developers actually hang out
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tier 2: Where citizen developers actually hang out">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#slack-communities-the-watercoolers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Slack communities (the watercoolers)
+        Recommendation
       
     </span>
   </a>
@@ -5932,242 +5681,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#discord-communities" class="md-nav__link">
+  <a href="#decision-needed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Discord communities
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#kaggle-6m-data-scientists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kaggle (6M+ data scientists)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#reddit-domain-specific-subs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reddit (domain-specific subs)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#youtube-tutorial-platforms" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        YouTube / tutorial platforms
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#newsletters-that-reach-citizen-devs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Newsletters that reach citizen devs
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tier-3-startup-and-industry-segments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 3: Startup and industry segments
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tier 3: Startup and industry segments">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#startup-segments-that-benefit-directly" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Startup segments that benefit directly
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tool-specific-communities-where-users-have-the-problem-right-now" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tool-specific communities (where users have the problem right now)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tier-4-content-and-media" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 4: Content and media
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tier 4: Content and media">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#blog-posts-devto-medium-personal" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Blog posts (dev.to / Medium / personal)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#linkedin" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        LinkedIn
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#twitterx-bluesky-mastodon" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Twitter/X, Bluesky, Mastodon
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pythondata-podcasts-and-newsletters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Python/Data podcasts and newsletters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pycon-local-meetups" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PyCon / local meetups
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-content-calendar-suggested-sequence" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Content Calendar — Suggested Sequence
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="5. Content Calendar — Suggested Sequence">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#pre-launch-before-v10-tag" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pre-launch (before v1.0 tag)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#launch-week-v10-tag-developer-communities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Launch week (v1.0 tag) — developer communities
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#week-2-citizen-dev-and-data-communities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Week 2 — citizen-dev and data communities
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#week-3-industry-specific-outreach" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Week 3 — industry-specific outreach
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#week-4-sustain-and-expand" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Week 4+ — sustain and expand
+        Decision needed
       
     </span>
   </a>
@@ -6180,22 +5697,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#6-concrete-draft-messages" class="md-nav__link">
+  <a href="#7-clarify-atomicitymetadata-guarantees-for-move-and-copy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. Concrete Draft Messages
+        7. Clarify Atomicity/Metadata Guarantees for move and copy
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="6. Concrete Draft Messages">
+    <nav class="md-nav" aria-label="7. Clarify Atomicity/Metadata Guarantees for move and copy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#reddit-rpython-post-title-body" class="md-nav__link">
+  <a href="#problem_4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reddit r/Python — post title + body
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation-method_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommendation_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impact_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Impact
       
     </span>
   </a>
@@ -6208,22 +5758,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-the-way-of-working-story" class="md-nav__link">
+  <a href="#8-visual-separation-of-escape-hatches" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8. The "Way of Working" Story
+        8. Visual Separation of Escape Hatches
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="8. The &#34;Way of Working&#34; Story">
+    <nav class="md-nav" aria-label="8. Visual Separation of Escape Hatches">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-makes-remote-stores-process-unusual" class="md-nav__link">
+  <a href="#problem_5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What makes remote-store's process unusual
+        Problem
       
     </span>
   </a>
@@ -6231,10 +5781,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#where-to-tell-this-story" class="md-nav__link">
+  <a href="#recommendation_5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Where to tell this story
+        Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impact_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Impact
       
     </span>
   </a>
@@ -6247,33 +5808,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#9-metrics-to-track" class="md-nav__link">
+  <a href="#9-cross-cutting-concerns" class="md-nav__link">
     <span class="md-ellipsis">
       
-        9. Metrics to Track
+        9. Cross-Cutting Concerns
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#10-summary-recommended-approach" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        10. Summary — Recommended Approach
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="10. Summary — Recommended Approach">
+    <nav class="md-nav" aria-label="9. Cross-Cutting Concerns">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#strategy-three-waves-not-one-splash" class="md-nav__link">
+  <a href="#9a-write_text-gap-is-user-visible-in-quickstart-phase-1-priority" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Strategy: three waves, not one splash
+        9a. write_text() gap is user-visible in quickstart — Phase 1 priority
       
     </span>
   </a>
@@ -6281,10 +5831,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#principles" class="md-nav__link">
+  <a href="#9b-readme-api-table-descriptions-lag-behind-actual-contracts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Principles
+        9b. README API table descriptions lag behind actual contracts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9c-backend-behavior-matrix-essential-for-the-core-promise-phase-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9c. Backend behavior matrix — essential for the core promise (Phase 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9d-thread-safety-statement-missing-from-store-class-docstring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9d. Thread-safety statement missing from Store class docstring
       
     </span>
   </a>
@@ -6293,6 +5865,78 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-execution-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Execution Plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Execution Plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-docstring-fixes-write_text-and-documentation-gaps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Docstring fixes, write_text(), and documentation gaps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-api-design-decision-requires-choice-before-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: API design decision (requires choice before implementation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-method-name-validation-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Method Name Validation Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-appendix-verified-cross-ecosystem-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Appendix: Verified Cross-Ecosystem Sources
+      
+    </span>
+  </a>
   
 </li>
       
@@ -6313,1019 +5957,921 @@
 
 
 
-<h1 id="research-v1-communication-announcement-plan">Research: v1 Communication &amp; Announcement Plan<a class="headerlink" href="#research-v1-communication-announcement-plan" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> 2026-03-06
-<strong>Status:</strong> Research complete — ready for review and refinement</p>
+<h1 id="research-store-api-refinement">Research: Store API Refinement<a class="headerlink" href="#research-store-api-refinement" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-03-12
+<strong>Backlog items:</strong> ID-071 (Store API refinement), related: ID-063 (write_text convenience)
+<strong>Status:</strong> Research complete — awaiting design decisions</p>
 <hr />
-<h2 id="1-what-is-remote-store-and-who-is-it-for">1. What Is remote-store and Who Is It For<a class="headerlink" href="#1-what-is-remote-store-and-who-is-it-for" title="Permanent link">&para;</a></h2>
-<p>Before choosing channels and messages, the positioning needs to be clear.</p>
-<h3 id="the-one-liner">The one-liner<a class="headerlink" href="#the-one-liner" title="Permanent link">&para;</a></h3>
-<blockquote>
-<p>One simple API for file storage. Local, S3, SFTP, Azure. Same methods,
-swappable backends, zero reinvention.</p>
-</blockquote>
-<h3 id="what-it-actually-is">What it actually is<a class="headerlink" href="#what-it-actually-is" title="Permanent link">&para;</a></h3>
-<p>A Python library that gives every storage backend the same front door.
-<code>store.read()</code>, <code>store.write()</code>, <code>store.list_files()</code> — same call whether
-files sit on a local disk, in S3, on an SFTP server, or in Azure Blob.
-Streaming by default, atomic writes where the backend supports it, zero
-runtime dependencies in the core package.</p>
-<h3 id="what-it-is-not">What it is <em>not</em><a class="headerlink" href="#what-it-is-not" title="Permanent link">&para;</a></h3>
+<h2 id="1-motivation">1. Motivation<a class="headerlink" href="#1-motivation" title="Permanent link">&para;</a></h2>
+<p>The <code>Store</code> public API is approaching v1 freeze. Before locking the surface, a
+systematic audit is needed to catch inconsistencies, misleading docstrings, and
+missing convenience methods that would be breaking to fix after v1.</p>
+<p>This research applies two lenses:</p>
 <ul>
-<li>Not a query engine (no SQL, no predicate pushdown)</li>
-<li>Not a table format (no Delta Lake log, no Iceberg manifests)</li>
-<li>Not a filesystem reimplementation (delegates to <code>boto3</code>, <code>paramiko</code>,
-  <code>azure-storage-file-datalake</code>, <code>pyarrow</code> — the libraries you'd pick anyway)</li>
-<li>Not competing with <code>fsspec</code> on the same axis (see § 2)</li>
+<li><strong>Internal consistency audit</strong> — do return types, naming, and docstrings
+  match the actual type aliases and behavior across all Store methods?</li>
+<li><strong>Cross-ecosystem comparison</strong> — how do equivalent APIs (pathlib, fsspec,
+  PyFilesystem2, Go io/fs, Rust object_store, Java NIO, .NET System.IO) handle
+  the same problems? Where does <code>remote-store</code> diverge without good reason?</li>
 </ul>
-<h3 id="primary-audiences">Primary audiences<a class="headerlink" href="#primary-audiences" title="Permanent link">&para;</a></h3>
+<h2 id="2-scope">2. Scope<a class="headerlink" href="#2-scope" title="Permanent link">&para;</a></h2>
+<p>Six concerns identified by the audit, ordered by impact:</p>
 <ol>
-<li><strong>Citizen developers</strong> — analysts, scientists, domain experts who write
-   Python but shouldn't need to learn cloud SDKs to read and write files.</li>
-<li><strong>Platform teams</strong> — engineers who set up infrastructure and want to hand
-   colleagues a simple, safe, immutable-config API that can't be misused.</li>
-<li><strong>Anyone tired of rewriting storage glue</strong> — if you've wrapped S3 or SFTP
-   access more than once, this is that wrapper, tested and maintained.</li>
+<li><strong>Normalize child/listing return shapes</strong> — <code>iter_children()</code> returns <code>FileInfo | str</code>; <code>list_folders()</code> returns bare names while <code>list_files()</code> returns <code>FileInfo</code> with full paths</li>
+<li><strong>Fix misleading <code>write()</code> / <code>write_atomic()</code> docstrings</strong> — docstrings claim <code>str</code> is accepted but <code>WritableContent = BinaryIO | bytes</code>; consider adding <code>write_text()</code> for symmetry with <code>read_text()</code></li>
+<li><strong>Fix the <code>read_text(errors=...)</code> reference</strong> — cites <code>codecs.register</code> instead of the correct pointer</li>
+<li><strong>Add explicit ordering/performance guarantees for listing methods</strong> — <code>iter_children()</code> documents backend-defined ordering but <code>list_files()</code>, <code>list_folders()</code>, <code>glob()</code> do not</li>
+<li><strong>Clarify atomicity/metadata guarantees for <code>move()</code> and <code>copy()</code></strong> — backend-dependent behavior is undocumented</li>
+<li><strong>Visually separate advanced escape hatches</strong> — <code>unwrap()</code>, <code>native_path()</code>, and native <code>glob()</code> are backend-specific but not marked as such in docstrings</li>
 </ol>
-<h3 id="secondary-audiences">Secondary audiences<a class="headerlink" href="#secondary-audiences" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Data engineers</strong> building lightweight data lakes (Bronze/Silver/Gold via
-   <code>Store.child()</code> + PyArrow adapter — see PR #114's data lake patterns guide).</li>
-<li><strong>Teams that need observability</strong> — <code>ext.observe</code> hooks + OpenTelemetry
-   bridge give visibility into every I/O operation without instrumenting
-   application code.</li>
-</ol>
+<p>Plus cross-cutting concerns surfaced during the audit:</p>
+<ul>
+<li><strong>README API table descriptions</strong> lag behind actual contracts (bare names, mixed types, file-only constraints)</li>
+<li><strong>Backend behavior matrix</strong> is missing — users of <code>supports()</code> cannot tell what a capability means per backend</li>
+<li><strong>Thread-safety statement</strong> is absent from the <code>Store</code> class docstring</li>
+</ul>
 <hr />
-<h2 id="2-the-landscape-where-remote-store-sits">2. The Landscape — Where remote-store Sits<a class="headerlink" href="#2-the-landscape-where-remote-store-sits" title="Permanent link">&para;</a></h2>
-<p>Understanding the ecosystem is essential for honest, non-salesy positioning.</p>
-<h3 id="fsspec-filesystem-spec">fsspec (Filesystem Spec)<a class="headerlink" href="#fsspec-filesystem-spec" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>What:</strong> The de facto Python filesystem abstraction. 56+ public methods,
-  async support, caching, transactions, built-in backends for dozens of
-  storage systems.</li>
-<li><strong>Strengths:</strong> Ubiquitous. Dask, Intake, pandas, and many tools integrate
-  natively. Huge ecosystem of <code>fsspec</code>-based backends (<code>s3fs</code>, <code>adlfs</code>,
-  <code>sshfs</code>, <code>gcsfs</code>).</li>
-<li><strong>Criticisms:</strong> Large API surface, statefulness (caching surprises), poor
-  static typing, "filesystem on top of object stores" impedance mismatch.</li>
-<li><strong>remote-store's angle:</strong> remote-store is <em>not</em> an fsspec replacement.
-  It's a simpler, narrower tool for teams that want <code>read/write/list/delete</code>
-  with zero learning curve and immutable config. fsspec is a power tool;
-  remote-store is the box cutter that just works.</li>
-</ul>
-<h3 id="obstore-by-development-seed">obstore (by Development Seed)<a class="headerlink" href="#obstore-by-development-seed" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>What:</strong> Rust-backed (via PyO3) object store client. Wraps the Apache
-  <code>object_store</code> crate. S3, GCS, Azure. First-class async.</li>
-<li><strong>Strengths:</strong> 9x throughput over fsspec for concurrent small reads,
-  stateless API, self-contained (no boto3/Azure SDK), strong types.</li>
-<li><strong>Criticisms:</strong> No SFTP, no streaming file-like interface, newer ecosystem.</li>
-<li><strong>remote-store's angle:</strong> obstore optimises for raw throughput on object
-  stores (cloud + local). remote-store optimises for <em>simplicity and
-  portability</em> across heterogeneous backends including SFTP, with streaming
-  file-like I/O, observability, and immutable config. Different goals,
-  overlapping but distinct audiences.</li>
-</ul>
-<h3 id="smart_open-by-rare-technologies">smart_open (by RaRe Technologies)<a class="headerlink" href="#smart_open-by-rare-technologies" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>What:</strong> Drop-in replacement for Python's <code>open()</code> that handles S3, GCS,
-  Azure, HDFS, SFTP, HTTP, and local files. 14M+ weekly PyPI downloads.
-  A <strong>key ecosystem project</strong> with 120+ contributors.</li>
-<li><strong>Strengths:</strong> Ubiquitous adoption, dead-simple API (<code>open("s3://...")</code> just
-  works), transparent compression, minimal learning curve.</li>
-<li><strong>Criticisms:</strong> Focused on open/read/write — no <code>list_files()</code>, no <code>glob()</code>,
-  no <code>move()</code>, no <code>delete()</code>, no metadata. Not a storage management layer.</li>
-<li><strong>remote-store's angle:</strong> smart_open solves "open a file at a URI."
-  remote-store solves "manage files across backends with listing, deletion,
-  atomic writes, observability, and immutable config." Complementary scopes.
-  Teams that outgrow <code>smart_open("s3://…").read()</code> because they need listing,
-  deletion, or observability are remote-store's exact audience.</li>
-</ul>
-<h3 id="cloudpathlib-by-drivendata">cloudpathlib (by DrivenData)<a class="headerlink" href="#cloudpathlib-by-drivendata" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>What:</strong> <code>pathlib.Path</code>-style classes for S3, GCS, Azure. 608 GitHub stars.
-  Familiar API, seamless caching, local-filesystem mocks for testing.</li>
-<li><strong>Strengths:</strong> Pathlib muscle memory, automatic local caching, clean
-  <code>CloudPath("s3://bucket/key")</code> constructor.</li>
-<li><strong>Criticisms:</strong> No SFTP. Caching is implicit (can surprise). No streaming
-  (downloads full files). No observability. No immutable config model.</li>
-<li><strong>remote-store's angle:</strong> cloudpathlib is great for teams that think in
-  <code>pathlib</code> and want caching. remote-store is for teams that need streaming,
-  SFTP, atomic writes, and want explicit control over config and lifecycle.
-  The pathlib metaphor breaks down for object stores; remote-store doesn't
-  pretend files have a filesystem.</li>
-</ul>
-<h3 id="universal_pathlib-upath-by-fsspec">universal_pathlib (UPath, by fsspec)<a class="headerlink" href="#universal_pathlib-upath-by-fsspec" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>What:</strong> Extends <code>pathlib</code> API over fsspec backends. <code>UPath("s3://…")</code>
-  auto-dispatches to the right fsspec implementation.</li>
-<li><strong>Strengths:</strong> Pathlib API everywhere, huge backend coverage via fsspec,
-  converging with CPython 3.13+ pathlib ABC.</li>
-<li><strong>Criticisms:</strong> Inherits fsspec's statefulness and large surface. Still
-  stabilising internal implementation.</li>
-<li><strong>remote-store's angle:</strong> UPath wraps fsspec in pathlib syntax.
-  remote-store wraps native SDKs in a purpose-built storage API. Different
-  philosophy — UPath says "paths are universal," remote-store says "stores
-  are the abstraction."</li>
-</ul>
-<h3 id="obspec-protocol">obspec (Protocol)<a class="headerlink" href="#obspec-protocol" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>What:</strong> A 10-method protocol formalising object store interfaces.
-  Obstore is the primary implementation.</li>
-<li><strong>remote-store's angle:</strong> Complementary. remote-store's <code>Backend</code> protocol
-  could potentially implement <code>obspec</code> in the future for interop, but the
-  scope differs — remote-store includes filesystem-style backends (local,
-  SFTP) that obspec explicitly doesn't target.</li>
-</ul>
-<h3 id="raw-sdks-boto3-paramiko-azure-storage-">Raw SDKs (boto3, paramiko, azure-storage-*)<a class="headerlink" href="#raw-sdks-boto3-paramiko-azure-storage-" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>What:</strong> The official clients. Full-featured, cloud-specific.</li>
-<li><strong>remote-store's angle:</strong> remote-store <em>wraps</em> these. It doesn't replace
-  them — it provides a unified front door so application code doesn't need
-  to know which SDK is underneath. <code>unwrap()</code> gives escape-hatch access
-  when you need the native handle.</li>
-</ul>
-<h3 id="key-differentiators-for-messaging">Key differentiators for messaging<a class="headerlink" href="#key-differentiators-for-messaging" title="Permanent link">&para;</a></h3>
+<h2 id="3-normalize-childlisting-return-shapes">3. Normalize Child/Listing Return Shapes<a class="headerlink" href="#3-normalize-childlisting-return-shapes" title="Permanent link">&para;</a></h2>
+<h3 id="problem">Problem<a class="headerlink" href="#problem" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Dimension</th>
-<th>fsspec</th>
-<th>smart_open</th>
-<th>cloudpathlib</th>
-<th>obstore</th>
-<th>remote-store</th>
+<th>Method</th>
+<th>Returns</th>
+<th>Path shape</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>API surface</td>
-<td>~56 methods</td>
-<td><code>open()</code> only</td>
-<td>pathlib-style</td>
-<td>~10 methods</td>
-<td>~18 methods</td>
+<td><code>list_files()</code></td>
+<td><code>Iterator[FileInfo]</code></td>
+<td>store-relative full path</td>
 </tr>
 <tr>
-<td>Backend scope</td>
-<td>30+ filesystems</td>
-<td>S3,GCS,Az,SFTP</td>
-<td>S3,GCS,Azure</td>
-<td>S3, GCS, Azure</td>
-<td>Local,S3,SFTP,Az,Mem</td>
+<td><code>list_folders()</code></td>
+<td><code>Iterator[str]</code></td>
+<td>bare name (not full path)</td>
 </tr>
 <tr>
-<td>SFTP support</td>
-<td>via sshfs</td>
-<td>Yes</td>
-<td>No</td>
-<td>No</td>
-<td>Built-in</td>
-</tr>
-<tr>
-<td>Local filesystem</td>
-<td>Yes</td>
-<td>Yes (fallback)</td>
-<td>Mock only</td>
-<td>Yes (LocalStore)</td>
-<td>Built-in</td>
-</tr>
-<tr>
-<td>Memory backend (test)</td>
-<td>Yes</td>
-<td>No</td>
-<td>Local mock</td>
-<td>No</td>
-<td>Built-in</td>
-</tr>
-<tr>
-<td>List/glob/delete</td>
-<td>Yes</td>
-<td>No</td>
-<td>Yes (pathlib)</td>
-<td>Yes</td>
-<td>Yes</td>
-</tr>
-<tr>
-<td>Atomic writes</td>
-<td>No</td>
-<td>No</td>
-<td>No</td>
-<td>No</td>
-<td>Yes (capability-gated)</td>
-</tr>
-<tr>
-<td>Runtime dependencies</td>
-<td>Yes</td>
-<td>Minimal</td>
-<td>SDK-based</td>
-<td>Rust binary</td>
-<td>Zero (core)</td>
-</tr>
-<tr>
-<td>Streaming I/O</td>
-<td>Yes</td>
-<td>Yes</td>
-<td>No (downloads)</td>
-<td>Bytes-oriented</td>
-<td>Yes (BinaryIO)</td>
-</tr>
-<tr>
-<td>Async</td>
-<td>Yes</td>
-<td>No</td>
-<td>No</td>
-<td>Yes (first-class)</td>
-<td>Sync-only (for now)</td>
-</tr>
-<tr>
-<td>PyArrow interop</td>
-<td>Native</td>
-<td>No</td>
-<td>No</td>
-<td>Via obspec</td>
-<td><code>ext.arrow</code> adapter</td>
-</tr>
-<tr>
-<td>Observability</td>
-<td>No</td>
-<td>No</td>
-<td>No</td>
-<td>No</td>
-<td><code>ext.observe</code>+OTel</td>
-</tr>
-<tr>
-<td>Config model</td>
-<td>Per-filesystem</td>
-<td>URI-based</td>
-<td>Per-client</td>
-<td>Per-store kwargs</td>
-<td>Immutable Registry</td>
-</tr>
-<tr>
-<td>Typing</td>
-<td>Limited</td>
-<td>Limited</td>
-<td>Good</td>
-<td>Strong</td>
-<td>Strict mypy</td>
-</tr>
-<tr>
-<td>Weekly PyPI downloads</td>
-<td>~30M+</td>
-<td>~14M+</td>
-<td>~200K</td>
-<td>~150K</td>
-<td>New</td>
+<td><code>iter_children()</code></td>
+<td><code>Iterator[FileInfo \| str]</code></td>
+<td>mixed: FileInfo for files, str name for folders</td>
 </tr>
 </tbody>
 </table>
-<h3 id="positioning-takeaway">Positioning takeaway<a class="headerlink" href="#positioning-takeaway" title="Permanent link">&para;</a></h3>
-<p>remote-store occupies a specific niche: <strong>teams that need more than <code>open()</code>
-(smart_open) but less than a full filesystem abstraction (fsspec), with
-streaming, SFTP, atomic writes, observability, and immutable config.</strong> The
-closest comparison is cloudpathlib, but remote-store adds SFTP, streaming,
-atomic writes, observability, and rejects the pathlib metaphor for object stores.</p>
-<hr />
-<h2 id="3-core-messaging-what-to-say">3. Core Messaging — What to Say<a class="headerlink" href="#3-core-messaging-what-to-say" title="Permanent link">&para;</a></h2>
-<h3 id="principle-share-the-benefit-and-the-way-of-working-dont-sell">Principle: share the benefit and the way of working, don't sell<a class="headerlink" href="#principle-share-the-benefit-and-the-way-of-working-dont-sell" title="Permanent link">&para;</a></h3>
-<p>The goal is not "use remote-store instead of X." The goal is:</p>
-<blockquote>
-<p>"Here's a problem we had. Here's how we solved it. Here's what we learned.
-Maybe it helps you too."</p>
-</blockquote>
-<h3 id="message-pillars">Message pillars<a class="headerlink" href="#message-pillars" title="Permanent link">&para;</a></h3>
-<p><strong>Pillar 1: The problem is real and boring</strong></p>
-<blockquote>
-<p>Every team that touches multiple storage systems ends up writing the same
-glue code. A wrapper around S3 here, an SFTP helper there, a local
-fallback for testing. It's not hard work — it's tedious work that nobody
-maintains after the person who wrote it leaves.</p>
-</blockquote>
-<p><strong>Pillar 2: One API, swap the config</strong></p>
-<blockquote>
-<p><code>store.read("data.parquet")</code> works the same whether <code>store</code> points at a
-local directory, an S3 bucket, an SFTP server, or Azure Blob. Change the
-config, not the code. Develop locally with <code>MemoryBackend</code>, deploy to S3
-without touching application logic.</p>
-</blockquote>
-<p><strong>Pillar 3: Honest about the boundaries</strong></p>
-<blockquote>
-<p>remote-store is a storage I/O layer. It does not do queries, table formats,
-catalogs, or scheduling. It delegates to the SDKs you'd pick anyway
-(boto3, paramiko, Azure SDK). It's the thin layer that makes them
-interchangeable.</p>
-</blockquote>
-<p><strong>Pillar 4: The way of working (Spec-Driven Development)</strong></p>
-<blockquote>
-<p>The library is built with a spec-driven workflow: every feature starts as
-a spec, tests are written against the spec, then code is written to pass
-the tests. 21 specs, 95%+ coverage, strict mypy. The methodology itself
-may be as interesting as the library to some audiences.</p>
-</blockquote>
-<p><strong>Pillar 5: Citizen developers as a design force</strong></p>
-<blockquote>
-<p>Born from enabling analyst teams who write Python but shouldn't need to
-learn boto3 or paramiko. Immutable config so non-experts can't accidentally
-break state. Clear errors instead of raw SDK tracebacks. Streaming that
-just works without tuning buffer sizes.</p>
-</blockquote>
-<h3 id="avoid">Avoid<a class="headerlink" href="#avoid" title="Permanent link">&para;</a></h3>
-<ul>
-<li>"Better than fsspec / obstore / X" — position alongside, not against</li>
-<li>Feature lists without context — always lead with the problem</li>
-<li>"Production-ready" without evidence — share test coverage, spec count,
-  the backlog transparency instead</li>
-<li>Marketing language — no "revolutionary", "game-changing", "blazing fast"</li>
-<li>Overselling scope — be clear about what it does NOT do</li>
-</ul>
-<hr />
-<h2 id="4-where-to-announce-channels-and-formats">4. Where to Announce — Channels and Formats<a class="headerlink" href="#4-where-to-announce-channels-and-formats" title="Permanent link">&para;</a></h2>
-<h3 id="tier-1-high-signal-developer-communities">Tier 1: High-signal developer communities<a class="headerlink" href="#tier-1-high-signal-developer-communities" title="Permanent link">&para;</a></h3>
-<h4 id="reddit-rpython">Reddit r/Python<a class="headerlink" href="#reddit-rpython" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Format:</strong> "I built" / "What I'm working on" post</li>
-<li><strong>Tone:</strong> First person, conversational, honest about tradeoffs</li>
-<li><strong>What to include:</strong></li>
-<li>The problem (rewriting storage glue)</li>
-<li>Quick code example showing backend swap</li>
-<li>Link to GitHub repo (not a landing page)</li>
-<li>Honest "what this doesn't do" section</li>
-<li>Ask for feedback in a first comment</li>
-<li><strong>Flair:</strong> Use "I Made This" or similar project-showcase flair</li>
-<li><strong>Timing:</strong> Weekday morning US Eastern tends to perform best</li>
-<li><strong>Example title:</strong><blockquote>
-<p>I built a Python library that gives S3, SFTP, Azure, and local files the
-same read/write/list/delete API — here's what I learned</p>
-</blockquote>
-</li>
-</ul>
-<h4 id="hacker-news-show-hn">Hacker News — Show HN<a class="headerlink" href="#hacker-news-show-hn" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Format:</strong> <code>Show HN: remote-store — One API for file storage across
-  Local, S3, SFTP, Azure</code> → link to GitHub repo</li>
-<li><strong>Tone:</strong> Technical, concise, curious. HN rewards candor and punishes
-  marketing-speak. First person, explain <em>why</em> you built it.</li>
-<li><strong>First comment:</strong> Add a comment explaining the motivation, the
-  spec-driven approach, what's done, what's not. Ask: "What would you
-  need to try this?"</li>
-<li><strong>Key:</strong> Link to GitHub, not a docs site or landing page. Make it easy
-  to try (<code>pip install remote-store</code>, copy the quickstart, run it).</li>
-<li><strong>What resonates on HN:</strong></li>
-<li>The spec-driven development methodology</li>
-<li>Zero runtime dependencies in core</li>
-<li>The citizen-developer angle (enabling non-infrastructure people)</li>
-<li>Honest "known limitations" section</li>
-<li><strong>Example title:</strong><blockquote>
-<p>Show HN: remote-store – One Python API for Local, S3, SFTP, Azure file storage</p>
-</blockquote>
-</li>
-</ul>
-<h4 id="python-discourse-discusspythonorg">Python Discourse (discuss.python.org)<a class="headerlink" href="#python-discourse-discusspythonorg" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Category:</strong> "Packaging" or general "Python Help" → "Showcase"</li>
-<li><strong>Format:</strong> Longer-form post explaining the design decisions</li>
-<li><strong>Good for:</strong> Reaching library authors, packaging enthusiasts, CPython
-  contributors</li>
-<li><strong>Angle:</strong> Lead with the spec-driven methodology and how it shaped the
-  API design. This audience cares about <em>how</em> things are built.</li>
-</ul>
-<h3 id="tier-2-where-citizen-developers-actually-hang-out">Tier 2: Where citizen developers actually hang out<a class="headerlink" href="#tier-2-where-citizen-developers-actually-hang-out" title="Permanent link">&para;</a></h3>
-<p>Citizen developers — analysts, scientists, domain experts who write Python —
-don't frequent r/Python or Hacker News. They're in <strong>domain-specific and
-learning-focused communities.</strong> This is where remote-store's "you don't need
-to learn boto3" message lands hardest.</p>
-<h4 id="slack-communities-the-watercoolers">Slack communities (the watercoolers)<a class="headerlink" href="#slack-communities-the-watercoolers" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>DataTalks.Club</strong> (80K+ members) — The largest data Slack. Active channels
-  for data engineering, analytics, ML. The data lake patterns guide is perfect
-  content here. Citizen devs ask "how do I read from S3" in #general daily.</li>
-<li><strong>dbt Community</strong> (66K+ members) — Analytics engineers who build transforms.
-  They already deal with multi-backend storage for staging/output. The
-  "immutable config + SFTP for legacy sources" angle resonates.</li>
-<li><strong>Locally Optimistic</strong> (8K+ members) — Analytics leadership. The pitch here
-  is platform-team-facing: "give your analysts a safe API, stop them from
-  writing raw boto3."</li>
-<li><strong>PySlackers</strong> (40K+ members) — General Python Slack. Good for the "I built
-  this" announcement. More technical than the data Slacks.</li>
-<li><strong>Data Quality Camp</strong> (9K+ members) — Teams obsessed with data reliability.
-  Atomic writes + observability hooks are directly relevant.</li>
-<li><strong>Real Python Slack</strong> — Learners and intermediate devs. The quickstart
-  tutorial format works here. "Read from S3 in 5 lines" is compelling.</li>
-</ul>
-<h4 id="discord-communities">Discord communities<a class="headerlink" href="#discord-communities" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Polars Discord</strong> — Users of Polars are reading/writing Parquet constantly.
-  The PyArrow adapter that makes <code>store</code> a drop-in for <code>pq.read_table()</code> is
-  the hook. These users currently deal with <code>fsspec</code> or raw <code>boto3</code> for I/O.</li>
-<li><strong>DuckDB Discord</strong> + <strong>MotherDuck Community Slack</strong> — Same story: DuckDB
-  users need file I/O to feed their queries. <code>remote-store</code> as the I/O layer
-  under DuckDB's Parquet scanner is a natural fit.</li>
-<li><strong>Data Science Discord</strong> (14K+) — Broad data science audience. The
-  "MemoryBackend for tests, S3 for prod" story resonates with anyone tired
-  of mocking S3 in unit tests.</li>
-<li><strong>Python Discord</strong> (300K+) — Massive general Python community. Good for
-  visibility, but noisy. Time announcements for when channels are active.</li>
-</ul>
-<h4 id="kaggle-6m-data-scientists">Kaggle (6M+ data scientists)<a class="headerlink" href="#kaggle-6m-data-scientists" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Format:</strong> Notebook showing remote-store + Polars/DuckDB reading Parquet
-  from multiple backends with identical code. Kaggle users are hands-on —
-  a runnable notebook beats a blog post.</li>
-<li><strong>Discussion forums:</strong> "Tips &amp; Techniques" discussions about data loading
-  are common. A post about "simplifying multi-backend file access" fits.</li>
-</ul>
-<h4 id="reddit-domain-specific-subs">Reddit (domain-specific subs)<a class="headerlink" href="#reddit-domain-specific-subs" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>r/dataengineering</strong> (350K+) — The data lake patterns guide is the entry
-  point. Bronze/Silver/Gold with <code>Store.child()</code> + PyArrow. Be explicit about
-  what remote-store is NOT.</li>
-<li><strong>r/datascience</strong> (900K+) — Scientists who write Python. The "swap backend
-  without changing code" story for reproducibility (local dev → cloud prod).</li>
-<li><strong>r/bioinformatics</strong> (100K+) — SFTP is everywhere in genomics data exchange.
-  "One API for your SFTP data sources and your S3 results bucket" hits home.</li>
-<li><strong>r/learnpython</strong> (900K+) — Beginners learning file I/O. A tutorial post
-  "Beyond <code>open()</code>: reading files from S3, SFTP, Azure" could drive awareness.</li>
-</ul>
-<h4 id="youtube-tutorial-platforms">YouTube / tutorial platforms<a class="headerlink" href="#youtube-tutorial-platforms" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Audience:</strong> Self-taught analysts, bootcamp grads, career switchers.
-  These people learn by watching, not reading docs.</li>
-<li><strong>Format:</strong> 10-minute tutorial: "Read files from anywhere in Python"
-  showing local → S3 → SFTP with the same code. Terminal-focused, no slides.</li>
-<li><strong>Channels to pitch:</strong> Real Python, ArjanCodes, mCoding, Tech With Tim,
-  Rob Mulla (data science focus).</li>
-</ul>
-<h4 id="newsletters-that-reach-citizen-devs">Newsletters that reach citizen devs<a class="headerlink" href="#newsletters-that-reach-citizen-devs" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Python Weekly</strong> / <strong>PyCoders Weekly</strong> — Standard Python newsletters</li>
-<li><strong>Data Engineering Weekly</strong> — Targeted at the data infra crowd</li>
-<li><strong>Pandas Illustrated</strong> (Substack) — Reaches DataFrame-oriented analysts</li>
-<li><strong>Data Engineering Central</strong> (Substack) — DuckDB/Polars audience</li>
-<li><strong>Console.dev</strong> — Curates interesting developer tools weekly</li>
-<li><strong>TLDR</strong> / <strong>Changelog</strong> — Broader dev newsletters with Python sections</li>
-</ul>
-<h3 id="tier-3-startup-and-industry-segments">Tier 3: Startup and industry segments<a class="headerlink" href="#tier-3-startup-and-industry-segments" title="Permanent link">&para;</a></h3>
-<p>These are organisations that would <em>use</em> remote-store, not just <em>discuss</em> it.
-Reaching them requires different channels than developer communities.</p>
-<h4 id="startup-segments-that-benefit-directly">Startup segments that benefit directly<a class="headerlink" href="#startup-segments-that-benefit-directly" title="Permanent link">&para;</a></h4>
-<p><strong>1. Data infrastructure startups (Airbyte, dltHub, Meltano, Dagster)</strong>
-- These build ETL/ELT tools. Their users deal with multi-backend file I/O
-  constantly. remote-store could be a dependency or recommended companion.
-- <strong>Action:</strong> Open issues or discussions on their repos showing integration
-  examples. "Here's how remote-store + Dagster simplifies multi-backend I/O."</p>
-<p><strong>2. Healthcare / life sciences data platforms</strong>
-- SFTP is mandated by HIPAA-adjacent workflows (lab results, claims files,
-  imaging metadata). S3 is where analytics happens. Both in one pipeline.
-- <strong>Channels:</strong> Health Data Science Slack, r/bioinformatics, AMIA forums
-- <strong>Pitch:</strong> "SFTP for ingest, S3 for analytics, one API, credential masking
-  built in."</p>
-<p><strong>3. Fintech / banking data teams</strong>
-- Bank feeds arrive via SFTP. Analytics sits in S3/Azure. Legacy systems
-  aren't going away. The "SFTP + cloud" story is their daily reality.
-- <strong>Channels:</strong> Fintech Slack communities, LinkedIn fintech groups
-- <strong>Pitch:</strong> "Stop maintaining separate SFTP and S3 wrappers. Credential
-  masking in logs. Atomic writes for reconciliation files."</p>
-<p><strong>4. IoT / manufacturing / edge computing</strong>
-- Devices write to local storage or edge SFTP. Cloud aggregation in S3/Azure.
-  The local → cloud pipeline is remote-store's sweet spot.
-- <strong>Channels:</strong> r/IoT, industrial Python meetups, AWS IoT community</p>
-<p><strong>5. ML platforms / MLOps teams</strong>
-- Model artifacts, training data, evaluation results — all need multi-backend
-  storage. The MemoryBackend for testing ML pipelines is a differentiator.
-- <strong>Channels:</strong> MLOps Community Slack (9.3K), Weights &amp; Biases community,
-  r/mlops</p>
-<p><strong>6. Consultancies and agencies</strong>
-- Build for multiple clients with different infra. "One storage API that
-  works whether the client uses S3, Azure, or on-prem SFTP" is a real
-  selling point for reusable codebases.
-- <strong>Channels:</strong> LinkedIn, agency-focused tech meetups</p>
-<p><strong>7. Research labs and universities</strong>
-- Scientists share data via institutional SFTP, compute on cloud. The
-  "develop locally with MemoryBackend, deploy to S3" story maps to
-  laptop → HPC cluster workflows.
-- <strong>Channels:</strong> Jupyter Discourse, Scientific Python community, domain
-  conferences (SciPy, PyData, PyCon sprints)</p>
-<h4 id="tool-specific-communities-where-users-have-the-problem-right-now">Tool-specific communities (where users have the problem right now)<a class="headerlink" href="#tool-specific-communities-where-users-have-the-problem-right-now" title="Permanent link">&para;</a></h4>
+<p>From a user's perspective: "I called <code>list_folders('data')</code> and got <code>['reports', 'archive']</code> — bare names I have to manually join back to paths. But <code>list_files('data')</code> gave me <code>FileInfo</code> objects with full paths. Why the asymmetry?" And <code>iter_children()</code> is worse — it yields <code>FileInfo</code> for files but plain <code>str</code> for folders, forcing an <code>isinstance</code> branch just to iterate a directory.</p>
+<h3 id="validation-method">Validation method<a class="headerlink" href="#validation-method" title="Permanent link">&para;</a></h3>
+<p><strong>Cross-ecosystem comparison</strong> of how storage/filesystem APIs handle directory listing return types:</p>
 <table>
 <thead>
 <tr>
-<th>Tool community</th>
-<th>The pain point remote-store solves</th>
+<th>Library</th>
+<th>List files</th>
+<th>List folders</th>
+<th>Combined</th>
+<th>Return uniformity</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Polars</strong> Discord/GitHub</td>
-<td>"How do I read Parquet from S3?" → PyArrow adapter</td>
+<td>Python <code>pathlib</code></td>
+<td><code>iterdir()</code></td>
+<td><code>iterdir()</code></td>
+<td>Same method</td>
+<td>Uniform <code>Path</code> objects, filter with <code>is_file()</code>/<code>is_dir()</code></td>
 </tr>
 <tr>
-<td><strong>DuckDB</strong> Discord</td>
-<td>"How do I scan files across backends?" → <code>ext.arrow</code></td>
+<td>Python <code>os</code></td>
+<td><code>scandir()</code></td>
+<td><code>scandir()</code></td>
+<td>Same method</td>
+<td>Uniform <code>DirEntry</code> with <code>.is_file()</code>, <code>.is_dir()</code>, <code>.name</code>, <code>.path</code></td>
 </tr>
 <tr>
-<td><strong>Pandas</strong> (SO/Reddit)</td>
-<td>"How do I write to S3?" → <code>store.write()</code></td>
+<td>PyFilesystem2</td>
+<td><code>listdir()</code> / <code>scandir()</code></td>
+<td><code>listdir()</code> / <code>scandir()</code></td>
+<td>Same method</td>
+<td><code>listdir</code> → uniform <code>str</code> names; <code>scandir</code> → uniform <code>Info</code> objects with <code>is_dir</code> flag</td>
 </tr>
 <tr>
-<td><strong>Airflow</strong> Slack</td>
-<td>"How do I abstract file transfers?" → Store API (<code>read</code>/<code>write</code> across backends)</td>
+<td>fsspec</td>
+<td><code>ls(detail=True)</code></td>
+<td><code>ls(detail=True)</code></td>
+<td>Same method</td>
+<td>Uniform dicts with <code>"type": "file"|"directory"</code></td>
 </tr>
 <tr>
-<td><strong>Dagster</strong> Slack</td>
-<td>"How do I make I/O manager backend-agnostic?" → Registry</td>
+<td>Go <code>io/fs</code></td>
+<td><code>ReadDir()</code></td>
+<td><code>ReadDir()</code></td>
+<td>Same method</td>
+<td>Uniform <code>DirEntry</code> with <code>IsDir()</code>, <code>Name()</code>, <code>Info()</code></td>
 </tr>
 <tr>
-<td><strong>Prefect</strong> community</td>
-<td>Same as Dagster — pipeline I/O abstraction</td>
+<td>Go <code>afero</code></td>
+<td><code>ReadDir()</code></td>
+<td><code>ReadDir()</code></td>
+<td>Same method</td>
+<td>Uniform <code>os.FileInfo</code></td>
 </tr>
 <tr>
-<td><strong>FastAPI</strong> Discord</td>
-<td>"How do I handle file uploads to S3/local?" → Store</td>
+<td>Rust <code>std::fs</code></td>
+<td><code>read_dir()</code></td>
+<td><code>read_dir()</code></td>
+<td>Same method</td>
+<td>Uniform <code>DirEntry</code> with <code>file_type()</code></td>
 </tr>
 <tr>
-<td><strong>Jupyter</strong> Discourse</td>
-<td>"How do I read remote files in notebooks?" → quickstart</td>
+<td>Rust <code>object_store</code></td>
+<td><code>list()</code></td>
+<td><code>list_with_delimiter()</code></td>
+<td>Separate</td>
+<td><code>list()</code> → <code>ObjectMeta</code>; delimiter → <code>ListResult { objects, common_prefixes }</code></td>
+</tr>
+<tr>
+<td>Java <code>java.nio.file</code></td>
+<td><code>Files.list()</code> / <code>newDirectoryStream()</code></td>
+<td>Same</td>
+<td>Same method</td>
+<td>Uniform <code>Path</code> objects</td>
+</tr>
+<tr>
+<td>.NET <code>System.IO</code></td>
+<td><code>GetFiles()</code> / <code>GetDirectories()</code></td>
+<td>Separate</td>
+<td><code>GetFileSystemEntries()</code></td>
+<td>Separate returns strings; <code>DirectoryInfo.EnumerateFileSystemInfos()</code> returns uniform <code>FileSystemInfo</code></td>
+</tr>
+<tr>
+<td>Node.js <code>fs</code></td>
+<td><code>readdir({withFileTypes})</code></td>
+<td>Same</td>
+<td>Same method</td>
+<td><code>withFileTypes: true</code> → uniform <code>Dirent</code> with <code>isFile()</code>, <code>isDirectory()</code></td>
 </tr>
 </tbody>
 </table>
-<h3 id="tier-4-content-and-media">Tier 4: Content and media<a class="headerlink" href="#tier-4-content-and-media" title="Permanent link">&para;</a></h3>
-<h4 id="blog-posts-devto-medium-personal">Blog posts (dev.to / Medium / personal)<a class="headerlink" href="#blog-posts-devto-medium-personal" title="Permanent link">&para;</a></h4>
+<p><strong>Overwhelming industry consensus</strong>: when a method returns both files and folders, they use a <strong>uniform type</strong> with a <code>kind</code>/<code>type</code>/<code>is_dir</code> discriminator — never a union of unrelated types.</p>
+<h3 id="recommendation">Recommendation<a class="headerlink" href="#recommendation" title="Permanent link">&para;</a></h3>
+<p><strong>Option A: Introduce <code>ChildEntry</code> dataclass</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ChildEntry</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>           <span class="c1"># bare name (last path component)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">path</span><span class="p">:</span> <span class="n">RemotePath</span>     <span class="c1"># store-relative full path</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">kind</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;file&quot;</span><span class="p">,</span> <span class="s2">&quot;folder&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">info</span><span class="p">:</span> <span class="n">FileInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># populated for files, None for folders</span>
+</code></pre></div>
 <ul>
-<li><strong>Post 1 — The methodology story:</strong> "Building a spec-driven Python library:
-  what I learned." The SDD process, 21 specs, adversarial audits, AI
-  collaboration. This is the most distinctive and shareable piece.</li>
-<li><strong>Post 2 — The problem story:</strong> "Every team writes the same S3 wrapper.
-  Here's why I open-sourced ours." Problem-first, practical, code examples.</li>
-<li><strong>Post 3 — The use-case story:</strong> "A portable data lake with Python — no
-  Spark required." Based on PR #114's data lake patterns guide. The
-  Bronze/Silver/Gold architecture diagram is visually compelling.</li>
-<li><strong>Post 4 — The SFTP story:</strong> "SFTP isn't dead: bridging legacy and cloud
-  with one Python API." Targets the finance/healthcare audience specifically.</li>
+<li><code>iter_children()</code> → <code>Iterator[ChildEntry]</code>  (uniform type, no isinstance branching)</li>
+<li><code>list_folders()</code> → <code>Iterator[str]</code> remains for the simple "give me folder names" case, BUT also add <code>list_folders_info()</code> → <code>Iterator[ChildEntry]</code> for callers who need full paths</li>
 </ul>
-<h4 id="linkedin">LinkedIn<a class="headerlink" href="#linkedin" title="Permanent link">&para;</a></h4>
+<p><strong>Option B (minimal): Make <code>list_folders()</code> return store-relative paths</strong></p>
 <ul>
-<li><strong>Format:</strong> Short post (&lt; 300 words) with a clear hook</li>
-<li><strong>Angle 1 (platform teams):</strong> "We enabled our analyst teams to work with
-  S3 and SFTP without learning boto3 or paramiko."</li>
-<li><strong>Angle 2 (engineering managers):</strong> "How spec-driven development with AI
-  produced a 1,400-test Python library in ~11 weeks."</li>
-<li><strong>Angle 3 (data leads):</strong> "Our analysts stopped asking how to upload to S3.
-  Here's the library that made it a non-question."</li>
+<li><code>list_folders()</code> → <code>Iterator[str]</code> but full store-relative paths instead of bare names</li>
+<li><code>iter_children()</code> stays <code>FileInfo | str</code> but the <code>str</code> is now a full path</li>
 </ul>
-<h4 id="twitterx-bluesky-mastodon">Twitter/X, Bluesky, Mastodon<a class="headerlink" href="#twitterx-bluesky-mastodon" title="Permanent link">&para;</a></h4>
+<p>This is simpler but doesn't fix the isinstance branching issue.</p>
+<p><strong>Option C (alternative): FolderEntry dataclass</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">FolderEntry</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">path</span><span class="p">:</span> <span class="n">RemotePath</span>
+</code></pre></div>
 <ul>
-<li><strong>Format:</strong> Thread (4–6 posts) or single post with link</li>
-<li><strong>Hook:</strong> Start with the problem, not the solution</li>
-<li><strong>Example thread opener:</strong><blockquote>
-<p>Every team I've worked with has written their own S3 wrapper.
-Then their own SFTP wrapper. Then a "unified" one that wraps both.
-Then someone leaves and nobody maintains it.</p>
-<p>I open-sourced the version that broke the cycle. 🧵</p>
-</blockquote>
-</li>
+<li><code>list_folders()</code> → <code>Iterator[FolderEntry]</code></li>
+<li><code>iter_children()</code> → <code>Iterator[FileInfo | FolderEntry]</code> (still a union, but both are named types with <code>.name</code> and <code>.path</code>)</li>
 </ul>
-<h4 id="pythondata-podcasts-and-newsletters">Python/Data podcasts and newsletters<a class="headerlink" href="#pythondata-podcasts-and-newsletters" title="Permanent link">&para;</a></h4>
+<p><strong>Option D (preferred): Protocol + FolderEntry</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@typing</span><span class="o">.</span><span class="n">runtime_checkable</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">PathEntry</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Structural type shared by all listing results.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="nd">@property</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="nd">@property</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemotePath</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="k">class</span><span class="w"> </span><span class="nc">FolderEntry</span><span class="p">:</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">path</span><span class="p">:</span> <span class="n">RemotePath</span>
+</code></pre></div>
+<p><code>FileInfo</code> already has <code>name: str</code> and <code>path: RemotePath</code>, so it satisfies
+<code>PathEntry</code> structurally — no inheritance change needed. <code>FolderEntry</code> likewise
+satisfies it by construction.</p>
 <ul>
-<li><strong>Python Bytes, Talk Python, Real Python newsletter, Data Engineering
-  Weekly, PyCoders Weekly</strong></li>
-<li><strong>Format:</strong> Submit for inclusion / suggest as a topic</li>
-<li><strong>Angle:</strong> "New library for unified file storage" or "Spec-driven
-  development in practice"</li>
+<li><code>list_folders()</code> → <code>Iterator[FolderEntry]</code></li>
+<li><code>iter_children()</code> → <code>Iterator[PathEntry]</code> (uniform type in the signature)</li>
+<li><code>list_files()</code> → <code>Iterator[FileInfo]</code> (unchanged — callers still get full metadata)</li>
 </ul>
-<h4 id="pycon-local-meetups">PyCon / local meetups<a class="headerlink" href="#pycon-local-meetups" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Lightning talk:</strong> 5 minutes on the spec-driven approach</li>
-<li><strong>Poster session:</strong> Architecture diagram + live demo</li>
-<li><strong>Sprint:</strong> Get contributors to tackle backlog items</li>
-</ul>
-<hr />
-<h2 id="5-content-calendar-suggested-sequence">5. Content Calendar — Suggested Sequence<a class="headerlink" href="#5-content-calendar-suggested-sequence" title="Permanent link">&para;</a></h2>
-<p>The goal is a wave, not a single splash. Each piece builds on the previous.</p>
-<h3 id="pre-launch-before-v10-tag">Pre-launch (before v1.0 tag)<a class="headerlink" href="#pre-launch-before-v10-tag" title="Permanent link">&para;</a></h3>
+<p>Callers of <code>iter_children()</code> get <code>.name</code> and <code>.path</code> on every entry without
+isinstance. Callers who need file-specific metadata (size, modified_at) narrow
+with <code>isinstance(entry, FileInfo)</code> — which is the correct semantic: "I want
+richer info that only files have."</p>
+<p><strong>Migration impact:</strong> This is a <strong>behavioral</strong> change requiring migration for
+existing callers, not just a type-level one. Currently <code>iter_children()</code> yields
+bare <code>str</code> names for folders. Under Option D, folders become <code>FolderEntry</code>
+objects. Existing code like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">):</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        <span class="n">subfolder_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;data/</span><span class="si">{</span><span class="n">child</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># child IS the name string</span>
+</code></pre></div>
+<p>will fail at runtime — <code>isinstance(child, str)</code> returns <code>False</code> for
+<code>FolderEntry</code>, so the folder branch never triggers. <strong>All callers must change
+<code>child</code> → <code>child.name</code> (or <code>child.path</code>) for the folder branch.</strong> Similarly,
+<code>list_folders()</code> callers that treat results as plain strings must update to
+access <code>.name</code> or <code>.path</code> on <code>FolderEntry</code> objects. Migration guidance must
+be included in the CHANGELOG and upgrade guide when this change ships.</p>
+<p><strong>Approachability trade-off:</strong> <code>Protocol</code> + structural typing is less familiar to
+citizen developers than concrete classes. Users may see <code>PathEntry</code> in IDE
+completions and not know what a Protocol is. However, they don't <em>need</em> to know —
+they just use <code>.name</code> and <code>.path</code>. By contrast, Option C's union
+(<code>FileInfo | FolderEntry</code>) is arguably more discoverable: both types are concrete
+classes you can click through to in your IDE. The protocol's advantages
+(extensibility, no isinstance) are library-designer concerns. This trade-off
+should be weighed during the design decision.</p>
+<p>This is strictly better than Option C's <code>FileInfo | FolderEntry</code> union because:</p>
 <ol>
-<li><strong>Polish README</strong> — ensure quickstart works in &lt; 30 seconds</li>
-<li><strong>Merge PR #114</strong> (data lake patterns guide) — gives a compelling
-   use-case document to reference</li>
-<li><strong>Record a 2-minute demo</strong> — terminal screencast showing:</li>
-<li><code>pip install remote-store</code></li>
-<li>Write a file to local</li>
-<li>Change config to S3 (or MemoryBackend for demo)</li>
-<li>Same code, different backend</li>
-<li><strong>Write the blog post</strong> — "Building a spec-driven Python library"
-   (methodology story, not a product launch)</li>
+<li><strong>The common-case code path uses no isinstance at all.</strong> Iterating names or
+   paths works directly on <code>PathEntry</code>. Option C's union technically has the
+   same attributes, but the type checker still sees a union and may require
+   narrowing depending on the operation.</li>
+<li><strong>The protocol is the documented contract.</strong> Type checkers enforce that both
+   <code>FileInfo</code> and <code>FolderEntry</code> satisfy <code>PathEntry</code>. If a future entry type is
+   added (e.g., <code>SymlinkEntry</code>), it just needs to satisfy the same protocol —
+   no union expansion needed.</li>
+<li><strong>No wrapper, no inheritance.</strong> <code>FileInfo</code> stays unchanged. <code>FolderEntry</code> is
+   a simple dataclass. The protocol is purely structural — existing code that
+   constructs <code>FileInfo</code> or <code>FolderEntry</code> doesn't change.</li>
 </ol>
-<h3 id="launch-week-v10-tag-developer-communities">Launch week (v1.0 tag) — developer communities<a class="headerlink" href="#launch-week-v10-tag-developer-communities" title="Permanent link">&para;</a></h3>
+<h3 id="analysis">Analysis<a class="headerlink" href="#analysis" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Day</th>
-<th>Channel</th>
-<th>Content</th>
+<th>Criterion</th>
+<th>Option A</th>
+<th>Option B</th>
+<th>Option C</th>
+<th><strong>Option D</strong></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Mon</td>
-<td>Blog post (dev.to/Medium)</td>
-<td>Publish methodology story</td>
+<td>isinstance-free iteration</td>
+<td>Yes</td>
+<td>No</td>
+<td>Partially (union still typed)</td>
+<td><strong>Yes</strong></td>
 </tr>
 <tr>
-<td>Tue</td>
-<td>Hacker News</td>
-<td>Show HN with GitHub link</td>
+<td><code>list_folders()</code> returns full paths</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><strong>Yes</strong></td>
 </tr>
 <tr>
-<td>Tue</td>
-<td>Reddit r/Python</td>
-<td>"I built this" post</td>
+<td><code>FileInfo</code> unchanged</td>
+<td>No (wrapped)</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><strong>Yes</strong></td>
 </tr>
 <tr>
-<td>Wed</td>
-<td>Python Discourse</td>
-<td>Design-focused writeup</td>
+<td>Type-checker enforced contract</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>Duck-typed coincidence</td>
+<td><strong>Protocol-enforced</strong></td>
 </tr>
 <tr>
-<td>Wed</td>
-<td>Twitter/X, Bluesky</td>
-<td>Thread with problem hook</td>
+<td>Extensible to new entry kinds</td>
+<td>Requires updating <code>ChildEntry.kind</code></td>
+<td>N/A</td>
+<td>Requires union expansion</td>
+<td><strong>Just satisfy protocol</strong></td>
 </tr>
 <tr>
-<td>Thu</td>
-<td>Reddit r/dataengineering</td>
-<td>Data lake patterns angle</td>
-</tr>
-<tr>
-<td>Thu</td>
-<td>LinkedIn</td>
-<td>Professional short post</td>
-</tr>
-<tr>
-<td>Fri</td>
-<td>Submit to newsletters</td>
-<td>Python Bytes, PyCoders, Data Eng Weekly, Console.dev</td>
+<td>Migration scope</td>
+<td><code>iter_children</code> return type</td>
+<td><code>list_folders</code> return values</td>
+<td><code>list_folders</code> + <code>iter_children</code> types</td>
+<td><code>list_folders</code> + <code>iter_children</code> types</td>
 </tr>
 </tbody>
 </table>
-<h3 id="week-2-citizen-dev-and-data-communities">Week 2 — citizen-dev and data communities<a class="headerlink" href="#week-2-citizen-dev-and-data-communities" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Day</th>
-<th>Channel</th>
-<th>Content</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Mon</td>
-<td>DataTalks.Club Slack</td>
-<td>Share in #general with data lake angle</td>
-</tr>
-<tr>
-<td>Mon</td>
-<td>Polars Discord</td>
-<td>"PyArrow adapter for multi-backend Parquet I/O"</td>
-</tr>
-<tr>
-<td>Tue</td>
-<td>DuckDB Discord</td>
-<td>"Using remote-store as I/O layer for DuckDB"</td>
-</tr>
-<tr>
-<td>Tue</td>
-<td>dbt Community Slack</td>
-<td>Short post: SFTP sources + S3 staging</td>
-</tr>
-<tr>
-<td>Wed</td>
-<td>Reddit r/datascience</td>
-<td>"Swap storage backends for reproducibility"</td>
-</tr>
-<tr>
-<td>Wed</td>
-<td>PySlackers Slack</td>
-<td>"I built this" announcement</td>
-</tr>
-<tr>
-<td>Thu</td>
-<td>Kaggle notebook</td>
-<td>Runnable notebook: multi-backend Parquet</td>
-</tr>
-<tr>
-<td>Thu</td>
-<td>Reddit r/learnpython</td>
-<td>Tutorial: "Beyond open() — files from anywhere"</td>
-</tr>
-<tr>
-<td>Fri</td>
-<td>MLOps Community Slack</td>
-<td>"MemoryBackend for testing ML pipelines"</td>
-</tr>
-</tbody>
-</table>
-<h3 id="week-3-industry-specific-outreach">Week 3 — industry-specific outreach<a class="headerlink" href="#week-3-industry-specific-outreach" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Day</th>
-<th>Channel</th>
-<th>Content</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Mon</td>
-<td>Blog post #2</td>
-<td>"SFTP isn't dead: bridging legacy and cloud"</td>
-</tr>
-<tr>
-<td>Mon</td>
-<td>LinkedIn (fintech angle)</td>
-<td>Short post for financial data teams</td>
-</tr>
-<tr>
-<td>Tue</td>
-<td>Reddit r/bioinformatics</td>
-<td>"One API for SFTP data sources + S3 results"</td>
-</tr>
-<tr>
-<td>Wed</td>
-<td>Data Quality Camp Slack</td>
-<td>Atomic writes + observability hooks angle</td>
-</tr>
-<tr>
-<td>Thu</td>
-<td>YouTube pitch</td>
-<td>Contact ArjanCodes / Real Python for collab</td>
-</tr>
-<tr>
-<td>Fri</td>
-<td>Locally Optimistic Slack</td>
-<td>Platform-team angle for analytics leaders</td>
-</tr>
-</tbody>
-</table>
-<h3 id="week-4-sustain-and-expand">Week 4+ — sustain and expand<a class="headerlink" href="#week-4-sustain-and-expand" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Respond to every comment and issue — this is where trust is built</li>
-<li>Write follow-up posts addressing recurring questions</li>
-<li>Submit lightning talk proposals to PyCon, PyData, SciPy</li>
-<li>If traction in a specific community, write targeted content for it</li>
-<li>Write a comparison post (not "vs" — "how remote-store complements
-  smart_open, cloudpathlib, fsspec, and obstore")</li>
-<li>Pitch to podcast hosts: Talk Python, Python Bytes, Data Engineering
-  Podcast, Changelog</li>
-<li>Open integration discussions on Dagster/Airflow/Prefect repos</li>
-</ul>
+<p><strong>Recommendation: Option D.</strong> It gives the cleanest caller ergonomics, enforces
+the shared contract at the type level, and is the most extensible. The protocol
+is tiny (two properties), so it adds minimal API surface. <code>FileInfo</code> is
+untouched — it already structurally satisfies <code>PathEntry</code>.</p>
+<h3 id="decision-needed">Decision needed<a class="headerlink" href="#decision-needed" title="Permanent link">&para;</a></h3>
+<p>Which option to pursue? This is the most impactful change and affects Backend ABC, all backend implementations, specs, tests, docs.</p>
 <hr />
-<h2 id="6-concrete-draft-messages">6. Concrete Draft Messages<a class="headerlink" href="#6-concrete-draft-messages" title="Permanent link">&para;</a></h2>
-<h3 id="reddit-rpython-post-title-body">Reddit r/Python — post title + body<a class="headerlink" href="#reddit-rpython-post-title-body" title="Permanent link">&para;</a></h3>
-<p><strong>Title:</strong></p>
+<h2 id="4-fix-misleading-writewrite_atomic-docstrings">4. Fix Misleading write/write_atomic Docstrings<a class="headerlink" href="#4-fix-misleading-writewrite_atomic-docstrings" title="Permanent link">&para;</a></h2>
+<h3 id="problem_1">Problem<a class="headerlink" href="#problem_1" title="Permanent link">&para;</a></h3>
+<p>The <code>write()</code> docstring says:</p>
 <blockquote>
-<p>I built a Python library that gives S3, SFTP, Azure, and local files the
-same read/write API — what I learned along the way</p>
+<p><code>:param content: Data to write (``bytes``, ``str``, or readable binary stream).</code></p>
 </blockquote>
-<p><strong>Body:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Hey r/Python,
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>I&#39;ve been working on `remote-store`, a library that came out of a real
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>problem: enabling analyst teams to work with files on S3, SFTP servers,
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>and local disks without having to learn boto3, paramiko, or Azure SDKs.
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>The idea is simple — one `Store` object with `read()`, `write()`,
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>`list_files()`, `delete()`. Swap the backend config, the code stays the
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>same. MemoryBackend for tests, LocalBackend for dev, S3Backend for prod.
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>```python
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>from remote_store import BackendConfig, Registry, RegistryConfig, StoreProfile
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>config = RegistryConfig(
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    backends={&quot;s3&quot;: BackendConfig(type=&quot;s3&quot;, options={&quot;bucket&quot;: &quot;my-bucket&quot;})},
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    stores={&quot;data&quot;: StoreProfile(backend=&quot;s3&quot;, root_path=&quot;data&quot;)},
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>)
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>with Registry(config) as registry:
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    store = registry.get_store(&quot;data&quot;)
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    store.write(&quot;hello.txt&quot;, b&quot;Hello, world!&quot;)
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    print(store.read_bytes(&quot;hello.txt&quot;))
-</code></pre></div>
-<p><strong>What it does:</strong>
-- read, write, list, delete, move, copy, exists, glob
-- Streaming I/O by default (large files don't blow up memory)
-- Atomic writes where the backend supports it
-- PyArrow filesystem adapter (works with Parquet, Polars, DuckDB)
-- Observability hooks + OpenTelemetry bridge
-- Zero runtime dependencies in the core package</p>
-<p><strong>What it does NOT do:</strong>
-- No query execution (that's Polars/DuckDB/Spark)
-- No table format protocols (that's Delta Lake/Iceberg)
-- No async yet (sync-only, <code>asyncio.to_thread()</code> as workaround)
-- No GCS backend yet (S3, SFTP, Azure, Local, Memory today)</p>
-<p>The whole thing is built spec-driven: 21 specs, tests written against
-specs before code, 95%+ coverage, strict mypy. The methodology was as
-interesting to develop as the library itself.</p>
-<p>GitHub: https://github.com/haalfi/remote-store
-PyPI: https://pypi.org/project/remote-store/
-Docs: https://remote-store.readthedocs.io/</p>
-<p>Happy to answer questions. Feedback welcome — especially on what
-you'd need that isn't there.
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>**First comment:**
-</code></pre></div>
-Author here. Some context on why this exists:</p>
-<p>I work with teams where analysts write Python but aren't (and shouldn't
-need to be) infrastructure engineers. They need to read CSV files from
-SFTP, write Parquet to S3, and shouldn't have to learn three different
-SDKs to do it.</p>
-<p>The config is immutable by design — once created, a Store can't be
-accidentally reconfigured. Credentials are auto-masked in logs and repr().
-Errors are clear (<code>NotFound</code>, <code>AlreadyExists</code>, <code>PermissionDenied</code>) instead
-of raw SDK tracebacks.</p>
-<p>The spec-driven approach: every feature starts as a written spec (we have
-21 now), tests are written against the spec, then code passes the tests.
-It's slower but catches design issues before they become API debt.</p>
-<p>What would make you try something like this? Curious what the gap is
-between "interesting" and "I'd actually use it."
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>### Hacker News — Show HN
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>**Title:**
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>&gt; Show HN: remote-store – One Python API for Local, S3, SFTP, Azure file storage
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>**First comment:**
-</code></pre></div>
-Hi HN — I'm the author. remote-store came out of enabling analyst teams
-who write Python but shouldn't need to learn boto3 or paramiko.</p>
-<p>The pitch: store.read("file.csv") works the same whether the store points
-at a local directory, S3 bucket, SFTP server, or Azure. Change the config,
-not the code. MemoryBackend for tests, cloud for prod.</p>
-<p>What's different from fsspec: much smaller API surface (~18 methods vs ~56),
-immutable config (no stateful surprises), zero runtime dependencies in core,
-built-in observability hooks + OpenTelemetry bridge.</p>
-<p>What it's NOT: not a query engine, not a table format, not async (yet).
-Delegates to boto3/paramiko/Azure SDK under the hood. The scope is
-deliberately narrow — unified I/O, nothing more.</p>
-<p>Built spec-driven: 21 formal specs, tests against specs before code,
-95%+ coverage, strict mypy. The methodology is documented in the repo
-if that's interesting to anyone.</p>
-<p>v0.13 is current. Approaching v1. Would love feedback on what's missing
-or what would make you reach for this vs writing your own wrapper.</p>
-<p>GitHub: https://github.com/haalfi/remote-store
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>### Blog post — outline
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>**Title:** &quot;Spec-Driven Development in Practice: Building a Python Storage Library&quot;
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>**Sections:**
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>1. The problem (everyone writes storage wrappers, nobody maintains them)
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>2. The decision to open-source it
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>3. What spec-driven development means in practice
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>   - A spec before code — show a real spec excerpt
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>   - Tests against specs, not against implementation
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>   - The adversarial audit (sdd/audits/audit-001)
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>   - Backlog as living document
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>4. The API design choices and why
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>   - Why 18 methods, not 56
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>   - Why immutable config
-<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>   - Why zero core dependencies
-<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>   - Why `MemoryBackend` matters more than you&#39;d think
-<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>5. What I&#39;d do differently
-<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>6. The roadmap (retry policy research, async, GCS)
-<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>7. Try it: `pip install remote-store`
-<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>
-<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>### LinkedIn — short post
-</code></pre></div>
-We enabled our analyst teams to work with S3 and SFTP without learning
-boto3 or paramiko. The result became an open-source Python library.</p>
-<p>remote-store gives every storage backend — local disk, S3, SFTP, Azure —
-the same simple API. Change the config, not the code. Stream large files
-without blowing up memory. Test with an in-memory backend, deploy to
-cloud without changing a line.</p>
-<p>Built spec-driven: 21 formal specs, tests before code, 95%+ coverage.</p>
-<p>It's not a query engine, not a table format, and it doesn't try to
-replace your existing SDKs. It just gives them the same front door.</p>
-<p>GitHub: https://github.com/haalfi/remote-store</p>
-<p>What storage problems does your team keep solving over and over?
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>---
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>## 7. Leveraging PR #113 and PR #114
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>### PR #113 — Retry policy research (ID-010)
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>This research document is _itself_ shareable content:
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>- **Blog post angle:** &quot;How we&#39;re designing retry policy for a multi-backend
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>  storage library&quot; — shows the research-driven, transparent approach
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>- **HN/Reddit angle:** The survey of retry approaches across boto3, paramiko,
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>  Azure, tenacity, urllib3, obstore is genuinely useful reference material
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>- **Timing:** Share after the spec and implementation ship (post-v1), not
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>  as a standalone
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>### PR #114 — Data lake patterns guide (ID-034)
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>This is the strongest &quot;use case&quot; content available:
-<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>
-<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>- **r/dataengineering:** Lead with the Bronze/Silver/Gold pattern, the
-<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>  architecture diagram, and the honest &quot;what this does not get you&quot; section
-<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>- **Blog post:** &quot;Building a portable data lake with Python — no Spark
-<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>  required&quot; (the guide&#39;s content is essentially ready for this)
-<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>- **The architecture diagram** from the guide is visually compelling:
-</code></pre></div>
-┌──────────────────────────────────┐
-│  Query / Compute                 │
-│  Polars · DuckDB · Pandas        │
-├──────────────────────────────────┤
-│  Table Format (optional)         │
-│  Delta Lake · PyIceberg           │
-├──────────────────────────────────┤
-│  PyArrow FileSystem interface    │
-├──────────────────────────────────┤
-│  remote-store                    │
-├──────────────────────────────────┤
-│  Backend                         │
-│  Local · Memory · S3 · SFTP · Azure│
-└──────────────────────────────────┘
-```</p>
-<ul>
-<li><strong>Key message:</strong> remote-store owns the I/O layer. Everything above — formats,
-  queries, catalogs — belongs to purpose-built tools. This honest boundary
-  makes the library more trustworthy, not less.</li>
-</ul>
-<hr />
-<h2 id="8-the-way-of-working-story">8. The "Way of Working" Story<a class="headerlink" href="#8-the-way-of-working-story" title="Permanent link">&para;</a></h2>
-<p>This is potentially the most distinctive and shareable angle. Most library
-announcements focus on features. Few talk about <em>how</em> they were built.</p>
-<h3 id="what-makes-remote-stores-process-unusual">What makes remote-store's process unusual<a class="headerlink" href="#what-makes-remote-stores-process-unusual" title="Permanent link">&para;</a></h3>
+<p>But <code>WritableContent = BinaryIO | bytes</code> — <strong><code>str</code> is not actually accepted</strong>. The docstring is wrong.</p>
+<p>Furthermore, even if we wanted to accept <code>str</code>, the encoding contract is unspecified. <code>read_text()</code> has explicit <code>encoding</code> and <code>errors</code> params, but the write side has no equivalent.</p>
+<h3 id="validation-method_1">Validation method<a class="headerlink" href="#validation-method_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Write accepts str?</th>
+<th>If yes, how encoded?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python <code>pathlib</code></td>
+<td>Separate methods: <code>write_text(data, encoding=)</code> vs <code>write_bytes(data)</code></td>
+<td>Explicit encoding param</td>
+</tr>
+<tr>
+<td>PyFilesystem2</td>
+<td>Separate: <code>writetext(text, encoding=)</code> vs <code>writebytes(data)</code></td>
+<td>Explicit encoding param</td>
+</tr>
+<tr>
+<td>fsspec</td>
+<td><code>pipe(path, value)</code> — bytes only</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td>Go</td>
+<td><code>WriteFile(name, data)</code> — <code>[]byte</code> only</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td>Rust <code>std::fs</code></td>
+<td><code>write(path, contents: AsRef&lt;[u8]&gt;)</code> — accepts both</td>
+<td>Implicit (Rust strings are UTF-8)</td>
+</tr>
+<tr>
+<td>Rust <code>object_store</code></td>
+<td><code>put(location, payload)</code> — bytes only</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td>Java NIO</td>
+<td>Separate: <code>Files.writeString(path, text)</code> (Java 11+) vs <code>Files.write(path, bytes)</code></td>
+<td>Explicit charset param</td>
+</tr>
+<tr>
+<td>.NET</td>
+<td>Separate: <code>File.WriteAllText(path, text)</code> vs <code>File.WriteAllBytes(path, bytes)</code></td>
+<td>Explicit encoding param</td>
+</tr>
+<tr>
+<td>Node.js</td>
+<td><code>writeFile(path, data)</code> — accepts both</td>
+<td>Encoding option toggles string vs Buffer</td>
+</tr>
+<tr>
+<td>boto3 S3</td>
+<td><code>put_object(Body=...)</code> — bytes/stream</td>
+<td>N/A</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Industry consensus</strong>: 8 of 10 libraries either provide a separate <code>write_text()</code> method with explicit encoding or only accept bytes. Silently encoding strings with an assumed default is a portability trap. The explicit-pair pattern (<code>write_text</code>/<code>write_bytes</code> or <code>writetext</code>/<code>writebytes</code>) is the dominant approach in Python, Java, and .NET.</p>
+<h3 id="recommendation_1">Recommendation<a class="headerlink" href="#recommendation_1" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>21 formal specs</strong> before any code — each spec has an ID, test markers
-   reference spec sections (<code>@pytest.mark.spec("S3-003")</code>)</li>
-<li><strong>Adversarial audits</strong> — two documented audits (one adversarial review,
-   one design-compliance audit) with published findings and tracked fixes</li>
-<li><strong>Transparent backlog</strong> — <code>sdd/BACKLOG.md</code> is in the repo, shows what's
-   done, what's in progress, what's deferred, with version tags</li>
-<li><strong>Research documents</strong> — design decisions start with published research
-   (async API research, retry policy research, logging/monitoring research)</li>
-<li><strong>Claude Code as development partner</strong> — the SDD pipeline, specs, audits,
-   and much of the implementation were developed collaboratively with AI.
-   This is a genuine story about human-AI collaborative software development
-   that goes beyond "I used Copilot for autocomplete."</li>
+<li><strong>Fix the docstring immediately</strong> — remove "<code>str</code>" from <code>write()</code> and <code>write_atomic()</code> parameter descriptions. This is a documentation bug, not a feature gap.</li>
+<li><strong>Consider adding <code>write_text()</code></strong> as a convenience (symmetric with <code>read_text()</code>):
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">write_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>               <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">),</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+</code></pre></div>
+   This would complete the read_text/write_text symmetry that users expect from pathlib.</li>
 </ol>
-<h3 id="where-to-tell-this-story">Where to tell this story<a class="headerlink" href="#where-to-tell-this-story" title="Permanent link">&para;</a></h3>
+<h3 id="decision-needed_1">Decision needed<a class="headerlink" href="#decision-needed_1" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Blog post</strong> (primary) — the methodology is the headline</li>
-<li><strong>PyCon lightning talk</strong> — 5 minutes on SDD with live examples</li>
-<li><strong>Python Discourse</strong> — the process-oriented audience will engage deeply</li>
-<li><strong>HN first comment</strong> — mention it, link to the specs directory</li>
+<li>Fix-docstring is mandatory.</li>
+<li><code>write_text()</code> addition is optional but recommended for symmetry. Decide whether to add it now (pre-v1) or defer.</li>
 </ul>
 <hr />
-<h2 id="9-metrics-to-track">9. Metrics to Track<a class="headerlink" href="#9-metrics-to-track" title="Permanent link">&para;</a></h2>
-<p>After launch, track these to understand what resonates:</p>
-<ul>
-<li><strong>GitHub stars and forks</strong> — vanity but directional</li>
-<li><strong>PyPI downloads</strong> (via pypistats.org) — actual adoption signal</li>
-<li><strong>GitHub issues opened</strong> — engagement quality</li>
-<li><strong>Which channel drove the most traffic</strong> (GitHub referrers page)</li>
-<li><strong>What questions people ask</strong> — reveals messaging gaps</li>
-<li><strong>What feature requests come in</strong> — reveals audience fit</li>
-</ul>
+<h2 id="5-fix-the-read_texterrors-reference">5. Fix the <code>read_text(errors=...)</code> Reference<a class="headerlink" href="#5-fix-the-read_texterrors-reference" title="Permanent link">&para;</a></h2>
+<h3 id="problem_2">Problem<a class="headerlink" href="#problem_2" title="Permanent link">&para;</a></h3>
+<p>The docstring says:</p>
+<blockquote>
+<p><code>See :func:</code>codecs.register<code>for valid values.</code></p>
+</blockquote>
+<p><code>codecs.register</code> is for registering custom codecs. The correct reference for error handler names is <code>codecs.register_error</code> or more practically, the built-in error handler names documented in the Python <code>codecs</code> module ("strict", "ignore", "replace", "backslashreplace", "xmlcharrefreplace").</p>
+<h3 id="recommendation_2">Recommendation<a class="headerlink" href="#recommendation_2" title="Permanent link">&para;</a></h3>
+<p>Change to:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>See the :mod:`codecs` module for available error handlers
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>(e.g., ``&quot;strict&quot;``, ``&quot;ignore&quot;``, ``&quot;replace&quot;``).
+</code></pre></div>
+<p>Or more precisely:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Standard error handlers: ``&quot;strict&quot;`` (default, raises ``UnicodeDecodeError``),
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>``&quot;ignore&quot;``, ``&quot;replace&quot;``, ``&quot;backslashreplace&quot;``.
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>See :func:`codecs.register_error` for custom handlers.
+</code></pre></div>
+<h3 id="impact">Impact<a class="headerlink" href="#impact" title="Permanent link">&para;</a></h3>
+<p>Docstring-only change. No code change needed.</p>
 <hr />
-<h2 id="10-summary-recommended-approach">10. Summary — Recommended Approach<a class="headerlink" href="#10-summary-recommended-approach" title="Permanent link">&para;</a></h2>
-<h3 id="strategy-three-waves-not-one-splash">Strategy: three waves, not one splash<a class="headerlink" href="#strategy-three-waves-not-one-splash" title="Permanent link">&para;</a></h3>
-<p><strong>Wave 1 (launch week):</strong> Developer communities — r/Python, HN, Discourse,
-Twitter/Bluesky, LinkedIn. Establish credibility and get initial feedback.</p>
-<p><strong>Wave 2 (week 2):</strong> Citizen-dev communities — DataTalks.Club, Polars/DuckDB
-Discord, dbt Slack, Kaggle, r/datascience, r/learnpython. Go where the
-people who <em>have the problem</em> actually hang out.</p>
-<p><strong>Wave 3 (week 3+):</strong> Industry-specific outreach — finance (SFTP + S3),
-healthcare (HIPAA workflows), bioinformatics (data exchange), ML platforms
-(artifact storage). Plus integration discussions on Dagster/Airflow/Prefect.</p>
-<h3 id="principles">Principles<a class="headerlink" href="#principles" title="Permanent link">&para;</a></h3>
+<h2 id="6-add-explicit-orderingperformance-guarantees-for-listing-methods">6. Add Explicit Ordering/Performance Guarantees for Listing Methods<a class="headerlink" href="#6-add-explicit-orderingperformance-guarantees-for-listing-methods" title="Permanent link">&para;</a></h2>
+<h3 id="problem_3">Problem<a class="headerlink" href="#problem_3" title="Permanent link">&para;</a></h3>
+<p><code>iter_children()</code> documents that ordering is backend-defined. <code>list_files()</code>, <code>list_folders()</code>, and <code>glob()</code> do not. Callers need to know:</p>
+<ul>
+<li><strong>Ordering</strong>: Is it deterministic? Alphabetical? Backend-defined?</li>
+<li><strong>Laziness</strong>: Are results streamed or buffered? What are the memory implications for large directories?</li>
+<li><strong>Pagination</strong>: Are there backend-specific round-trip implications?</li>
+</ul>
+<h3 id="validation-method_2">Validation method<a class="headerlink" href="#validation-method_2" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Ordering guarantee</th>
+<th>Laziness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python <code>pathlib.iterdir()</code></td>
+<td>"in arbitrary order" (documented)</td>
+<td>Iterator (lazy)</td>
+</tr>
+<tr>
+<td>Python <code>os.scandir()</code></td>
+<td>"in arbitrary order" (documented)</td>
+<td>Iterator (lazy)</td>
+</tr>
+<tr>
+<td>fsspec <code>ls()</code></td>
+<td>Not specified</td>
+<td>Returns list (eager)</td>
+</tr>
+<tr>
+<td>PyFilesystem2 <code>scandir()</code></td>
+<td>Not specified</td>
+<td>Iterator</td>
+</tr>
+<tr>
+<td>Go <code>io/fs.ReadDir()</code></td>
+<td>"sorted by filename" (documented)</td>
+<td>Eager (returns slice)</td>
+</tr>
+<tr>
+<td>Rust <code>std::fs::read_dir()</code></td>
+<td>"in no particular order" (documented)</td>
+<td>Iterator (lazy)</td>
+</tr>
+<tr>
+<td>Rust <code>object_store::list()</code></td>
+<td>Not specified</td>
+<td>AsyncStream (lazy)</td>
+</tr>
+<tr>
+<td>Java NIO <code>Files.list()</code></td>
+<td>Not specified</td>
+<td>Stream (lazy)</td>
+</tr>
+<tr>
+<td>.NET <code>EnumerateFiles()</code></td>
+<td>Not specified</td>
+<td>IEnumerable (lazy)</td>
+</tr>
+<tr>
+<td>Node.js <code>readdir()</code></td>
+<td>Not specified</td>
+<td>Returns array (eager)</td>
+</tr>
+<tr>
+<td>boto3 <code>list_objects_v2</code></td>
+<td>Lexicographic by key (S3 guarantees this)</td>
+<td>Paginated</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Observation</strong>: most APIs explicitly document ordering as either "arbitrary" or "sorted". Laziness is typically clear from the return type (iterator vs list).</p>
+<h3 id="recommendation_3">Recommendation<a class="headerlink" href="#recommendation_3" title="Permanent link">&para;</a></h3>
+<p>Add to docstrings of <code>list_files()</code>, <code>list_folders()</code>, <code>glob()</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Ordering is backend-defined and may vary; callers must not depend on it.
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>Results are yielded lazily; backends may use pagination internally.
+</code></pre></div>
+<p>This is a docstring-only change. If we want to guarantee sorted output, that's a code change (sorting at the Store layer), but it would defeat the laziness benefit for large directories.</p>
+<h3 id="decision-needed_2">Decision needed<a class="headerlink" href="#decision-needed_2" title="Permanent link">&para;</a></h3>
+<p>Document "no ordering guarantee" (recommended) vs add Store-level sorting?</p>
+<hr />
+<h2 id="7-clarify-atomicitymetadata-guarantees-for-move-and-copy">7. Clarify Atomicity/Metadata Guarantees for move and copy<a class="headerlink" href="#7-clarify-atomicitymetadata-guarantees-for-move-and-copy" title="Permanent link">&para;</a></h2>
+<h3 id="problem_4">Problem<a class="headerlink" href="#problem_4" title="Permanent link">&para;</a></h3>
+<p>The docs are good but leave three questions unanswered:</p>
 <ol>
-<li><strong>Lead with the problem</strong>, not the solution</li>
-<li><strong>Be honest about boundaries</strong> — what it does NOT do is as important as
-   what it does</li>
-<li><strong>Tell the methodology story</strong> — SDD is genuinely unusual and interesting</li>
-<li><strong>Use the data lake guide</strong> (PR #114) as a concrete use-case showcase</li>
-<li><strong>Go where citizen devs are</strong> — Slack communities (DataTalks 80K, dbt 66K,
-   PySlackers 40K), Discord (Polars, DuckDB, Python 300K), Kaggle (6M).
-   These people don't read Hacker News.</li>
-<li><strong>Engage deeply</strong> — respond to every comment, incorporate feedback</li>
-<li><strong>Position alongside, not against</strong> — smart_open, cloudpathlib, fsspec,
-   obstore all solve related but different problems. Be specific about the
-   niche: "more than <code>open()</code>, less than a full filesystem, with SFTP,
-   streaming, atomic writes, and observability."</li>
-<li><strong>Target startups with the pain</strong> — fintech (SFTP bank feeds), healthcare
-   (HIPAA file exchange), data platforms (multi-backend I/O), consultancies
-   (client-agnostic codebases)</li>
-<li><strong>Make it trivially easy to try</strong> — <code>pip install remote-store</code>, paste the
-   quickstart, run it in 30 seconds. Kaggle notebook for hands-on learners.</li>
-<li><strong>The way of working (SDD + AI collaboration) is the most distinctive
-    story</strong> — most libraries don't ship with 21 specs, adversarial audits,
-    and a transparent backlog</li>
-<li><strong>Create tool-specific integration content</strong> — show remote-store + Polars,
-    remote-store + DuckDB, remote-store + Dagster. Meet people in <em>their</em>
-    ecosystem, not yours.</li>
-<li><strong>Write four blog posts</strong>, not one — methodology, problem story, data lake
-    patterns, SFTP bridge story. Each targets a different audience.</li>
+<li><strong>Is <code>move()</code> atomic on all backends?</strong> (Local: yes via <code>os.replace</code>; S3: no, it's copy+delete; SFTP: depends on server)</li>
+<li><strong>Does <code>copy()</code> preserve metadata?</strong> (modification time, content type, custom metadata)</li>
+<li><strong>Are <code>move()</code> and <code>copy()</code> file-only?</strong> (The current code uses <code>_require_file_path</code>, so yes, but it's not documented)</li>
 </ol>
+<h3 id="validation-method_3">Validation method<a class="headerlink" href="#validation-method_3" title="Permanent link">&para;</a></h3>
+<p>Cross-ecosystem patterns for move/copy:</p>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Move name</th>
+<th>Copy name</th>
+<th>Atomicity documented?</th>
+<th>Metadata documented?</th>
+<th>File-only?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pathlib</td>
+<td><code>rename()</code> / <code>replace()</code></td>
+<td>N/A (<code>shutil.copy2</code>)</td>
+<td><code>replace</code> is atomic on same FS</td>
+<td><code>shutil.copy2</code> preserves metadata</td>
+<td>File-only (rename)</td>
+</tr>
+<tr>
+<td>PyFilesystem2</td>
+<td><code>move()</code> + <code>movedir()</code></td>
+<td><code>copy()</code> + <code>copydir()</code></td>
+<td>Not documented</td>
+<td>Not documented</td>
+<td>Separate file/dir methods</td>
+</tr>
+<tr>
+<td>fsspec</td>
+<td><code>mv()</code> (alias: <code>move</code>, <code>rename</code>)</td>
+<td><code>cp()</code> (alias: <code>copy</code>)</td>
+<td>Not documented</td>
+<td>Not documented</td>
+<td>Not specified</td>
+</tr>
+<tr>
+<td>Go afero</td>
+<td><code>Rename()</code></td>
+<td>N/A (manual)</td>
+<td>Follows <code>os.Rename</code></td>
+<td>N/A</td>
+<td>Not specified</td>
+</tr>
+<tr>
+<td>Rust <code>std::fs</code></td>
+<td><code>rename()</code></td>
+<td><code>copy()</code></td>
+<td>"atomic on same FS"</td>
+<td>"copies permission bits"</td>
+<td>File-only for copy</td>
+</tr>
+<tr>
+<td>Rust <code>object_store</code></td>
+<td><code>rename()</code> + <code>rename_if_not_exists()</code></td>
+<td><code>copy()</code> + <code>copy_if_not_exists()</code></td>
+<td>Default: copy+delete (not atomic)</td>
+<td>Not documented</td>
+<td>Files only (no folders in object stores)</td>
+</tr>
+<tr>
+<td>Java NIO</td>
+<td><code>Files.move()</code></td>
+<td><code>Files.copy()</code></td>
+<td><code>ATOMIC_MOVE</code> option</td>
+<td><code>COPY_ATTRIBUTES</code> option</td>
+<td>Both support dirs</td>
+</tr>
+<tr>
+<td>.NET</td>
+<td><code>File.Move()</code></td>
+<td><code>File.Copy()</code></td>
+<td>Not documented</td>
+<td>Not documented</td>
+<td>File-only (separate <code>Directory.Move</code>)</td>
+</tr>
+<tr>
+<td>boto3 S3</td>
+<td><code>copy_object</code> + <code>delete_object</code></td>
+<td><code>copy_object</code></td>
+<td>No native move; copy+delete</td>
+<td>S3 copies metadata by default</td>
+<td>Files only</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key insight</strong>: Java NIO is the gold standard here — explicit <code>ATOMIC_MOVE</code> and <code>COPY_ATTRIBUTES</code> option flags. Most other APIs leave atomicity and metadata undocumented or backend-implicit. Documenting these guarantees (even as "backend-dependent") puts us ahead of most.</p>
+<h3 id="recommendation_4">Recommendation<a class="headerlink" href="#recommendation_4" title="Permanent link">&para;</a></h3>
+<p>Add to <code>move()</code> docstring:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Atomicity is backend-dependent. Local backends use ``os.replace`` (atomic
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>on the same filesystem). Object-store backends (S3, Azure) typically
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>implement move as copy-then-delete, which is not atomic.
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>This method operates on files only. To move a folder, iterate its contents.
+</code></pre></div></p>
+<p>Add to <code>copy()</code> docstring:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Metadata preservation is backend-dependent. Some backends (local, SFTP)
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>may not preserve all metadata (modification time, content type).
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>This method operates on files only. To copy a folder, iterate its contents.
+</code></pre></div></p>
+<h3 id="impact_1">Impact<a class="headerlink" href="#impact_1" title="Permanent link">&para;</a></h3>
+<p>Docstring-only changes. Factual accuracy needs verification by checking each backend implementation.</p>
+<hr />
+<h2 id="8-visual-separation-of-escape-hatches">8. Visual Separation of Escape Hatches<a class="headerlink" href="#8-visual-separation-of-escape-hatches" title="Permanent link">&para;</a></h2>
+<h3 id="problem_5">Problem<a class="headerlink" href="#problem_5" title="Permanent link">&para;</a></h3>
+<p><code>unwrap()</code>, <code>native_path()</code>, and <code>glob()</code> (native backend glob) are backend-specific escape hatches mixed in with the portable API. Their docstrings don't warn callers that using them ties code to a specific backend.</p>
+<h3 id="recommendation_5">Recommendation<a class="headerlink" href="#recommendation_5" title="Permanent link">&para;</a></h3>
+<p>This is a <strong>docs presentation</strong> concern, not a code concern. In the mkdocstrings-generated page, we could:</p>
+<ol>
+<li>Add a "Backend-Specific Interop" section header comment in the source</li>
+<li>Add admonition boxes to the docstrings: <code>.. warning:: This method exposes backend-specific behavior...</code></li>
+</ol>
+<p>For the docstrings, add a note like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>.. note::
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    **Advanced — backend-specific.** Using this method ties your code
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    to a specific backend. For portable alternatives, see ...
+</code></pre></div>
+<h3 id="impact_2">Impact<a class="headerlink" href="#impact_2" title="Permanent link">&para;</a></h3>
+<p>Docstring-only changes. Possibly also docs template changes.</p>
+<hr />
+<h2 id="9-cross-cutting-concerns">9. Cross-Cutting Concerns<a class="headerlink" href="#9-cross-cutting-concerns" title="Permanent link">&para;</a></h2>
+<p>Beyond individual method docstrings, the audit surfaced three API documentation gaps that span the whole Store surface.</p>
+<h3 id="9a-write_text-gap-is-user-visible-in-quickstart-phase-1-priority">9a. <code>write_text()</code> gap is user-visible in quickstart — Phase 1 priority<a class="headerlink" href="#9a-write_text-gap-is-user-visible-in-quickstart-phase-1-priority" title="Permanent link">&para;</a></h3>
+<p>The first code example a new user encounters uses <code>b"Hello, world!"</code>. This is lower-level than pathlib-trained Python developers expect. A <code>write_text()</code>/<code>read_text()</code> hello-world would be more natural. This is the <strong>#1 priority for the target audience</strong>: forcing citizen developers into bytes-land before they've even stored a file contradicts the "just works" promise.</p>
+<p>The design decision is already made by every comparable library: pathlib (<code>write_text</code>), PyFilesystem2 (<code>writetext</code>), Java NIO (<code>Files.writeString</code>), .NET (<code>File.WriteAllText</code>) — all cited in §4. There's no ambiguity. <code>write_text()</code> should ship in Phase 1 alongside the docstring fixes, not wait for a separate design decision phase.</p>
+<h3 id="9b-readme-api-table-descriptions-lag-behind-actual-contracts">9b. README API table descriptions lag behind actual contracts<a class="headerlink" href="#9b-readme-api-table-descriptions-lag-behind-actual-contracts" title="Permanent link">&para;</a></h3>
+<p>The README's API summary table has descriptions that are accurate but miss key contracts:</p>
+<table>
+<thead>
+<tr>
+<th>Current description</th>
+<th>What's missing</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>list_folders(path)</code> → "Iterate subfolder names"</td>
+<td>Doesn't say these are bare names (not paths) — the exact asymmetry from §3</td>
+</tr>
+<tr>
+<td><code>iter_children(path)</code> → "Iterate files and folders in one pass"</td>
+<td>Doesn't hint at the mixed return type</td>
+</tr>
+<tr>
+<td><code>move(src, dst)</code> → "Move or rename"</td>
+<td>Doesn't say file-only</td>
+</tr>
+<tr>
+<td><code>copy(src, dst)</code> → "Copy a file"</td>
+<td>Good — already says "file"</td>
+</tr>
+<tr>
+<td><code>glob(pattern)</code> → "Native glob (capability-gated)"</td>
+<td>Doesn't say backend-specific</td>
+</tr>
+<tr>
+<td><code>write(path, content)</code> → "Write bytes or binary stream"</td>
+<td>Good — correctly omits <code>str</code> here, but docstring still claims it</td>
+</tr>
+</tbody>
+</table>
+<p>These descriptions should be updated <strong>after</strong> the docstring fixes in Phase 1, so they stay consistent with the source of truth.</p>
+<h3 id="9c-backend-behavior-matrix-essential-for-the-core-promise-phase-1">9c. Backend behavior matrix — essential for the core promise (Phase 1)<a class="headerlink" href="#9c-backend-behavior-matrix-essential-for-the-core-promise-phase-1" title="Permanent link">&para;</a></h3>
+<p>Users of <code>supports(capability)</code> can check <strong>whether</strong> a backend has a capability, but cannot tell <strong>what</strong> that capability means concretely on each backend. "Write once, run anywhere" implicitly promises predictable cross-backend behavior. When <code>move()</code> is atomic on Local but copy+delete on S3, users need to know <em>before</em> they deploy. This matrix is the honest version of the portability promise and should ship as documentation in Phase 1, not wait for Phase 3 implementation. A per-backend behavior matrix belongs in the API docs:</p>
+<table>
+<thead>
+<tr>
+<th>Behavior</th>
+<th>Local</th>
+<th>S3</th>
+<th>S3-PyArrow</th>
+<th>SFTP</th>
+<th>Azure</th>
+<th>Memory</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>move()</code> atomicity</td>
+<td>Atomic (same FS)</td>
+<td>Copy+delete</td>
+<td>Copy+delete</td>
+<td>Server-dependent</td>
+<td>Copy+delete</td>
+<td>Atomic</td>
+</tr>
+<tr>
+<td><code>copy()</code> preserves metadata</td>
+<td>No (new mtime)</td>
+<td>Yes (S3 copies metadata)</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>write_atomic()</code></td>
+<td>Yes (temp+rename)</td>
+<td>Yes (temp+rename)</td>
+<td>Yes</td>
+<td>Yes (temp+rename)</td>
+<td>Yes (temp+rename)</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Native <code>glob()</code></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>list_files()</code> ordering</td>
+<td>OS-dependent</td>
+<td>Lexicographic (S3)</td>
+<td>Lexicographic</td>
+<td>OS-dependent</td>
+<td>Lexicographic</td>
+<td>Insertion order</td>
+</tr>
+</tbody>
+</table>
+<p>This needs verification against actual backend implementations before publishing.</p>
+<h3 id="9d-thread-safety-statement-missing-from-store-class-docstring">9d. Thread-safety statement missing from Store class docstring<a class="headerlink" href="#9d-thread-safety-statement-missing-from-store-class-docstring" title="Permanent link">&para;</a></h3>
+<p>The spec says Store is thread-safe (immutable after construction), but the class docstring doesn't mention it. Add:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Thread-safe: ``Store`` is immutable and can be shared across threads.
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>Backend thread safety depends on the underlying library.
+</code></pre></div>
+<hr />
+<h2 id="10-execution-plan">10. Execution Plan<a class="headerlink" href="#10-execution-plan" title="Permanent link">&para;</a></h2>
+<h3 id="phase-1-docstring-fixes-write_text-and-documentation-gaps">Phase 1: Docstring fixes, <code>write_text()</code>, and documentation gaps<a class="headerlink" href="#phase-1-docstring-fixes-write_text-and-documentation-gaps" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Fix <code>write()</code> / <code>write_atomic()</code> docstrings — remove <code></code>str<code></code> from content param description (§4)</li>
+<li>Fix <code>read_text(errors=...)</code> reference — <code>codecs.register</code> → correct pointer (§5)</li>
+<li>Add ordering/laziness guarantees to <code>list_files()</code>, <code>list_folders()</code>, <code>glob()</code> docstrings (§6)</li>
+<li>Add atomicity/metadata/file-only notes to <code>move()</code> and <code>copy()</code> docstrings (§7)</li>
+<li>Add "advanced — backend-specific" notes to <code>unwrap()</code>, <code>native_path()</code>, <code>glob()</code> docstrings (§8)</li>
+<li>Add thread-safety statement to <code>Store</code> class docstring (§9d)</li>
+<li>Implement <code>write_text()</code> — design is settled by ecosystem precedent (§4, §9a)</li>
+<li>Build and verify backend behavior matrix as documentation (§9c) — audit each backend</li>
+<li>Update README API table descriptions to match improved docstrings (§9b)</li>
+</ol>
+<h3 id="phase-2-api-design-decision-requires-choice-before-implementation">Phase 2: API design decision (requires choice before implementation)<a class="headerlink" href="#phase-2-api-design-decision-requires-choice-before-implementation" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Listing normalization approach — Option D preferred (§3), but see approachability trade-off</li>
+</ol>
+<h3 id="phase-3-implementation">Phase 3: Implementation<a class="headerlink" href="#phase-3-implementation" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Implement chosen listing normalization (§3)</li>
+<li>Update specs, tests, docs, examples, BACKLOG, CHANGELOG per ripple-check table</li>
+</ol>
+<hr />
+<h2 id="11-method-name-validation-summary">11. Method Name Validation Summary<a class="headerlink" href="#11-method-name-validation-summary" title="Permanent link">&para;</a></h2>
+<p>Based on cross-ecosystem analysis, current names are well-chosen. Notes:</p>
+<table>
+<thead>
+<tr>
+<th>Current name</th>
+<th>Ecosystem alignment</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>read()</code></td>
+<td>Universal</td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>read_bytes()</code></td>
+<td>pathlib <code>read_bytes()</code></td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>read_text()</code></td>
+<td>pathlib <code>read_text()</code>, PyFS <code>readtext()</code></td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>write()</code></td>
+<td>Universal</td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>write_atomic()</code></td>
+<td>Unique (most libs don't have this)</td>
+<td>Keep — clear intent</td>
+</tr>
+<tr>
+<td><code>open_atomic()</code></td>
+<td>Unique</td>
+<td>Keep — clear intent</td>
+</tr>
+<tr>
+<td><code>delete()</code></td>
+<td>Common (vs <code>remove</code> in pathlib/os)</td>
+<td>Keep — <code>delete</code> is more common in storage APIs</td>
+</tr>
+<tr>
+<td><code>delete_folder()</code></td>
+<td><code>rmdir</code>/<code>rmtree</code> in stdlib, but <code>delete_folder</code> is clearer</td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>list_files()</code></td>
+<td>Common pattern</td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>list_folders()</code></td>
+<td>Return type needs work (see §1)</td>
+<td>Keep name, fix return type</td>
+</tr>
+<tr>
+<td><code>iter_children()</code></td>
+<td><code>iterdir()</code> in pathlib, <code>scandir()</code> in os</td>
+<td>Name is fine, return type needs work</td>
+</tr>
+<tr>
+<td><code>glob()</code></td>
+<td>Universal</td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>move()</code></td>
+<td>Split: <code>rename</code> (pathlib, Go, Rust, object_store), <code>move</code> (PyFS, Java NIO, .NET), <code>mv</code> (fsspec)</td>
+<td>Keep — <code>move</code> is the higher-level abstraction name; <code>rename</code> implies same-filesystem</td>
+</tr>
+<tr>
+<td><code>copy()</code></td>
+<td>Universal</td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>exists()</code></td>
+<td>Universal</td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>is_file()</code></td>
+<td><code>pathlib.is_file()</code>, Go <code>IsRegular()</code></td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>is_folder()</code></td>
+<td><code>pathlib.is_dir()</code>, but "folder" aligns with cloud storage</td>
+<td>Keep — consistent with rest of API</td>
+</tr>
+<tr>
+<td><code>get_file_info()</code></td>
+<td><code>stat()</code> (pathlib/os), <code>info()</code> (PyFS), <code>head_object</code> (S3)</td>
+<td>Keep — more descriptive than <code>stat</code></td>
+</tr>
+<tr>
+<td><code>get_folder_info()</code></td>
+<td>Unique (most APIs don't aggregate folder stats)</td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>child()</code></td>
+<td><code>opendir()</code> (PyFS), <code>chdir()</code> (fsspec)</td>
+<td>Keep — clearer semantics</td>
+</tr>
+<tr>
+<td><code>ping()</code></td>
+<td>Common in database clients</td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>supports()</code></td>
+<td>Capability pattern common in Java/enterprise</td>
+<td>Keep</td>
+</tr>
+<tr>
+<td><code>unwrap()</code></td>
+<td><code>getDelegate()</code> (Java), <code>inner()</code> (Rust), type-assertion (Go)</td>
+<td>Keep — Rust-inspired, clear</td>
+</tr>
+<tr>
+<td><code>native_path()</code></td>
+<td><code>getsyspath()</code> (PyFS), <code>__fspath__()</code> (pathlib), <code>BlobClient.Uri</code> (.NET)</td>
+<td>Keep — clearer than alternatives</td>
+</tr>
+<tr>
+<td><code>to_key()</code></td>
+<td>Unique (inverse of <code>native_path</code>)</td>
+<td>Keep</td>
+</tr>
+</tbody>
+</table>
+<p><strong>No method renames recommended.</strong> The names are well-aligned with industry conventions and internally consistent.</p>
+<hr />
+<h2 id="12-appendix-verified-cross-ecosystem-sources">12. Appendix: Verified Cross-Ecosystem Sources<a class="headerlink" href="#12-appendix-verified-cross-ecosystem-sources" title="Permanent link">&para;</a></h2>
+<p>Analysis based on verified API documentation from:
+- Python: pathlib, os, fsspec, PyFilesystem2, boto3 S3
+- Go: io/fs, afero
+- Rust: std::fs, object_store crate
+- Java: java.nio.file (Files), Apache Commons VFS
+- .NET: System.IO (File, Directory), Azure.Storage.Blobs
+- Node.js: fs, AWS SDK JS v3</p>
 
 
 
