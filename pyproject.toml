@@ -114,6 +114,7 @@ dev = [
 ]
 
 [tool.hatch.envs.default]
+installer = "uv"
 dependencies = [
   "pytest",
   "pytest-cov",

@@ -460,6 +460,11 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
 
 ### Ideas shipped
 
+- [x] **ID-073 — Use uv as hatch installer backend** (v0.16.0)
+  Set `installer = "uv"` in `[tool.hatch.envs.default]`. Hatch >=1.12 has
+  native uv support — no plugin needed. ~10x faster env creation (2m → 12s).
+  Zero CI impact, zero workflow change.
+
 - [x] **ID-056 — `read_text()` convenience method** (post-v0.15.0)
   `Store.read_text(path, encoding="utf-8", errors="strict")` -- thin wrapper
   around `read_bytes()` + `.decode()`. Store-level only (no backend changes).
