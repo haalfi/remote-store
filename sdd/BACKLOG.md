@@ -149,12 +149,6 @@ Not evaluated, not committed to. Pick up when relevant.
   `write_text()` moved to ID-071 (Phase 1). Related: ID-063.
   Research: `sdd/research/research-store-api-refinement.md`.
 
-- [x] **ID-073 — Use uv as hatch installer backend** (v0.16.0)
-  Set `installer = "uv"` in `[tool.hatch.envs.default]`. Hatch >=1.12 has
-  native uv support — no plugin needed. Faster env creation and dependency
-  installs locally. Zero CI impact (CI uses `uv pip install` directly).
-  Zero workflow change (all `hatch run X` commands unchanged).
-
 - [ ] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**
   `list_files`, `list_folders`, and `iter_children` in S3Backend and
   S3PyArrowBackend call `self._fs.exists()` before `self._fs.ls()`, adding
@@ -465,6 +459,11 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
   `ruamel.yaml.YAMLError` in config loader spec.
 
 ### Ideas shipped
+
+- [x] **ID-073 — Use uv as hatch installer backend** (v0.16.0)
+  Set `installer = "uv"` in `[tool.hatch.envs.default]`. Hatch >=1.12 has
+  native uv support — no plugin needed. ~10x faster env creation (2m → 12s).
+  Zero CI impact, zero workflow change.
 
 - [x] **ID-056 — `read_text()` convenience method** (post-v0.15.0)
   `Store.read_text(path, encoding="utf-8", errors="strict")` -- thin wrapper
