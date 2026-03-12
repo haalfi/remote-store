@@ -106,11 +106,65 @@ class FolderEntry:
 - `list_folders()` → `Iterator[FolderEntry]`
 - `iter_children()` → `Iterator[FileInfo | FolderEntry]` (still a union, but both are named types with `.name` and `.path`)
 
+**Option D (preferred): Protocol + FolderEntry**
+
+```python
+@typing.runtime_checkable
+class PathEntry(Protocol):
+    """Structural type shared by all listing results."""
+    @property
+    def name(self) -> str: ...
+    @property
+    def path(self) -> RemotePath: ...
+
+@dataclasses.dataclass(frozen=True)
+class FolderEntry:
+    name: str
+    path: RemotePath
+```
+
+`FileInfo` already has `name: str` and `path: RemotePath`, so it satisfies
+`PathEntry` structurally — no inheritance change needed. `FolderEntry` likewise
+satisfies it by construction.
+
+- `list_folders()` → `Iterator[FolderEntry]`
+- `iter_children()` → `Iterator[PathEntry]` (uniform type in the signature)
+- `list_files()` → `Iterator[FileInfo]` (unchanged — callers still get full metadata)
+
+Callers of `iter_children()` get `.name` and `.path` on every entry without
+isinstance. Callers who need file-specific metadata (size, modified_at) narrow
+with `isinstance(entry, FileInfo)` — which is the correct semantic: "I want
+richer info that only files have."
+
+This is strictly better than Option C's `FileInfo | FolderEntry` union because:
+
+1. **The common-case code path uses no isinstance at all.** Iterating names or
+   paths works directly on `PathEntry`. Option C's union technically has the
+   same attributes, but the type checker still sees a union and may require
+   narrowing depending on the operation.
+2. **The protocol is the documented contract.** Type checkers enforce that both
+   `FileInfo` and `FolderEntry` satisfy `PathEntry`. If a future entry type is
+   added (e.g., `SymlinkEntry`), it just needs to satisfy the same protocol —
+   no union expansion needed.
+3. **No wrapper, no inheritance.** `FileInfo` stays unchanged. `FolderEntry` is
+   a simple dataclass. The protocol is purely structural — existing code that
+   constructs `FileInfo` or `FolderEntry` doesn't change.
+
 ### Analysis
 
-Option A is the cleanest for `iter_children()` users but introduces a wrapper type that may feel redundant alongside `FileInfo`. Option C preserves the separation of file vs folder info while making both sides of the union richer. Option B is the least disruptive.
+| Criterion | Option A | Option B | Option C | **Option D** |
+|-----------|----------|----------|----------|------------|
+| isinstance-free iteration | Yes | No | Partially (union still typed) | **Yes** |
+| `list_folders()` returns full paths | Yes | Yes | Yes | **Yes** |
+| `FileInfo` unchanged | No (wrapped) | Yes | Yes | **Yes** |
+| Type-checker enforced contract | N/A | N/A | Duck-typed coincidence | **Protocol-enforced** |
+| Extensible to new entry kinds | Requires updating `ChildEntry.kind` | N/A | Requires union expansion | **Just satisfy protocol** |
+| Breaking change scope | `iter_children` return type | `list_folders` return values | `list_folders` + `iter_children` types | `list_folders` + `iter_children` types |
 
-**My recommendation: Option C** — it fixes the two real problems (bare names and type-branching ergonomics) without introducing a wrapper that obscures `FileInfo`. Both `FileInfo` and `FolderEntry` would share `.name` and `.path`, making common-case code work without isinstance. For full metadata, isinstance is still needed, which correctly models the reality that folder metadata is structurally different from file metadata.
+**Recommendation: Option D.** It gives the cleanest caller ergonomics, enforces
+the shared contract at the type level, and is the most extensible. The protocol
+is tiny (two properties), so it adds minimal API surface. `FileInfo` is
+untouched — it already structurally satisfies `PathEntry`.
 
 ### Decision needed
 
