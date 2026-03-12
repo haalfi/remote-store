@@ -118,9 +118,14 @@ Furthermore, even if we wanted to accept `str`, the encoding contract is unspeci
 | PyFilesystem2 | Separate: `writetext(text, encoding=)` vs `writebytes(data)` | Explicit encoding param |
 | fsspec | `pipe(path, value)` — bytes only | N/A |
 | Go | `WriteFile(name, data)` — `[]byte` only | N/A |
-| Rust | `write(path, contents: &[u8])` — bytes only | N/A |
+| Rust `std::fs` | `write(path, contents: AsRef<[u8]>)` — accepts both | Implicit (Rust strings are UTF-8) |
+| Rust `object_store` | `put(location, payload)` — bytes only | N/A |
+| Java NIO | Separate: `Files.writeString(path, text)` (Java 11+) vs `Files.write(path, bytes)` | Explicit charset param |
+| .NET | Separate: `File.WriteAllText(path, text)` vs `File.WriteAllBytes(path, bytes)` | Explicit encoding param |
+| Node.js | `writeFile(path, data)` — accepts both | Encoding option toggles string vs Buffer |
+| boto3 S3 | `put_object(Body=...)` — bytes/stream | N/A |
 
-**Industry consensus**: either provide a separate `write_text()` method with explicit encoding, or only accept bytes. Silently encoding strings with an assumed default is a portability trap.
+**Industry consensus**: 8 of 10 libraries either provide a separate `write_text()` method with explicit encoding or only accept bytes. Silently encoding strings with an assumed default is a portability trap. The explicit-pair pattern (`write_text`/`write_bytes` or `writetext`/`writebytes`) is the dominant approach in Python, Java, and .NET.
 
 ### Recommendation
 
@@ -191,8 +196,12 @@ Docstring-only change. No code change needed.
 | Python `os.scandir()` | "in arbitrary order" (documented) | Iterator (lazy) |
 | fsspec `ls()` | Not specified | Returns list (eager) |
 | PyFilesystem2 `scandir()` | Not specified | Iterator |
-| Go `ReadDir()` | "sorted by filename" | Eager (returns slice) |
-| Rust `read_dir()` | "in no particular order" (documented) | Iterator (lazy) |
+| Go `io/fs.ReadDir()` | "sorted by filename" (documented) | Eager (returns slice) |
+| Rust `std::fs::read_dir()` | "in no particular order" (documented) | Iterator (lazy) |
+| Rust `object_store::list()` | Not specified | AsyncStream (lazy) |
+| Java NIO `Files.list()` | Not specified | Stream (lazy) |
+| .NET `EnumerateFiles()` | Not specified | IEnumerable (lazy) |
+| Node.js `readdir()` | Not specified | Returns array (eager) |
 | boto3 `list_objects_v2` | Lexicographic by key (S3 guarantees this) | Paginated |
 
 **Observation**: most APIs explicitly document ordering as either "arbitrary" or "sorted". Laziness is typically clear from the return type (iterator vs list).
@@ -223,6 +232,24 @@ The docs are good but leave three questions unanswered:
 1. **Is `move()` atomic on all backends?** (Local: yes via `os.replace`; S3: no, it's copy+delete; SFTP: depends on server)
 2. **Does `copy()` preserve metadata?** (modification time, content type, custom metadata)
 3. **Are `move()` and `copy()` file-only?** (The current code uses `_require_file_path`, so yes, but it's not documented)
+
+### Validation method
+
+Cross-ecosystem patterns for move/copy:
+
+| Library | Move name | Copy name | Atomicity documented? | Metadata documented? | File-only? |
+|---------|-----------|-----------|----------------------|---------------------|------------|
+| pathlib | `rename()` / `replace()` | N/A (`shutil.copy2`) | `replace` is atomic on same FS | `shutil.copy2` preserves metadata | File-only (rename) |
+| PyFilesystem2 | `move()` + `movedir()` | `copy()` + `copydir()` | Not documented | Not documented | Separate file/dir methods |
+| fsspec | `mv()` (alias: `move`, `rename`) | `cp()` (alias: `copy`) | Not documented | Not documented | Not specified |
+| Go afero | `Rename()` | N/A (manual) | Follows `os.Rename` | N/A | Not specified |
+| Rust `std::fs` | `rename()` | `copy()` | "atomic on same FS" | "copies permission bits" | File-only for copy |
+| Rust `object_store` | `rename()` + `rename_if_not_exists()` | `copy()` + `copy_if_not_exists()` | Default: copy+delete (not atomic) | Not documented | Files only (no folders in object stores) |
+| Java NIO | `Files.move()` | `Files.copy()` | `ATOMIC_MOVE` option | `COPY_ATTRIBUTES` option | Both support dirs |
+| .NET | `File.Move()` | `File.Copy()` | Not documented | Not documented | File-only (separate `Directory.Move`) |
+| boto3 S3 | `copy_object` + `delete_object` | `copy_object` | No native move; copy+delete | S3 copies metadata by default | Files only |
+
+**Key insight**: Java NIO is the gold standard here — explicit `ATOMIC_MOVE` and `COPY_ATTRIBUTES` option flags. Most other APIs leave atomicity and metadata undocumented or backend-implicit. Documenting these guarantees (even as "backend-dependent") puts us ahead of most.
 
 ### Recommendation
 
@@ -321,7 +348,7 @@ Based on cross-ecosystem analysis, current names are well-chosen. Notes:
 | `list_folders()` | Return type needs work (see §1) | Keep name, fix return type |
 | `iter_children()` | `iterdir()` in pathlib, `scandir()` in os | Name is fine, return type needs work |
 | `glob()` | Universal | Keep |
-| `move()` | Split: `rename` (pathlib, Go), `move` (PyFS), `mv` (fsspec) | Keep — `move` is most intuitive for storage |
+| `move()` | Split: `rename` (pathlib, Go, Rust, object_store), `move` (PyFS, Java NIO, .NET), `mv` (fsspec) | Keep — `move` is the higher-level abstraction name; `rename` implies same-filesystem |
 | `copy()` | Universal | Keep |
 | `exists()` | Universal | Keep |
 | `is_file()` | `pathlib.is_file()`, Go `IsRegular()` | Keep |
@@ -331,8 +358,20 @@ Based on cross-ecosystem analysis, current names are well-chosen. Notes:
 | `child()` | `opendir()` (PyFS), `chdir()` (fsspec) | Keep — clearer semantics |
 | `ping()` | Common in database clients | Keep |
 | `supports()` | Capability pattern common in Java/enterprise | Keep |
-| `unwrap()` | `getDelegate()` (Java), `inner()` (Rust) | Keep — Rust-inspired, clear |
-| `native_path()` | Unique | Keep |
-| `to_key()` | Unique | Keep |
+| `unwrap()` | `getDelegate()` (Java), `inner()` (Rust), type-assertion (Go) | Keep — Rust-inspired, clear |
+| `native_path()` | `getsyspath()` (PyFS), `__fspath__()` (pathlib), `BlobClient.Uri` (.NET) | Keep — clearer than alternatives |
+| `to_key()` | Unique (inverse of `native_path`) | Keep |
 
 **No method renames recommended.** The names are well-aligned with industry conventions and internally consistent.
+
+---
+
+## Appendix: Verified Cross-Ecosystem Sources
+
+Analysis based on verified API documentation from:
+- Python: pathlib, os, fsspec, PyFilesystem2, boto3 S3
+- Go: io/fs, afero
+- Rust: std::fs, object_store crate
+- Java: java.nio.file (Files), Apache Commons VFS
+- .NET: System.IO (File, Directory), Azure.Storage.Blobs
+- Node.js: fs, AWS SDK JS v3
