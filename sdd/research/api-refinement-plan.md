@@ -303,30 +303,81 @@ Docstring-only changes. Possibly also docs template changes.
 
 ---
 
+## 7. README Review — API-Relevant Insights Only
+
+A second external review (of the README) reinforces and adds to the Store API concerns:
+
+### 7a. `write_text()` gap is user-visible
+
+The reviewer noted that quickstart examples feel "a bit lower-level than many users expect" because the first interaction is `b"Hello, world!"`. This directly supports item §2's recommendation to add `write_text()` — it's not just a symmetry concern, it affects first impressions. A `write_text()`/`read_text()` hello-world is what pathlib-trained Python developers expect.
+
+**Strengthens the case for `write_text()` as a pre-v1 addition, not a deferral.**
+
+### 7b. Store API table descriptions need sharpening
+
+The README's API table has descriptions that are accurate but miss key contracts:
+
+| Current description | What's missing |
+|---|---|
+| `list_folders(path)` → "Iterate subfolder names" | Doesn't say these are bare names (not paths) — the exact asymmetry from §1 |
+| `iter_children(path)` → "Iterate files and folders in one pass" | Doesn't hint at the mixed return type |
+| `move(src, dst)` → "Move or rename" | Doesn't say file-only |
+| `copy(src, dst)` → "Copy a file" | Good — already says "file" |
+| `glob(pattern)` → "Native glob (capability-gated)" | Doesn't say backend-specific |
+| `write(path, content)` → "Write bytes or binary stream" | Good — correctly omits `str` here, but docstring still claims it |
+
+These descriptions should be updated **after** the docstring fixes in Phase 1, so they stay consistent with the source of truth.
+
+### 7c. Backend behavior matrix — API documentation gap
+
+The reviewer asked for a compact table showing per-backend behavior: atomic writes, native glob, move semantics, metadata fidelity. This is an API documentation concern (not just README presentation). Users of `supports(capability)` still have to guess **what** a capability means on each backend.
+
+Proposed table (for docs, not necessarily README):
+
+| Behavior | Local | S3 | S3-PyArrow | SFTP | Azure | Memory |
+|---|---|---|---|---|---|---|
+| `move()` atomicity | Atomic (same FS) | Copy+delete | Copy+delete | Server-dependent | Copy+delete | Atomic |
+| `copy()` preserves metadata | No (new mtime) | Yes (S3 copies metadata) | Yes | No | Yes | No |
+| `write_atomic()` | Yes (temp+rename) | Yes (temp+rename) | Yes | Yes (temp+rename) | Yes (temp+rename) | Yes |
+| Native `glob()` | Yes | Yes | Yes | No | Yes | No |
+| `list_files()` ordering | OS-dependent | Lexicographic (S3) | Lexicographic | OS-dependent | Lexicographic | Insertion order |
+
+This needs verification against actual backend implementations before publishing.
+
+### 7d. Thread safety statement
+
+The reviewer asked for one sentence on thread/process safety. The spec says Store is thread-safe (immutable), but the docstring doesn't mention it. Add to the class docstring:
+
+```
+Thread-safe: ``Store`` is immutable and can be shared across threads.
+Backend thread safety depends on the underlying library.
+```
+
+---
+
 ## Execution Plan
 
-### Phase 1: Quick Wins (docstring-only, no code changes)
+### Phase 1: Docstring fixes (no code changes, no API surface change)
 
-These can be done immediately and don't affect the API surface:
-
-1. Fix `write()` / `write_atomic()` docstrings — remove "``str``" from content param description
-2. Fix `read_text(errors=...)` reference — change from `codecs.register` to correct pointer
+1. Fix `write()` / `write_atomic()` docstrings — remove `` ``str`` `` from content param description
+2. Fix `read_text(errors=...)` reference — `codecs.register` → correct pointer
 3. Add ordering/laziness guarantees to `list_files()`, `list_folders()`, `glob()` docstrings
 4. Add atomicity/metadata/file-only notes to `move()` and `copy()` docstrings
 5. Add "advanced — backend-specific" notes to `unwrap()`, `native_path()`, `glob()` docstrings
+6. Add thread-safety statement to `Store` class docstring (§7d)
 
-### Phase 2: API Decisions (requires design choice)
+### Phase 2: API design decisions (requires choice before implementation)
 
-These change the API surface and need careful consideration:
+7. Listing normalization approach — Option A, B, or C (§1)
+8. `write_text()` addition — yes/no (§2, strengthened by §7a)
 
-6. Decide on listing normalization approach (Option A/B/C above)
-7. Decide on `write_text()` addition
+### Phase 3: Implementation
 
-### Phase 3: Implementation (if Phase 2 decisions made)
-
-8. Implement chosen listing normalization
-9. Implement `write_text()` if approved
-10. Update specs, tests, docs, examples, BACKLOG, CHANGELOG per ripple-check table
+9. Implement chosen listing normalization (§1)
+10. Implement `write_text()` if approved (§2)
+11. Build and verify backend behavior matrix (§7c) — audit each backend
+12. Update README API table descriptions to match improved docstrings (§7b)
+13. Update specs, tests, docs, examples, BACKLOG, CHANGELOG per ripple-check table
 
 ---
 
