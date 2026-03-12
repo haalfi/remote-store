@@ -124,6 +124,21 @@ Not evaluated, not committed to. Pick up when relevant.
   `Annotated[T, Doc("...")]`. Not recommended near-term.
   Research: `sdd/research/research-fastapi-docs.md` P5.
 
+- [ ] **ID-071 — Store API refinement: Phase 1 docstring fixes**
+  Fix misleading docstrings across Store methods identified by API audit.
+  Research: `sdd/research/research-store-api-refinement.md`.
+  Phase 1 items: fix `write()`/`write_atomic()` str claim, fix `read_text(errors=...)`
+  reference, add ordering/laziness notes to listing methods, add atomicity/metadata
+  notes to `move()`/`copy()`, add backend-specific warnings to escape hatches,
+  add thread-safety statement. No code changes, docstring-only.
+
+- [ ] **ID-072 — Store API refinement: Phase 2-3 design and implementation**
+  Design decisions and implementation for listing normalization (Option D preferred:
+  `PathEntry` protocol + `FolderEntry` dataclass) and optional `write_text()` addition.
+  Depends on ID-071 completion and owner sign-off on design choices.
+  Related: ID-063 (`write_text()` convenience method).
+  Research: `sdd/research/research-store-api-refinement.md`.
+
 - [ ] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**
   `list_files`, `list_folders`, and `iter_children` in S3Backend and
   S3PyArrowBackend call `self._fs.exists()` before `self._fs.ls()`, adding

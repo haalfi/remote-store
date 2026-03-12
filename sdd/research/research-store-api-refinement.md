@@ -1,7 +1,7 @@
 # Research: Store API Refinement
 
 **Date:** 2026-03-12
-**Backlog items:** AF-005 (Store API refinement), related: BK-003 (write_text convenience)
+**Backlog items:** ID-071 (Store API refinement), related: ID-063 (write_text convenience)
 **Status:** Research complete — awaiting design decisions
 
 ---
@@ -135,6 +135,24 @@ Callers of `iter_children()` get `.name` and `.path` on every entry without
 isinstance. Callers who need file-specific metadata (size, modified_at) narrow
 with `isinstance(entry, FileInfo)` — which is the correct semantic: "I want
 richer info that only files have."
+
+**Migration impact:** This is a **behavioral** breaking change for existing
+callers, not just a type-level one. Currently `iter_children()` yields bare
+`str` names for folders. Under Option D, folders become `FolderEntry` objects.
+Existing code like:
+
+```python
+for child in store.iter_children("data"):
+    if isinstance(child, str):
+        subfolder_path = f"data/{child}"  # child IS the name string
+```
+
+will break at runtime — `isinstance(child, str)` returns `False` for
+`FolderEntry`, so the folder branch never triggers. **All callers must change
+`child` → `child.name` (or `child.path`) for the folder branch.** Similarly,
+`list_folders()` callers that treat results as plain strings must update to
+access `.name` or `.path` on `FolderEntry` objects. Migration guidance must
+be included in the CHANGELOG and upgrade guide when this change ships.
 
 This is strictly better than Option C's `FileInfo | FolderEntry` union because:
 
@@ -438,7 +456,7 @@ Backend thread safety depends on the underlying library.
 
 ### Phase 2: API design decisions (requires choice before implementation)
 
-7. Listing normalization approach — Option A, B, or C (§3)
+7. Listing normalization approach — Option A, B, C, or D (§3) — **Option D preferred**
 8. `write_text()` addition — yes/no (§4, strengthened by §9a)
 
 ### Phase 3: Implementation
