@@ -110,6 +110,7 @@ _OP_HOOK_MAP: dict[str, str] = {
     "read_bytes": "on_read",
     "read_text": "on_read",
     "write": "on_write",
+    "write_text": "on_write",
     "write_atomic": "on_write",
     "open_atomic": "on_write",
     "delete": "on_delete",
@@ -398,7 +399,7 @@ def observe(
 
     :param store: The Store to observe.
     :param on_read: Fires after read/read_bytes/read_text.
-    :param on_write: Fires after write/write_atomic/open_atomic.
+    :param on_write: Fires after write/write_text/write_atomic/open_atomic.
     :param on_delete: Fires after delete/delete_folder.
     :param on_copy: Fires after copy.
     :param on_move: Fires after move.

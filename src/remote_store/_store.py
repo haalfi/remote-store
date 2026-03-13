@@ -136,17 +136,14 @@ class Store:
         Equivalent to
         ``write(path, text.encode(encoding), overwrite=overwrite)``.
         """
-        _bk = self._backend.name
         log.debug(
             "write_text path=%r encoding=%r overwrite=%r",
             path,
             encoding,
             overwrite,
-            extra={"op": "write_text", "path": path, "backend": _bk},
+            extra={"op": "write_text", "path": path, "backend": self._backend.name},
         )
-        self._backend.capabilities.require(Capability.WRITE, backend=_bk)
-        self._backend.write(self._require_file_path(path), text.encode(encoding), overwrite=overwrite)
-        log.info("write_text complete path=%r", path, extra={"op": "write_text", "path": path, "backend": _bk})
+        self.write(path, text.encode(encoding), overwrite=overwrite)
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         """Write binary content to *path* atomically.
@@ -463,6 +460,9 @@ class Store:
     def ping(self) -> None:
         """Verify that the backend is reachable.
 
+        :raises PermissionDenied: If credentials are invalid.
+        :raises NotFound: If the bucket, container, or root path does not
+            exist.
         :raises BackendUnavailable: If the backend cannot be reached.
         """
         _bk = self._backend.name
@@ -485,6 +485,8 @@ class Store:
 
         :param subpath: Path segment to append to the current root.
         :returns: ``Store``.
+        :raises InvalidPath: If *subpath* is empty, contains ``..``
+            segments, or includes null bytes.
 
         ```python
         data = store.child("data/2024")
