@@ -108,8 +108,9 @@ Azure via fsspec). However:
    `exists`) is exactly the interface needed. There is no value in the fsspec abstraction
    layer.
 
-**Decision:** Implement against the public `Store` API directly, using
-`ConfigurableIOManagerFactory` (two-class pattern) as the Dagster entry point.
+**Decision:** Implement against the public `Store` API directly. v1 wraps the
+raw `IOManager` base class; v2 adds `ConfigurableIOManagerFactory` (two-class
+pattern) for Dagster-config-driven Store construction.
 
 ---
 
@@ -121,11 +122,14 @@ Azure via fsspec). However:
 - `remote_store_io_manager(store, serializer="pickle")` factory function
 - `_RemoteStoreIOManagerImpl` — internal `IOManager` subclass
 - Built-in serializers: pickle, JSON, Parquet (optional PyArrow)
-- Caller owns Store lifecycle (no teardown responsibility)
+- Caller owns Store lifecycle (no teardown responsibility); the adapter does
+  not close the Store — see §4.3 lifecycle note
 
 **v2 (deferred) — Dagster-config-driven Store construction:**
 - `DagsterStoreResource` — `ConfigurableResource` that builds a Store from
   Dagster config fields (`backend_type`, `backend_options`, `root_path`)
+- `DagsterStoreResource.teardown_after_execution()` → calls `store.close()`
+  to prevent connection leaks on connection-based backends (SFTP, S3)
 - `RemoteStoreIOManager` — `ConfigurableIOManagerFactory` wrapping the resource
 - `DagsterStoreResource.teardown_after_execution()` → `store.close()` to
   prevent connection leaks on SFTP/S3 backends
