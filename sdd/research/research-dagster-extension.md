@@ -1,18 +1,26 @@
-# Research: Dagster Extension (`ext.dagster`, ID-073)
+# Research: Dagster Extension (`ext.dagster`, ID-075)
 
 **Date:** 2026-03-13
-**Backlog item:** ID-073 — Dagster integration (`ext.dagster`)
+**Backlog item:** ID-075 — Dagster integration (`ext.dagster`)
 **Status:** Research complete — ready for design decisions
 
 ---
 
 ## 1. Problem Statement
 
-Dagster users who want portable storage (S3 + SFTP + Local without rewriting pipelines)
-today must choose a backend-specific IO manager (`dagster-aws`, `dagster-gcp`, …).
-Switching backends requires changing pipeline code. remote-store already provides a
-backend-uniform `Store` API. A thin Dagster adapter would let Dagster pipelines declare
-*which backend to use* purely via config, with zero pipeline code changes.
+Dagster already provides backend-specific IO managers (`dagster-aws`, `dagster-azure`,
+`dagster-gcp`) that handle S3/Azure/GCS portability natively — swapping the `"io_manager"`
+resource is all that's needed; asset code stays unchanged.
+
+The gap this extension fills is for **teams already using remote-store who adopt Dagster**.
+These teams have an existing `Store` (or `Registry`) with configured backends, credentials,
+retry policy, caching, and observability wrapping. They should not need to duplicate that
+config into `dagster-aws`/`dagster-azure` alongside what they already have.
+
+A thin adapter — `remote_store_io_manager(store)` — lets any existing `Store` object serve
+as a Dagster IO manager with zero duplication. This is genuinely useful and not covered by
+any existing Dagster library. Additionally, Dagster has no native SFTP IO manager, so
+remote-store covers that backend directly.
 
 ---
 
@@ -107,29 +115,96 @@ Azure via fsspec). However:
 
 ## 4. Proposed Design
 
-### 4.1 Architecture overview
+### 4.1 Scope split: v1 vs v2
+
+**v1 — adapter for existing Store users (primary audience):**
+- `remote_store_io_manager(store, serializer="pickle")` factory function
+- `_RemoteStoreIOManagerImpl` — internal `IOManager` subclass
+- Built-in serializers: pickle, JSON, Parquet (optional PyArrow)
+- Caller owns Store lifecycle (no teardown responsibility)
+
+**v2 (deferred) — Dagster-config-driven Store construction:**
+- `DagsterStoreResource` — `ConfigurableResource` that builds a Store from
+  Dagster config fields (`backend_type`, `backend_options`, `root_path`)
+- `RemoteStoreIOManager` — `ConfigurableIOManagerFactory` wrapping the resource
+- `DagsterStoreResource.teardown_after_execution()` → `store.close()` to
+  prevent connection leaks on SFTP/S3 backends
+- Targets Dagster-first users who don't already have a `Store`
+
+This split ships value to the primary audience (existing remote-store users)
+sooner, while deferring the higher-effort Dagster-native config integration.
+
+### 4.2 v1 architecture
+
+```
+remote_store_io_manager(store, serializer)  → factory function (exported)
+    Returns a _RemoteStoreIOManagerImpl
+
+_RemoteStoreIOManagerImpl                   → IOManager (internal, not exported)
+    __init__(store: Store, serializer: Serializer)
+    handle_output(context, obj) → None
+    load_input(context)         → Any
+```
+
+Only `remote_store_io_manager` is exported in `__all__` for v1.
+
+### 4.3 v1 usage
+
+```python
+from dagster import Definitions, asset, io_manager, IOManager
+from remote_store import Store
+from remote_store.backends import LocalBackend
+from remote_store.ext.dagster import remote_store_io_manager
+
+@io_manager
+def my_io_manager() -> IOManager:
+    store = Store(LocalBackend(root="/data/dagster"))
+    return remote_store_io_manager(store, serializer="pickle")
+
+@asset
+def raw_data() -> dict:
+    return {"rows": [1, 2, 3]}
+
+defs = Definitions(
+    assets=[raw_data],
+    resources={"io_manager": my_io_manager},
+)
+```
+
+For teams using `Registry`:
+
+```python
+@io_manager
+def production_io_manager() -> IOManager:
+    registry = Registry(config)
+    store = registry.get_store("production")
+    return remote_store_io_manager(store, serializer="pickle")
+```
+
+**Lifecycle note (v1):** The caller owns the Store. The adapter does not close
+it. If the Store was created inline (not from a long-lived Registry), the caller
+is responsible for cleanup.
+
+### 4.4 v2 architecture (deferred)
 
 ```
 DagsterStoreResource          → ConfigurableResource that builds a Store
     backend_type: str
     backend_options: dict
     root_path: str = ""
+    teardown_after_execution() → store.close()
 
 RemoteStoreIOManager          → ConfigurableIOManagerFactory
     store_resource: ResourceDependency[DagsterStoreResource]
     serializer: str = "pickle"    # "pickle" | "json" | "parquet"
     extension: str = ""           # override file extension (default: serializer default)
-
-_RemoteStoreIOManagerImpl     → IOManager (internal, not exported)
-    __init__(store: Store, serializer: Serializer)
-    handle_output(context, obj) → None
-    load_input(context)         → Any
 ```
 
-`DagsterStoreResource` and `RemoteStoreIOManager` are both exported in `__all__`.
-`_RemoteStoreIOManagerImpl` is internal.
+`DagsterStoreResource` and `RemoteStoreIOManager` would be added to `__all__`
+in v2. `teardown_after_execution()` calls `store.close()` to prevent connection
+leaks on SFTP/S3 backends.
 
-### 4.2 Minimal usage
+### 4.5 v2 usage (deferred)
 
 ```python
 from dagster import Definitions, asset
@@ -154,35 +229,7 @@ defs = Definitions(
 )
 ```
 
-Local-dev override — purely via resource config, zero pipeline changes:
-
-```python
-resources={
-    "io_manager": RemoteStoreIOManager(
-        store_resource=DagsterStoreResource(backend_type="local",
-                                            backend_options={"root": "/tmp/dagster"}),
-    )
-}
-```
-
-### 4.3 Direct-Store path (escape hatch)
-
-For users who already have a `Store` object (e.g., from `Registry`), a factory function
-provides a non-`ConfigurableIOManager` path:
-
-```python
-from remote_store.ext.dagster import remote_store_io_manager
-
-@io_manager
-def my_io_manager() -> IOManager:
-    registry = Registry(config)
-    store = registry.get_store("production")
-    return remote_store_io_manager(store, serializer="pickle")
-```
-
-This covers the "pass an existing Store" case without fighting Dagster's resource system.
-
-### 4.4 Path generation strategy
+### 4.6 Path generation strategy
 
 Storage path derived from `context.get_asset_identifier()` (includes partition key when
 partitioned):
@@ -206,7 +253,7 @@ def _asset_path(context: OutputContext | InputContext, ext: str) -> str:
 The `root_path` of the `Store` (set on `DagsterStoreResource`) acts as the namespace
 prefix — no need to embed it in the path generation logic.
 
-### 4.5 Serializer protocol
+### 4.7 Serializer protocol
 
 ```python
 from typing import Protocol, runtime_checkable
@@ -264,7 +311,9 @@ packages, not for first-party extensions — this is first-party.
 
 ---
 
-## 6. Design Decision: `DagsterStoreResource` vs. RegistryConfig YAML
+## 6. Design Decision: `DagsterStoreResource` vs. RegistryConfig YAML (v2)
+
+*Note: This section applies to the v2 `DagsterStoreResource` scope.*
 
 The backlog mentions "wraps `RegistryConfig`". Two approaches:
 
@@ -281,7 +330,9 @@ A `profile` field can be added later without breaking Option A.
 
 ---
 
-## 7. Design Decision: `DagsterStoreResource` backend_options schema
+## 7. Design Decision: `DagsterStoreResource` backend_options schema (v2)
+
+*Note: This section applies to the v2 `DagsterStoreResource` scope.*
 
 `backend_options` is `dict[str, Any]` — same as `BackendConfig.options` in RegistryConfig.
 Secret wrapping (e.g., `account_key`, `password`) should use the same logic as
@@ -299,8 +350,8 @@ resolves at runtime. The `DagsterStoreResource.get_store()` method calls
 
 ```python
 from dagster import build_output_context, build_input_context, AssetKey
-from remote_store.backends._memory import MemoryBackend
-from remote_store._store import Store
+from remote_store.backends import MemoryBackend
+from remote_store import Store
 from remote_store.ext.dagster import remote_store_io_manager
 
 def test_roundtrip_pickle():
@@ -321,18 +372,18 @@ def test_roundtrip_pickle():
 
 ### What must be tested
 
-| Test | Spec ID to assign |
-|---|---|
-| Pickle roundtrip (MemoryBackend) | DAG-001 |
-| JSON roundtrip | DAG-002 |
-| Parquet roundtrip (pandas DataFrame) | DAG-003 |
-| Partitioned asset — path includes partition key | DAG-004 |
-| Multi-segment asset key maps to nested path | DAG-005 |
-| `DagsterStoreResource.get_store()` builds correct Store | DAG-006 |
-| Missing file raises `NotFound` on load | DAG-007 |
-| `handle_output` adds metadata to context | DAG-008 |
-| Custom serializer protocol respected | DAG-009 |
-| Missing PyArrow for parquet gives helpful error | DAG-010 |
+| Test | Spec ID to assign | Scope |
+|---|---|---|
+| Pickle roundtrip (MemoryBackend) | DAG-001 | v1 |
+| JSON roundtrip | DAG-002 | v1 |
+| Parquet roundtrip (pandas DataFrame) | DAG-003 | v1 |
+| Partitioned asset — path includes partition key | DAG-004 | v1 |
+| Multi-segment asset key maps to nested path | DAG-005 | v1 |
+| `DagsterStoreResource.get_store()` builds correct Store | DAG-006 | v2 |
+| Missing file raises `NotFound` on load | DAG-007 | v1 |
+| `handle_output` adds metadata to context | DAG-008 | v1 |
+| Custom serializer protocol respected | DAG-009 | v1 |
+| Missing PyArrow for parquet gives helpful error | DAG-010 | v1 |
 
 ---
 
@@ -371,11 +422,11 @@ def test_roundtrip_pickle():
 
 ## 11. Remaining Open Questions (for owner to decide)
 
-1. **`DagsterStoreResource.backend_options` typing**: Should sensitive keys in
+1. **`DagsterStoreResource.backend_options` typing** (v2): Should sensitive keys in
    `backend_options` accept Dagster's `EnvVar("...")` type directly, or require users to
    use Dagster's `EnvVar` string resolution before passing? The simplest approach is plain
    strings (users set env vars themselves). Dagster `EnvVar` integration would be a
-   follow-up.
+   follow-up. Deferred to v2 scope.
 
 2. **Multi-partition loading**: When a downstream asset has multiple upstream partitions
    (e.g., time-window aggregation), `load_input` is called once with `asset_partition_keys`
@@ -400,17 +451,44 @@ def test_roundtrip_pickle():
 
 ---
 
-## 13. Implementation Checklist (SDD pipeline)
+## 13. Maintenance & Risk
+
+- **Dagster API churn**: Dagster actively renames classes and changes metadata
+  APIs (e.g., `ConfigurablePickledObjectS3IOManager` renamed;
+  `definition_metadata` replaced `metadata`). Each Dagster major bump may
+  require adapter updates.
+- **v1 scope minimises exposure**: `remote_store_io_manager(store)` wraps only
+  the stable `IOManager` base class (`handle_output` / `load_input`). No
+  dependency on `ConfigurableResource` or Dagster config plumbing in v1.
+- **Version floor at `dagster>=1.9`** (not 1.7): aligns with Python 3.10+ floor
+  and avoids supporting the transitional 1.7–1.8 API surface.
+- **Alternative for SFTP-only users**: A 40-line custom `ConfigurableIOManager`
+  with paramiko directly is viable. The extension's value is avoiding that
+  boilerplate and reusing existing `Store` config/wrapping.
+
+---
+
+## 14. Implementation Checklist (SDD pipeline)
+
+### v1 — `remote_store_io_manager(store)`
 
 - [ ] RFC: `sdd/rfcs/rfc-0005-dagster-extension.md`
 - [ ] Spec: `sdd/specs/030-ext-dagster.md` (DAG-001 … DAG-010+)
-- [ ] Implementation: `src/remote_store/ext/dagster.py`
+- [ ] Implementation: `src/remote_store/ext/dagster.py` (`remote_store_io_manager`, serializers, `_RemoteStoreIOManagerImpl`)
 - [ ] Tests: `tests/test_dagster.py` with `@pytest.mark.spec("DAG-NNN")`
 - [ ] Guide: `guides/dagster.md` (setup, usage patterns, serializer guide)
 - [ ] Docs wiring: `docs-src/api/ext-dagster.md`, `docs-src/_nav.yml`
 - [ ] `pyproject.toml`: add `dagster` extra (`dagster>=1.9`)
-- [ ] `remote_store/__init__.py`: conditional re-export
 - [ ] CHANGELOG, BACKLOG updates (same commit)
+
+### v2 (deferred) — `DagsterStoreResource` + `RemoteStoreIOManager`
+
+- [ ] `DagsterStoreResource`: `ConfigurableResource` with `backend_type`, `backend_options`, `root_path`
+- [ ] `DagsterStoreResource.teardown_after_execution()` → `store.close()`
+- [ ] `RemoteStoreIOManager`: `ConfigurableIOManagerFactory` wrapping the resource
+- [ ] `remote_store/__init__.py`: conditional re-export of v2 classes
+- [ ] Additional tests: DAG-006 (`DagsterStoreResource.get_store()`), teardown test
+- [ ] Guide update: Dagster-config-driven usage section
 
 ---
 
