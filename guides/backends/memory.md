@@ -13,8 +13,8 @@ from remote_store.backends import MemoryBackend
 backend = MemoryBackend()
 store = Store(backend=backend, root_path="data")
 
-store.write("hello.txt", b"Hello, world!")
-print(store.read_bytes("hello.txt"))  # b'Hello, world!'
+store.write_text("hello.txt", "Hello, world!")
+print(store.read_text("hello.txt"))  # 'Hello, world!'
 ```
 
 ### Via Registry
@@ -29,7 +29,7 @@ config = RegistryConfig(
 
 with Registry(config) as registry:
     store = registry.get_store("data")
-    store.write("readme.txt", b"Hello!")
+    store.write_text("readme.txt", "Hello!")
 ```
 
 ## Options

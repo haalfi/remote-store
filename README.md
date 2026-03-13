@@ -95,8 +95,8 @@ from remote_store import Store
 from remote_store.backends import LocalBackend
 
 store = Store(LocalBackend(root="/tmp/data"))
-store.write("hello.txt", b"Hello, world!")
-print(store.read_bytes("hello.txt"))  # b'Hello, world!'
+store.write_text("hello.txt", "Hello, world!")
+print(store.read_text("hello.txt"))  # 'Hello, world!'
 ```
 
 For applications that manage multiple backends or switch between environments,
@@ -112,8 +112,8 @@ config = RegistryConfig.from_dict({
 
 with Registry(config) as registry:
     store = registry.get_store("data")
-    store.write("hello.txt", b"Hello, world!")
-    print(store.read_bytes("hello.txt"))  # b'Hello, world!'
+    store.write_text("hello.txt", "Hello, world!")
+    print(store.read_text("hello.txt"))  # 'Hello, world!'
 ```
 
 Switch to S3 by changing the config. The application code stays the same:

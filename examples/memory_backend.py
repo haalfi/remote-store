@@ -15,9 +15,9 @@ from remote_store.backends import MemoryBackend
 
 def demo(store):
     """Standard Store operations on any backend."""
-    store.write("hello.txt", b"Hello from memory!")
+    store.write_text("hello.txt", "Hello from memory!")
     print(f"exists: {store.exists('hello.txt')}")
-    print(f"content: {store.read_bytes('hello.txt')}")
+    print(f"content: {store.read_text('hello.txt')}")
 
     # Folders are created automatically
     store.write("reports/q1.csv", b"revenue,100\n")

@@ -1,9 +1,5 @@
 # Store
 
-!!! tip "See also"
-    The [Store API Reference](store-api.md) documents behavioral guarantees,
-    backend differences, and the target v1 API surface.
-
 ::: remote_store.Store
     options:
       members: false
