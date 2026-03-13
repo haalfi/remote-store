@@ -65,6 +65,11 @@ All work is tracked in `sdd/BACKLOG.md`:
 | **Ideas** | `ID-NNN` | Parking lot: not evaluated, not committed to. |
 | **Done** | (original prefix) | Completed items kept for reference. |
 
+Items within each section are ordered newest-first (most recently completed at the top).
+
+When completing work: mark items `[x]` (with version) or `[~]` (with what remains).
+Move completed items to the matching section under Done. Same commit as the code change.
+
 ### ADRs, RFCs, research, and audits
 
 - **ADRs** (`sdd/adrs/NNNN-<short-title>.md`): capture *why* a design decision was made. Immutable once accepted: if reversed, a new ADR supersedes the old one.
