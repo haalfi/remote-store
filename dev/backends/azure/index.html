@@ -5548,146 +5548,86 @@ real directory support.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>container</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Azure Storage container name (required, non-empty).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>account_name</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Storage account name.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>container</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Azure Storage container name (required, non-empty).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>account_name</code></b>
+              (<code><span title="str">str</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>account_url</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Full account URL (e.g. <code>https://myaccount.dfs.core.windows.net</code>).</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Storage account name.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>account_url</code></b>
+              (<code><span title="str">str</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>account_key</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Storage account key.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Full account URL (e.g. <code>https://myaccount.dfs.core.windows.net</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>account_key</code></b>
+              (<code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>sas_token</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Shared Access Signature token.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Storage account key.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>sas_token</code></b>
+              (<code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>connection_string</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Azure Storage connection string.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Shared Access Signature token.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>connection_string</code></b>
+              (<code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>credential</code>
-            </td>
-            <td>
-                  <code><span title="typing.Any">Any</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Any credential object (e.g. <code>DefaultAzureCredential()</code>).</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Azure Storage connection string.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>credential</code></b>
+              (<code><span title="typing.Any">Any</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>client_options</code>
-            </td>
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Additional options passed to service clients.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Any credential object (e.g. <code>DefaultAzureCredential()</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>client_options</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Additional options passed to service clients.</p>
+          </div>
+        </li>
+    </ul>
 
 
 

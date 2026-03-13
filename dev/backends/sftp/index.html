@@ -5502,211 +5502,127 @@
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>host</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>SFTP server hostname (required, non-empty).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>port</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>SSH port (default: 22).</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>host</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>SFTP server hostname (required, non-empty).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>port</code></b>
+              (<code><span title="int">int</span></code>, default:
                   <code>22</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>username</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>SSH username.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>SSH port (default: 22).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>username</code></b>
+              (<code><span title="str">str</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>password</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>SSH password.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>SSH username.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>password</code></b>
+              (<code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>pkey</code>
-            </td>
-            <td>
-                  <code><span title="typing.Any">Any</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>paramiko.PKey instance for key-based auth.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>SSH password.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>pkey</code></b>
+              (<code><span title="typing.Any">Any</span></code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>base_path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Root path on the remote server (default: <code>/</code>).</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>paramiko.PKey instance for key-based auth.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>base_path</code></b>
+              (<code><span title="str">str</span></code>, default:
                   <code>&#39;/&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>host_key_policy</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="remote_store.backends._sftp.HostKeyPolicy" href="../../api/sftp-utils/#remote_store.backends._sftp.HostKeyPolicy">HostKeyPolicy</a> | <span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Host key verification policy
-(see <code>SFTPUtils.HostKeyPolicy</code>). Accepts enum value or string.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Root path on the remote server (default: <code>/</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>host_key_policy</code></b>
+              (<code><a class="autorefs autorefs-internal" title="remote_store.backends._sftp.HostKeyPolicy" href="../../api/sftp-utils/#remote_store.backends._sftp.HostKeyPolicy">HostKeyPolicy</a> | <span title="str">str</span></code>, default:
                   <code><span title="remote_store.backends._sftp.HostKeyPolicy.STRICT">STRICT</span></code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>known_host_keys</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Known hosts string (code-level override).</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Host key verification policy
+(see <code>SFTPUtils.HostKeyPolicy</code>). Accepts enum value or string.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>known_host_keys</code></b>
+              (<code><span title="str">str</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>host_keys_path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Path to known_hosts file (default: <code>~/.ssh/known_hosts</code>).</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Known hosts string (code-level override).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>host_keys_path</code></b>
+              (<code><span title="str">str</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>config</code>
-            </td>
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional config dict (may contain <code>known_host_keys</code>).</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Path to known_hosts file (default: <code>~/.ssh/known_hosts</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>config</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>timeout</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>SSH connection timeout in seconds.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional config dict (may contain <code>known_host_keys</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>timeout</code></b>
+              (<code><span title="int">int</span></code>, default:
                   <code>10</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>connect_kwargs</code>
-            </td>
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Extra kwargs passed to <code>SSHClient.connect()</code>.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>SSH connection timeout in seconds.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>connect_kwargs</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Extra kwargs passed to <code>SSHClient.connect()</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
 

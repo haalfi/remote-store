@@ -6255,126 +6255,73 @@ Only methods with additional behavior (<code>invalidate</code>, <code>clear_cach
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>store</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Store to wrap.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>ttl</code>
-            </td>
-            <td>
-                  <code><span title="float">float</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Time-to-live in seconds for cache entries (default 300).</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>store</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The Store to wrap.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>ttl</code></b>
+              (<code><span title="float">float</span></code>, default:
                   <code>300.0</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>max_content_size</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Maximum byte length for <code>read_bytes</code> caching.
+)
+          –
+          <div class="doc-md-description">
+            <p>Time-to-live in seconds for cache entries (default 300).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>max_content_size</code></b>
+              (<code><span title="int">int</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Maximum byte length for <code>read_bytes</code> caching.
 Files larger than this are returned without caching. <code>None</code> means
 unlimited.</p>
-              </div>
-            </td>
-            <td>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>max_entries</code></b>
+              (<code><span title="int">int</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>max_entries</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Maximum number of cache entries. When exceeded, the
+)
+          –
+          <div class="doc-md-description">
+            <p>Maximum number of cache entries. When exceeded, the
 least-recently-used entry is evicted. <code>None</code> means no limit.
 Ignored when <em>cache_backend</em> is provided.</p>
-              </div>
-            </td>
-            <td>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>cache_backend</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            CacheBackend (remote_store.ext.cache.CacheBackend)" href="#remote_store.ext.cache.CacheBackend">CacheBackend</a> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>cache_backend</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            CacheBackend (remote_store.ext.cache.CacheBackend)" href="#remote_store.ext.cache.CacheBackend">CacheBackend</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional custom cache. When <code>None</code>, a
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional custom cache. When <code>None</code>, a
 :class:<code>MemoryCache</code> is created.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            CachedStore (remote_store.ext.cache.CachedStore)" href="#remote_store.ext.cache.CachedStore">CachedStore</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A :class:<code>CachedStore</code> proxy.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            CachedStore (remote_store.ext.cache.CachedStore)" href="#remote_store.ext.cache.CachedStore">CachedStore</a></code>
+          –
+          <div class="doc-md-description">
+            <p>A :class:<code>CachedStore</code> proxy.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

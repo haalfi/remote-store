@@ -5112,106 +5112,60 @@
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | <span title="pathlib.Path">Path</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Path to the YAML file.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span> | <span title="pathlib.Path">Path</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Path to the YAML file.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            RegistryConfig
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            RegistryConfig
 
 
   
       dataclass
    (remote_store._config.RegistryConfig)" href="../config/#remote_store.RegistryConfig">RegistryConfig</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>An immutable <code>RegistryConfig</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          –
+          <div class="doc-md-description">
+            <p>An immutable <code>RegistryConfig</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>ModuleNotFoundError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If neither <code>pyyaml</code> nor <code>ruamel.yaml</code>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>ModuleNotFoundError</code>
+            –
+          <div class="doc-md-description">
+            <p>If neither <code>pyyaml</code> nor <code>ruamel.yaml</code>
 is installed.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>FileNotFoundError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> does not exist.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>TypeError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the top-level YAML value is not a mapping.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>FileNotFoundError</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>TypeError</code>
+            –
+          <div class="doc-md-description">
+            <p>If the top-level YAML value is not a mapping.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

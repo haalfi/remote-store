@@ -5273,73 +5273,38 @@
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>source</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>File path (if <code>from_file=True</code>) or PEM-encoded string.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>from_file</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <code>True</code>, treat <em>source</em> as a file path.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>source</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>File path (if <code>from_file=True</code>) or PEM-encoded string.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>from_file</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>True</code>, treat <em>source</em> as a file path.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="typing.Any">Any</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>paramiko.RSAKey</code></p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="typing.Any">Any</span></code>
+          –
+          <div class="doc-md-description">
+            <p><code>paramiko.RSAKey</code></p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -5363,47 +5328,29 @@
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td><code><span title="remote_store.backends._sftp.HostKeyPolicy.STRICT">STRICT</span></code></td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Reject unknown hosts (production default).</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td><code><span title="remote_store.backends._sftp.HostKeyPolicy.TRUST_ON_FIRST_USE">TRUST_ON_FIRST_USE</span></code></td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Save on first connect, verify after.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td><code><span title="remote_store.backends._sftp.HostKeyPolicy.AUTO_ADD">AUTO_ADD</span></code></td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Accept any key (dev/testing ONLY).</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.backends._sftp.HostKeyPolicy.STRICT">STRICT</span></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Reject unknown hosts (production default).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.backends._sftp.HostKeyPolicy.TRUST_ON_FIRST_USE">TRUST_ON_FIRST_USE</span></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Save on first connect, verify after.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.backends._sftp.HostKeyPolicy.AUTO_ADD">AUTO_ADD</span></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Accept any key (dev/testing ONLY).</p>
+          </div>
+        </li>
+    </ul>
 
 
 

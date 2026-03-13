@@ -5299,60 +5299,38 @@
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>backends</code>
-            </td>
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="            BackendConfig
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>backends</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="            BackendConfig
 
 
   
       dataclass
-   (remote_store._config.BackendConfig)" href="#remote_store.BackendConfig">BackendConfig</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Mapping of backend names to their configs.</p>
-              </div>
-            </td>
-            <td>
+   (remote_store._config.BackendConfig)" href="#remote_store.BackendConfig">BackendConfig</a>]</code>, default:
                   <code><span title="dict">dict</span>()</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>stores</code>
-            </td>
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="            StoreProfile
+)
+          –
+          <div class="doc-md-description">
+            <p>Mapping of backend names to their configs.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>stores</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="            StoreProfile
 
 
   
       dataclass
-   (remote_store._config.StoreProfile)" href="#remote_store.StoreProfile">StoreProfile</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Mapping of store names to their profiles.</p>
-              </div>
-            </td>
-            <td>
+   (remote_store._config.StoreProfile)" href="#remote_store.StoreProfile">StoreProfile</a>]</code>, default:
                   <code><span title="dict">dict</span>()</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Mapping of store names to their profiles.</p>
+          </div>
+        </li>
+    </ul>
 
 
 
@@ -5392,26 +5370,15 @@
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>ValueError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If a store references a non-existent backend.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>ValueError</code>
+            –
+          <div class="doc-md-description">
+            <p>If a store references a non-existent backend.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -5439,34 +5406,16 @@
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>data</code>
-            </td>
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Dict with <code>backends</code> and <code>stores</code> keys.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>data</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Dict with <code>backends</code> and <code>stores</code> keys.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -5494,85 +5443,47 @@
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | <span title="pathlib.Path">Path</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Path to the TOML file.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>table</code>
-            </td>
-            <td>
-                  <code><span title="tuple">tuple</span>[<span title="str">str</span>, ...]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Dotted table path to extract config from.
-For <code>pyproject.toml</code> use <code>table=("tool", "remote-store")</code>.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span> | <span title="pathlib.Path">Path</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Path to the TOML file.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>table</code></b>
+              (<code><span title="tuple">tuple</span>[<span title="str">str</span>, ...]</code>, default:
                   <code>()</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Dotted table path to extract config from.
+For <code>pyproject.toml</code> use <code>table=("tool", "remote-store")</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>ModuleNotFoundError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <code>tomllib</code> is unavailable and
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>ModuleNotFoundError</code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>tomllib</code> is unavailable and
 <code>tomli</code> is not installed.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>KeyError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If a <em>table</em> key is not found.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>KeyError</code>
+            –
+          <div class="doc-md-description">
+            <p>If a <em>table</em> key is not found.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -5611,71 +5522,41 @@ For <code>pyproject.toml</code> use <code>table=("tool", "remote-store")</code>.
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>type</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Backend type identifier (e.g. <code>"local"</code>, <code>"s3"</code>).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>options</code>
-            </td>
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Backend-specific configuration options.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>type</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Backend type identifier (e.g. <code>"local"</code>, <code>"s3"</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>options</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>, default:
                   <code><span title="dict">dict</span>()</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>retry</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            RetryPolicy
+)
+          –
+          <div class="doc-md-description">
+            <p>Backend-specific configuration options.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>retry</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            RetryPolicy
 
 
   
       dataclass
-   (remote_store._config.RetryPolicy)" href="#remote_store.RetryPolicy">RetryPolicy</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional retry policy for transient errors.</p>
-              </div>
-            </td>
-            <td>
+   (remote_store._config.RetryPolicy)" href="#remote_store.RetryPolicy">RetryPolicy</a> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional retry policy for transient errors.</p>
+          </div>
+        </li>
+    </ul>
 
 
 
@@ -5732,101 +5613,61 @@ Backends that don't support a parameter silently ignore it.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>max_attempts</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Maximum number of attempts (including the initial).
-Set to 1 to disable retry.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>max_attempts</code></b>
+              (<code><span title="int">int</span></code>, default:
                   <code>3</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>backoff_base</code>
-            </td>
-            <td>
-                  <code><span title="float">float</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Base delay in seconds for exponential backoff.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Maximum number of attempts (including the initial).
+Set to 1 to disable retry.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>backoff_base</code></b>
+              (<code><span title="float">float</span></code>, default:
                   <code>1.0</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>backoff_max</code>
-            </td>
-            <td>
-                  <code><span title="float">float</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Maximum delay between retries in seconds.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Base delay in seconds for exponential backoff.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>backoff_max</code></b>
+              (<code><span title="float">float</span></code>, default:
                   <code>60.0</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>jitter</code>
-            </td>
-            <td>
-                  <code><span title="float">float</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Maximum random jitter added to each delay in seconds.
-Set to 0.0 to disable jitter.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Maximum delay between retries in seconds.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>jitter</code></b>
+              (<code><span title="float">float</span></code>, default:
                   <code>1.0</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>timeout</code>
-            </td>
-            <td>
-                  <code><span title="float">float</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Total wall-clock timeout in seconds for all attempts
-combined. <code>None</code> means no total timeout.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Maximum random jitter added to each delay in seconds.
+Set to 0.0 to disable jitter.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>timeout</code></b>
+              (<code><span title="float">float</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Total wall-clock timeout in seconds for all attempts
+combined. <code>None</code> means no total timeout.</p>
+          </div>
+        </li>
+    </ul>
 
 
 
@@ -5905,66 +5746,36 @@ combined. <code>None</code> means no total timeout.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>backend</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Name of the backend config to use.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>root_path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Path prefix for all operations.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>backend</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Name of the backend config to use.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>root_path</code></b>
+              (<code><span title="str">str</span></code>, default:
                   <code>&#39;&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>options</code>
-            </td>
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-specific options.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Path prefix for all operations.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>options</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>, default:
                   <code><span title="dict">dict</span>()</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Store-specific options.</p>
+          </div>
+        </li>
+    </ul>
 
 
 
@@ -6017,57 +5828,28 @@ Call <code>.reveal()</code> to obtain the plain-text credential.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>value</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The secret string to protect.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>value</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The secret string to protect.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>TypeError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>value</em> is not a <code>str</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>TypeError</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>value</em> is not a <code>str</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
 

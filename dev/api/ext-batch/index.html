@@ -5245,50 +5245,24 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>succeeded</code>
-            </td>
-            <td>
-                  <code><span title="tuple">tuple</span>[<span title="str">str</span>, ...]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Paths that completed without error.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>failed</code>
-            </td>
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="            RemoteStoreError (remote_store._errors.RemoteStoreError)" href="../errors/#remote_store.RemoteStoreError">RemoteStoreError</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Mapping from path to the error that occurred.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>succeeded</code></b>
+              (<code><span title="tuple">tuple</span>[<span title="str">str</span>, ...]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Paths that completed without error.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>failed</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="            RemoteStoreError (remote_store._errors.RemoteStoreError)" href="../errors/#remote_store.RemoteStoreError">RemoteStoreError</a>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Mapping from path to the error that occurred.</p>
+          </div>
+        </li>
+    </ul>
 
 
 
@@ -5385,165 +5359,93 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>store</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Store to delete from.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>paths</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Iterable">Iterable</span>[<span title="str">str</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>File paths to delete.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>missing_ok</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Forwarded to each <code>store.delete()</code> call.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>store</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The Store to delete from.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>paths</code></b>
+              (<code><span title="collections.abc.Iterable">Iterable</span>[<span title="str">str</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>File paths to delete.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>missing_ok</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>stop_on_error</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Stop on first <code>RemoteStoreError</code> (sequential only).</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Forwarded to each <code>store.delete()</code> call.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>stop_on_error</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>concurrent</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Use a thread pool for parallel execution.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Stop on first <code>RemoteStoreError</code> (sequential only).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>concurrent</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>max_workers</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Max threads (forwarded to <code>ThreadPoolExecutor</code>).</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Use a thread pool for parallel execution.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>max_workers</code></b>
+              (<code><span title="int">int</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Max threads (forwarded to <code>ThreadPoolExecutor</code>).</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            BatchResult
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BatchResult
 
 
   
       dataclass
    (remote_store.ext.batch.BatchResult)" href="#remote_store.ext.batch.BatchResult">BatchResult</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A :class:<code>BatchResult</code> with succeeded/failed paths.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          –
+          <div class="doc-md-description">
+            <p>A :class:<code>BatchResult</code> with succeeded/failed paths.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>ValueError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If both <code>concurrent</code> and <code>stop_on_error</code> are True.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>ValueError</code>
+            –
+          <div class="doc-md-description">
+            <p>If both <code>concurrent</code> and <code>stop_on_error</code> are True.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -5567,165 +5469,93 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>store</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Store to copy within.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>pairs</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Iterable">Iterable</span>[<span title="tuple">tuple</span>[<span title="str">str</span>, <span title="str">str</span>]]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>(src, dst)</code> tuples.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>overwrite</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Forwarded to each <code>store.copy()</code> call.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>store</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The Store to copy within.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>pairs</code></b>
+              (<code><span title="collections.abc.Iterable">Iterable</span>[<span title="tuple">tuple</span>[<span title="str">str</span>, <span title="str">str</span>]]</code>)
+          –
+          <div class="doc-md-description">
+            <p><code>(src, dst)</code> tuples.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>overwrite</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>stop_on_error</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Stop on first <code>RemoteStoreError</code> (sequential only).</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Forwarded to each <code>store.copy()</code> call.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>stop_on_error</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>concurrent</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Use a thread pool for parallel execution.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Stop on first <code>RemoteStoreError</code> (sequential only).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>concurrent</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>max_workers</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Max threads (forwarded to <code>ThreadPoolExecutor</code>).</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Use a thread pool for parallel execution.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>max_workers</code></b>
+              (<code><span title="int">int</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Max threads (forwarded to <code>ThreadPoolExecutor</code>).</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            BatchResult
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BatchResult
 
 
   
       dataclass
    (remote_store.ext.batch.BatchResult)" href="#remote_store.ext.batch.BatchResult">BatchResult</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A :class:<code>BatchResult</code> with succeeded/failed source paths.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          –
+          <div class="doc-md-description">
+            <p>A :class:<code>BatchResult</code> with succeeded/failed source paths.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>ValueError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If both <code>concurrent</code> and <code>stop_on_error</code> are True.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>ValueError</code>
+            –
+          <div class="doc-md-description">
+            <p>If both <code>concurrent</code> and <code>stop_on_error</code> are True.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -5752,105 +5582,56 @@ immediately.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>store</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Store to query.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>paths</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Iterable">Iterable</span>[<span title="str">str</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Paths to check.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>concurrent</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Use a thread pool for parallel execution.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>store</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The Store to query.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>paths</code></b>
+              (<code><span title="collections.abc.Iterable">Iterable</span>[<span title="str">str</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Paths to check.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>concurrent</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>max_workers</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Max threads (forwarded to <code>ThreadPoolExecutor</code>).</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Use a thread pool for parallel execution.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>max_workers</code></b>
+              (<code><span title="int">int</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Max threads (forwarded to <code>ThreadPoolExecutor</code>).</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="bool">bool</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Dict mapping each path to <code>True</code>/<code>False</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="bool">bool</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>Dict mapping each path to <code>True</code>/<code>False</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

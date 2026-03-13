@@ -5167,50 +5167,24 @@ data lake workflows.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>partitions</code>
-            </td>
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="str">str</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Ordered mapping of partition column names to values.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>filename</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The trailing non-partition portion of the path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>partitions</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="str">str</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Ordered mapping of partition column names to values.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>filename</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The trailing non-partition portion of the path.</p>
+          </div>
+        </li>
+    </ul>
 
 
 
@@ -5259,100 +5233,54 @@ data lake workflows.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>filename</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Leaf file name (e.g., <code>"data.parquet"</code>).
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>filename</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Leaf file name (e.g., <code>"data.parquet"</code>).
 Must be non-empty and must not contain <code>/</code>.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>partitions</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | <span title="int">int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Partition key-value pairs. Values are coerced to
-<code>str</code>. Keys and coerced values must be non-empty.</p>
-              </div>
-            </td>
-            <td>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>partitions</code></b>
+              (<code><span title="str">str</span> | <span title="int">int</span></code>, default:
                   <code>{}</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Partition key-value pairs. Values are coerced to
+<code>str</code>. Keys and coerced values must be non-empty.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Forward-slash-joined path like
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>Forward-slash-joined path like
 <code>"year=2026/month=03/data.parquet"</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>ValueError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>filename</em> is empty or contains <code>/</code>, or if
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>ValueError</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>filename</em> is empty or contains <code>/</code>, or if
 any partition key or coerced value is empty.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -5380,87 +5308,47 @@ segments) become part of the filename.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The partition path to parse (e.g.,
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The partition path to parse (e.g.,
 <code>"year=2026/month=03/data.parquet"</code>).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            ParsedPartition
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            ParsedPartition
 
 
   
       dataclass
    (remote_store.ext.partition.ParsedPartition)" href="#remote_store.ext.partition.ParsedPartition">ParsedPartition</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A :class:<code>ParsedPartition</code> with extracted partitions and
+          –
+          <div class="doc-md-description">
+            <p>A :class:<code>ParsedPartition</code> with extracted partitions and
 filename.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>ValueError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> is empty.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>ValueError</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

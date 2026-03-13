@@ -5117,62 +5117,35 @@
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>config</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            RegistryConfig
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>config</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            RegistryConfig
 
 
   
       dataclass
-   (remote_store._config.RegistryConfig)" href="../config/#remote_store.RegistryConfig">RegistryConfig</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional configuration. Validates immediately.</p>
-              </div>
-            </td>
-            <td>
+   (remote_store._config.RegistryConfig)" href="../config/#remote_store.RegistryConfig">RegistryConfig</a> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional configuration. Validates immediately.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>ValueError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If config is invalid.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>ValueError</code>
+            –
+          <div class="doc-md-description">
+            <p>If config is invalid.</p>
+          </div>
+        </li>
+    </ul>
 
 
 
@@ -5212,57 +5185,28 @@
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>name</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The store profile name.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>name</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The store profile name.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>KeyError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If no store profile with this name exists.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>KeyError</code>
+            –
+          <div class="doc-md-description">
+            <p>If no store profile with this name exists.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -5317,50 +5261,24 @@ backends have been processed.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>type_name</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The type identifier (e.g. <code>"local"</code>).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>cls</code>
-            </td>
-            <td>
-                  <code><span title="type">type</span>[<a class="autorefs autorefs-internal" title="            Backend (remote_store._backend.Backend)" href="../backend/#remote_store.Backend">Backend</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The backend class to instantiate.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>type_name</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The type identifier (e.g. <code>"local"</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>cls</code></b>
+              (<code><span title="type">type</span>[<a class="autorefs autorefs-internal" title="            Backend (remote_store._backend.Backend)" href="../backend/#remote_store.Backend">Backend</a>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The backend class to instantiate.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

@@ -5137,59 +5137,34 @@
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>store</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Store to expose as a PyArrow filesystem.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>materialization_threshold</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Max file size (bytes) for Tier 2 full-file
-materialization in <code>open_input_file</code>. Default 64 MB.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>store</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The Store to expose as a PyArrow filesystem.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>materialization_threshold</code></b>
+              (<code><span title="int">int</span></code>, default:
                   <code>64 * 1024 * 1024</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>write_spill_threshold</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Max in-memory buffer size (bytes) for
+)
+          –
+          <div class="doc-md-description">
+            <p>Max file size (bytes) for Tier 2 full-file
+materialization in <code>open_input_file</code>. Default 64 MB.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>write_spill_threshold</code></b>
+              (<code><span title="int">int</span></code>, default:
+                  <code>64 * 1024 * 1024</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Max in-memory buffer size (bytes) for
     <code>_StoreSink</code> before spilling to disk. Default 64 MB.</p>
 <p><strong>Thread safety:</strong> The handler itself holds no shared mutable state. PyArrow's
 C++ layer may call handler methods from background threads (with the GIL
@@ -5197,14 +5172,9 @@ acquired). Thread safety therefore depends on the backend: <code>MemoryBackend</
 uses a lock (safe), <code>LocalBackend</code> relies on OS file semantics (safe),
 cloud backends use thread-safe HTTP clients (safe). If using a custom backend,
 ensure its methods are safe under concurrent calls.</p>
-              </div>
-            </td>
-            <td>
-                  <code>64 * 1024 * 1024</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
 
@@ -5253,66 +5223,36 @@ ensure its methods are safe under concurrent calls.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>store</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Store to expose.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>materialization_threshold</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>See :class:<code>StoreFileSystemHandler</code>.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>store</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The Store to expose.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>materialization_threshold</code></b>
+              (<code><span title="int">int</span></code>, default:
                   <code>64 * 1024 * 1024</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>write_spill_threshold</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>See :class:<code>StoreFileSystemHandler</code>.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>See :class:<code>StoreFileSystemHandler</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>write_spill_threshold</code></b>
+              (<code><span title="int">int</span></code>, default:
                   <code>64 * 1024 * 1024</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>See :class:<code>StoreFileSystemHandler</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

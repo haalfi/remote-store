@@ -5121,79 +5121,42 @@ filters client-side.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>store</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Store to search.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>pattern</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Glob pattern relative to the store root
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>store</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The Store to search.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>pattern</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Glob pattern relative to the store root
 (e.g., <code>"data/*.csv"</code>, <code>"**/*.txt"</code>).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
 
 
   
       dataclass
    (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Iterator of matching <code>FileInfo</code> objects.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          –
+          <div class="doc-md-description">
+            <p>Iterator of matching <code>FileInfo</code> objects.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

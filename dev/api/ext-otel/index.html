@@ -5145,109 +5145,64 @@ and an <code>on_any</code> callback (metrics).  Unpack it into <code>observe()</
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>tracer_name</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>OTel tracer name (default <code>"remote_store"</code>).
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>tracer_name</code></b>
+              (<code><span title="str">str</span></code>, default:
+                  <code>&#39;remote_store&#39;</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>OTel tracer name (default <code>"remote_store"</code>).
 Ignored when <em>tracer</em> is provided.</p>
-              </div>
-            </td>
-            <td>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>meter_name</code></b>
+              (<code><span title="str">str</span></code>, default:
                   <code>&#39;remote_store&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>meter_name</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>OTel meter name (default <code>"remote_store"</code>).
+)
+          –
+          <div class="doc-md-description">
+            <p>OTel meter name (default <code>"remote_store"</code>).
 Ignored when <em>meter</em> is provided.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;remote_store&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>tracer</code>
-            </td>
-            <td>
-                  <code><span title="opentelemetry.trace.Tracer">Tracer</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Explicit tracer instance. When <code>None</code> (default),
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tracer</code></b>
+              (<code><span title="opentelemetry.trace.Tracer">Tracer</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Explicit tracer instance. When <code>None</code> (default),
 obtained from the global <code>TracerProvider</code> via <em>tracer_name</em>.</p>
-              </div>
-            </td>
-            <td>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>meter</code></b>
+              (<code><span title="opentelemetry.metrics.Meter">Meter</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>meter</code>
-            </td>
-            <td>
-                  <code><span title="opentelemetry.metrics.Meter">Meter</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Explicit meter instance. When <code>None</code> (default),
+)
+          –
+          <div class="doc-md-description">
+            <p>Explicit meter instance. When <code>None</code> (default),
 obtained from the global <code>MeterProvider</code> via <em>meter_name</em>.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A dict with <code>around</code> and <code>on_any</code> keys.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>A dict with <code>around</code> and <code>on_any</code> keys.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -5272,123 +5227,70 @@ obtained from the global <code>MeterProvider</code> via <em>meter_name</em>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>store</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Store to observe.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>tracer_name</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>OTel tracer name (default <code>"remote_store"</code>).
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>store</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The Store to observe.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tracer_name</code></b>
+              (<code><span title="str">str</span></code>, default:
+                  <code>&#39;remote_store&#39;</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>OTel tracer name (default <code>"remote_store"</code>).
 Ignored when <em>tracer</em> is provided.</p>
-              </div>
-            </td>
-            <td>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>meter_name</code></b>
+              (<code><span title="str">str</span></code>, default:
                   <code>&#39;remote_store&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>meter_name</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>OTel meter name (default <code>"remote_store"</code>).
+)
+          –
+          <div class="doc-md-description">
+            <p>OTel meter name (default <code>"remote_store"</code>).
 Ignored when <em>meter</em> is provided.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;remote_store&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>tracer</code>
-            </td>
-            <td>
-                  <code><span title="opentelemetry.trace.Tracer">Tracer</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Explicit tracer instance (see :func:<code>otel_hooks</code>).</p>
-              </div>
-            </td>
-            <td>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tracer</code></b>
+              (<code><span title="opentelemetry.trace.Tracer">Tracer</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>meter</code>
-            </td>
-            <td>
-                  <code><span title="opentelemetry.metrics.Meter">Meter</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Explicit meter instance (see :func:<code>otel_hooks</code>).</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Explicit tracer instance (see :func:<code>otel_hooks</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>meter</code></b>
+              (<code><span title="opentelemetry.metrics.Meter">Meter</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Explicit meter instance (see :func:<code>otel_hooks</code>).</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            ObservedStore (remote_store.ext.observe.ObservedStore)" href="../ext-observe/#remote_store.ext.observe.ObservedStore">ObservedStore</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>An <code>ObservedStore</code> with OTel instrumentation.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            ObservedStore (remote_store.ext.observe.ObservedStore)" href="../ext-observe/#remote_store.ext.observe.ObservedStore">ObservedStore</a></code>
+          –
+          <div class="doc-md-description">
+            <p>An <code>ObservedStore</code> with OTel instrumentation.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

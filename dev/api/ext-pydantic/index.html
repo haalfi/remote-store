@@ -5125,86 +5125,46 @@ and validation all happen in <code>from_dict()</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>model</code>
-            </td>
-            <td>
-                  <code><span title="pydantic.BaseModel">BaseModel</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A Pydantic model whose <code>model_dump()</code> output has
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>model</code></b>
+              (<code><span title="pydantic.BaseModel">BaseModel</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>A Pydantic model whose <code>model_dump()</code> output has
 <code>backends</code> and <code>stores</code> keys matching the RegistryConfig schema.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            RegistryConfig
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            RegistryConfig
 
 
   
       dataclass
    (remote_store._config.RegistryConfig)" href="../config/#remote_store.RegistryConfig">RegistryConfig</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>An immutable <code>RegistryConfig</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          –
+          <div class="doc-md-description">
+            <p>An immutable <code>RegistryConfig</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>TypeError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the model dump does not conform to the expected schema.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>TypeError</code>
+            –
+          <div class="doc-md-description">
+            <p>If the model dump does not conform to the expected schema.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

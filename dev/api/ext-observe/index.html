@@ -5573,71 +5573,41 @@ dispatch and are otherwise transparent.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>handler</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Callable">Callable</span>[[<span title="list">list</span>[<a class="autorefs autorefs-internal" title="            StoreEvent
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>handler</code></b>
+              (<code><span title="collections.abc.Callable">Callable</span>[[<span title="list">list</span>[<a class="autorefs autorefs-internal" title="            StoreEvent
 
 
   
       dataclass
-   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>]], None]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Called with a list of events on each flush.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>max_queue</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Maximum queue size. Events are dropped when full.</p>
-              </div>
-            </td>
-            <td>
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>]], None]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Called with a list of events on each flush.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>max_queue</code></b>
+              (<code><span title="int">int</span></code>, default:
                   <code>1000</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>flush_interval</code>
-            </td>
-            <td>
-                  <code><span title="float">float</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Seconds between automatic flushes.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Maximum queue size. Events are dropped when full.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>flush_interval</code></b>
+              (<code><span title="float">float</span></code>, default:
                   <code>5.0</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Seconds between automatic flushes.</p>
+          </div>
+        </li>
+    </ul>
 
 
 
@@ -5751,57 +5721,28 @@ dispatch and are otherwise transparent.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>cid</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Correlation ID string, or <code>None</code> to clear.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>cid</code></b>
+              (<code><span title="str">str</span> | None</code>)
+          –
+          <div class="doc-md-description">
+            <p>Correlation ID string, or <code>None</code> to clear.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="contextvars.Token">Token</span>[<span title="str">str</span> | None]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A <code>Token</code> for resetting the value.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="contextvars.Token">Token</span>[<span title="str">str</span> | None]</code>
+          –
+          <div class="doc-md-description">
+            <p>A <code>Token</code> for resetting the value.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -5825,264 +5766,175 @@ dispatch and are otherwise transparent.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>store</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Store to observe.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>on_read</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>store</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The Store to observe.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>on_read</code></b>
+              (<code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
 
 
   
       dataclass
-   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Fires after read/read_bytes/read_text.</p>
-              </div>
-            </td>
-            <td>
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>on_write</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
+)
+          –
+          <div class="doc-md-description">
+            <p>Fires after read/read_bytes/read_text.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>on_write</code></b>
+              (<code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
 
 
   
       dataclass
-   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Fires after write/write_text/write_atomic/open_atomic.</p>
-              </div>
-            </td>
-            <td>
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>on_delete</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
+)
+          –
+          <div class="doc-md-description">
+            <p>Fires after write/write_text/write_atomic/open_atomic.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>on_delete</code></b>
+              (<code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
 
 
   
       dataclass
-   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Fires after delete/delete_folder.</p>
-              </div>
-            </td>
-            <td>
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>on_copy</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
+)
+          –
+          <div class="doc-md-description">
+            <p>Fires after delete/delete_folder.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>on_copy</code></b>
+              (<code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
 
 
   
       dataclass
-   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Fires after copy.</p>
-              </div>
-            </td>
-            <td>
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>on_move</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
+)
+          –
+          <div class="doc-md-description">
+            <p>Fires after copy.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>on_move</code></b>
+              (<code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
 
 
   
       dataclass
-   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Fires after move.</p>
-              </div>
-            </td>
-            <td>
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>on_list</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
+)
+          –
+          <div class="doc-md-description">
+            <p>Fires after move.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>on_list</code></b>
+              (<code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
 
 
   
       dataclass
-   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Fires after list_files/list_folders/glob/get_file_info/
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Fires after list_files/list_folders/glob/get_file_info/
 get_folder_info/exists/is_file/is_folder.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>on_ping</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>on_ping</code></b>
+              (<code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
 
 
   
       dataclass
-   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Fires after ping.</p>
-              </div>
-            </td>
-            <td>
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>on_error</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
+)
+          –
+          <div class="doc-md-description">
+            <p>Fires after ping.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>on_error</code></b>
+              (<code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
 
 
   
       dataclass
-   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Fires on any operation that raises an exception.</p>
-              </div>
-            </td>
-            <td>
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>on_any</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
+)
+          –
+          <div class="doc-md-description">
+            <p>Fires on any operation that raises an exception.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>on_any</code></b>
+              (<code><span title="collections.abc.Callable">Callable</span>[[<a class="autorefs autorefs-internal" title="            StoreEvent
 
 
   
       dataclass
-   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Fires after every operation (catch-all).</p>
-              </div>
-            </td>
-            <td>
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a>], None] | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>around</code>
-            </td>
-            <td>
-                  <code><span title="collections.abc.Callable">Callable</span>[[<span title="str">str</span>, <span title="str">str</span>, <span title="str">str</span>], <span title="contextlib.AbstractContextManager">AbstractContextManager</span>[None]] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Context-manager factory <code>(op, path, backend) -&gt; CM</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Fires after every operation (catch-all).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>around</code></b>
+              (<code><span title="collections.abc.Callable">Callable</span>[[<span title="str">str</span>, <span title="str">str</span>, <span title="str">str</span>], <span title="contextlib.AbstractContextManager">AbstractContextManager</span>[None]] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Context-manager factory <code>(op, path, backend) -&gt; CM</code>
 wrapping the entire operation.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            ObservedStore (remote_store.ext.observe.ObservedStore)" href="#remote_store.ext.observe.ObservedStore">ObservedStore</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>An <code>ObservedStore</code> proxy.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            ObservedStore (remote_store.ext.observe.ObservedStore)" href="#remote_store.ext.observe.ObservedStore">ObservedStore</a></code>
+          –
+          <div class="doc-md-description">
+            <p>An <code>ObservedStore</code> proxy.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

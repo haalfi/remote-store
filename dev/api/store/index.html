@@ -5930,53 +5930,29 @@ protocol (<code>with Store(...) as s:</code>) which calls <code>close()</code> o
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>backend</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Backend (remote_store._backend.Backend)" href="../backend/#remote_store.Backend">Backend</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Backend instance (Local, S3, SFTP, Azure, Memory).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>root_path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Prefix prepended to every path.
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>backend</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Backend (remote_store._backend.Backend)" href="../backend/#remote_store.Backend">Backend</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Backend instance (Local, S3, SFTP, Azure, Memory).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>root_path</code></b>
+              (<code><span title="str">str</span></code>, default:
+                  <code>&#39;&#39;</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Prefix prepended to every path.
     <code>""</code> means the backend root.</p>
 <p><code>Store</code> is immutable after construction and can be shared across
 threads.  Backend thread safety depends on the backend implementation.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;&#39;</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
 
@@ -6033,90 +6009,47 @@ Backend thread safety depends on the backend implementation.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative file path.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="typing.BinaryIO">BinaryIO</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Readable binary stream positioned at byte 0.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="typing.BinaryIO">BinaryIO</span></code>
+          –
+          <div class="doc-md-description">
+            <p>Readable binary stream positioned at byte 0.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>NotFound</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the file does not exist.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> is empty.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>NotFound</code>
+            –
+          <div class="doc-md-description">
+            <p>If the file does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -6140,91 +6073,48 @@ Backend thread safety depends on the backend implementation.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative file path.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="bytes">bytes</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The file content as <code>bytes</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="bytes">bytes</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The file content as <code>bytes</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>NotFound</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the file does not exist.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> is empty.</p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>NotFound</code>
+            –
+          <div class="doc-md-description">
+            <p>If the file does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty.</p>
 <p>Equivalent to <code>read(path).read()</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -6248,136 +6138,78 @@ Backend thread safety depends on the backend implementation.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>encoding</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Text encoding, any name accepted by <code>codecs</code>.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative file path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>encoding</code></b>
+              (<code><span title="str">str</span></code>, default:
                   <code>&#39;utf-8&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>errors</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Error handler: <code>"strict"</code>, <code>"ignore"</code>,
+)
+          –
+          <div class="doc-md-description">
+            <p>Text encoding, any name accepted by <code>codecs</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>errors</code></b>
+              (<code><span title="str">str</span></code>, default:
+                  <code>&#39;strict&#39;</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Error handler: <code>"strict"</code>, <code>"ignore"</code>,
 <code>"replace"</code>, <code>"backslashreplace"</code>.  See
 <code>codecs.register_error</code> for custom handlers.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;strict&#39;</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The file content as <code>str</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The file content as <code>str</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>NotFound</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the file does not exist.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> is empty.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>UnicodeDecodeError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If decoding fails with
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>NotFound</code>
+            –
+          <div class="doc-md-description">
+            <p>If the file does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>UnicodeDecodeError</code>
+            –
+          <div class="doc-md-description">
+            <p>If decoding fails with
     <code>errors="strict"</code>.</p>
 <p>Equivalent to <code>read_bytes(path).decode(encoding, errors)</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -6403,101 +6235,55 @@ Backend thread safety depends on the backend implementation.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>content</code>
-            </td>
-            <td>
-                  <code><span title="remote_store._types.WritableContent">WritableContent</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>bytes</code> or readable binary stream (<code>BinaryIO</code>).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>overwrite</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <code>False</code>, raises <code>AlreadyExists</code> when
-<em>path</em> exists.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative file path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>content</code></b>
+              (<code><span title="remote_store._types.WritableContent">WritableContent</span></code>)
+          –
+          <div class="doc-md-description">
+            <p><code>bytes</code> or readable binary stream (<code>BinaryIO</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>overwrite</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>False</code>, raises <code>AlreadyExists</code> when
+<em>path</em> exists.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>AlreadyExists</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the file exists and <em>overwrite</em> is
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>AlreadyExists</code>
+            –
+          <div class="doc-md-description">
+            <p>If the file exists and <em>overwrite</em> is
 <code>False</code>.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> is empty.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -6521,119 +6307,67 @@ Backend thread safety depends on the backend implementation.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>text</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The string to write.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>encoding</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Text encoding.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative file path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>text</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The string to write.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>encoding</code></b>
+              (<code><span title="str">str</span></code>, default:
                   <code>&#39;utf-8&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>overwrite</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <code>False</code>, raises <code>AlreadyExists</code> when
-<em>path</em> exists.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Text encoding.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>overwrite</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>False</code>, raises <code>AlreadyExists</code> when
+<em>path</em> exists.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>AlreadyExists</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the file exists and <em>overwrite</em> is
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>AlreadyExists</code>
+            –
+          <div class="doc-md-description">
+            <p>If the file exists and <em>overwrite</em> is
 <code>False</code>.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> is empty.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty.</p>
 <p>Equivalent to
 <code>write(path, text.encode(encoding), overwrite=overwrite)</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -6659,111 +6393,62 @@ partial state.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>content</code>
-            </td>
-            <td>
-                  <code><span title="remote_store._types.WritableContent">WritableContent</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>bytes</code> or readable binary stream (<code>BinaryIO</code>).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>overwrite</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <code>False</code>, raises <code>AlreadyExists</code> when
-<em>path</em> exists.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative file path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>content</code></b>
+              (<code><span title="remote_store._types.WritableContent">WritableContent</span></code>)
+          –
+          <div class="doc-md-description">
+            <p><code>bytes</code> or readable binary stream (<code>BinaryIO</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>overwrite</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>False</code>, raises <code>AlreadyExists</code> when
+<em>path</em> exists.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>CapabilityNotSupported</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If backend lacks <code>ATOMIC_WRITE</code>.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>AlreadyExists</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the file exists and <em>overwrite</em> is
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>CapabilityNotSupported</code>
+            –
+          <div class="doc-md-description">
+            <p>If backend lacks <code>ATOMIC_WRITE</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>AlreadyExists</code>
+            –
+          <div class="doc-md-description">
+            <p>If the file exists and <em>overwrite</em> is
 <code>False</code>.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> is empty.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -6794,124 +6479,72 @@ the partial write is discarded.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>overwrite</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <code>False</code>, raises <code>AlreadyExists</code> when
-<em>path</em> exists.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative file path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>overwrite</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>False</code>, raises <code>AlreadyExists</code> when
+<em>path</em> exists.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="collections.abc.Iterator">Iterator</span>[<span title="typing.BinaryIO">BinaryIO</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Writable binary stream.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="collections.abc.Iterator">Iterator</span>[<span title="typing.BinaryIO">BinaryIO</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>Writable binary stream.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>CapabilityNotSupported</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the backend lacks
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>CapabilityNotSupported</code>
+            –
+          <div class="doc-md-description">
+            <p>If the backend lacks
 <code>ATOMIC_WRITE</code>.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>AlreadyExists</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> exists and <em>overwrite</em> is
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>AlreadyExists</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> exists and <em>overwrite</em> is
 <code>False</code>.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> is empty.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open_atomic</span><span class="p">(</span><span class="s2">&quot;data/output.bin&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;chunk 1&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;chunk 2&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># file is now visible at data/output.bin</span>
 </code></pre></div>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -6937,85 +6570,47 @@ the partial write is discarded.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>missing_ok</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <code>True</code>, silently succeeds when <em>path</em>
-does not exist.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative file path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>missing_ok</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>True</code>, silently succeeds when <em>path</em>
+does not exist.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>NotFound</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the file is missing and <em>missing_ok</em> is
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>NotFound</code>
+            –
+          <div class="doc-md-description">
+            <p>If the file is missing and <em>missing_ok</em> is
 <code>False</code>.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> is empty.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -7039,116 +6634,69 @@ does not exist.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative folder path.  Must not be <code>""</code>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative folder path.  Must not be <code>""</code>
 (root).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>recursive</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <code>True</code>, delete all contents first.
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>recursive</code></b>
+              (<code><span title="bool">bool</span></code>, default:
+                  <code>False</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>True</code>, delete all contents first.
 If <code>False</code>, raises <code>DirectoryNotEmpty</code> when folder is
 non-empty.</p>
-              </div>
-            </td>
-            <td>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>missing_ok</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>missing_ok</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <code>True</code>, silently succeeds when <em>path</em>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>True</code>, silently succeeds when <em>path</em>
 does not exist.</p>
-              </div>
-            </td>
-            <td>
-                  <code>False</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>NotFound</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the folder is missing and <em>missing_ok</em> is
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>NotFound</code>
+            –
+          <div class="doc-md-description">
+            <p>If the folder is missing and <em>missing_ok</em> is
 <code>False</code>.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>DirectoryNotEmpty</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the folder is non-empty and
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>DirectoryNotEmpty</code>
+            –
+          <div class="doc-md-description">
+            <p>If the folder is non-empty and
 <em>recursive</em> is <code>False</code>.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> is empty (cannot delete the store
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty (cannot delete the store
 root).</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -7174,97 +6722,56 @@ root).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative folder path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>recursive</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Descend into subfolders.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative folder path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>recursive</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>pattern</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Glob pattern to filter filenames
+)
+          –
+          <div class="doc-md-description">
+            <p>Descend into subfolders.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>pattern</code></b>
+              (<code><span title="str">str</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Glob pattern to filter filenames
 (e.g. <code>"*.csv"</code>).  Matched against each file's <strong>name</strong>
 (basename only).  For full path-based patterns, use
 <code>ext.glob.glob_files()</code>.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
 
 
   
       dataclass
    (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Iterator of <code>FileInfo</code> with store-relative paths.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          –
+          <div class="doc-md-description">
+            <p>Iterator of <code>FileInfo</code> with store-relative paths.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -7288,57 +6795,28 @@ root).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative folder path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative folder path.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="collections.abc.Iterator">Iterator</span>[<span title="str">str</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Iterator of subfolder name strings.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="collections.abc.Iterator">Iterator</span>[<span title="str">str</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>Iterator of subfolder name strings.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -7364,63 +6842,34 @@ folders as bare <code>str</code> names.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative folder path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative folder path.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
 
 
   
       dataclass
    (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a> | <span title="str">str</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Iterator of <code>FileInfo</code> (files) and <code>str</code>
+          –
+          <div class="doc-md-description">
+            <p>Iterator of <code>FileInfo</code> (files) and <code>str</code>
 (folder names).</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -7445,85 +6894,45 @@ folders as bare <code>str</code> names.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>pattern</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Glob pattern (e.g. <code>"data/**/*.parquet"</code>).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>pattern</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Glob pattern (e.g. <code>"data/**/*.parquet"</code>).</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
 
 
   
       dataclass
    (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Iterator of <code>FileInfo</code> with store-relative paths.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          –
+          <div class="doc-md-description">
+            <p>Iterator of <code>FileInfo</code> with store-relative paths.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>CapabilityNotSupported</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the backend lacks <code>GLOB</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>CapabilityNotSupported</code>
+            –
+          <div class="doc-md-description">
+            <p>If the backend lacks <code>GLOB</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -7558,111 +6967,62 @@ Memory usage stays bounded for large directories.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>src</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Source file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>dst</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Destination file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>overwrite</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <code>False</code>, raises <code>AlreadyExists</code> when
-<em>dst</em> exists.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>src</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Source file path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>dst</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Destination file path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>overwrite</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>False</code>, raises <code>AlreadyExists</code> when
+<em>dst</em> exists.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>NotFound</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>src</em> does not exist.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>AlreadyExists</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>dst</em> exists and <em>overwrite</em> is
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>NotFound</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>src</em> does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>AlreadyExists</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>dst</em> exists and <em>overwrite</em> is
 <code>False</code>.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>src</em> or <em>dst</em> is empty.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>src</em> or <em>dst</em> is empty.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -7693,111 +7053,62 @@ atomicity depends on the server.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>src</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Source file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>dst</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Destination file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>overwrite</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <code>False</code>, raises <code>AlreadyExists</code> when
-<em>dst</em> exists.</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>src</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Source file path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>dst</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Destination file path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>overwrite</code></b>
+              (<code><span title="bool">bool</span></code>, default:
                   <code>False</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>False</code>, raises <code>AlreadyExists</code> when
+<em>dst</em> exists.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>NotFound</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>src</em> does not exist.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>AlreadyExists</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>dst</em> exists and <em>overwrite</em> is
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>NotFound</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>src</em> does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>AlreadyExists</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>dst</em> exists and <em>overwrite</em> is
 <code>False</code>.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>src</em> or <em>dst</em> is empty.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>src</em> or <em>dst</em> is empty.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -7828,34 +7139,16 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative path.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -7879,34 +7172,16 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative path.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -7930,34 +7205,16 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative path.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -7981,95 +7238,52 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative file path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative file path.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            FileInfo
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            FileInfo
 
 
   
       dataclass
    (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>FileInfo</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          –
+          <div class="doc-md-description">
+            <p><code>FileInfo</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>NotFound</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the file does not exist.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>path</em> is empty.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>NotFound</code>
+            –
+          <div class="doc-md-description">
+            <p>If the file does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -8093,85 +7307,45 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative folder path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative folder path.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            FolderInfo
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            FolderInfo
 
 
   
       dataclass
    (remote_store._models.FolderInfo)" href="../models/#remote_store.FolderInfo">FolderInfo</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>FolderInfo</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          –
+          <div class="doc-md-description">
+            <p><code>FolderInfo</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>NotFound</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the folder does not exist.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>NotFound</code>
+            –
+          <div class="doc-md-description">
+            <p>If the folder does not exist.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -8197,47 +7371,30 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>PermissionDenied</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If credentials are invalid.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>NotFound</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the bucket, container, or root path does not
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>PermissionDenied</code>
+            –
+          <div class="doc-md-description">
+            <p>If credentials are invalid.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>NotFound</code>
+            –
+          <div class="doc-md-description">
+            <p>If the bucket, container, or root path does not
 exist.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>BackendUnavailable</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the backend cannot be reached.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code>BackendUnavailable</code>
+            –
+          <div class="doc-md-description">
+            <p>If the backend cannot be reached.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -8283,84 +7440,44 @@ exist.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>subpath</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Path segment to append to the current root.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>subpath</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Path segment to append to the current root.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="#remote_store.Store">Store</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>Store</code>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="#remote_store.Store">Store</a></code>
+          –
+          <div class="doc-md-description">
+            <p><code>Store</code>.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If <em>subpath</em> is empty, contains <code>..</code>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>subpath</em> is empty, contains <code>..</code>
     segments, or includes null bytes.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;data/2024&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">data</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>  <span class="c1"># lists files under &lt;root&gt;/data/2024/</span>
 </code></pre></div>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -8392,84 +7509,44 @@ above.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>type_hint</code>
-            </td>
-            <td>
-                  <code><span title="type">type</span>[<span title="remote_store._store.T">T</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The expected type of the native client
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>type_hint</code></b>
+              (<code><span title="type">type</span>[<span title="remote_store._store.T">T</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The expected type of the native client
 (e.g. <code>pyarrow.fs.FileSystem</code>).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="remote_store._store.T">T</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The native client.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="remote_store._store.T">T</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The native client.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>CapabilityNotSupported</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the backend cannot provide
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>CapabilityNotSupported</code>
+            –
+          <div class="doc-md-description">
+            <p>If the backend cannot provide
     the requested type.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">arrow_fs</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">FileSystem</span><span class="p">)</span>
 </code></pre></div>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -8494,58 +7571,29 @@ above.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>key</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>key</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative path.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Backend-native path (e.g. S3 object key, local
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>Backend-native path (e.g. S3 object key, local
 filesystem path).</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -8570,80 +7618,40 @@ filesystem path).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Backend-native path string.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Backend-native path string.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Store-relative key.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>Store-relative key.</p>
+          </div>
+        </li>
+    </ul>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>InvalidPath</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the path does not belong to this store.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>InvalidPath</code>
+            –
+          <div class="doc-md-description">
+            <p>If the path does not belong to this store.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -8667,60 +7675,31 @@ filesystem path).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>capability</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Capability (remote_store._capabilities.Capability)" href="../capabilities/#remote_store.Capability">Capability</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A <code>Capability</code> enum member.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>capability</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Capability (remote_store._capabilities.Capability)" href="../capabilities/#remote_store.Capability">Capability</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>A <code>Capability</code> enum member.</p>
+          </div>
+        </li>
+    </ul>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>True</code> if the backend declares this capability.</p>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="bool">bool</span></code>
+          –
+          <div class="doc-md-description">
+            <p><code>True</code> if the backend declares this capability.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span><span class="p">):</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;**/*.csv&quot;</span><span class="p">)</span>
 </code></pre></div>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

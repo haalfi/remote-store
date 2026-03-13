@@ -5231,114 +5231,66 @@
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>bucket</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>S3 bucket name (required, non-empty).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>endpoint_url</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Custom endpoint URL (e.g. for MinIO).</p>
-              </div>
-            </td>
-            <td>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>bucket</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>S3 bucket name (required, non-empty).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>endpoint_url</code></b>
+              (<code><span title="str">str</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>key</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>AWS access key ID.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>Custom endpoint URL (e.g. for MinIO).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>key</code></b>
+              (<code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>secret</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>AWS secret access key.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>AWS access key ID.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>secret</code></b>
+              (<code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>region_name</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>AWS region name.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>AWS secret access key.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>region_name</code></b>
+              (<code><span title="str">str</span> | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>client_options</code>
-            </td>
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Additional options passed to s3fs.</p>
-              </div>
-            </td>
-            <td>
+)
+          –
+          <div class="doc-md-description">
+            <p>AWS region name.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>client_options</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>, default:
                   <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+)
+          –
+          <div class="doc-md-description">
+            <p>Additional options passed to s3fs.</p>
+          </div>
+        </li>
+    </ul>
 
 
 
