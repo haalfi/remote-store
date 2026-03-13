@@ -521,6 +521,11 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
 
 ### Ideas shipped
 
+- [x] **ID-077 — Switch docstring rendering from tables to lists**
+  Changed `docstring_section_style` from `table` (default) to `list` in
+  mkdocstrings config. Reduces whitespace in Parameters/Returns/Raises
+  sections, matching PyArrow-style compact definition lists.
+
 - [x] **ID-074 — Store API refinement (pre-v1 audit)**
   Systematic pre-v1 audit of the Store public API. Rewrote all Store docstrings
   (fixed `write`/`write_atomic` str claim, `read_text` errors reference).
