@@ -24,9 +24,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   individual method headings, admonitions for ordering, atomicity, metadata, and
   thread-safety. Added backend behavior matrix verified against backend source.
 
-- **`store-api.md` target API reference** (ID-074) -- hand-written reference page
-  with full method signatures, usage examples, and backend behavior matrix.
-
 ## [0.16.0] - 2026-03-10
 
 ### Added
