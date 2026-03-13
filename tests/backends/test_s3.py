@@ -556,8 +556,8 @@ class TestS3Listing:
         s3_backend.write("lf/sub1/a.txt", b"a")
         s3_backend.write("lf/sub2/b.txt", b"b")
         s3_backend.write("lf/root.txt", b"r")
-        folders = set(s3_backend.list_folders("lf"))
-        assert folders == {"sub1", "sub2"}
+        folders = list(s3_backend.list_folders("lf"))
+        assert {f.name for f in folders} == {"sub1", "sub2"}
 
     def test_list_folders_empty(self, s3_backend: Backend) -> None:
         folders = list(s3_backend.list_folders("empty"))

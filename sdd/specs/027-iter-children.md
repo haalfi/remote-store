@@ -23,14 +23,16 @@ Non-recursive only (immediate children). For recursive file listing, use
 
 **Signature:**
 ```python
-def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
     ...
 ```
 
 **Postconditions:**
 - Files are yielded as `FileInfo` with store-relative paths (same rebasing as
   `list_files` — see STORE-012).
-- Folders are yielded as `str` folder names (same format as `list_folders`).
+- Folders are yielded as `FolderEntry` with `.name` (folder name) and `.path`
+  (store-relative `RemotePath`). Both `FileInfo` and `FolderEntry` satisfy the
+  `PathEntry` protocol, enabling uniform iteration via `.name` and `.path`.
 - Ordering within a single type is backend-defined. Files and folders may be
   interleaved or grouped — callers must not depend on ordering.
 - Empty directories yield nothing.
@@ -58,19 +60,19 @@ method with a default implementation that chains `list_files()` and
 
 **Signature:**
 ```python
-def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
     ...
 ```
 
 **Default implementation:**
 ```python
-def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
     yield from self.list_files(path)
     yield from self.list_folders(path)
 ```
 
 **Postconditions:**
-- Returns an iterator of `FileInfo` (for files) and `str` (for folder names).
+- Returns an iterator of `FileInfo` (for files) and `FolderEntry` (for folders).
 - Backends may override to perform a single I/O call instead of two.
 - Non-existent paths yield nothing.
 
@@ -81,7 +83,7 @@ operation override `iter_children()` for efficiency.
 
 | Backend      | Override strategy                                         |
 |------------- |-----------------------------------------------------------|
-| Local        | Single `iterdir()`, yield `FileInfo` or folder name       |
+| Local        | Single `iterdir()`, yield `FileInfo` or `FolderEntry`     |
 | S3           | Single `ls(detail=True)`, partition by `type`             |
 | S3-PyArrow   | Single `ls(detail=True)`, partition by `type`             |
 | SFTP         | Single `listdir_attr()`, partition by `st_mode`           |

@@ -202,13 +202,6 @@ Not evaluated, not committed to. Pick up when relevant.
   Subsumed by **ID-074**. Kept for traceability.
   Research: `sdd/research/research-store-api-refinement.md`.
 
-- [ ] **ID-072 — Store API refinement: Phase 2-3 listing normalization**
-  Design decision and implementation for listing normalization (Option D preferred:
-  `PathEntry` protocol + `FolderEntry` dataclass — but see approachability
-  trade-off for citizen developers noted in research doc).
-  Depends on ID-071 completion and owner sign-off on design choice.
-  `write_text()` moved to ID-071 (Phase 1). Related: ID-063.
-  Research: `sdd/research/research-store-api-refinement.md`.
 
 - [ ] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**
   `list_files`, `list_folders`, and `iter_children` in S3Backend and
@@ -525,6 +518,14 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
   Added docstring note on `Store` class and admonition in
   `docs-src/api/store.md` documenting that `root_path` need not exist
   beforehand -- `write()` creates intermediate folders implicitly.
+
+- [x] **ID-072 — Store API refinement: listing normalization (Option D)**
+  `list_folders()` now returns `Iterator[FolderEntry]` (was `Iterator[str]`).
+  `iter_children()` now returns `Iterator[FileInfo | FolderEntry]` (was
+  `Iterator[FileInfo | str]`). Added `FolderEntry` dataclass (frozen, path-based
+  equality) and `PathEntry` runtime-checkable protocol. All 6 backends, Store,
+  CachedStore, ObservedStore, PyArrow handler updated. Specs 003, 023, 027
+  updated. Research: `sdd/research/research-store-api-refinement.md`.
 
 - [x] **ID-077 — Switch docstring rendering from tables to lists**
   Changed `docstring_section_style` from `table` (default) to `list` in

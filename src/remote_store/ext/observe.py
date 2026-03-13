@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from contextlib import AbstractContextManager
 
     from remote_store._capabilities import Capability
-    from remote_store._models import FileInfo, FolderInfo
+    from remote_store._models import FileInfo, FolderEntry, FolderInfo
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -329,7 +329,7 @@ class ObservedStore(Store):
         with self._observe_op("delete_folder", path, {"recursive": recursive, "missing_ok": missing_ok}):
             self._inner.delete_folder(path, recursive=recursive, missing_ok=missing_ok)
 
-    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         # Materialize: see list_files comment.
         with self._observe_op("iter_children", path, {}):
             return iter(list(self._inner.iter_children(path)))
@@ -352,7 +352,7 @@ class ObservedStore(Store):
         with self._observe_op("glob", pattern, {"pattern": pattern}):
             return iter(list(self._inner.glob(pattern)))
 
-    def list_folders(self, path: str) -> Iterator[str]:
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
         # Materialize: see list_files comment.
         with self._observe_op("list_folders", path, {}):
             return iter(list(self._inner.list_folders(path)))

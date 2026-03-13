@@ -9,7 +9,7 @@ import pytest
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import AlreadyExists, CapabilityNotSupported, NotFound
-from remote_store._models import FileInfo, FolderInfo
+from remote_store._models import FileInfo, FolderEntry, FolderInfo
 
 
 class TestBackendIdentity:
@@ -270,8 +270,9 @@ class TestBackendListing:
         backend.write("lfd/sub1/a.txt", b"a")
         backend.write("lfd/sub2/b.txt", b"b")
         backend.write("lfd/file.txt", b"f")
-        folders = set(backend.list_folders("lfd"))
-        assert folders == {"sub1", "sub2"}
+        folders = list(backend.list_folders("lfd"))
+        assert all(isinstance(f, FolderEntry) for f in folders)
+        assert {f.name for f in folders} == {"sub1", "sub2"}
 
 
 class TestBackendIterChildren:
@@ -284,9 +285,9 @@ class TestBackendIterChildren:
         backend.write("ic/sub/c.txt", b"c")
         children = list(backend.iter_children("ic"))
         files = [c for c in children if isinstance(c, FileInfo)]
-        folders = [c for c in children if isinstance(c, str)]
+        folders = [c for c in children if isinstance(c, FolderEntry)]
         assert {f.name for f in files} == {"a.txt", "b.txt"}
-        assert set(folders) == {"sub"}
+        assert {f.name for f in folders} == {"sub"}
 
     @pytest.mark.spec("ITER-004")
     def test_iter_children_empty_or_nonexistent(self, backend: Backend) -> None:
@@ -297,7 +298,7 @@ class TestBackendIterChildren:
         backend.write("icf/x.txt", b"x")
         children = list(backend.iter_children("icf"))
         files = [c for c in children if isinstance(c, FileInfo)]
-        folders = [c for c in children if isinstance(c, str)]
+        folders = [c for c in children if isinstance(c, FolderEntry)]
         assert len(files) == 1
         assert files[0].name == "x.txt"
         assert folders == []
@@ -307,9 +308,9 @@ class TestBackendIterChildren:
         backend.write("ico/sub/y.txt", b"y")
         children = list(backend.iter_children("ico"))
         files = [c for c in children if isinstance(c, FileInfo)]
-        folders = [c for c in children if isinstance(c, str)]
+        folders = [c for c in children if isinstance(c, FolderEntry)]
         assert files == []
-        assert set(folders) == {"sub"}
+        assert {f.name for f in folders} == {"sub"}
 
 
 class TestBackendMetadata:

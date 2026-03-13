@@ -600,8 +600,8 @@ class TestSFTPListing:
         sftp_backend.write("lf/sub1/a.txt", b"a")
         sftp_backend.write("lf/sub2/b.txt", b"b")
         sftp_backend.write("lf/root.txt", b"r")
-        folders = set(sftp_backend.list_folders("lf"))
-        assert folders == {"sub1", "sub2"}
+        folders = list(sftp_backend.list_folders("lf"))
+        assert {f.name for f in folders} == {"sub1", "sub2"}
 
     def test_list_folders_empty(self, sftp_backend: Backend) -> None:
         folders = list(sftp_backend.list_folders("empty"))

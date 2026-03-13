@@ -22,7 +22,7 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderInfo
+from remote_store._models import FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
 
@@ -213,7 +213,7 @@ class S3Backend(Backend):
         except Exception as exc:  # pragma: no cover -- defensive
             raise self._classify_error(exc, path) from None
 
-    def list_folders(self, path: str) -> Iterator[str]:
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
         try:
             s3_path = self._s3_path(path)
             if not self._fs.exists(s3_path):
@@ -221,9 +221,9 @@ class S3Backend(Backend):
             entries: list[dict[str, Any]] = self._fs.ls(s3_path, detail=True)
             for info in entries:
                 if info.get("type") == "directory":
-                    folder_name = info["name"].rstrip("/")
-                    folder_name = folder_name.rsplit("/", 1)[-1]
-                    yield folder_name
+                    rel = self.to_key(info["name"].rstrip("/"))
+                    folder_name = rel.rsplit("/", 1)[-1]
+                    yield FolderEntry(path=RemotePath(rel), name=folder_name)
         except RemoteStoreError:  # pragma: no cover -- defensive
             raise
         except FileNotFoundError:  # pragma: no cover -- checked via exists()
@@ -233,7 +233,7 @@ class S3Backend(Backend):
         except Exception as exc:  # pragma: no cover -- defensive
             raise self._classify_error(exc, path) from None
 
-    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         try:
             s3_path = self._s3_path(path)
             if not self._fs.exists(s3_path):
@@ -244,9 +244,9 @@ class S3Backend(Backend):
                     rel = self.to_key(info["name"])
                     yield self._info_to_fileinfo(info, rel)
                 elif info.get("type") == "directory":
-                    folder_name = info["name"].rstrip("/")
-                    folder_name = folder_name.rsplit("/", 1)[-1]
-                    yield folder_name
+                    rel = self.to_key(info["name"].rstrip("/"))
+                    folder_name = rel.rsplit("/", 1)[-1]
+                    yield FolderEntry(path=RemotePath(rel), name=folder_name)
         except RemoteStoreError:  # pragma: no cover -- defensive
             raise
         except FileNotFoundError:  # pragma: no cover -- checked via exists()

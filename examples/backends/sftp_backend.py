@@ -87,7 +87,7 @@ if __name__ == "__main__":
         # --- List folders ---
         print("\nFolders:")
         for folder in store.list_folders(""):
-            print(f"  {folder}/")
+            print(f"  {folder.name}/")
 
         # --- Folder info ---
         folder_info = store.get_folder_info("data")

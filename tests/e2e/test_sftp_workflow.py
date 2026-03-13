@@ -94,15 +94,15 @@ class TestSFTPWorkflow:
         sftp_lake.write("staging/a.txt", b"a")
         sftp_lake.write("processed/b.txt", b"b")
 
-        folders = set(sftp_lake.list_folders(""))
-        assert {"staging", "processed"} <= folders
+        folder_names = {f.name for f in sftp_lake.list_folders("")}
+        assert {"staging", "processed"} <= folder_names
 
         # Clean up files, then delete folder
         sftp_lake.delete("staging/a.txt")
         sftp_lake.delete_folder("staging")
 
-        folders_after = set(sftp_lake.list_folders(""))
-        assert "staging" not in folders_after
+        folder_names_after = {f.name for f in sftp_lake.list_folders("")}
+        assert "staging" not in folder_names_after
 
         # Clean up processed too
         sftp_lake.delete("processed/b.txt")

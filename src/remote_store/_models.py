@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import typing
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -34,6 +35,37 @@ class FileInfo:
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, FileInfo):
+            return self.path == other.path
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self.path)
+
+
+@typing.runtime_checkable
+class PathEntry(typing.Protocol):
+    """Shared interface for listing results -- every entry has a name and path."""
+
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def path(self) -> RemotePath: ...
+
+
+@dataclasses.dataclass(frozen=True, eq=False)
+class FolderEntry:
+    """Immutable folder identity returned by listing operations.
+
+    :param path: Normalized remote path.
+    :param name: Folder name (final path component).
+    """
+
+    path: RemotePath
+    name: str
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, FolderEntry):
             return self.path == other.path
         return NotImplemented
 

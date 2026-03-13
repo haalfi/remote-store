@@ -40,6 +40,7 @@ data = cached.read_bytes("config.json")  # b'{"key": "new"}'
 | `get_folder_info()` | Yes | |
 | `list_files()` | Yes | Materialized on first call |
 | `list_folders()` | Yes | Materialized on first call |
+| `iter_children()` | Yes | Materialized on first call |
 | `glob()` | Yes | Materialized on first call |
 | `read()` | **No** | Returns `BinaryIO` stream |
 

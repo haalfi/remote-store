@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, BinaryIO
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound, PermissionDenied
-from remote_store._models import FileInfo, FolderInfo
+from remote_store._models import FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
@@ -224,15 +224,16 @@ class LocalBackend(Backend):
                     rel = self.to_key(str(item))
                     yield self._stat_to_fileinfo(rel, item)
 
-    def list_folders(self, path: str) -> Iterator[str]:
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
         full = self._resolve(path)
         if not full.is_dir():
             return
         for item in full.iterdir():
             if item.is_dir():
-                yield item.name
+                rel = self.to_key(str(item))
+                yield FolderEntry(path=RemotePath(rel), name=item.name)
 
-    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         full = self._resolve(path)
         if not full.is_dir():
             return
@@ -241,7 +242,8 @@ class LocalBackend(Backend):
                 rel = self.to_key(str(item))
                 yield self._stat_to_fileinfo(rel, item)
             elif item.is_dir():
-                yield item.name
+                rel = self.to_key(str(item))
+                yield FolderEntry(path=RemotePath(rel), name=item.name)
 
     def get_file_info(self, path: str) -> FileInfo:
         full = self._resolve(path)

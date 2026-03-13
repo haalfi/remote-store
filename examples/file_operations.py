@@ -30,7 +30,7 @@ def demo(store):
     # --- List folders at the store root ---
     print("\nFolders at store root:")
     for folder in store.list_folders(""):
-        print(f"  {folder}/")
+        print(f"  {folder.name}/")
 
     # --- Read ---
     content = store.read_bytes("data/report.csv")

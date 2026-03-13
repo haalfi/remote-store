@@ -8,6 +8,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`FolderEntry` dataclass and `PathEntry` protocol** (ID-072) -- `FolderEntry`
+  is an immutable identity object returned by listing operations with `.name`
+  and `.path` attributes. `PathEntry` is a runtime-checkable protocol satisfied
+  by both `FileInfo` and `FolderEntry`, enabling uniform iteration.
+
 - **`Store.write_text()` convenience method** (ID-074) -- writes a string to a
   file with configurable encoding. Wraps `write()` with `encoding` and
   `overwrite` parameters matching `pathlib.Path.write_text()`. Store-level only
@@ -15,6 +20,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `write`. Spec `030-write-text.md` (WTXT-001 through WTXT-006).
 
 ### Changed
+
+- **`list_folders()` returns `Iterator[FolderEntry]`** (ID-072) -- was
+  `Iterator[str]`. Use `.name` for the folder name, `.path` for the full path.
+
+- **`iter_children()` returns `Iterator[FileInfo | FolderEntry]`** (ID-072) --
+  was `Iterator[FileInfo | str]`. Use `isinstance(entry, FolderEntry)` instead
+  of `isinstance(entry, str)` to distinguish folders from files.
 
 - **Store docstring rewrite** (ID-074) -- rewrote all Store method docstrings for
   accuracy and consistency. Fixed `write`/`write_atomic` str claim, corrected

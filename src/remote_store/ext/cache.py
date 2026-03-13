@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from remote_store._capabilities import Capability
-    from remote_store._models import FileInfo, FolderInfo
+    from remote_store._models import FileInfo, FolderEntry, FolderInfo
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -379,7 +379,7 @@ class CachedStore(Store):
         self._cache.set(key, result, self._ttl)
         return result
 
-    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         key = ("iter_children", path)
         cached = self._cache_get(key)
         if cached is not _MISSING:
@@ -404,7 +404,7 @@ class CachedStore(Store):
         self._cache.set(key, result, self._ttl)
         return iter(result)
 
-    def list_folders(self, path: str) -> Iterator[str]:
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
         key = ("list_folders", path)
         cached = self._cache_get(key)
         if cached is not _MISSING:

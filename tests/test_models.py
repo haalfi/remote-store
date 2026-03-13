@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from remote_store._models import FileInfo, FolderInfo
+from remote_store._models import FileInfo, FolderEntry, FolderInfo, PathEntry
 from remote_store._path import RemotePath
 
 NOW = datetime(2024, 1, 1, tzinfo=timezone.utc)
@@ -106,3 +106,53 @@ class TestModelEqualityHashing:
         a = FolderInfo(path=RemotePath("data"), file_count=1, total_size=10)
         b = FolderInfo(path=RemotePath("data"), file_count=9, total_size=99)
         assert a == b
+
+    @pytest.mark.spec("MOD-007")
+    def test_folderentry_equality_by_path(self) -> None:
+        a = FolderEntry(path=RemotePath("data"), name="data")
+        b = FolderEntry(path=RemotePath("data"), name="data")
+        assert a == b
+
+    @pytest.mark.spec("MOD-007")
+    def test_folderentry_hash_by_path(self) -> None:
+        a = FolderEntry(path=RemotePath("data"), name="data")
+        b = FolderEntry(path=RemotePath("data"), name="data")
+        assert hash(a) == hash(b)
+        assert {a, b} == {a}
+
+    @pytest.mark.spec("MOD-007")
+    def test_folderentry_inequality(self) -> None:
+        a = FolderEntry(path=RemotePath("x"), name="x")
+        b = FolderEntry(path=RemotePath("y"), name="y")
+        assert a != b
+
+
+class TestFolderEntry:
+    """FolderEntry dataclass tests."""
+
+    def test_frozen(self) -> None:
+        fe = FolderEntry(path=RemotePath("sub"), name="sub")
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            fe.name = "other"  # type: ignore[misc]
+
+    def test_fields(self) -> None:
+        fe = FolderEntry(path=RemotePath("a/b"), name="b")
+        assert fe.path == RemotePath("a/b")
+        assert fe.name == "b"
+
+    def test_not_equal_to_other_types(self) -> None:
+        fe = FolderEntry(path=RemotePath("x"), name="x")
+        assert fe != "x"
+        assert fe.__eq__("x") is NotImplemented
+
+
+class TestPathEntryProtocol:
+    """PathEntry protocol structural subtyping tests."""
+
+    def test_fileinfo_satisfies_path_entry(self) -> None:
+        fi = FileInfo(path=RemotePath("a.txt"), name="a.txt", size=0, modified_at=NOW)
+        assert isinstance(fi, PathEntry)
+
+    def test_folderentry_satisfies_path_entry(self) -> None:
+        fe = FolderEntry(path=RemotePath("sub"), name="sub")
+        assert isinstance(fe, PathEntry)

@@ -93,7 +93,7 @@ sync API surface before implementation proceeds.
 
 ### ASYNC-015: list_folders()
 
-**Invariant:** `async def list_folders(path) -> AsyncIterator[str]` of immediate subfolder names.
+**Invariant:** `async def list_folders(path) -> AsyncIterator[FolderEntry]` of immediate subfolders.
 **See also:** [BE-015](003-backend-adapter-contract.md).
 
 ### ASYNC-016: get_file_info()
@@ -168,7 +168,7 @@ sync API surface before implementation proceeds.
 
 ### ASYNC-029: iter_children()
 
-**Invariant:** `async def iter_children(path) -> AsyncIterator[FileInfo | str]` — files as `FileInfo`, folders as `str` names. Concrete method with a default implementation that chains `list_files(path)` and `list_folders(path)`.
+**Invariant:** `async def iter_children(path) -> AsyncIterator[FileInfo | FolderEntry]` — files as `FileInfo`, folders as `FolderEntry`. Concrete method with a default implementation that chains `list_files(path)` and `list_folders(path)`.
 **See also:** [BE-026](003-backend-adapter-contract.md), [027-iter-children.md](027-iter-children.md).
 
 ---

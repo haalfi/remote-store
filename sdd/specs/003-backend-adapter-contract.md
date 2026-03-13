@@ -116,7 +116,8 @@ for cap in cs:
 
 ### BE-015: list_folders()
 
-**Invariant:** `list_folders(path)` returns `Iterator[str]` of immediate subfolder names.
+**Invariant:** `list_folders(path)` returns `Iterator[FolderEntry]` of immediate subfolders.
+Each `FolderEntry` has `.name` (folder name) and `.path` (backend-relative `RemotePath`).
 
 ### BE-016: get_file_info()
 
@@ -168,7 +169,7 @@ for cap in cs:
 
 ### BE-026: iter_children()
 
-**Invariant:** `iter_children(path)` returns `Iterator[FileInfo | str]` — files as `FileInfo`, folders as `str` names. Concrete method with a default implementation that chains `list_files(path)` and `list_folders(path)`. Backends that can fetch both in a single I/O call override for efficiency.
+**Invariant:** `iter_children(path)` returns `Iterator[FileInfo | FolderEntry]` — files as `FileInfo`, folders as `FolderEntry`. Concrete method with a default implementation that chains `list_files(path)` and `list_folders(path)`. Backends that can fetch both in a single I/O call override for efficiency.
 **Postconditions:** Non-recursive (immediate children only). Non-existent paths yield nothing.
 **See also:** [027-iter-children.md](027-iter-children.md) (ITER-004, ITER-005).
 

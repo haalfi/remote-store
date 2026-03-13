@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath, NotFound
+from remote_store._models import FolderEntry
 from remote_store._path import RemotePath
 
 log = logging.getLogger(__name__)
@@ -298,33 +299,36 @@ class Store:
                 continue
             yield rebased
 
-    def list_folders(self, path: str) -> Iterator[str]:
-        """Yield immediate subfolder names of *path*.
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
+        """Yield immediate subfolders of *path* as ``FolderEntry`` objects.
 
         :param path: Store-relative folder path.
-        :returns: Iterator of subfolder name strings.
+        :returns: Iterator of ``FolderEntry`` with ``.name`` and
+            ``.path`` (store-relative).
         """
         _bk = self._backend.name
         log.debug("list_folders path=%r", path, extra={"op": "list_folders", "path": path, "backend": _bk})
         self._backend.capabilities.require(Capability.LIST, backend=_bk)
-        return self._backend.list_folders(self._full_path(path))
+        for entry in self._backend.list_folders(self._full_path(path)):
+            yield self._rebase_folder_entry(entry)
 
-    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         """Yield all immediate children (files and folders) of *path* in a single pass.
 
-        Files are yielded as ``FileInfo`` (with store-relative paths),
-        folders as bare ``str`` names.
+        Files are yielded as ``FileInfo``, folders as ``FolderEntry``.
+        Both have ``.name`` and ``.path`` attributes (satisfying the
+        ``PathEntry`` protocol) so callers can iterate uniformly.
 
         :param path: Store-relative folder path.
-        :returns: Iterator of ``FileInfo`` (files) and ``str``
-            (folder names).
+        :returns: Iterator of ``FileInfo`` (files) and ``FolderEntry``
+            (folders).
         """
         _bk = self._backend.name
         log.debug("iter_children path=%r", path, extra={"op": "iter_children", "path": path, "backend": _bk})
         self._backend.capabilities.require(Capability.LIST, backend=_bk)
         for entry in self._backend.iter_children(self._full_path(path)):
-            if isinstance(entry, str):
-                yield entry
+            if isinstance(entry, FolderEntry):
+                yield self._rebase_folder_entry(entry)
             else:
                 yield self._rebase_file_info(entry)
 
@@ -642,5 +646,12 @@ class Store:
             return info
         new_path = RemotePath.from_backend_path(rel)
         return dataclasses.replace(info, path=new_path)
+
+    def _rebase_folder_entry(self, entry: FolderEntry) -> FolderEntry:
+        """Return a copy of *entry* with its path rebased to store-relative."""
+        rel = self._strip_root(str(entry.path))
+        if rel == str(entry.path):
+            return entry
+        return dataclasses.replace(entry, path=RemotePath(rel))
 
     # endregion
