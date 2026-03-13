@@ -16,8 +16,8 @@ from remote_store.backends import LocalBackend
 def demo_direct(root: str) -> None:
     """Simplest usage: construct a Store directly."""
     store = Store(LocalBackend(root=root))
-    store.write("hello.txt", b"Hello, world!")
-    print(store.read_bytes("hello.txt"))  # b'Hello, world!'
+    store.write_text("hello.txt", "Hello, world!")
+    print(store.read_text("hello.txt"))  # 'Hello, world!'
 
 
 def demo_registry(root: str) -> None:
@@ -31,8 +31,8 @@ def demo_registry(root: str) -> None:
 
     with Registry(config) as registry:
         store = registry.get_store("data")
-        store.write("hello.txt", b"Hello, world!")
-        print(store.read_bytes("hello.txt"))  # b'Hello, world!'
+        store.write_text("hello.txt", "Hello, world!")
+        print(store.read_text("hello.txt"))  # 'Hello, world!'
 
 
 if __name__ == "__main__":

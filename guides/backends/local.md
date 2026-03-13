@@ -14,7 +14,7 @@ config = RegistryConfig(
 
 with Registry(config) as registry:
     store = registry.get_store("files")
-    store.write("readme.txt", b"Hello!")
+    store.write_text("readme.txt", "Hello!")
 ```
 
 ## Options

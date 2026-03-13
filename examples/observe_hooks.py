@@ -44,7 +44,7 @@ def demo(store):
 
     observed = observe(store, on_write=on_write, on_read=on_read)
 
-    observed.write("hello.txt", b"Hello, world!")
+    observed.write_text("hello.txt", "Hello, world!")
     observed.write("data.csv", b"a,b,c\n1,2,3", overwrite=False)
     _ = observed.read_bytes("hello.txt")
     print()

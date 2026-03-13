@@ -423,7 +423,7 @@ class TestObserveHooks:
 
         # Per-operation hooks fired
         assert len(results["write_events"]) == 2  # two writes
-        assert results["write_events"][0].operation == "write"
+        assert results["write_events"][0].operation == "write_text"
         assert len(results["read_events"]) == 1  # one read_bytes
         assert results["read_events"][0].operation == "read_bytes"
 
