@@ -510,3 +510,50 @@ class TestStoreReadText:
     def test_read_text_dot_path(self, store: Store) -> None:
         with pytest.raises(InvalidPath):
             store.read_text(".")
+
+
+class TestStoreWriteText:
+    """WTXT-001: write_text() convenience method."""
+
+    @pytest.mark.spec("WTXT-001")
+    def test_write_text_utf8_default(self, store: Store) -> None:
+        store.write_text("greet.txt", "Hello, world!")
+        assert store.read_text("greet.txt") == "Hello, world!"
+
+    @pytest.mark.spec("WTXT-001")
+    def test_write_text_custom_encoding(self, store: Store) -> None:
+        text = "caf\u00e9"
+        store.write_text("latin.txt", text, encoding="latin-1")
+        assert store.read_bytes("latin.txt") == text.encode("latin-1")
+
+    @pytest.mark.spec("WTXT-001")
+    def test_write_text_overwrite(self, store: Store) -> None:
+        store.write_text("ow.txt", "old")
+        store.write_text("ow.txt", "new", overwrite=True)
+        assert store.read_text("ow.txt") == "new"
+
+    @pytest.mark.spec("WTXT-001")
+    def test_write_text_already_exists(self, store: Store) -> None:
+        store.write_text("ow.txt", "first")
+        with pytest.raises(AlreadyExists):
+            store.write_text("ow.txt", "second")
+
+    @pytest.mark.spec("WTXT-001")
+    def test_write_text_bytes_rejected(self, store: Store) -> None:
+        with pytest.raises(AttributeError):
+            store.write_text("bad.txt", b"not a string")  # type: ignore[arg-type]
+
+    @pytest.mark.spec("WTXT-001")
+    def test_write_text_empty_path(self, store: Store) -> None:
+        with pytest.raises(InvalidPath):
+            store.write_text("", "text")
+
+    @pytest.mark.spec("WTXT-001")
+    def test_write_text_dot_path(self, store: Store) -> None:
+        with pytest.raises(InvalidPath):
+            store.write_text(".", "text")
+
+    @pytest.mark.spec("WTXT-001")
+    def test_write_text_roundtrip(self, store: Store) -> None:
+        store.write_text("rt.txt", "caf\u00e9", encoding="utf-8")
+        assert store.read_bytes("rt.txt") == "caf\u00e9".encode()

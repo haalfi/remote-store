@@ -464,6 +464,10 @@ class CachedStore(Store):
         self._inner.write(path, content, overwrite=overwrite)
         self._invalidate_path(path)
 
+    def write_text(self, path: str, text: str, *, encoding: str = "utf-8", overwrite: bool = False) -> None:
+        self._inner.write_text(path, text, encoding=encoding, overwrite=overwrite)
+        self._invalidate_path(path)
+
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         self._inner.write_atomic(path, content, overwrite=overwrite)
         self._invalidate_path(path)
