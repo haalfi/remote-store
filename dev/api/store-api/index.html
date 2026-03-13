@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/examples/sftp-backend/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/api/store-api/">
       
       
-        <link rel="prev" href="../s3-pyarrow-backend/">
+        <link rel="prev" href="../store/">
       
       
-        <link rel="next" href="../azure-backend/">
+        <link rel="next" href="../registry/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>SFTP Backend - remote-store</title>
+        <title>Store API Reference - remote-store</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#sftp-backend" class="md-skip">
+        <a href="#store-api-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SFTP Backend
+              Store API Reference
             
           </span>
         </div>
@@ -245,12 +245,10 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../../getting-started/" class="md-tabs__link">
           
   
@@ -287,11 +285,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../api/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -455,29 +455,24 @@
       
   
   
-    
   
   
-  
     
     
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -495,7 +490,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -538,8 +533,6 @@
                 
   
   
-    
-  
   
   
     
@@ -550,15 +543,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../examples/" class="md-nav__link ">
               
   
   
@@ -582,7 +575,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -600,7 +593,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quickstart/" class="md-nav__link">
+      <a href="../../examples/quickstart/" class="md-nav__link">
         
   
   
@@ -628,7 +621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../file-operations/" class="md-nav__link">
+      <a href="../../examples/file-operations/" class="md-nav__link">
         
   
   
@@ -656,7 +649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../streaming-io/" class="md-nav__link">
+      <a href="../../examples/streaming-io/" class="md-nav__link">
         
   
   
@@ -684,7 +677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../atomic-writes/" class="md-nav__link">
+      <a href="../../examples/atomic-writes/" class="md-nav__link">
         
   
   
@@ -712,7 +705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../../examples/configuration/" class="md-nav__link">
         
   
   
@@ -740,7 +733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../config-loaders/" class="md-nav__link">
+      <a href="../../examples/config-loaders/" class="md-nav__link">
         
   
   
@@ -768,7 +761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../error-handling/" class="md-nav__link">
+      <a href="../../examples/error-handling/" class="md-nav__link">
         
   
   
@@ -796,7 +789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../capabilities-and-errors/" class="md-nav__link">
+      <a href="../../examples/capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -824,7 +817,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../path-model/" class="md-nav__link">
+      <a href="../../examples/path-model/" class="md-nav__link">
         
   
   
@@ -852,7 +845,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../memory-backend/" class="md-nav__link">
+      <a href="../../examples/memory-backend/" class="md-nav__link">
         
   
   
@@ -880,7 +873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store-child/" class="md-nav__link">
+      <a href="../../examples/store-child/" class="md-nav__link">
         
   
   
@@ -908,7 +901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../s3-backend/" class="md-nav__link">
+      <a href="../../examples/s3-backend/" class="md-nav__link">
         
   
   
@@ -936,7 +929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../examples/s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -961,19 +954,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../examples/sftp-backend/" class="md-nav__link">
         
   
   
@@ -989,7 +973,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -1002,7 +985,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../azure-backend/" class="md-nav__link">
+      <a href="../../examples/azure-backend/" class="md-nav__link">
         
   
   
@@ -1030,7 +1013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../batch-operations/" class="md-nav__link">
+      <a href="../../examples/batch-operations/" class="md-nav__link">
         
   
   
@@ -1058,7 +1041,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../transfer-operations/" class="md-nav__link">
+      <a href="../../examples/transfer-operations/" class="md-nav__link">
         
   
   
@@ -1086,7 +1069,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../glob-pattern-matching/" class="md-nav__link">
+      <a href="../../examples/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1114,7 +1097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../caching/" class="md-nav__link">
+      <a href="../../examples/caching/" class="md-nav__link">
         
   
   
@@ -1142,7 +1125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observe-hooks/" class="md-nav__link">
+      <a href="../../examples/observe-hooks/" class="md-nav__link">
         
   
   
@@ -1170,7 +1153,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../otel-tracing/" class="md-nav__link">
+      <a href="../../examples/otel-tracing/" class="md-nav__link">
         
   
   
@@ -1198,7 +1181,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pyarrow-adapter/" class="md-nav__link">
+      <a href="../../examples/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1226,7 +1209,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../retry-policy/" class="md-nav__link">
+      <a href="../../examples/retry-policy/" class="md-nav__link">
         
   
   
@@ -1254,7 +1237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../health-check/" class="md-nav__link">
+      <a href="../../examples/health-check/" class="md-nav__link">
         
   
   
@@ -2006,24 +1989,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -2041,7 +2029,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2056,6 +2044,8 @@
                 
   
   
+    
+  
   
   
     
@@ -2066,15 +2056,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -2098,7 +2088,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2116,7 +2106,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/" class="md-nav__link">
+      <a href="../store/" class="md-nav__link">
         
   
   
@@ -2141,10 +2131,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../api/store-api/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store API Reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2160,6 +2177,509 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#class-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        class Store
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="class Store">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constructor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constructor
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reading">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#readpath-binaryio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        read(path) -&gt; BinaryIO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read_bytespath-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        read_bytes(path) -&gt; bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read_textpath-encoding-errors-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        read_text(path, *, encoding, errors) -&gt; str
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#writepath-content-overwrite-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        write(path, content, *, overwrite) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write_textpath-text-encoding-overwrite-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        write_text(path, text, *, encoding, overwrite) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write_atomicpath-content-overwrite-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        write_atomic(path, content, *, overwrite) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open_atomicpath-overwrite-iteratorbinaryio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        open_atomic(path, *, overwrite) -&gt; Iterator[BinaryIO]
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deleting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deleting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deletepath-missing_ok-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete(path, *, missing_ok) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete_folderpath-recursive-missing_ok-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete_folder(path, *, recursive, missing_ok) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#listing-and-iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing and Iteration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Listing and Iteration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#list_filespath-recursive-pattern-iteratorfileinfo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        list_files(path, *, recursive, pattern) -&gt; Iterator[FileInfo]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list_folderspath-iteratorfolderentry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        list_folders(path) -&gt; Iterator[FolderEntry]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iter_childrenpath-iteratorpathentry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        iter_children(path) -&gt; Iterator[PathEntry]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#globpattern-iteratorfileinfo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        glob(pattern) -&gt; Iterator[FileInfo]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#target-types-for-listing-normalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Target types for listing normalization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#movesrc-dst-overwrite-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        move(src, dst, *, overwrite) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#copysrc-dst-overwrite-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        copy(src, dst, *, overwrite) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#existspath-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        exists(path) -&gt; bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is_filepath-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_file(path) -&gt; bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is_folderpath-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_folder(path) -&gt; bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_file_infopath-fileinfo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_file_info(path) -&gt; FileInfo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_folder_infopath-folderinfo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_folder_info(path) -&gt; FolderInfo
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lifecycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ping-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ping() -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#close-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        close() -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#childsubpath-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        child(subpath) -&gt; Store
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interop-backend-specific" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interop (Backend-Specific)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interop (Backend-Specific)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unwraptype_hint-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        unwrap(type_hint) -&gt; T
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#native_pathkey-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        native_path(key) -&gt; str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to_keypath-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_key(path) -&gt; str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supportscapability-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        supports(capability) -&gt; bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backend-behavior-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend Behavior Matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2172,7 +2692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/registry/" class="md-nav__link">
+      <a href="../registry/" class="md-nav__link">
         
   
   
@@ -2200,7 +2720,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/backend/" class="md-nav__link">
+      <a href="../backend/" class="md-nav__link">
         
   
   
@@ -2228,7 +2748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/sftp-utils/" class="md-nav__link">
+      <a href="../sftp-utils/" class="md-nav__link">
         
   
   
@@ -2256,7 +2776,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/config/" class="md-nav__link">
+      <a href="../config/" class="md-nav__link">
         
   
   
@@ -2284,7 +2804,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/models/" class="md-nav__link">
+      <a href="../models/" class="md-nav__link">
         
   
   
@@ -2312,7 +2832,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/path/" class="md-nav__link">
+      <a href="../path/" class="md-nav__link">
         
   
   
@@ -2340,7 +2860,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/capabilities/" class="md-nav__link">
+      <a href="../capabilities/" class="md-nav__link">
         
   
   
@@ -2368,7 +2888,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/errors/" class="md-nav__link">
+      <a href="../errors/" class="md-nav__link">
         
   
   
@@ -2396,7 +2916,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-arrow/" class="md-nav__link">
+      <a href="../ext-arrow/" class="md-nav__link">
         
   
   
@@ -2424,7 +2944,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-batch/" class="md-nav__link">
+      <a href="../ext-batch/" class="md-nav__link">
         
   
   
@@ -2452,7 +2972,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-cache/" class="md-nav__link">
+      <a href="../ext-cache/" class="md-nav__link">
         
   
   
@@ -2480,7 +3000,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-glob/" class="md-nav__link">
+      <a href="../ext-glob/" class="md-nav__link">
         
   
   
@@ -2508,7 +3028,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-observe/" class="md-nav__link">
+      <a href="../ext-observe/" class="md-nav__link">
         
   
   
@@ -2536,7 +3056,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-otel/" class="md-nav__link">
+      <a href="../ext-otel/" class="md-nav__link">
         
   
   
@@ -2564,7 +3084,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-partition/" class="md-nav__link">
+      <a href="../ext-partition/" class="md-nav__link">
         
   
   
@@ -2592,7 +3112,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-pydantic/" class="md-nav__link">
+      <a href="../ext-pydantic/" class="md-nav__link">
         
   
   
@@ -2620,7 +3140,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-transfer/" class="md-nav__link">
+      <a href="../ext-transfer/" class="md-nav__link">
         
   
   
@@ -2648,7 +3168,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/ext-yaml/" class="md-nav__link">
+      <a href="../ext-yaml/" class="md-nav__link">
         
   
   
@@ -4931,6 +5451,497 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#class-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        class Store
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="class Store">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constructor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constructor
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reading">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#readpath-binaryio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        read(path) -&gt; BinaryIO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read_bytespath-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        read_bytes(path) -&gt; bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read_textpath-encoding-errors-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        read_text(path, *, encoding, errors) -&gt; str
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#writepath-content-overwrite-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        write(path, content, *, overwrite) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write_textpath-text-encoding-overwrite-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        write_text(path, text, *, encoding, overwrite) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write_atomicpath-content-overwrite-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        write_atomic(path, content, *, overwrite) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open_atomicpath-overwrite-iteratorbinaryio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        open_atomic(path, *, overwrite) -&gt; Iterator[BinaryIO]
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deleting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deleting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deletepath-missing_ok-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete(path, *, missing_ok) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete_folderpath-recursive-missing_ok-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete_folder(path, *, recursive, missing_ok) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#listing-and-iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing and Iteration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Listing and Iteration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#list_filespath-recursive-pattern-iteratorfileinfo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        list_files(path, *, recursive, pattern) -&gt; Iterator[FileInfo]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list_folderspath-iteratorfolderentry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        list_folders(path) -&gt; Iterator[FolderEntry]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iter_childrenpath-iteratorpathentry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        iter_children(path) -&gt; Iterator[PathEntry]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#globpattern-iteratorfileinfo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        glob(pattern) -&gt; Iterator[FileInfo]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#target-types-for-listing-normalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Target types for listing normalization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#movesrc-dst-overwrite-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        move(src, dst, *, overwrite) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#copysrc-dst-overwrite-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        copy(src, dst, *, overwrite) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#existspath-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        exists(path) -&gt; bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is_filepath-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_file(path) -&gt; bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is_folderpath-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_folder(path) -&gt; bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_file_infopath-fileinfo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_file_info(path) -&gt; FileInfo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_folder_infopath-folderinfo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_folder_info(path) -&gt; FolderInfo
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lifecycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ping-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ping() -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#close-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        close() -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#childsubpath-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        child(subpath) -&gt; Store
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interop-backend-specific" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interop (Backend-Specific)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interop (Backend-Specific)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unwraptype_hint-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        unwrap(type_hint) -&gt; T
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#native_pathkey-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        native_path(key) -&gt; str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to_keypath-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_key(path) -&gt; str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supportscapability-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        supports(capability) -&gt; bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backend-behavior-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend Behavior Matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -4949,180 +5960,498 @@
   
 
 
-<h1 id="sftp-backend">SFTP Backend<a class="headerlink" href="#sftp-backend" title="Permanent link">&para;</a></h1>
-<p>Connect to any SSH/SFTP server with paramiko.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="sd">&quot;&quot;&quot;SFTP backend — connect to any SSH/SFTP server.</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="sd">Demonstrates:</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="sd">- Configuring an SFTP backend via RegistryConfig</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">- File operations: write, read, list, copy, move, delete, delete_folder</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="sd">- Streaming line iteration</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">- Escape hatch: unwrap() to access paramiko.SFTPClient</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">Prerequisites:</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="sd">- pip install &quot;remote-store[sftp]&quot;</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="sd">- An accessible SFTP server</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="sd">Environment variables:</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="sd">    RS_SFTP_HOST    SFTP hostname (required)</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="sd">    RS_SFTP_USER    SSH username (required)</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="sd">    RS_SFTP_PASS    SSH password</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="sd">    RS_SFTP_PORT    SSH port (default: 22)</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="sd">    RS_SFTP_BASE    Base path on the server (default: /)</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">BackendConfig</span><span class="p">,</span> <span class="n">Registry</span><span class="p">,</span> <span class="n">RegistryConfig</span><span class="p">,</span> <span class="n">StoreProfile</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends._sftp</span><span class="w"> </span><span class="kn">import</span> <span class="n">HostKeyPolicy</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>
-<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="n">HOST</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;RS_SFTP_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="n">USER</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;RS_SFTP_USER&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
-<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">HOST</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">USER</span><span class="p">:</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>    <span class="nb">print</span><span class="p">(</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>        <span class="s2">&quot;Set RS_SFTP_HOST and RS_SFTP_USER to run this example.</span><span class="se">\n</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>        <span class="s2">&quot;Optional: RS_SFTP_PASS, RS_SFTP_PORT, RS_SFTP_BASE</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>        <span class="s2">&quot;Example with a local Docker SFTP server:</span><span class="se">\n</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>        <span class="s2">&quot;  RS_SFTP_HOST=localhost RS_SFTP_USER=benchuser RS_SFTP_PASS=benchpass &quot;</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>        <span class="s2">&quot;RS_SFTP_PORT=2222 RS_SFTP_BASE=/upload python examples/sftp_backend.py&quot;</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>    <span class="p">)</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>
-<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>    <span class="c1"># --- Build options from environment ---</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>    <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>        <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="n">HOST</span><span class="p">,</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>        <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="n">USER</span><span class="p">,</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>    <span class="p">}</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>    <span class="k">if</span> <span class="n">val</span> <span class="o">:=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;RS_SFTP_PASS&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>        <span class="n">options</span><span class="p">[</span><span class="s2">&quot;password&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>    <span class="k">if</span> <span class="n">val</span> <span class="o">:=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;RS_SFTP_PORT&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>        <span class="n">options</span><span class="p">[</span><span class="s2">&quot;port&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>    <span class="k">if</span> <span class="n">val</span> <span class="o">:=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;RS_SFTP_BASE&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>        <span class="n">options</span><span class="p">[</span><span class="s2">&quot;base_path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>
-<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>    <span class="c1"># host_key_policy is an enum — it works in Python config-as-code (below)</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>    <span class="c1"># but cannot be serialized to JSON/TOML. When loading from a file, use</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>    <span class="c1"># direct backend construction instead (see commented section at the end).</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>    <span class="c1"># The default is STRICT; for dev/testing with unknown hosts use AUTO_ADD.</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>    <span class="n">options</span><span class="p">[</span><span class="s2">&quot;host_key_policy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">HostKeyPolicy</span><span class="o">.</span><span class="n">AUTO_ADD</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>
-<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>    <span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="p">(</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>        <span class="n">backends</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sftp&quot;</span><span class="p">:</span> <span class="n">BackendConfig</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;sftp&quot;</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">)},</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>        <span class="n">stores</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;files&quot;</span><span class="p">:</span> <span class="n">StoreProfile</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="s2">&quot;sftp&quot;</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;example&quot;</span><span class="p">)},</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a>    <span class="p">)</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a>
-<a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a>    <span class="k">with</span> <span class="n">Registry</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="k">as</span> <span class="n">registry</span><span class="p">:</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;files&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a>
-<a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a>        <span class="c1"># --- Write ---</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a>        <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;readme.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;Hello from SFTP!</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a>        <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;data/report.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;col1,col2</span><span class="se">\n</span><span class="s2">10,20</span><span class="se">\n</span><span class="s2">30,40</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Wrote 2 files.&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a>
-<a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a>        <span class="c1"># --- Read ---</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a>        <span class="n">content</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;readme.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">readme.txt: </span><span class="si">{</span><span class="n">content</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a>
-<a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a>        <span class="c1"># --- Metadata ---</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a>        <span class="n">info</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_file_info</span><span class="p">(</span><span class="s2">&quot;readme.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-80" name="__codelineno-0-80" href="#__codelineno-0-80"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;readme.txt  size=</span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">  modified=</span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">modified_at</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a>
-<a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a>        <span class="c1"># --- List files (recursive) ---</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83" href="#__codelineno-0-83"></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">All files (recursive):&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84" href="#__codelineno-0-84"></a>        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<a id="__codelineno-0-85" name="__codelineno-0-85" href="#__codelineno-0-85"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">f</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="n">f</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> bytes)&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-86" name="__codelineno-0-86" href="#__codelineno-0-86"></a>
-<a id="__codelineno-0-87" name="__codelineno-0-87" href="#__codelineno-0-87"></a>        <span class="c1"># --- List folders ---</span>
-<a id="__codelineno-0-88" name="__codelineno-0-88" href="#__codelineno-0-88"></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Folders:&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-89" name="__codelineno-0-89" href="#__codelineno-0-89"></a>        <span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_folders</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-90" name="__codelineno-0-90" href="#__codelineno-0-90"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">folder</span><span class="si">}</span><span class="s2">/&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-91" name="__codelineno-0-91" href="#__codelineno-0-91"></a>
-<a id="__codelineno-0-92" name="__codelineno-0-92" href="#__codelineno-0-92"></a>        <span class="c1"># --- Folder info ---</span>
-<a id="__codelineno-0-93" name="__codelineno-0-93" href="#__codelineno-0-93"></a>        <span class="n">folder_info</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_folder_info</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-94" name="__codelineno-0-94" href="#__codelineno-0-94"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">data/ totals: </span><span class="si">{</span><span class="n">folder_info</span><span class="o">.</span><span class="n">file_count</span><span class="si">}</span><span class="s2"> files, </span><span class="si">{</span><span class="n">folder_info</span><span class="o">.</span><span class="n">total_size</span><span class="si">}</span><span class="s2"> bytes&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-95" name="__codelineno-0-95" href="#__codelineno-0-95"></a>
-<a id="__codelineno-0-96" name="__codelineno-0-96" href="#__codelineno-0-96"></a>        <span class="c1"># --- Copy (SFTP copy = read + write, no server-side copy) ---</span>
-<a id="__codelineno-0-97" name="__codelineno-0-97" href="#__codelineno-0-97"></a>        <span class="n">store</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="s2">&quot;readme.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;readme_backup.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-98" name="__codelineno-0-98" href="#__codelineno-0-98"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Copied readme.txt -&gt; readme_backup.txt (exists: </span><span class="si">{</span><span class="n">store</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;readme_backup.txt&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-99" name="__codelineno-0-99" href="#__codelineno-0-99"></a>
-<a id="__codelineno-0-100" name="__codelineno-0-100" href="#__codelineno-0-100"></a>        <span class="c1"># --- Move (uses posix_rename with fallback) ---</span>
-<a id="__codelineno-0-101" name="__codelineno-0-101" href="#__codelineno-0-101"></a>        <span class="n">store</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="s2">&quot;readme_backup.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;archive/readme_old.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-102" name="__codelineno-0-102" href="#__codelineno-0-102"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Moved to archive/readme_old.txt (original exists: </span><span class="si">{</span><span class="n">store</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;readme_backup.txt&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-103" name="__codelineno-0-103" href="#__codelineno-0-103"></a>
-<a id="__codelineno-0-104" name="__codelineno-0-104" href="#__codelineno-0-104"></a>        <span class="c1"># --- Streaming line iteration ---</span>
-<a id="__codelineno-0-105" name="__codelineno-0-105" href="#__codelineno-0-105"></a>        <span class="n">reader</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;data/report.csv&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-106" name="__codelineno-0-106" href="#__codelineno-0-106"></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Streaming read (line by line):&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-107" name="__codelineno-0-107" href="#__codelineno-0-107"></a>        <span class="n">newline</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-108" name="__codelineno-0-108" href="#__codelineno-0-108"></a>        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
-<a id="__codelineno-0-109" name="__codelineno-0-109" href="#__codelineno-0-109"></a>            <span class="n">text</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="n">newline</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
-<a id="__codelineno-0-110" name="__codelineno-0-110" href="#__codelineno-0-110"></a>            <span class="k">if</span> <span class="n">text</span><span class="p">:</span>
-<a id="__codelineno-0-111" name="__codelineno-0-111" href="#__codelineno-0-111"></a>                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-112" name="__codelineno-0-112" href="#__codelineno-0-112"></a>
-<a id="__codelineno-0-113" name="__codelineno-0-113" href="#__codelineno-0-113"></a>        <span class="c1"># --- Delete files and folders ---</span>
-<a id="__codelineno-0-114" name="__codelineno-0-114" href="#__codelineno-0-114"></a>        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<a id="__codelineno-0-115" name="__codelineno-0-115" href="#__codelineno-0-115"></a>            <span class="n">store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>
-<a id="__codelineno-0-116" name="__codelineno-0-116" href="#__codelineno-0-116"></a>        <span class="n">store</span><span class="o">.</span><span class="n">delete_folder</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-117" name="__codelineno-0-117" href="#__codelineno-0-117"></a>        <span class="n">store</span><span class="o">.</span><span class="n">delete_folder</span><span class="p">(</span><span class="s2">&quot;archive&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-118" name="__codelineno-0-118" href="#__codelineno-0-118"></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Cleaned up all example files and folders.&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-119" name="__codelineno-0-119" href="#__codelineno-0-119"></a>
-<a id="__codelineno-0-120" name="__codelineno-0-120" href="#__codelineno-0-120"></a>    <span class="c1"># --- Escape hatch: unwrap() via direct construction ---</span>
-<a id="__codelineno-0-121" name="__codelineno-0-121" href="#__codelineno-0-121"></a>    <span class="c1"># Construct the backend directly to access paramiko.SFTPClient and to</span>
-<a id="__codelineno-0-122" name="__codelineno-0-122" href="#__codelineno-0-122"></a>    <span class="c1"># set host_key_policy for dev/testing environments.</span>
-<a id="__codelineno-0-123" name="__codelineno-0-123" href="#__codelineno-0-123"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTPBackend</span>
-<a id="__codelineno-0-124" name="__codelineno-0-124" href="#__codelineno-0-124"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends._sftp</span><span class="w"> </span><span class="kn">import</span> <span class="n">HostKeyPolicy</span>
-<a id="__codelineno-0-125" name="__codelineno-0-125" href="#__codelineno-0-125"></a>
-<a id="__codelineno-0-126" name="__codelineno-0-126" href="#__codelineno-0-126"></a>    <span class="n">backend</span> <span class="o">=</span> <span class="n">SFTPBackend</span><span class="p">(</span>
-<a id="__codelineno-0-127" name="__codelineno-0-127" href="#__codelineno-0-127"></a>        <span class="n">host</span><span class="o">=</span><span class="n">HOST</span><span class="p">,</span>
-<a id="__codelineno-0-128" name="__codelineno-0-128" href="#__codelineno-0-128"></a>        <span class="n">port</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;RS_SFTP_PORT&quot;</span><span class="p">,</span> <span class="s2">&quot;22&quot;</span><span class="p">)),</span>
-<a id="__codelineno-0-129" name="__codelineno-0-129" href="#__codelineno-0-129"></a>        <span class="n">username</span><span class="o">=</span><span class="n">USER</span><span class="p">,</span>
-<a id="__codelineno-0-130" name="__codelineno-0-130" href="#__codelineno-0-130"></a>        <span class="n">password</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;RS_SFTP_PASS&quot;</span><span class="p">),</span>
-<a id="__codelineno-0-131" name="__codelineno-0-131" href="#__codelineno-0-131"></a>        <span class="n">base_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;RS_SFTP_BASE&quot;</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">),</span>
-<a id="__codelineno-0-132" name="__codelineno-0-132" href="#__codelineno-0-132"></a>        <span class="n">host_key_policy</span><span class="o">=</span><span class="n">HostKeyPolicy</span><span class="o">.</span><span class="n">AUTO_ADD</span><span class="p">,</span>  <span class="c1"># Dev/testing only!</span>
-<a id="__codelineno-0-133" name="__codelineno-0-133" href="#__codelineno-0-133"></a>    <span class="p">)</span>
-<a id="__codelineno-0-134" name="__codelineno-0-134" href="#__codelineno-0-134"></a>
-<a id="__codelineno-0-135" name="__codelineno-0-135" href="#__codelineno-0-135"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-136" name="__codelineno-0-136" href="#__codelineno-0-136"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">paramiko</span>
-<a id="__codelineno-0-137" name="__codelineno-0-137" href="#__codelineno-0-137"></a>
-<a id="__codelineno-0-138" name="__codelineno-0-138" href="#__codelineno-0-138"></a>        <span class="n">sftp_client</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">paramiko</span><span class="o">.</span><span class="n">SFTPClient</span><span class="p">)</span>
-<a id="__codelineno-0-139" name="__codelineno-0-139" href="#__codelineno-0-139"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">paramiko SFTPClient: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">sftp_client</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-140" name="__codelineno-0-140" href="#__codelineno-0-140"></a>    <span class="k">finally</span><span class="p">:</span>
-<a id="__codelineno-0-141" name="__codelineno-0-141" href="#__codelineno-0-141"></a>        <span class="n">backend</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-<a id="__codelineno-0-142" name="__codelineno-0-142" href="#__codelineno-0-142"></a>
-<a id="__codelineno-0-143" name="__codelineno-0-143" href="#__codelineno-0-143"></a>    <span class="c1"># --- Host key policies (commented out) ---</span>
-<a id="__codelineno-0-144" name="__codelineno-0-144" href="#__codelineno-0-144"></a>    <span class="c1">#</span>
-<a id="__codelineno-0-145" name="__codelineno-0-145" href="#__codelineno-0-145"></a>    <span class="c1"># from remote_store.backends._sftp import HostKeyPolicy</span>
-<a id="__codelineno-0-146" name="__codelineno-0-146" href="#__codelineno-0-146"></a>    <span class="c1">#</span>
-<a id="__codelineno-0-147" name="__codelineno-0-147" href="#__codelineno-0-147"></a>    <span class="c1"># # STRICT (default) — reject unknown hosts; key must be in known_hosts</span>
-<a id="__codelineno-0-148" name="__codelineno-0-148" href="#__codelineno-0-148"></a>    <span class="c1"># backend = SFTPBackend(host=&quot;...&quot;, username=&quot;...&quot;, password=&quot;...&quot;,</span>
-<a id="__codelineno-0-149" name="__codelineno-0-149" href="#__codelineno-0-149"></a>    <span class="c1">#                       host_key_policy=HostKeyPolicy.STRICT)</span>
-<a id="__codelineno-0-150" name="__codelineno-0-150" href="#__codelineno-0-150"></a>    <span class="c1">#</span>
-<a id="__codelineno-0-151" name="__codelineno-0-151" href="#__codelineno-0-151"></a>    <span class="c1"># # TRUST_ON_FIRST_USE — accept and save on first connect, verify after</span>
-<a id="__codelineno-0-152" name="__codelineno-0-152" href="#__codelineno-0-152"></a>    <span class="c1"># backend = SFTPBackend(host=&quot;...&quot;, username=&quot;...&quot;, password=&quot;...&quot;,</span>
-<a id="__codelineno-0-153" name="__codelineno-0-153" href="#__codelineno-0-153"></a>    <span class="c1">#                       host_key_policy=HostKeyPolicy.TRUST_ON_FIRST_USE)</span>
-<a id="__codelineno-0-154" name="__codelineno-0-154" href="#__codelineno-0-154"></a>    <span class="c1">#</span>
-<a id="__codelineno-0-155" name="__codelineno-0-155" href="#__codelineno-0-155"></a>    <span class="c1"># # AUTO_ADD — accept any key silently (dev/testing only)</span>
-<a id="__codelineno-0-156" name="__codelineno-0-156" href="#__codelineno-0-156"></a>    <span class="c1"># backend = SFTPBackend(host=&quot;...&quot;, username=&quot;...&quot;, password=&quot;...&quot;,</span>
-<a id="__codelineno-0-157" name="__codelineno-0-157" href="#__codelineno-0-157"></a>    <span class="c1">#                       host_key_policy=HostKeyPolicy.AUTO_ADD)</span>
-<a id="__codelineno-0-158" name="__codelineno-0-158" href="#__codelineno-0-158"></a>
-<a id="__codelineno-0-159" name="__codelineno-0-159" href="#__codelineno-0-159"></a>    <span class="c1"># --- Key-based authentication (commented out) ---</span>
-<a id="__codelineno-0-160" name="__codelineno-0-160" href="#__codelineno-0-160"></a>    <span class="c1">#</span>
-<a id="__codelineno-0-161" name="__codelineno-0-161" href="#__codelineno-0-161"></a>    <span class="c1"># from remote_store.backends._sftp import load_private_key</span>
-<a id="__codelineno-0-162" name="__codelineno-0-162" href="#__codelineno-0-162"></a>    <span class="c1">#</span>
-<a id="__codelineno-0-163" name="__codelineno-0-163" href="#__codelineno-0-163"></a>    <span class="c1"># # From a file</span>
-<a id="__codelineno-0-164" name="__codelineno-0-164" href="#__codelineno-0-164"></a>    <span class="c1"># pkey = load_private_key(&quot;/path/to/id_rsa&quot;, from_file=True)</span>
-<a id="__codelineno-0-165" name="__codelineno-0-165" href="#__codelineno-0-165"></a>    <span class="c1"># backend = SFTPBackend(host=&quot;...&quot;, username=&quot;...&quot;, pkey=pkey)</span>
-<a id="__codelineno-0-166" name="__codelineno-0-166" href="#__codelineno-0-166"></a>    <span class="c1">#</span>
-<a id="__codelineno-0-167" name="__codelineno-0-167" href="#__codelineno-0-167"></a>    <span class="c1"># # From a PEM string (e.g. from a secrets manager)</span>
-<a id="__codelineno-0-168" name="__codelineno-0-168" href="#__codelineno-0-168"></a>    <span class="c1"># pkey = load_private_key(pem_string)</span>
-<a id="__codelineno-0-169" name="__codelineno-0-169" href="#__codelineno-0-169"></a>    <span class="c1"># backend = SFTPBackend(host=&quot;...&quot;, username=&quot;...&quot;, pkey=pkey)</span>
-<a id="__codelineno-0-170" name="__codelineno-0-170" href="#__codelineno-0-170"></a>
-<a id="__codelineno-0-171" name="__codelineno-0-171" href="#__codelineno-0-171"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Done!&quot;</span><span class="p">)</span>
+<h1 id="store-api-reference">Store API Reference<a class="headerlink" href="#store-api-reference" title="Permanent link">&para;</a></h1>
+<div class="admonition info">
+<p class="admonition-title">Pre-v1 target API</p>
+<p>This page describes the <strong>target</strong> v1 Store API surface. It is hand-written
+to capture behavioral guarantees, parameter contracts, and cross-backend
+differences that the auto-generated <a href="../store/">Store</a> page does not yet
+reflect. As docstrings are corrected, sections will migrate to <code>:::</code>
+directives.</p>
+</div>
+<hr />
+<h2 id="class-store"><code>class Store</code><a class="headerlink" href="#class-store" title="Permanent link">&para;</a></h2>
+<p>A logical remote folder scoped to a root path.</p>
+<p>All path arguments are validated and prefixed with <code>root_path</code> before being
+delegated to the backend. Supports the context-manager protocol
+(<code>with Store(...) as s:</code>) which calls <a href="#close-none"><code>close()</code></a> on exit.</p>
+<h3 id="constructor">Constructor<a class="headerlink" href="#constructor" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="n">Backend</span><span class="p">,</span> <span class="n">root_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
 </code></pre></div>
+<p>Create a store bound to a backend, optionally scoped to <em>root_path</em>.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>backend</strong> (<a href="../backend/"><code>Backend</code></a>)
+    Backend instance (Local, S3, SFTP, Azure, Memory).</li>
+<li><strong>root_path</strong> (<code>str</code>, default <code>""</code>)
+    Prefix prepended to every path. <code>""</code> means the backend root.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Thread safety</p>
+<p><code>Store</code> is immutable after construction and can be shared across threads.
+Backend thread safety depends on the backend implementation.</p>
+</div>
+<hr />
+<h2 id="reading">Reading<a class="headerlink" href="#reading" title="Permanent link">&para;</a></h2>
+<h3 id="readpath-binaryio"><code>read(path) -&gt; BinaryIO</code><a class="headerlink" href="#readpath-binaryio" title="Permanent link">&para;</a></h3>
+<p>Return a readable binary stream positioned at the start of <em>path</em>.
+The caller is responsible for closing the stream (or using a <code>with</code> block).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative file path.</li>
+</ul>
+<p><strong>Returns:</strong> <code>BinaryIO</code> -- readable binary stream positioned at byte 0.</p>
+<p><strong>Raises:</strong> <a href="../errors/"><code>NotFound</code></a>, <a href="../errors/"><code>InvalidPath</code></a>.</p>
+<hr />
+<h3 id="read_bytespath-bytes"><code>read_bytes(path) -&gt; bytes</code><a class="headerlink" href="#read_bytespath-bytes" title="Permanent link">&para;</a></h3>
+<p>Read the entire file into memory and return <code>bytes</code>.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative file path.</li>
+</ul>
+<p><strong>Returns:</strong> <code>bytes</code></p>
+<p><strong>Raises:</strong> <a href="../errors/"><code>NotFound</code></a>, <a href="../errors/"><code>InvalidPath</code></a>.</p>
+<p>Equivalent to <code>read(path).read()</code>.</p>
+<hr />
+<h3 id="read_textpath-encoding-errors-str"><code>read_text(path, *, encoding, errors) -&gt; str</code><a class="headerlink" href="#read_textpath-encoding-errors-str" title="Permanent link">&para;</a></h3>
+<p>Read the entire file and decode it as text.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative file path.</li>
+<li><strong>encoding</strong> (<code>str</code>, default <code>"utf-8"</code>)
+    Text encoding, any name accepted by <code>codecs</code>.</li>
+<li><strong>errors</strong> (<code>str</code>, default <code>"strict"</code>)
+    Error handler: <code>"strict"</code>, <code>"ignore"</code>, <code>"replace"</code>, <code>"backslashreplace"</code>.
+    See <code>codecs.register_error</code> for custom handlers.</li>
+</ul>
+<p><strong>Returns:</strong> <code>str</code></p>
+<p><strong>Raises:</strong> <a href="../errors/"><code>NotFound</code></a>, <a href="../errors/"><code>InvalidPath</code></a>,
+<code>UnicodeDecodeError</code> (when <code>errors="strict"</code>).</p>
+<p>Equivalent to <code>read_bytes(path).decode(encoding, errors)</code>.</p>
+<hr />
+<h2 id="writing">Writing<a class="headerlink" href="#writing" title="Permanent link">&para;</a></h2>
+<h3 id="writepath-content-overwrite-none"><code>write(path, content, *, overwrite) -&gt; None</code><a class="headerlink" href="#writepath-content-overwrite-none" title="Permanent link">&para;</a></h3>
+<p>Write binary content to <em>path</em>. Creates parent folders implicitly.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative file path.</li>
+<li><strong>content</strong> (<a href="../models/"><code>WritableContent</code></a>)
+    <code>bytes</code> or readable binary stream (<code>BinaryIO</code>).</li>
+<li><strong>overwrite</strong> (<code>bool</code>, default <code>False</code>)
+    If <code>False</code>, raises <a href="../errors/"><code>AlreadyExists</code></a> when <em>path</em> exists.</li>
+</ul>
+<p><strong>Raises:</strong> <a href="../errors/"><code>AlreadyExists</code></a> (when <code>overwrite=False</code> and file
+exists), <a href="../errors/"><code>InvalidPath</code></a>.</p>
+<hr />
+<h3 id="write_textpath-text-encoding-overwrite-none"><code>write_text(path, text, *, encoding, overwrite) -&gt; None</code><a class="headerlink" href="#write_textpath-text-encoding-overwrite-none" title="Permanent link">&para;</a></h3>
+<p>Write a string to <em>path</em>, encoded with the given encoding.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative file path.</li>
+<li><strong>text</strong> (<code>str</code>)
+    The string to write.</li>
+<li><strong>encoding</strong> (<code>str</code>, default <code>"utf-8"</code>)
+    Text encoding.</li>
+<li><strong>overwrite</strong> (<code>bool</code>, default <code>False</code>)
+    If <code>False</code>, raises <a href="../errors/"><code>AlreadyExists</code></a> when <em>path</em> exists.</li>
+</ul>
+<p><strong>Raises:</strong> <a href="../errors/"><code>AlreadyExists</code></a>, <a href="../errors/"><code>InvalidPath</code></a>.</p>
+<p>Equivalent to <code>write(path, text.encode(encoding), overwrite=overwrite)</code>.</p>
+<hr />
+<h3 id="write_atomicpath-content-overwrite-none"><code>write_atomic(path, content, *, overwrite) -&gt; None</code><a class="headerlink" href="#write_atomicpath-content-overwrite-none" title="Permanent link">&para;</a></h3>
+<p>Write binary content to <em>path</em> atomically. If the write fails or is
+interrupted, <em>path</em> is not left in a partial state.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative file path.</li>
+<li><strong>content</strong> (<a href="../models/"><code>WritableContent</code></a>)
+    <code>bytes</code> or readable binary stream (<code>BinaryIO</code>).</li>
+<li><strong>overwrite</strong> (<code>bool</code>, default <code>False</code>)
+    If <code>False</code>, raises <a href="../errors/"><code>AlreadyExists</code></a> when <em>path</em> exists.</li>
+</ul>
+<p><strong>Raises:</strong> <a href="../errors/"><code>CapabilityNotSupported</code></a> (if backend lacks
+<code>ATOMIC_WRITE</code>), <a href="../errors/"><code>AlreadyExists</code></a>, <a href="../errors/"><code>InvalidPath</code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Most backends implement this as temp-file + rename. See the
+<a href="#backend-behavior-matrix">Backend Behavior Matrix</a> for details.</p>
+</div>
+<hr />
+<h3 id="open_atomicpath-overwrite-iteratorbinaryio"><code>open_atomic(path, *, overwrite) -&gt; Iterator[BinaryIO]</code><a class="headerlink" href="#open_atomicpath-overwrite-iteratorbinaryio" title="Permanent link">&para;</a></h3>
+<p>Context manager that yields a writable binary stream. The file is committed
+atomically on successful exit; on exception the partial write is discarded.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative file path.</li>
+<li><strong>overwrite</strong> (<code>bool</code>, default <code>False</code>)
+    If <code>False</code>, raises <a href="../errors/"><code>AlreadyExists</code></a> when <em>path</em> exists.</li>
+</ul>
+<p><strong>Returns:</strong> <code>BinaryIO</code> -- writable binary stream.</p>
+<p><strong>Raises:</strong> <a href="../errors/"><code>CapabilityNotSupported</code></a>,
+<a href="../errors/"><code>AlreadyExists</code></a>, <a href="../errors/"><code>InvalidPath</code></a>.</p>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open_atomic</span><span class="p">(</span><span class="s2">&quot;data/output.bin&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;chunk 1&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;chunk 2&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># file is now visible at data/output.bin</span>
+</code></pre></div>
+<hr />
+<h2 id="deleting">Deleting<a class="headerlink" href="#deleting" title="Permanent link">&para;</a></h2>
+<h3 id="deletepath-missing_ok-none"><code>delete(path, *, missing_ok) -&gt; None</code><a class="headerlink" href="#deletepath-missing_ok-none" title="Permanent link">&para;</a></h3>
+<p>Delete a single file.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative file path.</li>
+<li><strong>missing_ok</strong> (<code>bool</code>, default <code>False</code>)
+    If <code>True</code>, silently succeeds when <em>path</em> does not exist.</li>
+</ul>
+<p><strong>Raises:</strong> <a href="../errors/"><code>NotFound</code></a> (when <code>missing_ok=False</code>),
+<a href="../errors/"><code>InvalidPath</code></a>.</p>
+<hr />
+<h3 id="delete_folderpath-recursive-missing_ok-none"><code>delete_folder(path, *, recursive, missing_ok) -&gt; None</code><a class="headerlink" href="#delete_folderpath-recursive-missing_ok-none" title="Permanent link">&para;</a></h3>
+<p>Delete a folder.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative folder path. Must not be <code>""</code> (root).</li>
+<li><strong>recursive</strong> (<code>bool</code>, default <code>False</code>)
+    If <code>True</code>, delete all contents first. If <code>False</code>, raises
+    <a href="../errors/"><code>DirectoryNotEmpty</code></a> when folder is non-empty.</li>
+<li><strong>missing_ok</strong> (<code>bool</code>, default <code>False</code>)
+    If <code>True</code>, silently succeeds when <em>path</em> does not exist.</li>
+</ul>
+<p><strong>Raises:</strong> <a href="../errors/"><code>NotFound</code></a> (when <code>missing_ok=False</code>),
+<a href="../errors/"><code>DirectoryNotEmpty</code></a> (when <code>recursive=False</code>),
+<a href="../errors/"><code>InvalidPath</code></a>.</p>
+<hr />
+<h2 id="listing-and-iteration">Listing and Iteration<a class="headerlink" href="#listing-and-iteration" title="Permanent link">&para;</a></h2>
+<h3 id="list_filespath-recursive-pattern-iteratorfileinfo"><code>list_files(path, *, recursive, pattern) -&gt; Iterator[FileInfo]</code><a class="headerlink" href="#list_filespath-recursive-pattern-iteratorfileinfo" title="Permanent link">&para;</a></h3>
+<p>Yield <a href="../models/"><code>FileInfo</code></a> objects for files under <em>path</em>.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative folder path.</li>
+<li><strong>recursive</strong> (<code>bool</code>, default <code>False</code>)
+    Descend into subfolders.</li>
+<li><strong>pattern</strong> (<code>str | None</code>, default <code>None</code>)
+    Glob pattern to filter filenames (e.g. <code>"*.csv"</code>).</li>
+</ul>
+<p><strong>Returns:</strong> Iterator of <a href="../models/"><code>FileInfo</code></a>.</p>
+<hr />
+<h3 id="list_folderspath-iteratorfolderentry"><code>list_folders(path) -&gt; Iterator[FolderEntry]</code><a class="headerlink" href="#list_folderspath-iteratorfolderentry" title="Permanent link">&para;</a></h3>
+<p>Yield immediate subfolders of <em>path</em>.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative folder path.</li>
+</ul>
+<p><strong>Returns:</strong> Iterator of <a href="#target-types-for-listing-normalization"><code>FolderEntry</code></a>.</p>
+<p><strong>Current behavior:</strong> yields bare folder names (<code>str</code>).
+<strong>Target behavior:</strong> yields <a href="#target-types-for-listing-normalization"><code>FolderEntry</code></a> objects with <code>.name</code> and <code>.path</code>.</p>
+<hr />
+<h3 id="iter_childrenpath-iteratorpathentry"><code>iter_children(path) -&gt; Iterator[PathEntry]</code><a class="headerlink" href="#iter_childrenpath-iteratorpathentry" title="Permanent link">&para;</a></h3>
+<p>Yield all immediate children (files and folders) of <em>path</em> in a single pass.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative folder path.</li>
+</ul>
+<p><strong>Returns:</strong> Iterator of <a href="#target-types-for-listing-normalization"><code>PathEntry</code></a>.</p>
+<p><strong>Current behavior:</strong> yields <a href="../models/"><code>FileInfo</code></a> for files, bare <code>str</code> for folders.
+<strong>Target behavior:</strong> yields <a href="#target-types-for-listing-normalization"><code>PathEntry</code></a> objects -- both <a href="../models/"><code>FileInfo</code></a> and
+<a href="#target-types-for-listing-normalization"><code>FolderEntry</code></a> satisfy <a href="#target-types-for-listing-normalization"><code>PathEntry</code></a>, so callers get <code>.name</code> and <code>.path</code> on
+every entry without <code>isinstance</code> branching.</p>
+<hr />
+<h3 id="globpattern-iteratorfileinfo"><code>glob(pattern) -&gt; Iterator[FileInfo]</code><a class="headerlink" href="#globpattern-iteratorfileinfo" title="Permanent link">&para;</a></h3>
+<p>Yield files matching a glob <em>pattern</em>, using the backend's native glob
+implementation. Requires <code>Capability.GLOB</code>.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>pattern</strong> (<code>str</code>)
+    Glob pattern (e.g. <code>"data/**/*.parquet"</code>).</li>
+</ul>
+<p><strong>Returns:</strong> Iterator of <a href="../models/"><code>FileInfo</code></a>.</p>
+<p><strong>Raises:</strong> <a href="../errors/"><code>CapabilityNotSupported</code></a> (when backend lacks
+<code>GLOB</code>).</p>
+<hr />
+<h3 id="target-types-for-listing-normalization">Target types for listing normalization<a class="headerlink" href="#target-types-for-listing-normalization" title="Permanent link">&para;</a></h3>
+<p>These types capture the v1 target for uniform listing return types
+(see <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/research-store-api-refinement.md">research</a> -- Option D).</p>
+<p><strong><code>PathEntry</code></strong> (Protocol) -- structural type shared by all listing results:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@typing</span><span class="o">.</span><span class="n">runtime_checkable</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">PathEntry</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="nd">@property</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="nd">@property</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemotePath</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<p><strong><code>FolderEntry</code></strong> (frozen dataclass):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">FolderEntry</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">path</span><span class="p">:</span> <span class="n">RemotePath</span>
+</code></pre></div>
+<p><a href="../models/"><code>FileInfo</code></a> already satisfies <code>PathEntry</code> structurally (has
+<code>.name: str</code> and <code>.path: RemotePath</code>).</p>
+<div class="admonition note">
+<p class="admonition-title">Ordering and laziness</p>
+<p><strong>Ordering is backend-defined</strong> and may vary between backends (e.g.
+lexicographic on S3, OS-dependent on local filesystems). Callers must
+not depend on any particular order.</p>
+<p><strong>Results are yielded lazily.</strong> Backends may use pagination internally.
+Memory usage stays bounded for large directories.</p>
+</div>
+<hr />
+<h2 id="file-operations">File Operations<a class="headerlink" href="#file-operations" title="Permanent link">&para;</a></h2>
+<h3 id="movesrc-dst-overwrite-none"><code>move(src, dst, *, overwrite) -&gt; None</code><a class="headerlink" href="#movesrc-dst-overwrite-none" title="Permanent link">&para;</a></h3>
+<p>Move (rename) a file from <em>src</em> to <em>dst</em>. File-only -- to move a folder,
+iterate its contents.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>src</strong> (<code>str</code>)
+    Source file path.</li>
+<li><strong>dst</strong> (<code>str</code>)
+    Destination file path.</li>
+<li><strong>overwrite</strong> (<code>bool</code>, default <code>False</code>)
+    If <code>False</code>, raises <a href="../errors/"><code>AlreadyExists</code></a> when <em>dst</em> exists.</li>
+</ul>
+<p><strong>Raises:</strong> <a href="../errors/"><code>NotFound</code></a>,
+<a href="../errors/"><code>AlreadyExists</code></a> (when <code>overwrite=False</code>),
+<a href="../errors/"><code>InvalidPath</code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Atomicity</p>
+<p>Atomicity is backend-dependent. Local uses <code>os.replace</code> (atomic on same
+filesystem). S3 and Azure use copy-then-delete (not atomic). SFTP
+atomicity depends on the server.</p>
+</div>
+<hr />
+<h3 id="copysrc-dst-overwrite-none"><code>copy(src, dst, *, overwrite) -&gt; None</code><a class="headerlink" href="#copysrc-dst-overwrite-none" title="Permanent link">&para;</a></h3>
+<p>Copy a file from <em>src</em> to <em>dst</em>. File-only -- to copy a folder, iterate its
+contents.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>src</strong> (<code>str</code>)
+    Source file path.</li>
+<li><strong>dst</strong> (<code>str</code>)
+    Destination file path.</li>
+<li><strong>overwrite</strong> (<code>bool</code>, default <code>False</code>)
+    If <code>False</code>, raises <a href="../errors/"><code>AlreadyExists</code></a> when <em>dst</em> exists.</li>
+</ul>
+<p><strong>Raises:</strong> <a href="../errors/"><code>NotFound</code></a>,
+<a href="../errors/"><code>AlreadyExists</code></a> (when <code>overwrite=False</code>),
+<a href="../errors/"><code>InvalidPath</code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Metadata preservation</p>
+<p>Metadata preservation is backend-dependent. S3 copies metadata;
+local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
+</div>
+<hr />
+<h2 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h2>
+<h3 id="existspath-bool"><code>exists(path) -&gt; bool</code><a class="headerlink" href="#existspath-bool" title="Permanent link">&para;</a></h3>
+<p>Return <code>True</code> if <em>path</em> exists (file or folder).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative path.</li>
+</ul>
+<p><strong>Returns:</strong> <code>bool</code></p>
+<hr />
+<h3 id="is_filepath-bool"><code>is_file(path) -&gt; bool</code><a class="headerlink" href="#is_filepath-bool" title="Permanent link">&para;</a></h3>
+<p>Return <code>True</code> if <em>path</em> exists and is a file.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative path.</li>
+</ul>
+<p><strong>Returns:</strong> <code>bool</code></p>
+<hr />
+<h3 id="is_folderpath-bool"><code>is_folder(path) -&gt; bool</code><a class="headerlink" href="#is_folderpath-bool" title="Permanent link">&para;</a></h3>
+<p>Return <code>True</code> if <em>path</em> exists and is a folder.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative path.</li>
+</ul>
+<p><strong>Returns:</strong> <code>bool</code></p>
+<hr />
+<h3 id="get_file_infopath-fileinfo"><code>get_file_info(path) -&gt; FileInfo</code><a class="headerlink" href="#get_file_infopath-fileinfo" title="Permanent link">&para;</a></h3>
+<p>Return a <a href="../models/"><code>FileInfo</code></a> with size, modification time, and content
+type for a single file.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative file path.</li>
+</ul>
+<p><strong>Returns:</strong> <a href="../models/"><code>FileInfo</code></a></p>
+<p><strong>Raises:</strong> <a href="../errors/"><code>NotFound</code></a>, <a href="../errors/"><code>InvalidPath</code></a>.</p>
+<hr />
+<h3 id="get_folder_infopath-folderinfo"><code>get_folder_info(path) -&gt; FolderInfo</code><a class="headerlink" href="#get_folder_infopath-folderinfo" title="Permanent link">&para;</a></h3>
+<p>Return a <a href="../models/"><code>FolderInfo</code></a> with aggregated size and file count for a
+folder.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Store-relative folder path.</li>
+</ul>
+<p><strong>Returns:</strong> <a href="../models/"><code>FolderInfo</code></a></p>
+<p><strong>Raises:</strong> <a href="../errors/"><code>NotFound</code></a>.</p>
+<hr />
+<h2 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h2>
+<h3 id="ping-none"><code>ping() -&gt; None</code><a class="headerlink" href="#ping-none" title="Permanent link">&para;</a></h3>
+<p>Verify that the backend is reachable.</p>
+<p><strong>Raises:</strong> <a href="../errors/"><code>BackendUnavailable</code></a>.</p>
+<hr />
+<h3 id="close-none"><code>close() -&gt; None</code><a class="headerlink" href="#close-none" title="Permanent link">&para;</a></h3>
+<p>Release backend resources. Called automatically when used as a context
+manager.</p>
+<hr />
+<h3 id="childsubpath-store"><code>child(subpath) -&gt; Store</code><a class="headerlink" href="#childsubpath-store" title="Permanent link">&para;</a></h3>
+<p>Return a new <code>Store</code> scoped to <em>subpath</em> under the current root. The child
+shares the same backend instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>subpath</strong> (<code>str</code>)
+    Path segment to append to the current root.</li>
+</ul>
+<p><strong>Returns:</strong> <a href="../store/"><code>Store</code></a></p>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;data/2024&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">data</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>  <span class="c1"># lists files under &lt;root&gt;/data/2024/</span>
+</code></pre></div>
+<hr />
+<h2 id="interop-backend-specific">Interop (Backend-Specific)<a class="headerlink" href="#interop-backend-specific" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Backend-specific methods</p>
+<p>Methods in this section expose backend internals. Using them ties your
+code to a specific backend. For portable alternatives, use the methods
+above.</p>
+</div>
+<h3 id="unwraptype_hint-t"><code>unwrap(type_hint) -&gt; T</code><a class="headerlink" href="#unwraptype_hint-t" title="Permanent link">&para;</a></h3>
+<p>Return the backend's native client object, cast to <em>type_hint</em>.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>type_hint</strong> (<code>type[T]</code>)
+    The expected type of the native client (e.g. <code>pyarrow.fs.FileSystem</code>).</li>
+</ul>
+<p><strong>Returns:</strong> <code>T</code></p>
+<p><strong>Raises:</strong> <a href="../errors/"><code>CapabilityNotSupported</code></a> (when backend cannot
+provide the requested type).</p>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">arrow_fs</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">FileSystem</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h3 id="native_pathkey-str"><code>native_path(key) -&gt; str</code><a class="headerlink" href="#native_pathkey-str" title="Permanent link">&para;</a></h3>
+<p>Convert a store-relative <em>key</em> to the backend's native path representation
+(e.g. S3 object key, local filesystem path). Inverse of <code>to_key()</code>.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>key</strong> (<code>str</code>)
+    Store-relative path.</li>
+</ul>
+<p><strong>Returns:</strong> <code>str</code></p>
+<hr />
+<h3 id="to_keypath-str"><code>to_key(path) -&gt; str</code><a class="headerlink" href="#to_keypath-str" title="Permanent link">&para;</a></h3>
+<p>Convert a backend-native <em>path</em> to a store-relative key. Inverse of
+<code>native_path()</code>.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>path</strong> (<code>str</code>)
+    Backend-native path string.</li>
+</ul>
+<p><strong>Returns:</strong> <code>str</code></p>
+<hr />
+<h3 id="supportscapability-bool"><code>supports(capability) -&gt; bool</code><a class="headerlink" href="#supportscapability-bool" title="Permanent link">&para;</a></h3>
+<p>Check whether the backend supports a given <a href="../capabilities/"><code>Capability</code></a>.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>capability</strong> (<a href="../capabilities/"><code>Capability</code></a>)
+    A <a href="../capabilities/"><code>Capability</code></a> enum member.</li>
+</ul>
+<p><strong>Returns:</strong> <code>bool</code></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>supports()</code> itself is portable -- it works on all backends. Only the
+<em>capability-gated methods</em> it guards are backend-specific.</p>
+</div>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span><span class="p">):</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;**/*.csv&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="backend-behavior-matrix">Backend Behavior Matrix<a class="headerlink" href="#backend-behavior-matrix" title="Permanent link">&para;</a></h2>
+<p>How key operations behave across backends. Verify against actual code before
+relying on these in production.</p>
+<table>
+<thead>
+<tr>
+<th>Behavior</th>
+<th>Local</th>
+<th>S3</th>
+<th>S3-PyArrow</th>
+<th>SFTP</th>
+<th>Azure</th>
+<th>Memory</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>move()</code> atomicity</td>
+<td>Atomic (same FS)</td>
+<td>Copy+delete</td>
+<td>Copy+delete</td>
+<td>Server-dependent</td>
+<td>Copy+delete</td>
+<td>Atomic</td>
+</tr>
+<tr>
+<td><code>copy()</code> preserves metadata</td>
+<td>Yes (<code>copy2</code>)</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>write_atomic()</code> mechanism</td>
+<td>temp+rename</td>
+<td>Direct PUT (atomic)</td>
+<td>Direct PUT (atomic)</td>
+<td>temp+rename</td>
+<td>Direct PUT or temp+rename</td>
+<td>Direct (atomic)</td>
+</tr>
+<tr>
+<td>Native <code>glob()</code></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>list_files()</code> ordering</td>
+<td>OS-dependent</td>
+<td>Lexicographic</td>
+<td>Lexicographic</td>
+<td>OS-dependent</td>
+<td>Lexicographic</td>
+<td>Insertion order</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Related types:</strong> <code>WritableContent = BinaryIO | bytes</code>,
+<a href="../models/"><code>FileInfo</code></a>, <a href="../models/"><code>FolderInfo</code></a>,
+<a href="../path/"><code>RemotePath</code></a>, <a href="../capabilities/"><code>Capability</code></a>.</p>
 
 
 
