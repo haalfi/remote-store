@@ -139,6 +139,7 @@ class TestObservedStoreProxy:
             ("on_read", ["a.txt"], lambda o: o.read("a.txt"), "read"),
             ("on_read", ["a.txt"], lambda o: o.read_bytes("a.txt"), "read_bytes"),
             ("on_read", ["a.txt"], lambda o: o.read_text("a.txt"), "read_text"),
+            ("on_write", [], lambda o: o.write_text("wt.txt", "hi"), "write_text"),
             ("on_delete", ["a.txt"], lambda o: o.delete("a.txt"), "delete"),
             ("on_copy", ["a.txt"], lambda o: o.copy("a.txt", "b.txt"), "copy"),
             ("on_move", ["a.txt"], lambda o: o.move("a.txt", "b.txt"), "move"),
@@ -146,7 +147,18 @@ class TestObservedStoreProxy:
             ("on_list", ["a.txt"], lambda o: list(o.list_files("")), "list_files"),
             ("on_list", ["a.txt"], lambda o: list(o.iter_children("")), "iter_children"),
         ],
-        ids=["read", "read_bytes", "read_text", "delete", "copy", "move", "exists", "list_files", "iter_children"],
+        ids=[
+            "read",
+            "read_bytes",
+            "read_text",
+            "write_text",
+            "delete",
+            "copy",
+            "move",
+            "exists",
+            "list_files",
+            "iter_children",
+        ],
     )
     def test_hook_fires_for_operation(
         self,
@@ -201,6 +213,18 @@ class TestObservedStoreProxy:
         assert len(events) == 1
         assert events[0].error is not None
         assert events[0].operation == "read"
+
+    @pytest.mark.spec("WTXT-004")
+    def test_write_text_event_metadata(self) -> None:
+        store = _make_store()
+        events: list[StoreEvent] = []
+        observed = observe(store, on_write=events.append)
+        observed.write_text("wt.txt", "hello", encoding="latin-1", overwrite=True)
+        assert len(events) == 1
+        assert events[0].operation == "write_text"
+        assert events[0].path == "wt.txt"
+        assert events[0].metadata["encoding"] == "latin-1"
+        assert events[0].metadata["overwrite"] is True
 
     @pytest.mark.spec("OBS-003")
     def test_proxy_does_not_modify_results(self) -> None:

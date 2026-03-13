@@ -124,22 +124,9 @@ Not evaluated, not committed to. Pick up when relevant.
   `Annotated[T, Doc("...")]`. Not recommended near-term.
   Research: `sdd/research/research-fastapi-docs.md` P5.
 
-- [ ] **ID-071 — Store API refinement: Phase 1 docstring fixes, `write_text()`, docs gaps**
-  Fix misleading docstrings and document previously-unspecified behavior across
-  Store methods identified by API audit.
+- [~] **ID-071 — Store API refinement: Phase 1 docstring fixes, `write_text()`, docs gaps**
+  Subsumed by **ID-074**. Kept for traceability.
   Research: `sdd/research/research-store-api-refinement.md`.
-  Two categories of work:
-  - **Fix wrong docs**: `write()`/`write_atomic()` str claim, `read_text(errors=...)`
-    reference, README API table descriptions.
-  - **Document unspecified behavior** (establishes new guarantees — requires
-    verification against all backends): ordering/laziness for listing methods,
-    atomicity/metadata for `move()`/`copy()`, backend-specific escape-hatch
-    warnings, thread-safety statement, backend behavior matrix.
-  - **`write_text()` implementation**: design settled by ecosystem precedent;
-    ships alongside docstring fixes.
-  Note: the "document unspecified behavior" items are not just text fixes — they
-  establish API guarantees (ordering, atomicity, thread-safety) that users will
-  rely on.
 
 - [ ] **ID-072 — Store API refinement: Phase 2-3 listing normalization**
   Design decision and implementation for listing normalization (Option D preferred:
@@ -459,6 +446,15 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
   `ruamel.yaml.YAMLError` in config loader spec.
 
 ### Ideas shipped
+
+- [x] **ID-074 — Store API refinement (pre-v1 audit)**
+  Systematic pre-v1 audit of the Store public API. Rewrote all Store docstrings
+  (fixed `write`/`write_atomic` str claim, `read_text` errors reference).
+  Implemented `write_text()` with encoding param and 8 tests. Restructured
+  `store.md` with per-method `:::` directives, admonitions for ordering,
+  atomicity, metadata, and thread-safety. Built backend behavior matrix
+  (verified against backend code). Created hand-written `store-api.md` target
+  API reference page. Updated README API table. Subsumes ID-071 Phase 1.
 
 - [x] **ID-073 — Use uv as hatch installer backend** (v0.16.0)
   Set `installer = "uv"` in `[tool.hatch.envs.default]`. Hatch >=1.12 has

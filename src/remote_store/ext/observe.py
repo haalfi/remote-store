@@ -110,6 +110,7 @@ _OP_HOOK_MAP: dict[str, str] = {
     "read_bytes": "on_read",
     "read_text": "on_read",
     "write": "on_write",
+    "write_text": "on_write",
     "write_atomic": "on_write",
     "open_atomic": "on_write",
     "delete": "on_delete",
@@ -304,6 +305,10 @@ class ObservedStore(Store):
         with self._observe_op("write", path, {"overwrite": overwrite}):
             self._inner.write(path, content, overwrite=overwrite)
 
+    def write_text(self, path: str, text: str, *, encoding: str = "utf-8", overwrite: bool = False) -> None:
+        with self._observe_op("write_text", path, {"encoding": encoding, "overwrite": overwrite}):
+            self._inner.write_text(path, text, encoding=encoding, overwrite=overwrite)
+
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         with self._observe_op("write_atomic", path, {"overwrite": overwrite}):
             self._inner.write_atomic(path, content, overwrite=overwrite)
@@ -394,7 +399,7 @@ def observe(
 
     :param store: The Store to observe.
     :param on_read: Fires after read/read_bytes/read_text.
-    :param on_write: Fires after write/write_atomic/open_atomic.
+    :param on_write: Fires after write/write_text/write_atomic/open_atomic.
     :param on_delete: Fires after delete/delete_folder.
     :param on_copy: Fires after copy.
     :param on_move: Fires after move.

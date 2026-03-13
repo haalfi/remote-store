@@ -408,6 +408,13 @@ class TestWriteInvalidation:
         assert cached.exists("new.txt") is True
         assert cached.stats.misses == 2
 
+    @pytest.mark.spec("WTXT-005")
+    def test_write_text_invalidates(self, cached: CachedStore) -> None:
+        assert cached.read_bytes("a.txt") == b"alpha"
+        cached.write_text("a.txt", "updated", overwrite=True)
+        assert cached.read_text("a.txt") == "updated"
+        assert cached.stats.misses == 2  # both calls are misses
+
     @pytest.mark.spec("CACHE-008")
     def test_write_atomic_invalidates(self, cached: CachedStore) -> None:
         assert cached.read_bytes("a.txt") == b"alpha"
