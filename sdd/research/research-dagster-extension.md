@@ -131,8 +131,6 @@ pattern) for Dagster-config-driven Store construction.
 - `DagsterStoreResource.teardown_after_execution()` → calls `store.close()`
   to prevent connection leaks on connection-based backends (SFTP, S3)
 - `RemoteStoreIOManager` — `ConfigurableIOManagerFactory` wrapping the resource
-- `DagsterStoreResource.teardown_after_execution()` → `store.close()` to
-  prevent connection leaks on SFTP/S3 backends
 - Targets Dagster-first users who don't already have a `Store`
 
 This split ships value to the primary audience (existing remote-store users)

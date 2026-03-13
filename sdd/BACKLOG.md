@@ -104,6 +104,12 @@ Not evaluated, not committed to. Pick up when relevant.
   **Packaging:** `ext/dagster.py` in-tree (consistent with `ext/arrow.py`,
   `ext/otel.py`); `pip install "remote-store[dagster]"`.
 
+  **Maintenance note:** Dagster's API surface has high churn (renamed classes,
+  metadata changes). v1 scope minimises exposure by wrapping only the stable
+  `IOManager` base class. Floor at `dagster>=1.9`, not 1.7.
+
+  Research: `sdd/research/research-dagster-extension.md`.
+
 - [ ] **ID-006 — Progress callbacks for large transfers**
   Add an optional `callback: Callable[[int], None]` parameter to `read()` and
   `write()` reporting bytes transferred. Enables progress bars (e.g. `tqdm`)
@@ -168,12 +174,6 @@ Not evaluated, not committed to. Pick up when relevant.
   Depends on ID-071 completion and owner sign-off on design choice.
   `write_text()` moved to ID-071 (Phase 1). Related: ID-063.
   Research: `sdd/research/research-store-api-refinement.md`.
-
-  **Maintenance note:** Dagster's API surface has high churn (renamed classes,
-  metadata changes). v1 scope minimises exposure by wrapping only the stable
-  `IOManager` base class. Floor at `dagster>=1.9`, not 1.7.
-
-  Research: `sdd/research/research-dagster-extension.md`.
 
 - [ ] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**
   `list_files`, `list_folders`, and `iter_children` in S3Backend and
