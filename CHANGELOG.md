@@ -6,6 +6,27 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **`Store.write_text()` convenience method** (ID-074) -- writes a string to a
+  file with configurable encoding. Wraps `write()` with `encoding` and
+  `overwrite` parameters matching `pathlib.Path.write_text()`. Store-level only
+  (no backend changes). `ext.observe` `on_write` hook, `ext.cache` routes through
+  `write`. Spec `030-write-text.md` (WTXT-001 through WTXT-006).
+
+### Changed
+
+- **Store docstring rewrite** (ID-074) -- rewrote all Store method docstrings for
+  accuracy and consistency. Fixed `write`/`write_atomic` str claim, corrected
+  `read_text` errors reference.
+
+- **`store.md` restructured with per-method `:::` directives** (ID-074) --
+  individual method headings, admonitions for ordering, atomicity, metadata, and
+  thread-safety. Added backend behavior matrix verified against backend source.
+
+- **`store-api.md` target API reference** (ID-074) -- hand-written reference page
+  with full method signatures, usage examples, and backend behavior matrix.
+
 ## [0.16.0] - 2026-03-10
 
 ### Added

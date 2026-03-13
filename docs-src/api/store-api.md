@@ -585,8 +585,8 @@ relying on these in production.
 | Behavior | Local | S3 | S3-PyArrow | SFTP | Azure | Memory |
 |----------|-------|----|------------|------|-------|--------|
 | `move()` atomicity | Atomic (same FS) | Copy+delete | Copy+delete | Server-dependent | Copy+delete | Atomic |
-| `copy()` preserves metadata | No (new mtime) | Yes | Yes | No | Yes | No |
-| `write_atomic()` mechanism | temp+rename | temp+rename | temp+rename | temp+rename | temp+rename | Direct (atomic) |
+| `copy()` preserves metadata | Yes (`copy2`) | Yes | Yes | No | Yes | No |
+| `write_atomic()` mechanism | temp+rename | Direct PUT (atomic) | Direct PUT (atomic) | temp+rename | Direct PUT or temp+rename | Direct (atomic) |
 | Native `glob()` | Yes | Yes | Yes | No | Yes | No |
 | `list_files()` ordering | OS-dependent | Lexicographic | Lexicographic | OS-dependent | Lexicographic | Insertion order |
 

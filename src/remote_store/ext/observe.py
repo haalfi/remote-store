@@ -305,7 +305,7 @@ class ObservedStore(Store):
             self._inner.write(path, content, overwrite=overwrite)
 
     def write_text(self, path: str, text: str, *, encoding: str = "utf-8", overwrite: bool = False) -> None:
-        with self._observe_op("write", path, {"overwrite": overwrite}):
+        with self._observe_op("write_text", path, {"encoding": encoding, "overwrite": overwrite}):
             self._inner.write_text(path, text, encoding=encoding, overwrite=overwrite)
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
