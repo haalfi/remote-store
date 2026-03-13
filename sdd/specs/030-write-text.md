@@ -33,9 +33,8 @@ def write_text(self, path: str, text: str, *, encoding: str = "utf-8", overwrite
 - Writes `text.encode(encoding)` to the file at `path`.
 - `encoding` parameter matches `pathlib.Path.write_text()` semantics.
 - `overwrite` parameter controls whether existing files may be replaced.
-- Raises `NotFound` if the parent folder does not exist (inherited from `write`).
 - Raises `InvalidPath` if `path` is empty or `"."`.
-- Raises `FileExists` if the file exists and `overwrite=False`.
+- Raises `AlreadyExists` if the file exists and `overwrite=False`.
 - Capability-gated on `Capability.WRITE` (inherited from `write`).
 
 ### WTXT-002: No Backend ABC Change

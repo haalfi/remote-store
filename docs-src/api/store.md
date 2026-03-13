@@ -125,8 +125,8 @@
       heading_level: 3
 
 !!! note "Metadata preservation"
-    Metadata preservation is backend-dependent. S3 copies metadata; local
-    and SFTP may not preserve modification time or content type.
+    Metadata preservation is backend-dependent. S3 copies metadata;
+    local preserves metadata (`copy2`); SFTP does not (stream copy).
 
 ---
 
