@@ -146,6 +146,51 @@ Not evaluated, not committed to. Pick up when relevant.
   the API calls for listing operations. Low priority — consistent across
   all S3 listing methods today.
 
+- [ ] **ID-073 — Dagster integration (`ext.dagster`)**
+  Provide a first-class Dagster I/O manager backed by any remote-store `Store`,
+  so Dagster pipelines can read/write assets to Local, S3, SFTP, Azure, or any
+  future backend without writing backend-specific I/O manager code.
+
+  **Background:**
+  Dagster is a widely-used data orchestration platform where I/O managers
+  control how asset outputs are serialised and persisted. Today, users who want
+  cloud or SFTP storage must pick a Dagster-native I/O manager (e.g.
+  `dagster-aws` S3PickleIOManager) that is tightly coupled to one backend.
+  Switching backends requires rewriting pipelines.
+
+  remote-store already solves the backend-portability problem for general
+  Python code. A thin Dagster adapter (`ext/dagster.py`) would expose a
+  `RemoteStoreIOManager` that accepts a `Store` (or a `RegistryConfig`
+  + profile name) and delegates all I/O to it. Because remote-store's API is
+  uniform, the same I/O manager would work across all backends — local dev,
+  S3 staging, SFTP production — purely via config.
+
+  **Proposed shape:**
+  - `RemoteStoreIOManager(store: Store, serialiser: Serialiser = PickleSerialiser())`
+    — pluggable serialisation (pickle, JSON, Parquet via `ext.arrow`).
+  - `DagsterStoreResource` — Dagster `ConfigurableResource` that builds a
+    `Store` from declarative config (wraps `RegistryConfig`).
+  - Optional PyArrow / Parquet serialiser leveraging `ext.arrow` for
+    `DataFrame`-typed assets.
+  - Follows the extension contract (ADR-0008): uses only the public Store API,
+    never owns backend lifecycle.
+
+  **Dependencies:** `dagster>=1.7` (new-style resources + I/O managers);
+  optional `pyarrow>=14.0` for Parquet serialiser.
+
+  **Packaging:** new `dagster` extra in `pyproject.toml`; published as
+  `remote-store[dagster]`.
+
+  **Open questions:**
+  - Scope: single-package (`ext/dagster.py`) or separate `remote-store-dagster`
+    distribution?
+  - Serialisation defaults: pickle is universal but opaque; Parquet is better
+    for DataFrames but requires PyArrow. Decide default + escape hatch.
+  - Dagster version floor: 1.7 introduced `ConfigurableResource`; older
+    versions used `@resource`. Decide minimum supported version.
+  - Testing: Dagster's test helpers (`build_asset_context`) allow unit testing
+    without a running orchestrator; verify this is sufficient for CI.
+
 ---
 
 ## Done
