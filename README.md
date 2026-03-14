@@ -155,10 +155,10 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 | Backend | Extra | Library | Atomic write | Native glob | `move()` atomic |
 |---------|-------|---------|:------------:|:-----------:|:---------------:|
 | Local filesystem | *(built-in)* | stdlib | Yes | Yes | Yes* |
-| Memory (in-process) | *(built-in)* | — | Yes | — | Yes |
+| Memory (in-process) | *(built-in)* | -- | Yes | -- | Yes |
 | Amazon S3 / MinIO | `remote-store[s3]` | `s3fs` | Yes | Yes | No (copy+delete) |
 | S3 (PyArrow) | `remote-store[s3-pyarrow]` | `pyarrow` + `s3fs` | Yes | Yes | No (copy+delete) |
-| SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | — | Yes** |
+| SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | -- | Yes** |
 | Azure Blob / ADLS | `remote-store[azure]` | `azure-storage-file-datalake` | Yes | Yes | HNS: Yes / non-HNS: No |
 
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
