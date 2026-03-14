@@ -29,6 +29,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Changed
 
+- **S3 listing methods no longer call `exists()` before listing** (ID-062) --
+  removes a redundant API round-trip from `list_files`, `list_folders`, and
+  `iter_children` in `S3Backend` and `S3PyArrowBackend`. The existing
+  `FileNotFoundError` handler already covers non-existent paths.
+
 - **`list_folders()` returns `Iterator[FolderEntry]`** (ID-072) -- was
   `Iterator[str]`. Use `.name` for the folder name, `.path` for the full path.
 
