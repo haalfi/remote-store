@@ -90,6 +90,27 @@ class TestQuickstart:
         assert info.size == 13
         store.close()
 
+    @pytest.mark.spec("STORE-008")
+    def test_demo_new_root(self, tmp_path):
+        from examples.quickstart import demo_new_root
+
+        demo_new_root(str(tmp_path / "new-root"))
+
+        from remote_store import Store
+        from remote_store.backends import LocalBackend
+
+        store = Store(
+            LocalBackend(root=str(tmp_path / "new-root")),
+            root_path="project/data",
+        )
+        assert store.exists("report.csv")
+        assert store.read_bytes("report.csv") == b"col1,col2\n1,2\n"
+
+        archive = store.child("2024")
+        assert archive.exists("summary.txt")
+        assert archive.read_bytes("summary.txt") == b"Year-end summary"
+        store.close()
+
 
 # ---------------------------------------------------------------------------
 # File operations

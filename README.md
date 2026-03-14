@@ -292,7 +292,7 @@ Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/ma
 
 | Script | What it shows |
 |--------|---------------|
-| [quickstart.py](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py) | Direct construction and Registry config |
+| [quickstart.py](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py) | Direct construction, Registry config, and Store at a new root |
 | [file_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/file_operations.py) | Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key |
 | [streaming_io.py](https://github.com/haalfi/remote-store/blob/master/examples/streaming_io.py) | Streaming writes and reads with `BytesIO` |
 | [atomic_writes.py](https://github.com/haalfi/remote-store/blob/master/examples/atomic_writes.py) | Atomic writes and overwrite semantics |
