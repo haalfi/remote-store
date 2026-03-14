@@ -14,7 +14,7 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
 | Coverage | >= 95% CI floor (actual in README badge) |
 | Co-work sessions | Spread across ~4 calendar weeks (since Feb 14) |
-| Commits | ~377 |
+| Commits | ~380 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
@@ -464,6 +464,14 @@ After v0.16.0, the project had every feature it needed for beta. What followed w
 **Benchmark numbers without understanding the measurement are dangerous.** Azure comparative benchmarks showed remote-store 107x slower than `adlfs` at listing. Investigation revealed a fsspec caching artifact: `adlfs` caches after the first call, remote-store hits Azurite every iteration. Real overhead: 1.2x vs raw SDK -- FileInfo/RemotePath construction cost. **The 107x would have been damning; the 1.2x is an acceptable design trade-off.**
 
 **"Defensive" code that duplicates library guarantees is just overhead.** Three S3 listing methods had `exists()` guards before every call -- an extra HEAD request each time. But `s3fs.ls()` already raises `FileNotFoundError` for missing prefixes. The guards doubled round-trips for zero benefit. **Know what your dependencies promise before adding safety nets.**
+
+### Phase 27: Listing Normalization and API Consistency (v0.17.0)
+
+The v0.17.0 release completed the API consistency work that Phase 26 identified. The headline change was listing normalization (ID-072): `list_folders()` shifted from returning bare strings to `FolderEntry` objects, and `iter_children()` from `FileInfo | str` to `FileInfo | FolderEntry`. A new `PathEntry` protocol unified all listing return types. `FolderInfo` gained a `.name` property (ID-079) so it also satisfies `PathEntry`. These changes made the listing API uniform -- every method that returns path-bearing objects now returns typed objects with `.name` and `.path`.
+
+Azure got `max_concurrency` support (ID-076), threading a single constructor parameter through all five SDK call sites. Benchmarks showed ~50% write and ~25% read improvement on 100MB payloads. `Store.write_text()` (ID-074) rounded out the convenience API started by `read_text()` in v0.16.0.
+
+On the docs side, the full Sphinx-to-Google docstring migration (ID-080, 367 markers across 25 files) unlocked proper rendering in mkdocstrings. The README got a medium pass (ID-081) streamlining onboarding, and the docs site gained Fira Code, sticky tabs, and property type annotations (ID-064). S3 listing methods dropped their redundant `exists()` guards (ID-062) -- a one-line change per method that halved round-trips.
 
 ## What Worked Well
 

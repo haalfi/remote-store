@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-03-14
+
 ### Added
 
 - **`AzureBackend(max_concurrency=)` parameter** (ID-076) -- controls parallel
