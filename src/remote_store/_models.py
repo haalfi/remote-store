@@ -98,7 +98,12 @@ class FolderInfo:
 
     @property
     def name(self) -> str:
-        """Folder name (final path component)."""
+        """Folder name (final path component).
+
+        Unlike :class:`FileInfo` and :class:`FolderEntry`, which store ``name``
+        as a constructor field, this is a derived property (``self.path.name``)
+        to avoid redundancy and keep ``name`` in sync with ``path``.
+        """
         return self.path.name
 
     def __eq__(self, other: object) -> bool:
