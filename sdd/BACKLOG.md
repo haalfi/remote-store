@@ -173,7 +173,7 @@ preserved to support future design decisions.
 ### Feature work (post-v0.16.0)
 
 - [x] **ID-080 — Migrate docstrings from Sphinx to Google style**
-  Converted 367 Sphinx markers (`:param:`, `:returns:`, `:raises:`) across 31 files
+  Converted 367 Sphinx markers (`:param:`, `:returns:`, `:raises:`) across 25 files
   under `src/remote_store/` to Google-style sections (`Args:`, `Returns:`, `Raises:`).
   Updated `mkdocs.yml` (`docstring_style: google`) and `sdd/DESIGN.md` §4.
   Unlocks inline admonitions, fenced code blocks, and cross-references in docstrings.

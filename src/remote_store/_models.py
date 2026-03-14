@@ -37,7 +37,7 @@ class FileInfo:
 
     Satisfies the ``PathEntry`` protocol.
 
-    Args:
+    Attributes:
         path: Normalized remote path.
         name: File name (final path component).
         size: File size in bytes.
@@ -70,7 +70,7 @@ class FolderEntry:
 
     Satisfies the ``PathEntry`` protocol.
 
-    Args:
+    Attributes:
         path: Normalized remote path.
         name: Folder name (final path component).
     """
@@ -93,7 +93,7 @@ class FolderInfo:
 
     Satisfies the ``PathEntry`` protocol.
 
-    Args:
+    Attributes:
         path: Normalized remote path.
         file_count: Number of files in the folder.
         total_size: Total size of all files in bytes.
