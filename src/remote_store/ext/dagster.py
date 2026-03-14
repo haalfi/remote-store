@@ -108,7 +108,7 @@ class ParquetSerializer:
 
     def __init__(self) -> None:
         try:
-            import pyarrow  # noqa: F401
+            import pyarrow  # type: ignore[import-untyped]  # noqa: F401
         except ModuleNotFoundError as exc:
             raise ModuleNotFoundError(
                 "PyArrow is required for the parquet serializer. "
