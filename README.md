@@ -25,9 +25,6 @@ Those wrappers are usually duplicated across projects, slightly inconsistent,
 and painful to replace later.
 
 `remote-store` replaces them with one simple interface.
-
-> **Write file storage code once. Run it against local files, S3, SFTP, or Azure.**
-
 Where files live is configuration, not application code.
 Under the hood, established Python libraries (`s3fs`, `paramiko`,
 `azure-storage-file-datalake`) still do the work.
