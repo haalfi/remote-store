@@ -5217,7 +5217,7 @@
 
         <p>Batch operations — convenience wrappers for bulk delete, copy, and exists.</p>
 <p>All functions call Store methods one-by-one by default (sequential). Pass
-<code>concurrent=True</code> to use a :class:<code>~concurrent.futures.ThreadPoolExecutor</code>
+<code>concurrent=True</code> to use a <code>ThreadPoolExecutor</code>
 for parallel I/O — cloud backends benefit significantly from this.</p>
 <p>Usage:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.batch</span><span class="w"> </span><span class="kn">import</span> <span class="n">batch_delete</span><span class="p">,</span> <span class="n">batch_copy</span><span class="p">,</span> <span class="n">batch_exists</span>
@@ -5272,10 +5272,10 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
         <p>Outcome of a batch operation.</p>
 
 
-<p><span class="doc-section-title">Parameters:</span></p>
+<p><span class="doc-section-title">Attributes:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-            <b><code>succeeded</code></b>
+          <b><code><span title="remote_store.ext.batch.BatchResult.succeeded">succeeded</span></code></b>
               (<code><span title="tuple">tuple</span>[<span title="str">str</span>, ...]</code>)
           –
           <div class="doc-md-description">
@@ -5283,7 +5283,7 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>failed</code></b>
+          <b><code><span title="remote_store.ext.batch.BatchResult.failed">failed</span></code></b>
               (<code><span title="dict">dict</span>[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="            RemoteStoreError (remote_store._errors.RemoteStoreError)" href="../errors/#remote_store.RemoteStoreError">RemoteStoreError</a>]</code>)
           –
           <div class="doc-md-description">
@@ -5458,7 +5458,7 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
    (remote_store.ext.batch.BatchResult)" href="#remote_store.ext.batch.BatchResult">BatchResult</a></code>
           –
           <div class="doc-md-description">
-            <p>A :class:<code>BatchResult</code> with succeeded/failed paths.</p>
+            <p>A <code>BatchResult</code> with succeeded/failed paths.</p>
           </div>
         </li>
     </ul>
@@ -5467,7 +5467,7 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>ValueError</code>
+              <code><span title="ValueError">ValueError</span></code>
             –
           <div class="doc-md-description">
             <p>If both <code>concurrent</code> and <code>stop_on_error</code> are True.</p>
@@ -5568,7 +5568,7 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
    (remote_store.ext.batch.BatchResult)" href="#remote_store.ext.batch.BatchResult">BatchResult</a></code>
           –
           <div class="doc-md-description">
-            <p>A :class:<code>BatchResult</code> with succeeded/failed source paths.</p>
+            <p>A <code>BatchResult</code> with succeeded/failed source paths.</p>
           </div>
         </li>
     </ul>
@@ -5577,7 +5577,7 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>ValueError</code>
+              <code><span title="ValueError">ValueError</span></code>
             –
           <div class="doc-md-description">
             <p>If both <code>concurrent</code> and <code>stop_on_error</code> are True.</p>
@@ -5604,7 +5604,7 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
     <div class="doc doc-contents ">
 
         <p>Check existence of multiple paths.</p>
-<p>Unlike :func:<code>batch_delete</code> and :func:<code>batch_copy</code>, this function does
+<p>Unlike <code>batch_delete()</code> and <code>batch_copy()</code>, this function does
 <strong>not</strong> catch errors — any exception from <code>store.exists()</code> propagates
 immediately.</p>
 

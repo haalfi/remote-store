@@ -5116,7 +5116,7 @@
     <div class="doc doc-contents first">
 
         <p><a href="https://opentelemetry.io/">OpenTelemetry</a> bridge -- pre-built hooks emitting OTel spans and metrics.</p>
-<p>Provides ready-made <code>around</code> and <code>on_any</code> hooks for :func:<code>observe</code> that
+<p>Provides ready-made <code>around</code> and <code>on_any</code> hooks for <code>observe()</code> that
 emit OpenTelemetry traces and metrics.  Depends only on <code>opentelemetry-api</code>
 (not the SDK); if no SDK is configured at runtime, all OTel calls become
 zero-cost no-ops.</p>
@@ -5165,7 +5165,7 @@ zero-cost no-ops.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Return hook kwargs for :func:<code>~remote_store.ext.observe.observe</code>.</p>
+        <p>Return hook kwargs for <code>observe()</code>.</p>
 <p>The returned dict contains an <code>around</code> context-manager hook (tracing)
 and an <code>on_any</code> callback (metrics).  Unpack it into <code>observe()</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="o">**</span><span class="n">otel_hooks</span><span class="p">())</span>
@@ -5293,7 +5293,7 @@ Ignored when <em>meter</em> is provided.</p>
 )
           –
           <div class="doc-md-description">
-            <p>Explicit tracer instance (see :func:<code>otel_hooks</code>).</p>
+            <p>Explicit tracer instance (see <code>otel_hooks()</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -5303,7 +5303,7 @@ Ignored when <em>meter</em> is provided.</p>
 )
           –
           <div class="doc-md-description">
-            <p>Explicit meter instance (see :func:<code>otel_hooks</code>).</p>
+            <p>Explicit meter instance (see <code>otel_hooks()</code>).</p>
           </div>
         </li>
     </ul>

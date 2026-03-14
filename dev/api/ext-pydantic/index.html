@@ -5140,17 +5140,21 @@
 
     <div class="doc doc-contents ">
 
-        <p>Convert a Pydantic model to a :class:<code>RegistryConfig</code>.</p>
+        <p>Convert a Pydantic model to a <code>RegistryConfig</code>.</p>
 <p>Calls <code>model.model_dump()</code> to produce a plain dict, then delegates to
-:meth:<code>RegistryConfig.from_dict</code>. Secret wrapping, unknown-key warnings,
+<code>RegistryConfig.from_dict()</code>. Secret wrapping, unknown-key warnings,
 and validation all happen in <code>from_dict()</code>.</p>
-<p>.. note:: Pydantic <code>SecretStr</code> fields are <strong>not</strong> auto-unwrapped.
-   <code>model_dump()</code> returns <code>SecretStr</code> objects (not plain strings),
-   which bypass <code>from_dict()</code>'s <code>isinstance(v, str)</code> check and are
-   <strong>not</strong> re-wrapped in :class:<code>Secret</code>. Use plain <code>str</code> for
-   credential values in your model's <code>options</code> dicts — <code>from_dict()</code>
-   handles Secret wrapping at the config→registry boundary.</p>
 
+
+<details class="note" open>
+  <summary>Note</summary>
+  <p>Pydantic <code>SecretStr</code> fields are <strong>not</strong> auto-unwrapped.
+<code>model_dump()</code> returns <code>SecretStr</code> objects (not plain strings),
+which bypass <code>from_dict()</code>'s <code>isinstance(v, str)</code> check and are
+<strong>not</strong> re-wrapped in <code>Secret</code>. Use plain <code>str</code> for
+credential values in your model's <code>options</code> dicts -- <code>from_dict()</code>
+handles Secret wrapping at the config-registry boundary.</p>
+</details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
     <ul>
@@ -5186,7 +5190,7 @@ and validation all happen in <code>from_dict()</code>.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>TypeError</code>
+              <code><span title="TypeError">TypeError</span></code>
             –
           <div class="doc-md-description">
             <p>If the model dump does not conform to the expected schema.</p>

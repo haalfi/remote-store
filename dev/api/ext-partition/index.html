@@ -5194,10 +5194,10 @@ data lake workflows.</p>
         <p>Result of parsing a Hive-style partition path.</p>
 
 
-<p><span class="doc-section-title">Parameters:</span></p>
+<p><span class="doc-section-title">Attributes:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-            <b><code>partitions</code></b>
+          <b><code><span title="remote_store.ext.partition.ParsedPartition.partitions">partitions</span></code></b>
               (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="str">str</span>]</code>)
           –
           <div class="doc-md-description">
@@ -5205,7 +5205,7 @@ data lake workflows.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>filename</code></b>
+          <b><code><span title="remote_store.ext.partition.ParsedPartition.filename">filename</span></code></b>
               (<code><span title="str">str</span></code>)
           –
           <div class="doc-md-description">
@@ -5291,8 +5291,7 @@ Must be non-empty and must not contain <code>/</code>.</p>
               <code><span title="str">str</span></code>
           –
           <div class="doc-md-description">
-            <p>Forward-slash-joined path like
-<code>"year=2026/month=03/data.parquet"</code>.</p>
+            <p>Forward-slash-joined path like <code>"year=2026/month=03/data.parquet"</code>.</p>
           </div>
         </li>
     </ul>
@@ -5301,7 +5300,7 @@ Must be non-empty and must not contain <code>/</code>.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>ValueError</code>
+              <code><span title="ValueError">ValueError</span></code>
             –
           <div class="doc-md-description">
             <p>If <em>filename</em> is empty or contains <code>/</code>, or if
@@ -5360,8 +5359,7 @@ segments) become part of the filename.</p>
    (remote_store.ext.partition.ParsedPartition)" href="#remote_store.ext.partition.ParsedPartition">ParsedPartition</a></code>
           –
           <div class="doc-md-description">
-            <p>A :class:<code>ParsedPartition</code> with extracted partitions and
-filename.</p>
+            <p>A <code>ParsedPartition</code> with extracted partitions and filename.</p>
           </div>
         </li>
     </ul>
@@ -5370,7 +5368,7 @@ filename.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>ValueError</code>
+              <code><span title="ValueError">ValueError</span></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty.</p>

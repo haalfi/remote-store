@@ -5975,16 +5975,16 @@ protocol (<code>with Store(...) as s:</code>) which calls <code>close()</code> o
           –
           <div class="doc-md-description">
             <p>Prefix prepended to every path.
-    <code>""</code> means the backend root.</p>
-<p><code>Store</code> is immutable after construction and can be shared across
+<code>""</code> means the backend root.</p>
+          </div>
+        </li>
+    </ul>
+        <p><code>Store</code> is immutable after construction and can be shared across
 threads.  Backend thread safety depends on the backend implementation.</p>
 <p>The root path does not need to exist before constructing the store.
 <code>write()</code> creates intermediate folders implicitly on all backends,
 so files written under a new <code>root_path</code> will work without any
 explicit folder-creation step.</p>
-          </div>
-        </li>
-    </ul>
 
 
 
@@ -6076,14 +6076,14 @@ Backend thread safety depends on the backend implementation.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>NotFound</code>
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
             <p>If the file does not exist.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty.</p>
@@ -6140,21 +6140,21 @@ Backend thread safety depends on the backend implementation.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>NotFound</code>
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
             <p>If the file does not exist.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty.</p>
-<p>Equivalent to <code>read(path).read()</code>.</p>
           </div>
         </li>
     </ul>
+        <p>Equivalent to <code>read(path).read()</code>.</p>
 
 
     </div>
@@ -6227,29 +6227,29 @@ Backend thread safety depends on the backend implementation.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>NotFound</code>
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
             <p>If the file does not exist.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>UnicodeDecodeError</code>
+              <code><span title="UnicodeDecodeError">UnicodeDecodeError</span></code>
             –
           <div class="doc-md-description">
             <p>If decoding fails with
-    <code>errors="strict"</code>.</p>
-<p>Equivalent to <code>read_bytes(path).decode(encoding, errors)</code>.</p>
+<code>errors="strict"</code>.</p>
           </div>
         </li>
     </ul>
+        <p>Equivalent to <code>read_bytes(path).decode(encoding, errors)</code>.</p>
 
 
     </div>
@@ -6309,7 +6309,7 @@ Backend thread safety depends on the backend implementation.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>AlreadyExists</code>
+              <code><a class="autorefs autorefs-internal" title="            AlreadyExists (remote_store._errors.AlreadyExists)" href="../errors/#remote_store.AlreadyExists">AlreadyExists</a></code>
             –
           <div class="doc-md-description">
             <p>If the file exists and <em>overwrite</em> is
@@ -6317,7 +6317,7 @@ Backend thread safety depends on the backend implementation.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty.</p>
@@ -6391,7 +6391,7 @@ Backend thread safety depends on the backend implementation.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>AlreadyExists</code>
+              <code><a class="autorefs autorefs-internal" title="            AlreadyExists (remote_store._errors.AlreadyExists)" href="../errors/#remote_store.AlreadyExists">AlreadyExists</a></code>
             –
           <div class="doc-md-description">
             <p>If the file exists and <em>overwrite</em> is
@@ -6399,15 +6399,15 @@ Backend thread safety depends on the backend implementation.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty.</p>
-<p>Equivalent to
-<code>write(path, text.encode(encoding), overwrite=overwrite)</code>.</p>
           </div>
         </li>
     </ul>
+        <p>Equivalent to
+<code>write(path, text.encode(encoding), overwrite=overwrite)</code>.</p>
 
 
     </div>
@@ -6467,14 +6467,14 @@ partial state.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>CapabilityNotSupported</code>
+              <code><a class="autorefs autorefs-internal" title="            CapabilityNotSupported (remote_store._errors.CapabilityNotSupported)" href="../errors/#remote_store.CapabilityNotSupported">CapabilityNotSupported</a></code>
             –
           <div class="doc-md-description">
             <p>If backend lacks <code>ATOMIC_WRITE</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>AlreadyExists</code>
+              <code><a class="autorefs autorefs-internal" title="            AlreadyExists (remote_store._errors.AlreadyExists)" href="../errors/#remote_store.AlreadyExists">AlreadyExists</a></code>
             –
           <div class="doc-md-description">
             <p>If the file exists and <em>overwrite</em> is
@@ -6482,7 +6482,7 @@ partial state.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty.</p>
@@ -6557,7 +6557,7 @@ the partial write is discarded.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>CapabilityNotSupported</code>
+              <code><a class="autorefs autorefs-internal" title="            CapabilityNotSupported (remote_store._errors.CapabilityNotSupported)" href="../errors/#remote_store.CapabilityNotSupported">CapabilityNotSupported</a></code>
             –
           <div class="doc-md-description">
             <p>If the backend lacks
@@ -6565,7 +6565,7 @@ the partial write is discarded.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>AlreadyExists</code>
+              <code><a class="autorefs autorefs-internal" title="            AlreadyExists (remote_store._errors.AlreadyExists)" href="../errors/#remote_store.AlreadyExists">AlreadyExists</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> exists and <em>overwrite</em> is
@@ -6573,18 +6573,18 @@ the partial write is discarded.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open_atomic</span><span class="p">(</span><span class="s2">&quot;data/output.bin&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+          </div>
+        </li>
+    </ul>
+        <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open_atomic</span><span class="p">(</span><span class="s2">&quot;data/output.bin&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;chunk 1&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;chunk 2&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># file is now visible at data/output.bin</span>
 </code></pre></div>
-          </div>
-        </li>
-    </ul>
 
 
     </div>
@@ -6636,7 +6636,7 @@ does not exist.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>NotFound</code>
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
             <p>If the file is missing and <em>missing_ok</em> is
@@ -6644,7 +6644,7 @@ does not exist.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty.</p>
@@ -6713,7 +6713,7 @@ does not exist.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>NotFound</code>
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
             <p>If the folder is missing and <em>missing_ok</em> is
@@ -6721,7 +6721,7 @@ does not exist.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>DirectoryNotEmpty</code>
+              <code><a class="autorefs autorefs-internal" title="            DirectoryNotEmpty (remote_store._errors.DirectoryNotEmpty)" href="../errors/#remote_store.DirectoryNotEmpty">DirectoryNotEmpty</a></code>
             –
           <div class="doc-md-description">
             <p>If the folder is non-empty and
@@ -6729,7 +6729,7 @@ does not exist.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty (cannot delete the store
@@ -6858,8 +6858,7 @@ root).</p>
    (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a>]</code>
           –
           <div class="doc-md-description">
-            <p>Iterator of <code>FolderEntry</code> with <code>.name</code> and
-<code>.path</code> (store-relative).</p>
+            <p>Iterator of <code>FolderEntry</code> with <code>.name</code> and <code>.path</code> (store-relative).</p>
           </div>
         </li>
     </ul>
@@ -6917,8 +6916,7 @@ Both have <code>.name</code> and <code>.path</code> attributes (satisfying the
    (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a>]</code>
           –
           <div class="doc-md-description">
-            <p>Iterator of <code>FileInfo</code> (files) and <code>FolderEntry</code>
-(folders).</p>
+            <p>Iterator of <code>FileInfo</code> (files) and <code>FolderEntry</code> (folders).</p>
           </div>
         </li>
     </ul>
@@ -6978,7 +6976,7 @@ Both have <code>.name</code> and <code>.path</code> attributes (satisfying the
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>CapabilityNotSupported</code>
+              <code><a class="autorefs autorefs-internal" title="            CapabilityNotSupported (remote_store._errors.CapabilityNotSupported)" href="../errors/#remote_store.CapabilityNotSupported">CapabilityNotSupported</a></code>
             –
           <div class="doc-md-description">
             <p>If the backend lacks <code>GLOB</code>.</p>
@@ -7053,14 +7051,14 @@ Memory usage stays bounded for large directories.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>NotFound</code>
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>src</em> does not exist.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>AlreadyExists</code>
+              <code><a class="autorefs autorefs-internal" title="            AlreadyExists (remote_store._errors.AlreadyExists)" href="../errors/#remote_store.AlreadyExists">AlreadyExists</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>dst</em> exists and <em>overwrite</em> is
@@ -7068,7 +7066,7 @@ Memory usage stays bounded for large directories.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>src</em> or <em>dst</em> is empty.</p>
@@ -7139,14 +7137,14 @@ atomicity depends on the server.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>NotFound</code>
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>src</em> does not exist.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>AlreadyExists</code>
+              <code><a class="autorefs autorefs-internal" title="            AlreadyExists (remote_store._errors.AlreadyExists)" href="../errors/#remote_store.AlreadyExists">AlreadyExists</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>dst</em> exists and <em>overwrite</em> is
@@ -7154,7 +7152,7 @@ atomicity depends on the server.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>src</em> or <em>dst</em> is empty.</p>
@@ -7322,14 +7320,14 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>NotFound</code>
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
             <p>If the file does not exist.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty.</p>
@@ -7391,7 +7389,7 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>NotFound</code>
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
             <p>If the folder does not exist.</p>
@@ -7425,14 +7423,14 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>PermissionDenied</code>
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
             <p>If credentials are invalid.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>NotFound</code>
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
             <p>If the bucket, container, or root path does not
@@ -7440,7 +7438,7 @@ exist.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code>BackendUnavailable</code>
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
             –
           <div class="doc-md-description">
             <p>If the backend cannot be reached.</p>
@@ -7519,17 +7517,17 @@ exist.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>subpath</em> is empty, contains <code>..</code>
-    segments, or includes null bytes.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;data/2024&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">data</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>  <span class="c1"># lists files under &lt;root&gt;/data/2024/</span>
-</code></pre></div>
+segments, or includes null bytes.</p>
           </div>
         </li>
     </ul>
+        <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;data/2024&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">data</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>  <span class="c1"># lists files under &lt;root&gt;/data/2024/</span>
+</code></pre></div>
 
 
     </div>
@@ -7589,16 +7587,16 @@ above.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>CapabilityNotSupported</code>
+              <code><a class="autorefs autorefs-internal" title="            CapabilityNotSupported (remote_store._errors.CapabilityNotSupported)" href="../errors/#remote_store.CapabilityNotSupported">CapabilityNotSupported</a></code>
             –
           <div class="doc-md-description">
             <p>If the backend cannot provide
-    the requested type.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">arrow_fs</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">FileSystem</span><span class="p">)</span>
-</code></pre></div>
+the requested type.</p>
           </div>
         </li>
     </ul>
+        <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">arrow_fs</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">FileSystem</span><span class="p">)</span>
+</code></pre></div>
 
 
     </div>
@@ -7641,8 +7639,7 @@ above.</p>
               <code><span title="str">str</span></code>
           –
           <div class="doc-md-description">
-            <p>Backend-native path (e.g. S3 object key, local
-filesystem path).</p>
+            <p>Backend-native path (e.g. S3 object key, local filesystem path).</p>
           </div>
         </li>
     </ul>
@@ -7697,7 +7694,7 @@ filesystem path).</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code>InvalidPath</code>
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
             <p>If the path does not belong to this store.</p>
@@ -7746,12 +7743,12 @@ filesystem path).</p>
           –
           <div class="doc-md-description">
             <p><code>True</code> if the backend declares this capability.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span><span class="p">):</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;**/*.csv&quot;</span><span class="p">)</span>
-</code></pre></div>
           </div>
         </li>
     </ul>
+        <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span><span class="p">):</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;**/*.csv&quot;</span><span class="p">)</span>
+</code></pre></div>
 
 
     </div>

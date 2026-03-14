@@ -6757,6 +6757,14 @@
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong>Docstrings migrated from Sphinx to Google style</strong> (ID-080) -- all 367
+  Sphinx-style markers (<code>:param:</code>, <code>:returns:</code>, <code>:raises:</code>) across 25 source
+  files converted to Google-style sections (<code>Args:</code>, <code>Returns:</code>, <code>Raises:</code>).
+  <code>mkdocs.yml</code> updated to <code>docstring_style: google</code>. <code>sdd/DESIGN.md</code> §4
+  updated with the new convention. Unlocks inline admonitions and markdown
+  cross-references inside docstrings.</p>
+</li>
+<li>
 <p><strong>S3 listing methods no longer call <code>exists()</code> before listing</strong> (ID-062) --
   removes a redundant API round-trip from <code>list_files</code>, <code>list_folders</code>, and
   <code>iter_children</code> in <code>S3Backend</code> and <code>S3PyArrowBackend</code>. The existing

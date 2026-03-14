@@ -5193,16 +5193,16 @@ materialization in <code>open_input_file</code>. Default 64 MB.</p>
           –
           <div class="doc-md-description">
             <p>Max in-memory buffer size (bytes) for
-    <code>_StoreSink</code> before spilling to disk. Default 64 MB.</p>
-<p><strong>Thread safety:</strong> The handler itself holds no shared mutable state. PyArrow's
+<code>_StoreSink</code> before spilling to disk. Default 64 MB.</p>
+          </div>
+        </li>
+    </ul>
+        <p><strong>Thread safety:</strong> The handler itself holds no shared mutable state. PyArrow's
 C++ layer may call handler methods from background threads (with the GIL
 acquired). Thread safety therefore depends on the backend: <code>MemoryBackend</code>
 uses a lock (safe), <code>LocalBackend</code> relies on OS file semantics (safe),
 cloud backends use thread-safe HTTP clients (safe). If using a custom backend,
 ensure its methods are safe under concurrent calls.</p>
-          </div>
-        </li>
-    </ul>
 
 
 
@@ -5267,7 +5267,7 @@ ensure its methods are safe under concurrent calls.</p>
 )
           –
           <div class="doc-md-description">
-            <p>See :class:<code>StoreFileSystemHandler</code>.</p>
+            <p>See <code>StoreFileSystemHandler</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -5277,7 +5277,7 @@ ensure its methods are safe under concurrent calls.</p>
 )
           –
           <div class="doc-md-description">
-            <p>See :class:<code>StoreFileSystemHandler</code>.</p>
+            <p>See <code>StoreFileSystemHandler</code>.</p>
           </div>
         </li>
     </ul>

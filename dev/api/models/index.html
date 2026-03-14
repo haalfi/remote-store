@@ -5327,13 +5327,13 @@ over mixed listing results.</p>
 
 
         <p>Immutable snapshot of file metadata.</p>
-<p>Satisfies the :class:<code>PathEntry</code> protocol.</p>
+<p>Satisfies the <code>PathEntry</code> protocol.</p>
 
 
-<p><span class="doc-section-title">Parameters:</span></p>
+<p><span class="doc-section-title">Attributes:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-            <b><code>path</code></b>
+          <b><code><span title="remote_store.FileInfo.path">path</span></code></b>
               (<code><a class="autorefs autorefs-internal" title="            RemotePath (remote_store._path.RemotePath)" href="../path/#remote_store.RemotePath">RemotePath</a></code>)
           –
           <div class="doc-md-description">
@@ -5341,7 +5341,7 @@ over mixed listing results.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>name</code></b>
+          <b><code><span title="remote_store.FileInfo.name">name</span></code></b>
               (<code><span title="str">str</span></code>)
           –
           <div class="doc-md-description">
@@ -5349,7 +5349,7 @@ over mixed listing results.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>size</code></b>
+          <b><code><span title="remote_store.FileInfo.size">size</span></code></b>
               (<code><span title="int">int</span></code>)
           –
           <div class="doc-md-description">
@@ -5357,7 +5357,7 @@ over mixed listing results.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>modified_at</code></b>
+          <b><code><span title="remote_store.FileInfo.modified_at">modified_at</span></code></b>
               (<code><span title="datetime.datetime">datetime</span></code>)
           –
           <div class="doc-md-description">
@@ -5365,30 +5365,24 @@ over mixed listing results.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>checksum</code></b>
-              (<code><span title="str">str</span> | None</code>, default:
-                  <code>None</code>
-)
+          <b><code><span title="remote_store.FileInfo.checksum">checksum</span></code></b>
+              (<code><span title="str">str</span> | None</code>)
           –
           <div class="doc-md-description">
             <p>Optional checksum (e.g. ETag, MD5).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>content_type</code></b>
-              (<code><span title="str">str</span> | None</code>, default:
-                  <code>None</code>
-)
+          <b><code><span title="remote_store.FileInfo.content_type">content_type</span></code></b>
+              (<code><span title="str">str</span> | None</code>)
           –
           <div class="doc-md-description">
             <p>Optional MIME type.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>extra</code></b>
-              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>, default:
-                  <code><span title="dict">dict</span>()</code>
-)
+          <b><code><span title="remote_store.FileInfo.extra">extra</span></code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>)
           –
           <div class="doc-md-description">
             <p>Backend-specific metadata.</p>
@@ -5446,13 +5440,13 @@ over mixed listing results.</p>
 
 
         <p>Immutable folder identity returned by listing operations.</p>
-<p>Satisfies the :class:<code>PathEntry</code> protocol.</p>
+<p>Satisfies the <code>PathEntry</code> protocol.</p>
 
 
-<p><span class="doc-section-title">Parameters:</span></p>
+<p><span class="doc-section-title">Attributes:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-            <b><code>path</code></b>
+          <b><code><span title="remote_store.FolderEntry.path">path</span></code></b>
               (<code><a class="autorefs autorefs-internal" title="            RemotePath (remote_store._path.RemotePath)" href="../path/#remote_store.RemotePath">RemotePath</a></code>)
           –
           <div class="doc-md-description">
@@ -5460,7 +5454,7 @@ over mixed listing results.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>name</code></b>
+          <b><code><span title="remote_store.FolderEntry.name">name</span></code></b>
               (<code><span title="str">str</span></code>)
           –
           <div class="doc-md-description">
@@ -5519,13 +5513,13 @@ over mixed listing results.</p>
 
 
         <p>Aggregated folder metadata.</p>
-<p>Satisfies the :class:<code>PathEntry</code> protocol.</p>
+<p>Satisfies the <code>PathEntry</code> protocol.</p>
 
 
-<p><span class="doc-section-title">Parameters:</span></p>
+<p><span class="doc-section-title">Attributes:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-            <b><code>path</code></b>
+          <b><code><span title="remote_store.FolderInfo.path">path</span></code></b>
               (<code><a class="autorefs autorefs-internal" title="            RemotePath (remote_store._path.RemotePath)" href="../path/#remote_store.RemotePath">RemotePath</a></code>)
           –
           <div class="doc-md-description">
@@ -5533,7 +5527,7 @@ over mixed listing results.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>file_count</code></b>
+          <b><code><span title="remote_store.FolderInfo.file_count">file_count</span></code></b>
               (<code><span title="int">int</span></code>)
           –
           <div class="doc-md-description">
@@ -5541,7 +5535,7 @@ over mixed listing results.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>total_size</code></b>
+          <b><code><span title="remote_store.FolderInfo.total_size">total_size</span></code></b>
               (<code><span title="int">int</span></code>)
           –
           <div class="doc-md-description">
@@ -5549,20 +5543,16 @@ over mixed listing results.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>modified_at</code></b>
-              (<code><span title="datetime.datetime">datetime</span> | None</code>, default:
-                  <code>None</code>
-)
+          <b><code><span title="remote_store.FolderInfo.modified_at">modified_at</span></code></b>
+              (<code><span title="datetime.datetime">datetime</span> | None</code>)
           –
           <div class="doc-md-description">
             <p>Optional last modification time.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>extra</code></b>
-              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>, default:
-                  <code><span title="dict">dict</span>()</code>
-)
+          <b><code><span title="remote_store.FolderInfo.extra">extra</span></code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>)
           –
           <div class="doc-md-description">
             <p>Backend-specific metadata.</p>
@@ -5607,7 +5597,7 @@ over mixed listing results.</p>
     <div class="doc doc-contents ">
 
         <p>Folder name (final path component).</p>
-<p>Unlike :class:<code>FileInfo</code> and :class:<code>FolderEntry</code>, which store <code>name</code>
+<p>Unlike <code>FileInfo</code> and <code>FolderEntry</code>, which store <code>name</code>
 as a constructor field, this is a derived property (<code>self.path.name</code>)
 to avoid redundancy and keep <code>name</code> in sync with <code>path</code>.</p>
 
