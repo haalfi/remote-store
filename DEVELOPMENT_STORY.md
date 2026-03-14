@@ -6,15 +6,15 @@ This document chronicles how `remote-store` was built as a collaboration between
 
 | Metric | Value |
 |--------|-------|
-| Source code | ~8,100 lines (6 backends) |
-| Tests | ~1,710 tests, ~14,900 lines |
-| Specs & docs | 28 specs, 11 ADRs, 4 RFCs |
+| Source code | ~8,500 lines (6 backends) |
+| Tests | ~1,750 tests, ~15,200 lines |
+| Specs & docs | 30 specs, 12 ADRs, 4 RFCs |
 | Examples | 21 core + 4 cloud + 5 notebooks |
 | Extensions | 10 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.glob`, `ext.observe`, `ext.otel`, `ext.partition`, `ext.pydantic`, `ext.transfer`, `ext.yaml`) |
 | Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
 | Coverage | >= 95% CI floor (actual in README badge) |
-| Co-work sessions | Spread across ~3.5 calendar weeks (since Feb 14) |
-| Commits | ~350 |
+| Co-work sessions | Spread across ~4 calendar weeks (since Feb 14) |
+| Commits | ~377 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
@@ -444,6 +444,26 @@ Four PRs (#170--#173) landed in a single day, each small but collectively shapin
 The v0.16.0 release bundled the post-v0.15.0 work into a cohesive minor release: new convenience APIs (`read_text()`, `iter_children()`, `ping()`), the `RetryPolicy` configuration surface, the YAML config loader move to `ext.yaml`, and a documentation quality audit (Audit 003) that fixed 16 findings across guides, docstrings, and examples. The `SFTPUtils` public utility class replaced private imports in user-facing code, and `from_yaml()` moved to the extension layer for consistency with the Pydantic adapter.
 
 The release also shipped colored type annotations in the docs site (mkdocstrings config), uv-based CI installs across all workflows, and cross-platform CI (Windows + macOS). The documentation audit reinforced Principle 17 from the lessons section: audit findings are hypotheses, not prescriptions. Three of the 19 findings were closed as non-defects after investigation.
+
+### Phase 26: The Polish Phase -- What Happens After "Feature Complete" (post-v0.16.0)
+
+After v0.16.0, the project had every feature it needed for beta. What followed was not a cooldown -- it was the densest learning period yet. Twelve PRs in four days exposed problems that only become visible when you stop adding features and start examining what you already have.
+
+**Consistency bugs are invisible to tools.** `list_folders()` had been returning plain strings since v0.1.0 while every other listing method returned typed objects. Tests passed, mypy was happy -- strings cooperate just enough. Only a systematic cross-method API audit (ID-074) surfaced the gap. The fix introduced `FolderEntry` and a `PathEntry` protocol unifying all listing return types. **Each callsite is locally correct; only a cross-method comparison reveals the inconsistency.**
+
+**Research that says "no" is not wasted.** Two research documents produced the explicit decision *not* to build what they investigated. The async API research (ID-013) found it would double codebase/surface/docs with no clear audience benefit. The Dagster extension research (ID-073) concluded v1 should be a thin adapter -- only if someone actually needs it. Both documents live in `sdd/research/`, so when someone asks "why no async?", the answer is a link, not a re-investigation.
+
+**Fast failures that leave a record.** The Claude Code GitHub Action for automated PR review (ID-069) hit 18 sandbox permission denials, took ~10 minutes, and cost ~$2 per trivial PR. Added in one commit, reverted in the next. The revert documents the specific failure modes so nobody repeats the experiment.
+
+**Choose docstring style by what your toolchain renders, not what looks best in source.** Sphinx `:param:` markers, `:class:` cross-references, and `.. note::` directives all rendered as plain text in mkdocstrings. The migration to Google style (ID-080, 367+ markers across 25 files) was driven entirely by rendered output, not preference. Review caught that dataclass docstrings need `Attributes:` not `Args:` -- a distinction only visible in the rendered docs.
+
+**Include-markdown makes every link potentially circular.** The README restructuring (ID-081) replaced the inline extras list with a link to getting-started. But `getting-started.md` includes README content via `include-markdown` -- so the link would point back to itself. **The authoring context (README standalone) and rendering context (README included inside another page) see different link targets.**
+
+**Encoding bugs survive by hiding in unchecked cells.** Em dashes were caught and fixed three times in the same PR -- prose, then table headers, then table N/A cells. Each review round fixed the instances the reviewer checked; the rest survived. Em dashes render fine on Linux CI but produce mojibake on Windows cp1252. **Systematic encoding issues don't announce themselves -- they hide in the specific cells you didn't look at.**
+
+**Benchmark numbers without understanding the measurement are dangerous.** Azure comparative benchmarks showed remote-store 107x slower than `adlfs` at listing. Investigation revealed a fsspec caching artifact: `adlfs` caches after the first call, remote-store hits Azurite every iteration. Real overhead: 1.2x vs raw SDK -- FileInfo/RemotePath construction cost. **The 107x would have been damning; the 1.2x is an acceptable design trade-off.**
+
+**"Defensive" code that duplicates library guarantees is just overhead.** Three S3 listing methods had `exists()` guards before every call -- an extra HEAD request each time. But `s3fs.ls()` already raises `FileNotFoundError` for missing prefixes. The guards doubled round-trips for zero benefit. **Know what your dependencies promise before adding safety nets.**
 
 ## What Worked Well
 
