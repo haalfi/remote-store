@@ -17,9 +17,7 @@
   <a href="https://github.com/haalfi/remote-store/blob/master/LICENSE"><img src="https://img.shields.io/pypi/l/remote-store" alt="License"></a>
 </p>
 
-> **Beta software.** The core API is stable, but minor versions may still
-> contain breaking changes before 1.0. See the [changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
-> for what's new, and [open an issue](https://github.com/haalfi/remote-store/issues) if something breaks.
+> **Beta.** The API is settling, but until 1.0, minor releases may include breaking changes. See the [changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md) for what's new, and [open an issue](https://github.com/haalfi/remote-store/issues) if something breaks.
 
 Most Python projects that deal with files eventually grow storage glue:
 small wrappers around local paths, S3 clients, SFTP connections, and cloud SDKs.
@@ -27,37 +25,11 @@ Those wrappers are usually duplicated across projects, slightly inconsistent,
 and painful to replace later.
 
 `remote-store` replaces them with one simple interface.
-
-> **Write file storage code once. Run it against local files, S3, SFTP, or Azure.**
-
 Where files live is configuration, not application code.
-Under the hood, established Python libraries (`s3fs`, `paramiko`,
-`azure-storage-file-datalake`) still do the work.
+Under the hood, established Python libraries like `s3fs`, `paramiko`,
+and `azure-storage-file-datalake` do the real work.
 
-### Who this is for
-
-- **Platform and internal tooling teams** -- provide one stable storage interface across environments
-- **Data engineering teams** -- pipelines that run against local storage, S3, or SFTP depending on the environment
-- **Teams that include citizen developers** -- analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files
-- **Anyone tired of rewriting storage wrappers**
-
-## What you get
-
-- **One interface, many backends:** local fs, S3, SFTP, Azure, in-memory
-- **Folder-scoped stores:** each Store is rooted at a folder -- compose layouts with multiple stores or narrow scope with `child()`
-- **Swap backends via config:** move between environments without changing code
-- **Streaming by default:** large files just work without blowing up memory
-- **Atomic writes where supported:** safer updates for file-producing workflows
-- **Established libraries underneath:** `s3fs`, `paramiko`, etc. do the real work
-- **Zero runtime dependencies:** backend extras pull in only what they need
-- **Typed and tested:** strict mypy, spec-driven test suite
-- **Optional integrations:** PyArrow filesystem adapter, OpenTelemetry tracing and metrics
-
-### What it is not
-
-- Not a query engine (no SQL, no predicate pushdown)
-- Not a table format (no Delta Lake log, no Iceberg manifests)
-- Not a filesystem reimplementation (delegates to `s3fs`, `paramiko`, `azure-storage-file-datalake`, `pyarrow` -- the libraries you'd pick anyway)
+**Requires Python 3.10+.** The core API is synchronous; see the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for atomicity caveats and race conditions.
 
 ## Installation
 
@@ -71,19 +43,19 @@ Backends that need extra dependencies use extras:
 
 ```bash
 pip install "remote-store[s3]"           # Amazon S3 / MinIO
+pip install "remote-store[s3-pyarrow]"   # S3 via PyArrow (high-throughput)
 pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
 ```
 
-Optional extras for tooling and config formats:
+Optional extras for integrations:
 
 ```bash
-pip install "remote-store[arrow]"        # PyArrow filesystem adapter
-pip install "remote-store[s3-pyarrow]"   # S3 with PyArrow (high-throughput)
-pip install "remote-store[otel]"         # OpenTelemetry tracing and metrics
-pip install "remote-store[toml]"         # TOML config (backport for Python 3.10)
-pip install "remote-store[yaml]"         # YAML config (pyyaml)
-pip install "remote-store[pydantic]"     # Pydantic config (pydantic-settings)
+pip install "remote-store[arrow]"          # PyArrow filesystem adapter
+pip install "remote-store[otel]"           # OpenTelemetry instrumentation
+pip install "remote-store[yaml]"           # YAML config support
+pip install "remote-store[pydantic]"       # Pydantic BaseSettings config
+pip install "remote-store[toml]"           # TOML config on Python < 3.11
 ```
 
 ## Quick Start
@@ -116,219 +88,131 @@ with Registry(config) as registry:
     print(store.read_text("hello.txt"))  # 'Hello, world!'
 ```
 
-Switch to S3 by changing the config. The application code stays the same:
+### Same code, different environment
 
-**Dev config:**
+Switch from local to S3 by changing the config file. The application code stays the same:
+
+**Dev -- local filesystem:**
 
 ```toml
 [backends.main]
 type = "local"
 options = { root = "/tmp/data" }
 
-[stores.data]
+[stores.reports]
 backend = "main"
 root_path = "reports"
 ```
 
-**Production -- just swap the backend:**
+**Production -- S3:**
 
 ```toml
 [backends.main]
 type = "s3"
 options = { bucket = "analytics-data" }
 
-[stores.data]
+[stores.reports]
 backend = "main"
 root_path = "reports"
 ```
 
 ```python
+# Identical in both environments:
 config = RegistryConfig.from_toml("remote-store.toml")
+with Registry(config) as registry:
+    store = registry.get_store("reports")
+    store.write_text("monthly/2026-03.csv", report_csv)
 ```
 
-## Configuration
+Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Credentials are automatically masked in `repr()`/`str()` to prevent leakage in logs.
 
-Configuration is declarative and immutable. Load from TOML, YAML, Pydantic, a dict, or build with Python objects:
+## Who this is for
 
-```python
-from remote_store import RegistryConfig
+- **Platform and internal tooling teams** -- provide one stable storage interface across environments
+- **Data engineering teams** -- pipelines that run against local storage, S3, or SFTP depending on the environment
+- **Teams that include citizen developers** -- analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files
+- **Anyone tired of writing storage wrappers in every project**
 
-# From a TOML file (zero dependencies on Python 3.11+):
-config = RegistryConfig.from_toml("remote-store.toml")
+## What you get
 
-# From pyproject.toml:
-config = RegistryConfig.from_toml("pyproject.toml", table=("tool", "remote-store"))
+- **One interface, many backends:** local filesystem, S3, SFTP, Azure, in-memory
+- **Folder-scoped stores:** each Store is rooted at a folder -- compose layouts with multiple stores or narrow scope with `child()`
+- **Swap backends via config:** move between environments without changing code
+- **Streaming by default:** large files just work without blowing up memory
+- **Atomic writes where supported:** safer updates for file-producing workflows
+- **Established libraries underneath:** `s3fs`, `paramiko`, etc. do the real work
 
-# From YAML (requires pyyaml or ruamel.yaml):
-from remote_store.ext.yaml import from_yaml
-config = from_yaml("remote-store.yaml")
+Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integrations for PyArrow, OpenTelemetry, and more.
 
-# From Pydantic BaseSettings (requires pydantic-settings):
-from remote_store.ext.pydantic import pydantic_to_registry_config
-config = pydantic_to_registry_config(my_settings)
+## What it is not
 
-# From a dict (e.g. loaded from JSON):
-config = RegistryConfig.from_dict({
-    "backends": {
-        "local": {"type": "local", "options": {"root": "/data"}},
-    },
-    "stores": {
-        "uploads": {"backend": "local", "root_path": "uploads"},
-        "reports": {"backend": "local", "root_path": "reports"},
-    },
-})
-```
-
-### Credential hygiene
-
-Credentials passed through `from_dict()` are automatically wrapped in `Secret`, which masks values in `repr()` and `str()` to prevent accidental leakage in logs or tracebacks. Sensitive keys: `key`, `secret`, `password`, `account_key`, `sas_token`, `connection_string`.
-
-```python
-from remote_store import RegistryConfig, Secret
-
-# Auto-wrapped by from_dict():
-config = RegistryConfig.from_dict({
-    "backends": {"s3": {"type": "s3", "options": {
-        "bucket": "my-bucket",
-        "key": "AKIA...",
-        "secret": "wJalr...",
-    }}},
-    "stores": {"data": {"backend": "s3", "root_path": "data"}},
-})
-print(config.backends["s3"].options["secret"])  # → ***
-
-# Or wrap manually:
-secret = Secret("my-secret-key")
-secret.reveal()  # → 'my-secret-key'
-```
-
-## Store API
-
-**Read & write**
-
-|Method                       |Description                 |
-|-----------------------------|----------------------------|
-|`read(path)`                 |Streaming read (`BinaryIO`) |
-|`read_bytes(path)`           |Full content as `bytes`     |
-|`read_text(path, encoding=)` |Full content as `str`       |
-|`write(path, content)`       |Write bytes or binary stream|
-|`write_text(path, text)`     |Write string with encoding  |
-|`write_atomic(path, content)`|Write via temp file + rename|
-|`open_atomic(path)`          |Streaming write via temp + rename|
-
-**Browse & inspect**
-
-|Method                             |Description                     |
-|-----------------------------------|--------------------------------|
-|`list_files(path, pattern=…)`      |Iterate `FileInfo`, optional name filter|
-|`list_folders(path)`               |Iterate `FolderEntry` (name + path)|
-|`iter_children(path)`              |Iterate `FileInfo` and `FolderEntry` in one pass|
-|`glob(pattern)`                    |Native glob (capability-gated)  |
-|`exists(path)`                     |Check if a file or folder exists|
-|`is_file(path)` / `is_folder(path)`|Type checks                     |
-|`get_file_info(path)`              |File metadata (`FileInfo`)      |
-|`get_folder_info(path)`            |Folder metadata (`FolderInfo`)  |
-
-**Manage**
-
-|Method               |Description                                   |
-|---------------------|----------------------------------------------|
-|`delete(path)`       |Delete a file                                 |
-|`delete_folder(path)`|Delete a folder                               |
-|`move(src, dst)`     |Move or rename                                |
-|`copy(src, dst)`     |Copy a file                                   |
-
-**Utility**
-
-|Method               |Description                                   |
-|---------------------|----------------------------------------------|
-|`child(subpath)`     |Return a child store scoped to a subfolder    |
-|`supports(capability)`|Check if the backend supports a capability   |
-|`to_key(path)`       |Convert native/absolute path to store-relative key|
-|`native_path(key)`   |Convert store-relative key to backend-native path |
-|`unwrap(type_hint)`  |Get backend's native handle (e.g., `pyarrow.fs.FileSystem`)|
-|`ping()`             |Verify backend connectivity (health check)    |
-|`close()`            |Close the underlying backend                  |
-
-All write/move/copy methods accept `overwrite=True` to replace existing files.
-
-For full details, see the [API reference](https://docs.remotestore.dev/stable/api/store/).
+- Not a query engine (no SQL, no predicate pushdown)
+- Not a table format (no Delta Lake log, no Iceberg manifests)
+- Not a filesystem reimplementation (delegates to `s3fs`, `paramiko`, `pyarrow`, etc. -- the libraries you'd pick anyway)
 
 ## Supported Backends
 
-|Backend              |Status    |Extra                       |
-|---------------------|----------|----------------------------|
-|Local filesystem     |Built-in  |                            |
-|Memory (in-process)  |Built-in  |                            |
-|Amazon S3 / MinIO    |Built-in  |`remote-store[s3]`          |
-|S3 (PyArrow)         |Built-in  |`remote-store[s3-pyarrow]`  |
-|SFTP / SSH           |Built-in  |`remote-store[sftp]`        |
-|Azure Blob / ADLS    |Built-in  |`remote-store[azure]`       |
+| Backend | Extra | Library | Atomic write | Native glob | `move()` atomic |
+|---------|-------|---------|:------------:|:-----------:|:---------------:|
+| Local filesystem | *(built-in)* | stdlib | Yes | Yes | Yes* |
+| Memory (in-process) | *(built-in)* | -- | Yes | -- | Yes |
+| Amazon S3 / MinIO | `remote-store[s3]` | `s3fs` | Yes | Yes | No (copy+delete) |
+| S3 (PyArrow) | `remote-store[s3-pyarrow]` | `pyarrow` + `s3fs` | Yes | Yes | No (copy+delete) |
+| SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | -- | Yes** |
+| Azure Blob / ADLS | `remote-store[azure]` | `azure-storage-file-datalake` | Yes | Yes | HNS: Yes / non-HNS: No |
 
-Detailed configuration guides for each backend are in [`guides/backends/`](https://docs.remotestore.dev/stable/backends/).
+\* Same-filesystem only; cross-filesystem falls back to copy+delete.
+\** Via `posix_rename` on most OpenSSH servers; falls back to copy+delete.
 
-### Extensions
+All backends support read, write, delete, list, copy, move, and metadata. Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback `ext.glob.glob_files()`. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
 
-All extensions live in `remote_store.ext` and are optional -- import only what you need.
+## Store API
 
-|Extension            |Extra                       |Description                 |
-|---------------------|----------------------------|----------------------------|
-|PyArrow adapter      |`remote-store[arrow]`       |Use any Store as a `pyarrow.fs.FileSystem` for Parquet, datasets, Pandas, Polars, DuckDB ([guide](https://docs.remotestore.dev/stable/pyarrow-adapter/), [example](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py)) |
-|Batch operations     |*(none)*                    |Bulk delete, copy, and exists with error aggregation ([guide](https://docs.remotestore.dev/stable/batch-operations/), [example](https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py)) |
-|Transfer operations  |*(none)*                    |Upload, download, and cross-store transfer with streaming and progress ([guide](https://docs.remotestore.dev/stable/transfer-operations/), [example](https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py)) |
-|Observability hooks  |*(none)*                    |Callback-based instrumentation for logging, metrics, and tracing ([guide](https://docs.remotestore.dev/stable/observe/), [example](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py)) |
-|OpenTelemetry bridge |`remote-store[otel]`        |Pre-built OTel spans and metrics for Store operations ([guide](https://docs.remotestore.dev/stable/observe/), [example](https://github.com/haalfi/remote-store/blob/master/examples/otel_tracing.py)) |
-|Glob helpers         |*(none)*                    |Portable glob fallback for backends without native glob support ([guide](https://docs.remotestore.dev/stable/glob-pattern-matching/), [example](https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py)) |
-|Caching middleware   |*(none)*                    |TTL-based read cache with automatic invalidation on mutations ([guide](https://docs.remotestore.dev/stable/cache/), [API](https://docs.remotestore.dev/stable/api/ext-cache/)) |
-|Partition helpers    |*(none)*                    |Hive-style partition path builder and parser ([API](https://docs.remotestore.dev/stable/api/ext-partition/)) |
-|YAML config loader   |`remote-store[yaml]`        |Load RegistryConfig from YAML files via PyYAML or ruamel.yaml ([API](https://docs.remotestore.dev/stable/api/ext-yaml/)) |
-|Pydantic adapter     |`remote-store[pydantic]`    |Convert Pydantic BaseSettings to RegistryConfig ([API](https://docs.remotestore.dev/stable/api/ext-pydantic/)) |
+The Store provides 27 methods across read/write, browsing, management, and utility. Key highlights:
 
-## Examples
+```python
+store.read_text("path/to/file.txt")             # → str
+store.write_text("path/to/file.txt", content)   # write string
+store.read_bytes("path/to/file.csv")            # → bytes
+store.write("path/to/data.bin", binary_stream)  # streaming write
 
-Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples):
+store.list_files("reports/", pattern="*.csv")   # iterate FileInfo
+store.glob("**/*.parquet")                      # native glob (capability-gated)
+store.exists("path/to/file.txt")                # → bool
 
-**Core** -- run locally, no external services needed:
+store.move("old.txt", "new.txt")                # move / rename
+store.copy("src.txt", "dst.txt")                # copy
+store.delete("path/to/file.txt")                # delete
 
-| Script | What it shows |
-|--------|---------------|
-| [quickstart.py](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py) | Direct construction and Registry config |
-| [file_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/file_operations.py) | Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key |
-| [streaming_io.py](https://github.com/haalfi/remote-store/blob/master/examples/streaming_io.py) | Streaming writes and reads with `BytesIO` |
-| [atomic_writes.py](https://github.com/haalfi/remote-store/blob/master/examples/atomic_writes.py) | Atomic writes and overwrite semantics |
-| [configuration.py](https://github.com/haalfi/remote-store/blob/master/examples/configuration.py) | Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs |
-| [error_handling.py](https://github.com/haalfi/remote-store/blob/master/examples/error_handling.py) | Catching `NotFound`, `AlreadyExists`, etc. |
-| [glob_pattern_matching.py](https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py) | Three-tier glob: name filter, native glob, portable fallback |
-| [memory_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/memory_backend.py) | In-process memory backend for testing and caching |
-| [store_child.py](https://github.com/haalfi/remote-store/blob/master/examples/store_child.py) | Runtime sub-scoping with `Store.child()` |
-| [pyarrow_adapter.py](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py) | PyArrow filesystem adapter: Parquet, datasets |
-| [batch_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py) | Bulk delete, copy, exists with error aggregation |
-| [transfer_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py) | Upload, download, cross-store transfer with progress |
-| [observe_hooks.py](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py) | Callback hooks, around spans, buffered observer |
-| [otel_tracing.py](https://github.com/haalfi/remote-store/blob/master/examples/otel_tracing.py) | OpenTelemetry tracing and metrics bridge |
-| [health_check.py](https://github.com/haalfi/remote-store/blob/master/examples/health_check.py) | Startup gate pattern with `Store.ping()` |
-| [retry_policy.py](https://github.com/haalfi/remote-store/blob/master/examples/retry_policy.py) | Retry policy configuration for transient failures |
-| [caching.py](https://github.com/haalfi/remote-store/blob/master/examples/caching.py) | TTL-based read caching with automatic invalidation |
-| [config_loaders.py](https://github.com/haalfi/remote-store/blob/master/examples/config_loaders.py) | TOML, YAML, and Pydantic config loaders |
-| [capabilities_and_errors.py](https://github.com/haalfi/remote-store/blob/master/examples/capabilities_and_errors.py) | Capability checks, error hierarchy, path round-trip |
-| [path_model.py](https://github.com/haalfi/remote-store/blob/master/examples/path_model.py) | RemotePath normalization, operators, ROOT sentinel |
+store.child("subfolder")                        # scoped child store
+store.supports(Capability.ATOMIC_WRITE)         # runtime capability check
+store.ping()                                    # health check
+```
 
-**Backend** -- require a running service and credentials ([`examples/backends/`](https://github.com/haalfi/remote-store/tree/master/examples/backends)):
+For the full method list, see the [API reference](https://docs.remotestore.dev/stable/api/store/). All write, move, and copy methods accept `overwrite=True` to replace existing files.
 
-| Script | What it shows |
-|--------|---------------|
-| [s3_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/backends/s3_backend.py) | S3 / MinIO: config, two stores, virtual folders |
-| [s3_pyarrow_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/backends/s3_pyarrow_backend.py) | High-throughput S3 via PyArrow C++ + escape hatch |
-| [sftp_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/backends/sftp_backend.py) | SSH/SFTP: config, host key policies, `unwrap()` |
-| [azure_backend.py](https://github.com/haalfi/remote-store/blob/master/examples/backends/azure_backend.py) | Azure Blob / ADLS Gen2: config, auth methods, `unwrap()` |
+## Extensions
 
-Interactive Jupyter notebooks are available in [`examples/notebooks/`](https://github.com/haalfi/remote-store/tree/master/examples/notebooks).
+The core library handles storage operations. Extensions add optional capabilities on top -- e.g. PyArrow integration, observability, caching, or bulk operations. All live in `remote_store.ext`; import only what you need.
 
-### Known Limitations
+| Extension | Extra | What it does |
+|-----------|-------|-------------|
+| PyArrow adapter | `remote-store[arrow]` | Use any Store as a `pyarrow.fs.FileSystem` -- works with Parquet, Pandas, Polars, DuckDB |
+| Batch operations | *(none)* | Bulk delete, copy, and exists with error aggregation |
+| Transfer operations | *(none)* | Upload, download, and cross-store transfer with progress |
+| Observability hooks | *(none)* | Callback-based instrumentation for logging, metrics, and tracing |
+| OpenTelemetry bridge | `remote-store[otel]` | Pre-built OTel spans and metrics for Store operations |
+| Caching middleware | *(none)* | TTL-based read cache with automatic invalidation on mutations |
 
-- **Sync only** -- all operations are synchronous. For async frameworks, wrap calls with `asyncio.to_thread()`.
-- **Glob** -- `list_files(pattern=)` and `ext.glob.glob_files()` work on all backends. Native `Store.glob()` is supported by Local, S3, S3-PyArrow, and Azure backends.
-- **PyArrow adapter** -- Tier 1 native fast-path reads, Tier 2/3 reads, and writes are complete. `native_path()` is implemented for all backends.
+Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/extensions/) for details.
+
+## Learn more
+
+To explore `remote-store` beyond the Quick Start:
+
+- **Examples:** self-contained scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, SFTP, and Azure.
+- **Notebooks:** interactive [Jupyter notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks) that walk through common workflows step by step.
+- **Guides:** topic-focused walkthroughs in the [documentation](https://docs.remotestore.dev/stable/) covering backends, extensions, configuration, and patterns like data lake layouts or health checks.
 
 ## How it compares
 
@@ -336,7 +220,7 @@ There are several excellent Python libraries for file I/O across backends. Here 
 
 | | fsspec | smart_open | cloudpathlib | obstore | **remote-store** |
 |---|---|---|---|---|---|
-| API surface | ~56 methods | `open()` only | pathlib-style | ~10 methods | 26 methods |
+| API surface | ~56 methods | `open()` only | pathlib-style | ~10 methods | 27 methods |
 | Backends | 30+ filesystems | S3, GCS, Az, SFTP | S3, GCS, Azure | S3, GCS, Azure | Local, S3, SFTP, Az, Memory |
 | SFTP | via sshfs | Yes | No | No | Built-in |
 | Streaming I/O | Yes | Yes | No (downloads) | Bytes-oriented | Yes (BinaryIO) |
@@ -348,7 +232,7 @@ There are several excellent Python libraries for file I/O across backends. Here 
 
 *Comparison as of March 2026. Method counts and feature sets may change as these libraries evolve.*
 
-**In short:** `remote-store` is for teams that need more than `open()` (smart_open) but less than a full filesystem abstraction (fsspec), with streaming, SFTP, atomic writes, observability, and immutable config. The closest comparison is cloudpathlib, but `remote-store` adds SFTP, streaming, atomic writes, and observability -- and doesn't use the pathlib metaphor for object stores. Under the hood, `remote-store` delegates to the same libraries you'd pick anyway (`s3fs`/`boto3`, `paramiko`, Azure SDK, PyArrow).
+**In short:** `remote-store` is for teams that need more than `open()` (smart_open) but less than a full filesystem abstraction (fsspec), with streaming, SFTP, atomic writes, observability, and immutable config. Under the hood, it delegates to the same libraries you'd pick anyway (`s3fs`/`boto3`, `paramiko`, Azure SDK, PyArrow).
 
 ## Contributing
 

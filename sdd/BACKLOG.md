@@ -165,6 +165,10 @@ preserved to support future design decisions.
 
 ### Feature work (post-v0.16.0)
 
+- [x] **ID-081 — README medium pass: trim density, add backend behavior matrix**
+  Streamlined onboarding flow: trimmed duplicate explanations, added backend
+  comparison matrix, restored correct extras list, fixed method count (27).
+
 - [x] **ID-064 — Docs site enhancements (colored types, Material features, Fira Code)**
   Applied findings from `sdd/research/research-fastapi-docs.md`.
   P1: `separate_signature`, `signature_crossrefs`, `show_symbol_type_heading`,
