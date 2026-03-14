@@ -5733,7 +5733,7 @@
 <h3 id="mod-007-equality-and-hashing">MOD-007: Equality and Hashing<a class="headerlink" href="#mod-007-equality-and-hashing" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>FileInfo</code>, <code>FolderInfo</code>, and <code>FolderEntry</code> support equality and hashing based on <code>path</code>.</p>
 <h3 id="mod-008-pathentry-protocol">MOD-008: PathEntry Protocol<a class="headerlink" href="#mod-008-pathentry-protocol" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>PathEntry</code> is a <code>runtime_checkable</code> <code>Protocol</code> with two read-only properties: <code>name</code> (<code>str</code>) and <code>path</code> (<code>RemotePath</code>). Both <code>FileInfo</code> and <code>FolderEntry</code> satisfy the protocol structurally, enabling uniform iteration over mixed listing results.</p>
+<p><strong>Invariant:</strong> <code>PathEntry</code> is a <code>runtime_checkable</code> <code>Protocol</code> with two read-only properties: <code>name</code> (<code>str</code>) and <code>path</code> (<code>RemotePath</code>). <code>FileInfo</code>, <code>FolderEntry</code>, and <code>FolderInfo</code> satisfy the protocol structurally, enabling uniform iteration over mixed listing results.</p>
 
 
 

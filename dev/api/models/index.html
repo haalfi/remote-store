@@ -2306,6 +2306,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#remote_store.PathEntry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;PathEntry
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" PathEntry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.PathEntry.name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.PathEntry.path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#remote_store.FileInfo" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2336,16 +2375,22 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.PathEntry" class="md-nav__link">
+    <nav class="md-nav" aria-label=" FolderInfo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.FolderInfo.name" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;PathEntry
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;name
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5047,6 +5092,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#remote_store.PathEntry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;PathEntry
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" PathEntry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.PathEntry.name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.PathEntry.path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#remote_store.FileInfo" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5077,16 +5161,22 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.PathEntry" class="md-nav__link">
+    <nav class="md-nav" aria-label=" FolderInfo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.FolderInfo.name" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;PathEntry
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;name
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5111,7 +5201,110 @@
 
 
 <h1 id="models">Models<a class="headerlink" href="#models" title="Permanent link">&para;</a></h1>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p><a href="#remote_store.FileInfo"><code>FileInfo</code></a>, <a href="#remote_store.FolderEntry"><code>FolderEntry</code></a>,
+and <a href="#remote_store.FolderInfo"><code>FolderInfo</code></a> all satisfy the
+<a href="#remote_store.PathEntry"><code>PathEntry</code></a> protocol, enabling uniform iteration
+over mixed listing results.</p>
+</div>
 
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="remote_store.PathEntry" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">PathEntry</span>
+
+
+<a href="#remote_store.PathEntry" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.Protocol">Protocol</span></code></p>
+
+
+
+        <p>Shared interface for listing results -- every entry has a name and path.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="remote_store.PathEntry.name" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">name</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#remote_store.PathEntry.name" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">name</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Entry name (final path component).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="remote_store.PathEntry.path" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">path</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#remote_store.PathEntry.path" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">path</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Normalized remote path.</p>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-class">
 
@@ -5134,6 +5327,7 @@
 
 
         <p>Immutable snapshot of file metadata.</p>
+<p>Satisfies the :class:<code>PathEntry</code> protocol.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5252,6 +5446,7 @@
 
 
         <p>Immutable folder identity returned by listing operations.</p>
+<p>Satisfies the :class:<code>PathEntry</code> protocol.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5324,6 +5519,7 @@
 
 
         <p>Aggregated folder metadata.</p>
+<p>Satisfies the :class:<code>PathEntry</code> protocol.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5392,53 +5588,32 @@
 
 
 
+<div class="doc doc-object doc-attribute">
 
 
 
+<h3 id="remote_store.FolderInfo.name" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">name</span>
 
 
-  </div>
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#remote_store.FolderInfo.name" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">name</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Folder name (final path component).</p>
+<p>Unlike :class:<code>FileInfo</code> and :class:<code>FolderEntry</code>, which store <code>name</code>
+as a constructor field, this is a derived property (<code>self.path.name</code>)
+to avoid redundancy and keep <code>name</code> in sync with <code>path</code>.</p>
 
     </div>
 
 </div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="remote_store.PathEntry" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">PathEntry</span>
-
-
-<a href="#remote_store.PathEntry" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-    <div class="doc doc-contents first">
-            <p class="doc doc-class-bases">
-              Bases: <code><span title="typing.Protocol">Protocol</span></code></p>
-
-
-
-        <p>Shared interface for listing results -- every entry has a name and path.</p>
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
 
 
 
