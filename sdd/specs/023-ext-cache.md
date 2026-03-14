@@ -141,9 +141,9 @@ class CacheStats:
 | `read_bytes(path)` | `("read_bytes", path)` | `bytes` |
 | `get_file_info(path)` | `("get_file_info", path)` | `FileInfo` |
 | `get_folder_info(path)` | `("get_folder_info", path)` | `FolderInfo` |
-| `iter_children(path)` | `("iter_children", path)` | `tuple[FileInfo \| str, ...]` |
+| `iter_children(path)` | `("iter_children", path)` | `tuple[FileInfo \| FolderEntry, ...]` |
 | `list_files(path, recursive, pattern)` | `("list_files", path, recursive, pattern)` | `tuple[FileInfo, ...]` |
-| `list_folders(path)` | `("list_folders", path)` | `tuple[str, ...]` |
+| `list_folders(path)` | `("list_folders", path)` | `tuple[FolderEntry, ...]` |
 | `glob(pattern)` | `("glob", pattern)` | `tuple[FileInfo, ...]` |
 
 **Postconditions:**

@@ -22,7 +22,7 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderInfo
+from remote_store._models import FileInfo, FolderEntry, FolderInfo, PathEntry
 from remote_store._path import RemotePath
 from remote_store._registry import Registry, register_backend
 from remote_store._store import Store
@@ -52,7 +52,9 @@ __all__ = [
     # Path & Models
     "RemotePath",
     "FileInfo",
+    "FolderEntry",
     "FolderInfo",
+    "PathEntry",
     # Capabilities
     "Capability",
     "CapabilitySet",

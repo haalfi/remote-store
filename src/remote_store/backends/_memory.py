@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, BinaryIO, cast
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound
-from remote_store._models import FileInfo, FolderInfo
+from remote_store._models import FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
@@ -219,23 +219,31 @@ class MemoryBackend(Backend):
             results = self._collect_files(node, prefix, recursive=recursive)
         yield from results
 
-    def list_folders(self, path: str) -> Iterator[str]:
-        segments = self._split_path(path)
-        with self._lock:
-            node = self._traverse(segments)
-            if not isinstance(node, _DirNode):
-                return
-            results = [name for name, child in node.children.items() if isinstance(child, _DirNode)]
-        yield from results
-
-    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
         segments = self._split_path(path)
         with self._lock:
             node = self._traverse(segments)
             if not isinstance(node, _DirNode):
                 return
             prefix = "/".join(segments) if segments else ""
-            results: list[FileInfo | str] = []
+            results = [
+                FolderEntry(
+                    path=RemotePath(f"{prefix}/{name}" if prefix else name),
+                    name=name,
+                )
+                for name, child in node.children.items()
+                if isinstance(child, _DirNode)
+            ]
+        yield from results
+
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
+        segments = self._split_path(path)
+        with self._lock:
+            node = self._traverse(segments)
+            if not isinstance(node, _DirNode):
+                return
+            prefix = "/".join(segments) if segments else ""
+            results: list[FileInfo | FolderEntry] = []
             for name, child in node.children.items():
                 if isinstance(child, _FileEntry):
                     child_path = f"{prefix}/{name}" if prefix else name
@@ -249,7 +257,8 @@ class MemoryBackend(Backend):
                         )
                     )
                 elif isinstance(child, _DirNode):
-                    results.append(name)
+                    child_path = f"{prefix}/{name}" if prefix else name
+                    results.append(FolderEntry(path=RemotePath(child_path), name=name))
         yield from results
 
     def get_file_info(self, path: str) -> FileInfo:

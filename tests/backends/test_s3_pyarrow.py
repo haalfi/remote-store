@@ -547,8 +547,8 @@ class TestS3PyArrowListing:
         s3pa_backend.write("lf/sub1/a.txt", b"a")
         s3pa_backend.write("lf/sub2/b.txt", b"b")
         s3pa_backend.write("lf/root.txt", b"r")
-        folders = set(s3pa_backend.list_folders("lf"))
-        assert folders == {"sub1", "sub2"}
+        folders = list(s3pa_backend.list_folders("lf"))
+        assert {f.name for f in folders} == {"sub1", "sub2"}
 
     def test_list_folders_empty(self, s3pa_backend: Backend) -> None:
         folders = list(s3pa_backend.list_folders("empty"))

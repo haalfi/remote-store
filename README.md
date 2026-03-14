@@ -221,8 +221,8 @@ secret.reveal()  # → 'my-secret-key'
 |Method                             |Description                     |
 |-----------------------------------|--------------------------------|
 |`list_files(path, pattern=…)`      |Iterate `FileInfo`, optional name filter|
-|`list_folders(path)`               |Iterate subfolder names         |
-|`iter_children(path)`              |Iterate files and folders in one pass|
+|`list_folders(path)`               |Iterate `FolderEntry` (name + path)|
+|`iter_children(path)`              |Iterate `FileInfo` and `FolderEntry` in one pass|
 |`glob(pattern)`                    |Native glob (capability-gated)  |
 |`exists(path)`                     |Check if a file or folder exists|
 |`is_file(path)` / `is_folder(path)`|Type checks                     |

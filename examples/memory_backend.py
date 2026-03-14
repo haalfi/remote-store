@@ -23,7 +23,7 @@ def demo(store):
     store.write("reports/q1.csv", b"revenue,100\n")
     store.write("reports/q2.csv", b"revenue,200\n")
     print(f"\nFiles in reports/: {[f.name for f in store.list_files('reports')]}")
-    print(f"Folders: {list(store.list_folders(''))}")
+    print(f"Folders: {[f.name for f in store.list_folders('')]}")
 
     info = store.get_folder_info("reports")
     print(f"Folder info: {info.file_count} files, {info.total_size} bytes")

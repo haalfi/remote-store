@@ -462,8 +462,8 @@ class TestDataLakeMedallion:
         )
 
         # Lake should see all three layers
-        top_folders = set(lake.list_folders(""))
-        assert {"bronze", "silver", "gold"} <= top_folders
+        top_folder_names = {f.name for f in lake.list_folders("")}
+        assert {"bronze", "silver", "gold"} <= top_folder_names
 
     def test_memory_baseline(self, memory_lake: Store) -> None:
         """Baseline: full pipeline on MemoryBackend (always runs)."""

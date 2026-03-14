@@ -90,7 +90,7 @@ if __name__ == "__main__":
         # --- List folders ---
         print("\nFolders in data/:")
         for folder in data.list_folders(""):
-            print(f"  {folder}/")
+            print(f"  {folder.name}/")
 
         # --- Folder info ---
         folder_info = data.get_folder_info("notes")

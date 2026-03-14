@@ -269,9 +269,8 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                         results.append(pafs.FileInfo(dir_path, type=pafs.FileType.Directory))
                 else:
                     # Non-recursive: list immediate subfolders
-                    for name in self._store.list_folders(base_dir):
-                        folder_path = f"{base_dir}/{name}" if base_dir else name
-                        results.append(pafs.FileInfo(folder_path, type=pafs.FileType.Directory))
+                    for entry in self._store.list_folders(base_dir):
+                        results.append(pafs.FileInfo(str(entry.path), type=pafs.FileType.Directory))
 
         except FileNotFoundError:
             if not allow_not_found:
@@ -391,9 +390,8 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                 for fi in list(self._store.list_files(path)):
                     self._store.delete(str(fi.path), missing_ok=True)
                 # Delete subfolders recursively
-                for name in list(self._store.list_folders(path)):
-                    folder_path = f"{path}/{name}"
-                    self._store.delete_folder(folder_path, recursive=True, missing_ok=True)
+                for entry in list(self._store.list_folders(path)):
+                    self._store.delete_folder(str(entry.path), recursive=True, missing_ok=True)
         except FileNotFoundError:
             if not missing_dir_ok:
                 raise

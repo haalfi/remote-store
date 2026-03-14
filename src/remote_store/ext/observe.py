@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from contextlib import AbstractContextManager
 
     from remote_store._capabilities import Capability
-    from remote_store._models import FileInfo, FolderInfo
+    from remote_store._models import FileInfo, FolderEntry, FolderInfo
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -329,7 +329,7 @@ class ObservedStore(Store):
         with self._observe_op("delete_folder", path, {"recursive": recursive, "missing_ok": missing_ok}):
             self._inner.delete_folder(path, recursive=recursive, missing_ok=missing_ok)
 
-    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         # Materialize: see list_files comment.
         with self._observe_op("iter_children", path, {}):
             return iter(list(self._inner.iter_children(path)))
@@ -352,7 +352,7 @@ class ObservedStore(Store):
         with self._observe_op("glob", pattern, {"pattern": pattern}):
             return iter(list(self._inner.glob(pattern)))
 
-    def list_folders(self, path: str) -> Iterator[str]:
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
         # Materialize: see list_files comment.
         with self._observe_op("list_folders", path, {}):
             return iter(list(self._inner.list_folders(path)))
@@ -403,8 +403,8 @@ def observe(
     :param on_delete: Fires after delete/delete_folder.
     :param on_copy: Fires after copy.
     :param on_move: Fires after move.
-    :param on_list: Fires after list_files/list_folders/glob/get_file_info/
-        get_folder_info/exists/is_file/is_folder.
+    :param on_list: Fires after list_files/list_folders/iter_children/glob/
+        get_file_info/get_folder_info/exists/is_file/is_folder.
     :param on_ping: Fires after ping.
     :param on_error: Fires on any operation that raises an exception.
     :param on_any: Fires after every operation (catch-all).

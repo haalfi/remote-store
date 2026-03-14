@@ -34,7 +34,7 @@ Each hook fires **after** the operation completes (success or failure):
 | `on_delete` | `delete`, `delete_folder` |
 | `on_copy` | `copy` |
 | `on_move` | `move` |
-| `on_list` | `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `exists`, `is_file`, `is_folder` |
+| `on_list` | `list_files`, `list_folders`, `iter_children`, `glob`, `get_file_info`, `get_folder_info`, `exists`, `is_file`, `is_folder` |
 | `on_ping` | `ping` |
 | `on_error` | Any operation that raises an exception |
 | `on_any` | Every operation (catch-all) |

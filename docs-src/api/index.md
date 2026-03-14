@@ -33,7 +33,9 @@ Complete reference for all public exports of `remote-store`.
 |-------|-------------|
 | [RemotePath](path.md) | Validated, immutable path value object |
 | [FileInfo](models.md#remote_store.FileInfo) | Metadata for a file (name, size, modified time) |
-| [FolderInfo](models.md#remote_store.FolderInfo) | Metadata for a folder |
+| [FolderEntry](models.md#remote_store.FolderEntry) | Folder identity returned by listing operations |
+| [FolderInfo](models.md#remote_store.FolderInfo) | Aggregated folder metadata (file count, total size) |
+| [PathEntry](models.md#remote_store.PathEntry) | Protocol for uniform listing (name + path) |
 
 ## Capabilities
 

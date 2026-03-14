@@ -29,7 +29,7 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderInfo
+from remote_store._models import FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
 
@@ -432,7 +432,7 @@ class SFTPBackend(Backend):
         except Exception as exc:
             raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
 
-    def list_folders(self, path: str) -> Iterator[str]:
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
         try:
             sftp_path = self._sftp_path(path)
             try:
@@ -441,13 +441,14 @@ class SFTPBackend(Backend):
                 return
             for attr in entries:
                 if stat.S_ISDIR(attr.st_mode):
-                    yield attr.filename
+                    rel = f"{path}/{attr.filename}" if path else attr.filename
+                    yield FolderEntry(path=RemotePath(rel), name=attr.filename)
         except RemoteStoreError:
             raise
         except Exception as exc:
             raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
 
-    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         try:
             sftp_path = self._sftp_path(path)
             try:
@@ -459,7 +460,8 @@ class SFTPBackend(Backend):
                     rel = f"{path}/{attr.filename}" if path else attr.filename
                     yield self._stat_to_fileinfo(rel, attr)
                 elif stat.S_ISDIR(attr.st_mode):
-                    yield attr.filename
+                    rel = f"{path}/{attr.filename}" if path else attr.filename
+                    yield FolderEntry(path=RemotePath(rel), name=attr.filename)
         except RemoteStoreError:
             raise
         except Exception as exc:

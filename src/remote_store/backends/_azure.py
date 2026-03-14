@@ -24,7 +24,7 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderInfo
+from remote_store._models import FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
 
@@ -409,7 +409,7 @@ class AzureBackend(Backend):
                     if not getattr(item, "prefix", None):
                         yield self._props_to_fileinfo(item, item.name)
 
-    def list_folders(self, path: str) -> Iterator[str]:
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
         with self._errors(path):
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
@@ -419,8 +419,9 @@ class AzureBackend(Backend):
                     paths = self._fs.get_paths(path=azure_path or "/", recursive=False)
                     for p in paths:
                         if getattr(p, "is_directory", False):
-                            folder_name = str(p.name).rstrip("/").rsplit("/", 1)[-1]
-                            yield folder_name
+                            rel = str(p.name).rstrip("/")
+                            folder_name = rel.rsplit("/", 1)[-1]
+                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
                 except Exception as exc:
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
@@ -430,10 +431,11 @@ class AzureBackend(Backend):
                 blobs = self._cc.walk_blobs(name_starts_with=prefix)
                 for item in blobs:
                     if getattr(item, "prefix", None):
-                        folder_name = item.prefix.rstrip("/").rsplit("/", 1)[-1]
-                        yield folder_name
+                        rel = self.to_key(item.prefix.rstrip("/"))
+                        folder_name = rel.rsplit("/", 1)[-1]
+                        yield FolderEntry(path=RemotePath(rel), name=folder_name)
 
-    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         with self._errors(path):
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
@@ -443,8 +445,9 @@ class AzureBackend(Backend):
                     paths = self._fs.get_paths(path=azure_path or "/", recursive=False)
                     for p in paths:
                         if getattr(p, "is_directory", False):
-                            folder_name = str(p.name).rstrip("/").rsplit("/", 1)[-1]
-                            yield folder_name
+                            rel = str(p.name).rstrip("/")
+                            folder_name = rel.rsplit("/", 1)[-1]
+                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
                         else:
                             yield self._props_to_fileinfo(p, str(p.name))
                 except Exception as exc:
@@ -456,8 +459,9 @@ class AzureBackend(Backend):
                 blobs = self._cc.walk_blobs(name_starts_with=prefix)
                 for item in blobs:
                     if getattr(item, "prefix", None):
-                        folder_name = item.prefix.rstrip("/").rsplit("/", 1)[-1]
-                        yield folder_name
+                        rel = self.to_key(item.prefix.rstrip("/"))
+                        folder_name = rel.rsplit("/", 1)[-1]
+                        yield FolderEntry(path=RemotePath(rel), name=folder_name)
                     else:
                         yield self._props_to_fileinfo(item, item.name)
 

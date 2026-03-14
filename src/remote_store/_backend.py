@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from contextlib import AbstractContextManager
 
     from remote_store._capabilities import CapabilitySet
-    from remote_store._models import FileInfo, FolderInfo
+    from remote_store._models import FileInfo, FolderEntry, FolderInfo
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -141,11 +141,12 @@ class Backend(abc.ABC):
         """
 
     @abc.abstractmethod
-    def list_folders(self, path: str) -> Iterator[str]:
-        """List immediate subfolder names under ``path``.
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
+        """List immediate subfolders under ``path``.
 
         :param path: Backend-relative folder key, or ``""`` for the root.
-        :returns: An iterator of subfolder name strings.
+        :returns: An iterator of ``FolderEntry`` objects with ``.name``
+            and ``.path``.
         """
 
     @abc.abstractmethod
@@ -188,16 +189,17 @@ class Backend(abc.ABC):
         :raises AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
 
-    def iter_children(self, path: str) -> Iterator[FileInfo | str]:
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         """Yield both files and folders under ``path`` in a single pass.
 
-        Files are yielded as ``FileInfo`` objects, folders as ``str`` names.
-        The default implementation chains ``list_files()`` and
-        ``list_folders()``. Backends that can fetch both in a single I/O
-        call should override this for efficiency.
+        Files are yielded as ``FileInfo`` objects, folders as
+        ``FolderEntry`` objects. The default implementation chains
+        ``list_files()`` and ``list_folders()``. Backends that can fetch
+        both in a single I/O call should override this for efficiency.
 
         :param path: Backend-relative folder key, or ``""`` for the root.
-        :returns: An iterator of ``FileInfo`` (files) and ``str`` (folder names).
+        :returns: An iterator of ``FileInfo`` (files) and ``FolderEntry``
+            (folders).
         """
         yield from self.list_files(path)
         yield from self.list_folders(path)

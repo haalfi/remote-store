@@ -61,7 +61,7 @@
 
 ### STORE-012: Round-Trip Path Invariant
 
-**Invariant:** Paths returned by listing and metadata methods (`list_files`, `get_file_info`, `get_folder_info`) are store-relative — `root_path` is stripped from `FileInfo.path` and `FolderInfo.path`. The returned path is directly usable as input to other Store methods without modification.
+**Invariant:** Paths returned by listing and metadata methods (`list_files`, `list_folders`, `iter_children`, `get_file_info`, `get_folder_info`) are store-relative — `root_path` is stripped from `FileInfo.path`, `FolderEntry.path`, and `FolderInfo.path`. The returned path is directly usable as input to other Store methods without modification.
 **See also:** [010-native-path-resolution.md](010-native-path-resolution.md) (NPR-001, NPR-014 through NPR-016).
 
 ### STORE-013: unwrap()
@@ -115,6 +115,15 @@
 
 **Invariant:** `FolderInfo` optional fields: `modified_at` (`datetime | None`, default `None`), `extra` (`dict[str, object]`, default empty dict).
 
+### MOD-006: FolderEntry Immutability and Fields
+
+**Invariant:** `FolderEntry` is a frozen dataclass — immutable after construction. Required fields: `path` (`RemotePath`), `name` (`str`).
+**Postconditions:** Attribute assignment raises `FrozenInstanceError`.
+
 ### MOD-007: Equality and Hashing
 
-**Invariant:** `FileInfo` and `FolderInfo` support equality and hashing based on `path`.
+**Invariant:** `FileInfo`, `FolderInfo`, and `FolderEntry` support equality and hashing based on `path`.
+
+### MOD-008: PathEntry Protocol
+
+**Invariant:** `PathEntry` is a `runtime_checkable` `Protocol` with two read-only properties: `name` (`str`) and `path` (`RemotePath`). Both `FileInfo` and `FolderEntry` satisfy the protocol structurally, enabling uniform iteration over mixed listing results.

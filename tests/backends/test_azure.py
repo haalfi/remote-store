@@ -613,7 +613,7 @@ class TestAzureHNSPaths:
         mock_path.name = "parent/sub"
         backend._fs_instance.get_paths.return_value = [mock_path]
         folders = list(backend.list_folders("parent"))
-        assert folders == ["sub"]
+        assert [f.name for f in folders] == ["sub"]
 
     def test_get_folder_info_checks_directory_on_hns(self) -> None:
         backend = self._make_hns_backend()
@@ -732,9 +732,9 @@ class TestAzureIntegration:
         azure_backend.write("lf/sub1/a.txt", b"a")
         azure_backend.write("lf/sub2/b.txt", b"b")
         azure_backend.write("lf/root.txt", b"r")
-        folders = set(azure_backend.list_folders("lf"))
-        assert "sub1" in folders
-        assert "sub2" in folders
+        folder_names = {f.name for f in azure_backend.list_folders("lf")}
+        assert "sub1" in folder_names
+        assert "sub2" in folder_names
 
     def test_get_file_info(self, azure_backend: Backend) -> None:
         azure_backend.write("info.txt", b"hello world")
