@@ -6,6 +6,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **`ext.dagster` — Dagster IO Manager adapter** (ID-075 v1) -- wraps any
+  existing `Store` as a Dagster `IOManager` via `remote_store_io_manager()`.
+  Pluggable serialization (pickle, JSON, Parquet). Install with
+  `pip install "remote-store[dagster]"`. Spec `031-ext-dagster.md`
+  (DAG-001 through DAG-011).
+
 ## [0.17.0] - 2026-03-14
 
 ### Added

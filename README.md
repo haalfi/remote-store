@@ -203,6 +203,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Observability hooks | *(none)* | Callback-based instrumentation for logging, metrics, and tracing |
 | OpenTelemetry bridge | `remote-store[otel]` | Pre-built OTel spans and metrics for Store operations |
 | Caching middleware | *(none)* | TTL-based read cache with automatic invalidation on mutations |
+| Dagster IO manager | `remote-store[dagster]` | Use any Store as a Dagster IOManager with pluggable serialization |
 
 Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/extensions/) for details.
 

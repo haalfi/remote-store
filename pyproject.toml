@@ -60,6 +60,7 @@ otel = ["opentelemetry-api>=1.28.0"]
 toml = ["tomli>=1.1.0; python_version < '3.11'"]
 yaml = ["pyyaml>=5.1"]
 pydantic = ["pydantic-settings>=2.0.0"]
+dagster = ["dagster>=1.9"]
 
 bench = [
   "pytest-benchmark>=4.0",
@@ -230,6 +231,14 @@ warn_unused_ignores = false
 
 [[tool.mypy.overrides]]
 module = "remote_store.ext.yaml"
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = "dagster.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "remote_store.ext.dagster"
 warn_unused_ignores = false
 
 [tool.pytest.ini_options]
