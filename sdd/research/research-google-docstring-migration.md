@@ -1,7 +1,7 @@
 # Research: Google-Style Docstring Migration & Zensical Evaluation
 
-**Item IDs:** ID-067 (griffe-typingdoc)
-**Related:** ID-064 (docs enhancements — P3/P4 scope, distinct from this migration)
+**Item IDs:** ID-064 (docs enhancements)
+**Related:** ID-067 (griffe-typingdoc — PEP 727 comparison in §5)
 **Date:** 2026-03-13
 **Context:** Evaluate migrating from Sphinx-style to Google-style docstrings
 for native markdown support in mkdocstrings, and assess Zensical as a
