@@ -208,6 +208,26 @@ class TestAzureConstruction:
         with pytest.raises(ValueError, match="account_name"):
             AzureBackend(container="test")
 
+    @pytest.mark.spec("AZ-033")
+    def test_max_concurrency_default(self) -> None:
+        backend = AzureBackend(container="test", account_name="x")
+        assert backend._max_concurrency == 1
+
+    @pytest.mark.spec("AZ-033")
+    def test_max_concurrency_custom(self) -> None:
+        backend = AzureBackend(container="test", account_name="x", max_concurrency=4)
+        assert backend._max_concurrency == 4
+
+    @pytest.mark.spec("AZ-033")
+    def test_max_concurrency_zero_raises(self) -> None:
+        with pytest.raises(ValueError, match="max_concurrency"):
+            AzureBackend(container="test", account_name="x", max_concurrency=0)
+
+    @pytest.mark.spec("AZ-033")
+    def test_max_concurrency_negative_raises(self) -> None:
+        with pytest.raises(ValueError, match="max_concurrency"):
+            AzureBackend(container="test", account_name="x", max_concurrency=-1)
+
 
 # =============================================================================
 # Path normalization (AZ-011)
@@ -569,13 +589,14 @@ class TestAzureHNSPaths:
         from azure.core.exceptions import ResourceNotFoundError
 
         backend = self._make_hns_backend()
+        backend._max_concurrency = 4
         bc = MagicMock()
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         backend._cc_instance.get_blob_client.return_value = bc
         tmp_fc = MagicMock()
         backend._fs_instance.get_file_client.return_value = tmp_fc
         backend.write_atomic("dir/file.txt", b"content")
-        tmp_fc.upload_data.assert_called_once()
+        tmp_fc.upload_data.assert_called_once_with(b"content", overwrite=True, max_concurrency=4)
         tmp_fc.rename_file.assert_called_once()
 
     def test_delete_folder_uses_directory_client_on_hns(self) -> None:
@@ -623,6 +644,81 @@ class TestAzureHNSPaths:
         info = backend.get_folder_info("my-dir")
         dc.get_directory_properties.assert_called_once()
         assert info.file_count == 0
+
+
+# =============================================================================
+# Max concurrency threading (AZ-033)
+# =============================================================================
+
+
+class TestAzureMaxConcurrency:
+    """AZ-033: max_concurrency kwarg reaches all SDK upload/download call sites."""
+
+    def test_max_concurrency_threaded_to_upload(self) -> None:
+        """AZ-033: max_concurrency kwarg reaches upload_blob."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = AzureBackend(container="test", account_name="x", account_key="fakekey", max_concurrency=4)
+        backend._hns_enabled = False
+        backend._blob_service_instance = MagicMock()
+        backend._cc_instance = MagicMock()
+        bc = MagicMock()
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance.get_blob_client.return_value = bc
+        backend.write("file.txt", b"data")
+        bc.upload_blob.assert_called_once_with(b"data", overwrite=True, max_concurrency=4)
+
+    def test_max_concurrency_threaded_to_download(self) -> None:
+        """AZ-033: max_concurrency kwarg reaches download_blob."""
+        backend = AzureBackend(container="test", account_name="x", account_key="fakekey", max_concurrency=4)
+        backend._hns_enabled = False
+        backend._blob_service_instance = MagicMock()
+        backend._cc_instance = MagicMock()
+        bc = MagicMock()
+        downloader = MagicMock()
+        downloader.chunks.return_value = iter([b"data"])
+        bc.download_blob.return_value = downloader
+        backend._cc_instance.get_blob_client.return_value = bc
+        stream = backend.read("file.txt")
+        bc.download_blob.assert_called_once_with(max_concurrency=4)
+        stream.close()
+
+    def test_max_concurrency_threaded_to_read_bytes(self) -> None:
+        """AZ-033: max_concurrency kwarg reaches download_blob in read_bytes."""
+        backend = AzureBackend(container="test", account_name="x", account_key="fakekey", max_concurrency=8)
+        backend._hns_enabled = False
+        backend._blob_service_instance = MagicMock()
+        backend._cc_instance = MagicMock()
+        bc = MagicMock()
+        downloader = MagicMock()
+        downloader.readall.return_value = b"data"
+        bc.download_blob.return_value = downloader
+        backend._cc_instance.get_blob_client.return_value = bc
+        backend.read_bytes("file.txt")
+        bc.download_blob.assert_called_once_with(max_concurrency=8)
+
+    def test_max_concurrency_threaded_to_open_atomic_hns(self) -> None:
+        """AZ-033: max_concurrency kwarg reaches upload_data in open_atomic HNS path."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = AzureBackend(container="test", account_name="x", account_key="fakekey", max_concurrency=4)
+        backend._hns_enabled = True
+        backend._blob_service_instance = MagicMock()
+        backend._cc_instance = MagicMock()
+        backend._datalake_service_instance = MagicMock()
+        backend._fs_instance = MagicMock()
+        bc = MagicMock()
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance.get_blob_client.return_value = bc
+        tmp_fc = MagicMock()
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+        with backend.open_atomic("dir/file.txt", overwrite=True) as f:
+            f.write(b"content")
+        tmp_fc.upload_data.assert_called_once()
+        call_kwargs = tmp_fc.upload_data.call_args
+        assert call_kwargs[1]["max_concurrency"] == 4
+        assert call_kwargs[1]["overwrite"] is True
+        tmp_fc.rename_file.assert_called_once()
 
 
 # =============================================================================

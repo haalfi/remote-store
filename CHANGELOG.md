@@ -8,6 +8,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`AzureBackend(max_concurrency=)` parameter** (ID-076) -- controls parallel
+  connections for blob uploads and downloads. Default `1` (sequential, matching
+  prior behavior). Set higher for improved throughput on large files.
+
 - **`FolderInfo.name` property** (ID-079) -- derived `@property` returning the
   final path component (`self.path.name`). `FolderInfo` now satisfies the
   `PathEntry` protocol alongside `FileInfo` and `FolderEntry`.
