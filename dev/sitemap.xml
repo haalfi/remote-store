@@ -41,6 +41,10 @@
          <lastmod>2026-03-14</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/dagster/</loc>
+         <lastmod>2026-03-14</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/data-lake-patterns/</loc>
          <lastmod>2026-03-14</lastmod>
     </url>
@@ -130,6 +134,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/ext-cache/</loc>
+         <lastmod>2026-03-14</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/ext-dagster/</loc>
          <lastmod>2026-03-14</lastmod>
     </url>
     <url>
@@ -469,6 +477,10 @@
          <lastmod>2026-03-14</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/specs/031-ext-dagster/</loc>
+         <lastmod>2026-03-14</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/examples/</loc>
          <lastmod>2026-03-14</lastmod>
     </url>
@@ -498,6 +510,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/configuration/</loc>
+         <lastmod>2026-03-14</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/examples/dagster-io-manager/</loc>
          <lastmod>2026-03-14</lastmod>
     </url>
     <url>
