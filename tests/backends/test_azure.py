@@ -697,6 +697,29 @@ class TestAzureMaxConcurrency:
         backend.read_bytes("file.txt")
         bc.download_blob.assert_called_once_with(max_concurrency=8)
 
+    def test_max_concurrency_threaded_to_open_atomic_hns(self) -> None:
+        """AZ-033: max_concurrency kwarg reaches upload_data in open_atomic HNS path."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = AzureBackend(container="test", account_name="x", account_key="fakekey", max_concurrency=4)
+        backend._hns_enabled = True
+        backend._blob_service_instance = MagicMock()
+        backend._cc_instance = MagicMock()
+        backend._datalake_service_instance = MagicMock()
+        backend._fs_instance = MagicMock()
+        bc = MagicMock()
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance.get_blob_client.return_value = bc
+        tmp_fc = MagicMock()
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+        with backend.open_atomic("dir/file.txt", overwrite=True) as f:
+            f.write(b"content")
+        tmp_fc.upload_data.assert_called_once()
+        call_kwargs = tmp_fc.upload_data.call_args
+        assert call_kwargs[1]["max_concurrency"] == 4
+        assert call_kwargs[1]["overwrite"] is True
+        tmp_fc.rename_file.assert_called_once()
+
 
 # =============================================================================
 # Integration tests (require Azurite)
