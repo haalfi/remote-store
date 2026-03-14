@@ -556,9 +556,7 @@ class TestHealthCheck:
 
 
 class TestDagsterIOManager:
-    @pytest.mark.spec("DAG-002")
-    @pytest.mark.spec("DAG-005")
-    @pytest.mark.spec("DAG-003")
+    @pytest.mark.spec("DAG-002,DAG-003,DAG-005")
     def test_demo(self):
         pytest.importorskip("dagster")
 

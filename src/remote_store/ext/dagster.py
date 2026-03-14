@@ -128,9 +128,12 @@ class ParquetSerializer:
         elif hasattr(obj, "to_pandas"):
             # Already an Arrow Table or similar
             table = obj
-        else:
+        elif hasattr(obj, "dtypes"):
             # pandas DataFrame
             table = pa.Table.from_pandas(obj)  # type: ignore[no-untyped-call]
+        else:
+            msg = f"ParquetSerializer expects a DataFrame, got {type(obj).__name__}"
+            raise TypeError(msg)
 
         buf = io.BytesIO()
         pq.write_table(table, buf)  # type: ignore[no-untyped-call]

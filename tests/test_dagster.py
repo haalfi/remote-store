@@ -112,6 +112,14 @@ class TestPathGeneration:
         # Verify the file was written at the expected path
         assert store.exists("foo/bar/2026-01.pkl")
 
+        # Roundtrip through load_input with partitioned context
+        in_ctx = build_input_context(
+            asset_key=AssetKey(["foo", "bar"]),
+            partition_key="2026-01",
+            upstream_output=out_ctx,
+        )
+        assert mgr.load_input(in_ctx) == obj
+
     @pytest.mark.spec("DAG-006")
     def test_multi_segment_asset_key(self, store: Store) -> None:
         """Multi-segment asset key maps to nested path."""
