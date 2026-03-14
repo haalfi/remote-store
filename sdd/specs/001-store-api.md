@@ -126,4 +126,4 @@
 
 ### MOD-008: PathEntry Protocol
 
-**Invariant:** `PathEntry` is a `runtime_checkable` `Protocol` with two read-only properties: `name` (`str`) and `path` (`RemotePath`). Both `FileInfo` and `FolderEntry` satisfy the protocol structurally, enabling uniform iteration over mixed listing results.
+**Invariant:** `PathEntry` is a `runtime_checkable` `Protocol` with two read-only properties: `name` (`str`) and `path` (`RemotePath`). `FileInfo`, `FolderEntry`, and `FolderInfo` satisfy the protocol structurally, enabling uniform iteration over mixed listing results.

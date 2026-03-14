@@ -85,6 +85,16 @@ class TestFolderInfoFields:
         assert fi.modified_at == NOW
         assert fi.extra == {"key": "val"}
 
+    @pytest.mark.spec("MOD-008")
+    def test_name_property(self) -> None:
+        fi = FolderInfo(path=RemotePath("a/b/c"), file_count=0, total_size=0)
+        assert fi.name == "c"
+
+    @pytest.mark.spec("MOD-008")
+    def test_name_property_single_component(self) -> None:
+        fi = FolderInfo(path=RemotePath("data"), file_count=0, total_size=0)
+        assert fi.name == "data"
+
 
 class TestModelEqualityHashing:
     """MOD-007: Equality and hashing based on path."""
@@ -169,12 +179,18 @@ class TestPathEntryProtocol:
         assert isinstance(fe, PathEntry)
 
     @pytest.mark.spec("MOD-008")
+    def test_folderinfo_satisfies_path_entry(self) -> None:
+        fi = FolderInfo(path=RemotePath("a/b"), file_count=0, total_size=0)
+        assert isinstance(fi, PathEntry)
+
+    @pytest.mark.spec("MOD-008")
     def test_path_entry_uniform_iteration(self) -> None:
         entries: list[PathEntry] = [
             FileInfo(path=RemotePath("a.txt"), name="a.txt", size=0, modified_at=NOW),
             FolderEntry(path=RemotePath("sub"), name="sub"),
+            FolderInfo(path=RemotePath("data"), file_count=3, total_size=500),
         ]
         names = [e.name for e in entries]
         paths = [str(e.path) for e in entries]
-        assert names == ["a.txt", "sub"]
-        assert paths == ["a.txt", "sub"]
+        assert names == ["a.txt", "sub", "data"]
+        assert paths == ["a.txt", "sub", "data"]

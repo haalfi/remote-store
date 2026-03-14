@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 class FileInfo:
     """Immutable snapshot of file metadata.
 
+    Satisfies the :class:`PathEntry` protocol.
+
     :param path: Normalized remote path.
     :param name: File name (final path component).
     :param size: File size in bytes.
@@ -57,6 +59,8 @@ class PathEntry(typing.Protocol):
 class FolderEntry:
     """Immutable folder identity returned by listing operations.
 
+    Satisfies the :class:`PathEntry` protocol.
+
     :param path: Normalized remote path.
     :param name: Folder name (final path component).
     """
@@ -77,6 +81,8 @@ class FolderEntry:
 class FolderInfo:
     """Aggregated folder metadata.
 
+    Satisfies the :class:`PathEntry` protocol.
+
     :param path: Normalized remote path.
     :param file_count: Number of files in the folder.
     :param total_size: Total size of all files in bytes.
@@ -89,6 +95,11 @@ class FolderInfo:
     total_size: int
     modified_at: datetime | None = None
     extra: dict[str, object] = dataclasses.field(default_factory=dict)
+
+    @property
+    def name(self) -> str:
+        """Folder name (final path component)."""
+        return self.path.name
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, FolderInfo):
