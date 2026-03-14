@@ -41,16 +41,19 @@ def write(self, path: str, content: BinaryIO | bytes, *, overwrite: bool = False
 
 ### 4. Docstrings
 
-reST-style (`:param:`, `:returns:`, `:raises:`). Short and purpose-focused:
+Google style (`Args:`, `Returns:`, `Raises:`). Short and purpose-focused:
 
 ```python
 def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
     """Write content to a file.
 
-    :param path: Relative path within the store.
-    :param content: Bytes or binary stream to write.
-    :param overwrite: If ``True``, replace existing file.
-    :raises AlreadyExists: If file exists and ``overwrite`` is ``False``.
+    Args:
+        path: Relative path within the store.
+        content: Bytes or binary stream to write.
+        overwrite: If ``True``, replace existing file.
+
+    Raises:
+        AlreadyExists: If file exists and ``overwrite`` is ``False``.
 
     ```python
     store.write("data/report.csv", b"hello", overwrite=True)

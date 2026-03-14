@@ -516,17 +516,20 @@ def cached_store(
 ) -> CachedStore:
     """Wrap a Store with read-through caching.
 
-    :param store: The Store to wrap.
-    :param ttl: Time-to-live in seconds for cache entries (default 300).
-    :param max_content_size: Maximum byte length for ``read_bytes`` caching.
-        Files larger than this are returned without caching. ``None`` means
-        unlimited.
-    :param max_entries: Maximum number of cache entries. When exceeded, the
-        least-recently-used entry is evicted. ``None`` means no limit.
-        Ignored when *cache_backend* is provided.
-    :param cache_backend: Optional custom cache. When ``None``, a
-        :class:`MemoryCache` is created.
-    :returns: A :class:`CachedStore` proxy.
+    Args:
+        store: The Store to wrap.
+        ttl: Time-to-live in seconds for cache entries (default 300).
+        max_content_size: Maximum byte length for ``read_bytes`` caching.
+            Files larger than this are returned without caching. ``None`` means
+            unlimited.
+        max_entries: Maximum number of cache entries. When exceeded, the
+            least-recently-used entry is evicted. ``None`` means no limit.
+            Ignored when *cache_backend* is provided.
+        cache_backend: Optional custom cache. When ``None``, a
+            ``MemoryCache`` is created.
+
+    Returns:
+        A ``CachedStore`` proxy.
     """
     if ttl <= 0:
         msg = f"ttl must be positive, got {ttl}"

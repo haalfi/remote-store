@@ -30,7 +30,8 @@ log = logging.getLogger(__name__)
 class LocalBackend(Backend):
     """Local filesystem backend using only the Python standard library.
 
-    :param root: Absolute path to the root directory on the local filesystem.
+    Args:
+        root: Absolute path to the root directory on the local filesystem.
     """
 
     def __init__(self, root: str) -> None:
@@ -317,7 +318,8 @@ class LocalBackend(Backend):
         ``relative_to(self._root)`` then rejects any path that escapes the
         root — including symlinks pointing outside it.
 
-        :raises InvalidPath: If the resolved path escapes the root.
+        Raises:
+            InvalidPath: If the resolved path escapes the root.
         """
         resolved = (self._root / path).resolve()
         try:

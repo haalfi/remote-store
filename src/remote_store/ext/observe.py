@@ -68,8 +68,11 @@ def set_correlation_id(cid: str | None) -> Token[str | None]:
     _correlation_id.reset(token)
     ```
 
-    :param cid: Correlation ID string, or ``None`` to clear.
-    :returns: A ``Token`` for resetting the value.
+    Args:
+        cid: Correlation ID string, or ``None`` to clear.
+
+    Returns:
+        A ``Token`` for resetting the value.
     """
     return _correlation_id.set(cid)
 
@@ -397,20 +400,23 @@ def observe(
 ) -> ObservedStore:
     """Wrap a Store with observation hooks.
 
-    :param store: The Store to observe.
-    :param on_read: Fires after read/read_bytes/read_text.
-    :param on_write: Fires after write/write_text/write_atomic/open_atomic.
-    :param on_delete: Fires after delete/delete_folder.
-    :param on_copy: Fires after copy.
-    :param on_move: Fires after move.
-    :param on_list: Fires after list_files/list_folders/iter_children/glob/
-        get_file_info/get_folder_info/exists/is_file/is_folder.
-    :param on_ping: Fires after ping.
-    :param on_error: Fires on any operation that raises an exception.
-    :param on_any: Fires after every operation (catch-all).
-    :param around: Context-manager factory ``(op, path, backend) -> CM``
-        wrapping the entire operation.
-    :returns: An ``ObservedStore`` proxy.
+    Args:
+        store: The Store to observe.
+        on_read: Fires after read/read_bytes/read_text.
+        on_write: Fires after write/write_text/write_atomic/open_atomic.
+        on_delete: Fires after delete/delete_folder.
+        on_copy: Fires after copy.
+        on_move: Fires after move.
+        on_list: Fires after list_files/list_folders/iter_children/glob/
+            get_file_info/get_folder_info/exists/is_file/is_folder.
+        on_ping: Fires after ping.
+        on_error: Fires on any operation that raises an exception.
+        on_any: Fires after every operation (catch-all).
+        around: Context-manager factory ``(op, path, backend) -> CM``
+            wrapping the entire operation.
+
+    Returns:
+        An ``ObservedStore`` proxy.
     """
     hooks = {
         "on_read": on_read,
@@ -434,9 +440,10 @@ def observe(
 class BufferedObserver:
     """Collects events and flushes them in batches to a handler.
 
-    :param handler: Called with a list of events on each flush.
-    :param max_queue: Maximum queue size. Events are dropped when full.
-    :param flush_interval: Seconds between automatic flushes.
+    Args:
+        handler: Called with a list of events on each flush.
+        max_queue: Maximum queue size. Events are dropped when full.
+        flush_interval: Seconds between automatic flushes.
     """
 
     def __init__(

@@ -66,13 +66,18 @@ def upload(
     Opens the local file in binary read mode and streams it to the Store
     via ``store.write()``. The full file is never loaded into memory.
 
-    :param store: The Store to write to.
-    :param local_path: Path to the local file.
-    :param remote_path: Destination key in the Store.
-    :param overwrite: Forwarded to ``store.write()``.
-    :param on_progress: Called per read with the byte count (not cumulative).
-    :returns: None
-    :raises FileNotFoundError: If *local_path* does not exist.
+    Args:
+        store: The Store to write to.
+        local_path: Path to the local file.
+        remote_path: Destination key in the Store.
+        overwrite: Forwarded to ``store.write()``.
+        on_progress: Called per read with the byte count (not cumulative).
+
+    Returns:
+        None
+
+    Raises:
+        FileNotFoundError: If *local_path* does not exist.
     """
     path = os.fspath(local_path)
     log.debug("upload %r -> %r", path, remote_path, extra={"op": "upload", "path": remote_path})
@@ -96,15 +101,20 @@ def download(
     Reads the remote file in 1 MiB chunks and writes each chunk to the
     local file. The full file is never loaded into memory.
 
-    :param store: The Store to read from.
-    :param remote_path: Key to read from the Store.
-    :param local_path: Destination path on the local filesystem.
-    :param overwrite: If ``False`` (default) and *local_path* exists,
-        raises ``FileExistsError``.
-    :param on_progress: Called per chunk written with the byte count
-        (not cumulative).
-    :returns: None
-    :raises FileExistsError: If *local_path* exists and *overwrite* is False.
+    Args:
+        store: The Store to read from.
+        remote_path: Key to read from the Store.
+        local_path: Destination path on the local filesystem.
+        overwrite: If ``False`` (default) and *local_path* exists,
+            raises ``FileExistsError``.
+        on_progress: Called per chunk written with the byte count
+            (not cumulative).
+
+    Returns:
+        None
+
+    Raises:
+        FileExistsError: If *local_path* exists and *overwrite* is False.
     """
     dest = os.fspath(local_path)
     log.debug("download %r -> %r", remote_path, dest, extra={"op": "download", "path": remote_path})
@@ -139,13 +149,16 @@ def transfer(
     Reads the source file and streams it to the destination via
     ``dst_store.write()``. The full file is never loaded into memory.
 
-    :param src_store: The Store to read from.
-    :param src_path: Key to read from *src_store*.
-    :param dst_store: The Store to write to (may be the same as *src_store*).
-    :param dst_path: Destination key in *dst_store*.
-    :param overwrite: Forwarded to ``dst_store.write()``.
-    :param on_progress: Called per read with the byte count (not cumulative).
-    :returns: None
+    Args:
+        src_store: The Store to read from.
+        src_path: Key to read from *src_store*.
+        dst_store: The Store to write to (may be the same as *src_store*).
+        dst_path: Destination key in *dst_store*.
+        overwrite: Forwarded to ``dst_store.write()``.
+        on_progress: Called per read with the byte count (not cumulative).
+
+    Returns:
+        None
     """
     log.debug("transfer %r -> %r", src_path, dst_path, extra={"op": "transfer", "path": src_path})
     stream = src_store.read(src_path)

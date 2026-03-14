@@ -55,7 +55,8 @@ class Capability(enum.Enum):
 class CapabilitySet:
     """Immutable set of capabilities declared by a backend.
 
-    :param capabilities: The set of supported capabilities.
+    Args:
+        capabilities: The set of supported capabilities.
     """
 
     __slots__ = ("_caps",)
@@ -71,7 +72,8 @@ class CapabilitySet:
     def require(self, cap: Capability, *, backend: str = "") -> None:
         """Raise if a capability is not supported.
 
-        :raises CapabilityNotSupported: If the capability is missing.
+        Raises:
+            CapabilityNotSupported: If the capability is missing.
         """
         if cap not in self._caps:
             supported = sorted(c.value for c in self._caps)

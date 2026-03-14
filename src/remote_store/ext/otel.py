@@ -1,6 +1,6 @@
 """[OpenTelemetry](https://opentelemetry.io/) bridge -- pre-built hooks emitting OTel spans and metrics.
 
-Provides ready-made ``around`` and ``on_any`` hooks for :func:`observe` that
+Provides ready-made ``around`` and ``on_any`` hooks for ``observe()`` that
 emit OpenTelemetry traces and metrics.  Depends only on ``opentelemetry-api``
 (not the SDK); if no SDK is configured at runtime, all OTel calls become
 zero-cost no-ops.
@@ -60,7 +60,7 @@ def otel_hooks(
     tracer: Tracer | None = None,
     meter: Meter | None = None,
 ) -> dict[str, Any]:
-    """Return hook kwargs for :func:`~remote_store.ext.observe.observe`.
+    """Return hook kwargs for ``observe()``.
 
     The returned dict contains an ``around`` context-manager hook (tracing)
     and an ``on_any`` callback (metrics).  Unpack it into ``observe()``:
@@ -69,15 +69,18 @@ def otel_hooks(
     observed = observe(store, **otel_hooks())
     ```
 
-    :param tracer_name: OTel tracer name (default ``"remote_store"``).
-        Ignored when *tracer* is provided.
-    :param meter_name: OTel meter name (default ``"remote_store"``).
-        Ignored when *meter* is provided.
-    :param tracer: Explicit tracer instance. When ``None`` (default),
-        obtained from the global ``TracerProvider`` via *tracer_name*.
-    :param meter: Explicit meter instance. When ``None`` (default),
-        obtained from the global ``MeterProvider`` via *meter_name*.
-    :returns: A dict with ``around`` and ``on_any`` keys.
+    Args:
+        tracer_name: OTel tracer name (default ``"remote_store"``).
+            Ignored when *tracer* is provided.
+        meter_name: OTel meter name (default ``"remote_store"``).
+            Ignored when *meter* is provided.
+        tracer: Explicit tracer instance. When ``None`` (default),
+            obtained from the global ``TracerProvider`` via *tracer_name*.
+        meter: Explicit meter instance. When ``None`` (default),
+            obtained from the global ``MeterProvider`` via *meter_name*.
+
+    Returns:
+        A dict with ``around`` and ``on_any`` keys.
     """
     _tracer = tracer if tracer is not None else trace.get_tracer(tracer_name)
     _meter = meter if meter is not None else metrics.get_meter(meter_name)
@@ -153,14 +156,17 @@ def otel_observe(
 
     Equivalent to ``observe(store, **otel_hooks(...))``.
 
-    :param store: The Store to observe.
-    :param tracer_name: OTel tracer name (default ``"remote_store"``).
-        Ignored when *tracer* is provided.
-    :param meter_name: OTel meter name (default ``"remote_store"``).
-        Ignored when *meter* is provided.
-    :param tracer: Explicit tracer instance (see :func:`otel_hooks`).
-    :param meter: Explicit meter instance (see :func:`otel_hooks`).
-    :returns: An ``ObservedStore`` with OTel instrumentation.
+    Args:
+        store: The Store to observe.
+        tracer_name: OTel tracer name (default ``"remote_store"``).
+            Ignored when *tracer* is provided.
+        meter_name: OTel meter name (default ``"remote_store"``).
+            Ignored when *meter* is provided.
+        tracer: Explicit tracer instance (see ``otel_hooks()``).
+        meter: Explicit meter instance (see ``otel_hooks()``).
+
+    Returns:
+        An ``ObservedStore`` with OTel instrumentation.
     """
     return observe(
         store,

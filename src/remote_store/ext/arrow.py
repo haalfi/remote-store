@@ -142,11 +142,12 @@ def _normalize(path: str) -> str:
 class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
     """``pyarrow.fs.FileSystemHandler`` backed by a ``Store``.
 
-    :param store: The Store to expose as a PyArrow filesystem.
-    :param materialization_threshold: Max file size (bytes) for Tier 2 full-file
-        materialization in ``open_input_file``. Default 64 MB.
-    :param write_spill_threshold: Max in-memory buffer size (bytes) for
-        ``_StoreSink`` before spilling to disk. Default 64 MB.
+    Args:
+        store: The Store to expose as a PyArrow filesystem.
+        materialization_threshold: Max file size (bytes) for Tier 2 full-file
+            materialization in ``open_input_file``. Default 64 MB.
+        write_spill_threshold: Max in-memory buffer size (bytes) for
+            ``_StoreSink`` before spilling to disk. Default 64 MB.
 
     **Thread safety:** The handler itself holds no shared mutable state. PyArrow's
     C++ layer may call handler methods from background threads (with the GIL
@@ -428,9 +429,10 @@ def pyarrow_fs(
 ) -> pafs.PyFileSystem:
     """Create a ``pyarrow.fs.PyFileSystem`` backed by *store*.
 
-    :param store: The Store to expose.
-    :param materialization_threshold: See :class:`StoreFileSystemHandler`.
-    :param write_spill_threshold: See :class:`StoreFileSystemHandler`.
+    Args:
+        store: The Store to expose.
+        materialization_threshold: See ``StoreFileSystemHandler``.
+        write_spill_threshold: See ``StoreFileSystemHandler``.
     """
     handler = StoreFileSystemHandler(
         store,

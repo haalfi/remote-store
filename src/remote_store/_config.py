@@ -30,8 +30,11 @@ class Secret:
     ``__repr__`` and ``__str__`` always return a masked value.
     Call ``.reveal()`` to obtain the plain-text credential.
 
-    :param value: The secret string to protect.
-    :raises TypeError: If *value* is not a ``str``.
+    Args:
+        value: The secret string to protect.
+
+    Raises:
+        TypeError: If *value* is not a ``str``.
     """
 
     __slots__ = ("_value",)
@@ -117,14 +120,15 @@ class RetryPolicy:
     Backends map these parameters to their native retry mechanisms.
     Backends that don't support a parameter silently ignore it.
 
-    :param max_attempts: Maximum number of attempts (including the initial).
-        Set to 1 to disable retry.
-    :param backoff_base: Base delay in seconds for exponential backoff.
-    :param backoff_max: Maximum delay between retries in seconds.
-    :param jitter: Maximum random jitter added to each delay in seconds.
-        Set to 0.0 to disable jitter.
-    :param timeout: Total wall-clock timeout in seconds for all attempts
-        combined. ``None`` means no total timeout.
+    Args:
+        max_attempts: Maximum number of attempts (including the initial).
+            Set to 1 to disable retry.
+        backoff_base: Base delay in seconds for exponential backoff.
+        backoff_max: Maximum delay between retries in seconds.
+        jitter: Maximum random jitter added to each delay in seconds.
+            Set to 0.0 to disable jitter.
+        timeout: Total wall-clock timeout in seconds for all attempts
+            combined. ``None`` means no total timeout.
     """
 
     max_attempts: int = 3
@@ -158,9 +162,10 @@ class RetryPolicy:
 class BackendConfig:
     """Describes a backend instance.
 
-    :param type: Backend type identifier (e.g. ``"local"``, ``"s3"``).
-    :param options: Backend-specific configuration options.
-    :param retry: Optional retry policy for transient errors.
+    Args:
+        type: Backend type identifier (e.g. ``"local"``, ``"s3"``).
+        options: Backend-specific configuration options.
+        retry: Optional retry policy for transient errors.
     """
 
     type: str
@@ -172,9 +177,10 @@ class BackendConfig:
 class StoreProfile:
     """Describes a named store.
 
-    :param backend: Name of the backend config to use.
-    :param root_path: Path prefix for all operations.
-    :param options: Store-specific options.
+    Args:
+        backend: Name of the backend config to use.
+        root_path: Path prefix for all operations.
+        options: Store-specific options.
     """
 
     backend: str
@@ -186,8 +192,9 @@ class StoreProfile:
 class RegistryConfig:
     """Top-level configuration container.
 
-    :param backends: Mapping of backend names to their configs.
-    :param stores: Mapping of store names to their profiles.
+    Args:
+        backends: Mapping of backend names to their configs.
+        stores: Mapping of store names to their profiles.
     """
 
     backends: dict[str, BackendConfig] = dataclasses.field(default_factory=dict)
@@ -196,7 +203,8 @@ class RegistryConfig:
     def validate(self) -> None:
         """Validate that all store profiles reference existing backends.
 
-        :raises ValueError: If a store references a non-existent backend.
+        Raises:
+            ValueError: If a store references a non-existent backend.
         """
         for store_name, profile in self.stores.items():
             if profile.backend not in self.backends:
@@ -209,7 +217,7 @@ class RegistryConfig:
     def _from_dict(cls, data: dict[str, object], *, stacklevel: int) -> RegistryConfig:
         """Private implementation shared by all loaders.
 
-        *stacklevel* is passed directly to :func:`warnings.warn` so that the
+        *stacklevel* is passed directly to ``warnings.warn()`` so that the
         warning points at the correct frame in each calling context.
         """
         _KNOWN_KEYS = {"backends", "stores"}
@@ -265,7 +273,8 @@ class RegistryConfig:
     def from_dict(cls, data: dict[str, object]) -> RegistryConfig:
         """Construct from a plain dict (e.g. parsed TOML/JSON).
 
-        :param data: Dict with ``backends`` and ``stores`` keys.
+        Args:
+            data: Dict with ``backends`` and ``stores`` keys.
         """
         return cls._from_dict(data, stacklevel=3)
 
@@ -278,12 +287,15 @@ class RegistryConfig:
     ) -> RegistryConfig:
         """Load config from a TOML file.
 
-        :param path: Path to the TOML file.
-        :param table: Dotted table path to extract config from.
-            For ``pyproject.toml`` use ``table=("tool", "remote-store")``.
-        :raises ModuleNotFoundError: If ``tomllib`` is unavailable and
-            ``tomli`` is not installed.
-        :raises KeyError: If a *table* key is not found.
+        Args:
+            path: Path to the TOML file.
+            table: Dotted table path to extract config from.
+                For ``pyproject.toml`` use ``table=("tool", "remote-store")``.
+
+        Raises:
+            ModuleNotFoundError: If ``tomllib`` is unavailable and
+                ``tomli`` is not installed.
+            KeyError: If a *table* key is not found.
         """
         try:
             import tomllib

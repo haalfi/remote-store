@@ -48,10 +48,13 @@ def glob_files(store: Store, pattern: str) -> Iterator[FileInfo]:
     longest non-wildcard prefix, lists files under that prefix, and
     filters client-side.
 
-    :param store: The Store to search.
-    :param pattern: Glob pattern relative to the store root
-        (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
-    :returns: Iterator of matching ``FileInfo`` objects.
+    Args:
+        store: The Store to search.
+        pattern: Glob pattern relative to the store root
+            (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
+
+    Returns:
+        Iterator of matching ``FileInfo`` objects.
     """
     if store.supports(Capability.GLOB):
         yield from store.glob(pattern)

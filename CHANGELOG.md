@@ -29,6 +29,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Changed
 
+- **Docstrings migrated from Sphinx to Google style** (ID-080) -- all 367
+  Sphinx-style markers (`:param:`, `:returns:`, `:raises:`) across 25 source
+  files converted to Google-style sections (`Args:`, `Returns:`, `Raises:`).
+  `mkdocs.yml` updated to `docstring_style: google`. `sdd/DESIGN.md` §4
+  updated with the new convention. Unlocks inline admonitions and markdown
+  cross-references inside docstrings.
+
 - **S3 listing methods no longer call `exists()` before listing** (ID-062) --
   removes a redundant API round-trip from `list_files`, `list_folders`, and
   `iter_children` in `S3Backend` and `S3PyArrowBackend`. The existing

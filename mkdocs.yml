@@ -48,7 +48,7 @@ plugins:
         python:
           paths: [src]
           options:
-            docstring_style: sphinx
+            docstring_style: google
             docstring_section_style: list
             merge_init_into_class: true
             members_order: source

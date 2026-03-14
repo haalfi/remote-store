@@ -78,16 +78,17 @@ class AzureBackend(Backend):
     the DataLake SDK for HNS accounts (ADLS Gen2) to get atomic rename and
     real directory support.
 
-    :param container: Azure Storage container name (required, non-empty).
-    :param account_name: Storage account name.
-    :param account_url: Full account URL (e.g. ``https://myaccount.dfs.core.windows.net``).
-    :param account_key: Storage account key.
-    :param sas_token: Shared Access Signature token.
-    :param connection_string: Azure Storage connection string.
-    :param credential: Any credential object (e.g. ``DefaultAzureCredential()``).
-    :param client_options: Additional options passed to service clients.
-    :param max_concurrency: Maximum number of parallel connections for
-        uploads and downloads (default ``1`` -- sequential).
+    Args:
+        container: Azure Storage container name (required, non-empty).
+        account_name: Storage account name.
+        account_url: Full account URL (e.g. ``https://myaccount.dfs.core.windows.net``).
+        account_key: Storage account key.
+        sas_token: Shared Access Signature token.
+        connection_string: Azure Storage connection string.
+        credential: Any credential object (e.g. ``DefaultAzureCredential()``).
+        client_options: Additional options passed to service clients.
+        max_concurrency: Maximum number of parallel connections for
+            uploads and downloads (default ``1`` -- sequential).
     """
 
     def __init__(

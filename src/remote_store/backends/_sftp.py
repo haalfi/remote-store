@@ -54,9 +54,10 @@ _CHUNK_SIZE = 32768
 class HostKeyPolicy(Enum):
     """Controls how unknown remote host keys are handled.
 
-    :cvar STRICT: Reject unknown hosts (production default).
-    :cvar TRUST_ON_FIRST_USE: Save on first connect, verify after.
-    :cvar AUTO_ADD: Accept any key (dev/testing ONLY).
+    Attributes:
+        STRICT: Reject unknown hosts (production default).
+        TRUST_ON_FIRST_USE: Save on first connect, verify after.
+        AUTO_ADD: Accept any key (dev/testing ONLY).
     """
 
     STRICT = "strict"
@@ -93,9 +94,12 @@ def _sanitize_pem(pem_content: str) -> str:
 def load_private_key(source: str, *, from_file: bool = False) -> Any:  # pragma: no cover
     """Load an RSA private key from a file path or a PEM string.
 
-    :param source: File path (if ``from_file=True``) or PEM-encoded string.
-    :param from_file: If ``True``, treat *source* as a file path.
-    :returns: ``paramiko.RSAKey``
+    Args:
+        source: File path (if ``from_file=True``) or PEM-encoded string.
+        from_file: If ``True``, treat *source* as a file path.
+
+    Returns:
+        ``paramiko.RSAKey``
     """
     import paramiko
 
@@ -154,19 +158,20 @@ def _load_host_keys_from_string(ssh: Any, keys_content: str) -> None:  # pragma:
 class SFTPBackend(Backend):
     """SFTP backend using pure paramiko.
 
-    :param host: SFTP server hostname (required, non-empty).
-    :param port: SSH port (default: 22).
-    :param username: SSH username.
-    :param password: SSH password.
-    :param pkey: paramiko.PKey instance for key-based auth.
-    :param base_path: Root path on the remote server (default: ``/``).
-    :param host_key_policy: Host key verification policy
-        (see ``SFTPUtils.HostKeyPolicy``). Accepts enum value or string.
-    :param known_host_keys: Known hosts string (code-level override).
-    :param host_keys_path: Path to known_hosts file (default: ``~/.ssh/known_hosts``).
-    :param config: Optional config dict (may contain ``known_host_keys``).
-    :param timeout: SSH connection timeout in seconds.
-    :param connect_kwargs: Extra kwargs passed to ``SSHClient.connect()``.
+    Args:
+        host: SFTP server hostname (required, non-empty).
+        port: SSH port (default: 22).
+        username: SSH username.
+        password: SSH password.
+        pkey: paramiko.PKey instance for key-based auth.
+        base_path: Root path on the remote server (default: ``/``).
+        host_key_policy: Host key verification policy
+            (see ``SFTPUtils.HostKeyPolicy``). Accepts enum value or string.
+        known_host_keys: Known hosts string (code-level override).
+        host_keys_path: Path to known_hosts file (default: ``~/.ssh/known_hosts``).
+        config: Optional config dict (may contain ``known_host_keys``).
+        timeout: SSH connection timeout in seconds.
+        connect_kwargs: Extra kwargs passed to ``SSHClient.connect()``.
     """
 
     def __init__(

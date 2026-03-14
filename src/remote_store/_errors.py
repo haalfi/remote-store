@@ -6,9 +6,10 @@ from __future__ import annotations
 class RemoteStoreError(Exception):
     """Base class for all remote_store errors.
 
-    :param message: Human-readable error description.
-    :param path: The path involved in the error, if any.
-    :param backend: The backend name involved, if any.
+    Args:
+        message: Human-readable error description.
+        path: The path involved in the error, if any.
+        backend: The backend name involved, if any.
     """
 
     def __init__(self, message: str = "", *, path: str | None = None, backend: str | None = None) -> None:
@@ -79,7 +80,8 @@ class CapabilityNotSupported(RemoteStoreError):
     and by ``CapabilitySet.require()`` when a backend does not declare
     the needed capability.
 
-    :param capability: The name of the unsupported capability.
+    Args:
+        capability: The name of the unsupported capability.
     """
 
     def __init__(
