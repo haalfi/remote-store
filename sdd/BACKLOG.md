@@ -80,6 +80,14 @@ Not evaluated, not committed to. Pick up when relevant.
 
   Research: `sdd/research/research-dagster-extension.md`.
 
+- [ ] **ID-080 — Document lazy-import pattern for mixed optional deps**
+  `ext.dagster` uses a better pattern than `ext.arrow`: module-level guard
+  for the primary dep (`dagster`), deferred guard in `__init__` for secondary
+  dep (`pyarrow` in `ParquetSerializer`). This lets pickle/json serializers
+  work without pyarrow. Document this as the preferred pattern for future
+  extensions with mixed optional deps. Evaluate whether `ext.arrow` could
+  benefit from a similar split.
+
 - [ ] **ID-006 — Progress callbacks for large transfers**
   Add an optional `callback: Callable[[int], None]` parameter to `read()` and
   `write()` reporting bytes transferred. Enables progress bars (e.g. `tqdm`)

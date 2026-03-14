@@ -66,7 +66,7 @@ class Serializer(Protocol):
 - `deserialize`: reads Parquet bytes back to a pandas DataFrame via
   `pyarrow`.
 
-**Guard:** importing `ParquetSerializer` when `pyarrow` is not installed
+**Guard:** instantiating `ParquetSerializer` when `pyarrow` is not installed
 raises `ModuleNotFoundError` with the message:
 `"PyArrow is required for the parquet serializer. Install it with: pip install 'remote-store[dagster,arrow]'"`.
 

@@ -1,4 +1,4 @@
-"""Dagster IO Manager adapter — wraps any Store as a Dagster IOManager.
+"""Dagster IO Manager adapter — wraps any Store as a Dagster `IOManager <https://docs.dagster.io/_apidocs/io-managers#dagster.IOManager>`_.
 
 Lets teams already using remote-store reuse their Store configuration
 (credentials, retry policy, caching, observability) inside Dagster pipelines
