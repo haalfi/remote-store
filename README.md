@@ -29,7 +29,7 @@ Where files live is configuration, not application code.
 Under the hood, established Python libraries (`s3fs`, `paramiko`,
 `azure-storage-file-datalake`) still do the work.
 
-**Requires Python 3.10+.** Sync-only; for async frameworks, wrap calls with `asyncio.to_thread()`. Store instances are not thread-safe — use one per thread or add your own synchronization. S3, Azure, and SFTP backends support default credential discovery (environment variables, instance profiles, SSH agent) in addition to explicit credentials.
+**Requires Python 3.10+.** Sync-only; for async frameworks, wrap calls with `asyncio.to_thread()`. Store is immutable after construction and safe to share across threads; backend thread safety depends on the backend implementation. S3, Azure, and SFTP backends support default credential discovery (environment variables, instance profiles, SSH agent) in addition to explicit credentials.
 
 ### Who this is for
 
