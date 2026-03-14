@@ -6731,6 +6731,11 @@
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong><code>AzureBackend(max_concurrency=)</code> parameter</strong> (ID-076) -- controls parallel
+  connections for blob uploads and downloads. Default <code>1</code> (sequential, matching
+  prior behavior). Set higher for improved throughput on large files.</p>
+</li>
+<li>
 <p><strong><code>FolderInfo.name</code> property</strong> (ID-079) -- derived <code>@property</code> returning the
   final path component (<code>self.path.name</code>). <code>FolderInfo</code> now satisfies the
   <code>PathEntry</code> protocol alongside <code>FileInfo</code> and <code>FolderEntry</code>.</p>

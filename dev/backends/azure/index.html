@@ -5413,6 +5413,12 @@
 <td><code>None</code></td>
 <td>Extra kwargs passed to <code>DataLakeServiceClient</code></td>
 </tr>
+<tr>
+<td><code>max_concurrency</code></td>
+<td><code>int</code></td>
+<td><code>1</code></td>
+<td>Parallel connections for uploads/downloads (&gt;1 benefits large files)</td>
+</tr>
 </tbody>
 </table>
 <p>At least one of <code>account_name</code>, <code>account_url</code>, or <code>connection_string</code> must be provided.</p>
@@ -5560,7 +5566,7 @@
 
 
 <a href="#remote_store.backends.AzureBackend" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">account_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sas_token</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">connection_string</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credential</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">client_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">account_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sas_token</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">connection_string</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credential</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">client_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_concurrency</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -5653,6 +5659,17 @@ real directory support.</p>
           –
           <div class="doc-md-description">
             <p>Additional options passed to service clients.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>max_concurrency</code></b>
+              (<code><span title="int">int</span></code>, default:
+                  <code>1</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Maximum number of parallel connections for
+uploads and downloads (default <code>1</code> -- sequential).</p>
           </div>
         </li>
     </ul>

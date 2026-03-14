@@ -3883,6 +3883,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#az-033-transfer-concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AZ-033: Transfer Concurrency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#az-031-client-options-passthrough" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5976,6 +5987,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#az-033-transfer-concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AZ-033: Transfer Concurrency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#az-031-client-options-passthrough" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6041,7 +6063,8 @@
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">credential</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># e.g. DefaultAzureCredential()</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n">RetryPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># see spec 025</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">max_concurrency</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># see AZ-033</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
 </code></pre></div>
 <strong>Postconditions:</strong> The backend stores configuration but does not connect to Azure during construction (see AZ-004). At least one of <code>account_name</code>, <code>account_url</code>, or <code>connection_string</code> must be provided — otherwise <code>ValueError</code> is raised at construction time.</p>
 <h3 id="az-002-backend-name">AZ-002: Backend Name<a class="headerlink" href="#az-002-backend-name" title="Permanent link">&para;</a></h3>
@@ -6240,6 +6263,12 @@
 <strong>Rationale:</strong> Escape hatch for users who need Azure-specific features (per ADR-0003).</p>
 <hr />
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<h3 id="az-033-transfer-concurrency">AZ-033: Transfer Concurrency<a class="headerlink" href="#az-033-transfer-concurrency" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>AzureBackend</code> accepts a <code>max_concurrency: int = 1</code> constructor parameter that controls the number of parallel connections used for blob uploads and downloads. The value is threaded through to <code>BlobClient.upload_blob()</code>, <code>BlobClient.download_blob()</code>, and <code>DataLakeFileClient.upload_data()</code> (HNS atomic writes).
+<strong>Preconditions:</strong> <code>max_concurrency</code> must be &gt;= 1; <code>ValueError</code> is raised at construction time otherwise.
+<strong>Default:</strong> <code>1</code> (sequential transfer, matching prior behavior). Users opt in to parallelism for large-file workloads.
+<strong>Rationale:</strong> The Azure SDK natively supports parallel block uploads and parallel chunk downloads. Exposing this parameter lets users improve throughput for large files without changing application code. SFTP has no equivalent (Paramiko is sequential); S3 concurrency is controlled at the <code>s3fs</code>/<code>aiobotocore</code> level.</p>
+<hr />
 <h3 id="az-031-client-options-passthrough">AZ-031: Client Options Passthrough<a class="headerlink" href="#az-031-client-options-passthrough" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The <code>client_options</code> dict is merged into both the <code>BlobServiceClient</code> and <code>DataLakeServiceClient</code> configurations, allowing advanced settings (custom timeouts, retry policies, proxies, API version overrides, etc.).
 <strong>Postconditions:</strong> Explicit constructor parameters (<code>account_key</code>, <code>sas_token</code>, <code>credential</code>, etc.) take precedence over keys in <code>client_options</code>.</p>
