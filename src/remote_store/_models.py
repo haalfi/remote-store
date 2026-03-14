@@ -1,4 +1,8 @@
-"""Immutable metadata and identity models."""
+"""Immutable metadata and identity models.
+
+``FileInfo``, ``FolderEntry``, and ``FolderInfo`` all satisfy the
+``PathEntry`` protocol, enabling uniform iteration over mixed results.
+"""
 
 from __future__ import annotations
 
