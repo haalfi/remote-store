@@ -35,13 +35,6 @@ Active work items, ordered by priority.
 
 Started but not yet prioritized for completion.
 
-- [~] **ID-064 -- Docs site enhancements (colored types, Material features, Fira Code)**
-  Apply findings from `sdd/research/research-fastapi-docs.md`.
-  - Done: P1 -- added `separate_signature`, `signature_crossrefs`,
-    `show_symbol_type_heading`, `show_symbol_type_toc` to mkdocstrings config.
-  - Remaining: P3 (Fira Code font via `extra_css`), P4 (`navigation.tabs.sticky`,
-    `search.suggest`, `search.highlight`).
-
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.
   - Done: `packaging/conda-forge/recipe.yaml`, `conda-recipe.yml` workflow,
@@ -171,6 +164,13 @@ Completed items, grouped by origin. Kept for traceability — full context
 preserved to support future design decisions.
 
 ### Feature work (post-v0.16.0)
+
+- [x] **ID-064 — Docs site enhancements (colored types, Material features, Fira Code)**
+  Applied findings from `sdd/research/research-fastapi-docs.md`.
+  P1: `separate_signature`, `signature_crossrefs`, `show_symbol_type_heading`,
+  `show_symbol_type_toc`. P3: Fira Code font via `extra_css`. P4: `navigation.tabs.sticky`,
+  `search.suggest`, `search.highlight`. Also added `show_signature_annotations` for
+  property return type visibility.
 
 - [x] **ID-080 — Migrate docstrings from Sphinx to Google style**
   Converted 367 Sphinx markers (`:param:`, `:returns:`, `:raises:`) across 25 files
