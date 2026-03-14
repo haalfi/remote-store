@@ -1,0 +1,6863 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Write file storage code once. Run it against local files, S3, SFTP, or Azure.">
+      
+      
+      
+        <link rel="canonical" href="https://docs.remotestore.dev/0.17.0/development-story/">
+      
+      
+        <link rel="prev" href="../further-reading/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>Development Story - remote-store</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../css/custom.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#how-we-built-this-package-human-ai-pair-programming" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            remote-store
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Development Story
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/haalfi/remote-store" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    haalfi/remote-store
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../backends/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Explanation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../further-reading/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Further Reading
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Development Story
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    remote-store
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/haalfi/remote-store" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    haalfi/remote-store
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../examples/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/file-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    File Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/streaming-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/atomic-writes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Atomic Writes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/config-loaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config Loaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/error-handling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/capabilities-and-errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Capabilities & Errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/path-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Path Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/memory-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/store-child/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store.child()
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/s3-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    S3 Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/s3-pyarrow-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    S3-PyArrow Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/sftp-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTP Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/azure-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/batch-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/transfer-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transfer Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/glob-pattern-matching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glob Pattern Matching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/caching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/observe-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observe Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/otel-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pyarrow-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PyArrow Adapter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/retry-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retry Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Health Check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../backends/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backends
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Backends
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/s3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    S3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/s3-pyarrow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    S3-PyArrow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/sftp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/azure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Extensions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pyarrow-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PyArrow Adapter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../batch-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glob-pattern-matching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glob Pattern Matching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transfer-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transfer Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retry Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Health Check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-lake-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Lake Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../choosing-a-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choosing a Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_1" id="__nav_4_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/sftp-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTPUtils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/path/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RemotePath
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/capabilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Capabilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ext-arrow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.arrow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ext-batch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.batch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ext-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ext-glob/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.glob
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ext-observe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.observe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ext-otel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.otel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ext-partition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.partition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ext-pydantic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.pydantic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ext-transfer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.transfer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ext-yaml/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.yaml
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../capabilities-matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Capabilities Matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explanation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Explanation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concurrency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concurrency
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../design/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/design-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Document
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../design/specs/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specs
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5_3" id="__nav_5_5_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Specs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/001-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    001: Store API Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/002-registry-config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    002: Registry & Configuration Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/003-backend-adapter-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    003: Backend Adapter Contract Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/004-path-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    004: Path Model Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/005-error-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    005: Error Model Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/006-streaming-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    006: Streaming I/O Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/007-atomic-writes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    007: Atomic Writes Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/008-s3-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    008: S3 Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/009-sftp-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    009: SFTP Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/010-native-path-resolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    010: Native Path Resolution Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    011: S3-PyArrow Hybrid Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/012-azure-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    012: Azure Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/013-memory-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    013: Memory Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    014: PyArrow FileSystem Adapter Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/015-store-child/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    015: Store.child() Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/016-ext-batch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    016: ext.batch - Batch Operations Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/017-ext-transfer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    017: ext.transfer - Upload, Download, Cross-Store Transfer Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/018-glob/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    018: Glob - Pattern Matching Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/019-ext-observe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    019: ext.observe - Observability Hooks Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/020-credential-hygiene/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: Credential Hygiene Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/021-config-loaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    021: Config Loaders Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/022-streaming-atomic-writes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    022: Streaming Atomic Writes Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/023-ext-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    023: ext.cache - Store-Level Caching Middleware Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/024-ext-partition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    024: ext.partition - Hive-Style Partition Path Helpers Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/025-retry-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    025: Retry Policy Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/026-health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    026: Health Check Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/027-iter-children/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    027: iter_children Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/028-read-text/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    028: read_text Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/029-async-store-backend-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    029: Async Store and Backend API Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/030-write-text/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    030: write_text Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../design/adrs/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5_4" id="__nav_5_5_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADRs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001: Architecture - Store, Registry, Backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Configuration Resolution - No Merging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: fsspec Is an Implementation Detail
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0004-empty-path-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Empty Path Semantics in Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0005-native-path-resolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005: Bidirectional Path Resolution via to_key
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0006-documentation-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Documentation Architecture - Source of Truth and Audiences
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007: Three-Tier Documentation Architecture with docs-src/ and Literate Nav
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0008-extension-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Extension Namespace Contract (ext.*)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Glob - Three-Tier Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010: Observe - Proxy Subclass Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Retry - Per-Backend Native Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0012-async-store-backend-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0012: Async Store / Backend API — Hybrid Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../design/rfcs/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RFCs
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5_5" id="__nav_5_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RFCs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001: RFC-0001: Azure Backend via Direct ADLS Gen2 SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: RFC-0002: PyArrow FileSystemHandler Adapter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: RFC-0003: S3-PyArrow Read Path Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: RFC-0004: Streaming Atomic Writes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../design/research/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5_6" id="__nav_5_5_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/research/research-async-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async Store / Backend API (ID-013)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/research/research-dagster-extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dagster Extension (ext.dagster, ID-075)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/research/research-example-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example Testing Across Language Ecosystems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/research/research-fastapi-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FastAPI Documentation & CI/CD Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/research/research-google-docstring-migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Google-Style Docstring Migration & Zensical Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/research/research-health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend Health Check (store.ping() / backend.check_health())
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/research/research-logging-monitoring-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging, Monitoring & Tracing for remote-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/research/research-retry-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retry Policy Configuration (ID-010)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/research/research-store-api-refinement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store API Refinement
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/research/research-store-config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Loaders and Store Config Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/research/research-v1-communication-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v1 Communication & Announcement Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../further-reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Further Reading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Story
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Story
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-numbers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Numbers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#origin-citizen-developers-shouldnt-need-to-learn-boto3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Origin: Citizen Developers Shouldn't Need to Learn boto3
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-approach-specs-first-code-second" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Approach: Specs First, Code Second
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-timeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Timeline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Timeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-foundation-human-led" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Foundation (human-led)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-implementation-ai-led-human-reviewed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Implementation (AI-led, human-reviewed)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-documentation-polish-collaborative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Documentation &amp; polish (collaborative)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-discovery-through-dogfooding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Discovery through dogfooding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-5-production-readiness-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 5: Production readiness audit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-6-s3-backend-ai-led-human-reviewed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 6: S3 Backend (AI-led, human-reviewed)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-7-developer-tooling-collaborative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 7: Developer tooling (collaborative)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-8-sftp-backend-ai-led-human-reviewed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 8: SFTP Backend (AI-led, human-reviewed)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-9-going-public-collaborative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 9: Going Public (collaborative)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-10-the-streaming-audit-v043" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 10: The Streaming Audit (v0.4.3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-11-ai-reviewing-ai-ai-reviewed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 11: AI Reviewing AI (AI-reviewed)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-12-adversarial-audit-ai-vs-ai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 12: Adversarial Audit (AI-vs-AI)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-13-fixing-the-audit-v060" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 13: Fixing the Audit (v0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-14-release-checklist-process-improvement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 14: Release Checklist (process improvement)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-15-reusable-skills-collaborative-process-mining" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 15: Reusable Skills (collaborative process mining)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-16-extensions-and-ecosystem-v090" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 16: Extensions and Ecosystem (v0.9.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-17-instrumentation-and-optimization-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 17: Instrumentation and Optimization (v0.10.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-18-beta-and-glob-v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 18: Beta and Glob (v0.11.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-19-cloud-glob-and-conda-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 19: Cloud Glob and Conda (v0.12.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-20-research-before-implementation-post-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 20: Research Before Implementation (post-v0.12.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bug-001-when-your-value-object-has-no-word-for-here-post-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BUG-001: When Your Value Object Has No Word for "Here" (post-v0.12.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-21-observability-and-credential-hygiene-v0130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 21: Observability and Credential Hygiene (v0.13.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-22-config-loaders-and-consolidation-v0140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 22: Config Loaders and Consolidation (v0.14.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-23-extensions-and-documentation-v0150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 23: Extensions and Documentation (v0.15.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-24-developer-experience-and-tooling-post-v0150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 24: Developer Experience and Tooling (post-v0.15.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-25-api-conveniences-and-documentation-quality-v0160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 25: API Conveniences and Documentation Quality (v0.16.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-26-the-polish-phase-what-happens-after-feature-complete-post-v0160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 26: The Polish Phase -- What Happens After "Feature Complete" (post-v0.16.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-27-listing-normalization-and-api-consistency-v0170" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 27: Listing Normalization and API Consistency (v0.17.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-worked-well" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Worked Well
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Worked Well">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#specs-as-a-shared-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Specs as a shared contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ai-excels-at-breadth-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AI excels at breadth tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plan-mode-for-alignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plan mode for alignment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#discovery-through-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Discovery through implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#detailed-plans-pay-for-themselves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detailed plans pay for themselves
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#legacy-code-as-a-knowledge-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy code as a knowledge source
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-was-surprising" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Was Surprising
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Was Surprising">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cross-platform-issues-surface-in-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-platform issues surface in layers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#session-isolation-as-a-review-mechanism" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Session isolation as a review mechanism
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-humans-role-shifts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The human's role shifts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation-quality-requires-iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation quality requires iteration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unpinned-dependencies-are-a-time-bomb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unpinned dependencies are a time bomb
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-could-be-better" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Could Be Better
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Could Be Better">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spec-coverage-of-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spec coverage of edge cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-before-spec-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test-before-spec updates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-server-complexity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test server complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-living-backlog-beats-a-static-roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A living backlog beats a static roadmap
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lessons-for-others" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lessons for Others
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducing-this-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducing This Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-numbers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Numbers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#origin-citizen-developers-shouldnt-need-to-learn-boto3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Origin: Citizen Developers Shouldn't Need to Learn boto3
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-approach-specs-first-code-second" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Approach: Specs First, Code Second
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-timeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Timeline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Timeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-foundation-human-led" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Foundation (human-led)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-implementation-ai-led-human-reviewed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Implementation (AI-led, human-reviewed)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-documentation-polish-collaborative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Documentation &amp; polish (collaborative)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-discovery-through-dogfooding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Discovery through dogfooding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-5-production-readiness-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 5: Production readiness audit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-6-s3-backend-ai-led-human-reviewed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 6: S3 Backend (AI-led, human-reviewed)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-7-developer-tooling-collaborative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 7: Developer tooling (collaborative)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-8-sftp-backend-ai-led-human-reviewed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 8: SFTP Backend (AI-led, human-reviewed)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-9-going-public-collaborative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 9: Going Public (collaborative)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-10-the-streaming-audit-v043" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 10: The Streaming Audit (v0.4.3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-11-ai-reviewing-ai-ai-reviewed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 11: AI Reviewing AI (AI-reviewed)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-12-adversarial-audit-ai-vs-ai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 12: Adversarial Audit (AI-vs-AI)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-13-fixing-the-audit-v060" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 13: Fixing the Audit (v0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-14-release-checklist-process-improvement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 14: Release Checklist (process improvement)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-15-reusable-skills-collaborative-process-mining" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 15: Reusable Skills (collaborative process mining)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-16-extensions-and-ecosystem-v090" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 16: Extensions and Ecosystem (v0.9.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-17-instrumentation-and-optimization-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 17: Instrumentation and Optimization (v0.10.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-18-beta-and-glob-v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 18: Beta and Glob (v0.11.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-19-cloud-glob-and-conda-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 19: Cloud Glob and Conda (v0.12.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-20-research-before-implementation-post-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 20: Research Before Implementation (post-v0.12.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bug-001-when-your-value-object-has-no-word-for-here-post-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BUG-001: When Your Value Object Has No Word for "Here" (post-v0.12.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-21-observability-and-credential-hygiene-v0130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 21: Observability and Credential Hygiene (v0.13.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-22-config-loaders-and-consolidation-v0140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 22: Config Loaders and Consolidation (v0.14.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-23-extensions-and-documentation-v0150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 23: Extensions and Documentation (v0.15.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-24-developer-experience-and-tooling-post-v0150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 24: Developer Experience and Tooling (post-v0.15.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-25-api-conveniences-and-documentation-quality-v0160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 25: API Conveniences and Documentation Quality (v0.16.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-26-the-polish-phase-what-happens-after-feature-complete-post-v0160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 26: The Polish Phase -- What Happens After "Feature Complete" (post-v0.16.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-27-listing-normalization-and-api-consistency-v0170" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 27: Listing Normalization and API Consistency (v0.17.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-worked-well" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Worked Well
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Worked Well">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#specs-as-a-shared-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Specs as a shared contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ai-excels-at-breadth-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AI excels at breadth tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plan-mode-for-alignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plan mode for alignment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#discovery-through-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Discovery through implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#detailed-plans-pay-for-themselves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detailed plans pay for themselves
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#legacy-code-as-a-knowledge-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy code as a knowledge source
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-was-surprising" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Was Surprising
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Was Surprising">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cross-platform-issues-surface-in-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-platform issues surface in layers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#session-isolation-as-a-review-mechanism" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Session isolation as a review mechanism
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-humans-role-shifts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The human's role shifts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation-quality-requires-iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation quality requires iteration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unpinned-dependencies-are-a-time-bomb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unpinned dependencies are a time bomb
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-could-be-better" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Could Be Better
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Could Be Better">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spec-coverage-of-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spec coverage of edge cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-before-spec-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test-before-spec updates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-server-complexity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test server complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-living-backlog-beats-a-static-roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A living backlog beats a static roadmap
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lessons-for-others" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lessons for Others
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducing-this-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducing This Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="how-we-built-this-package-human-ai-pair-programming">How We Built This Package: Human + AI Pair Programming<a class="headerlink" href="#how-we-built-this-package-human-ai-pair-programming" title="Permanent link">&para;</a></h1>
+<p>This document chronicles how <code>remote-store</code> was built as a collaboration between a human developer and <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>, Anthropic's AI coding assistant. The goal is transparency: showing what worked, what surprised us, and what others can learn from the process.</p>
+<h2 id="the-numbers">The Numbers<a class="headerlink" href="#the-numbers" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Source code</td>
+<td>~8,500 lines (6 backends)</td>
+</tr>
+<tr>
+<td>Tests</td>
+<td>~1,750 tests, ~15,200 lines</td>
+</tr>
+<tr>
+<td>Specs &amp; docs</td>
+<td>30 specs, 12 ADRs, 4 RFCs</td>
+</tr>
+<tr>
+<td>Examples</td>
+<td>21 core + 4 cloud + 5 notebooks</td>
+</tr>
+<tr>
+<td>Extensions</td>
+<td>10 (<code>ext.arrow</code>, <code>ext.batch</code>, <code>ext.cache</code>, <code>ext.glob</code>, <code>ext.observe</code>, <code>ext.otel</code>, <code>ext.partition</code>, <code>ext.pydantic</code>, <code>ext.transfer</code>, <code>ext.yaml</code>)</td>
+</tr>
+<tr>
+<td>Documentation site</td>
+<td>MkDocs Material (versioned via mike, Diataxis structure)</td>
+</tr>
+<tr>
+<td>Coverage</td>
+<td>&gt;= 95% CI floor (actual in README badge)</td>
+</tr>
+<tr>
+<td>Co-work sessions</td>
+<td>Spread across ~4 calendar weeks (since Feb 14)</td>
+</tr>
+<tr>
+<td>Commits</td>
+<td>~380</td>
+</tr>
+</tbody>
+</table>
+<h2 id="origin-citizen-developers-shouldnt-need-to-learn-boto3">Origin: Citizen Developers Shouldn't Need to Learn boto3<a class="headerlink" href="#origin-citizen-developers-shouldnt-need-to-learn-boto3" title="Permanent link">&para;</a></h2>
+<p>The idea for <code>remote-store</code> came from a simple observation: teams that include citizen developers -- analysts, scientists, domain experts who write Python but aren't software engineers -- kept getting stuck on file storage. Every cloud provider has its own SDK, its own auth dance, its own streaming quirks. The experienced devs on the team would write wrapper code, but it was never reusable across projects, and the citizen devs couldn't maintain it.</p>
+<p>The goal was to give those teams a single API that hides the backend complexity entirely. A data analyst who can write <code>store.write("report.csv", data)</code> shouldn't need to understand S3 multipart uploads or SFTP channel management. The same code should work whether files live on a shared drive, an S3 bucket, or an SFTP server -- and switching between them should be a config change, not a code change.</p>
+<p>That citizen-developer use case shaped every design decision: immutable config (so non-experts can't accidentally mutate state), clear error messages (no raw <code>botocore</code> tracebacks), capability declarations (so unsupported operations fail with an explanation, not a cryptic exception), and streaming by default (so large files just work without anyone tuning buffer sizes).</p>
+<h2 id="the-approach-specs-first-code-second">The Approach: Specs First, Code Second<a class="headerlink" href="#the-approach-specs-first-code-second" title="Permanent link">&para;</a></h2>
+<p>The project follows <strong>Spec-Driven Development (SDD)</strong> -- every feature starts as a specification before any code is written. This turned out to be an excellent fit for AI-assisted development, because:</p>
+<ol>
+<li>
+<p><strong>Specs constrain the solution space.</strong> Instead of asking "build me a storage library," the human wrote specs that defined exact method signatures, error conditions, and invariants. Claude Code then implemented against those contracts.</p>
+</li>
+<li>
+<p><strong>Specs are reviewable.</strong> The human could verify correctness at the spec level before any code existed. This caught design issues early, before they became refactoring problems.</p>
+</li>
+<li>
+<p><strong>Specs enable traceability.</strong> Every test is tagged with <code>@pytest.mark.spec("ID")</code>, linking it back to the spec section it validates. This makes it easy to verify completeness.</p>
+</li>
+</ol>
+<h2 id="the-timeline">The Timeline<a class="headerlink" href="#the-timeline" title="Permanent link">&para;</a></h2>
+<h3 id="phase-1-foundation-human-led">Phase 1: Foundation (human-led)<a class="headerlink" href="#phase-1-foundation-human-led" title="Permanent link">&para;</a></h3>
+<p>The human wrote the initial specs, architecture decisions, and project structure:</p>
+<ul>
+<li>7 specifications covering Store API, Registry, Backend contract, Path model, Error model, Streaming I/O, and Atomic writes</li>
+<li>3 ADRs documenting key architectural decisions</li>
+<li>RFC workflow for future contributions</li>
+<li>Code style conventions</li>
+</ul>
+<p>This was deliberate. <strong>The human defined the "what" and "why"; the AI would handle the "how."</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>33a6dd2  Initial commit
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>e2e8ae3  Core files
+</code></pre></div>
+<h3 id="phase-2-implementation-ai-led-human-reviewed">Phase 2: Implementation (AI-led, human-reviewed)<a class="headerlink" href="#phase-2-implementation-ai-led-human-reviewed" title="Permanent link">&para;</a></h3>
+<p>With specs in hand, Claude Code implemented the entire core in a single session:</p>
+<ul>
+<li>All source modules (<code>_store.py</code>, <code>_registry.py</code>, <code>_backend.py</code>, <code>_path.py</code>, <code>_errors.py</code>, <code>_models.py</code>, <code>_config.py</code>, <code>_capabilities.py</code>)</li>
+<li>The local filesystem backend as a reference implementation</li>
+<li>Full test suite with spec traceability</li>
+<li>CI pipeline (ruff, mypy, pytest across Python 3.10-3.13)</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>0105d61  Implement M0 scaffolding and M1 core abstractions with local backend
+</code></pre></div>
+<p>The human reviewed the implementation against the specs, checking for correctness, edge cases, and code style alignment.</p>
+<h3 id="phase-3-documentation-polish-collaborative">Phase 3: Documentation &amp; polish (collaborative)<a class="headerlink" href="#phase-3-documentation-polish-collaborative" title="Permanent link">&para;</a></h3>
+<p>This is where the collaboration got interesting. The human asked for user-facing documentation, and Claude Code wrote:</p>
+<ul>
+<li>A new README.md (replacing the design spec)</li>
+<li>6 runnable example scripts</li>
+<li>3 Jupyter notebooks</li>
+<li>CHANGELOG, CONTRIBUTING updates</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>8a551c8  Add user-facing README, examples, and notebooks
+</code></pre></div>
+<h3 id="phase-4-discovery-through-dogfooding">Phase 4: Discovery through dogfooding<a class="headerlink" href="#phase-4-discovery-through-dogfooding" title="Permanent link">&para;</a></h3>
+<p>While writing examples, Claude Code discovered a real API bug: <code>Store</code> couldn't accept an empty string <code>""</code> as a path for root-level operations like listing files. The examples exposed what the tests hadn't.</p>
+<p>The human's response was characteristic of good pair programming: "yes, fix it, but let's afterwards check all public store methods whether we should check args (and fail) or normalize."</p>
+<p>This led to a principled design decision:</p>
+<ul>
+<li><strong>Folder/query operations</strong> (exists, list_files, list_folders, etc.) accept <code>""</code> to mean "the store root"</li>
+<li><strong>File-targeted operations</strong> (read, write, delete, etc.) reject <code>""</code> because an empty path can't identify a file</li>
+<li><code>delete_folder("")</code> is explicitly forbidden because deleting the store root is too destructive to allow by accident</li>
+</ul>
+<p>The decision was documented as ADR-0004 and the spec was updated.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>e9e75be  Allow empty path for folder ops, reject for file ops
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>cd3529d  Add ADR-0004 and update STORE-002 for empty path semantics
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>085b269  Update examples to use &quot;&quot; for root listing
+</code></pre></div>
+<h3 id="phase-5-production-readiness-audit">Phase 5: Production readiness audit<a class="headerlink" href="#phase-5-production-readiness-audit" title="Permanent link">&para;</a></h3>
+<p>The human asked: "What is missing to make this a valuable Python package?" Claude Code audited the project against PyPI best practices and produced a prioritized list of 12 items. The human picked which ones to tackle.</p>
+<p>Key work:
+- <strong>pyproject.toml metadata</strong>: classifiers, keywords, authors, URLs
+- <strong><code>__repr__</code></strong> on Store and Registry for debugging
+- <strong>CHANGELOG.md</strong> following Keep a Changelog format
+- <strong>Coverage enforcement</strong>: 53 new tests, coverage from 89% to 99%, <code>--cov-fail-under=95</code> in CI
+- <strong>Cross-platform fix</strong>: <code>delete_folder</code> on Windows with non-English locales was using string matching on error messages ("not empty"), which failed in German. Fixed by checking <code>errno</code> codes instead.
+- <strong>Makefile</strong> with common dev commands
+- <strong>Dev setup docs</strong> in CONTRIBUTING.md</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>d56dc18  Polish package for release: metadata, repr, coverage, changelog
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>66c540a  Add Makefile and dev setup docs to CONTRIBUTING.md
+</code></pre></div>
+<h3 id="phase-6-s3-backend-ai-led-human-reviewed">Phase 6: S3 Backend (AI-led, human-reviewed)<a class="headerlink" href="#phase-6-s3-backend-ai-led-human-reviewed" title="Permanent link">&para;</a></h3>
+<p>The first remote backend. The human identified s3fs as the right abstraction layer and wrote the spec (<code>008-s3-backend.md</code>). Claude Code then implemented against it in plan mode:</p>
+<ul>
+<li><code>S3Backend</code> using s3fs/aiobotocore (~210 lines)</li>
+<li>Session-scoped moto HTTP server for testing (avoiding Python 3.13 PEP 667 incompatibility with <code>mock_aws()</code>)</li>
+<li>S3-specific tests plus full conformance suite</li>
+<li>Logo design prompt (human picked the final version)</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>52d3799  Add S3Backend with s3fs, spec, tests, and logo
+</code></pre></div>
+<h3 id="phase-7-developer-tooling-collaborative">Phase 7: Developer tooling (collaborative)<a class="headerlink" href="#phase-7-developer-tooling-collaborative" title="Permanent link">&para;</a></h3>
+<p>The human pushed for tighter development workflow. Claude Code set up:</p>
+<ul>
+<li><strong>Pre-commit hooks</strong>: ruff lint+format and mypy, replacing manual <code>make lint</code> with automatic enforcement</li>
+<li><strong>MkDocs Material site</strong>: Full documentation site with API reference, getting started guide, backend docs, and design docs</li>
+<li><strong>Hatch scripts</strong>: Replaced Makefile with <code>pyproject.toml</code>-native scripts (<code>hatch run lint</code>, <code>hatch run test-cov</code>, etc.)</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>2e46651  Add pre-commit hooks for ruff and mypy
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>7fdde35  Add MkDocs Material documentation site
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>39ea749  Fix S3 backend status in README and add docs CI job
+</code></pre></div>
+<h3 id="phase-8-sftp-backend-ai-led-human-reviewed">Phase 8: SFTP Backend (AI-led, human-reviewed)<a class="headerlink" href="#phase-8-sftp-backend-ai-led-human-reviewed" title="Permanent link">&para;</a></h3>
+<p>The most complex backend, using pure paramiko (not sshfs or fsspec's SFTPFileSystem, which hardcodes <code>AutoAddPolicy</code>). The human wrote a detailed plan covering:</p>
+<ul>
+<li>Host key policies (STRICT / TRUST_ON_FIRST_USE / AUTO_ADD)</li>
+<li>PEM key sanitization (Azure Key Vault quirk from legacy code)</li>
+<li>Simulated atomic writes (temp file + <code>posix_rename</code>, with documented orphan caveat)</li>
+<li>Tenacity retry with exponential backoff for transient SSH errors</li>
+</ul>
+<p>Claude Code implemented the full stack in one session:</p>
+<ul>
+<li>Spec <code>009-sftp-backend.md</code> (27 spec items)</li>
+<li>In-process SFTP test server using paramiko's <code>ServerInterface</code> + <code>SFTPServerInterface</code></li>
+<li><code>SFTPBackend</code> (~420 lines) with lazy connection, staleness detection, and full Backend ABC compliance</li>
+<li>SFTP-specific tests plus conformance suite (453 total tests)</li>
+</ul>
+<p><strong>The debugging was instructive.</strong> Initial test runs had 24 failures -- all reads returning "Failure." A debug script isolated the issue to <code>SFTPHandle.stat()</code> in the test server: it used <code>SFTPServer.convert_errno(os.fstat(...))</code> instead of <code>SFTPAttributes.from_stat(os.fstat(...))</code>, causing <code>prefetch()</code> to fail because the handle stat returned errno codes as file metadata. A subtle API misuse that produced confusing errors far from the root cause.</p>
+<p><strong>CI revealed a pip resolver surprise.</strong> After pushing, CI failed with all S3 tests broken -- despite no S3 code changes. Investigation showed that botocore 1.42.50 had released between CI runs. The new version caused pip to silently downgrade s3fs from 2026.2.0 to 0.4.2 (ancient, no aiobotocore) rather than failing with a resolution error. The fix: pin <code>s3fs&gt;=2024.2.0</code> to prevent the fallback.</p>
+<p><strong>Cross-platform mypy differences.</strong> The <code>before_sleep_log(log, ...)</code> call from tenacity had a type mismatch on local mypy (Logger vs LoggerProtocol) but not on CI. Using <code># type: ignore[arg-type,unused-ignore]</code> handles both environments -- the combined codes suppress the error where it exists and silence the "unused ignore" warning where it doesn't.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>f3b7df9  Add SFTPBackend with paramiko, spec, tests, and bump to v0.2.0
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>3956b4d  Fix CI: pin s3fs&gt;=2024.2.0 and fix cross-platform type:ignore
+</code></pre></div>
+<h3 id="phase-9-going-public-collaborative">Phase 9: Going Public (collaborative)<a class="headerlink" href="#phase-9-going-public-collaborative" title="Permanent link">&para;</a></h3>
+<p>Making the repository public exposed a category of problems that don't exist while a project is private: <strong>everything that works "by reference" locally breaks "by value" on external platforms.</strong></p>
+<p>The first casualty was the PyPI listing. The README logo used a relative path (<code>assets/logo.png</code>), which renders fine on GitHub but produces a broken image on PyPI -- their CDN proxies images through <code>pypi-camo.freetls.fastly.net</code> and can't resolve relative paths. The fix was straightforward (absolute raw GitHub URL), but the failure was invisible until the package was actually published and someone looked at the PyPI page.</p>
+<p>The second issue was documentation hosting. The project had GitHub Pages set up via a CI workflow, but Read the Docs was missing. RTD provides versioned docs, search, and the familiar <code>readthedocs.io</code> URL that the Python community expects. The <code>.readthedocs.yaml</code> config had been written speculatively during setup but never activated -- the project needed to be imported on readthedocs.org, the build OS needed updating, and the <code>Documentation</code> URL in <code>pyproject.toml</code> was still pointing to GitHub Pages.</p>
+<p>The third issue was subtler: the documentation site itself was out of date. Specs 010 (native path resolution) and 011 (S3-PyArrow backend) had been added to <code>sdd/specs/</code> during development, but never copied to <code>docs/design/specs/</code> or added to <code>mkdocs.yml</code> navigation. Same for ADR-0005. The docs site was shipping a version of the design documentation that was two specs and one ADR behind the actual source of truth. <strong>When docs live in two places (source-of-truth in <code>sdd/</code> and rendered site in <code>docs/</code>), keeping them in sync is a manual step that's easy to forget.</strong></p>
+<p>Finally, the <code>pyproject.toml</code> metadata changes (Documentation URL, README fixes) don't take effect on PyPI until a new version is published. PyPI serves whatever was in the sdist/wheel at upload time. This means every metadata fix requires a version bump and release -- there's no way to patch the PyPI listing in place.</p>
+<p><strong>The lesson: "works on GitHub" is not the same as "works everywhere the package appears."</strong> PyPI, Read the Docs, and GitHub each render the same source files differently, with different rules for resolving paths, images, and links. A pre-release checklist that includes checking the rendered output on each platform would have caught all of these issues before users did.</p>
+<h3 id="phase-10-the-streaming-audit-v043">Phase 10: The Streaming Audit (v0.4.3)<a class="headerlink" href="#phase-10-the-streaming-audit-v043" title="Permanent link">&para;</a></h3>
+<p>The README says "streaming by default" and spec SIO-001 mandates that <code>read()</code> returns a <code>BinaryIO</code> that streams from the backend. But when the human asked to <strong>review whether streaming actually worked</strong>, every single backend turned out to load the entire file into memory.</p>
+<p>The pattern was the same in all four backends: <code>read()</code> called something that fetched the full content, wrapped it in <code>BytesIO</code>, and returned that. Callers got a <code>BinaryIO</code> that quacked correctly but had already consumed all the memory. Writes had the same problem — <code>BinaryIO</code> content was <code>.read()</code> into a <code>bytes</code> object before being written.</p>
+<p><strong>The fixes were backend-specific but shared a theme:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local</td>
+<td><code>BytesIO(path.read_bytes())</code></td>
+<td><code>open(path, "rb")</code> — real file handle</td>
+</tr>
+<tr>
+<td>S3</td>
+<td><code>BytesIO(fs.cat_file(path))</code></td>
+<td><code>fs.open(path, "rb")</code> — HTTP range requests</td>
+</tr>
+<tr>
+<td>S3-PyArrow</td>
+<td><code>BytesIO(pa_fs.open_input_stream(...).read())</code></td>
+<td>Custom <code>_PyArrowBinaryIO(io.RawIOBase)</code> adapter + <code>BufferedReader</code></td>
+</tr>
+<tr>
+<td>SFTP</td>
+<td><code>BytesIO(sftp.file(...).read())</code></td>
+<td>Return <code>SFTPFile</code> directly (no <code>prefetch()</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>For writes, all backends gained <code>shutil.copyfileobj()</code> for <code>BinaryIO</code> content, which copies in chunks without materializing the full stream.</p>
+<p><strong>The PyArrow adapter was the trickiest.</strong> PyArrow's <code>RandomAccessFile</code> doesn't implement Python's <code>BinaryIO</code> protocol — it has <code>read()</code> and <code>seek()</code> but no <code>readinto()</code>, which <code>io.BufferedReader</code> requires. The solution was a thin <code>io.RawIOBase</code> subclass that bridges <code>readinto()</code> → <code>read()</code>, wrapped in <code>BufferedReader</code> for buffering. About 20 lines to glue two ecosystems together.</p>
+<p><strong>The lesson is uncomfortable: specs that aren't enforced by tests drift from reality.</strong> Spec SIO-001 said "streaming," and every backend's <code>read()</code> signature returned <code>BinaryIO</code>, so mypy was happy and tests passed. But no test verified that the returned <code>BinaryIO</code> actually streamed from the backend rather than from a pre-filled buffer. The type system validated the interface; it couldn't validate the behavior behind it.</p>
+<p>This session also caught two housekeeping issues:
+- <strong>ReadTheDocs deep links need <code>/en/latest/</code></strong>: The README linked to <code>readthedocs.io/api/store/</code> which 404'd because RTD requires a version prefix. Another instance of the Phase 9 lesson — "works on GitHub ≠ works everywhere."
+- <strong>Versioning docs were duplicated and diverged</strong>: <code>CONTRIBUTING.md</code> had the current policy (bump-my-version, single source file), while <code>sdd/000-process.md</code> still described the old manual process. Consolidated to CONTRIBUTING.md with a pointer from process.md.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>0fc7116  Fix streaming read/write to avoid loading entire files into memory
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>712950e  Consolidate versioning docs into CONTRIBUTING.md
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>7f1776a  Fix broken API reference link in README for PyPI
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>76ec1b3  Bump version to 0.4.3
+</code></pre></div>
+<h3 id="phase-11-ai-reviewing-ai-ai-reviewed">Phase 11: AI Reviewing AI (AI-reviewed)<a class="headerlink" href="#phase-11-ai-reviewing-ai-ai-reviewed" title="Permanent link">&para;</a></h3>
+<p>After 14 PRs, the human asked Claude Code to review the merged pull requests -- looking for patterns, missed issues, and quality gaps. The twist: <strong>both the PRs and the reviews were produced by Claude Code, just in different sessions.</strong> The authoring sessions wrote specs, code, and documentation; a separate reviewing session evaluated them cold.</p>
+<p>Only 2 of the 14 PRs had received substantive review. But those two reviews caught real issues:</p>
+<ul>
+<li><strong>PR #1</strong> (backlog + README rewrite): 3 non-blocking items — a dead documentation URL (<code>readthedocs.io</code> referenced before hosting existed), stale <code>mkdocs.yml</code> description, and misleading <code>pyproject.toml</code> keywords.</li>
+<li><strong>PR #11</strong> (Azure backend RFC + spec): 6 critical issues + 4 minor notes — wrong RFC numbering, invalid markdown checkbox syntax, 7 Backend ABC methods with no spec coverage, GLOB capability declared but unexplained, cross-references instead of inline explanations, ambiguous return types.</li>
+</ul>
+<p>All 6 critical issues on PR #11 were fixed before merge. The 12 unreviewed PRs shipped as-is.</p>
+<p><strong>The most revealing pattern was the authoring session's blind spot: completeness, not correctness.</strong> The reviewing session didn't find things that were <em>wrong</em> — it found things that were <em>missing</em>. Seven abstract methods without invariants, a capability declared but never specified, return types left ambiguous. The authoring session "knew" how those would work and didn't realize the output was incomplete. A second session, reading the artifacts without that context, immediately spotted the gaps.</p>
+<p><strong>Same model, different role, different results.</strong> Both sessions had identical capabilities, but the reviewing session found issues the authoring session created. The difference wasn't intelligence — it was framing. The author optimizes for producing; the reviewer optimizes for interrogating. Session isolation prevented the reviewer from inheriting the author's assumptions, which is exactly what code review is supposed to provide.</p>
+<p><strong>The practical implication for solo maintainers:</strong> separate sessions simulate a two-person team. The context boundary between sessions acts as the "different person" that review traditionally requires. The cost of a review session is low; the 2 PRs that received reviews caught issues that would have persisted in the 12 that didn't.</p>
+<h3 id="phase-12-adversarial-audit-ai-vs-ai">Phase 12: Adversarial Audit (AI-vs-AI)<a class="headerlink" href="#phase-12-adversarial-audit-ai-vs-ai" title="Permanent link">&para;</a></h3>
+<p>Phase 11 used a second AI session as a code reviewer. Phase 12 took it further: the human asked a fresh Claude Code session to act as an adversary -- "prove this package wrong." Four parallel AI agents independently audited security, test quality, API design, and CI/docs, then the human consolidated findings.</p>
+<p>The audit produced 47 findings across four severity tiers. Two were critical (after post-audit verification downgraded one from Critical to High):</p>
+<ol>
+<li><strong>The README Quick Start for S3 doesn't work.</strong> <code>_register_builtin_backends()</code> only registers <code>local</code> and <code>azure</code>. S3, SFTP, and S3-PyArrow must be manually imported and registered. The documented happy path for the three most common remote backends crashes on first use.</li>
+<li><strong>The GLOB capability is a ghost.</strong> Four backends declare support; no <code>glob()</code> method exists anywhere. The capability system says "yes" to something the code can't do.</li>
+</ol>
+<p>A third finding -- <code>S3Backend.close()</code> calling a process-wide <code>clear_instance_cache()</code> -- was initially rated Critical but downgraded to High after verification showed existing filesystem references remain valid (the cache is a lookup table, not a lifecycle manager).</p>
+<p>Beyond the critical items, the audit exposed a pattern: <strong>the "unified interface" promise breaks down at the edges.</strong> <code>get_folder_info</code> on empty folders returns success on LocalBackend but raises <code>NotFound</code> on S3/SFTP/Azure. <code>delete_folder</code> on non-empty folders raises <code>NotFound</code> (wrong type) on local but <code>RemoteStoreError</code> (base class) on others. These are the exact scenarios where backend interchangeability matters most -- error handling -- and the backends disagree.</p>
+<p>The audit also found that thread safety (claimed by STORE-007) has zero implementation (no locks on lazy init) and zero tests (no concurrency tests exist). The 95% test coverage includes tests like <code>assert WritableContent is not None</code> that hit import lines without verifying behavior.</p>
+<p><strong>The lesson: reviewing PRs catches local issues; adversarial auditing catches systemic ones.</strong> PR review asks "is this change correct?" Adversarial auditing asks "does the whole thing hold together?" The TOCTOU race conditions, cross-backend semantic inconsistencies, and docs-to-code drift were invisible at the PR level because each PR was internally consistent. They only became visible when looking at the system as a whole.</p>
+<p>Full findings: <code>sdd/audits/audit-001-adversarial-review.md</code>. Backlog items: <code>sdd/BACKLOG.md</code> section "Audit Findings (AUD-001)".</p>
+<h3 id="phase-13-fixing-the-audit-v060">Phase 13: Fixing the Audit (v0.6.0)<a class="headerlink" href="#phase-13-fixing-the-audit-v060" title="Permanent link">&para;</a></h3>
+<p>Phase 12 found the problems; Phase 13 fixed them. The human took the 7 highest-severity findings from the adversarial audit (2 Critical, 5 High) and wrote a detailed implementation plan. Claude Code executed it in a single branch (<code>fix/audit-critical-high</code>), producing one commit per finding.</p>
+<p><strong>The seven fixes, in merge order:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Severity</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AF-005</td>
+<td>High</td>
+<td>New <code>DirectoryNotEmpty</code> error type, replacing generic <code>NotFound</code> when deleting non-empty folders</td>
+</tr>
+<tr>
+<td>AF-002</td>
+<td>Critical</td>
+<td>Removed <code>Capability.GLOB</code> and <code>Capability.RECURSIVE_LIST</code> -- enum members with no corresponding methods</td>
+</tr>
+<tr>
+<td>AF-001</td>
+<td>Critical</td>
+<td><code>_register_builtin_backends()</code> now auto-registers S3, SFTP, and S3-PyArrow (not just local/azure)</td>
+</tr>
+<tr>
+<td>AF-003</td>
+<td>High</td>
+<td><code>S3Backend.close()</code> no longer calls <code>clear_instance_cache()</code>, which was a process-wide side-effect</td>
+</tr>
+<tr>
+<td>AF-004</td>
+<td>High</td>
+<td>SFTP <code>get_folder_info()</code> on empty folders returns <code>FolderInfo(file_count=0)</code> instead of raising <code>NotFound</code></td>
+</tr>
+<tr>
+<td>AF-006</td>
+<td>High</td>
+<td><code>_ErrorMappingStream(io.RawIOBase)</code> proxy wraps all <code>read()</code> return values, catching <code>OSError</code> during lazy reads and mapping them through each backend's error classifier</td>
+</tr>
+<tr>
+<td>AF-007</td>
+<td>High</td>
+<td>Azure backend guide wired into docs site navigation</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The stream wrapper (AF-006) was the most substantial change.</strong> The problem: <code>Backend.read()</code> opens a stream inside an <code>_errors()</code> context manager, but the caller reads from the stream <em>after</em> the context manager exits. Any <code>OSError</code> raised during <code>stream.read()</code> would leak as a raw exception instead of being mapped to a <code>RemoteStoreError</code> subtype. The fix was a <code>io.RawIOBase</code> proxy that intercepts <code>read()</code>, <code>readline()</code>, <code>seek()</code>, and iteration, catching <code>OSError</code> and routing it through the backend's error classifier.</p>
+<p><strong>The review cycle was instructive.</strong> The initial PR had all 7 fixes in a single commit. The repo owner's review returned 12 points, several of them genuine bugs:</p>
+<ol>
+<li><strong>Double-buffering</strong>: Azure and S3-PyArrow were wrapping <code>BufferedReader(RawIOBase)</code> in <code>_ErrorMappingStream</code> then wrapping <em>that</em> in another <code>BufferedReader</code>. Two layers of buffering for no benefit.</li>
+<li><strong>Exception scope too broad</strong>: The stream wrapper caught bare <code>Exception</code>, which would silently swallow programming errors like <code>TypeError</code> or <code>AttributeError</code>. Narrowed to <code>OSError</code> only.</li>
+<li><strong><code>bytes()</code> wrapping masked <code>None</code></strong>: <code>read()</code> returning <code>bytes(None)</code> silently produces <code>b'\x00\x00\x00\x00'</code> (length of None's repr) instead of propagating the sentinel. Removed the wrapper.</li>
+<li><strong><code>from None</code> suppressed diagnostics</strong>: Changed to <code>from exc</code> to preserve the original traceback for debugging.</li>
+<li><strong>Inline imports</strong>: Moved <code>_ErrorMappingStream</code> imports from inside methods to module top-level.</li>
+<li><strong>SFTP error mapping duplication</strong>: The new <code>_map_exception()</code> method duplicated logic from <code>_errors()</code>. Refactored <code>_errors()</code> to delegate to <code>_map_exception()</code>.</li>
+</ol>
+<p>After addressing all 12 points, the single commit was split into 7 per-finding commits and force-pushed.</p>
+<p><strong>A CI-only mypy failure added a cross-version wrinkle.</strong> The <code>_ErrorMappingStream</code> class extends <code>io.RawIOBase</code>, but Python 3.13's typeshed stubs define <code>BufferedReader</code>'s constructor with a type variable that mypy (strict mode) doesn't accept for custom <code>RawIOBase</code> subclasses. Local mypy (Windows, Python 3.12 stubs) passed; CI mypy (Linux, Python 3.13 stubs) failed. Using <code>type: ignore[type-var]</code> would pass CI but fail locally (unused-ignore). The fix: <code>cast("io.RawIOBase", stream)</code> works on both. <strong>Yet another instance of "cross-platform" meaning the entire toolchain, not just the runtime.</strong></p>
+<p><strong>The rebase surfaced a docs architecture change.</strong> Between the audit PR and the fix PR, master had migrated from <code>generate_docs.py</code> + <code>docs/</code> to <code>gen_pages.py</code> + <code>docs-src/</code> (ADR-0007). The AF-007 commit's changes to the deleted <code>generate_docs.py</code> were dropped during conflict resolution; the Azure guide was already in the new nav structure.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>85b8c9c  AF-005: Add DirectoryNotEmpty error type
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>2fd16ab  AF-002: Remove ghost GLOB and RECURSIVE_LIST capabilities
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>305243d  AF-001: Auto-register S3, SFTP, and S3-PyArrow backends
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>f3b0152  AF-003: Remove clear_instance_cache() from S3 close()
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>688f996  AF-004: Fix SFTP get_folder_info on empty folders
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>c56aca2  AF-006: Map native exceptions from lazy read streams
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>fade101  AF-007: Wire Azure guide into docs site
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>309b00b  Bump version: 0.5.0 -&gt; 0.6.0
+</code></pre></div>
+<h3 id="phase-14-release-checklist-process-improvement">Phase 14: Release Checklist (process improvement)<a class="headerlink" href="#phase-14-release-checklist-process-improvement" title="Permanent link">&para;</a></h3>
+<p>Expanded the 5-item release checklist into a 6-phase process (pre-flight, content freeze, version bump, validate, ship, post-release verification). The motivation: despite thorough process documentation -- specs, CLAUDE.md principles, CONTRIBUTING.md conventions, PR templates -- past releases still had preventable errors (v0.6.1 bumped but never published, CITATION.cff dates missed, no post-publish verification). Process docs govern how to build; a release checklist governs how to ship. One doesn't replace the other.</p>
+<h3 id="phase-15-reusable-skills-collaborative-process-mining">Phase 15: Reusable Skills (collaborative process mining)<a class="headerlink" href="#phase-15-reusable-skills-collaborative-process-mining" title="Permanent link">&para;</a></h3>
+<p>After ~165 commits of human-AI pair programming, recurring friction points had become visible in the data: 7 of 9 audit-fix commits forgot to update the backlog, 62% of code changes skipped the CHANGELOG, version-file sync was missed repeatedly, and cross-reference consistency (the "ripple check") was manual and error-prone. These weren't knowledge gaps -- the rules existed in CLAUDE.md, CONTRIBUTING.md, and PR templates -- but they lived in prose that had to be re-read and re-applied every session.</p>
+<p>The fix was to extract the patterns into executable checklists: 6 slash-command skills in <code>.claude/commands/</code> that Claude Code can invoke directly. Each skill codifies a workflow that had been learned through trial and error across multiple sessions:</p>
+<ul>
+<li><strong><code>/ripple-check</code></strong> — the cross-reference table from CLAUDE-REFERENCE.md, turned into an actionable checklist</li>
+<li><strong><code>/release</code></strong> — the 6-phase release process, with every file and command spelled out</li>
+<li><strong><code>/add-backend</code></strong> — 12-step backend scaffolding (the exact sequence that tripped up AF-001)</li>
+<li><strong><code>/backlog-sync</code></strong> — enforces "same commit" backlog updates</li>
+<li><strong><code>/pr-preflight</code></strong> — 11 checks covering the historically-missed items</li>
+<li><strong><code>/add-spec</code></strong> — SDD spec + test scaffolding with the right markers</li>
+</ul>
+<p>The interesting insight: <strong>the skills weren't designed top-down -- they were mined from failure patterns.</strong> The commit history told us exactly which steps got forgotten and how often. The backlog-sync skill exists because 78% of tagged commits forgot the backlog. The CHANGELOG check in pr-preflight exists because the majority of code changes skipped it. Each skill is a scar from a past mistake, formalized so it doesn't recur.</p>
+<p>This is a natural evolution of the human-AI workflow: the human defines principles (CLAUDE.md), the pair discovers where those principles get violated in practice (PR reviews, audits), and the violations get codified into guardrails (skills) that the AI can follow without re-deriving them each session. The principles stay high-level; the skills handle the mechanical enforcement.</p>
+<h3 id="phase-16-extensions-and-ecosystem-v090">Phase 16: Extensions and Ecosystem (v0.9.0)<a class="headerlink" href="#phase-16-extensions-and-ecosystem-v090" title="Permanent link">&para;</a></h3>
+<p>Three new capabilities shipped in a single minor release, all following the <code>ext.*</code> pattern established by the PyArrow adapter:</p>
+<ul>
+<li><strong><code>ext.batch</code></strong> (ID-022) — <code>batch_delete</code>, <code>batch_copy</code>, <code>batch_exists</code> with error aggregation via <code>BatchResult</code>. The pattern of "call Store methods one-by-one, collect errors into a result" proved clean enough to template future extensions.</li>
+<li><strong><code>ext.transfer</code></strong> (ID-023) — <code>upload</code>, <code>download</code>, <code>transfer</code> for local-file-to-store and cross-store data movement. Unified two long-standing backlog items (ID-001 cross-store transfer, ID-009 upload/download) into three streaming functions with progress callbacks. The <code>_ProgressReader</code> wrapper reuses the <code>cast("BinaryIO", ...)</code> + <code>__getattr__</code> delegation pattern from the PyArrow adapter.</li>
+<li><strong>PyArrow FileSystem adapter Phase 1</strong> (ID-016) — <code>StoreFileSystemHandler</code> wraps any Store into a <code>pyarrow.fs.PyFileSystem</code>, enabling interop with Parquet, Pandas, Polars, DuckDB, and dataset discovery. The tiered read strategy (BufferReader for small files, PythonFile for large seekable files) and <code>_StoreSink</code> spill-to-disk write buffer were the most architecturally complex additions since the backends themselves.</li>
+</ul>
+<p>Supporting work included a concurrency guide (AF-010), capability gating tests (AF-012), error path tests for S3/SFTP (AF-013), a CI gate on the publish workflow (AF-014), and cleanup of stale capability declarations (ID-019).</p>
+<p>The <code>ext.*</code> namespace is proving to be a good layering decision: extensions compose on the public Store API without backend coupling, so they work with <code>Store.child()</code>, capability gating, and any future backend. Each extension is pure Python (except PyArrow which requires its optional dep), independently testable, and unconditionally exported from the top-level package.</p>
+<h3 id="phase-17-instrumentation-and-optimization-v0100">Phase 17: Instrumentation and Optimization (v0.10.0)<a class="headerlink" href="#phase-17-instrumentation-and-optimization-v0100" title="Permanent link">&para;</a></h3>
+<p>Four infrastructure improvements shipped together: the extension namespace contract (ADR-0008) formalized <code>ext.*</code> rules that had been implicit, the S3-PyArrow read path optimization (RFC-0003) eliminated double-buffering in streaming reads, benchmark tiered modes replaced the binary slow/not-slow split with three tiers (quick/standard/full) plus comparative reporting, and the release/docs CI was unified around GitHub Releases as the single trigger.</p>
+<h3 id="phase-18-beta-and-glob-v0110">Phase 18: Beta and Glob (v0.11.0)<a class="headerlink" href="#phase-18-beta-and-glob-v0110" title="Permanent link">&para;</a></h3>
+<p>Two milestones in one release. The glob feature (ADR-0009) introduced a three-tier design: universal <code>fnmatch</code> filtering via <code>list_files(pattern=)</code>, capability-gated native <code>Store.glob()</code> (Local-only initially), and a portable <code>ext.glob.glob_files()</code> fallback with recursive <code>**</code> patterns. S3/Azure native glob remains planned.</p>
+<p>The project also graduated from Alpha to Beta. After 18 specs, 9 ADRs, 1040+ tests, and 4 extensions, the core API surface (<code>Store</code>, <code>Registry</code>, <code>Backend</code>, models, errors) was declared stable. A stability tiers table was added to CONTRIBUTING.md to formalize the contract: Beta means breaking changes are documented and avoided where possible, while extensions may evolve more freely.</p>
+<h3 id="phase-19-cloud-glob-and-conda-v0120">Phase 19: Cloud Glob and Conda (v0.12.0)<a class="headerlink" href="#phase-19-cloud-glob-and-conda-v0120" title="Permanent link">&para;</a></h3>
+<p>The glob story completed. v0.11.0 shipped with native glob only for LocalBackend; now S3, S3-PyArrow, and Azure all override <code>Backend.glob()</code> with prefix-optimized listing and client-side regex filtering (GLOB-018/019/020). Shared helpers were extracted to an internal <code>_glob.py</code> module to avoid duplicating prefix extraction and regex compilation across backends. All four file-capable backends now declare <code>Capability.GLOB</code>.</p>
+<p>On the infrastructure side, a conda-forge recipe was added (<code>packaging/conda-forge/recipe.yaml</code>, v1 CEP-13 format) with CI validation via <code>rattler-build --render-only</code>. The release checklist gained conda-specific steps: version bump in Phase 2, version match check in Phase 3, and sha256 update in Phase 5. Benchmark fixtures were fixed to invalidate fsspec listing caches (ID-032), and the 1000-file listing test was moved from quick to standard tier (ID-033).</p>
+<p>This release also demonstrated iterative self-review: the <code>/review-pr</code> skill (added in PR #76) was used to review its own PR and subsequent conda PRs, catching real consistency gaps each time -- including a non-existent GitHub Action, a premature version bump, and a missing staging step in the release checklist.</p>
+<h3 id="phase-20-research-before-implementation-post-v0120">Phase 20: Research Before Implementation (post-v0.12.0)<a class="headerlink" href="#phase-20-research-before-implementation-post-v0120" title="Permanent link">&para;</a></h3>
+<p>Three backlog items (ID-002 YAML config, ID-003 Pydantic adapter, ID-005 TOML config) had been sitting in the Ideas tier for months. Rather than jumping to implementation, the approach was to write a research document first: <code>sdd/research/research-store-config.md</code>. The document mapped the design space -- config formats, library choices, API surface, ecosystem compatibility -- before committing to any implementation decisions.</p>
+<p><strong>The research went through four review rounds, and each round found real problems:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Round</th>
+<th>Approach</th>
+<th>Findings</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Substantive review (fresh session)</td>
+<td>10 gaps: no fsspec analysis, no credential chain patterns, no Airflow/Hydra/dynaconf evaluation, secrets management hand-waved</td>
+</tr>
+<tr>
+<td>2-3</td>
+<td>Inline review comments</td>
+<td>Factual errors: <code>boto3</code> attribution wrong (S3Backend uses <code>s3fs</code> -&gt; <code>aiobotocore</code> -&gt; <code>botocore</code>), <code>endpoint_url</code> placement incorrect, <code>HostKeyPolicy</code> Enum case wrong</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Challenge review (adversarial session)</td>
+<td>7 gaps: <code>from_dict()</code> silently ignores unknown keys, YAML import precedence undermines YAML 1.2 intent, <code>SecretStr</code> + <code>model_dump()</code> negates secret protection, config discovery and schema versioning unaddressed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The most valuable discovery was a real pre-existing bug.</strong> The research process -- not a test, not a linter, not a code review -- found that <code>SFTPBackend.__init__</code> stores <code>host_key_policy</code> as a raw string without Enum coercion. When config loaders pass <code>"strict"</code> (a string from TOML/YAML), the Enum comparisons in <code>_create_ssh_client()</code> silently fail because <code>"strict" != HostKeyPolicy.STRICT</code> in Python. The result: host key verification silently degrades to the least secure mode. This bug existed since v0.2.0 and was invisible to every test, type checker, and code review because no test exercised the string-to-Enum path -- they all used the Enum directly.</p>
+<p><strong>The lesson has two parts:</strong></p>
+<p>First, <strong>research documents catch design-level bugs that code-level tools miss.</strong> The Enum coercion bug was invisible to mypy (both types are valid kwargs), invisible to tests (tests use Enum values, not strings), and invisible to code review (the constructor looks correct in isolation). Only by thinking through "what happens when a TOML parser sends a string here?" did the failure path become apparent. Thinking through integration scenarios on paper is cheaper than debugging them in production.</p>
+<p>Second, <strong>research quality improves dramatically under adversarial review.</strong> The first draft was described as "an implementation plan wearing a research hat" -- it proposed solutions before demonstrating that alternatives were studied. Four rounds of review transformed it into a genuine landscape analysis with explicit decisions, documented trade-offs, and scoped-out concerns. Each round found issues the previous round missed because each reviewer brought a different framing: the first focused on external landscape completeness, the second on factual accuracy, the third on internal consistency, the fourth on edge cases and missing explicit decisions.</p>
+<p>The final document (1,250 lines) covers 8+ ecosystem tools, maps all 6 backends' config surfaces, provides implementation sketches, resolves ADR-0002 tension with Pydantic, and captures 9 open design questions with reasoned recommendations. All of this exists before a single line of implementation code is written -- and the implementation spec can now cite specific decisions with ecosystem evidence rather than asserting them without context.</p>
+<h3 id="bug-001-when-your-value-object-has-no-word-for-here-post-v0120">BUG-001: When Your Value Object Has No Word for "Here" (post-v0.12.0)<a class="headerlink" href="#bug-001-when-your-value-object-has-no-word-for-here-post-v0120" title="Permanent link">&para;</a></h3>
+<p><code>RemotePath</code> -- the immutable path value object at the heart of every Store operation -- could represent any path <em>except</em> the root folder. Both <code>RemotePath("")</code> and <code>RemotePath(".")</code> raised <code>InvalidPath</code> by design (PATH-008). This was fine until <code>get_folder_info("")</code> needed to return metadata about the root folder itself. All six backends tried to construct <code>FolderInfo(path=RemotePath(""))</code> and crashed.</p>
+<p>The fix was a class-level sentinel: <code>RemotePath.ROOT</code>, created via <code>object.__new__</code> to bypass <code>__init__</code> validation, with an internal path of <code>"."</code>. The constructor still rejects <code>""</code> and <code>"."</code> -- <code>ROOT</code> is the only way to get a root-folder path, and it's a singleton.</p>
+<p><strong>The interesting part was the bug's discovery path.</strong> It wasn't found by tests, type checking, or code review. It was found by an external code analysis tool scanning for edge cases in <code>RemotePath</code> construction across all backends. The four regression tests were written <em>before</em> the fix -- a pattern that made the fix trivially verifiable. Write the failing test first, then make it pass.</p>
+<p>The fix also surfaced two related consistency issues (now tracked as ID-040 and ID-041): <code>move(src, dst)</code> behaves inconsistently when <code>src == dst</code> across backends, and <code>Registry.get_store()</code> returns stores that can accidentally close a shared backend. Neither crashes today, but both are foot-guns waiting for the right trigger. <strong>Edge-case audits don't just find the bug you're looking for -- they find the bugs next to it.</strong></p>
+<h3 id="phase-21-observability-and-credential-hygiene-v0130">Phase 21: Observability and Credential Hygiene (v0.13.0)<a class="headerlink" href="#phase-21-observability-and-credential-hygiene-v0130" title="Permanent link">&para;</a></h3>
+<p>This release shipped two new extensions and a security hardening layer, all following the established <code>ext.*</code> pattern:</p>
+<ul>
+<li><strong><code>ext.observe</code></strong> (ID-024) -- callback-based observability hooks. <code>observe(store, on_read=..., on_write=..., on_any=..., around=...)</code> wraps a Store in an <code>ObservedStore</code> proxy that fires <code>StoreEvent</code> callbacks after each operation. A <code>BufferedObserver</code> queues events for batched delivery on a background thread. A drift-protection test ensures new Store methods cannot silently bypass observation.</li>
+<li><strong><code>ext.otel</code></strong> (ID-024) -- pre-built OpenTelemetry bridge. <code>otel_observe(store)</code> wraps a Store with distributed tracing spans and three metric instruments (operations counter, errors counter, duration histogram). Depends only on <code>opentelemetry-api</code> for zero-cost no-ops without an SDK configured. New optional extra: <code>pip install "remote-store[otel]"</code>.</li>
+<li><strong><code>Secret</code> wrapper</strong> (ID-039) -- credential hygiene layer in <code>_config.py</code>. <code>Secret</code> wraps sensitive strings so that <code>repr()</code> and <code>str()</code> return <code>'***'</code> while <code>.reveal()</code> returns the plain value. <code>RegistryConfig.from_dict()</code> auto-wraps known sensitive keys. All backends accept <code>str | Secret</code> via <code>_reveal()</code>. A <code>SecretRedactionFilter</code> logging filter scrubs secrets from log output.</li>
+</ul>
+<p>The <code>Secret</code> wrapper emerged from the config loaders research (Phase 20). While mapping out how TOML/YAML config values flow into backend constructors, the research identified that credential strings were stored and logged in plain text throughout the library. Rather than waiting for config loaders to ship, the credential hygiene layer was extracted as a standalone improvement -- a case of research producing immediate value before its primary deliverable.</p>
+<p>The release also fixed BUG-001 (<code>get_folder_info("")</code> crashing for root folders) and added intrinsic stdlib logging to all modules (ID-004), completing the three-layer observability stack: Layer 1 (stdlib logging), Layer 2 (<code>ext.observe</code> callbacks), Layer 3 (<code>ext.otel</code> OpenTelemetry).</p>
+<h3 id="phase-22-config-loaders-and-consolidation-v0140">Phase 22: Config Loaders and Consolidation (v0.14.0)<a class="headerlink" href="#phase-22-config-loaders-and-consolidation-v0140" title="Permanent link">&para;</a></h3>
+<p>Phase 20's research document finally paid off. Three config loaders shipped in a single PR: <code>RegistryConfig.from_toml()</code> (zero-dep on 3.11+, <code>tomli</code> backport for 3.10), <code>RegistryConfig.from_yaml()</code> (pyyaml or ruamel.yaml), and <code>pydantic_to_registry_config()</code> in the new <code>ext/pydantic.py</code> module. The research had mapped every design decision in advance -- format precedence, library fallback chains, <code>SecretStr</code> interaction, unknown-key detection -- so implementation was a matter of following the blueprint. <code>from_dict()</code> also gained a <code>UserWarning</code> for unrecognized top-level keys like <code>"backend"</code> (typo for <code>"backends"</code>), a gap the Phase 20 adversarial review had flagged.</p>
+<p>Alongside the loaders, three "Tier 1" fixes addressed foot-guns the research had surfaced: <code>Registry.get_store()</code> no longer owns the shared backend (ID-041), <code>move()</code>/<code>copy()</code> short-circuit when <code>src == dst</code> (ID-040), and <code>_stacklevel</code> was removed from the public <code>from_dict()</code> signature (ID-043). The last one was a strict application of a project rule: no private parameters on public APIs, ever.</p>
+<p><strong>The consolidation work was as significant as the features.</strong> Both SFTP and Memory backends reached 100% test coverage (BK-005, BK-006) -- 65 new tests covering every uncovered branch. The slim-tests effort (PR #116) then went the other direction: collapsing verbose test functions into <code>@pytest.mark.parametrize</code> tables and extracting a shared <code>RestrictedBackend</code> fixture into <code>conftest.py</code>, saving ~940 lines while preserving every test case. This was lesson #15 in practice -- write tests verbosely, then compress once patterns emerge.</p>
+<p>A design-compliance audit (AF-016 through AF-021) swept the codebase for spec drift: glob capabilities missing from three backend specs, method ordering violations in <code>_store.py</code> and all six backends, an unlinked TODO in <code>ext/arrow.py</code>. These were individually minor but collectively represented the kind of slow rot that compounds across releases.</p>
+<p>Three more research documents were added to the <code>sdd/research/</code> collection: unified retry policy (ID-010), v1 communication strategy, and example testing patterns across language ecosystems. The research-first pattern from Phase 20 was becoming habitual -- map the space on paper before committing to implementation.</p>
+<p>The data lake patterns guide (ID-034) demonstrated that existing features could combine into something greater than the sum of their parts. <code>Store.child()</code> + <code>ext.arrow</code> + <code>ext.transfer</code> already supported Bronze/Silver/Gold medallion architectures -- the guide just documented the patterns. No new code was needed; the API surface was already sufficient.</p>
+<h3 id="phase-23-extensions-and-documentation-v0150">Phase 23: Extensions and Documentation (v0.15.0)<a class="headerlink" href="#phase-23-extensions-and-documentation-v0150" title="Permanent link">&para;</a></h3>
+<p>This release was the most extension-heavy yet -- three new extensions and major enhancements to an existing one, all backed by specs and full test suites.</p>
+<p><strong>Streaming atomic writes</strong> (<code>Store.open_atomic()</code>, ID-026) extended the existing <code>write_atomic()</code> with a context manager that yields a writable file object, eliminating the need to buffer large files in memory before writing. The implementation required careful attention to error mapping boundaries: SFTP's context manager had to yield <em>outside</em> the <code>_errors()</code> scope so user exceptions wouldn't get remapped as storage errors. RFC-0004 documented the design, and all six backends got per-backend temp-path strategies.</p>
+<p><strong>Store-level caching</strong> (<code>ext.cache</code>, ID-025) added TTL-based read caching with automatic invalidation on mutations. A subtle CPython dict behavior bit us: <code>dict.__setitem__</code> on an existing key does <em>not</em> move it to the end, breaking LRU eviction. The fix -- <code>del</code> then re-insert -- was simple but the bug was invisible in unit tests and only appeared under specific access patterns.</p>
+<p><strong>Parallel batch operations</strong> (ID-035) added <code>concurrent=True</code> to <code>batch_delete</code>, <code>batch_copy</code>, and <code>batch_exists</code>, using <code>ThreadPoolExecutor</code> from stdlib. The design explicitly made <code>stop_on_error</code> incompatible with concurrency -- a <code>ValueError</code> rather than silent misbehavior.</p>
+<p><strong>Hive-style partition helpers</strong> (<code>ext.partition</code>, ID-036) provided pure-Python path builders and parsers for partition schemes like <code>year=2026/month=03/data.parquet</code>. A review caught that <code>=</code> in partition values would break round-trip parsing -- rejected at construction time.</p>
+<p><strong>PyArrow Tier 1 native fast-path</strong> (ID-037) completed the PyArrow adapter's Phase 2: <code>StoreFileSystemHandler</code> now probes for a native PyArrow filesystem at construction and dispatches reads directly to C++ for zero-GIL overhead. Benchmarks showed 1.6-2x improvement on S3-PyArrow.</p>
+<p><strong>The documentation overhaul</strong> (DOC-001) was the largest non-code effort yet: full Diataxis restructure, 9 extension API reference pages, 7 new content pages, docstring audit for Store/Backend/errors, and cross-links throughout. Lesson #16 emerged: adopt a documentation framework early. Retrofitting Diataxis onto an existing flat site required reclassifying every page and rebuilding navigation.</p>
+<p><strong>E2E integration tests</strong> (ID-050) validated six extensions working together in a full data lake pipeline against Docker backends (MinIO, Azurite). A cross-layer assertion lesson: don't assert <code>gold_bytes &lt; silver_bytes</code> -- aggregation adds computed columns that can make Gold larger despite fewer rows. Use row counts for aggregation invariants.</p>
+<h3 id="phase-24-developer-experience-and-tooling-post-v0150">Phase 24: Developer Experience and Tooling (post-v0.15.0)<a class="headerlink" href="#phase-24-developer-experience-and-tooling-post-v0150" title="Permanent link">&para;</a></h3>
+<p>Four PRs (#170--#173) landed in a single day, each small but collectively shaping the developer experience story.</p>
+<p><strong>API ergonomics through convention</strong> (ID-056, ID-055). <code>read_text()</code> and <code>iter_children()</code> followed pathlib's API conventions deliberately -- same parameter names (<code>encoding</code>, <code>errors</code>), same return semantics. The lesson: when your audience is citizen developers, matching stdlib patterns reduces the API surface they need to learn to zero.</p>
+<p><strong>Learning from other projects' toolchains</strong> (#171, #173). A research pass on FastAPI's documentation setup (PR #171) revealed that mkdocstrings already supported colored, cross-linked type annotations -- just not enabled. A 4-line config change (<code>separate_signature</code>, <code>signature_crossrefs</code>, <code>show_symbol_type_heading</code>, <code>show_symbol_type_toc</code>) in PR #173 gave the API reference the same visual quality that FastAPI is known for. Lesson: before building, check if your existing tools already support the feature.</p>
+<p><strong>uv adoption, incrementally</strong> (#173). CI moved from pip to uv across three workflows (ci.yml, publish.yml, then docs.yml). The key insight: uv replaces pip <em>for installation speed in CI</em>, not hatch for local development. Locally, <code>hatch run</code> remains the interface -- it manages environments, scripts, and matrix testing. uv is a CI concern only, cutting install steps from ~45s to ~8s.</p>
+<p><strong>Cross-platform as a first-class constraint.</strong> The Win/macOS/Linux test matrix surfaced patterns that became project conventions: errno codes instead of string matching (German locale breaks English error messages), closing streams before <code>shutil.rmtree()</code> (Windows file locking), ASCII-only <code>print()</code> (cp1252 codec), and em-dash avoidance in Markdown titles (mojibake via MkDocs). These aren't edge cases -- they're the default experience for half the target audience.</p>
+<p><strong>Ripple-check strengthening</strong> (#172). The CLAUDE-REFERENCE.md ripple-check table gained more specific verification targets: Store method changes now explicitly require README API table + method count updates, extension changes require docs nav + API reference pages. The README audit in the same PR caught 3 missing examples and a stale method count -- exactly the kind of drift the table is designed to prevent.</p>
+<h3 id="phase-25-api-conveniences-and-documentation-quality-v0160">Phase 25: API Conveniences and Documentation Quality (v0.16.0)<a class="headerlink" href="#phase-25-api-conveniences-and-documentation-quality-v0160" title="Permanent link">&para;</a></h3>
+<p>The v0.16.0 release bundled the post-v0.15.0 work into a cohesive minor release: new convenience APIs (<code>read_text()</code>, <code>iter_children()</code>, <code>ping()</code>), the <code>RetryPolicy</code> configuration surface, the YAML config loader move to <code>ext.yaml</code>, and a documentation quality audit (Audit 003) that fixed 16 findings across guides, docstrings, and examples. The <code>SFTPUtils</code> public utility class replaced private imports in user-facing code, and <code>from_yaml()</code> moved to the extension layer for consistency with the Pydantic adapter.</p>
+<p>The release also shipped colored type annotations in the docs site (mkdocstrings config), uv-based CI installs across all workflows, and cross-platform CI (Windows + macOS). The documentation audit reinforced Principle 17 from the lessons section: audit findings are hypotheses, not prescriptions. Three of the 19 findings were closed as non-defects after investigation.</p>
+<h3 id="phase-26-the-polish-phase-what-happens-after-feature-complete-post-v0160">Phase 26: The Polish Phase -- What Happens After "Feature Complete" (post-v0.16.0)<a class="headerlink" href="#phase-26-the-polish-phase-what-happens-after-feature-complete-post-v0160" title="Permanent link">&para;</a></h3>
+<p>After v0.16.0, the project had every feature it needed for beta. What followed was not a cooldown -- it was the densest learning period yet. Twelve PRs in four days exposed problems that only become visible when you stop adding features and start examining what you already have.</p>
+<p><strong>Consistency bugs are invisible to tools.</strong> <code>list_folders()</code> had been returning plain strings since v0.1.0 while every other listing method returned typed objects. Tests passed, mypy was happy -- strings cooperate just enough. Only a systematic cross-method API audit (ID-074) surfaced the gap. The fix introduced <code>FolderEntry</code> and a <code>PathEntry</code> protocol unifying all listing return types. <strong>Each callsite is locally correct; only a cross-method comparison reveals the inconsistency.</strong></p>
+<p><strong>Research that says "no" is not wasted.</strong> Two research documents produced the explicit decision <em>not</em> to build what they investigated. The async API research (ID-013) found it would double codebase/surface/docs with no clear audience benefit. The Dagster extension research (ID-073) concluded v1 should be a thin adapter -- only if someone actually needs it. Both documents live in <code>sdd/research/</code>, so when someone asks "why no async?", the answer is a link, not a re-investigation.</p>
+<p><strong>Fast failures that leave a record.</strong> The Claude Code GitHub Action for automated PR review (ID-069) hit 18 sandbox permission denials, took ~10 minutes, and cost ~$2 per trivial PR. Added in one commit, reverted in the next. The revert documents the specific failure modes so nobody repeats the experiment.</p>
+<p><strong>Choose docstring style by what your toolchain renders, not what looks best in source.</strong> Sphinx <code>:param:</code> markers, <code>:class:</code> cross-references, and <code>.. note::</code> directives all rendered as plain text in mkdocstrings. The migration to Google style (ID-080, 367+ markers across 25 files) was driven entirely by rendered output, not preference. Review caught that dataclass docstrings need <code>Attributes:</code> not <code>Args:</code> -- a distinction only visible in the rendered docs.</p>
+<p><strong>Include-markdown makes every link potentially circular.</strong> The README restructuring (ID-081) replaced the inline extras list with a link to getting-started. But <code>getting-started.md</code> includes README content via <code>include-markdown</code> -- so the link would point back to itself. <strong>The authoring context (README standalone) and rendering context (README included inside another page) see different link targets.</strong></p>
+<p><strong>Encoding bugs survive by hiding in unchecked cells.</strong> Em dashes were caught and fixed three times in the same PR -- prose, then table headers, then table N/A cells. Each review round fixed the instances the reviewer checked; the rest survived. Em dashes render fine on Linux CI but produce mojibake on Windows cp1252. <strong>Systematic encoding issues don't announce themselves -- they hide in the specific cells you didn't look at.</strong></p>
+<p><strong>Benchmark numbers without understanding the measurement are dangerous.</strong> Azure comparative benchmarks showed remote-store 107x slower than <code>adlfs</code> at listing. Investigation revealed a fsspec caching artifact: <code>adlfs</code> caches after the first call, remote-store hits Azurite every iteration. Real overhead: 1.2x vs raw SDK -- FileInfo/RemotePath construction cost. <strong>The 107x would have been damning; the 1.2x is an acceptable design trade-off.</strong></p>
+<p><strong>"Defensive" code that duplicates library guarantees is just overhead.</strong> Three S3 listing methods had <code>exists()</code> guards before every call -- an extra HEAD request each time. But <code>s3fs.ls()</code> already raises <code>FileNotFoundError</code> for missing prefixes. The guards doubled round-trips for zero benefit. <strong>Know what your dependencies promise before adding safety nets.</strong></p>
+<h3 id="phase-27-listing-normalization-and-api-consistency-v0170">Phase 27: Listing Normalization and API Consistency (v0.17.0)<a class="headerlink" href="#phase-27-listing-normalization-and-api-consistency-v0170" title="Permanent link">&para;</a></h3>
+<p>The v0.17.0 release completed the API consistency work that Phase 26 identified. The headline change was listing normalization (ID-072): <code>list_folders()</code> shifted from returning bare strings to <code>FolderEntry</code> objects, and <code>iter_children()</code> from <code>FileInfo | str</code> to <code>FileInfo | FolderEntry</code>. A new <code>PathEntry</code> protocol unified all listing return types. <code>FolderInfo</code> gained a <code>.name</code> property (ID-079) so it also satisfies <code>PathEntry</code>. These changes made the listing API uniform -- every method that returns path-bearing objects now returns typed objects with <code>.name</code> and <code>.path</code>.</p>
+<p>Azure got <code>max_concurrency</code> support (ID-076), threading a single constructor parameter through all five SDK call sites. Benchmarks showed ~50% write and ~25% read improvement on 100MB payloads. <code>Store.write_text()</code> (ID-074) rounded out the convenience API started by <code>read_text()</code> in v0.16.0.</p>
+<p>On the docs side, the full Sphinx-to-Google docstring migration (ID-080, 367 markers across 25 files) unlocked proper rendering in mkdocstrings. The README got a medium pass (ID-081) streamlining onboarding, and the docs site gained Fira Code, sticky tabs, and property type annotations (ID-064). S3 listing methods dropped their redundant <code>exists()</code> guards (ID-062) -- a one-line change per method that halved round-trips.</p>
+<h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
+<h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
+<p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
+<h3 id="ai-excels-at-breadth-tasks">AI excels at breadth tasks<a class="headerlink" href="#ai-excels-at-breadth-tasks" title="Permanent link">&para;</a></h3>
+<p>Tasks like "write 53 tests to cover all uncovered code paths" or "create 6 example scripts demonstrating different API patterns" are tedious for humans but well-suited to AI. Claude Code could read the coverage report, identify gaps, and write targeted tests -- all in a single pass.</p>
+<h3 id="plan-mode-for-alignment">Plan mode for alignment<a class="headerlink" href="#plan-mode-for-alignment" title="Permanent link">&para;</a></h3>
+<p>Before large tasks, Claude Code entered "plan mode" -- proposing a detailed plan (files to create, structure, approach) for the human to review before any code was written. This prevented wasted work. The examples/notebooks plan, for instance, was reviewed and approved before a single file was created.</p>
+<h3 id="discovery-through-implementation">Discovery through implementation<a class="headerlink" href="#discovery-through-implementation" title="Permanent link">&para;</a></h3>
+<p>The empty path bug was found because writing examples forced real API usage. This is a well-known benefit of dogfooding, but it's worth noting that <strong>AI-written examples caught an issue that human-written tests missed.</strong> The tests were spec-compliant but the spec itself had a gap.</p>
+<h3 id="detailed-plans-pay-for-themselves">Detailed plans pay for themselves<a class="headerlink" href="#detailed-plans-pay-for-themselves" title="Permanent link">&para;</a></h3>
+<p>The SFTP backend plan was unusually detailed -- specifying constructor params, region structure, temp file naming patterns, and even the test server architecture. This upfront investment meant the entire implementation (spec + server + backend + tests + wiring) was completed in a single session with no false starts. <strong>The more complex the task, the more a detailed plan pays off.</strong></p>
+<h3 id="legacy-code-as-a-knowledge-source">Legacy code as a knowledge source<a class="headerlink" href="#legacy-code-as-a-knowledge-source" title="Permanent link">&para;</a></h3>
+<p>The SFTP backend drew from battle-tested legacy code (<code>legacy/sftp/sftp_store.py</code>) for PEM sanitization and host key handling. Claude Code extracted the proven patterns and adapted them to the new Backend ABC contract. <strong>Pointing AI at working legacy code is often more effective than describing requirements from scratch.</strong></p>
+<h2 id="what-was-surprising">What Was Surprising<a class="headerlink" href="#what-was-surprising" title="Permanent link">&para;</a></h2>
+<h3 id="cross-platform-issues-surface-in-layers">Cross-platform issues surface in layers<a class="headerlink" href="#cross-platform-issues-surface-in-layers" title="Permanent link">&para;</a></h3>
+<p>The Windows errno fix was discovered because Claude Code ran tests on a German-locale Windows machine. The <code>delete_folder</code> method was catching <code>OSError</code> and checking <code>if "not empty" in str(exc)</code> -- which fails when the OS returns "Das Verzeichnis ist nicht leer." The fix (checking <code>exc.errno</code> instead) is obvious in hindsight but easy to miss in an English-only development environment.</p>
+<p>The SFTP work added another layer: mypy type-checking results differed between Windows (local) and Linux (CI) due to different tenacity stub versions. <strong>Cross-platform doesn't just mean "runs on both OSes" -- it means the entire toolchain (linters, type checkers, dependency resolvers) behaves consistently.</strong></p>
+<h3 id="session-isolation-as-a-review-mechanism">Session isolation as a review mechanism<a class="headerlink" href="#session-isolation-as-a-review-mechanism" title="Permanent link">&para;</a></h3>
+<p>The most unexpected quality win wasn't a tool or a process — it was the context boundary between Claude Code sessions. A reviewing session, with no memory of the authoring session's reasoning, approached the same artifacts as a genuinely independent reader. It didn't have to fight the urge to skim past familiar code; the code wasn't familiar. This produced reviews that were qualitatively different from "check your own work" — closer to what you'd get from a colleague who reads your PR for the first time.</p>
+<h3 id="the-humans-role-shifts">The human's role shifts<a class="headerlink" href="#the-humans-role-shifts" title="Permanent link">&para;</a></h3>
+<p>With AI handling implementation, the human's role shifted toward:
+- <strong>Defining scope</strong> ("do items 1 through 5")
+- <strong>Making judgment calls</strong> ("fix it, but let's audit all methods first")
+- <strong>Architectural decisions</strong> (spec-first, two-tier path resolution)
+- <strong>Quality gates</strong> (reviewing code, approving plans)</p>
+<p>This is closer to a tech lead role than a traditional developer role.</p>
+<h3 id="documentation-quality-requires-iteration">Documentation quality requires iteration<a class="headerlink" href="#documentation-quality-requires-iteration" title="Permanent link">&para;</a></h3>
+<p>The first pass of examples had issues: Unicode characters that broke on Windows consoles, f-string syntax not supported on Python 3.10, and <code>RemotePath("")</code> calls that triggered validation errors. Each required a fix-and-rerun cycle. <strong>Generated documentation isn't done until it actually runs.</strong></p>
+<h3 id="unpinned-dependencies-are-a-time-bomb">Unpinned dependencies are a time bomb<a class="headerlink" href="#unpinned-dependencies-are-a-time-bomb" title="Permanent link">&para;</a></h3>
+<p>The s3fs downgrade incident was particularly insidious: pip silently installed a 2-year-old version instead of failing with a resolution error. The CI was green one day and broken the next, with zero code changes to the affected component. <strong>Pin lower bounds on all non-trivial dependencies, especially in dev/CI configurations where transitive dependency trees are large.</strong></p>
+<h2 id="what-could-be-better">What Could Be Better<a class="headerlink" href="#what-could-be-better" title="Permanent link">&para;</a></h2>
+<h3 id="spec-coverage-of-edge-cases">Spec coverage of edge cases<a class="headerlink" href="#spec-coverage-of-edge-cases" title="Permanent link">&para;</a></h3>
+<p>The specs didn't address empty path semantics, which led to a runtime discovery. Specs could include an "Edge Cases" section explicitly listing boundary conditions (empty strings, None, very long paths, special characters).</p>
+<h3 id="test-before-spec-updates">Test-before-spec updates<a class="headerlink" href="#test-before-spec-updates" title="Permanent link">&para;</a></h3>
+<p>When we fixed the empty path handling, the code and tests were updated first, and the spec was updated afterward. In strict SDD, the spec should change first. In practice, the fix-then-document flow was faster for a bug-like issue, but it's a discipline worth noting.</p>
+<h3 id="test-server-complexity">Test server complexity<a class="headerlink" href="#test-server-complexity" title="Permanent link">&para;</a></h3>
+<p>The in-process SFTP test server (~275 lines) is nearly as complex as some backends. The <code>SFTPHandle.stat()</code> bug showed that test infrastructure can harbor subtle bugs of its own. A dedicated debug script was needed to isolate the issue -- standard test output just showed "Failure" with no useful context. <strong>Test servers deserve the same care as production code.</strong></p>
+<h3 id="a-living-backlog-beats-a-static-roadmap">A living backlog beats a static roadmap<a class="headerlink" href="#a-living-backlog-beats-a-static-roadmap" title="Permanent link">&para;</a></h3>
+<p>After the production readiness audit (Phase 5), we realized loose ideas were
+scattered across commit messages and review comments. We created
+<code>sdd/BACKLOG.md</code> as a single, tiered tracker:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Prefix</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Release Blockers</td>
+<td><code>BL-NNN</code></td>
+<td>Must ship before the next PyPI publish</td>
+</tr>
+<tr>
+<td>Backlog</td>
+<td><code>BK-NNN</code></td>
+<td>Committed work, queued behind blockers</td>
+</tr>
+<tr>
+<td>Ideas</td>
+<td><code>ID-NNN</code></td>
+<td>Parking lot — not evaluated, not committed</td>
+</tr>
+<tr>
+<td>Done</td>
+<td><code>DONE-NNN</code></td>
+<td>Completed items kept for reference</td>
+</tr>
+</tbody>
+</table>
+<p>Items graduate upward: an Idea becomes a Backlog item when someone scopes it
+and commits to an RFC; a Backlog item becomes a Release Blocker when it's
+required for the upcoming release. Code-changing items still go through the
+full SDD pipeline (spec → tests → code); operational items (CI, branch
+protection, dependency pins) are tracked and closed directly.</p>
+<p>This turned out to be surprisingly useful for AI-assisted development.
+<strong>Giving Claude Code a structured backlog to read means it can propose
+promotions, spot dependencies between items, and draft new entries in the
+right tier with the right prefix</strong> — without the human re-explaining the
+prioritization scheme each session.</p>
+<h2 id="lessons-for-others">Lessons for Others<a class="headerlink" href="#lessons-for-others" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p><strong>Write specs before involving AI.</strong> The clearer your specs, the better the AI's output. Vague requirements produce vague code.</p>
+</li>
+<li>
+<p><strong>Use plan mode for anything non-trivial.</strong> Having the AI propose a plan before writing code catches misalignment early.</p>
+</li>
+<li>
+<p><strong>Run the examples.</strong> Generated code that looks right may not be right. Run it, on your actual platform, with your actual Python version.</p>
+</li>
+<li>
+<p><strong>Let the AI do breadth; you do depth.</strong> AI is great at writing 50 tests or 6 example scripts. You're great at deciding whether the API design is right.</p>
+</li>
+<li>
+<p><strong>Document decisions as you go.</strong> ADRs and spec updates are cheap to write in the moment but expensive to reconstruct later. We documented the empty path decision as ADR-0004 immediately after making it.</p>
+</li>
+<li>
+<p><strong>Audit before release.</strong> Asking "what's missing?" and getting a structured, prioritized list is one of the highest-value uses of AI pair programming. It surfaces blind spots you've adapted to.</p>
+</li>
+<li>
+<p><strong>Pin your dependency lower bounds.</strong> Unpinned deps in CI will eventually bite you. A <code>&gt;=</code> pin costs nothing and prevents silent downgrades that produce baffling failures.</p>
+</li>
+<li>
+<p><strong>Point AI at legacy code.</strong> If you have working code that solves part of the problem, show it to the AI. It will extract the relevant patterns faster than you can describe them.</p>
+</li>
+<li>
+<p><strong>Test behavior, not just interfaces.</strong> A method that returns <code>BinaryIO</code> can satisfy mypy and pass functional tests while secretly loading everything into memory. If your spec promises streaming, write a test that proves it streams — e.g., verify that reading a large file doesn't allocate proportional memory, or that the returned handle reads lazily from the source.</p>
+</li>
+<li>
+<p><strong>Periodically audit spec claims against implementation.</strong> Specs drift. A dedicated "does the code still do what the spec says?" review caught four backends worth of non-streaming <code>read()</code> implementations hiding behind correct type signatures.</p>
+</li>
+<li>
+<p><strong>Review in a separate session from authoring.</strong> A single AI session reviewing its own output suffers from the same blind spot a human developer has proofreading their own code — the author's mental model fills in gaps the artifact doesn't. A fresh session reads the output cold and catches what the authoring session "knew" but didn't write down. This is especially valuable for design documents (specs, RFCs) where correctness means completeness and internal consistency, not just "does it compile."</p>
+</li>
+<li>
+<p><strong>Run adversarial audits after major releases.</strong> PR reviews catch local issues; adversarial audits catch systemic ones. Cross-backend semantic inconsistencies, capability declarations with no implementation, and docs-to-code drift are invisible at the PR level because each PR is internally consistent. Asking a fresh session to "prove this package wrong" with parallel specialized agents (security, tests, design, CI) surfaces the cross-cutting concerns that no single review would find. The cost is one session; the yield is a prioritized list of real problems ranked by severity.</p>
+</li>
+<li>
+<p><strong>Write research documents before implementation specs, and review them like code.</strong> When a feature touches multiple design dimensions (formats, libraries, ecosystem compatibility, security), a research document that maps the full design space before committing to any solution prevents expensive mid-implementation pivots. But the document itself must be reviewed rigorously -- the first draft tends to be "an implementation plan wearing a research hat," proposing solutions before proving alternatives were studied. Multiple review rounds from fresh sessions, each with a different angle (landscape completeness, factual accuracy, internal consistency, adversarial challenge), transform shallow research into genuine analysis. The investment is front-loaded but pays compound interest: every downstream artifact -- spec, implementation, docs, tests -- can cite explicit decisions with ecosystem evidence instead of asserting them without context. Research also catches design-level bugs that no amount of code review, testing, or type-checking will find, because those tools operate on code that exists, not on integration scenarios that haven't been built yet.</p>
+</li>
+<li>
+<p><strong>Your CI environment is not your user's environment.</strong> CI ran on Linux with Azurite (our Azure emulator), which inflated test coverage enough to mask untested code paths in new config loaders. Meanwhile, example scripts used Unicode arrows (<code>→</code>) that rendered fine on Linux's UTF-8 locale but crashed on Windows cp1252. Both bugs shipped through green CI. The fix was a pre-commit hook rejecting non-ASCII in <code>print()</code> calls and a release checklist item requiring <code>hatch run all</code> locally — because the developer's environment (Windows, no Docker backends) was closer to a real user's experience than CI was. <strong>If your CI is more forgiving than your users' environments, your CI is testing itself, not your software.</strong></p>
+</li>
+<li>
+<p><strong>Parametrize tests ruthlessly, but only after they exist.</strong> Once a test suite reaches critical mass, repetitive test functions become a maintenance burden — every API change ripples through dozens of near-identical functions. Collapsing them into <code>@pytest.mark.parametrize</code> data tables with <code>pytest.param(..., id="...")</code> preserves every test case while cutting hundreds of lines. Shared fixtures (a single <code>RestrictedBackend</code> in <code>conftest.py</code> replaced five per-file copies) compound the savings. But this works precisely because the tests existed first as explicit, readable functions — parametrizing from scratch risks hiding what's actually being tested behind opaque data tables. <strong>Write tests verbosely, then compress them once patterns emerge.</strong> The result is a suite that's faster to scan, cheaper to extend, and just as thorough.</p>
+</li>
+<li>
+<p><strong>Adopt a documentation framework early.</strong> We retrofitted the <a href="https://diataxis.fr/">Diataxis</a> framework (tutorials, how-to guides, reference, explanation) onto an existing flat docs site. Every existing page needed reclassification, the navigation had to be rebuilt, and pages that mixed guide content with reference material had to be split. If we had adopted Diataxis from the start, content would have landed in the right category naturally. The lesson applies beyond Diataxis: any structural decision (code architecture, test organization, docs layout) is cheapest when made before content accumulates, and most expensive when retrofitted after hundreds of pages exist. We also learned that Sphinx RST cross-reference syntax (<code>:meth:</code>, <code>:class:</code>) does not render in mkdocstrings -- a subtle trap when writing docstrings with IDE autocompletion trained on Sphinx projects.</p>
+</li>
+<li>
+<p><strong>Audit findings are hypotheses, not facts -- verify before fixing.</strong> Our third audit (documentation quality) produced 19 findings. Blindly implementing them would have meant updating hardcoded counts that would go stale again, adding 40+ boilerplate docstrings that add zero information, and "fixing" three items that weren't defects at all. The real value came from treating each finding as a hypothesis and investigating the root cause: a stale count revealed a hand-maintained listing that should be structural; missing proxy docstrings revealed a mkdocstrings config gap (one line fix vs 40 boilerplate edits); private imports in guides revealed missing public re-exports. Three findings were closed as non-defects after verifying the code was already correct. <strong>Completeness (fix every finding) is not the same as correctness (fix the right thing). An audit tells you where to look, not what to do.</strong></p>
+</li>
+<li>
+<p><strong>Systematic pattern errors are invisible because they look intentional.</strong> Every docstring in the project used RST <code>Example::</code> literal blocks — the standard Python convention. They rendered without syntax highlighting in mkdocstrings, but because <em>every</em> docstring was wrong in the same way, it looked like a deliberate style choice. No linter, type checker, or test caught it — all operated on source, not rendered output. It took a human browsing the actual docs site to notice that code examples were plain monospace text instead of highlighted Python. The fix was mechanical (replace <code>Example::</code> + indented code with markdown fenced blocks across 13 files), but finding it required looking at what users see, not what CI checks. <strong>If a pattern is applied uniformly, review can't distinguish "consistently correct" from "consistently wrong." Only the rendered artifact reveals which one it is.</strong></p>
+</li>
+</ol>
+<h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>
+<p>If you want to try this approach on your own project:</p>
+<ol>
+<li>Write specs first (see <code>sdd/specs/</code> for examples of the format)</li>
+<li>Use <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> or a similar AI coding tool</li>
+<li>Start with plan mode: describe the task, review the plan, then approve</li>
+<li>Implement in phases: core first, then docs, then polish</li>
+<li>Run everything after each phase (lint, typecheck, tests, examples)</li>
+<li>Document decisions as ADRs when you make non-obvious choices</li>
+</ol>
+<p>The full commit history of this project is the best documentation of the process. Each commit message describes what changed and why.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
