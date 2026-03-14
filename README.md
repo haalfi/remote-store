@@ -31,7 +31,7 @@ Under the hood, established Python libraries (`s3fs`, `paramiko`,
 
 **Requires Python 3.10+.** Sync-only; for async frameworks, wrap calls with `asyncio.to_thread()`. Store is immutable after construction and safe to share across threads; backend thread safety depends on the backend implementation. S3, Azure, and SFTP backends support default credential discovery (environment variables, instance profiles, SSH agent) in addition to explicit credentials.
 
-### Who this is for
+## Who this is for
 
 - **Platform and internal tooling teams** — provide one stable storage interface across environments
 - **Data engineering teams** — pipelines that run against local storage, S3, or SFTP depending on the environment
@@ -50,7 +50,7 @@ Under the hood, established Python libraries (`s3fs`, `paramiko`,
 - **Typed and tested:** strict mypy, spec-driven test suite
 - **Optional integrations:** PyArrow filesystem adapter, OpenTelemetry tracing and metrics
 
-### What it is not
+## What it is not
 
 - Not a query engine (no SQL, no predicate pushdown)
 - Not a table format (no Delta Lake log, no Iceberg manifests)
