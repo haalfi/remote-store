@@ -5978,6 +5978,10 @@ protocol (<code>with Store(...) as s:</code>) which calls <code>close()</code> o
     <code>""</code> means the backend root.</p>
 <p><code>Store</code> is immutable after construction and can be shared across
 threads.  Backend thread safety depends on the backend implementation.</p>
+<p>The root path does not need to exist before constructing the store.
+<code>write()</code> creates intermediate folders implicitly on all backends,
+so files written under a new <code>root_path</code> will work without any
+explicit folder-creation step.</p>
           </div>
         </li>
     </ul>
@@ -6010,6 +6014,14 @@ threads.  Backend thread safety depends on the backend implementation.</p>
     </div>
 
 </div><div class="admonition note">
+<p class="admonition-title">Root path creation</p>
+<p>The root path does not need to exist before constructing the store.
+<code>write()</code> creates intermediate folders implicitly on all backends:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;brand-new-folder&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;works&quot;</span><span class="p">)</span>  <span class="c1"># folder created automatically</span>
+</code></pre></div>
+</div>
+<div class="admonition note">
 <p class="admonition-title">Thread safety</p>
 <p><code>Store</code> is immutable after construction and can be shared across threads.
 Backend thread safety depends on the backend implementation.</p>
