@@ -53,10 +53,14 @@ class PathEntry(typing.Protocol):
     """Shared interface for listing results -- every entry has a name and path."""
 
     @property
-    def name(self) -> str: ...
+    def name(self) -> str:
+        """Entry name (final path component)."""
+        ...
 
     @property
-    def path(self) -> RemotePath: ...
+    def path(self) -> RemotePath:
+        """Normalized remote path."""
+        ...
 
 
 @dataclasses.dataclass(frozen=True, eq=False)
