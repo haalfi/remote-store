@@ -204,7 +204,7 @@ class S3Backend(Backend):
                         yield self._info_to_fileinfo(info, rel)
         except RemoteStoreError:  # pragma: no cover -- defensive
             raise
-        except FileNotFoundError:
+        except FileNotFoundError:  # pragma: no cover -- s3fs returns empty for missing prefixes
             return
         except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
@@ -222,7 +222,7 @@ class S3Backend(Backend):
                     yield FolderEntry(path=RemotePath(rel), name=folder_name)
         except RemoteStoreError:  # pragma: no cover -- defensive
             raise
-        except FileNotFoundError:
+        except FileNotFoundError:  # pragma: no cover -- s3fs returns empty for missing prefixes
             return
         except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
@@ -243,7 +243,7 @@ class S3Backend(Backend):
                     yield FolderEntry(path=RemotePath(rel), name=folder_name)
         except RemoteStoreError:  # pragma: no cover -- defensive
             raise
-        except FileNotFoundError:
+        except FileNotFoundError:  # pragma: no cover -- s3fs returns empty for missing prefixes
             return
         except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
