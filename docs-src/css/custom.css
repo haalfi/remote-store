@@ -1,2 +1,10 @@
 @import url(https://cdn.jsdelivr.net/npm/firacode@6.2.0/distr/fira_code.css);
 :root { --md-code-font: "Fira Code", monospace; }
+
+/* Slightly tighter prose line-height (Material default: 1.6) */
+.md-typeset { line-height: 1.5; }
+
+/* Tighter spacing for mkdocstrings parameter/attribute lists */
+.md-typeset .doc-section-item.field-body { margin-bottom: .15em; }
+.md-typeset .doc-section-item.field-body p { margin: .1em 0; }
+.md-typeset .doc-section-item.field-body .doc-md-description { margin-top: .1em; }
