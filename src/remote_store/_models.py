@@ -1,4 +1,8 @@
-"""Immutable metadata and identity models."""
+"""Immutable metadata and identity models.
+
+``FileInfo``, ``FolderEntry``, and ``FolderInfo`` all satisfy the
+``PathEntry`` protocol, enabling uniform iteration over mixed results.
+"""
 
 from __future__ import annotations
 
@@ -12,9 +16,26 @@ if TYPE_CHECKING:
     from remote_store._path import RemotePath
 
 
+@typing.runtime_checkable
+class PathEntry(typing.Protocol):
+    """Shared interface for listing results -- every entry has a name and path."""
+
+    @property
+    def name(self) -> str:
+        """Entry name (final path component)."""
+        ...
+
+    @property
+    def path(self) -> RemotePath:
+        """Normalized remote path."""
+        ...
+
+
 @dataclasses.dataclass(frozen=True, eq=False)
 class FileInfo:
     """Immutable snapshot of file metadata.
+
+    Satisfies the :class:`PathEntry` protocol.
 
     :param path: Normalized remote path.
     :param name: File name (final path component).
@@ -42,20 +63,11 @@ class FileInfo:
         return hash(self.path)
 
 
-@typing.runtime_checkable
-class PathEntry(typing.Protocol):
-    """Shared interface for listing results -- every entry has a name and path."""
-
-    @property
-    def name(self) -> str: ...
-
-    @property
-    def path(self) -> RemotePath: ...
-
-
 @dataclasses.dataclass(frozen=True, eq=False)
 class FolderEntry:
     """Immutable folder identity returned by listing operations.
+
+    Satisfies the :class:`PathEntry` protocol.
 
     :param path: Normalized remote path.
     :param name: Folder name (final path component).
@@ -77,6 +89,8 @@ class FolderEntry:
 class FolderInfo:
     """Aggregated folder metadata.
 
+    Satisfies the :class:`PathEntry` protocol.
+
     :param path: Normalized remote path.
     :param file_count: Number of files in the folder.
     :param total_size: Total size of all files in bytes.
@@ -89,6 +103,16 @@ class FolderInfo:
     total_size: int
     modified_at: datetime | None = None
     extra: dict[str, object] = dataclasses.field(default_factory=dict)
+
+    @property
+    def name(self) -> str:
+        """Folder name (final path component).
+
+        Unlike :class:`FileInfo` and :class:`FolderEntry`, which store ``name``
+        as a constructor field, this is a derived property (``self.path.name``)
+        to avoid redundancy and keep ``name`` in sync with ``path``.
+        """
+        return self.path.name
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, FolderInfo):

@@ -8,6 +8,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`FolderInfo.name` property** (ID-079) -- derived `@property` returning the
+  final path component (`self.path.name`). `FolderInfo` now satisfies the
+  `PathEntry` protocol alongside `FileInfo` and `FolderEntry`.
+
 - **`FolderEntry` dataclass and `PathEntry` protocol** (ID-072) -- `FolderEntry`
   is an immutable identity object returned by listing operations with `.name`
   and `.path` attributes. `PathEntry` is a runtime-checkable protocol satisfied

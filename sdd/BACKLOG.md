@@ -218,6 +218,13 @@ Not evaluated, not committed to. Pick up when relevant.
 Completed items, grouped by origin. Kept for traceability — full context
 preserved to support future design decisions.
 
+### Feature work (post-v0.16.0)
+
+- [x] **ID-079 — FolderInfo.name property and PathEntry protocol notes**
+  Added `name` property to `FolderInfo` (derived from `path.name`) so it
+  satisfies `PathEntry` alongside `FileInfo` and `FolderEntry`. Added
+  docstring notes to all three types.
+
 ### Release blockers (v0.3.0–v0.4.1)
 
 All v1.0 release blockers were resolved across v0.3.0–v0.4.1.
