@@ -77,7 +77,8 @@ raises `ModuleNotFoundError` with the message:
 ### DAG-005: Asset Path Derivation
 
 **Invariant:** the storage path for an asset is derived from
-`context.get_asset_identifier()`:
+`context.asset_key.path` (joined with `/`) plus the partition key
+(when `context.has_partition_key` is true) plus the serializer extension:
 
 | Asset key | Partition key | Derived path |
 |-----------|--------------|--------------|
