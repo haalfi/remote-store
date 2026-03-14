@@ -175,11 +175,11 @@ class TestMetadata:
         out_ctx = build_output_context(asset_key=AssetKey(["meta", "test"]))
         mgr.handle_output(out_ctx, obj)
 
-        # Dagster's build_output_context collects metadata via add_output_metadata
-        # Verify the file was written correctly (metadata is added to context)
-        assert store.exists("meta/test.pkl")
-        data = store.read_bytes("meta/test.pkl")
-        assert len(data) > 0
+        metadata = out_ctx.get_logged_metadata()
+        assert "path" in metadata
+        assert "size" in metadata
+        assert metadata["path"].text == "meta/test.pkl"
+        assert metadata["size"].value > 0
 
     @pytest.mark.spec("DAG-007")
     def test_none_is_written(self, store: Store) -> None:
