@@ -1,6 +1,7 @@
 # Research: Google-Style Docstring Migration & Zensical Evaluation
 
-**Item IDs:** ID-064 (docs enhancements), ID-067 (griffe-typingdoc)
+**Item IDs:** ID-067 (griffe-typingdoc)
+**Related:** ID-064 (docs enhancements — P3/P4 scope, distinct from this migration)
 **Date:** 2026-03-13
 **Context:** Evaluate migrating from Sphinx-style to Google-style docstrings
 for native markdown support in mkdocstrings, and assess Zensical as a
@@ -190,10 +191,10 @@ link resolves automatically. Neither is possible with Sphinx style.
 | Category | Count | Files |
 |----------|-------|-------|
 | Core modules | ~10 | `_store.py`, `_backend.py`, `_errors.py`, `_models.py`, `_capabilities.py`, `_path.py`, `_secret.py`, etc. |
-| Backends | ~6 | `_local.py`, `_s3.py`, `_sftp.py`, `_azure.py`, `_memory.py`, backend init |
-| Extensions | ~8 | `ext/transfer.py`, `ext/batch.py`, `ext/observe.py`, `ext/cache.py`, `ext/arrow.py`, `ext/otel.py`, `ext/yaml.py`, etc. |
+| Backends | ~7 | `_local.py`, `_s3.py`, `_s3_pyarrow.py`, `_sftp.py`, `_azure.py`, `_memory.py`, backend init |
+| Extensions | ~10 | `ext/arrow.py`, `ext/batch.py`, `ext/cache.py`, `ext/glob.py`, `ext/observe.py`, `ext/otel.py`, `ext/partition.py`, `ext/pydantic.py`, `ext/transfer.py`, `ext/yaml.py` |
 | Config modules | ~4 | `_config.py`, backend configs |
-| Total | ~28 | ~100+ docstring blocks |
+| Total | ~31 | ~120+ docstring blocks |
 
 ### 3.2 Automated Tooling
 
@@ -206,7 +207,7 @@ Three conversion tools exist:
 | **pymend** | AST-based (fork of pyment) | Best — uses `docstring_parser`, handles edge cases | Best option |
 
 **Recommended approach:**
-1. Run `docconvert -i rest -o google --in-place src/` for mechanical conversion
+1. Run `pymend -w -s rest -t google src/` for AST-based mechanical conversion
 2. Manual review pass: fix edge cases, add `Note:`/`Example:` sections where
    valuable, verify cross-references
 3. Run `hatch run docs-build` to catch warnings from `warn_unknown_params`
@@ -303,6 +304,6 @@ option (ID-067 stays in parking lot).
 3. **Keep ID-067 (PEP 727) in parking lot** — not recommended until PEP is
    accepted and ecosystem tooling matures.
 
-4. **Suggested backlog item:** New ID for Google-style migration, prioritized
-   in Feature work. Estimated scope: ~28 files, ~100 docstring blocks,
-   1 config change, 1 style guide update.
+4. **Suggested backlog item:** New ID for Google-style migration (distinct from
+   ID-064), prioritized in Feature work. Estimated scope: ~31 files, ~120+
+   docstring blocks, 1 config change, 1 style guide update.
