@@ -29,7 +29,7 @@ Where files live is configuration, not application code.
 Under the hood, established Python libraries like `s3fs`, `paramiko`,
 and `pyarrow` do the real work.
 
-**Requires Python 3.10+.** Sync-only; see the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for thread safety, async usage, and credential discovery details.
+**Requires Python 3.10+.** The core API is synchronous; see the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for thread safety, async usage, and credential discovery details.
 
 ## Installation
 
@@ -199,7 +199,7 @@ Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the
 
 ## Learn more
 
-The best way to explore `remote-store` beyond the Quick Start is through runnable examples, interactive notebooks, and topic guides.
+To explore `remote-store` beyond the Quick Start:
 
 - **Examples:** self-contained scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, SFTP, and Azure.
 - **Notebooks:** interactive [Jupyter notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks) that walk through common workflows step by step.
