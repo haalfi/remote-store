@@ -92,7 +92,7 @@ with Registry(config) as registry:
 
 Switch from local to S3 by changing the config file. The application code stays the same:
 
-**Dev — local filesystem:**
+**Dev -- local filesystem:**
 
 ```toml
 [backends.main]
@@ -104,7 +104,7 @@ backend = "main"
 root_path = "reports"
 ```
 
-**Production — S3:**
+**Production -- S3:**
 
 ```toml
 [backends.main]
@@ -128,15 +128,15 @@ Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Crede
 
 ## Who this is for
 
-- **Platform and internal tooling teams** — provide one stable storage interface across environments
-- **Data engineering teams** — pipelines that run against local storage, S3, or SFTP depending on the environment
-- **Teams that include citizen developers** — analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files
+- **Platform and internal tooling teams** -- provide one stable storage interface across environments
+- **Data engineering teams** -- pipelines that run against local storage, S3, or SFTP depending on the environment
+- **Teams that include citizen developers** -- analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files
 - **Anyone tired of writing storage wrappers in every project**
 
 ## What you get
 
 - **One interface, many backends:** local filesystem, S3, SFTP, Azure, in-memory
-- **Folder-scoped stores:** each Store is rooted at a folder — compose layouts with multiple stores or narrow scope with `child()`
+- **Folder-scoped stores:** each Store is rooted at a folder -- compose layouts with multiple stores or narrow scope with `child()`
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
 - **Atomic writes where supported:** safer updates for file-producing workflows
@@ -148,7 +148,7 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 
 - Not a query engine (no SQL, no predicate pushdown)
 - Not a table format (no Delta Lake log, no Iceberg manifests)
-- Not a filesystem reimplementation (delegates to `s3fs`, `paramiko`, `pyarrow`, etc. — the libraries you'd pick anyway)
+- Not a filesystem reimplementation (delegates to `s3fs`, `paramiko`, `pyarrow`, etc. -- the libraries you'd pick anyway)
 
 ## Supported Backends
 
@@ -193,11 +193,11 @@ For the full method list, see the [API reference](https://docs.remotestore.dev/s
 
 ## Extensions
 
-The core library handles storage operations. Extensions add optional capabilities on top — e.g. PyArrow integration, observability, caching, or bulk operations. All live in `remote_store.ext`; import only what you need.
+The core library handles storage operations. Extensions add optional capabilities on top -- e.g. PyArrow integration, observability, caching, or bulk operations. All live in `remote_store.ext`; import only what you need.
 
 | Extension | Extra | What it does |
 |-----------|-------|-------------|
-| PyArrow adapter | `remote-store[arrow]` | Use any Store as a `pyarrow.fs.FileSystem` — works with Parquet, Pandas, Polars, DuckDB |
+| PyArrow adapter | `remote-store[arrow]` | Use any Store as a `pyarrow.fs.FileSystem` -- works with Parquet, Pandas, Polars, DuckDB |
 | Batch operations | *(none)* | Bulk delete, copy, and exists with error aggregation |
 | Transfer operations | *(none)* | Upload, download, and cross-store transfer with progress |
 | Observability hooks | *(none)* | Callback-based instrumentation for logging, metrics, and tracing |
