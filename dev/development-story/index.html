@@ -5307,6 +5307,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-27-listing-normalization-and-api-consistency-v0170" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 27: Listing Normalization and API Consistency (v0.17.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5926,6 +5937,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-27-listing-normalization-and-api-consistency-v0170" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 27: Listing Normalization and API Consistency (v0.17.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6234,7 +6256,7 @@
 </tr>
 <tr>
 <td>Commits</td>
-<td>~377</td>
+<td>~380</td>
 </tr>
 </tbody>
 </table>
@@ -6622,6 +6644,10 @@
 <p><strong>Encoding bugs survive by hiding in unchecked cells.</strong> Em dashes were caught and fixed three times in the same PR -- prose, then table headers, then table N/A cells. Each review round fixed the instances the reviewer checked; the rest survived. Em dashes render fine on Linux CI but produce mojibake on Windows cp1252. <strong>Systematic encoding issues don't announce themselves -- they hide in the specific cells you didn't look at.</strong></p>
 <p><strong>Benchmark numbers without understanding the measurement are dangerous.</strong> Azure comparative benchmarks showed remote-store 107x slower than <code>adlfs</code> at listing. Investigation revealed a fsspec caching artifact: <code>adlfs</code> caches after the first call, remote-store hits Azurite every iteration. Real overhead: 1.2x vs raw SDK -- FileInfo/RemotePath construction cost. <strong>The 107x would have been damning; the 1.2x is an acceptable design trade-off.</strong></p>
 <p><strong>"Defensive" code that duplicates library guarantees is just overhead.</strong> Three S3 listing methods had <code>exists()</code> guards before every call -- an extra HEAD request each time. But <code>s3fs.ls()</code> already raises <code>FileNotFoundError</code> for missing prefixes. The guards doubled round-trips for zero benefit. <strong>Know what your dependencies promise before adding safety nets.</strong></p>
+<h3 id="phase-27-listing-normalization-and-api-consistency-v0170">Phase 27: Listing Normalization and API Consistency (v0.17.0)<a class="headerlink" href="#phase-27-listing-normalization-and-api-consistency-v0170" title="Permanent link">&para;</a></h3>
+<p>The v0.17.0 release completed the API consistency work that Phase 26 identified. The headline change was listing normalization (ID-072): <code>list_folders()</code> shifted from returning bare strings to <code>FolderEntry</code> objects, and <code>iter_children()</code> from <code>FileInfo | str</code> to <code>FileInfo | FolderEntry</code>. A new <code>PathEntry</code> protocol unified all listing return types. <code>FolderInfo</code> gained a <code>.name</code> property (ID-079) so it also satisfies <code>PathEntry</code>. These changes made the listing API uniform -- every method that returns path-bearing objects now returns typed objects with <code>.name</code> and <code>.path</code>.</p>
+<p>Azure got <code>max_concurrency</code> support (ID-076), threading a single constructor parameter through all five SDK call sites. Benchmarks showed ~50% write and ~25% read improvement on 100MB payloads. <code>Store.write_text()</code> (ID-074) rounded out the convenience API started by <code>read_text()</code> in v0.16.0.</p>
+<p>On the docs side, the full Sphinx-to-Google docstring migration (ID-080, 367 markers across 25 files) unlocked proper rendering in mkdocstrings. The README got a medium pass (ID-081) streamlining onboarding, and the docs site gained Fira Code, sticky tabs, and property type annotations (ID-064). S3 listing methods dropped their redundant <code>exists()</code> guards (ID-062) -- a one-line change per method that halved round-trips.</p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
