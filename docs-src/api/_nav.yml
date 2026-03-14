@@ -10,6 +10,7 @@
 - ext.arrow: ext-arrow.md
 - ext.batch: ext-batch.md
 - ext.cache: ext-cache.md
+- ext.dagster: ext-dagster.md
 - ext.glob: ext-glob.md
 - ext.observe: ext-observe.md
 - ext.otel: ext-otel.md

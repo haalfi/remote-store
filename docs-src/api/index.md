@@ -70,6 +70,7 @@ Complete reference for all public exports of `remote-store`.
 | [ext.arrow](ext-arrow.md) | PyArrow `FileSystemHandler` adapter for Store |
 | [ext.batch](ext-batch.md) | Batch delete, copy, and exists operations |
 | [ext.cache](ext-cache.md) | Store-level caching middleware with TTL |
+| [ext.dagster](ext-dagster.md) | Dagster IO Manager adapter for Store |
 | [ext.glob](ext-glob.md) | Portable glob pattern matching fallback |
 | [ext.observe](ext-observe.md) | Callback hooks for store operations |
 | [ext.otel](ext-otel.md) | OpenTelemetry bridge for ext.observe |

@@ -66,42 +66,27 @@ Started but not yet prioritized for completion.
 
 Not evaluated, not committed to. Pick up when relevant.
 
-- [ ] **ID-075 — Dagster integration (`ext.dagster`)**
+- [~] **ID-075 — Dagster integration (`ext.dagster`)**
   Thin Dagster IO manager adapter for teams already using remote-store who
   adopt Dagster. Lets any existing `Store` serve as a Dagster IO manager
   with zero config duplication — no need to re-specify backend credentials
   in `dagster-aws` / `dagster-azure` alongside an existing remote-store setup.
-
-  **Background:**
-  Dagster already provides backend-specific IO managers (`dagster-aws`,
-  `dagster-azure`, `dagster-gcp`) that handle S3/Azure/GCS portability
-  natively. The gap this fills: teams that already have a configured
-  remote-store `Store` (with credentials, retry policy, caching, observability)
-  should not need to duplicate that config into Dagster-native IO managers.
-  Additionally, Dagster has no native SFTP IO manager — remote-store covers
-  that backend directly.
-
-  **Scope (v1):** `remote_store_io_manager(store)` factory function only.
-  Wraps any existing `Store` as a Dagster `IOManager` with pluggable
-  serialisation (pickle, JSON, Parquet via `ext.arrow`). Caller owns Store
-  lifecycle.
-
-  **Scope (v2, deferred):** `DagsterStoreResource` — Dagster
-  `ConfigurableResource` that constructs a `Store` from Dagster config fields.
-  Targets Dagster-first users who don't already have a `Store`. Includes
-  `teardown_after_execution()` for Store lifecycle management.
-
-  **Dependencies:** `dagster>=1.9` (aligns with remote-store's Python 3.10+
-  floor); optional `pyarrow>=14.0` for Parquet serialiser.
-
-  **Packaging:** `ext/dagster.py` in-tree (consistent with `ext/arrow.py`,
-  `ext/otel.py`); `pip install "remote-store[dagster]"`.
-
-  **Maintenance note:** Dagster's API surface has high churn (renamed classes,
-  metadata changes). v1 scope minimises exposure by wrapping only the stable
-  `IOManager` base class. Floor at `dagster>=1.9`, not 1.7.
+  - Done (v1): `remote_store_io_manager(store)` factory, serializers
+    (pickle, JSON, Parquet), spec `031-ext-dagster.md` (DAG-001–DAG-011),
+    tests, guide, docs wiring.
+  - Remaining (v2, deferred): `DagsterStoreResource` (`ConfigurableResource`),
+    `RemoteStoreIOManager` (`ConfigurableIOManagerFactory`),
+    `teardown_after_execution()`.
 
   Research: `sdd/research/research-dagster-extension.md`.
+
+- [ ] **ID-080 — Document lazy-import pattern for mixed optional deps**
+  `ext.dagster` uses a better pattern than `ext.arrow`: module-level guard
+  for the primary dep (`dagster`), deferred guard in `__init__` for secondary
+  dep (`pyarrow` in `ParquetSerializer`). This lets pickle/json serializers
+  work without pyarrow. Document this as the preferred pattern for future
+  extensions with mixed optional deps. Evaluate whether `ext.arrow` could
+  benefit from a similar split.
 
 - [ ] **ID-006 — Progress callbacks for large transfers**
   Add an optional `callback: Callable[[int], None]` parameter to `read()` and
