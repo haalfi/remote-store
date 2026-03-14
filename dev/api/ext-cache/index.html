@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../css/custom.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -96,7 +98,9 @@
     
       
 
-<header class="md-header" data-md-component="header">
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
@@ -180,6 +184,8 @@
         </button>
       </nav>
       
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
@@ -210,14 +216,8 @@
     
   </nav>
   
-</header>
     
-    <div class="md-container" data-md-component="container">
       
-      
-        
-          
-            
 <nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
   <div class="md-grid">
     <ul class="md-tabs__list">
@@ -383,7 +383,13 @@
     </ul>
   </div>
 </nav>
-          
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
         
       
       <main class="md-main" data-md-component="main">
@@ -5680,7 +5686,7 @@ metadata, listings, content) and automatically invalidates on mutations.</p>
   </span>
 
 <a href="#remote_store.ext.cache.CacheStats" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CacheStats</span><span class="p">(</span><span class="n">hits</span><span class="p">,</span> <span class="n">misses</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CacheStats</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">,</span> <span class="n">misses</span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5769,7 +5775,7 @@ is <code>MemoryCache</code>.</p>
 
 
 <a href="#remote_store.ext.cache.CacheBackend.get" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.Any">Any</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5789,7 +5795,7 @@ is <code>MemoryCache</code>.</p>
 
 
 <a href="#remote_store.ext.cache.CacheBackend.set" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">ttl</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="n"><span title="float">float</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5809,7 +5815,7 @@ is <code>MemoryCache</code>.</p>
 
 
 <a href="#remote_store.ext.cache.CacheBackend.delete" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5829,7 +5835,7 @@ is <code>MemoryCache</code>.</p>
 
 
 <a href="#remote_store.ext.cache.CacheBackend.clear" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5849,7 +5855,7 @@ is <code>MemoryCache</code>.</p>
 
 
 <a href="#remote_store.ext.cache.CacheBackend.clear_prefix" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear_prefix</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear_prefix</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5869,7 +5875,7 @@ is <code>MemoryCache</code>.</p>
 
 
 <a href="#remote_store.ext.cache.CacheBackend.size" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">size</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">size</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="int">int</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5898,7 +5904,7 @@ is <code>MemoryCache</code>.</p>
 
 
 <a href="#remote_store.ext.cache.MemoryCache" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MemoryCache</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">max_entries</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MemoryCache</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">max_entries</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5942,7 +5948,7 @@ paths can grow without limit during the TTL window.</p>
 
 
 <a href="#remote_store.ext.cache.MemoryCache.get" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.Any">Any</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5962,7 +5968,7 @@ paths can grow without limit during the TTL window.</p>
 
 
 <a href="#remote_store.ext.cache.MemoryCache.set" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">ttl</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="n"><span title="float">float</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5982,7 +5988,7 @@ paths can grow without limit during the TTL window.</p>
 
 
 <a href="#remote_store.ext.cache.MemoryCache.delete" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6002,7 +6008,7 @@ paths can grow without limit during the TTL window.</p>
 
 
 <a href="#remote_store.ext.cache.MemoryCache.clear" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6022,7 +6028,7 @@ paths can grow without limit during the TTL window.</p>
 
 
 <a href="#remote_store.ext.cache.MemoryCache.clear_prefix" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear_prefix</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear_prefix</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6042,7 +6048,7 @@ paths can grow without limit during the TTL window.</p>
 
 
 <a href="#remote_store.ext.cache.MemoryCache.clear_prefixes" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear_prefixes</span><span class="p">(</span><span class="n">prefixes</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear_prefixes</span><span class="p">(</span><span class="n">prefixes</span><span class="p">:</span> <span class="n"><span title="frozenset">frozenset</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6063,7 +6069,7 @@ paths can grow without limit during the TTL window.</p>
 
 
 <a href="#remote_store.ext.cache.MemoryCache.size" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">size</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">size</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="int">int</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6092,7 +6098,7 @@ paths can grow without limit during the TTL window.</p>
 
 
 <a href="#remote_store.ext.cache.CachedStore" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CachedStore</span><span class="p">(</span><span class="n">inner</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ttl</span><span class="p">,</span> <span class="n">max_content_size</span><span class="p">,</span> <span class="n">max_entries</span><span class="p">,</span> <span class="n">cache_backend</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CachedStore</span><span class="p">(</span><span class="n">inner</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="n"><span title="float">float</span></span><span class="p">,</span> <span class="n">max_content_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_entries</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cache_backend</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            CacheBackend (remote_store.ext.cache.CacheBackend)" href="#remote_store.ext.cache.CacheBackend">CacheBackend</a></span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6139,7 +6145,7 @@ Only methods with additional behavior (<code>invalidate</code>, <code>clear_cach
   </span>
 
 <a href="#remote_store.ext.cache.CachedStore.inner" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">inner</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">inner</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6163,7 +6169,12 @@ Only methods with additional behavior (<code>invalidate</code>, <code>clear_cach
   </span>
 
 <a href="#remote_store.ext.cache.CachedStore.stats" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">stats</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">stats</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            CacheStats
+
+
+  
+      dataclass
+   (remote_store.ext.cache.CacheStats)" href="#remote_store.ext.cache.CacheStats">CacheStats</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6185,7 +6196,7 @@ Only methods with additional behavior (<code>invalidate</code>, <code>clear_cach
 
 
 <a href="#remote_store.ext.cache.CachedStore.invalidate" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">invalidate</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">invalidate</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6205,7 +6216,7 @@ Only methods with additional behavior (<code>invalidate</code>, <code>clear_cach
 
 
 <a href="#remote_store.ext.cache.CachedStore.clear_cache" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear_cache</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear_cache</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6225,7 +6236,7 @@ Only methods with additional behavior (<code>invalidate</code>, <code>clear_cach
 
 
 <a href="#remote_store.ext.cache.CachedStore.ping" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ping</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ping</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6245,7 +6256,7 @@ Only methods with additional behavior (<code>invalidate</code>, <code>clear_cach
 
 
 <a href="#remote_store.ext.cache.CachedStore.close" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6274,7 +6285,7 @@ Only methods with additional behavior (<code>invalidate</code>, <code>clear_cach
 
 
 <a href="#remote_store.ext.cache.cached_store" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">cached_store</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mf">300.0</span><span class="p">,</span> <span class="n">max_content_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_entries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cache_backend</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">cached_store</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">300.0</span><span class="p">,</span> <span class="n">max_content_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_entries</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cache_backend</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            CacheBackend (remote_store.ext.cache.CacheBackend)" href="#remote_store.ext.cache.CacheBackend">CacheBackend</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            CachedStore (remote_store.ext.cache.CachedStore)" href="#remote_store.ext.cache.CachedStore">CachedStore</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6418,7 +6429,7 @@ Ignored when <em>cache_backend</em> is provided.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../css/custom.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -96,7 +98,9 @@
     
       
 
-<header class="md-header" data-md-component="header">
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
@@ -180,6 +184,8 @@
         </button>
       </nav>
       
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
@@ -210,14 +216,8 @@
     
   </nav>
   
-</header>
     
-    <div class="md-container" data-md-component="container">
       
-      
-        
-          
-            
 <nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
   <div class="md-grid">
     <ul class="md-tabs__list">
@@ -383,7 +383,13 @@
     </ul>
   </div>
 </nav>
-          
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
         
       
       <main class="md-main" data-md-component="main">
@@ -2765,6 +2771,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2805,7 +2822,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#docs" class="md-nav__link">
+  <a href="#docs_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Docs
@@ -5886,6 +5903,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5926,7 +5954,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#docs" class="md-nav__link">
+  <a href="#docs_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Docs
@@ -6790,6 +6818,13 @@
   thread-safety. Added backend behavior matrix verified against backend source.</p>
 </li>
 </ul>
+<h3 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Docs site polish</strong> (ID-064) -- property return types now visible
+  (<code>show_signature_annotations</code>), Fira Code font for code blocks,
+  sticky navigation tabs, search suggest/highlight, tighter parameter
+  list spacing, capability matrix icons.</li>
+</ul>
 <h2 id="0160-2026-03-10">[0.16.0] - 2026-03-10<a class="headerlink" href="#0160-2026-03-10" title="Permanent link">&para;</a></h2>
 <h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
 <ul>
@@ -6850,7 +6885,7 @@
   when pyyaml is installed).</p>
 </li>
 </ul>
-<h3 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h3>
+<h3 id="docs_1">Docs<a class="headerlink" href="#docs_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
 <p><strong>RTD docs now default to stable release</strong> -- changed all docs deep links in
@@ -7305,7 +7340,7 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>

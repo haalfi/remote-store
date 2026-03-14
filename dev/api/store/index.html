@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../css/custom.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -96,7 +98,9 @@
     
       
 
-<header class="md-header" data-md-component="header">
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
@@ -180,6 +184,8 @@
         </button>
       </nav>
       
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
@@ -210,14 +216,8 @@
     
   </nav>
   
-</header>
     
-    <div class="md-container" data-md-component="container">
       
-      
-        
-          
-            
 <nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
   <div class="md-grid">
     <ul class="md-tabs__list">
@@ -383,7 +383,13 @@
     </ul>
   </div>
 </nav>
-          
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
         
       
       <main class="md-main" data-md-component="main">
@@ -5944,7 +5950,7 @@
 
 
 <a href="#remote_store.Store" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Store</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Store</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Backend (remote_store._backend.Backend)" href="../backend/#remote_store.Backend">Backend</a></span><span class="p">,</span> <span class="n">root_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6038,7 +6044,7 @@ Backend thread safety depends on the backend implementation.</p>
 
 
 <a href="#remote_store.Store.read" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.BinaryIO">BinaryIO</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6104,7 +6110,7 @@ Backend thread safety depends on the backend implementation.</p>
 
 
 <a href="#remote_store.Store.read_bytes" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bytes">bytes</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6169,7 +6175,7 @@ Backend thread safety depends on the backend implementation.</p>
 
 
 <a href="#remote_store.Store.read_text" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_text</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;strict&#39;</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_text</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">encoding</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;utf-8&#39;</span><span class="p">,</span> <span class="n">errors</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;strict&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6266,7 +6272,7 @@ Backend thread safety depends on the backend implementation.</p>
 
 
 <a href="#remote_store.Store.write" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n"><span title="remote_store._types.WritableContent">WritableContent</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6338,7 +6344,7 @@ Backend thread safety depends on the backend implementation.</p>
 
 
 <a href="#remote_store.Store.write_text" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_text</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_text</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">encoding</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;utf-8&#39;</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6422,7 +6428,7 @@ Backend thread safety depends on the backend implementation.</p>
 
 
 <a href="#remote_store.Store.write_atomic" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_atomic</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_atomic</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n"><span title="remote_store._types.WritableContent">WritableContent</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6508,7 +6514,7 @@ partial state.</p>
 
 
 <a href="#remote_store.Store.open_atomic" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open_atomic</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open_atomic</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><span title="typing.BinaryIO">BinaryIO</span></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6601,7 +6607,7 @@ the partial write is discarded.</p>
 
 
 <a href="#remote_store.Store.delete" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">missing_ok</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">missing_ok</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6665,7 +6671,7 @@ does not exist.</p>
 
 
 <a href="#remote_store.Store.delete_folder" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete_folder</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">missing_ok</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete_folder</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">missing_ok</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6753,7 +6759,12 @@ root).</p>
 
 
 <a href="#remote_store.Store.list_files" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_files</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_files</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6826,7 +6837,12 @@ root).</p>
 
 
 <a href="#remote_store.Store.list_folders" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_folders</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_folders</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
+
+
+  
+      dataclass
+   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6876,7 +6892,17 @@ root).</p>
 
 
 <a href="#remote_store.Store.iter_children" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">iter_children</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">iter_children</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
+
+
+  
+      dataclass
+   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6934,7 +6960,12 @@ Both have <code>.name</code> and <code>.path</code> attributes (satisfying the
 
 
 <a href="#remote_store.Store.glob" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7007,7 +7038,7 @@ Memory usage stays bounded for large directories.</p>
 
 
 <a href="#remote_store.Store.move" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">move</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">move</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7093,7 +7124,7 @@ atomicity depends on the server.</p>
 
 
 <a href="#remote_store.Store.copy" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">copy</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">copy</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7180,7 +7211,7 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 
 
 <a href="#remote_store.Store.exists" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7213,7 +7244,7 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 
 
 <a href="#remote_store.Store.is_file" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7246,7 +7277,7 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 
 
 <a href="#remote_store.Store.is_folder" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_folder</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_folder</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7279,7 +7310,12 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 
 
 <a href="#remote_store.Store.get_file_info" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_file_info</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_file_info</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7348,7 +7384,12 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 
 
 <a href="#remote_store.Store.get_folder_info" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_folder_info</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_folder_info</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            FolderInfo
+
+
+  
+      dataclass
+   (remote_store._models.FolderInfo)" href="../models/#remote_store.FolderInfo">FolderInfo</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7412,7 +7453,7 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 
 
 <a href="#remote_store.Store.ping" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ping</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ping</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7459,7 +7500,7 @@ exist.</p>
 
 
 <a href="#remote_store.Store.close" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7480,7 +7521,7 @@ exist.</p>
 
 
 <a href="#remote_store.Store.child" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">child</span><span class="p">(</span><span class="n">subpath</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">child</span><span class="p">(</span><span class="n">subpath</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="#remote_store.Store">Store</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7550,7 +7591,7 @@ above.</p>
 
 
 <a href="#remote_store.Store.unwrap" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unwrap</span><span class="p">(</span><span class="n">type_hint</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unwrap</span><span class="p">(</span><span class="n">type_hint</span><span class="p">:</span> <span class="n"><span title="type">type</span></span><span class="p">[</span><span class="n"><span title="remote_store._store.T">T</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="remote_store._store.T">T</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7611,7 +7652,7 @@ the requested type.</p>
 
 
 <a href="#remote_store.Store.native_path" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">native_path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">native_path</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7657,7 +7698,7 @@ the requested type.</p>
 
 
 <a href="#remote_store.Store.to_key" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_key</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_key</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7715,7 +7756,7 @@ the requested type.</p>
 
 
 <a href="#remote_store.Store.supports" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">supports</span><span class="p">(</span><span class="n">capability</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">supports</span><span class="p">(</span><span class="n">capability</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Capability (remote_store._capabilities.Capability)" href="../capabilities/#remote_store.Capability">Capability</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7880,7 +7921,7 @@ relying on these in production.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

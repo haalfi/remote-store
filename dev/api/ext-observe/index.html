@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../css/custom.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -96,7 +98,9 @@
     
       
 
-<header class="md-header" data-md-component="header">
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
@@ -180,6 +184,8 @@
         </button>
       </nav>
       
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
@@ -210,14 +216,8 @@
     
   </nav>
   
-</header>
     
-    <div class="md-container" data-md-component="container">
       
-      
-        
-          
-            
 <nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
   <div class="md-grid">
     <ul class="md-tabs__list">
@@ -383,7 +383,13 @@
     </ul>
   </div>
 </nav>
-          
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
         
       
       <main class="md-main" data-md-component="main">
@@ -5405,7 +5411,7 @@ modifying business code.</p>
   </span>
 
 <a href="#remote_store.ext.observe.StoreEvent" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">StoreEvent</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="p">,</span> <span class="n">started_at</span><span class="p">,</span> <span class="n">duration_ms</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">correlation_id</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">StoreEvent</span><span class="p">(</span><span class="n">operation</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">started_at</span><span class="p">:</span> <span class="n"><span title="float">float</span></span><span class="p">,</span> <span class="n">duration_ms</span><span class="p">:</span> <span class="n"><span title="float">float</span></span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="n"><span title="Exception">Exception</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">],</span> <span class="n">correlation_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5452,7 +5458,7 @@ modifying business code.</p>
 
 
 <a href="#remote_store.ext.observe.ObservedStore" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ObservedStore</span><span class="p">(</span><span class="n">inner</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">hooks</span><span class="p">,</span> <span class="n">around</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ObservedStore</span><span class="p">(</span><span class="n">inner</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">hooks</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">],</span> <span class="n">around</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5499,7 +5505,7 @@ dispatch and are otherwise transparent.</p>
   </span>
 
 <a href="#remote_store.ext.observe.ObservedStore.inner" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">inner</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">inner</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5521,7 +5527,7 @@ dispatch and are otherwise transparent.</p>
 
 
 <a href="#remote_store.ext.observe.ObservedStore.ping" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ping</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ping</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5541,7 +5547,7 @@ dispatch and are otherwise transparent.</p>
 
 
 <a href="#remote_store.ext.observe.ObservedStore.close" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5561,7 +5567,7 @@ dispatch and are otherwise transparent.</p>
 
 
 <a href="#remote_store.ext.observe.ObservedStore.child" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">child</span><span class="p">(</span><span class="n">subpath</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">child</span><span class="p">(</span><span class="n">subpath</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5590,7 +5596,12 @@ dispatch and are otherwise transparent.</p>
 
 
 <a href="#remote_store.ext.observe.BufferedObserver" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BufferedObserver</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_queue</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">flush_interval</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BufferedObserver</span><span class="p">(</span><span class="n">handler</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            StoreEvent
+
+
+  
+      dataclass
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a></span><span class="p">]],</span> <span class="kc">None</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_queue</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">flush_interval</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5666,7 +5677,12 @@ dispatch and are otherwise transparent.</p>
 
 
 <a href="#remote_store.ext.observe.BufferedObserver.on_event" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">on_event</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">on_event</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            StoreEvent
+
+
+  
+      dataclass
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5686,7 +5702,7 @@ dispatch and are otherwise transparent.</p>
 
 
 <a href="#remote_store.ext.observe.BufferedObserver.flush" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">flush</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">flush</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5706,7 +5722,7 @@ dispatch and are otherwise transparent.</p>
 
 
 <a href="#remote_store.ext.observe.BufferedObserver.close" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5735,7 +5751,7 @@ dispatch and are otherwise transparent.</p>
 
 
 <a href="#remote_store.ext.observe.set_correlation_id" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_correlation_id</span><span class="p">(</span><span class="n">cid</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_correlation_id</span><span class="p">(</span><span class="n">cid</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="contextvars.Token">Token</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5785,7 +5801,52 @@ dispatch and are otherwise transparent.</p>
 
 
 <a href="#remote_store.ext.observe.observe" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">on_read</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_write</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_delete</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_copy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_move</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_ping</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_error</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_any</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">around</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">observe</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">on_read</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-internal" title="            StoreEvent
+
+
+  
+      dataclass
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">on_write</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-internal" title="            StoreEvent
+
+
+  
+      dataclass
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">on_delete</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-internal" title="            StoreEvent
+
+
+  
+      dataclass
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">on_copy</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-internal" title="            StoreEvent
+
+
+  
+      dataclass
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">on_move</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-internal" title="            StoreEvent
+
+
+  
+      dataclass
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">on_list</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-internal" title="            StoreEvent
+
+
+  
+      dataclass
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">on_ping</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-internal" title="            StoreEvent
+
+
+  
+      dataclass
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">on_error</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-internal" title="            StoreEvent
+
+
+  
+      dataclass
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">on_any</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-internal" title="            StoreEvent
+
+
+  
+      dataclass
+   (remote_store.ext.observe.StoreEvent)" href="#remote_store.ext.observe.StoreEvent">StoreEvent</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">around</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">],</span> <span class="n"><span title="contextlib.AbstractContextManager">AbstractContextManager</span></span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            ObservedStore (remote_store.ext.observe.ObservedStore)" href="#remote_store.ext.observe.ObservedStore">ObservedStore</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6031,7 +6092,7 @@ wrapping the entire operation.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

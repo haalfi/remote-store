@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../css/custom.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -96,7 +98,9 @@
     
       
 
-<header class="md-header" data-md-component="header">
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
@@ -180,6 +184,8 @@
         </button>
       </nav>
       
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
@@ -210,14 +216,8 @@
     
   </nav>
   
-</header>
     
-    <div class="md-container" data-md-component="container">
       
-      
-        
-          
-            
 <nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
   <div class="md-grid">
     <ul class="md-tabs__list">
@@ -383,7 +383,13 @@
     </ul>
   </div>
 </nav>
-          
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
         
       
       <main class="md-main" data-md-component="main">
@@ -5316,7 +5322,17 @@
   </span>
 
 <a href="#remote_store.RegistryConfig" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RegistryConfig</span><span class="p">(</span><span class="n">backends</span><span class="o">=</span><span class="n"><span title="dict">dict</span></span><span class="p">(),</span> <span class="n">stores</span><span class="o">=</span><span class="n"><span title="dict">dict</span></span><span class="p">())</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RegistryConfig</span><span class="p">(</span><span class="n">backends</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            BackendConfig
+
+
+  
+      dataclass
+   (remote_store._config.BackendConfig)" href="#remote_store.BackendConfig">BackendConfig</a></span><span class="p">]</span> <span class="o">=</span> <span class="n"><span title="dict">dict</span></span><span class="p">(),</span> <span class="n">stores</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            StoreProfile
+
+
+  
+      dataclass
+   (remote_store._config.StoreProfile)" href="#remote_store.StoreProfile">StoreProfile</a></span><span class="p">]</span> <span class="o">=</span> <span class="n"><span title="dict">dict</span></span><span class="p">())</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -5389,7 +5405,7 @@
 
 
 <a href="#remote_store.RegistryConfig.validate" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">validate</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">validate</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5425,7 +5441,12 @@
   </span>
 
 <a href="#remote_store.RegistryConfig.from_dict" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="object">object</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            RegistryConfig
+
+
+  
+      dataclass
+   (remote_store._config.RegistryConfig)" href="#remote_store.RegistryConfig">RegistryConfig</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5462,7 +5483,12 @@
   </span>
 
 <a href="#remote_store.RegistryConfig.from_toml" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">from_toml</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="p">())</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">from_toml</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">())</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            RegistryConfig
+
+
+  
+      dataclass
+   (remote_store._config.RegistryConfig)" href="#remote_store.RegistryConfig">RegistryConfig</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5539,7 +5565,12 @@ For <code>pyproject.toml</code> use <code>table=("tool", "remote-store")</code>.
   </span>
 
 <a href="#remote_store.BackendConfig" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BackendConfig</span><span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n"><span title="dict">dict</span></span><span class="p">(),</span> <span class="n">retry</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BackendConfig</span><span class="p">(</span><span class="nb">type</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="object">object</span></span><span class="p">]</span> <span class="o">=</span> <span class="n"><span title="dict">dict</span></span><span class="p">(),</span> <span class="n">retry</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            RetryPolicy
+
+
+  
+      dataclass
+   (remote_store._config.RetryPolicy)" href="#remote_store.RetryPolicy">RetryPolicy</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -5628,7 +5659,7 @@ For <code>pyproject.toml</code> use <code>table=("tool", "remote-store")</code>.
   </span>
 
 <a href="#remote_store.RetryPolicy" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RetryPolicy</span><span class="p">(</span><span class="n">max_attempts</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">backoff_base</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">backoff_max</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span> <span class="n">jitter</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RetryPolicy</span><span class="p">(</span><span class="n">max_attempts</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">backoff_base</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">backoff_max</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">60.0</span><span class="p">,</span> <span class="n">jitter</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -5730,7 +5761,12 @@ combined. <code>None</code> means no total timeout.</p>
   </span>
 
 <a href="#remote_store.RetryPolicy.disabled" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">disabled</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">disabled</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            RetryPolicy
+
+
+  
+      dataclass
+   (remote_store._config.RetryPolicy)" href="#remote_store.RetryPolicy">RetryPolicy</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5763,7 +5799,7 @@ combined. <code>None</code> means no total timeout.</p>
   </span>
 
 <a href="#remote_store.StoreProfile" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">StoreProfile</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n"><span title="dict">dict</span></span><span class="p">())</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">StoreProfile</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">root_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="object">object</span></span><span class="p">]</span> <span class="o">=</span> <span class="n"><span title="dict">dict</span></span><span class="p">())</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -5843,7 +5879,7 @@ combined. <code>None</code> means no total timeout.</p>
 
 
 <a href="#remote_store.Secret" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Secret</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Secret</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -5908,7 +5944,7 @@ Call <code>.reveal()</code> to obtain the plain-text credential.</p>
 
 
 <a href="#remote_store.Secret.reveal" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">reveal</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">reveal</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6034,7 +6070,7 @@ Call <code>.reveal()</code> to obtain the plain-text credential.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

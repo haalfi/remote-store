@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../css/custom.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -96,7 +98,9 @@
     
       
 
-<header class="md-header" data-md-component="header">
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
@@ -180,6 +184,8 @@
         </button>
       </nav>
       
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
@@ -210,14 +216,8 @@
     
   </nav>
   
-</header>
     
-    <div class="md-container" data-md-component="container">
       
-      
-        
-          
-            
 <nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
   <div class="md-grid">
     <ul class="md-tabs__list">
@@ -383,7 +383,13 @@
     </ul>
   </div>
 </nav>
-          
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
         
       
       <main class="md-main" data-md-component="main">
@@ -5662,7 +5668,7 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
   </span>
 
 <a href="#remote_store.Backend.name" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">name</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5687,7 +5693,7 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
   </span>
 
 <a href="#remote_store.Backend.capabilities" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">capabilities</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">capabilities</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            CapabilitySet (remote_store._capabilities.CapabilitySet)" href="../capabilities/#remote_store.CapabilitySet">CapabilitySet</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5713,7 +5719,7 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
   </span>
 
 <a href="#remote_store.Backend.exists" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5762,7 +5768,7 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
   </span>
 
 <a href="#remote_store.Backend.is_file" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5811,7 +5817,7 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
   </span>
 
 <a href="#remote_store.Backend.is_folder" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_folder</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_folder</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5860,7 +5866,7 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
   </span>
 
 <a href="#remote_store.Backend.read" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.BinaryIO">BinaryIO</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5921,7 +5927,7 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
   </span>
 
 <a href="#remote_store.Backend.read_bytes" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bytes">bytes</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5982,7 +5988,7 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
   </span>
 
 <a href="#remote_store.Backend.write" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n"><span title="remote_store._types.WritableContent">WritableContent</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6049,7 +6055,7 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
   </span>
 
 <a href="#remote_store.Backend.write_atomic" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_atomic</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_atomic</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n"><span title="remote_store._types.WritableContent">WritableContent</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6123,7 +6129,7 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
   </span>
 
 <a href="#remote_store.Backend.open_atomic" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open_atomic</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open_atomic</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="contextlib.AbstractContextManager">AbstractContextManager</span></span><span class="p">[</span><span class="n"><span title="typing.BinaryIO">BinaryIO</span></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6191,7 +6197,7 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
   </span>
 
 <a href="#remote_store.Backend.delete" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">missing_ok</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">missing_ok</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6250,7 +6256,7 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
   </span>
 
 <a href="#remote_store.Backend.delete_folder" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete_folder</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">missing_ok</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete_folder</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">missing_ok</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6326,7 +6332,12 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
   </span>
 
 <a href="#remote_store.Backend.list_files" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_files</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_files</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6390,7 +6401,12 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
   </span>
 
 <a href="#remote_store.Backend.list_folders" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_folders</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_folders</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
+
+
+  
+      dataclass
+   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6444,7 +6460,12 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
   </span>
 
 <a href="#remote_store.Backend.get_file_info" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_file_info</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_file_info</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6510,7 +6531,12 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
   </span>
 
 <a href="#remote_store.Backend.get_folder_info" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_folder_info</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_folder_info</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            FolderInfo
+
+
+  
+      dataclass
+   (remote_store._models.FolderInfo)" href="../models/#remote_store.FolderInfo">FolderInfo</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6576,7 +6602,7 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
   </span>
 
 <a href="#remote_store.Backend.move" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">move</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">move</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6650,7 +6676,7 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
   </span>
 
 <a href="#remote_store.Backend.copy" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">copy</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">copy</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6720,7 +6746,17 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
 
 
 <a href="#remote_store.Backend.iter_children" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">iter_children</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">iter_children</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
+
+
+  
+      dataclass
+   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6779,7 +6815,12 @@ both in a single I/O call should override this for efficiency.</p>
 
 
 <a href="#remote_store.Backend.glob" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6826,7 +6867,7 @@ and add <code>Capability.GLOB</code> to their capability set.</p>
 
 
 <a href="#remote_store.Backend.to_key" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_key</span><span class="p">(</span><span class="n">native_path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_key</span><span class="p">(</span><span class="n">native_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6874,7 +6915,7 @@ root (filesystem path, bucket prefix, base_path) override this.</p>
 
 
 <a href="#remote_store.Backend.native_path" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">native_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">native_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6922,7 +6963,7 @@ override this to prepend their prefix.</p>
 
 
 <a href="#remote_store.Backend.check_health" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">check_health</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">check_health</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6971,7 +7012,7 @@ check using the cheapest possible read-only operation.</p>
 
 
 <a href="#remote_store.Backend.close" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6991,7 +7032,7 @@ check using the cheapest possible read-only operation.</p>
 
 
 <a href="#remote_store.Backend.unwrap" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unwrap</span><span class="p">(</span><span class="n">type_hint</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unwrap</span><span class="p">(</span><span class="n">type_hint</span><span class="p">:</span> <span class="n"><span title="type">type</span></span><span class="p">[</span><span class="n"><span title="remote_store._backend.T">T</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="remote_store._backend.T">T</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -7090,7 +7131,7 @@ check using the cheapest possible read-only operation.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
