@@ -169,6 +169,7 @@ class TestStoreFullAPI:
         folders = list(store.list_folders("lfd"))
         assert all(isinstance(f, FolderEntry) for f in folders)
         assert {f.name for f in folders} == {"sub1", "sub2"}
+        assert {str(f.path) for f in folders} == {"lfd/sub1", "lfd/sub2"}
 
     @pytest.mark.spec("ITER-001")
     def test_iter_children(self, store: Store) -> None:
@@ -215,15 +216,6 @@ class TestStoreFullAPI:
         assert str(files[0].path) == "ic2/f.txt"
         # Round-trip: path should work as input
         assert store.read_bytes(str(files[0].path)) == b"x"
-
-    @pytest.mark.spec("STORE-008")
-    def test_list_folders_returns_folder_entry_with_path(self, store: Store) -> None:
-        store.write("fp/sub/a.txt", b"a")
-        folders = list(store.list_folders("fp"))
-        assert len(folders) == 1
-        assert isinstance(folders[0], FolderEntry)
-        assert folders[0].name == "sub"
-        assert str(folders[0].path) == "fp/sub"
 
     @pytest.mark.spec("STORE-008")
     def test_list_folders_child_store_rebases_path(self, store: Store) -> None:

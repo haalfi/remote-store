@@ -136,16 +136,19 @@ class TestModelEqualityHashing:
 class TestFolderEntry:
     """FolderEntry dataclass tests."""
 
+    @pytest.mark.spec("MOD-006")
     def test_frozen(self) -> None:
         fe = FolderEntry(path=RemotePath("sub"), name="sub")
         with pytest.raises(dataclasses.FrozenInstanceError):
             fe.name = "other"  # type: ignore[misc]
 
+    @pytest.mark.spec("MOD-006")
     def test_fields(self) -> None:
         fe = FolderEntry(path=RemotePath("a/b"), name="b")
         assert fe.path == RemotePath("a/b")
         assert fe.name == "b"
 
+    @pytest.mark.spec("MOD-006")
     def test_not_equal_to_other_types(self) -> None:
         fe = FolderEntry(path=RemotePath("x"), name="x")
         assert fe != "x"
@@ -155,14 +158,17 @@ class TestFolderEntry:
 class TestPathEntryProtocol:
     """PathEntry protocol structural subtyping tests."""
 
+    @pytest.mark.spec("MOD-008")
     def test_fileinfo_satisfies_path_entry(self) -> None:
         fi = FileInfo(path=RemotePath("a.txt"), name="a.txt", size=0, modified_at=NOW)
         assert isinstance(fi, PathEntry)
 
+    @pytest.mark.spec("MOD-008")
     def test_folderentry_satisfies_path_entry(self) -> None:
         fe = FolderEntry(path=RemotePath("sub"), name="sub")
         assert isinstance(fe, PathEntry)
 
+    @pytest.mark.spec("MOD-008")
     def test_path_entry_uniform_iteration(self) -> None:
         entries: list[PathEntry] = [
             FileInfo(path=RemotePath("a.txt"), name="a.txt", size=0, modified_at=NOW),

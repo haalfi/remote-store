@@ -120,10 +120,10 @@
 **Invariant:** `FolderEntry` is a frozen dataclass — immutable after construction. Required fields: `path` (`RemotePath`), `name` (`str`).
 **Postconditions:** Attribute assignment raises `FrozenInstanceError`.
 
-### MOD-008: PathEntry Protocol
-
-**Invariant:** `PathEntry` is a `runtime_checkable` `Protocol` with two read-only properties: `name` (`str`) and `path` (`RemotePath`). Both `FileInfo` and `FolderEntry` satisfy the protocol structurally, enabling uniform iteration over mixed listing results.
-
 ### MOD-007: Equality and Hashing
 
 **Invariant:** `FileInfo`, `FolderInfo`, and `FolderEntry` support equality and hashing based on `path`.
+
+### MOD-008: PathEntry Protocol
+
+**Invariant:** `PathEntry` is a `runtime_checkable` `Protocol` with two read-only properties: `name` (`str`) and `path` (`RemotePath`). Both `FileInfo` and `FolderEntry` satisfy the protocol structurally, enabling uniform iteration over mixed listing results.
