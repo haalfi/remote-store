@@ -17,7 +17,7 @@
   <a href="https://github.com/haalfi/remote-store/blob/master/LICENSE"><img src="https://img.shields.io/pypi/l/remote-store" alt="License"></a>
 </p>
 
-> **Beta.** The API is settling, but until 1.0, minor releases may still include breaking changes. See the [changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md) for what's new, and [open an issue](https://github.com/haalfi/remote-store/issues) if something breaks.
+> **Beta.** The API is settling, but until 1.0, minor releases may include breaking changes. See the [changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md) for what's new, and [open an issue](https://github.com/haalfi/remote-store/issues) if something breaks.
 
 Most Python projects that deal with files eventually grow storage glue:
 small wrappers around local paths, S3 clients, SFTP connections, and cloud SDKs.
@@ -29,32 +29,12 @@ Where files live is configuration, not application code.
 Under the hood, established Python libraries (`s3fs`, `paramiko`,
 `azure-storage-file-datalake`) still do the work.
 
-**Requires Python 3.10+.** Sync-only; for async frameworks, wrap calls with `asyncio.to_thread()`. Store is immutable after construction and safe to share across threads; backend thread safety depends on the backend implementation. S3, Azure, and SFTP backends support default credential discovery (environment variables, instance profiles, SSH agent) in addition to explicit credentials.
+**Requires Python 3.10+.**
 
-## Who this is for
-
-- **Platform and internal tooling teams** — provide one stable storage interface across environments
-- **Data engineering teams** — pipelines that run against local storage, S3, or SFTP depending on the environment
-- **Teams that include citizen developers** — analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files
-- **Anyone tired of rewriting storage wrappers**
-
-## What you get
-
-- **One interface, many backends:** local fs, S3, SFTP, Azure, in-memory
-- **Folder-scoped stores:** each Store is rooted at a folder — compose layouts with multiple stores or narrow scope with `child()`
-- **Swap backends via config:** move between environments without changing code
-- **Streaming by default:** large files just work without blowing up memory
-- **Atomic writes where supported:** safer updates for file-producing workflows
-- **Established libraries underneath:** `s3fs`, `paramiko`, etc. do the real work
-- **Zero runtime dependencies:** backend extras pull in only what they need
-- **Typed and tested:** strict mypy, spec-driven test suite
-- **Optional integrations:** PyArrow filesystem adapter, OpenTelemetry tracing and metrics
-
-## What it is not
-
-- Not a query engine (no SQL, no predicate pushdown)
-- Not a table format (no Delta Lake log, no Iceberg manifests)
-- Not a filesystem reimplementation (delegates to `s3fs`, `paramiko`, `azure-storage-file-datalake`, `pyarrow` — the libraries you'd pick anyway)
+- Sync-only (wrap with `asyncio.to_thread()` in async apps)
+- `Store` instances are immutable after construction and safe to share across threads
+- Backend thread safety depends on the backend implementation
+- S3, Azure, and SFTP backends support default credential discovery (environment variables, instance profiles, SSH agent)
 
 ## Installation
 
@@ -141,6 +121,31 @@ with Registry(config) as registry:
 ```
 
 Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Credentials are automatically masked in `repr()`/`str()` to prevent leakage in logs. See the [configuration guide](https://docs.remotestore.dev/stable/getting-started/) for details.
+
+## Who this is for
+
+- **Platform and internal tooling teams** — provide one stable storage interface across environments
+- **Data engineering teams** — pipelines that run against local storage, S3, or SFTP depending on the environment
+- **Teams that include citizen developers** — analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files
+- **Anyone tired of writing storage wrappers in every project**
+
+## What you get
+
+- **One interface, many backends:** local filesystem, S3, SFTP, Azure, in-memory
+- **Folder-scoped stores:** each Store is rooted at a folder — compose layouts with multiple stores or narrow scope with `child()`
+- **Swap backends via config:** move between environments without changing code
+- **Streaming by default:** large files just work without blowing up memory
+- **Atomic writes where supported:** safer updates for file-producing workflows
+- **Established libraries underneath:** `s3fs`, `paramiko`, etc. do the real work
+- **Zero runtime dependencies:** backend extras pull in only what they need
+- **Typed and tested:** strict mypy, spec-driven test suite
+- **Optional integrations:** PyArrow filesystem adapter, OpenTelemetry tracing and metrics
+
+## What it is not
+
+- Not a query engine (no SQL, no predicate pushdown)
+- Not a table format (no Delta Lake log, no Iceberg manifests)
+- Not a filesystem reimplementation (delegates to `s3fs`, `paramiko`, `azure-storage-file-datalake`, `pyarrow` — the libraries you'd pick anyway)
 
 ## Supported Backends
 
