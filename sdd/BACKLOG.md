@@ -521,10 +521,10 @@ Documentation audit of v0.15.0: `sdd/audits/audit-003-documentation.md`.
 
 ### Ideas shipped
 
-- [x] **ID-078 — Quickstart example: Store at a new root**
-  Added `demo_new_root` to `examples/quickstart.py` showing that `root_path`
-  need not exist beforehand. Added docstring note on `Store` class, admonition
-  in `docs-src/api/store.md`, updated README examples table.
+- [x] **ID-078 — Document Store at a new root**
+  Added docstring note on `Store` class and admonition in
+  `docs-src/api/store.md` documenting that `root_path` need not exist
+  beforehand -- `write()` creates intermediate folders implicitly.
 
 - [x] **ID-077 — Switch docstring rendering from tables to lists**
   Changed `docstring_section_style` from `table` (default) to `list` in
