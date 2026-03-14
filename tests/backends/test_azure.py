@@ -589,13 +589,14 @@ class TestAzureHNSPaths:
         from azure.core.exceptions import ResourceNotFoundError
 
         backend = self._make_hns_backend()
+        backend._max_concurrency = 4
         bc = MagicMock()
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         backend._cc_instance.get_blob_client.return_value = bc
         tmp_fc = MagicMock()
         backend._fs_instance.get_file_client.return_value = tmp_fc
         backend.write_atomic("dir/file.txt", b"content")
-        tmp_fc.upload_data.assert_called_once()
+        tmp_fc.upload_data.assert_called_once_with(b"content", overwrite=True, max_concurrency=4)
         tmp_fc.rename_file.assert_called_once()
 
     def test_delete_folder_uses_directory_client_on_hns(self) -> None:
@@ -634,6 +635,24 @@ class TestAzureHNSPaths:
         backend._fs_instance.get_paths.return_value = [mock_path]
         folders = list(backend.list_folders("parent"))
         assert [f.name for f in folders] == ["sub"]
+
+    def test_get_folder_info_checks_directory_on_hns(self) -> None:
+        backend = self._make_hns_backend()
+        dc = MagicMock()
+        backend._fs_instance.get_directory_client.return_value = dc
+        backend._cc_instance.list_blobs.return_value = []  # empty dir
+        info = backend.get_folder_info("my-dir")
+        dc.get_directory_properties.assert_called_once()
+        assert info.file_count == 0
+
+
+# =============================================================================
+# Max concurrency threading (AZ-033)
+# =============================================================================
+
+
+class TestAzureMaxConcurrency:
+    """AZ-033: max_concurrency kwarg reaches all SDK upload/download call sites."""
 
     def test_max_concurrency_threaded_to_upload(self) -> None:
         """AZ-033: max_concurrency kwarg reaches upload_blob."""
@@ -677,15 +696,6 @@ class TestAzureHNSPaths:
         backend._cc_instance.get_blob_client.return_value = bc
         backend.read_bytes("file.txt")
         bc.download_blob.assert_called_once_with(max_concurrency=8)
-
-    def test_get_folder_info_checks_directory_on_hns(self) -> None:
-        backend = self._make_hns_backend()
-        dc = MagicMock()
-        backend._fs_instance.get_directory_client.return_value = dc
-        backend._cc_instance.list_blobs.return_value = []  # empty dir
-        info = backend.get_folder_info("my-dir")
-        dc.get_directory_properties.assert_called_once()
-        assert info.file_count == 0
 
 
 # =============================================================================
