@@ -120,6 +120,17 @@ class TestPathGeneration:
         )
         assert mgr.load_input(in_ctx) == obj
 
+    @pytest.mark.spec("DAG-005")
+    def test_single_segment_asset_key(self, store: Store) -> None:
+        """Single-segment asset key maps to flat path."""
+        mgr = remote_store_io_manager(store, serializer="json")
+        obj = {"summary": True}
+
+        out_ctx = build_output_context(asset_key=AssetKey(["report"]))
+        mgr.handle_output(out_ctx, obj)
+
+        assert store.exists("report.json")
+
     @pytest.mark.spec("DAG-006")
     def test_multi_segment_asset_key(self, store: Store) -> None:
         """Multi-segment asset key maps to nested path."""

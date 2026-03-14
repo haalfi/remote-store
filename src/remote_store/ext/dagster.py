@@ -125,8 +125,7 @@ class ParquetSerializer:
         if hasattr(obj, "to_arrow"):
             # Polars DataFrame → Arrow Table
             table = obj.to_arrow()
-        elif hasattr(obj, "to_pandas"):
-            # Already an Arrow Table or similar
+        elif isinstance(obj, pa.Table):
             table = obj
         elif hasattr(obj, "dtypes"):
             # pandas DataFrame

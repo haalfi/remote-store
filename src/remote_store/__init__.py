@@ -140,12 +140,3 @@ try:
 except ImportError:
     # pyyaml/ruamel.yaml not installed — don't crash the core package.
     pass
-
-# Optional Dagster extension (available when dagster is installed)
-try:
-    from remote_store.ext.dagster import Serializer, remote_store_io_manager
-
-    __all__ += ["Serializer", "remote_store_io_manager"]
-except ImportError:
-    # dagster not installed — don't crash the core package.
-    pass
