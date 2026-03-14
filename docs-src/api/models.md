@@ -1,8 +1,10 @@
 # Models
 
-`FileInfo`, `FolderEntry`, and `FolderInfo` all satisfy the
-[`PathEntry`](#remote_store.PathEntry) protocol, enabling uniform iteration
-over mixed listing results.
+!!! tip
+    [`FileInfo`](#remote_store.FileInfo), [`FolderEntry`](#remote_store.FolderEntry),
+    and [`FolderInfo`](#remote_store.FolderInfo) all satisfy the
+    [`PathEntry`](#remote_store.PathEntry) protocol, enabling uniform iteration
+    over mixed listing results.
 
 ::: remote_store.FileInfo
 
