@@ -6,9 +6,12 @@
 
 !!! note "Root path creation"
     The root path does not need to exist before constructing the store.
-    `write()` creates intermediate folders implicitly on all backends,
-    so files written under a new `root_path` will work without any
-    explicit folder-creation step.
+    `write()` creates intermediate folders implicitly on all backends:
+
+    ```python
+    store = Store(backend, root_path="brand-new-folder")
+    store.write("hello.txt", b"works")  # folder created automatically
+    ```
 
 !!! note "Thread safety"
     `Store` is immutable after construction and can be shared across threads.
