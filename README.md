@@ -29,7 +29,7 @@ Where files live is configuration, not application code.
 Under the hood, established Python libraries like `s3fs`, `paramiko`,
 and `azure-storage-file-datalake` do the real work.
 
-**Requires Python 3.10+.** The core API is synchronous; see the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for thread safety, async usage, and credential discovery details.
+**Requires Python 3.10+.** The core API is synchronous; see the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for atomicity caveats and race conditions.
 
 ## Installation
 
