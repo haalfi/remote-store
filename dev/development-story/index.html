@@ -5296,6 +5296,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-26-the-polish-phase-what-happens-after-feature-complete-post-v0160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 26: The Polish Phase -- What Happens After "Feature Complete" (post-v0.16.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5904,6 +5915,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-26-the-polish-phase-what-happens-after-feature-complete-post-v0160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 26: The Polish Phase -- What Happens After "Feature Complete" (post-v0.16.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6180,15 +6202,15 @@
 <tbody>
 <tr>
 <td>Source code</td>
-<td>~8,100 lines (6 backends)</td>
+<td>~8,500 lines (6 backends)</td>
 </tr>
 <tr>
 <td>Tests</td>
-<td>~1,710 tests, ~14,900 lines</td>
+<td>~1,750 tests, ~15,200 lines</td>
 </tr>
 <tr>
 <td>Specs &amp; docs</td>
-<td>28 specs, 11 ADRs, 4 RFCs</td>
+<td>30 specs, 12 ADRs, 4 RFCs</td>
 </tr>
 <tr>
 <td>Examples</td>
@@ -6208,11 +6230,11 @@
 </tr>
 <tr>
 <td>Co-work sessions</td>
-<td>Spread across ~3.5 calendar weeks (since Feb 14)</td>
+<td>Spread across ~4 calendar weeks (since Feb 14)</td>
 </tr>
 <tr>
 <td>Commits</td>
-<td>~350</td>
+<td>~377</td>
 </tr>
 </tbody>
 </table>
@@ -6590,6 +6612,16 @@
 <h3 id="phase-25-api-conveniences-and-documentation-quality-v0160">Phase 25: API Conveniences and Documentation Quality (v0.16.0)<a class="headerlink" href="#phase-25-api-conveniences-and-documentation-quality-v0160" title="Permanent link">&para;</a></h3>
 <p>The v0.16.0 release bundled the post-v0.15.0 work into a cohesive minor release: new convenience APIs (<code>read_text()</code>, <code>iter_children()</code>, <code>ping()</code>), the <code>RetryPolicy</code> configuration surface, the YAML config loader move to <code>ext.yaml</code>, and a documentation quality audit (Audit 003) that fixed 16 findings across guides, docstrings, and examples. The <code>SFTPUtils</code> public utility class replaced private imports in user-facing code, and <code>from_yaml()</code> moved to the extension layer for consistency with the Pydantic adapter.</p>
 <p>The release also shipped colored type annotations in the docs site (mkdocstrings config), uv-based CI installs across all workflows, and cross-platform CI (Windows + macOS). The documentation audit reinforced Principle 17 from the lessons section: audit findings are hypotheses, not prescriptions. Three of the 19 findings were closed as non-defects after investigation.</p>
+<h3 id="phase-26-the-polish-phase-what-happens-after-feature-complete-post-v0160">Phase 26: The Polish Phase -- What Happens After "Feature Complete" (post-v0.16.0)<a class="headerlink" href="#phase-26-the-polish-phase-what-happens-after-feature-complete-post-v0160" title="Permanent link">&para;</a></h3>
+<p>After v0.16.0, the project had every feature it needed for beta. What followed was not a cooldown -- it was the densest learning period yet. Twelve PRs in four days exposed problems that only become visible when you stop adding features and start examining what you already have.</p>
+<p><strong>Consistency bugs are invisible to tools.</strong> <code>list_folders()</code> had been returning plain strings since v0.1.0 while every other listing method returned typed objects. Tests passed, mypy was happy -- strings cooperate just enough. Only a systematic cross-method API audit (ID-074) surfaced the gap. The fix introduced <code>FolderEntry</code> and a <code>PathEntry</code> protocol unifying all listing return types. <strong>Each callsite is locally correct; only a cross-method comparison reveals the inconsistency.</strong></p>
+<p><strong>Research that says "no" is not wasted.</strong> Two research documents produced the explicit decision <em>not</em> to build what they investigated. The async API research (ID-013) found it would double codebase/surface/docs with no clear audience benefit. The Dagster extension research (ID-073) concluded v1 should be a thin adapter -- only if someone actually needs it. Both documents live in <code>sdd/research/</code>, so when someone asks "why no async?", the answer is a link, not a re-investigation.</p>
+<p><strong>Fast failures that leave a record.</strong> The Claude Code GitHub Action for automated PR review (ID-069) hit 18 sandbox permission denials, took ~10 minutes, and cost ~$2 per trivial PR. Added in one commit, reverted in the next. The revert documents the specific failure modes so nobody repeats the experiment.</p>
+<p><strong>Choose docstring style by what your toolchain renders, not what looks best in source.</strong> Sphinx <code>:param:</code> markers, <code>:class:</code> cross-references, and <code>.. note::</code> directives all rendered as plain text in mkdocstrings. The migration to Google style (ID-080, 367+ markers across 25 files) was driven entirely by rendered output, not preference. Review caught that dataclass docstrings need <code>Attributes:</code> not <code>Args:</code> -- a distinction only visible in the rendered docs.</p>
+<p><strong>Include-markdown makes every link potentially circular.</strong> The README restructuring (ID-081) replaced the inline extras list with a link to getting-started. But <code>getting-started.md</code> includes README content via <code>include-markdown</code> -- so the link would point back to itself. <strong>The authoring context (README standalone) and rendering context (README included inside another page) see different link targets.</strong></p>
+<p><strong>Encoding bugs survive by hiding in unchecked cells.</strong> Em dashes were caught and fixed three times in the same PR -- prose, then table headers, then table N/A cells. Each review round fixed the instances the reviewer checked; the rest survived. Em dashes render fine on Linux CI but produce mojibake on Windows cp1252. <strong>Systematic encoding issues don't announce themselves -- they hide in the specific cells you didn't look at.</strong></p>
+<p><strong>Benchmark numbers without understanding the measurement are dangerous.</strong> Azure comparative benchmarks showed remote-store 107x slower than <code>adlfs</code> at listing. Investigation revealed a fsspec caching artifact: <code>adlfs</code> caches after the first call, remote-store hits Azurite every iteration. Real overhead: 1.2x vs raw SDK -- FileInfo/RemotePath construction cost. <strong>The 107x would have been damning; the 1.2x is an acceptable design trade-off.</strong></p>
+<p><strong>"Defensive" code that duplicates library guarantees is just overhead.</strong> Three S3 listing methods had <code>exists()</code> guards before every call -- an extra HEAD request each time. But <code>s3fs.ls()</code> already raises <code>FileNotFoundError</code> for missing prefixes. The guards doubled round-trips for zero benefit. <strong>Know what your dependencies promise before adding safety nets.</strong></p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
