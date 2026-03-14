@@ -40,7 +40,7 @@ class Store:
     threads.  Backend thread safety depends on the backend implementation.
 
     The root path does not need to exist before constructing the store.
-    :meth:`write` creates intermediate folders implicitly on all backends,
+    ``write()`` creates intermediate folders implicitly on all backends,
     so files written under a new ``root_path`` will work without any
     explicit folder-creation step.
     """
