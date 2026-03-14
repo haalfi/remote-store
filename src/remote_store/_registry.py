@@ -19,8 +19,9 @@ _BACKEND_FACTORIES: dict[str, type[Backend]] = {}
 def register_backend(type_name: str, cls: type[Backend]) -> None:
     """Register a backend class for a given type string.
 
-    :param type_name: The type identifier (e.g. ``"local"``).
-    :param cls: The backend class to instantiate.
+    Args:
+        type_name: The type identifier (e.g. ``"local"``).
+        cls: The backend class to instantiate.
     """
     _BACKEND_FACTORIES[type_name] = cls
 
@@ -72,8 +73,11 @@ def _register_builtin_backends() -> None:
 class Registry:
     """Manages backend lifecycle and provides access to named stores.
 
-    :param config: Optional configuration. Validates immediately.
-    :raises ValueError: If config is invalid.
+    Args:
+        config: Optional configuration. Validates immediately.
+
+    Raises:
+        ValueError: If config is invalid.
     """
 
     def __init__(self, config: RegistryConfig | None = None) -> None:
@@ -97,8 +101,11 @@ class Registry:
     def get_store(self, name: str) -> Store:
         """Get a store by its profile name.
 
-        :param name: The store profile name.
-        :raises KeyError: If no store profile with this name exists.
+        Args:
+            name: The store profile name.
+
+        Raises:
+            KeyError: If no store profile with this name exists.
         """
         if name not in self._config.stores:
             available = sorted(self._config.stores.keys())

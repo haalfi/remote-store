@@ -24,9 +24,10 @@ class _ErrorMappingStream(io.RawIOBase):
     Programming errors (``TypeError``, ``ValueError``, ``AttributeError``, etc.)
     are **not** caught -- they propagate normally.
 
-    :param inner: The underlying stream to wrap.
-    :param mapper: ``(Exception, str) -> RemoteStoreError`` callable.
-    :param path: The logical path, forwarded to *mapper* for diagnostics.
+    Args:
+        inner: The underlying stream to wrap.
+        mapper: ``(Exception, str) -> RemoteStoreError`` callable.
+        path: The logical path, forwarded to *mapper* for diagnostics.
     """
 
     def __init__(

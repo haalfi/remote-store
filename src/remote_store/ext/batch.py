@@ -1,7 +1,7 @@
 """Batch operations — convenience wrappers for bulk delete, copy, and exists.
 
 All functions call Store methods one-by-one by default (sequential). Pass
-``concurrent=True`` to use a :class:`~concurrent.futures.ThreadPoolExecutor`
+``concurrent=True`` to use a ``ThreadPoolExecutor``
 for parallel I/O — cloud backends benefit significantly from this.
 
 Usage:
@@ -41,8 +41,9 @@ __all__ = ["BatchResult", "batch_copy", "batch_delete", "batch_exists"]
 class BatchResult:
     """Outcome of a batch operation.
 
-    :param succeeded: Paths that completed without error.
-    :param failed: Mapping from path to the error that occurred.
+    Attributes:
+        succeeded: Paths that completed without error.
+        failed: Mapping from path to the error that occurred.
     """
 
     succeeded: tuple[str, ...]
@@ -70,14 +71,19 @@ def batch_delete(
 ) -> BatchResult:
     """Delete multiple files, collecting errors.
 
-    :param store: The Store to delete from.
-    :param paths: File paths to delete.
-    :param missing_ok: Forwarded to each ``store.delete()`` call.
-    :param stop_on_error: Stop on first ``RemoteStoreError`` (sequential only).
-    :param concurrent: Use a thread pool for parallel execution.
-    :param max_workers: Max threads (forwarded to ``ThreadPoolExecutor``).
-    :returns: A :class:`BatchResult` with succeeded/failed paths.
-    :raises ValueError: If both ``concurrent`` and ``stop_on_error`` are True.
+    Args:
+        store: The Store to delete from.
+        paths: File paths to delete.
+        missing_ok: Forwarded to each ``store.delete()`` call.
+        stop_on_error: Stop on first ``RemoteStoreError`` (sequential only).
+        concurrent: Use a thread pool for parallel execution.
+        max_workers: Max threads (forwarded to ``ThreadPoolExecutor``).
+
+    Returns:
+        A ``BatchResult`` with succeeded/failed paths.
+
+    Raises:
+        ValueError: If both ``concurrent`` and ``stop_on_error`` are True.
     """
     if concurrent and stop_on_error:
         msg = "stop_on_error is not supported with concurrent=True"
@@ -156,14 +162,19 @@ def batch_copy(
 ) -> BatchResult:
     """Copy multiple files, collecting errors.
 
-    :param store: The Store to copy within.
-    :param pairs: ``(src, dst)`` tuples.
-    :param overwrite: Forwarded to each ``store.copy()`` call.
-    :param stop_on_error: Stop on first ``RemoteStoreError`` (sequential only).
-    :param concurrent: Use a thread pool for parallel execution.
-    :param max_workers: Max threads (forwarded to ``ThreadPoolExecutor``).
-    :returns: A :class:`BatchResult` with succeeded/failed source paths.
-    :raises ValueError: If both ``concurrent`` and ``stop_on_error`` are True.
+    Args:
+        store: The Store to copy within.
+        pairs: ``(src, dst)`` tuples.
+        overwrite: Forwarded to each ``store.copy()`` call.
+        stop_on_error: Stop on first ``RemoteStoreError`` (sequential only).
+        concurrent: Use a thread pool for parallel execution.
+        max_workers: Max threads (forwarded to ``ThreadPoolExecutor``).
+
+    Returns:
+        A ``BatchResult`` with succeeded/failed source paths.
+
+    Raises:
+        ValueError: If both ``concurrent`` and ``stop_on_error`` are True.
     """
     if concurrent and stop_on_error:
         msg = "stop_on_error is not supported with concurrent=True"
@@ -240,15 +251,18 @@ def batch_exists(
 ) -> dict[str, bool]:
     """Check existence of multiple paths.
 
-    Unlike :func:`batch_delete` and :func:`batch_copy`, this function does
+    Unlike ``batch_delete()`` and ``batch_copy()``, this function does
     **not** catch errors — any exception from ``store.exists()`` propagates
     immediately.
 
-    :param store: The Store to query.
-    :param paths: Paths to check.
-    :param concurrent: Use a thread pool for parallel execution.
-    :param max_workers: Max threads (forwarded to ``ThreadPoolExecutor``).
-    :returns: Dict mapping each path to ``True``/``False``.
+    Args:
+        store: The Store to query.
+        paths: Paths to check.
+        concurrent: Use a thread pool for parallel execution.
+        max_workers: Max threads (forwarded to ``ThreadPoolExecutor``).
+
+    Returns:
+        Dict mapping each path to ``True``/``False``.
     """
     if concurrent:
         return _batch_exists_concurrent(store, paths, max_workers)

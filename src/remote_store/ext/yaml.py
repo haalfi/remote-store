@@ -63,12 +63,17 @@ def from_yaml(path: str | Path) -> RegistryConfig:
 
     Accepts either ``pyyaml`` or ``ruamel.yaml`` as the parser.
 
-    :param path: Path to the YAML file.
-    :returns: An immutable ``RegistryConfig``.
-    :raises ModuleNotFoundError: If neither ``pyyaml`` nor ``ruamel.yaml``
-        is installed.
-    :raises FileNotFoundError: If *path* does not exist.
-    :raises TypeError: If the top-level YAML value is not a mapping.
+    Args:
+        path: Path to the YAML file.
+
+    Returns:
+        An immutable ``RegistryConfig``.
+
+    Raises:
+        ModuleNotFoundError: If neither ``pyyaml`` nor ``ruamel.yaml``
+            is installed.
+        FileNotFoundError: If *path* does not exist.
+        TypeError: If the top-level YAML value is not a mapping.
     """
     safe_load = _get_yaml_loader()
 

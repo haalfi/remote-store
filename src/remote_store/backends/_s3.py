@@ -41,12 +41,13 @@ log = logging.getLogger(__name__)
 class S3Backend(Backend):
     """S3-compatible object storage backend using s3fs.
 
-    :param bucket: S3 bucket name (required, non-empty).
-    :param endpoint_url: Custom endpoint URL (e.g. for MinIO).
-    :param key: AWS access key ID.
-    :param secret: AWS secret access key.
-    :param region_name: AWS region name.
-    :param client_options: Additional options passed to s3fs.
+    Args:
+        bucket: S3 bucket name (required, non-empty).
+        endpoint_url: Custom endpoint URL (e.g. for MinIO).
+        key: AWS access key ID.
+        secret: AWS secret access key.
+        region_name: AWS region name.
+        client_options: Additional options passed to s3fs.
     """
 
     def __init__(

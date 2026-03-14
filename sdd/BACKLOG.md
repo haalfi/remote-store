@@ -147,12 +147,6 @@ Not evaluated, not committed to. Pick up when relevant.
   export (e.g. `SFTPUtils`, `RetryPolicy`) ships without API docs
   (see AF-037 follow-up).
 
-- [ ] **ID-063 — `write_text()` convenience method**
-  Symmetric to `read_text()`. `Store.write_text(path, text, encoding="utf-8",
-  errors="strict", *, overwrite=False)` — thin wrapper around `.encode()` +
-  `write()`. Lower priority since `store.write(path, text.encode())` is a
-  trivial one-liner. Add if users request it.
-
 - [ ] **ID-066 -- PR preview deployments**
   Deploy PR previews to Cloudflare Pages, Netlify, or GitHub Pages artifacts.
   Inspired by FastAPI's Cloudflare Pages pattern. Infrastructure decision needed.
@@ -177,6 +171,16 @@ Completed items, grouped by origin. Kept for traceability — full context
 preserved to support future design decisions.
 
 ### Feature work (post-v0.16.0)
+
+- [x] **ID-080 — Migrate docstrings from Sphinx to Google style**
+  Converted 367 Sphinx markers (`:param:`, `:returns:`, `:raises:`) across 31 files
+  under `src/remote_store/` to Google-style sections (`Args:`, `Returns:`, `Raises:`).
+  Updated `mkdocs.yml` (`docstring_style: google`) and `sdd/DESIGN.md` §4.
+  Unlocks inline admonitions, fenced code blocks, and cross-references in docstrings.
+  Research: `sdd/research/research-google-docstring-migration.md`.
+
+- [x] **ID-063 — `write_text()` convenience method**
+  Shipped as part of ID-074 (Store API Refinement, PR #188).
 
 - [x] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**
   Removed `exists()` pre-check from `list_files`, `list_folders`, and

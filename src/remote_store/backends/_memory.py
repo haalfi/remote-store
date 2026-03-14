@@ -407,7 +407,8 @@ class MemoryBackend(Backend):
     def _split_path(path: str) -> list[str]:
         """Split and validate a path, returning a list of segments.
 
-        :raises InvalidPath: For absolute paths, ``..`` segments, or null bytes.
+        Raises:
+            InvalidPath: For absolute paths, ``..`` segments, or null bytes.
         """
         if "\0" in path:
             raise InvalidPath("Path contains null byte", path=path, backend="memory")

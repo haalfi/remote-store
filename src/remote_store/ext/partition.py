@@ -29,8 +29,9 @@ __all__ = ["ParsedPartition", "parse_partition", "partition_path"]
 class ParsedPartition:
     """Result of parsing a Hive-style partition path.
 
-    :param partitions: Ordered mapping of partition column names to values.
-    :param filename: The trailing non-partition portion of the path.
+    Attributes:
+        partitions: Ordered mapping of partition column names to values.
+        filename: The trailing non-partition portion of the path.
     """
 
     partitions: dict[str, str]
@@ -40,14 +41,18 @@ class ParsedPartition:
 def partition_path(filename: str, /, **partitions: str | int) -> str:
     """Build a Hive-style partition path.
 
-    :param filename: Leaf file name (e.g., ``"data.parquet"``).
-        Must be non-empty and must not contain ``/``.
-    :param partitions: Partition key-value pairs. Values are coerced to
-        ``str``. Keys and coerced values must be non-empty.
-    :returns: Forward-slash-joined path like
-        ``"year=2026/month=03/data.parquet"``.
-    :raises ValueError: If *filename* is empty or contains ``/``, or if
-        any partition key or coerced value is empty.
+    Args:
+        filename: Leaf file name (e.g., ``"data.parquet"``).
+            Must be non-empty and must not contain ``/``.
+        partitions: Partition key-value pairs. Values are coerced to
+            ``str``. Keys and coerced values must be non-empty.
+
+    Returns:
+        Forward-slash-joined path like ``"year=2026/month=03/data.parquet"``.
+
+    Raises:
+        ValueError: If *filename* is empty or contains ``/``, or if
+            any partition key or coerced value is empty.
     """
     if not filename:
         msg = "filename must be non-empty"
@@ -82,11 +87,15 @@ def parse_partition(path: str) -> ParsedPartition:
     encountered, all remaining segments (including any later ``key=value``
     segments) become part of the filename.
 
-    :param path: The partition path to parse (e.g.,
-        ``"year=2026/month=03/data.parquet"``).
-    :returns: A :class:`ParsedPartition` with extracted partitions and
-        filename.
-    :raises ValueError: If *path* is empty.
+    Args:
+        path: The partition path to parse (e.g.,
+            ``"year=2026/month=03/data.parquet"``).
+
+    Returns:
+        A ``ParsedPartition`` with extracted partitions and filename.
+
+    Raises:
+        ValueError: If *path* is empty.
     """
     if not path:
         msg = "path must be non-empty"

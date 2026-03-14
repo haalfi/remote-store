@@ -35,15 +35,16 @@ class PathEntry(typing.Protocol):
 class FileInfo:
     """Immutable snapshot of file metadata.
 
-    Satisfies the :class:`PathEntry` protocol.
+    Satisfies the ``PathEntry`` protocol.
 
-    :param path: Normalized remote path.
-    :param name: File name (final path component).
-    :param size: File size in bytes.
-    :param modified_at: Last modification time.
-    :param checksum: Optional checksum (e.g. ETag, MD5).
-    :param content_type: Optional MIME type.
-    :param extra: Backend-specific metadata.
+    Args:
+        path: Normalized remote path.
+        name: File name (final path component).
+        size: File size in bytes.
+        modified_at: Last modification time.
+        checksum: Optional checksum (e.g. ETag, MD5).
+        content_type: Optional MIME type.
+        extra: Backend-specific metadata.
     """
 
     path: RemotePath
@@ -67,10 +68,11 @@ class FileInfo:
 class FolderEntry:
     """Immutable folder identity returned by listing operations.
 
-    Satisfies the :class:`PathEntry` protocol.
+    Satisfies the ``PathEntry`` protocol.
 
-    :param path: Normalized remote path.
-    :param name: Folder name (final path component).
+    Args:
+        path: Normalized remote path.
+        name: Folder name (final path component).
     """
 
     path: RemotePath
@@ -89,13 +91,14 @@ class FolderEntry:
 class FolderInfo:
     """Aggregated folder metadata.
 
-    Satisfies the :class:`PathEntry` protocol.
+    Satisfies the ``PathEntry`` protocol.
 
-    :param path: Normalized remote path.
-    :param file_count: Number of files in the folder.
-    :param total_size: Total size of all files in bytes.
-    :param modified_at: Optional last modification time.
-    :param extra: Backend-specific metadata.
+    Args:
+        path: Normalized remote path.
+        file_count: Number of files in the folder.
+        total_size: Total size of all files in bytes.
+        modified_at: Optional last modification time.
+        extra: Backend-specific metadata.
     """
 
     path: RemotePath
@@ -108,7 +111,7 @@ class FolderInfo:
     def name(self) -> str:
         """Folder name (final path component).
 
-        Unlike :class:`FileInfo` and :class:`FolderEntry`, which store ``name``
+        Unlike ``FileInfo`` and ``FolderEntry``, which store ``name``
         as a constructor field, this is a derived property (``self.path.name``)
         to avoid redundancy and keep ``name`` in sync with ``path``.
         """

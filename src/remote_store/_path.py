@@ -10,8 +10,11 @@ from remote_store._errors import InvalidPath
 class RemotePath:
     """An immutable, normalized path within a remote store.
 
-    :param raw: The raw path string to normalize and validate.
-    :raises InvalidPath: If the path is malformed or unsafe.
+    Args:
+        raw: The raw path string to normalize and validate.
+
+    Raises:
+        InvalidPath: If the path is malformed or unsafe.
     """
 
     __slots__ = ("_path",)
