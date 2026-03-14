@@ -146,7 +146,7 @@ class TestPerFolderStats:
         def _stats() -> None:
             folders = list(bench_backend.list_folders(self._root))
             for folder in folders:
-                bench_backend.get_folder_info(f"{self._root}/{folder}")
+                bench_backend.get_folder_info(str(folder.path))
 
         benchmark(_stats)
 
