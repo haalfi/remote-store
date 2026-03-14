@@ -27,7 +27,7 @@ and painful to replace later.
 `remote-store` replaces them with one simple interface.
 Where files live is configuration, not application code.
 Under the hood, established Python libraries like `s3fs`, `paramiko`,
-and `pyarrow` do the real work.
+and `azure-storage-file-datalake` do the real work.
 
 **Requires Python 3.10+.** The core API is synchronous; see the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for thread safety, async usage, and credential discovery details.
 
@@ -47,7 +47,15 @@ pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
 ```
 
-See the [full extras list](https://docs.remotestore.dev/stable/getting-started/) for optional integrations (PyArrow, OpenTelemetry, TOML, YAML, Pydantic).
+Optional extras for integrations:
+
+```bash
+pip install "remote-store[arrow]"          # PyArrow filesystem adapter
+pip install "remote-store[otel]"           # OpenTelemetry instrumentation
+pip install "remote-store[yaml]"           # YAML config support
+pip install "remote-store[pydantic]"       # Pydantic BaseSettings config
+pip install "remote-store[toml]"           # TOML config on Python < 3.11
+```
 
 ## Quick Start
 
@@ -115,7 +123,7 @@ with Registry(config) as registry:
     store.write_text("monthly/2026-03.csv", report_csv)
 ```
 
-Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Credentials are automatically masked in `repr()`/`str()` to prevent leakage in logs. See the [configuration guide](https://docs.remotestore.dev/stable/getting-started/) for details.
+Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Credentials are automatically masked in `repr()`/`str()` to prevent leakage in logs.
 
 ## Who this is for
 
@@ -150,7 +158,7 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 | Amazon S3 / MinIO | `remote-store[s3]` | `s3fs` | Yes | Yes | No (copy+delete) |
 | S3 (PyArrow) | `remote-store[s3-pyarrow]` | `pyarrow` | Yes | Yes | No (copy+delete) |
 | SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | — | Yes** |
-| Azure Blob / ADLS | `remote-store[azure]` | `azure-storage` | Yes | Yes | HNS: Yes / non-HNS: No |
+| Azure Blob / ADLS | `remote-store[azure]` | `azure-storage-file-datalake` | Yes | Yes | HNS: Yes / non-HNS: No |
 
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Via `posix_rename` on most OpenSSH servers; falls back to copy+delete.
@@ -159,7 +167,7 @@ All backends support read, write, delete, list, copy, move, and metadata. Glob i
 
 ## Store API
 
-The Store provides 26 methods across read/write, browsing, management, and utility. Key highlights:
+The Store provides 27 methods across read/write, browsing, management, and utility. Key highlights:
 
 ```python
 store.read_text("path/to/file.txt")             # → str
@@ -211,7 +219,7 @@ There are several excellent Python libraries for file I/O across backends. Here 
 
 | | fsspec | smart_open | cloudpathlib | obstore | **remote-store** |
 |---|---|---|---|---|---|
-| API surface | ~56 methods | `open()` only | pathlib-style | ~10 methods | 26 methods |
+| API surface | ~56 methods | `open()` only | pathlib-style | ~10 methods | 27 methods |
 | Backends | 30+ filesystems | S3, GCS, Az, SFTP | S3, GCS, Azure | S3, GCS, Azure | Local, S3, SFTP, Az, Memory |
 | SFTP | via sshfs | Yes | No | No | Built-in |
 | Streaming I/O | Yes | Yes | No (downloads) | Bytes-oriented | Yes (BinaryIO) |

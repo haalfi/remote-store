@@ -58,6 +58,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Docs
 
+- **README medium pass** (ID-081) -- streamlined onboarding flow, added backend
+  behavior matrix, restored correct extras and library names, fixed method count
+  (27).
+
 - **Docs site polish** (ID-064) -- property return types now visible
   (`show_signature_annotations`), Fira Code font for code blocks,
   sticky navigation tabs, search suggest/highlight, tighter parameter
