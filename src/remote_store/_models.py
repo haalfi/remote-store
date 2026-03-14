@@ -16,6 +16,21 @@ if TYPE_CHECKING:
     from remote_store._path import RemotePath
 
 
+@typing.runtime_checkable
+class PathEntry(typing.Protocol):
+    """Shared interface for listing results -- every entry has a name and path."""
+
+    @property
+    def name(self) -> str:
+        """Entry name (final path component)."""
+        ...
+
+    @property
+    def path(self) -> RemotePath:
+        """Normalized remote path."""
+        ...
+
+
 @dataclasses.dataclass(frozen=True, eq=False)
 class FileInfo:
     """Immutable snapshot of file metadata.
@@ -46,21 +61,6 @@ class FileInfo:
 
     def __hash__(self) -> int:
         return hash(self.path)
-
-
-@typing.runtime_checkable
-class PathEntry(typing.Protocol):
-    """Shared interface for listing results -- every entry has a name and path."""
-
-    @property
-    def name(self) -> str:
-        """Entry name (final path component)."""
-        ...
-
-    @property
-    def path(self) -> RemotePath:
-        """Normalized remote path."""
-        ...
 
 
 @dataclasses.dataclass(frozen=True, eq=False)
