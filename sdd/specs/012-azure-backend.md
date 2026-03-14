@@ -29,6 +29,7 @@ AzureBackend(
     credential: Any | None = None,  # e.g. DefaultAzureCredential()
     client_options: dict[str, Any] | None = None,
     retry: RetryPolicy | None = None,  # see spec 025
+    max_concurrency: int = 1,  # see AZ-033
 )
 ```
 **Postconditions:** The backend stores configuration but does not connect to Azure during construction (see AZ-004). At least one of `account_name`, `account_url`, or `connection_string` must be provided — otherwise `ValueError` is raised at construction time.
@@ -256,6 +257,15 @@ backend.to_key("data/file.txt")               # -> "data/file.txt" (no prefix, u
 ---
 
 ## Configuration
+
+### AZ-033: Transfer Concurrency
+
+**Invariant:** `AzureBackend` accepts a `max_concurrency: int = 1` constructor parameter that controls the number of parallel connections used for blob uploads and downloads. The value is threaded through to `BlobClient.upload_blob()`, `BlobClient.download_blob()`, and `DataLakeFileClient.upload_data()` (HNS atomic writes).
+**Preconditions:** `max_concurrency` must be >= 1; `ValueError` is raised at construction time otherwise.
+**Default:** `1` (sequential transfer, matching prior behavior). Users opt in to parallelism for large-file workloads.
+**Rationale:** The Azure SDK natively supports parallel block uploads and parallel chunk downloads. Exposing this parameter lets users improve throughput for large files without changing application code. SFTP has no equivalent (Paramiko is sequential); S3 concurrency is controlled at the `s3fs`/`aiobotocore` level.
+
+---
 
 ### AZ-031: Client Options Passthrough
 

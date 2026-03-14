@@ -78,6 +78,7 @@ backend = AzureBackend(
 | `connection_string` | `str` | `None` | Azure Storage connection string |
 | `credential` | `Any` | `None` | Any credential object (e.g. `DefaultAzureCredential()`) |
 | `client_options` | `dict` | `None` | Extra kwargs passed to `DataLakeServiceClient` |
+| `max_concurrency` | `int` | `1` | Parallel connections for uploads/downloads (>1 benefits large files) |
 
 At least one of `account_name`, `account_url`, or `connection_string` must be provided.
 

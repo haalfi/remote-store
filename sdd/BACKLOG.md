@@ -73,41 +73,6 @@ Started but not yet prioritized for completion.
 
 Not evaluated, not committed to. Pick up when relevant.
 
-- [ ] **ID-076 — AzureConfig transfer concurrency (`max_concurrency`)**
-  Expose `max_concurrency: int = 1` on `AzureConfig` (or as a per-call kwarg)
-  and thread it through to `DataLakeFileClient.upload_data()` and
-  `DataLakeFileClient.download_file()`. The Azure SDK supports parallel block
-  uploads and parallel chunk downloads natively — today the parameter is
-  silently left at its SDK default of 1 (sequential).
-
-  **Context:**
-  Research into dagster-azure (`dagster_azure/adls2/io_manager.py`) confirmed
-  that no Dagster-native IO manager sets this parameter either — all fall back
-  to the SDK default. Setting `max_concurrency=4` (or higher on wide hosts)
-  would benefit all large-asset workloads without any API-surface change for
-  users who don't configure it.
-
-  **Proposed change:**
-  ```python
-  # AzureConfig
-  transfer_concurrency: int = 1   # or 4 as an opinionated default
-
-  # AzureBackend.write()
-  file_client.upload_data(data, overwrite=True,
-                          max_concurrency=self._cfg.transfer_concurrency)
-
-  # AzureBackend.read() / chunks()
-  downloader = file_client.download_file(
-      max_concurrency=self._cfg.transfer_concurrency)
-  ```
-
-  **Scope:** `src/remote_store/backends/_azure.py`, `AzureConfig` dataclass,
-  spec `sdd/specs/012-azure-backend.md`, Azure backend docs page.
-
-  **Note:** SFTP has no equivalent (Paramiko is sequential by design);
-  S3 concurrency is controlled via `s3fs` / `aiobotocore` at the fs level.
-  This item is Azure-specific.
-
 - [ ] **ID-075 — Dagster integration (`ext.dagster`)**
   Thin Dagster IO manager adapter for teams already using remote-store who
   adopt Dagster. Lets any existing `Store` serve as a Dagster IO manager
@@ -219,6 +184,12 @@ Completed items, grouped by origin. Kept for traceability — full context
 preserved to support future design decisions.
 
 ### Feature work (post-v0.16.0)
+
+- [x] **ID-076 — AzureBackend `max_concurrency` parameter**
+  Added `max_concurrency: int = 1` constructor parameter to `AzureBackend`.
+  Threaded through to `upload_blob()`, `download_blob()`, and HNS
+  `upload_data()` calls. Default 1 (sequential, matching prior behavior).
+  Spec AZ-033.
 
 - [x] **ID-079 — FolderInfo.name property and PathEntry protocol notes**
   Added `name` property to `FolderInfo` (derived from `path.name`) so it

@@ -86,6 +86,8 @@ class AzureBackend(Backend):
     :param connection_string: Azure Storage connection string.
     :param credential: Any credential object (e.g. ``DefaultAzureCredential()``).
     :param client_options: Additional options passed to service clients.
+    :param max_concurrency: Maximum number of parallel connections for
+        uploads and downloads (default ``1`` -- sequential).
     """
 
     def __init__(
@@ -100,11 +102,14 @@ class AzureBackend(Backend):
         credential: Any | None = None,
         client_options: dict[str, Any] | None = None,
         retry: RetryPolicy | None = None,
+        max_concurrency: int = 1,
     ) -> None:
         if not container or not container.strip():
             raise ValueError("container must be a non-empty string")
         if not account_name and not account_url and not connection_string:
             raise ValueError("At least one of account_name, account_url, or connection_string must be provided")
+        if max_concurrency < 1:
+            raise ValueError("max_concurrency must be >= 1")
         self._container = container
         self._account_name = account_name
         self._account_url = account_url
@@ -114,6 +119,7 @@ class AzureBackend(Backend):
         self._credential = credential
         self._client_options = client_options or {}
         self._retry = retry
+        self._max_concurrency = max_concurrency
         # Lazy instances
         self._blob_service_instance: Any = None
         self._cc_instance: Any = None
@@ -211,14 +217,14 @@ class AzureBackend(Backend):
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
             bc = self._blob_client(path)
-            downloader = bc.download_blob()
+            downloader = bc.download_blob(max_concurrency=self._max_concurrency)
             raw = _AzureBinaryIO(downloader.chunks())
             return io.BufferedReader(cast("io.RawIOBase", _ErrorMappingStream(raw, self._classify, path)))
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
             bc = self._blob_client(path)
-            return bytes(bc.download_blob().readall())
+            return bytes(bc.download_blob(max_concurrency=self._max_concurrency).readall())
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         from azure.core.exceptions import ResourceNotFoundError
@@ -233,7 +239,7 @@ class AzureBackend(Backend):
                     raise
                 except ResourceNotFoundError:
                     pass  # Blob doesn't exist, proceed
-            bc.upload_blob(content, overwrite=True)
+            bc.upload_blob(content, overwrite=True, max_concurrency=self._max_concurrency)
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         if not self._hns:
@@ -263,7 +269,7 @@ class AzureBackend(Backend):
 
             tmp_fc = self._fs.get_file_client(tmp_path)
             try:
-                tmp_fc.upload_data(content, overwrite=True)
+                tmp_fc.upload_data(content, overwrite=True, max_concurrency=self._max_concurrency)
                 new_name = f"{self._container}/{azure_path}"
                 tmp_fc.rename_file(new_name)
             except Exception:
@@ -327,7 +333,7 @@ class AzureBackend(Backend):
                 with self._errors(path):
                     tmp_fc = self._fs.get_file_client(tmp_path)
                     try:
-                        tmp_fc.upload_data(buf_hns, overwrite=True)
+                        tmp_fc.upload_data(buf_hns, overwrite=True, max_concurrency=self._max_concurrency)
                         new_name = f"{self._container}/{azure_path}"
                         tmp_fc.rename_file(new_name)
                     except Exception:
