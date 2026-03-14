@@ -273,6 +273,7 @@ class TestBackendListing:
         folders = list(backend.list_folders("lfd"))
         assert all(isinstance(f, FolderEntry) for f in folders)
         assert {f.name for f in folders} == {"sub1", "sub2"}
+        assert {str(f.path) for f in folders} == {"lfd/sub1", "lfd/sub2"}
 
 
 class TestBackendIterChildren:
@@ -288,6 +289,7 @@ class TestBackendIterChildren:
         folders = [c for c in children if isinstance(c, FolderEntry)]
         assert {f.name for f in files} == {"a.txt", "b.txt"}
         assert {f.name for f in folders} == {"sub"}
+        assert {str(f.path) for f in folders} == {"ic/sub"}
 
     @pytest.mark.spec("ITER-004")
     def test_iter_children_empty_or_nonexistent(self, backend: Backend) -> None:

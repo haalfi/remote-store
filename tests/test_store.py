@@ -215,6 +215,15 @@ class TestStoreFullAPI:
         assert str(folders[0].path) == "fp/sub"
 
     @pytest.mark.spec("STORE-008")
+    def test_list_folders_child_store_rebases_path(self, store: Store) -> None:
+        store.write("cr/sub/a.txt", b"a")
+        child = store.child("cr")
+        folders = list(child.list_folders(""))
+        assert len(folders) == 1
+        assert folders[0].name == "sub"
+        assert str(folders[0].path) == "sub"  # root stripped
+
+    @pytest.mark.spec("STORE-008")
     def test_get_file_info(self, store: Store) -> None:
         store.write("info.txt", b"hello")
         fi = store.get_file_info("info.txt")
