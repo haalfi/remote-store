@@ -548,3 +548,24 @@ class TestHealthCheck:
         from examples.health_check import demo
 
         demo(memory_store)
+
+
+# ---------------------------------------------------------------------------
+# Dagster IO Manager (optional dependency)
+# ---------------------------------------------------------------------------
+
+
+class TestDagsterIOManager:
+    @pytest.mark.spec("DAG-002")
+    @pytest.mark.spec("DAG-005")
+    @pytest.mark.spec("DAG-003")
+    def test_demo(self):
+        pytest.importorskip("dagster")
+
+        from examples.dagster_io_manager import demo
+
+        results = demo()
+
+        assert results["pickle_roundtrip"] is True
+        assert results["partition_path_exists"] is True
+        assert results["json_roundtrip"] is True

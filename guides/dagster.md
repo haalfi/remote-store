@@ -142,6 +142,13 @@ def production_io_manager() -> IOManager:
 The caller owns the Store. The IO manager does not close it. If the Store
 was created inline, the caller is responsible for cleanup.
 
+## See also
+
+- [Data Lake Patterns](data-lake-patterns.md) — medallion architecture with
+  `Store.child()` and PyArrow, complementary to Dagster orchestration
+- [PyArrow Adapter](pyarrow-adapter.md) — use Store as a PyArrow filesystem
+  for Parquet I/O
+
 ## What's next
 
 v2 (deferred) will add `DagsterStoreResource` — a Dagster `ConfigurableResource`
