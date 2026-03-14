@@ -56,6 +56,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   individual method headings, admonitions for ordering, atomicity, metadata, and
   thread-safety. Added backend behavior matrix verified against backend source.
 
+### Docs
+
+- **Docs site polish** (ID-064) -- property return types now visible
+  (`show_signature_annotations`), Fira Code font for code blocks,
+  sticky navigation tabs, search suggest/highlight, tighter parameter
+  list spacing, capability matrix icons.
+
 ## [0.16.0] - 2026-03-10
 
 ### Added
