@@ -13,7 +13,7 @@ changes that require action when upgrading.
 - `RegistryConfig.from_yaml()` has been removed from the core class and
   replaced by `from_yaml()` in `remote_store.ext.yaml`.
 - Old: `config = RegistryConfig.from_yaml("config.yaml")`
-- New: `from remote_store import from_yaml` then `config = from_yaml("config.yaml")`
+- New: `from remote_store.ext.yaml import from_yaml` then `config = from_yaml("config.yaml")`
 - Install the optional extra: `pip install "remote-store[yaml]"`
 
 ## v0.13.0 to v0.14.0

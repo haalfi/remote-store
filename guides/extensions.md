@@ -17,6 +17,7 @@ on top of the core Store API.
 | `ext.otel` | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](examples/otel-tracing.md) |
 | `ext.pydantic` | `pydantic` | Pydantic BaseModel/BaseSettings adapter | -- | [Example](examples/config-loaders.md) |
 | `ext.yaml` | `yaml` | YAML config file loader | -- | [Example](examples/config-loaders.md) |
+| `ext.dagster` | `dagster` | Dagster IO Manager adapter | [Guide](dagster.md) | [Example](examples/dagster-io-manager.md) |
 
 ## Using Extensions
 
@@ -46,37 +47,33 @@ from remote_store.ext.transfer import upload
 ### Optional-dependency extensions
 
 `ext.arrow` requires PyArrow, `ext.otel` requires the OpenTelemetry
-API, and `ext.pydantic` requires Pydantic v2.  Install the relevant
-extra first:
+API, `ext.pydantic` requires Pydantic v2, and `ext.dagster` requires
+Dagster.  Install the relevant extra first:
 
 ```bash
 pip install "remote-store[arrow]"     # PyArrow filesystem adapter
 pip install "remote-store[otel]"      # OpenTelemetry tracing and metrics
 pip install "remote-store[pydantic]"  # Pydantic BaseSettings adapter
 pip install "remote-store[yaml]"      # YAML config file loader
+pip install "remote-store[dagster]"   # Dagster IO Manager adapter
 ```
 
-Then import from the top-level package or the extension module directly:
+Then import from the extension module directly:
 
 ```python
-from remote_store import pyarrow_fs                  # ext.arrow
-from remote_store import otel_hooks                  # ext.otel
-from remote_store import pydantic_to_registry_config # ext.pydantic
-from remote_store import from_yaml                   # ext.yaml
-# or
 from remote_store.ext.arrow import pyarrow_fs
 from remote_store.ext.otel import otel_hooks
 from remote_store.ext.pydantic import pydantic_to_registry_config
 from remote_store.ext.yaml import from_yaml
+from remote_store.ext.dagster import remote_store_io_manager
 ```
 
-If the required dependency is not installed, the top-level import
-silently omits the symbols, and importing the extension module directly
-raises a `ModuleNotFoundError` with installation instructions.
+If the required dependency is not installed, importing the extension
+module raises a `ModuleNotFoundError` with installation instructions.
 
 ## Extension Guarantees
 
-All extensions follow the same contract (ADR-0008):
+All extensions follow the same contract (ADR-0008, ADR-0013):
 
 - **Public API only** -- extensions use only the public Store / Backend
   API.  They never access private internals.

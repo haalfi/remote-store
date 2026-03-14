@@ -6,6 +6,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Changed
+
+- **Optional-dependency extensions no longer re-exported from top-level
+  package** (ADR-0013) -- `from remote_store import pyarrow_fs` and similar
+  shortcuts for arrow, otel, pydantic, and yaml extensions are removed.
+  Use the canonical import path instead:
+  `from remote_store.ext.arrow import pyarrow_fs`.  Pure-Python extensions
+  (batch, cache, glob, observe, partition, transfer) are unchanged.
+
 ### Added
 
 - **`ext.dagster` — Dagster IO Manager adapter** (ID-075 v1) -- wraps any
@@ -126,8 +135,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   YAML config loading requires an optional dependency (`pyyaml` or `ruamel.yaml`),
   same as the Pydantic adapter. Moved to `ext.yaml` for consistency with the
   extension architecture (ADR-0008). Import changes:
-  `from remote_store.ext.yaml import from_yaml` (or `from remote_store import from_yaml`
-  when pyyaml is installed).
+  `from remote_store.ext.yaml import from_yaml`.
 
 ### Docs
 

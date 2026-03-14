@@ -105,43 +105,6 @@ __all__ = [
     "__version__",
 ]
 
-# Optional PyArrow extension (available when pyarrow is installed)
-try:
-    from remote_store.ext.arrow import StoreFileSystemHandler, pyarrow_fs
-
-    __all__ += ["StoreFileSystemHandler", "pyarrow_fs"]
-except ImportError:
-    # PyArrow not installed or broken — don't crash the core package.
-    pass
-
-# Optional OpenTelemetry extension (available when opentelemetry-api is installed)
-try:
-    from remote_store.ext.otel import otel_hooks, otel_observe
-
-    __all__ += ["otel_hooks", "otel_observe"]
-except ImportError:
-    # opentelemetry-api not installed — don't crash the core package.
-    pass
-
-# Optional Pydantic extension (available when pydantic is installed)
-try:
-    from remote_store.ext.pydantic import pydantic_to_registry_config
-
-    __all__ += ["pydantic_to_registry_config"]
-except ImportError:
-    # pydantic not installed — don't crash the core package.
-    pass
-
-# Optional Dagster extension — intentionally NOT re-exported here.
-# Dagster is one of the heaviest Python packages (~2-5s import); eagerly
-# importing it would penalise every ``import remote_store`` even when the
-# extension is unused.  Use ``from remote_store.ext.dagster import ...``.
-
-# Optional YAML extension (available when pyyaml or ruamel.yaml is installed)
-try:
-    from remote_store.ext.yaml import from_yaml
-
-    __all__ += ["from_yaml"]
-except ImportError:
-    # pyyaml/ruamel.yaml not installed — don't crash the core package.
-    pass
+# Optional-dependency extensions (arrow, otel, pydantic, yaml, dagster) are
+# NOT re-exported here.  Import them from their module directly, e.g.
+# ``from remote_store.ext.arrow import pyarrow_fs``.  See ADR-0013.
