@@ -180,6 +180,17 @@ class TestStoreFullAPI:
         folders = [c for c in children if isinstance(c, FolderEntry)]
         assert {f.name for f in files} == {"a.txt", "b.txt"}
         assert {f.name for f in folders} == {"sub"}
+        assert {str(f.path) for f in folders} == {"ic/sub"}
+
+    @pytest.mark.spec("ITER-001")
+    def test_iter_children_child_store_rebases_path(self, store: Store) -> None:
+        store.write("icc/sub/a.txt", b"a")
+        child = store.child("icc")
+        children = list(child.iter_children(""))
+        folders = [c for c in children if isinstance(c, FolderEntry)]
+        assert len(folders) == 1
+        assert folders[0].name == "sub"
+        assert str(folders[0].path) == "sub"  # root stripped
 
     @pytest.mark.spec("ITER-001")
     def test_iter_children_empty_dir(self, store: Store) -> None:

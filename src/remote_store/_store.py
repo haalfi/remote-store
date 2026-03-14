@@ -652,6 +652,7 @@ class Store:
         rel = self._strip_root(str(entry.path))
         if rel == str(entry.path):
             return entry
-        return dataclasses.replace(entry, path=RemotePath(rel))
+        new_path = RemotePath.from_backend_path(rel)
+        return dataclasses.replace(entry, path=new_path)
 
     # endregion

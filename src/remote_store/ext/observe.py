@@ -403,8 +403,8 @@ def observe(
     :param on_delete: Fires after delete/delete_folder.
     :param on_copy: Fires after copy.
     :param on_move: Fires after move.
-    :param on_list: Fires after list_files/list_folders/glob/get_file_info/
-        get_folder_info/exists/is_file/is_folder.
+    :param on_list: Fires after list_files/list_folders/iter_children/glob/
+        get_file_info/get_folder_info/exists/is_file/is_folder.
     :param on_ping: Fires after ping.
     :param on_error: Fires on any operation that raises an exception.
     :param on_any: Fires after every operation (catch-all).

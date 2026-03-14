@@ -114,6 +114,12 @@ class TestModelEqualityHashing:
         assert a == b
 
     @pytest.mark.spec("MOD-007")
+    def test_folderentry_equality_ignores_name(self) -> None:
+        a = FolderEntry(path=RemotePath("data"), name="data")
+        b = FolderEntry(path=RemotePath("data"), name="other")
+        assert a == b  # path-based equality ignores name
+
+    @pytest.mark.spec("MOD-007")
     def test_folderentry_hash_by_path(self) -> None:
         a = FolderEntry(path=RemotePath("data"), name="data")
         b = FolderEntry(path=RemotePath("data"), name="data")
@@ -156,3 +162,13 @@ class TestPathEntryProtocol:
     def test_folderentry_satisfies_path_entry(self) -> None:
         fe = FolderEntry(path=RemotePath("sub"), name="sub")
         assert isinstance(fe, PathEntry)
+
+    def test_path_entry_uniform_iteration(self) -> None:
+        entries: list[PathEntry] = [
+            FileInfo(path=RemotePath("a.txt"), name="a.txt", size=0, modified_at=NOW),
+            FolderEntry(path=RemotePath("sub"), name="sub"),
+        ]
+        names = [e.name for e in entries]
+        paths = [str(e.path) for e in entries]
+        assert names == ["a.txt", "sub"]
+        assert paths == ["a.txt", "sub"]
