@@ -262,8 +262,6 @@ class S3PyArrowBackend(Backend):
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
         try:
             s3_path = self._s3_path(path)
-            if not self._s3fs.exists(s3_path):
-                return
             if recursive:
                 results: dict[str, Any] = self._s3fs.find(s3_path, detail=True)
                 for s3_key, info in results.items():
@@ -278,7 +276,7 @@ class S3PyArrowBackend(Backend):
                         yield self._info_to_fileinfo(info, rel)
         except RemoteStoreError:  # pragma: no cover -- defensive
             raise
-        except FileNotFoundError:  # pragma: no cover -- checked via exists()
+        except FileNotFoundError:  # pragma: no cover -- s3fs returns empty for missing prefixes
             return
         except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
@@ -288,8 +286,6 @@ class S3PyArrowBackend(Backend):
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         try:
             s3_path = self._s3_path(path)
-            if not self._s3fs.exists(s3_path):
-                return
             entries: list[dict[str, Any]] = self._s3fs.ls(s3_path, detail=True)
             for info in entries:
                 if info.get("type") == "directory":
@@ -298,7 +294,7 @@ class S3PyArrowBackend(Backend):
                     yield FolderEntry(path=RemotePath(rel), name=folder_name)
         except RemoteStoreError:  # pragma: no cover -- defensive
             raise
-        except FileNotFoundError:  # pragma: no cover -- checked via exists()
+        except FileNotFoundError:  # pragma: no cover -- s3fs returns empty for missing prefixes
             return
         except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
@@ -308,8 +304,6 @@ class S3PyArrowBackend(Backend):
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         try:
             s3_path = self._s3_path(path)
-            if not self._s3fs.exists(s3_path):
-                return
             entries: list[dict[str, Any]] = self._s3fs.ls(s3_path, detail=True)
             for info in entries:
                 if info.get("type") == "file":
@@ -321,7 +315,7 @@ class S3PyArrowBackend(Backend):
                     yield FolderEntry(path=RemotePath(rel), name=folder_name)
         except RemoteStoreError:  # pragma: no cover -- defensive
             raise
-        except FileNotFoundError:  # pragma: no cover -- checked via exists()
+        except FileNotFoundError:  # pragma: no cover -- s3fs returns empty for missing prefixes
             return
         except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None

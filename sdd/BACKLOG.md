@@ -168,13 +168,6 @@ Not evaluated, not committed to. Pick up when relevant.
   Research: `sdd/research/research-store-api-refinement.md`.
 
 
-- [ ] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**
-  `list_files`, `list_folders`, and `iter_children` in S3Backend and
-  S3PyArrowBackend call `self._fs.exists()` before `self._fs.ls()`, adding
-  an extra API round-trip. The `FileNotFoundError` handler already covers
-  the non-existent path case. Removing the `exists()` check would halve
-  the API calls for listing operations. Low priority — consistent across
-  all S3 listing methods today.
 
 ---
 
@@ -184,6 +177,12 @@ Completed items, grouped by origin. Kept for traceability — full context
 preserved to support future design decisions.
 
 ### Feature work (post-v0.16.0)
+
+- [x] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**
+  Removed `exists()` pre-check from `list_files`, `list_folders`, and
+  `iter_children` in S3Backend and S3PyArrowBackend. The `FileNotFoundError`
+  handler already covers non-existent paths, making the check a redundant
+  API round-trip. Halves API calls for listing operations.
 
 - [x] **ID-076 — AzureBackend `max_concurrency` parameter**
   Added `max_concurrency: int = 1` constructor parameter to `AzureBackend`.
