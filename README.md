@@ -26,8 +26,8 @@ and painful to replace later.
 
 `remote-store` replaces them with one simple interface.
 Where files live is configuration, not application code.
-Under the hood, established Python libraries (`s3fs`, `paramiko`,
-`azure-storage-file-datalake`) still do the work.
+Under the hood, established Python libraries like `s3fs`, `paramiko`,
+and `pyarrow` do the real work.
 
 **Requires Python 3.10+.** Sync-only; see the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for thread safety, async usage, and credential discovery details.
 
@@ -139,18 +139,18 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 
 - Not a query engine (no SQL, no predicate pushdown)
 - Not a table format (no Delta Lake log, no Iceberg manifests)
-- Not a filesystem reimplementation (delegates to `s3fs`, `paramiko`, `azure-storage-file-datalake`, `pyarrow` — the libraries you'd pick anyway)
+- Not a filesystem reimplementation (delegates to `s3fs`, `paramiko`, `pyarrow`, etc. — the libraries you'd pick anyway)
 
 ## Supported Backends
 
-| Backend | Extra | Atomic write | Native glob | `move()` atomic |
-|---------|-------|:------------:|:-----------:|:---------------:|
-| Local filesystem | *(built-in)* | Yes | Yes | Yes* |
-| Memory (in-process) | *(built-in)* | Yes | — | Yes |
-| Amazon S3 / MinIO | `remote-store[s3]` | Yes | Yes | No (copy+delete) |
-| S3 (PyArrow) | `remote-store[s3-pyarrow]` | Yes | Yes | No (copy+delete) |
-| SFTP / SSH | `remote-store[sftp]` | Yes | — | Yes** |
-| Azure Blob / ADLS | `remote-store[azure]` | Yes | Yes | HNS: Yes / non-HNS: No |
+| Backend | Extra | Library | Atomic write | Native glob | `move()` atomic |
+|---------|-------|---------|:------------:|:-----------:|:---------------:|
+| Local filesystem | *(built-in)* | stdlib | Yes | Yes | Yes* |
+| Memory (in-process) | *(built-in)* | — | Yes | — | Yes |
+| Amazon S3 / MinIO | `remote-store[s3]` | `s3fs` | Yes | Yes | No (copy+delete) |
+| S3 (PyArrow) | `remote-store[s3-pyarrow]` | `pyarrow` | Yes | Yes | No (copy+delete) |
+| SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | — | Yes** |
+| Azure Blob / ADLS | `remote-store[azure]` | `azure-storage` | Yes | Yes | HNS: Yes / non-HNS: No |
 
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Via `posix_rename` on most OpenSSH servers; falls back to copy+delete.
@@ -162,7 +162,7 @@ All backends support read, write, delete, list, copy, move, and metadata. Glob i
 The Store provides 26 methods across read/write, browsing, management, and utility. Key highlights:
 
 ```python
-store.read_text("path/to/file.txt")            # → str
+store.read_text("path/to/file.txt")             # → str
 store.write_text("path/to/file.txt", content)   # write string
 store.read_bytes("path/to/file.csv")            # → bytes
 store.write("path/to/data.bin", binary_stream)  # streaming write
@@ -201,11 +201,9 @@ Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the
 
 The best way to explore `remote-store` beyond the Quick Start is through runnable examples, interactive notebooks, and topic guides.
 
-**Examples** — self-contained scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, SFTP, and Azure.
-
-**Notebooks** — interactive [Jupyter notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks) that walk through common workflows step by step.
-
-**Guides** — topic-focused walkthroughs in the [documentation](https://docs.remotestore.dev/stable/guides/) covering backends, extensions, configuration, and patterns like data lake layouts or health checks.
+- **Examples:** self-contained scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, SFTP, and Azure.
+- **Notebooks:** interactive [Jupyter notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks) that walk through common workflows step by step.
+- **Guides:** topic-focused walkthroughs in the [documentation](https://docs.remotestore.dev/stable/guides/) covering backends, extensions, configuration, and patterns like data lake layouts or health checks.
 
 ## How it compares
 
