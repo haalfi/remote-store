@@ -204,7 +204,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | OpenTelemetry bridge | `remote-store[otel]` | Pre-built OTel spans and metrics for Store operations |
 | Caching middleware | *(none)* | TTL-based read cache with automatic invalidation on mutations |
 
-Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/guides/) for details.
+Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/extensions/) for details.
 
 ## Learn more
 
@@ -212,7 +212,7 @@ To explore `remote-store` beyond the Quick Start:
 
 - **Examples:** self-contained scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, SFTP, and Azure.
 - **Notebooks:** interactive [Jupyter notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks) that walk through common workflows step by step.
-- **Guides:** topic-focused walkthroughs in the [documentation](https://docs.remotestore.dev/stable/guides/) covering backends, extensions, configuration, and patterns like data lake layouts or health checks.
+- **Guides:** topic-focused walkthroughs in the [documentation](https://docs.remotestore.dev/stable/) covering backends, extensions, configuration, and patterns like data lake layouts or health checks.
 
 ## How it compares
 
