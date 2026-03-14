@@ -95,6 +95,11 @@ class TestFolderInfoFields:
         fi = FolderInfo(path=RemotePath("data"), file_count=0, total_size=0)
         assert fi.name == "data"
 
+    @pytest.mark.spec("MOD-008")
+    def test_name_property_root(self) -> None:
+        fi = FolderInfo(path=RemotePath.ROOT, file_count=0, total_size=0)
+        assert fi.name == "."
+
 
 class TestModelEqualityHashing:
     """MOD-007: Equality and hashing based on path."""
