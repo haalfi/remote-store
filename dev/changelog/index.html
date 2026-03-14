@@ -6730,14 +6730,31 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>Store.write_text()</code> convenience method</strong> (ID-074) -- writes a string to a
+<li>
+<p><strong><code>FolderEntry</code> dataclass and <code>PathEntry</code> protocol</strong> (ID-072) -- <code>FolderEntry</code>
+  is an immutable identity object returned by listing operations with <code>.name</code>
+  and <code>.path</code> attributes. <code>PathEntry</code> is a runtime-checkable protocol satisfied
+  by both <code>FileInfo</code> and <code>FolderEntry</code>, enabling uniform iteration.</p>
+</li>
+<li>
+<p><strong><code>Store.write_text()</code> convenience method</strong> (ID-074) -- writes a string to a
   file with configurable encoding. Wraps <code>write()</code> with <code>encoding</code> and
   <code>overwrite</code> parameters matching <code>pathlib.Path.write_text()</code>. Store-level only
   (no backend changes). <code>ext.observe</code> <code>on_write</code> hook, <code>ext.cache</code> routes through
-  <code>write</code>. Spec <code>030-write-text.md</code> (WTXT-001 through WTXT-006).</li>
+  <code>write</code>. Spec <code>030-write-text.md</code> (WTXT-001 through WTXT-006).</p>
+</li>
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong><code>list_folders()</code> returns <code>Iterator[FolderEntry]</code></strong> (ID-072) -- was
+  <code>Iterator[str]</code>. Use <code>.name</code> for the folder name, <code>.path</code> for the full path.</p>
+</li>
+<li>
+<p><strong><code>iter_children()</code> returns <code>Iterator[FileInfo | FolderEntry]</code></strong> (ID-072) --
+  was <code>Iterator[FileInfo | str]</code>. Use <code>isinstance(entry, FolderEntry)</code> instead
+  of <code>isinstance(entry, str)</code> to distinguish folders from files.</p>
+</li>
 <li>
 <p><strong>Store docstring rewrite</strong> (ID-074) -- rewrote all Store method docstrings for
   accuracy and consistency. Fixed <code>write</code>/<code>write_atomic</code> str claim, corrected

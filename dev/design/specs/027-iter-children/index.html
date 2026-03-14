@@ -5371,13 +5371,15 @@ that efficiency to callers.</p>
 <p><strong>Invariant:</strong> <code>Store.iter_children(path)</code> delegates to
 <code>Backend.iter_children()</code> and yields both files and folders under <code>path</code>.</p>
 <p><strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">iter_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]:</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">iter_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span> <span class="o">|</span> <span class="n">FolderEntry</span><span class="p">]:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="o">...</span>
 </code></pre></div></p>
 <p><strong>Postconditions:</strong>
 - Files are yielded as <code>FileInfo</code> with store-relative paths (same rebasing as
   <code>list_files</code> — see STORE-012).
-- Folders are yielded as <code>str</code> folder names (same format as <code>list_folders</code>).
+- Folders are yielded as <code>FolderEntry</code> with <code>.name</code> (folder name) and <code>.path</code>
+  (store-relative <code>RemotePath</code>). Both <code>FileInfo</code> and <code>FolderEntry</code> satisfy the
+  <code>PathEntry</code> protocol, enabling uniform iteration via <code>.name</code> and <code>.path</code>.
 - Ordering within a single type is backend-defined. Files and folders may be
   interleaved or grouped — callers must not depend on ordering.
 - Empty directories yield nothing.
@@ -5395,16 +5397,16 @@ that efficiency to callers.</p>
 method with a default implementation that chains <code>list_files()</code> and
 <code>list_folders()</code>.</p>
 <p><strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">iter_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]:</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">iter_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span> <span class="o">|</span> <span class="n">FolderEntry</span><span class="p">]:</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="o">...</span>
 </code></pre></div></p>
 <p><strong>Default implementation:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">iter_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]:</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">iter_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span> <span class="o">|</span> <span class="n">FolderEntry</span><span class="p">]:</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_folders</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong>Postconditions:</strong>
-- Returns an iterator of <code>FileInfo</code> (for files) and <code>str</code> (for folder names).
+- Returns an iterator of <code>FileInfo</code> (for files) and <code>FolderEntry</code> (for folders).
 - Backends may override to perform a single I/O call instead of two.
 - Non-existent paths yield nothing.</p>
 <h3 id="iter-005-backend-overrides">ITER-005: Backend Overrides<a class="headerlink" href="#iter-005-backend-overrides" title="Permanent link">&para;</a></h3>
@@ -5420,7 +5422,7 @@ operation override <code>iter_children()</code> for efficiency.</p>
 <tbody>
 <tr>
 <td>Local</td>
-<td>Single <code>iterdir()</code>, yield <code>FileInfo</code> or folder name</td>
+<td>Single <code>iterdir()</code>, yield <code>FileInfo</code> or <code>FolderEntry</code></td>
 </tr>
 <tr>
 <td>S3</td>

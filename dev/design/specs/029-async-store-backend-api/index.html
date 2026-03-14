@@ -6392,7 +6392,7 @@ sync API surface before implementation proceeds.</p>
 <strong>Postconditions:</strong> Returns only files, not folders. If <code>recursive=True</code>, includes files in all subdirectories.
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-014</a>.</p>
 <h3 id="async-015-list_folders">ASYNC-015: list_folders()<a class="headerlink" href="#async-015-list_folders" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>async def list_folders(path) -&gt; AsyncIterator[str]</code> of immediate subfolder names.
+<p><strong>Invariant:</strong> <code>async def list_folders(path) -&gt; AsyncIterator[FolderEntry]</code> of immediate subfolders.
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-015</a>.</p>
 <h3 id="async-016-get_file_info">ASYNC-016: get_file_info()<a class="headerlink" href="#async-016-get_file_info" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def get_file_info(path) -&gt; FileInfo</code>.
@@ -6439,7 +6439,7 @@ sync API surface before implementation proceeds.</p>
 <p><strong>Invariant:</strong> <code>async def glob(pattern) -&gt; AsyncIterator[FileInfo]</code>. Non-abstract — the default implementation raises <code>CapabilityNotSupported</code>. Backends with native glob support override and declare <code>Capability.GLOB</code>.
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-024</a>, <a href="../018-glob/">018-glob.md</a>.</p>
 <h3 id="async-029-iter_children">ASYNC-029: iter_children()<a class="headerlink" href="#async-029-iter_children" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>async def iter_children(path) -&gt; AsyncIterator[FileInfo | str]</code> — files as <code>FileInfo</code>, folders as <code>str</code> names. Concrete method with a default implementation that chains <code>list_files(path)</code> and <code>list_folders(path)</code>.
+<p><strong>Invariant:</strong> <code>async def iter_children(path) -&gt; AsyncIterator[FileInfo | FolderEntry]</code> — files as <code>FileInfo</code>, folders as <code>FolderEntry</code>. Concrete method with a default implementation that chains <code>list_files(path)</code> and <code>list_folders(path)</code>.
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-026</a>, <a href="../027-iter-children/">027-iter-children.md</a>.</p>
 <hr />
 <h2 id="syncbackendadapter">SyncBackendAdapter<a class="headerlink" href="#syncbackendadapter" title="Permanent link">&para;</a></h2>

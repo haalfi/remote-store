@@ -6395,7 +6395,7 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
 
     <div class="doc doc-contents ">
 
-        <p>List immediate subfolder names under <code>path</code>.</p>
+        <p>List immediate subfolders under <code>path</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6414,10 +6414,16 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><span title="collections.abc.Iterator">Iterator</span>[<span title="str">str</span>]</code>
+              <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FolderEntry
+
+
+  
+      dataclass
+   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a>]</code>
           –
           <div class="doc-md-description">
-            <p>An iterator of subfolder name strings.</p>
+            <p>An iterator of <code>FolderEntry</code> objects with <code>.name</code>
+and <code>.path</code>.</p>
           </div>
         </li>
     </ul>
@@ -6721,10 +6727,10 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
     <div class="doc doc-contents ">
 
         <p>Yield both files and folders under <code>path</code> in a single pass.</p>
-<p>Files are yielded as <code>FileInfo</code> objects, folders as <code>str</code> names.
-The default implementation chains <code>list_files()</code> and
-<code>list_folders()</code>. Backends that can fetch both in a single I/O
-call should override this for efficiency.</p>
+<p>Files are yielded as <code>FileInfo</code> objects, folders as
+<code>FolderEntry</code> objects. The default implementation chains
+<code>list_files()</code> and <code>list_folders()</code>. Backends that can fetch
+both in a single I/O call should override this for efficiency.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6748,10 +6754,16 @@ call should override this for efficiency.</p>
 
   
       dataclass
-   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a> | <span title="str">str</span>]</code>
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a> | <a class="autorefs autorefs-internal" title="            FolderEntry
+
+
+  
+      dataclass
+   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a>]</code>
           –
           <div class="doc-md-description">
-            <p>An iterator of <code>FileInfo</code> (files) and <code>str</code> (folder names).</p>
+            <p>An iterator of <code>FileInfo</code> (files) and <code>FolderEntry</code>
+(folders).</p>
           </div>
         </li>
     </ul>

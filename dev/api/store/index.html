@@ -6831,7 +6831,7 @@ root).</p>
 
     <div class="doc doc-contents first">
 
-        <p>Yield immediate subfolder names of <em>path</em>.</p>
+        <p>Yield immediate subfolders of <em>path</em> as <code>FolderEntry</code> objects.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6850,10 +6850,16 @@ root).</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><span title="collections.abc.Iterator">Iterator</span>[<span title="str">str</span>]</code>
+              <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FolderEntry
+
+
+  
+      dataclass
+   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a>]</code>
           –
           <div class="doc-md-description">
-            <p>Iterator of subfolder name strings.</p>
+            <p>Iterator of <code>FolderEntry</code> with <code>.name</code> and
+<code>.path</code> (store-relative).</p>
           </div>
         </li>
     </ul>
@@ -6877,8 +6883,9 @@ root).</p>
     <div class="doc doc-contents first">
 
         <p>Yield all immediate children (files and folders) of <em>path</em> in a single pass.</p>
-<p>Files are yielded as <code>FileInfo</code> (with store-relative paths),
-folders as bare <code>str</code> names.</p>
+<p>Files are yielded as <code>FileInfo</code>, folders as <code>FolderEntry</code>.
+Both have <code>.name</code> and <code>.path</code> attributes (satisfying the
+<code>PathEntry</code> protocol) so callers can iterate uniformly.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6902,11 +6909,16 @@ folders as bare <code>str</code> names.</p>
 
   
       dataclass
-   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a> | <span title="str">str</span>]</code>
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a> | <a class="autorefs autorefs-internal" title="            FolderEntry
+
+
+  
+      dataclass
+   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a>]</code>
           –
           <div class="doc-md-description">
-            <p>Iterator of <code>FileInfo</code> (files) and <code>str</code>
-(folder names).</p>
+            <p>Iterator of <code>FileInfo</code> (files) and <code>FolderEntry</code>
+(folders).</p>
           </div>
         </li>
     </ul>

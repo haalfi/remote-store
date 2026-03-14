@@ -3385,10 +3385,32 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mod-006-folderentry-immutability-and-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MOD-006: FolderEntry Immutability and Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mod-007-equality-and-hashing" class="md-nav__link">
     <span class="md-ellipsis">
       
         MOD-007: Equality and Hashing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mod-008-pathentry-protocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MOD-008: PathEntry Protocol
       
     </span>
   </a>
@@ -5585,10 +5607,32 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mod-006-folderentry-immutability-and-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MOD-006: FolderEntry Immutability and Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mod-007-equality-and-hashing" class="md-nav__link">
     <span class="md-ellipsis">
       
         MOD-007: Equality and Hashing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mod-008-pathentry-protocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MOD-008: PathEntry Protocol
       
     </span>
   </a>
@@ -5650,7 +5694,7 @@
 <strong>Postconditions:</strong> The returned key is directly usable as input to any Store method.
 <strong>See also:</strong> <a href="../010-native-path-resolution/">010-native-path-resolution.md</a> (NPR-010 through NPR-013).</p>
 <h3 id="store-012-round-trip-path-invariant">STORE-012: Round-Trip Path Invariant<a class="headerlink" href="#store-012-round-trip-path-invariant" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Paths returned by listing and metadata methods (<code>list_files</code>, <code>get_file_info</code>, <code>get_folder_info</code>) are store-relative — <code>root_path</code> is stripped from <code>FileInfo.path</code> and <code>FolderInfo.path</code>. The returned path is directly usable as input to other Store methods without modification.
+<p><strong>Invariant:</strong> Paths returned by listing and metadata methods (<code>list_files</code>, <code>list_folders</code>, <code>iter_children</code>, <code>get_file_info</code>, <code>get_folder_info</code>) are store-relative — <code>root_path</code> is stripped from <code>FileInfo.path</code>, <code>FolderEntry.path</code>, and <code>FolderInfo.path</code>. The returned path is directly usable as input to other Store methods without modification.
 <strong>See also:</strong> <a href="../010-native-path-resolution/">010-native-path-resolution.md</a> (NPR-001, NPR-014 through NPR-016).</p>
 <h3 id="store-013-unwrap">STORE-013: unwrap()<a class="headerlink" href="#store-013-unwrap" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>unwrap(type_hint)</code> delegates to <code>Backend.unwrap(type_hint)</code> and returns the backend's native handle if it matches the requested type.
@@ -5683,8 +5727,13 @@
 <p><strong>Invariant:</strong> <code>FolderInfo</code> is a frozen dataclass with required fields: <code>path</code> (<code>RemotePath</code>), <code>file_count</code> (<code>int</code>), <code>total_size</code> (<code>int</code>).</p>
 <h3 id="mod-005-folderinfo-optional-fields">MOD-005: FolderInfo Optional Fields<a class="headerlink" href="#mod-005-folderinfo-optional-fields" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>FolderInfo</code> optional fields: <code>modified_at</code> (<code>datetime | None</code>, default <code>None</code>), <code>extra</code> (<code>dict[str, object]</code>, default empty dict).</p>
+<h3 id="mod-006-folderentry-immutability-and-fields">MOD-006: FolderEntry Immutability and Fields<a class="headerlink" href="#mod-006-folderentry-immutability-and-fields" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>FolderEntry</code> is a frozen dataclass — immutable after construction. Required fields: <code>path</code> (<code>RemotePath</code>), <code>name</code> (<code>str</code>).
+<strong>Postconditions:</strong> Attribute assignment raises <code>FrozenInstanceError</code>.</p>
 <h3 id="mod-007-equality-and-hashing">MOD-007: Equality and Hashing<a class="headerlink" href="#mod-007-equality-and-hashing" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>FileInfo</code> and <code>FolderInfo</code> support equality and hashing based on <code>path</code>.</p>
+<p><strong>Invariant:</strong> <code>FileInfo</code>, <code>FolderInfo</code>, and <code>FolderEntry</code> support equality and hashing based on <code>path</code>.</p>
+<h3 id="mod-008-pathentry-protocol">MOD-008: PathEntry Protocol<a class="headerlink" href="#mod-008-pathentry-protocol" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>PathEntry</code> is a <code>runtime_checkable</code> <code>Protocol</code> with two read-only properties: <code>name</code> (<code>str</code>) and <code>path</code> (<code>RemotePath</code>). Both <code>FileInfo</code> and <code>FolderEntry</code> satisfy the protocol structurally, enabling uniform iteration over mixed listing results.</p>
 
 
 

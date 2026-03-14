@@ -5721,7 +5721,7 @@ pattern (ADR-0010).</p>
 <tr>
 <td><code>iter_children(path)</code></td>
 <td><code>("iter_children", path)</code></td>
-<td><code>tuple[FileInfo \| str, ...]</code></td>
+<td><code>tuple[FileInfo \| FolderEntry, ...]</code></td>
 </tr>
 <tr>
 <td><code>list_files(path, recursive, pattern)</code></td>
@@ -5731,7 +5731,7 @@ pattern (ADR-0010).</p>
 <tr>
 <td><code>list_folders(path)</code></td>
 <td><code>("list_folders", path)</code></td>
-<td><code>tuple[str, ...]</code></td>
+<td><code>tuple[FolderEntry, ...]</code></td>
 </tr>
 <tr>
 <td><code>glob(pattern)</code></td>

@@ -5883,7 +5883,8 @@
 <p><strong>Invariant:</strong> <code>list_files(path, recursive=False)</code> returns <code>Iterator[FileInfo]</code>.
 <strong>Postconditions:</strong> Returns only files, not folders. If <code>recursive=True</code>, includes files in all subdirectories.</p>
 <h3 id="be-015-list_folders">BE-015: list_folders()<a class="headerlink" href="#be-015-list_folders" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>list_folders(path)</code> returns <code>Iterator[str]</code> of immediate subfolder names.</p>
+<p><strong>Invariant:</strong> <code>list_folders(path)</code> returns <code>Iterator[FolderEntry]</code> of immediate subfolders.
+Each <code>FolderEntry</code> has <code>.name</code> (folder name) and <code>.path</code> (backend-relative <code>RemotePath</code>).</p>
 <h3 id="be-016-get_file_info">BE-016: get_file_info()<a class="headerlink" href="#be-016-get_file_info" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>get_file_info(path)</code> returns <code>FileInfo</code>.
 <strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
@@ -5915,7 +5916,7 @@
 <strong>Example:</strong> <code>S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")</code> returns <code>"lake/data/file.parquet"</code>.
 <strong>See also:</strong> <a href="../001-store-api/">001-store-api.md</a> (STORE-015), <a href="../014-pyarrow-filesystem-adapter/">014-pyarrow-filesystem-adapter.md</a> (PA-010 Tier 1).</p>
 <h3 id="be-026-iter_children">BE-026: iter_children()<a class="headerlink" href="#be-026-iter_children" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>iter_children(path)</code> returns <code>Iterator[FileInfo | str]</code> — files as <code>FileInfo</code>, folders as <code>str</code> names. Concrete method with a default implementation that chains <code>list_files(path)</code> and <code>list_folders(path)</code>. Backends that can fetch both in a single I/O call override for efficiency.
+<p><strong>Invariant:</strong> <code>iter_children(path)</code> returns <code>Iterator[FileInfo | FolderEntry]</code> — files as <code>FileInfo</code>, folders as <code>FolderEntry</code>. Concrete method with a default implementation that chains <code>list_files(path)</code> and <code>list_folders(path)</code>. Backends that can fetch both in a single I/O call override for efficiency.
 <strong>Postconditions:</strong> Non-recursive (immediate children only). Non-existent paths yield nothing.
 <strong>See also:</strong> <a href="../027-iter-children/">027-iter-children.md</a> (ITER-004, ITER-005).</p>
 <h3 id="be-024-glob">BE-024: glob()<a class="headerlink" href="#be-024-glob" title="Permanent link">&para;</a></h3>
