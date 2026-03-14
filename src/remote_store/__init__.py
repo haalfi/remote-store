@@ -132,6 +132,11 @@ except ImportError:
     # pydantic not installed — don't crash the core package.
     pass
 
+# Optional Dagster extension — intentionally NOT re-exported here.
+# Dagster is one of the heaviest Python packages (~2-5s import); eagerly
+# importing it would penalise every ``import remote_store`` even when the
+# extension is unused.  Use ``from remote_store.ext.dagster import ...``.
+
 # Optional YAML extension (available when pyyaml or ruamel.yaml is installed)
 try:
     from remote_store.ext.yaml import from_yaml
