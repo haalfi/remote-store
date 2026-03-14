@@ -187,6 +187,7 @@ MINIO_SECRET_KEY = os.environ.get("BENCH_MINIO_SECRET_KEY", "minioadmin")
 
 AZURITE_HOST = os.environ.get("BENCH_AZURITE_HOST", "127.0.0.1")
 AZURITE_PORT = int(os.environ.get("BENCH_AZURITE_PORT", "10000"))
+AZURE_MAX_CONCURRENCY = int(os.environ.get("BENCH_AZURE_MAX_CONCURRENCY", "1"))
 AZURITE_CONN_STR = (
     "DefaultEndpointsProtocol=http;"
     "AccountName=devstoreaccount1;"
@@ -465,7 +466,9 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             if not CLOUD_AZURE_CONN_STR or not CLOUD_AZURE_CONTAINER:
                 pytest.skip("AZURE_STORAGE_CONNECTION_STRING / BENCH_AZURE_CONTAINER not set")
             container = CLOUD_AZURE_CONTAINER
-            b = AzureBackend(container=container, connection_string=CLOUD_AZURE_CONN_STR)
+            b = AzureBackend(
+                container=container, connection_string=CLOUD_AZURE_CONN_STR, max_concurrency=AZURE_MAX_CONCURRENCY
+            )
             yield b
             b.close()
             # Cleanup: delete all blobs (container should be dedicated to benchmarks)
@@ -478,7 +481,9 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             container = f"bench-az-{tag}"
             service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
             service.create_container(container)
-            b = AzureBackend(container=container, connection_string=AZURITE_CONN_STR)
+            b = AzureBackend(
+                container=container, connection_string=AZURITE_CONN_STR, max_concurrency=AZURE_MAX_CONCURRENCY
+            )
             yield b
             b.close()
             service.delete_container(container)
@@ -729,7 +734,9 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
             if target_kind == "remote_store":
                 from remote_store.backends._azure import AzureBackend
 
-                bk = AzureBackend(container=container, connection_string=conn_str)
+                bk = AzureBackend(
+                    container=container, connection_string=conn_str, max_concurrency=AZURE_MAX_CONCURRENCY
+                )
                 t = RemoteStoreTarget(bk)
                 yield t
                 t.close()
