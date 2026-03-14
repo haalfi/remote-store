@@ -6757,6 +6757,12 @@
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong>S3 listing methods no longer call <code>exists()</code> before listing</strong> (ID-062) --
+  removes a redundant API round-trip from <code>list_files</code>, <code>list_folders</code>, and
+  <code>iter_children</code> in <code>S3Backend</code> and <code>S3PyArrowBackend</code>. The existing
+  <code>FileNotFoundError</code> handler already covers non-existent paths.</p>
+</li>
+<li>
 <p><strong><code>list_folders()</code> returns <code>Iterator[FolderEntry]</code></strong> (ID-072) -- was
   <code>Iterator[str]</code>. Use <code>.name</code> for the folder name, <code>.path</code> for the full path.</p>
 </li>
