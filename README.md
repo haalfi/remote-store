@@ -29,12 +29,7 @@ Where files live is configuration, not application code.
 Under the hood, established Python libraries (`s3fs`, `paramiko`,
 `azure-storage-file-datalake`) still do the work.
 
-**Requires Python 3.10+.**
-
-- Sync-only (wrap with `asyncio.to_thread()` in async apps)
-- `Store` instances are immutable after construction and safe to share across threads
-- Backend thread safety depends on the backend implementation
-- S3, Azure, and SFTP backends support default credential discovery (environment variables, instance profiles, SSH agent)
+**Requires Python 3.10+.** Sync-only; see the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for thread safety, async usage, and credential discovery details.
 
 ## Installation
 
@@ -137,9 +132,8 @@ Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Crede
 - **Streaming by default:** large files just work without blowing up memory
 - **Atomic writes where supported:** safer updates for file-producing workflows
 - **Established libraries underneath:** `s3fs`, `paramiko`, etc. do the real work
-- **Zero runtime dependencies:** backend extras pull in only what they need
-- **Typed and tested:** strict mypy, spec-driven test suite
-- **Optional integrations:** PyArrow filesystem adapter, OpenTelemetry tracing and metrics
+
+Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integrations for PyArrow, OpenTelemetry, and more.
 
 ## What it is not
 
@@ -168,29 +162,29 @@ All backends support read, write, delete, list, copy, move, and metadata. Glob i
 The Store provides 26 methods across read/write, browsing, management, and utility. Key highlights:
 
 ```python
-store.read_text("path/to/file.txt")           # → str
-store.write_text("path/to/file.txt", content)  # write string
-store.read_bytes("path/to/file.csv")           # → bytes
+store.read_text("path/to/file.txt")            # → str
+store.write_text("path/to/file.txt", content)   # write string
+store.read_bytes("path/to/file.csv")            # → bytes
 store.write("path/to/data.bin", binary_stream)  # streaming write
 
-store.list_files("reports/", pattern="*.csv")  # iterate FileInfo
-store.glob("**/*.parquet")                     # native glob (capability-gated)
-store.exists("path/to/file.txt")               # → bool
+store.list_files("reports/", pattern="*.csv")   # iterate FileInfo
+store.glob("**/*.parquet")                      # native glob (capability-gated)
+store.exists("path/to/file.txt")                # → bool
 
-store.move("old.txt", "new.txt")               # move / rename
-store.copy("src.txt", "dst.txt")               # copy
-store.delete("path/to/file.txt")               # delete
+store.move("old.txt", "new.txt")                # move / rename
+store.copy("src.txt", "dst.txt")                # copy
+store.delete("path/to/file.txt")                # delete
 
-store.child("subfolder")                       # scoped child store
-store.supports(Capability.ATOMIC_WRITE)        # runtime capability check
-store.ping()                                   # health check
+store.child("subfolder")                        # scoped child store
+store.supports(Capability.ATOMIC_WRITE)         # runtime capability check
+store.ping()                                    # health check
 ```
 
-All write/move/copy methods accept `overwrite=True` to replace existing files. For the full method list, see the [API reference](https://docs.remotestore.dev/stable/api/store/).
+For the full method list, see the [API reference](https://docs.remotestore.dev/stable/api/store/). All write, move, and copy methods accept `overwrite=True` to replace existing files.
 
 ## Extensions
 
-All extensions live in `remote_store.ext` and are optional — import only what you need.
+The core library handles storage operations. Extensions add optional capabilities on top — e.g. PyArrow integration, observability, caching, or bulk operations. All live in `remote_store.ext`; import only what you need.
 
 | Extension | Extra | What it does |
 |-----------|-------|-------------|
@@ -201,22 +195,17 @@ All extensions live in `remote_store.ext` and are optional — import only what 
 | OpenTelemetry bridge | `remote-store[otel]` | Pre-built OTel spans and metrics for Store operations |
 | Caching middleware | *(none)* | TTL-based read cache with automatic invalidation on mutations |
 
-Additional extensions: glob helpers, partition helpers, YAML config loader, Pydantic adapter. See the [extensions guide](https://docs.remotestore.dev/stable/guides/) for details.
+Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/guides/) for details.
 
-## Examples
+## Learn more
 
-Runnable scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) and interactive [Jupyter notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks):
+The best way to explore `remote-store` beyond the Quick Start is through runnable examples, interactive notebooks, and topic guides.
 
-| Script | What it shows |
-|--------|---------------|
-| [quickstart.py](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py) | Direct construction and Registry config |
-| [file_operations.py](https://github.com/haalfi/remote-store/blob/master/examples/file_operations.py) | Full Store API: read, write, delete, move, copy, list, metadata |
-| [streaming_io.py](https://github.com/haalfi/remote-store/blob/master/examples/streaming_io.py) | Streaming writes and reads with `BytesIO` |
-| [atomic_writes.py](https://github.com/haalfi/remote-store/blob/master/examples/atomic_writes.py) | Atomic writes and overwrite semantics |
-| [error_handling.py](https://github.com/haalfi/remote-store/blob/master/examples/error_handling.py) | Catching `NotFound`, `AlreadyExists`, etc. |
-| [pyarrow_adapter.py](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py) | PyArrow filesystem adapter: Parquet, datasets |
+**Examples** — self-contained scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, SFTP, and Azure.
 
-[All examples →](https://docs.remotestore.dev/stable/examples/) · Backend-specific examples: [S3](https://github.com/haalfi/remote-store/blob/master/examples/backends/s3_backend.py) · [SFTP](https://github.com/haalfi/remote-store/blob/master/examples/backends/sftp_backend.py) · [Azure](https://github.com/haalfi/remote-store/blob/master/examples/backends/azure_backend.py) · [S3-PyArrow](https://github.com/haalfi/remote-store/blob/master/examples/backends/s3_pyarrow_backend.py)
+**Notebooks** — interactive [Jupyter notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks) that walk through common workflows step by step.
+
+**Guides** — topic-focused walkthroughs in the [documentation](https://docs.remotestore.dev/stable/guides/) covering backends, extensions, configuration, and patterns like data lake layouts or health checks.
 
 ## How it compares
 
