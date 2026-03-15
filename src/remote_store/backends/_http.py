@@ -273,19 +273,13 @@ class ReadOnlyHttpBackend(Backend):
     def read(self, path: str) -> BinaryIO:
         """Stream-read a file via GET."""
         resp = self._get(path)
-        if resp.status == 404:
-            raise NotFound(f"Not found: {path}", path=path, backend=self.name)
-        if resp.status >= 400:
-            raise self._classify_status(resp.status, path)
+        self._check_status(resp, path)
         return cast("BinaryIO", _ErrorMappingStream(resp.body, self._map_stream_error, path))
 
     def read_bytes(self, path: str) -> bytes:
         """Buffered-read a file via GET."""
         resp = self._get(path)
-        if resp.status == 404:
-            raise NotFound(f"Not found: {path}", path=path, backend=self.name)
-        if resp.status >= 400:
-            raise self._classify_status(resp.status, path)
+        self._check_status(resp, path)
         try:
             return resp.body.read()
         finally:
@@ -298,10 +292,7 @@ class ReadOnlyHttpBackend(Backend):
     def get_file_info(self, path: str) -> FileInfo:
         """Get file metadata via HEAD request."""
         resp = self._head(path)
-        if resp.status == 404:
-            raise NotFound(f"Not found: {path}", path=path, backend=self.name)
-        if resp.status >= 400:
-            raise self._classify_status(resp.status, path)
+        self._check_status(resp, path)
         return self._build_file_info(path, resp.headers)
 
     def get_folder_info(self, path: str) -> FolderInfo:
@@ -390,6 +381,13 @@ class ReadOnlyHttpBackend(Backend):
     # endregion
 
     # region: private helpers
+
+    def _check_status(self, resp: HttpResponse, path: str) -> None:
+        """Raise on non-2xx status codes."""
+        if resp.status == 404:
+            raise NotFound(f"Not found: {path}", path=path, backend=self.name)
+        if not (200 <= resp.status < 300):
+            raise self._classify_status(resp.status, path)
 
     def _url(self, path: str) -> str:
         """Build a full URL from a backend-relative path."""

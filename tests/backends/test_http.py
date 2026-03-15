@@ -575,7 +575,9 @@ class TestUrllibMaxRedirects:
     """max_redirects enforcement for urllib transport."""
 
     def test_max_redirects_prevents_infinite_loop(self, httpserver: HTTPServer) -> None:
-        """Redirect loop terminates after max_redirects (does not hang)."""
+        """Redirect loop terminates after max_redirects and raises."""
+        from remote_store._errors import RemoteStoreError
+
         httpserver.expect_request("/redir/a", method="GET").respond_with_data(
             b"", status=302, headers={"Location": httpserver.url_for("/redir/b")}
         )
@@ -587,10 +589,9 @@ class TestUrllibMaxRedirects:
             http_client="urllib",
             max_redirects=2,
         )
-        # Should complete (not hang) — redirect limit stops the loop.
-        # The final 302 is returned as an empty-body response.
-        result = b.read_bytes("a")
-        assert result == b""
+        # Should complete (not hang) and raise on non-2xx status.
+        with pytest.raises(RemoteStoreError):
+            b.read_bytes("a")
 
     def test_successful_redirect(self, httpserver: HTTPServer) -> None:
         """A redirect within limits resolves to the target."""
