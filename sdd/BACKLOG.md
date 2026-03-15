@@ -37,7 +37,15 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-*(none)*
+- [ ] **ID-085 — Docs quick fixes: dashes, See also, table booleans, SFTP blockquotes**
+  Fix the four medium-severity findings from
+  [Audit 004](audits/audit-004-docs-structural-consistency.md):
+  AF-041 (normalize `—` → `--` in 6 guides),
+  AF-042 (unify "See also" format, add to 4 missing files),
+  AF-043 (normalize table booleans to `Yes` / `--` convention),
+  AF-044 (convert SFTP blockquotes to `!!! note` admonitions).
+  Fix list: T-01 through T-15 in
+  [fix-docs-structural-issues.md](audits/fix-docs-structural-issues.md).
 
 ---
 
@@ -89,6 +97,17 @@ Items graduate through the SDD pipeline:
   [Research](research/research-dagster-extension.md).
 
 ### Documentation & Developer Experience
+
+- [ ] **ID-086 — Docs structural harmonization (backend templates, extensions table, admonitions)**
+  Address the lower-severity findings from
+  [Audit 004](audits/audit-004-docs-structural-consistency.md):
+  AF-046 (disambiguate `--` in extensions table),
+  AF-047/AF-048 (harmonize backend page template: consistent section
+  order and Installation stubs for built-in backends),
+  AF-049 (lone `!!! tip` → `!!! note`),
+  AF-050 (review memory.md unique sections).
+  Fix list: T-16 through T-20 in
+  [fix-docs-structural-issues.md](audits/fix-docs-structural-issues.md).
 
 - [ ] **ID-057 — Tested code snippets in docs (single-source snippets)**
   All code snippets in the docs site should come from real, tested Python
