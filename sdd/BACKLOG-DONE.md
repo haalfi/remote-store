@@ -6,6 +6,12 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Post-v0.17.0
 
+- [x] **BUG-001 — `pydantic_to_registry_config()` fails to wrap `SecretStr` in `Secret`**
+  `model_dump()` returns `SecretStr` objects (not a `str` subclass), which
+  bypassed `from_dict()`'s `isinstance(v, str)` check. Added
+  `_unwrap_secret_strs()` helper to convert `SecretStr` → `str` in backend
+  options before `from_dict()`. Spec CFG-015 updated.
+
 - [x] **ID-084 — Drop optional-extension re-exports from `__init__.py` (ADR-0013)**
   Removed `try/except ImportError` re-export blocks for arrow, otel, pydantic,
   and yaml extensions from `remote_store/__init__.py`. Each extension is now
