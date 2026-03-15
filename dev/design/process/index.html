@@ -3162,10 +3162,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#backlog-tiers" class="md-nav__link">
+  <a href="#backlog" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Backlog tiers
+        Backlog
       
     </span>
   </a>
@@ -5271,10 +5271,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#backlog-tiers" class="md-nav__link">
+  <a href="#backlog" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Backlog tiers
+        Backlog
       
     </span>
   </a>
@@ -5364,47 +5364,11 @@
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;foo/../bar&quot;</span><span class="p">)</span>
 </code></pre></div>
 <p><code>pytest -m "spec"</code> runs all spec-derived tests.</p>
-<h3 id="backlog-tiers">Backlog tiers<a class="headerlink" href="#backlog-tiers" title="Permanent link">&para;</a></h3>
-<p>All work is tracked in <code>sdd/BACKLOG.md</code>:</p>
-<table>
-<thead>
-<tr>
-<th>Tier</th>
-<th>Prefix</th>
-<th>Meaning</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Release Blockers</strong></td>
-<td><code>BL-NNN</code></td>
-<td>Must be resolved before the next PyPI publish.</td>
-</tr>
-<tr>
-<td><strong>Backlog</strong></td>
-<td><code>BK-NNN</code></td>
-<td>Committed work, queued behind blockers.</td>
-</tr>
-<tr>
-<td><strong>Known Bugs</strong></td>
-<td><code>BUG-NNN</code></td>
-<td>Confirmed defects with reproduction steps.</td>
-</tr>
-<tr>
-<td><strong>Ideas</strong></td>
-<td><code>ID-NNN</code></td>
-<td>Parking lot: not evaluated, not committed to.</td>
-</tr>
-<tr>
-<td><strong>Done</strong></td>
-<td>(original prefix)</td>
-<td>Completed items kept for reference.</td>
-</tr>
-</tbody>
-</table>
-<p>Items within each section are ordered newest-first (most recently completed at the top).</p>
-<p>When completing work: mark items <code>[x]</code> (with version) or <code>[~]</code> (with what remains).
-Move completed items to the matching section under Done. Same commit as the code change.</p>
+<h3 id="backlog">Backlog<a class="headerlink" href="#backlog" title="Permanent link">&para;</a></h3>
+<p>Active work and ideas are tracked in <a href="BACKLOG.md"><code>sdd/BACKLOG.md</code></a>.
+Completed items live in <a href="BACKLOG-DONE.md"><code>sdd/BACKLOG-DONE.md</code></a>.</p>
+<p><code>BACKLOG.md</code> is the single source of truth for ID prefixes, status conventions,
+completion workflow, and section structure. See its "How this file works" header.</p>
 <h3 id="adrs-rfcs-research-and-audits">ADRs, RFCs, research, and audits<a class="headerlink" href="#adrs-rfcs-research-and-audits" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>ADRs</strong> (<code>sdd/adrs/NNNN-&lt;short-title&gt;.md</code>): capture <em>why</em> a design decision was made. Immutable once accepted: if reversed, a new ADR supersedes the old one.</li>

@@ -5953,7 +5953,7 @@ numbered and named after the feature it describes (e.g. <code>008-s3-backend.md<
 <li>Add the page to <code>docs-src/_nav.yml</code></li>
 <li>Add a runnable example in <code>examples/</code></li>
 <li>Add an example docs wrapper in <code>docs-src/examples/&lt;name&gt;.md</code> and add it to <code>docs-src/examples/_nav.yml</code></li>
-<li>Update <code>CHANGELOG.md</code> and <code>sdd/BACKLOG.md</code> in the same commit</li>
+<li>Update <code>CHANGELOG.md</code> and <code>sdd/BACKLOG.md</code> (or <code>sdd/BACKLOG-DONE.md</code>) in the same commit</li>
 </ol>
 <h3 id="export-patterns">Export patterns<a class="headerlink" href="#export-patterns" title="Permanent link">&para;</a></h3>
 <p><strong>Pure Python (no extra dependencies)</strong> — export unconditionally from <code>remote_store.__init__</code>:</p>
@@ -6135,14 +6135,14 @@ errors.</p>
 <li>[ ] Master is clean: <code>git status</code> shows no uncommitted changes</li>
 <li>[ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)</li>
 <li>[ ] <code>hatch run all</code> passes <strong>locally</strong> (lint + format-check + typecheck + test-cov + examples). Local runs without Docker backends are stricter than CI for coverage — CI has Azurite which inflates Azure backend coverage, potentially masking gaps in new code</li>
-<li>[ ] No open <code>[~]</code> items shipping in this release in <code>sdd/BACKLOG.md</code> — complete (<code>[x]</code>) or defer (<code>[ ]</code>)</li>
+<li>[ ] No open <code>[~]</code> items shipping in this release in <code>sdd/BACKLOG.md</code> -- complete and move to <code>BACKLOG-DONE.md</code>, or defer (<code>[ ]</code>)</li>
 <li>[ ] <code>[Unreleased]</code> section in CHANGELOG.md is non-empty</li>
 <li>[ ] Decide bump level (patch / minor / major) per the table above</li>
 </ul>
 <h4 id="phase-1-content-freeze">Phase 1: Content freeze<a class="headerlink" href="#phase-1-content-freeze" title="Permanent link">&para;</a></h4>
 <ul>
 <li>[ ] CHANGELOG.md <code>[Unreleased]</code> is complete — every user-facing change listed with its backlog ID</li>
-<li>[ ] <code>sdd/BACKLOG.md</code>: all shipping items marked <code>[x]</code> with version (e.g. <code>(v0.8.0)</code>)</li>
+<li>[ ] <code>sdd/BACKLOG-DONE.md</code>: all shipping items moved here, marked <code>[x]</code> with version (e.g. <code>(v0.8.0)</code>)</li>
 <li>[ ] README.md: backends table, installation extras, API table, badges are current</li>
 <li>[ ] Specs vs code: spot-check shipped features match their specs (<code>pytest -m spec</code> as proxy)</li>
 <li>[ ] Examples: <code>hatch run examples</code> passes; manually review notebooks if API surface changed</li>
