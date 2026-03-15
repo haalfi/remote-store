@@ -37,14 +37,6 @@ class Store:
         backend: Backend instance (Local, S3, SFTP, Azure, Memory).
         root_path: Prefix prepended to every path.
             ``""`` means the backend root.
-
-    ``Store`` is immutable after construction and can be shared across
-    threads.  Backend thread safety depends on the backend implementation.
-
-    The root path does not need to exist before constructing the store.
-    ``write()`` creates intermediate folders implicitly on all backends,
-    so files written under a new ``root_path`` will work without any
-    explicit folder-creation step.
     """
 
     def __init__(self, backend: Backend, root_path: str = "") -> None:

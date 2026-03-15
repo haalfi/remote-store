@@ -2,6 +2,10 @@
 
 The local backend stores files on the local filesystem. It is built-in and requires no extra dependencies.
 
+## Installation
+
+Built-in — no extra dependencies. Available with any `remote-store` install.
+
 ## Usage
 
 ```python
@@ -30,9 +34,8 @@ with Registry(config) as registry:
 
 See the [Concurrency and Atomicity Guarantees](../concurrency.md) guide for details.
 
----
+## See also
 
-**See also:**
-[Capabilities matrix](../capabilities-matrix.md) --
-[API reference](../api/store.md) --
-[Example script](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py)
+- [Capabilities matrix](../capabilities-matrix.md)
+- [API reference](../api/store.md)
+- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py)

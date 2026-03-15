@@ -8,10 +8,10 @@ policies.
 All credentials are wrapped in `Secret` objects at the configuration layer.
 The `Secret` class provides:
 
-- **Masked output** -- `repr()` and `str()` return `***`, never plain text
-- **Explicit reveal** -- `secret.reveal()` is the only way to access the
+- **Masked output** — `repr()` and `str()` return `***`, never plain text
+- **Explicit reveal** — `secret.reveal()` is the only way to access the
   plain-text value, making credential access auditable
-- **Immutability** -- `Secret` uses `__slots__` with `__setattr__` and
+- **Immutability** — `Secret` uses `__slots__` with `__setattr__` and
   `__delattr__` overrides to prevent modification after creation
 
 ### Automatic wrapping
@@ -43,7 +43,7 @@ logging.getLogger("remote_store").addHandler(handler)
 
 ### Backend isolation
 
-- User code interacts with `Store` only -- backend instances are internal
+- User code interacts with `Store` only — backend instances are internal
 - Backend-specific exceptions are mapped to `remote-store` error types and
   **never leak** to user code
 - `Store.unwrap()` is the explicit escape hatch for direct backend access;
@@ -57,7 +57,7 @@ logging.getLogger("remote_store").addHandler(handler)
 
 ### Configuration isolation
 
-- Config-as-code has absolute priority -- no environment variable overrides
+- Config-as-code has absolute priority — no environment variable overrides
   unless explicitly opted in
 - No config merging prevents accidental credential exposure from layered
   sources
@@ -77,6 +77,6 @@ for the full policy.
 
 ## See also
 
-- [Architecture Overview](architecture.md) -- system design and error model
+- [Architecture Overview](architecture.md) — system design and error model
 - [API Reference: Secret](api/config.md#remote_store.Secret)
 - [Spec 020: Credential Hygiene](design/specs/020-credential-hygiene.md)

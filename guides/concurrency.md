@@ -4,7 +4,7 @@ remote-store wraps multiple storage backends behind a single API, but each backe
 
 ## `overwrite=False` and TOCTOU
 
-When you call `store.write(path, data, overwrite=False)`, the backend checks whether the file exists and then writes it. These are two separate operations -- a classic **Time-Of-Check-to-Time-Of-Use (TOCTOU)** race window:
+When you call `store.write(path, data, overwrite=False)`, the backend checks whether the file exists and then writes it. These are two separate operations — a classic **Time-Of-Check-to-Time-Of-Use (TOCTOU)** race window:
 
 ```text
 Thread A: exists("report.csv") -> False
@@ -13,7 +13,7 @@ Thread A: write("report.csv", data_a)      # succeeds
 Thread B: write("report.csv", data_b)      # also succeeds -- overwrites A's file
 ```
 
-This affects **all backends**. The check-then-act pattern cannot be made race-free without an external coordination mechanism. `overwrite=False` is a convenience guard against accidental overwrites in single-writer scenarios -- it is **not** a mutual exclusion mechanism.
+This affects **all backends**. The check-then-act pattern cannot be made race-free without an external coordination mechanism. `overwrite=False` is a convenience guard against accidental overwrites in single-writer scenarios — it is **not** a mutual exclusion mechanism.
 
 ### Mitigations
 
@@ -28,13 +28,13 @@ Several backends implement `move(src, dst)` as a **copy followed by a delete**. 
 | Backend | `move()` implementation | Atomic? |
 |---------|------------------------|---------|
 | Local | `shutil.move()` (`os.rename()` on same filesystem, copy+delete across) | Yes* |
-| S3 | Copy object + delete object | No |
-| S3-PyArrow | Copy object + delete object | No |
+| S3 | Copy object + delete object | — |
+| S3-PyArrow | Copy object + delete object | — |
 | Azure (HNS) | `rename_file()` | Yes |
-| Azure (non-HNS) | Copy blob + delete blob | No |
+| Azure (non-HNS) | Copy blob + delete blob | — |
 | SFTP (`posix_rename`) | `posix_rename` | Yes |
 | SFTP (`rename`) | `rename()` | Yes (but not guaranteed atomic on all servers) |
-| SFTP (final fallback) | Read + write + delete | No |
+| SFTP (final fallback) | Read + write + delete | — |
 
 SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename()`, and finally copy+delete. Most OpenSSH servers support `posix_rename`. Servers that lack it usually still support `rename()`, which is atomic on most POSIX filesystems.
 
@@ -58,3 +58,8 @@ SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename(
 \* Local `move()` uses `shutil.move()`, which delegates to `os.rename()` on the same filesystem (atomic) but falls back to copy+delete across filesystems. Only `write_atomic()` uses `os.replace()`.
 
 \*\* SFTP `move()` is atomic when `posix_rename` or `rename()` succeeds; falls back to copy+delete as a last resort. `write_atomic()` has an orphan-file risk if the connection drops between write and rename (see the [SFTP backend guide](backends/sftp.md)).
+
+## See also
+
+- [Capabilities Matrix](capabilities-matrix.md) — atomicity and move semantics per backend
+- [Architecture](architecture.md) — threading model and Store immutability

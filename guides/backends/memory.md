@@ -4,6 +4,10 @@ The memory backend stores files in an in-process tree data structure. Zero depen
 
 **Primary use cases:** unit testing (no temp-dir setup/teardown), interactive exploration, documentation examples, CI speed.
 
+## Installation
+
+Built-in — no extra dependencies. Available with any `remote-store` install.
+
 ## Usage
 
 ```python
@@ -74,9 +78,8 @@ def test_write_and_read(store):
     assert store.read_bytes("file.txt") == b"content"
 ```
 
----
+## See also
 
-**See also:**
-[Capabilities matrix](../capabilities-matrix.md) --
-[API reference](../api/store.md) --
-[Example script](https://github.com/haalfi/remote-store/blob/master/examples/memory_backend.py)
+- [Capabilities matrix](../capabilities-matrix.md)
+- [API reference](../api/store.md)
+- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/memory_backend.py)

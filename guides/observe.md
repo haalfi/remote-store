@@ -18,7 +18,7 @@ observed.write("data/report.csv", csv_bytes)
 # prints: Wrote data/report.csv in 12.3ms
 ```
 
-The returned `ObservedStore` is a full `Store` subclass -- it passes
+The returned `ObservedStore` is a full `Store` subclass — it passes
 `isinstance(observed, Store)` and works everywhere a Store is expected.
 
 ## Hook Types
@@ -134,7 +134,7 @@ the library is silent by default.
 
 ### Showing only warnings
 
-Set the level on the `"remote_store"` logger -- this applies to all
+Set the level on the `"remote_store"` logger — this applies to all
 child loggers in the hierarchy:
 
 ```python
@@ -281,8 +281,7 @@ trace.get_tracer_provider().add_span_processor(
 observed = otel_observe(store)
 ```
 
----
+## See also
 
-**See also:**
-[API reference](api/ext-observe.md) --
-[Example script](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py)
+- [API reference](api/ext-observe.md)
+- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py)

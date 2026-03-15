@@ -71,7 +71,7 @@ store = registry.get_store("default")
 
 ## See also
 
-- [Capabilities Matrix](capabilities-matrix.md) -- full backend x capability
+- [Capabilities Matrix](capabilities-matrix.md) — full backend x capability
   table
-- [Backends guide](backends/index.md) -- per-backend configuration details
-- [Performance guide](performance.md) -- benchmark data across backends
+- [Backends guide](backends/index.md) — per-backend configuration details
+- [Performance guide](performance.md) — benchmark data across backends

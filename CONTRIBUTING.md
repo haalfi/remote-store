@@ -161,7 +161,7 @@ All dev scripts are defined in `pyproject.toml` under `[tool.hatch.envs.default.
 ## Commit Signing
 
 All commits should be signed for supply chain transparency. GitHub Vigilant
-Mode is enabled on the repository -- unsigned commits show as "Unverified".
+Mode is enabled on the repository — unsigned commits show as "Unverified".
 
 ### Setup (SSH signing, one-time)
 
@@ -189,7 +189,7 @@ On Windows, you can also enable the OpenSSH Authentication Agent service
 (via `Set-Service ssh-agent -StartupType Automatic` in an elevated PowerShell)
 for persistence across sessions.
 
-Verify with `echo "test" | git commit-tree HEAD^{tree} -S` -- a commit hash without passphrase prompt means signing works.
+Verify with `echo "test" | git commit-tree HEAD^{tree} -S` — a commit hash without passphrase prompt means signing works.
 
 ## Code Style
 
@@ -212,7 +212,7 @@ The `examples/` directory contains runnable Python scripts that are validated in
 
 Jupyter notebooks in `examples/notebooks/` are validated in CI via
 `hatch run notebooks` (code cells executed with `exec()`, no Jupyter needed).
-Visual output is not checked -- the runner validates that cells execute without
+Visual output is not checked — the runner validates that cells execute without
 errors.
 
 ## Versioning
@@ -265,7 +265,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] Master is clean: `git status` shows no uncommitted changes
 - [ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)
 - [ ] `hatch run all` passes **locally** (lint + format-check + typecheck + test-cov + examples). Local runs without Docker backends are stricter than CI for coverage — CI has Azurite which inflates Azure backend coverage, potentially masking gaps in new code
-- [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` -- complete and move to `BACKLOG-DONE.md`, or defer (`[ ]`)
+- [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete and move to `BACKLOG-DONE.md`, or defer (`[ ]`)
 - [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
 - [ ] Decide bump level (patch / minor / major) per the table above
 

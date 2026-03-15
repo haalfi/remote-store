@@ -7,63 +7,65 @@ Companion to **Audit 004** (`audit-004-docs-structural-consistency.md`).
 
 ## 1. Dash convention (AF-041, AF-045)
 
-Pick one convention and apply globally.
-`—` is typographically correct; `--` is ASCII-safe and matches docs-src originals.
+**Decision:** Standardize on UTF-8 em dash `—` (U+2014). Typographically correct, and the earlier MkDocs/cp1252 mojibake concern no longer reproduces. `.editorconfig` enforces `charset = utf-8`.
 
-- [ ] **T-01** `guides/data-lake-patterns.md` -- convert `—` to chosen convention (lines 4, 32, 49, 62, 69, 96, 215, 302-307)
-- [ ] **T-02** `guides/dagster.md` -- convert `—` (lines 12, 67, 123, 147, 149, 154)
-- [ ] **T-03** `guides/batch-operations.md` -- convert `—` (lines 8, 10, 37, 115, 120)
-- [ ] **T-04** `guides/backends/sftp.md` -- convert `—` (lines 108-110)
-- [ ] **T-05** `guides/backends/memory.md` -- convert `—` (lines 3, 43)
-- [ ] **T-06** `guides/backends/s3-pyarrow.md` -- convert `—` (line 60)
+The 6 files below already use `—` — they are *correct*. The remaining `docs-src/` and guide files that use `--` need converting to `—`.
+
+- [x] **T-01** `guides/data-lake-patterns.md` — already uses `—` ✓
+- [x] **T-02** `guides/dagster.md` — already uses `—` ✓
+- [x] **T-03** `guides/batch-operations.md` — already uses `—` ✓
+- [x] **T-04** `guides/backends/sftp.md` — already uses `—` ✓
+- [x] **T-05** `guides/backends/memory.md` — already uses `—` ✓
+- [x] **T-06** `guides/backends/s3-pyarrow.md` — already uses `—` ✓
+- [x] **T-01b** Converted remaining `--` → `—` across 33 files (319 replacements)
 
 ---
 
 ## 2. "See also" format (AF-042)
 
-Pick Pattern A (`**See also:**` bold + inline links) or Pattern B (`## See also` heading + bullet list). Convert all to the winner. Add to the 4 files that lack it.
+**Decision:** Pattern B (`## See also` heading + bullet list). Shows in page TOC, easier to extend.
 
-- [ ] **T-07** `guides/concurrency.md` -- add See also section
-- [ ] **T-08** `guides/health-check.md` -- add See also section
-- [ ] **T-09** `guides/performance.md` -- add See also section
-- [ ] **T-10** `guides/extensions.md` -- add See also section
-- [ ] **T-11** Convert all 22 existing "See also" sections to the chosen format
+- [x] **T-07** `guides/concurrency.md` — added See also section
+- [x] **T-08** `guides/health-check.md` — added See also section
+- [x] **T-09** `guides/performance.md` — added See also section
+- [x] **T-10** `guides/extensions.md` — added See also section
+- [x] **T-11** Converted all 12 Pattern A files to Pattern B; 9 existing Pattern B files already consistent
 
 ---
 
 ## 3. Table boolean values (AF-043)
 
-Project convention: `Yes` / `--` (dash), never `Yes` / `No`.
+Project convention: `Yes` / `—` (em dash), never `Yes` / `No`.
 
-- [ ] **T-12** `docs-src/capabilities-matrix.md` lines 12-20 -- replace HTML entity checkmarks with `Yes` / `--`
-- [ ] **T-13** `guides/cache.md` line 45 -- replace bold `**No**` with `--`
-- [ ] **T-14** Normalize all 6 files to `Yes` / `--` convention
+- [x] **T-12** `docs-src/capabilities-matrix.md` — replaced HTML entity checkmarks with `Yes` / `—`
+- [x] **T-13** `guides/cache.md` — replaced bold `**No**` with `—`
+- [x] **T-14** Normalized all tables: `docs-src/api/store.md`, `guides/concurrency.md`, `README.md`
 
 ---
 
 ## 4. Blockquotes to admonitions (AF-044)
 
-- [ ] **T-15** `guides/backends/sftp.md` lines 127-131 -- convert three `>` blockquotes to `!!! warning` or `!!! note` admonitions
+- [x] **T-15** `guides/backends/sftp.md` — converted three `>` blockquotes to `!!! warning` / `!!! note` admonitions
 
 ---
 
 ## 5. Extensions table (AF-046)
 
-- [ ] **T-16** `guides/extensions.md` lines 10-19 -- replace `--` cell values with "none", empty cell, or a distinct glyph
+- [x] **T-16** `guides/extensions.md` — Extra column uses `*(none)*` for built-in, `—` for not available
 
 ---
 
 ## 6. Backend page structure (AF-047, AF-048, AF-050)
 
-- [ ] **T-17** `guides/backends/local.md` -- add `## Installation` stub ("Built-in -- no extra dependencies")
-- [ ] **T-18** `guides/backends/memory.md` -- add `## Installation` stub; review whether extra sections should follow standard ones
-- [ ] **T-19** Audit all 6 backend pages: ensure core sections (Installation, Usage, Options, Capabilities, Caveats, See also) appear in consistent order
+- [x] **T-17** `guides/backends/local.md` — added `## Installation` stub
+- [x] **T-18** `guides/backends/memory.md` — added `## Installation` stub
+- [x] **T-19** Audited all 6 backend pages — core sections (Installation, Usage, Options, ..., See also) consistent; backend-specific sections vary appropriately
 
 ---
 
 ## 7. Admonition type (AF-049)
 
-- [ ] **T-20** `docs-src/api/models.md` line 3 -- convert lone `!!! tip` to `!!! note`, or accept as intentional
+- [x] **T-20** `docs-src/api/models.md` — removed (content already in `_models.py` module docstring and each class docstring; triple redundancy on rendered page). AF-049 admonition type was correct (`!!! tip`)
 
 ---
 

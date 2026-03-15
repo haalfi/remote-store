@@ -7,16 +7,16 @@ on top of the core Store API.
 
 | Module | Extra | Description | Guide | Example |
 |--------|-------|-------------|-------|---------|
-| `ext.batch` | -- | Bulk delete, copy, and exists operations | [Guide](batch-operations.md) | [Example](examples/batch-operations.md) |
-| `ext.cache` | -- | Store-level caching with TTL and auto-invalidation | [Guide](cache.md) | [Example](examples/caching.md) |
-| `ext.glob` | -- | Portable glob pattern matching for file listing | [Guide](glob-pattern-matching.md) | [Example](examples/glob-pattern-matching.md) |
-| `ext.observe` | -- | Callback-based observability hooks for Store operations | [Guide](observe.md) | [Example](examples/observe-hooks.md) |
-| `ext.partition` | -- | Hive-style partition path helpers | -- | -- |
-| `ext.transfer` | -- | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](examples/transfer-operations.md) |
+| `ext.batch` | *(none)* | Bulk delete, copy, and exists operations | [Guide](batch-operations.md) | [Example](examples/batch-operations.md) |
+| `ext.cache` | *(none)* | Store-level caching with TTL and auto-invalidation | [Guide](cache.md) | [Example](examples/caching.md) |
+| `ext.glob` | *(none)* | Portable glob pattern matching for file listing | [Guide](glob-pattern-matching.md) | [Example](examples/glob-pattern-matching.md) |
+| `ext.observe` | *(none)* | Callback-based observability hooks for Store operations | [Guide](observe.md) | [Example](examples/observe-hooks.md) |
+| `ext.partition` | *(none)* | Hive-style partition path helpers | — | — |
+| `ext.transfer` | *(none)* | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](examples/transfer-operations.md) |
 | `ext.arrow` | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](examples/pyarrow-adapter.md) |
 | `ext.otel` | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](examples/otel-tracing.md) |
-| `ext.pydantic` | `pydantic` | Pydantic BaseModel/BaseSettings adapter | -- | [Example](examples/config-loaders.md) |
-| `ext.yaml` | `yaml` | YAML config file loader | -- | [Example](examples/config-loaders.md) |
+| `ext.pydantic` | `pydantic` | Pydantic BaseModel/BaseSettings adapter | — | [Example](examples/config-loaders.md) |
+| `ext.yaml` | `yaml` | YAML config file loader | — | [Example](examples/config-loaders.md) |
 | `ext.dagster` | `dagster` | Dagster IO Manager adapter | [Guide](dagster.md) | [Example](examples/dagster-io-manager.md) |
 
 ## Using Extensions
@@ -75,13 +75,18 @@ module raises a `ModuleNotFoundError` with installation instructions.
 
 All extensions follow the same contract (ADR-0008, ADR-0013):
 
-- **Public API only** -- extensions use only the public Store / Backend
+- **Public API only** — extensions use only the public Store / Backend
   API.  They never access private internals.
-- **No lifecycle ownership** -- extensions never close the Store.  The
+- **No lifecycle ownership** — extensions never close the Store.  The
   caller owns the Store's lifecycle.
-- **CapabilityNotSupported propagates** -- if a backend lacks a required
+- **CapabilityNotSupported propagates** — if a backend lacks a required
   capability, the error reaches the caller immediately.
 
 ## Writing Your Own Extension
 
 See the "Adding an Extension" checklist in CONTRIBUTING.md.
+
+## See also
+
+- [API reference](api/store.md) — core Store interface that extensions build on
+- [Architecture](architecture.md) — extension design principles

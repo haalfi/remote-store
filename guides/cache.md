@@ -42,7 +42,7 @@ data = cached.read_bytes("config.json")  # b'{"key": "new"}'
 | `list_folders()` | Yes | Materialized on first call |
 | `iter_children()` | Yes | Materialized on first call |
 | `glob()` | Yes | Materialized on first call |
-| `read()` | **No** | Returns `BinaryIO` stream |
+| `read()` | — | Returns `BinaryIO` stream |
 
 `read()` is deliberately not cached because it returns a `BinaryIO`
 stream that may be lazily consumed. Use `read_bytes()` when you want
@@ -52,13 +52,13 @@ cached content reads.
 
 Mutating operations automatically invalidate affected cache entries:
 
-- **`write`, `write_atomic`, `open_atomic`** -- invalidate the written
+- **`write`, `write_atomic`, `open_atomic`** — invalidate the written
   path and all listing/folder caches.
-- **`delete`** -- invalidate the deleted path and all listings.
-- **`delete_folder`** -- clear the entire cache (folder deletion can
+- **`delete`** — invalidate the deleted path and all listings.
+- **`delete_folder`** — clear the entire cache (folder deletion can
   affect any cached path).
-- **`move`** -- invalidate both source and destination paths plus listings.
-- **`copy`** -- invalidate destination path plus listings.
+- **`move`** — invalidate both source and destination paths plus listings.
+- **`copy`** — invalidate destination path plus listings.
 
 ## Limiting Memory Usage
 
@@ -70,7 +70,7 @@ large files, set `max_content_size` to prevent memory pressure:
 cached = cached_store(store, ttl=300, max_content_size=1_048_576)
 ```
 
-Files larger than the limit are still returned correctly -- they just
+Files larger than the limit are still returned correctly — they just
 bypass the cache.
 
 ## Cache Statistics
@@ -121,8 +121,7 @@ observed = observe(cached_store(store, ttl=300), on_read=my_hook)
 with `batch_exists(concurrent=True)` and similar concurrent access
 patterns.
 
----
+## See also
 
-**See also:**
-[API reference](api/ext-cache.md) --
-[Example script](https://github.com/haalfi/remote-store/blob/master/examples/caching.py)
+- [API reference](api/ext-cache.md)
+- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/caching.py)

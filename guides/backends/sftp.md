@@ -124,11 +124,18 @@ The SFTP backend supports all 8 capabilities:
 | `ATOMIC_WRITE` | Yes | Temp file + rename (see caveat below) |
 | `METADATA` | Yes | |
 
-> **Atomic write caveat:** Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the connection drops between write and rename, the orphan temp file will remain on the server.
+!!! warning "Atomic write caveat"
+    Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the
+    connection drops between write and rename, the orphan temp file will remain
+    on the server.
 
-> **Move fallback:** `move()` tries `posix_rename` (atomic), then standard `rename()`, then copy + delete as a last resort. Most servers support at least `rename()`.
+!!! note "Move fallback"
+    `move()` tries `posix_rename` (atomic), then standard `rename()`, then
+    copy + delete as a last resort. Most servers support at least `rename()`.
 
-> **TOCTOU on `overwrite=False`:** Like all backends, the exists-check and write are separate operations. Concurrent writers can both pass the check.
+!!! note "TOCTOU on `overwrite=False`"
+    Like all backends, the exists-check and write are separate operations.
+    Concurrent writers can both pass the check.
 
 See the [Concurrency and Atomicity Guarantees](../concurrency.md) guide for details and workarounds.
 
@@ -143,9 +150,8 @@ sftp_client = backend.unwrap(paramiko.SFTPClient)
 sftp_client.listdir_attr("/custom/path")
 ```
 
----
+## See also
 
-**See also:**
-[Capabilities matrix](../capabilities-matrix.md) --
-[API reference](../api/store.md) --
-[Example script](https://github.com/haalfi/remote-store/blob/master/examples/backends/sftp_backend.py)
+- [Capabilities matrix](../capabilities-matrix.md)
+- [API reference](../api/store.md)
+- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/backends/sftp_backend.py)

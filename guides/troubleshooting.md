@@ -153,6 +153,6 @@ backend x capability table.
 
 ## See also
 
-- [Getting Started](getting-started.md) -- installation and quick start
-- [Choosing a Backend](choosing-a-backend.md) -- picking the right backend
+- [Getting Started](getting-started.md) — installation and quick start
+- [Choosing a Backend](choosing-a-backend.md) — picking the right backend
 - [Error Handling example](examples/error-handling.md)
