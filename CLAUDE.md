@@ -16,8 +16,8 @@ Spec-Driven Development (SDD).
 
 ## Backlog (mandatory)
 
-- See `sdd/000-process.md` § Backlog tiers for workflow and ordering rules.
-- Read `sdd/BACKLOG.md` before starting. Note relevant item IDs (AF-NNN, BK-NNN, BL-NNN, ID-NNN).
+- See `sdd/BACKLOG.md` for workflow rules, ID prefixes, and active items.
+  Completed items are in `sdd/BACKLOG-DONE.md`.
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
 ## Dev commands
