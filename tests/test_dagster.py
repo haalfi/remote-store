@@ -69,10 +69,11 @@ class TestJsonSerializer:
 
 
 class TestParquetSerializer:
-    """DAG-004: Parquet roundtrip (pandas DataFrame)."""
+    """DAG-004: Parquet roundtrip."""
 
     @pytest.mark.spec("DAG-004")
-    def test_roundtrip(self, store: Store) -> None:
+    def test_roundtrip_pandas(self, store: Store) -> None:
+        """Roundtrip with a pandas DataFrame."""
         pandas = pytest.importorskip("pandas")
         mgr = remote_store_io_manager(store, serializer="parquet")
 
@@ -87,6 +88,75 @@ class TestParquetSerializer:
         )
         result = mgr.load_input(in_ctx)
         pandas.testing.assert_frame_equal(result, df)
+
+    @pytest.mark.spec("DAG-004")
+    def test_serialize_arrow_table(self) -> None:
+        """Serialize a PyArrow Table directly."""
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+
+        serializer = ParquetSerializer()
+        table = pa.table([pa.array([1, 2, 3]), pa.array(["x", "y", "z"])], names=["a", "b"])
+
+        data = serializer.serialize(table)
+        assert len(data) > 0
+
+        # Verify it's valid parquet by reading back as Arrow
+        import io
+
+        roundtrip = pq.read_table(io.BytesIO(data))
+        assert roundtrip.equals(table)
+
+    @pytest.mark.spec("DAG-004")
+    def test_serialize_polars_like(self) -> None:
+        """Serialize an object with to_arrow() (Polars-like)."""
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+
+        table = pa.table([pa.array([10, 20])], names=["val"])
+
+        # Mock a Polars-like DataFrame with to_arrow()
+        polars_like = mock.MagicMock()
+        polars_like.to_arrow.return_value = table
+        del polars_like.dtypes  # Ensure it doesn't match the pandas branch
+
+        serializer = ParquetSerializer()
+        data = serializer.serialize(polars_like)
+        polars_like.to_arrow.assert_called_once()
+
+        import io
+
+        roundtrip = pq.read_table(io.BytesIO(data))
+        assert roundtrip.equals(table)
+
+    @pytest.mark.spec("DAG-004")
+    def test_serialize_unsupported_type(self) -> None:
+        """Serializing an unsupported type raises TypeError."""
+        serializer = ParquetSerializer()
+        with pytest.raises(TypeError, match="ParquetSerializer expects a DataFrame, got str"):
+            serializer.serialize("not a dataframe")
+
+    @pytest.mark.spec("DAG-004")
+    def test_deserialize_returns_to_pandas(self) -> None:
+        """Deserialize reads parquet and calls to_pandas()."""
+        import io
+
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+
+        table = pa.table([pa.array([1, 2, 3])], names=["col"])
+        buf = io.BytesIO()
+        pq.write_table(table, buf)
+        parquet_bytes = buf.getvalue()
+
+        serializer = ParquetSerializer()
+        sentinel = object()
+        mock_table = mock.MagicMock()
+        mock_table.to_pandas.return_value = sentinel
+        with mock.patch("pyarrow.parquet.read_table", return_value=mock_table):
+            result = serializer.deserialize(parquet_bytes)
+        mock_table.to_pandas.assert_called_once()
+        assert result is sentinel
 
 
 # ---------------------------------------------------------------------------
