@@ -311,9 +311,8 @@ conventions:
 performs a top-level `import opentelemetry` and raises `ImportError` if the
 package is missing.
 
-The top-level `remote_store.__init__` conditionally re-exports `otel_hooks`
-and `otel_observe` using `try/except ImportError`, consistent with the
-`ext.arrow` pattern.
+`otel_hooks` and `otel_observe` are imported directly from
+`remote_store.ext.otel` (ADR-0013).
 
 **Convenience wrapper:**
 

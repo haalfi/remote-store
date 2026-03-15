@@ -6,6 +6,13 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Post-v0.17.0
 
+- [x] **ID-084 — Drop optional-extension re-exports from `__init__.py` (ADR-0013)**
+  Removed `try/except ImportError` re-export blocks for arrow, otel, pydantic,
+  and yaml extensions from `remote_store/__init__.py`. Each extension is now
+  imported only from `remote_store.ext.<name>`. Eliminates import-time overhead
+  from heavy optional deps (e.g. Dagster ~2-5 s). Pure-Python extensions
+  unchanged. ADR-0013, migration guide entry, CHANGELOG entry.
+
 - [x] **ID-075 — Dagster integration v1 (`ext.dagster`)**
   Thin Dagster IO manager adapter: `remote_store_io_manager(store)` factory,
   serializers (pickle, JSON, Parquet), [spec 031](specs/031-ext-dagster.md)

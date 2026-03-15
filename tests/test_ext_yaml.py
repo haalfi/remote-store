@@ -139,8 +139,8 @@ class TestYamlExtensionContract:
         assert "from_yaml" in yaml_ext.__all__
 
     @pytest.mark.spec("CFG-010")
-    def test_top_level_reexport(self) -> None:
+    def test_no_top_level_reexport(self) -> None:
+        """Optional-dep extensions are NOT re-exported (ADR-0013)."""
         import remote_store
 
-        assert hasattr(remote_store, "from_yaml")
-        assert "from_yaml" in remote_store.__all__
+        assert not hasattr(remote_store, "from_yaml")

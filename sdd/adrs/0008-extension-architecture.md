@@ -64,6 +64,10 @@ extension's caller.  Extensions must not catch and suppress it.
 
 ### Export rules
 
+> Superseded by ADR-0013 -- optional-dependency extensions are no longer
+> re-exported from `remote_store.__init__`. Import them directly from
+> `remote_store.ext.<name>`.
+
 Two patterns, determined by dependency requirements:
 
 1. **Pure Python (no extra dependencies).**

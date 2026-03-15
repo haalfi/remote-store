@@ -1004,8 +1004,9 @@ class TestAllExports:
         assert "pyarrow_fs" in arrow.__all__
 
     @pytest.mark.spec("PA-022")
-    def test_top_level_reexports(self) -> None:
+    def test_no_top_level_reexports(self) -> None:
+        """Optional-dep extensions are NOT re-exported (ADR-0013)."""
         import remote_store
 
-        assert hasattr(remote_store, "StoreFileSystemHandler")
-        assert hasattr(remote_store, "pyarrow_fs")
+        assert not hasattr(remote_store, "StoreFileSystemHandler")
+        assert not hasattr(remote_store, "pyarrow_fs")

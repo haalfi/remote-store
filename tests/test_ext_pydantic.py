@@ -170,9 +170,8 @@ class TestPydanticExtensionContract:
         assert "pydantic_to_registry_config" in pydantic.__all__
 
     @pytest.mark.spec("CFG-017")
-    def test_top_level_reexport(self) -> None:
-        """pydantic_to_registry_config is available from remote_store top level."""
+    def test_no_top_level_reexport(self) -> None:
+        """Optional-dep extensions are NOT re-exported (ADR-0013)."""
         import remote_store
 
-        assert hasattr(remote_store, "pydantic_to_registry_config")
-        assert remote_store.pydantic_to_registry_config is pydantic_to_registry_config
+        assert not hasattr(remote_store, "pydantic_to_registry_config")

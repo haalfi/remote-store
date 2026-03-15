@@ -266,11 +266,11 @@ class TestImportGating:
     @pytest.mark.spec("OBS-014")
     @pytest.mark.parametrize("name", ["otel_hooks", "otel_observe"])
     def test_exports(self, name: str) -> None:
-        """Public API available from top-level and ext.otel.__all__."""
+        """Public API available from ext.otel.__all__ (not top-level, ADR-0013)."""
         import remote_store
         from remote_store.ext import otel
 
-        assert hasattr(remote_store, name)
+        assert not hasattr(remote_store, name)
         assert name in otel.__all__
 
 

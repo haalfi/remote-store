@@ -12,8 +12,9 @@ contract (see ADR-0008):
 - **``__all__``** -- every extension module defines ``__all__``.
 - **Export rules** -- pure-Python extensions are re-exported from
   ``remote_store.__init__`` unconditionally.  Optional-dependency
-  extensions are conditionally re-exported (silent ``try/except
-  ImportError``) and can also be imported from their module directly.
+  extensions are imported from their module directly
+  (``from remote_store.ext.<name> import ...``); they are *not*
+  re-exported from the top-level package (ADR-0013).
 
 See ``guides/extensions.md`` for the list of available extensions.
 """

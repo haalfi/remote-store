@@ -62,6 +62,7 @@ addressed. Common misses to look for explicitly:
   `api/index.md`)?
 - **New example script?** → README examples table row? Docs wrapper page
   (`docs-src/examples/*.md`)? `tests/test_examples.py` import?
+- **Any non-trivial work?** → Backlog item present?
 
 If any target is missing from the diff **and** not already up-to-date in the
 repo, file a `Ripple:` comment.

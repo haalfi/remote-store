@@ -710,9 +710,9 @@ management is clearer and consistent with how the Store context manager works.
 __all__ = ["StoreFileSystemHandler", "pyarrow_fs"]
 ```
 
-Both are also importable from the top-level `remote_store` package when PyArrow
-is installed. When PyArrow is not installed, importing `ext.arrow` raises
-`ImportError` with a helpful message.
+Both are imported directly from `remote_store.ext.arrow` (ADR-0013). When
+PyArrow is not installed, importing `ext.arrow` raises `ImportError` with a
+helpful message.
 
 ### PA-023: Optional Dependency
 

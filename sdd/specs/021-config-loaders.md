@@ -172,8 +172,7 @@ User's Pydantic model (merges env + .env + files)
 **Invariant:** `ext/pydantic.py` follows the extension architecture (ADR-0008):
 - Defines `__all__`.
 - Uses only the public `RegistryConfig.from_dict()` API.
-- Conditionally re-exported from `remote_store.__init__` (silent
-  `try/except ImportError`).
+- Imported directly from `remote_store.ext.pydantic` (ADR-0013).
 - Import of `pydantic` is guarded at module level with a clear error message.
 
 ---

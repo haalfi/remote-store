@@ -43,7 +43,8 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | **Check**: `backends/__init__.py` `__all__` too —         |
 |                            | secondary public API (e.g. `SFTPUtils`) needs its own     |
 |                            | `api/*.md` page and index entry                           |
-| **An extension**           | `__init__.py` exports (if pure Python),                   |
+| **An extension**           | `__init__.py` exports (pure-Python only; optional-dep     |
+|                            | extensions are NOT re-exported — ADR-0013),               |
 |                            | `pyproject.toml` extras (if optional dep),                |
 |                            | README extensions table, `docs-src/api/ext-*.md` +        |
 |                            | `api/index.md` + `api/_nav.yml`, `guides/`,               |
