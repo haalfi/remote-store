@@ -37,6 +37,15 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-008 — Medallion + Dagster showcase implementation**
+  Implement the runnable showcase described in
+  [showcase architecture](research/research-medallion-dagster-showcase.md).
+  Self-contained Dagster project in `examples/showcase_medallion_dagster/`
+  demonstrating 6 extensions composing over live MeteoSwiss data.
+  Blocked by: ID-082 (ReadOnlyHttpBackend).
+  Depends on: ID-075, ext.cache, ext.observe, ext.otel, ext.transfer,
+  ext.arrow, ext.dagster (all shipped).
+
 ---
 
 ## Known Bugs
@@ -51,7 +60,8 @@ Items graduate through the SDD pipeline:
 
 - [~] **ID-082 — Read-only HTTP backend**
   Backend for reading files from HTTP/HTTPS URLs. Capabilities: `{READ, METADATA}`.
-  - Done: [research](research/research-readonly-http-backend.md) (complete).
+  - Done: [research](research/research-readonly-http-backend.md),
+    [showcase architecture](research/research-medallion-dagster-showcase.md).
   - Remaining: spec, conformance suite capability gates, implementation,
     tests, docs.
 
@@ -90,7 +100,8 @@ Items graduate through the SDD pipeline:
   - `RemoteStoreIOManager` (`ConfigurableIOManagerFactory`)
   - `teardown_after_execution()`
 
-  [Research](research/research-dagster-extension.md).
+  [Research](research/research-dagster-extension.md),
+  [showcase architecture](research/research-medallion-dagster-showcase.md).
 
 ### Documentation & Developer Experience
 
