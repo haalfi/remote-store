@@ -29,6 +29,7 @@ class RequestsTransport:
             resp = self._session.get(url, headers=headers, timeout=timeout, stream=True, allow_redirects=True)
         except (requests.ConnectionError, requests.Timeout, OSError) as exc:
             raise BackendUnavailable(f"HTTP request failed: {exc}", backend="http") from exc
+        resp.raw.decode_content = True
         resp_headers = {k.lower(): v for k, v in resp.headers.items()}
         return HttpResponse(
             status=resp.status_code,

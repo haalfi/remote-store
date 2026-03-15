@@ -75,6 +75,34 @@ _TransportMethod = Callable[[str, dict[str, str], float], HttpResponse]
 # ---------------------------------------------------------------------------
 
 
+class _LimitedRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Redirect handler that enforces a maximum number of redirects."""
+
+    def __init__(self, max_redirects: int) -> None:
+        self.max_redirects = max_redirects
+        self._redirect_count = 0
+
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: BinaryIO,  # type: ignore[override]
+        code: int,
+        msg: str,
+        headers: dict[str, str],  # type: ignore[override]
+        newurl: str,
+    ) -> urllib.request.Request | None:
+        self._redirect_count += 1
+        if self._redirect_count > self.max_redirects:
+            raise urllib.error.HTTPError(
+                newurl,
+                code,
+                f"Too many redirects (max {self.max_redirects})",
+                headers,  # type: ignore[arg-type]
+                fp,
+            )
+        return super().redirect_request(req, fp, code, msg, headers, newurl)  # type: ignore[arg-type]
+
+
 class UrllibTransport:
     """HTTP transport using stdlib ``urllib.request``."""
 
@@ -99,10 +127,16 @@ class UrllibTransport:
 
     def _request(self, url: str, headers: dict[str, str], timeout: float, *, method: str) -> HttpResponse:
         """Execute an HTTP request."""
+        redirect_handler = _LimitedRedirectHandler(self._max_redirects)
+        handlers: list[urllib.request.BaseHandler] = [redirect_handler]
+        if self._ssl_context is not None:
+            handlers.append(urllib.request.HTTPSHandler(context=self._ssl_context))
+        opener = urllib.request.build_opener(*handlers)
         req = urllib.request.Request(url, headers=headers, method=method)
         try:
-            resp = urllib.request.urlopen(  # noqa: S310 — URL is user-provided base_url + validated path
-                req, timeout=timeout, context=self._ssl_context
+            resp = opener.open(  # noqa: S310 — URL is user-provided base_url + validated path
+                req,
+                timeout=timeout,
             )
             resp_headers = {k.lower(): v for k, v in resp.getheaders()}
             return HttpResponse(status=resp.status, headers=resp_headers, body=cast("BinaryIO", resp))
@@ -200,6 +234,10 @@ class ReadOnlyHttpBackend(Backend):
     ) -> None:
         if not base_url:
             msg = "base_url must not be empty"
+            raise ValueError(msg)
+        parsed = urllib.parse.urlparse(base_url)
+        if parsed.scheme not in ("http", "https"):
+            msg = f"base_url must use http or https scheme, got {parsed.scheme!r}"
             raise ValueError(msg)
         self._base_url = base_url if base_url.endswith("/") else base_url + "/"
         self._headers = dict(headers) if headers else {}
@@ -361,7 +399,7 @@ class ReadOnlyHttpBackend(Backend):
 
     def _url(self, path: str) -> str:
         """Build a full URL from a backend-relative path."""
-        return self._base_url + urllib.parse.quote(path, safe="/")
+        return self.native_path(path)
 
     def _get(self, path: str) -> HttpResponse:
         """Send a GET request with retry support."""

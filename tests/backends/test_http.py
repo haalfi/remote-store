@@ -255,6 +255,11 @@ class TestHttpPaths:
         result = backend.native_path("")
         assert result.endswith("/files/")
 
+    def test_to_key_non_matching_prefix_passthrough(self) -> None:
+        """to_key returns path unchanged when it doesn't start with base_url."""
+        b = ReadOnlyHttpBackend(base_url="http://example.com/data/", http_client="urllib")
+        assert b.to_key("http://other.com/file.txt") == "http://other.com/file.txt"
+
 
 class TestHttpCustomHeaders:
     """HTTP-010: Custom headers are sent with every request."""
@@ -417,6 +422,21 @@ class TestHttpConstructor:
         with pytest.raises(ValueError, match="must not be empty"):
             ReadOnlyHttpBackend(base_url="", http_client="urllib")
 
+    def test_invalid_scheme_raises(self) -> None:
+        """Non-http(s) schemes are rejected."""
+        with pytest.raises(ValueError, match="http or https scheme"):
+            ReadOnlyHttpBackend(base_url="ftp://example.com/data/", http_client="urllib")
+
+    def test_file_scheme_raises(self) -> None:
+        """file:// scheme is rejected (security)."""
+        with pytest.raises(ValueError, match="http or https scheme"):
+            ReadOnlyHttpBackend(base_url="file:///etc/passwd", http_client="urllib")
+
+    def test_https_scheme_accepted(self) -> None:
+        """https:// scheme is accepted."""
+        b = ReadOnlyHttpBackend(base_url="https://example.com/", http_client="urllib")
+        assert b.native_path("") == "https://example.com/"
+
     def test_repr_masks_headers(self) -> None:
         """AF-008: repr masks header values."""
         b = ReadOnlyHttpBackend(
@@ -535,6 +555,41 @@ class TestHttpRetry:
         )
         with pytest.raises(BackendUnavailable):
             b.read_bytes("slow.txt")
+
+
+class TestUrllibMaxRedirects:
+    """max_redirects enforcement for urllib transport."""
+
+    def test_max_redirects_prevents_infinite_loop(self, httpserver: HTTPServer) -> None:
+        """Redirect loop terminates after max_redirects (does not hang)."""
+        httpserver.expect_request("/redir/a", method="GET").respond_with_data(
+            b"", status=302, headers={"Location": httpserver.url_for("/redir/b")}
+        )
+        httpserver.expect_request("/redir/b", method="GET").respond_with_data(
+            b"", status=302, headers={"Location": httpserver.url_for("/redir/a")}
+        )
+        b = ReadOnlyHttpBackend(
+            base_url=httpserver.url_for("/redir/"),
+            http_client="urllib",
+            max_redirects=2,
+        )
+        # Should complete (not hang) — redirect limit stops the loop.
+        # The final 302 is returned as an empty-body response.
+        result = b.read_bytes("a")
+        assert result == b""
+
+    def test_successful_redirect(self, httpserver: HTTPServer) -> None:
+        """A redirect within limits resolves to the target."""
+        httpserver.expect_request("/rd/start", method="GET").respond_with_data(
+            b"", status=302, headers={"Location": httpserver.url_for("/rd/end")}
+        )
+        httpserver.expect_request("/rd/end", method="GET").respond_with_data(b"final", content_type="text/plain")
+        b = ReadOnlyHttpBackend(
+            base_url=httpserver.url_for("/rd/"),
+            http_client="urllib",
+            max_redirects=5,
+        )
+        assert b.read_bytes("start") == b"final"
 
 
 class TestHttpErrorPaths:
@@ -763,4 +818,37 @@ class TestHttpxTransport:
         b = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", http_client="httpx", timeout=0.1)
         with pytest.raises(BackendUnavailable):
             b.exists("file.txt")
+        b.close()
+
+    def test_streaming_read(self, httpserver: HTTPServer) -> None:
+        """GET via httpx transport streams data (not buffered in memory)."""
+        payload = b"X" * 10_000
+        httpserver.expect_request("/hx/stream.bin", method="GET").respond_with_data(
+            payload, content_type="application/octet-stream"
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/hx/"), http_client="httpx")
+        stream = b.read("stream.bin")
+        # Read in small chunks to exercise the stream adapter
+        chunks = []
+        while True:
+            chunk = stream.read(256)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        assert b"".join(chunks) == payload
+        stream.close()
+        b.close()
+
+    def test_stream_adapter_readinto(self, httpserver: HTTPServer) -> None:
+        """_HttpxStreamAdapter.readinto() works correctly."""
+        httpserver.expect_request("/hx/ri.txt", method="GET").respond_with_data(
+            b"readinto-test", content_type="text/plain"
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/hx/"), http_client="httpx")
+        stream = b.read("ri.txt")
+        buf = bytearray(5)
+        n = stream.readinto(buf)
+        assert n == 5
+        assert buf == b"readi"
+        stream.close()
         b.close()

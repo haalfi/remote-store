@@ -115,6 +115,9 @@ dev = [
   "polars>=0.20",
   "duckdb>=0.9",
   "dagster>=1.9",
+  "pytest-httpserver>=1.0.0",
+  "requests>=2.25.0",
+  "httpx>=0.24.0",
 ]
 
 [tool.hatch.envs.default]
