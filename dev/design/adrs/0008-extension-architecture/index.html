@@ -4619,6 +4619,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0013-drop-optional-extension-reexports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013: Drop Optional-Extension Re-exports from __init__.py
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5540,6 +5568,11 @@ the Store and is responsible for its lifecycle.</p>
 <p><code>CapabilityNotSupported</code> raised by Store methods MUST propagate to the
 extension's caller.  Extensions must not catch and suppress it.</p>
 <h3 id="export-rules">Export rules<a class="headerlink" href="#export-rules" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>Superseded by ADR-0013 -- optional-dependency extensions are no longer
+re-exported from <code>remote_store.__init__</code>. Import them directly from
+<code>remote_store.ext.&lt;name&gt;</code>.</p>
+</blockquote>
 <p>Two patterns, determined by dependency requirements:</p>
 <ol>
 <li>

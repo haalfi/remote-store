@@ -5098,6 +5098,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013: Drop Optional-Extension Re-exports from __init__.py
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -7129,9 +7157,9 @@ management is clearer and consistent with how the Store context manager works.</
 <p><strong>Invariant:</strong> The <code>ext.arrow</code> module exports exactly two names:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;StoreFileSystemHandler&quot;</span><span class="p">,</span> <span class="s2">&quot;pyarrow_fs&quot;</span><span class="p">]</span>
 </code></pre></div>
-<p>Both are also importable from the top-level <code>remote_store</code> package when PyArrow
-is installed. When PyArrow is not installed, importing <code>ext.arrow</code> raises
-<code>ImportError</code> with a helpful message.</p>
+<p>Both are imported directly from <code>remote_store.ext.arrow</code> (ADR-0013). When
+PyArrow is not installed, importing <code>ext.arrow</code> raises <code>ImportError</code> with a
+helpful message.</p>
 <h3 id="pa-023-optional-dependency">PA-023: Optional Dependency<a class="headerlink" href="#pa-023-optional-dependency" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> PyArrow is declared as an optional extra in <code>pyproject.toml</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">[project.optional-dependencies]</span>

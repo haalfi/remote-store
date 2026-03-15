@@ -281,6 +281,10 @@
          <lastmod>2026-03-15</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0013-drop-optional-extension-reexports/</loc>
+         <lastmod>2026-03-15</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/design/research/</loc>
          <lastmod>2026-03-15</lastmod>
     </url>

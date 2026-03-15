@@ -4675,6 +4675,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013: Drop Optional-Extension Re-exports from __init__.py
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5729,8 +5757,7 @@ Pydantic's source merging (env vars, <code>.env</code> files, config files) happ
 <p><strong>Invariant:</strong> <code>ext/pydantic.py</code> follows the extension architecture (ADR-0008):
 - Defines <code>__all__</code>.
 - Uses only the public <code>RegistryConfig.from_dict()</code> API.
-- Conditionally re-exported from <code>remote_store.__init__</code> (silent
-  <code>try/except ImportError</code>).
+- Imported directly from <code>remote_store.ext.pydantic</code> (ADR-0013).
 - Import of <code>pydantic</code> is guarded at module level with a clear error message.</p>
 <hr />
 <h2 id="file-placement">File Placement<a class="headerlink" href="#file-placement" title="Permanent link">&para;</a></h2>

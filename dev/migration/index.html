@@ -2084,6 +2084,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v0170-to-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.17.0 to next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v0150-to-v0160" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4504,6 +4515,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013: Drop Optional-Extension Re-exports from __init__.py
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5185,6 +5224,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v0170-to-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.17.0 to next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v0150-to-v0160" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5275,13 +5325,42 @@
 <p><code>remote-store</code> has been published on PyPI since v0.11.0 (first Beta release).
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.</p>
+<h2 id="v0170-to-next">v0.17.0 to next<a class="headerlink" href="#v0170-to-next" title="Permanent link">&para;</a></h2>
+<p><strong>Extension imports moved (ADR-0013):</strong></p>
+<p>Optional-dependency extensions are no longer re-exported from
+<code>remote_store.__init__</code>. Import them directly from their extension module:</p>
+<ul>
+<li>Old: <code>from remote_store import pyarrow_fs, StoreFileSystemHandler</code></li>
+<li>
+<p>New: <code>from remote_store.ext.arrow import pyarrow_fs, StoreFileSystemHandler</code></p>
+</li>
+<li>
+<p>Old: <code>from remote_store import otel_hooks, otel_observe</code></p>
+</li>
+<li>
+<p>New: <code>from remote_store.ext.otel import otel_hooks, otel_observe</code></p>
+</li>
+<li>
+<p>Old: <code>from remote_store import pydantic_to_registry_config</code></p>
+</li>
+<li>
+<p>New: <code>from remote_store.ext.pydantic import pydantic_to_registry_config</code></p>
+</li>
+<li>
+<p>Old: <code>from remote_store import from_yaml</code></p>
+</li>
+<li>New: <code>from remote_store.ext.yaml import from_yaml</code></li>
+</ul>
+<p>Pure-Python extensions (<code>ext.batch</code>, <code>ext.transfer</code>, <code>ext.glob</code>, <code>ext.observe</code>,
+<code>ext.cache</code>, <code>ext.partition</code>) are unchanged -- they were already unconditionally
+exported from <code>remote_store.__init__</code>.</p>
 <h2 id="v0150-to-v0160">v0.15.0 to v0.16.0<a class="headerlink" href="#v0150-to-v0160" title="Permanent link">&para;</a></h2>
 <p><strong>YAML config loader moved to extension:</strong></p>
 <ul>
 <li><code>RegistryConfig.from_yaml()</code> has been removed from the core class and
   replaced by <code>from_yaml()</code> in <code>remote_store.ext.yaml</code>.</li>
 <li>Old: <code>config = RegistryConfig.from_yaml("config.yaml")</code></li>
-<li>New: <code>from remote_store import from_yaml</code> then <code>config = from_yaml("config.yaml")</code></li>
+<li>New: <code>from remote_store.ext.yaml import from_yaml</code> then <code>config = from_yaml("config.yaml")</code></li>
 <li>Install the optional extra: <code>pip install "remote-store[yaml]"</code></li>
 </ul>
 <h2 id="v0130-to-v0140">v0.13.0 to v0.14.0<a class="headerlink" href="#v0130-to-v0140" title="Permanent link">&para;</a></h2>

@@ -2844,6 +2844,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3296,7 +3307,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed" class="md-nav__link">
+  <a href="#removed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -5329,6 +5340,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013: Drop Optional-Extension Re-exports from __init__.py
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6032,6 +6071,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6484,7 +6534,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed" class="md-nav__link">
+  <a href="#removed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -6932,6 +6982,15 @@
   <code>pip install "remote-store[dagster]"</code>. Spec <code>031-ext-dagster.md</code>
   (DAG-001 through DAG-011).</li>
 </ul>
+<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Top-level re-exports of optional-dependency extensions</strong> (ADR-0013) --
+  <code>from remote_store import pyarrow_fs</code> and similar shortcuts for arrow, otel,
+  pydantic, and yaml extensions are removed.
+  Use the canonical import path instead:
+  <code>from remote_store.ext.arrow import pyarrow_fs</code>.  Pure-Python extensions
+  (batch, cache, glob, observe, partition, transfer) are unchanged.</li>
+</ul>
 <h2 id="0170-2026-03-14">[0.17.0] - 2026-03-14<a class="headerlink" href="#0170-2026-03-14" title="Permanent link">&para;</a></h2>
 <h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
 <ul>
@@ -7065,8 +7124,7 @@
   YAML config loading requires an optional dependency (<code>pyyaml</code> or <code>ruamel.yaml</code>),
   same as the Pydantic adapter. Moved to <code>ext.yaml</code> for consistency with the
   extension architecture (ADR-0008). Import changes:
-  <code>from remote_store.ext.yaml import from_yaml</code> (or <code>from remote_store import from_yaml</code>
-  when pyyaml is installed).</p>
+  <code>from remote_store.ext.yaml import from_yaml</code>.</p>
 </li>
 </ul>
 <h3 id="docs_1">Docs<a class="headerlink" href="#docs_1" title="Permanent link">&para;</a></h3>
@@ -7302,7 +7360,7 @@
 <li><strong>S3/S3-PyArrow <code>get_folder_info()</code> on empty folders</strong> -- no longer raises <code>NotFound</code>; the <code>exists()</code> check already gates non-existent paths. Azure non-HNS retains current behavior since virtual folders can't be empty (AF-004)</li>
 <li><strong><code>Registry.close()</code> error handling</strong> -- now closes all backends even if one raises, always clears the cache, and re-raises the first error (AF-009)</li>
 </ul>
-<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
+<h3 id="removed_1">Removed<a class="headerlink" href="#removed_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>RemoteFile</code> / <code>RemoteFolder</code> model classes</strong> -- removed dead code from models, <code>__all__</code>, tests, docs, and specs (AF-011)</li>
 </ul>
