@@ -322,7 +322,7 @@ class ReadOnlyHttpBackend(Backend):
             raise
         except Exception as exc:
             raise BackendUnavailable(f"Health check failed: {exc}", backend=self.name) from exc
-        if resp.status >= 500:
+        if not (200 <= resp.status < 300):
             raise BackendUnavailable(f"Health check returned HTTP {resp.status}", backend=self.name)
 
     def close(self) -> None:
@@ -410,6 +410,11 @@ class ReadOnlyHttpBackend(Backend):
                     self._retry.backoff_max,
                 )
                 delay += random.uniform(0, self._retry.jitter)  # noqa: S311
+                # Honour Retry-After header as delay floor (HTTP-RETRY-001)
+                if last_resp is not None:
+                    retry_after = _parse_retry_after(last_resp.headers.get("retry-after"))
+                    if retry_after is not None:
+                        delay = max(delay, retry_after)
                 time.sleep(delay)
 
         if last_exc is not None:
@@ -461,3 +466,25 @@ class ReadOnlyHttpBackend(Backend):
         )
 
     # endregion
+
+
+def _parse_retry_after(value: str | None) -> float | None:
+    """Parse a ``Retry-After`` header value into seconds.
+
+    Supports both delay-seconds (``120``) and HTTP-date formats.
+    Returns ``None`` if the header is missing or unparseable.
+    """
+    if not value:
+        return None
+    # Try integer seconds first
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    # Try HTTP-date format
+    try:
+        target = parsedate_to_datetime(value)
+        delta = (target - datetime.now(tz=timezone.utc)).total_seconds()
+        return max(0.0, delta)
+    except Exception:  # noqa: BLE001
+        return None

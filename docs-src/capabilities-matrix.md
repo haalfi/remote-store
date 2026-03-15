@@ -7,23 +7,25 @@ at runtime before calling an operation.
 
 ## Backend x Capability
 
-| Capability | Local | Memory | S3 | S3-PyArrow | SFTP | Azure |
-|------------|:-----:|:------:|:--:|:----------:|:----:|:-----:|
-| READ           | Yes | Yes | Yes | Yes | Yes | Yes |
-| WRITE          | Yes | Yes | Yes | Yes | Yes | Yes |
-| DELETE         | Yes | Yes | Yes | Yes | Yes | Yes |
-| LIST           | Yes | Yes | Yes | Yes | Yes | Yes |
-| MOVE           | Yes | Yes | Yes | Yes | Yes | Yes |
-| COPY           | Yes | Yes | Yes | Yes | Yes | Yes |
-| ATOMIC_WRITE   | Yes | Yes | Yes | Yes | Yes | Yes |
-| METADATA       | Yes | Yes | Yes | Yes | Yes | Yes |
-| GLOB           | Yes | —  | Yes | Yes | —  | Yes |
+| Capability | Local | Memory | HTTP | S3 | S3-PyArrow | SFTP | Azure |
+|------------|:-----:|:------:|:----:|:--:|:----------:|:----:|:-----:|
+| READ           | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| WRITE          | Yes | Yes | —   | Yes | Yes | Yes | Yes |
+| DELETE         | Yes | Yes | —   | Yes | Yes | Yes | Yes |
+| LIST           | Yes | Yes | —   | Yes | Yes | Yes | Yes |
+| MOVE           | Yes | Yes | —   | Yes | Yes | Yes | Yes |
+| COPY           | Yes | Yes | —   | Yes | Yes | Yes | Yes |
+| ATOMIC_WRITE   | Yes | Yes | —   | Yes | Yes | Yes | Yes |
+| METADATA       | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| GLOB           | Yes | —  | —   | Yes | Yes | —  | Yes |
 
 **Full support (9/9):** Local, S3, S3-PyArrow, Azure.
 
 **Partial (8/9):** Memory and SFTP lack native `GLOB`. Use the portable
 fallback `ext.glob.glob_files()` instead — see the
 [Glob Pattern Matching](glob-pattern-matching.md) guide.
+
+**Partial (2/9):** HTTP supports only `READ` and `METADATA` (read-only backend).
 
 ## Querying capabilities at runtime
 

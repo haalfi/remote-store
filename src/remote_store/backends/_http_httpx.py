@@ -35,7 +35,7 @@ class HttpxTransport:
         return HttpResponse(
             status=resp.status_code,
             headers=resp_headers,
-            body=cast("BinaryIO", resp.stream),
+            body=cast("BinaryIO", io.BytesIO(resp.read())),
         )
 
     def head(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse:
