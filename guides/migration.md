@@ -22,6 +22,9 @@ Optional-dependency extensions are no longer re-exported from
 - Old: `from remote_store import pydantic_to_registry_config`
 - New: `from remote_store.ext.pydantic import pydantic_to_registry_config`
 
+- Old: `from remote_store import from_yaml`
+- New: `from remote_store.ext.yaml import from_yaml`
+
 Pure-Python extensions (`ext.batch`, `ext.transfer`, `ext.glob`, `ext.observe`,
 `ext.cache`, `ext.partition`) are unchanged -- they were already unconditionally
 exported from `remote_store.__init__`.
