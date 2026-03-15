@@ -325,7 +325,8 @@ because the backend can't read, but because the test can't set up fixtures.
 | `TestBackendMetadata` | Calls `write()` in setup | Gate on WRITE or pre-seed |
 | `TestBackendMove` | Tests move operations | Gate on MOVE |
 | `TestBackendCopy` | Tests copy operations | Gate on COPY |
-| `TestStreamingConformance` | All 6 methods call `write()` for fixture setup | Gate on WRITE or pre-seed |
+| `TestStreamingConformance` | 4 read tests (SIO-001) call `write()` for setup; 2 write tests (SIO-003) test write behavior | Read tests: gate on WRITE or pre-seed; write tests: gate on WRITE |
+| `TestBackendToKey` | 3 of 4 methods pass; `test_to_key_round_trip_with_listing` calls `write()` + `list_files()` | Gate 1 method on WRITE+LIST |
 
 **Tests that pass as-is:**
 
@@ -338,7 +339,6 @@ because the backend can't read, but because the test can't set up fixtures.
 | `TestBackendGlob` | Already gated on GLOB |
 | `TestBackendUnwrap` | Only checks unwrap raises or returns |
 | `TestBackendNativePath` | Only checks path round-trip |
-| `TestBackendToKey` | Only checks key conversion |
 
 ### 10.3 Proposed conformance changes
 
@@ -440,7 +440,11 @@ close.
   as a known limitation that may warrant making `size` Optional in a future
   `FileInfo` revision.
 - `Last-Modified` is absent on many static file hosts and CDNs. Using
-  `datetime.min` signals "unknown" without requiring an Optional field change.
+  `datetime.min` signals "unknown" without requiring an Optional field change,
+  but has its own issues: sorting by `modified_at` would place HTTP files at the
+  beginning of any list. `datetime(1970, 1, 1, tzinfo=UTC)` (Unix epoch) is a
+  more conventional sentinel but carries the same ambiguity. Like `size`, both
+  fields may warrant `Optional` treatment in a future `FileInfo` revision.
 - `ETag` maps naturally to `checksum` -- both are opaque identifiers for
   content versioning. Useful for `ext.cache` integration.
 
@@ -500,7 +504,7 @@ The HTTP backend is a thin adapter over standard HTTP libraries. Estimated:
 - requests/httpx transports: ~50 lines each (optional)
 
 This is much smaller than `MemoryBackend` (~505 lines) and `S3Backend`
-(~300 lines). Not a wheel worth importing -- simpler to build.
+(~440 lines). Not a wheel worth importing -- simpler to build.
 
 ---
 
@@ -570,7 +574,7 @@ gap analysis) is resolved -- it works.
 After adding capability gates (SS10.3), the HTTP backend runs through the
 shared conformance suite. Expected results:
 
-- ~12 tests pass (identity 4, lifecycle 1, to_key 4, unwrap 1, native_path 2)
+- ~12 tests pass (identity 5, lifecycle 1, to_key 3, unwrap 1, native_path 2)
 - ~48 tests need capability gates (60 ungated minus 12 pass)
 - 9 tests already gated and skip (ATOMIC_WRITE 7 + GLOB 2)
 - Total: 12 + 48 + 9 = 69 ✓
