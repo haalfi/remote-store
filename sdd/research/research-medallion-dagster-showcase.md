@@ -108,35 +108,31 @@ that Store. This is an honest pattern -- not everything is a backend.
 
 ### 4.1 Store Topology
 
-```
-                           ┌──────────────────────────────────┐
-                           │  ReadOnlyHttpBackend (ID-082)    │
-                           │  base: data.geo.admin.ch/        │
-                           │        ch.meteoschweiz.ogd-smn/  │
-                           └──────────────┬───────────────────┘
-                                          │
-                         ┌────────────────┼────────────────┐
-                         │                │                │
-                    ext.cache        ext.observe       ext.otel
-                    (TTL: 1h)     (event logging)   (spans + metrics)
-                         │                │                │
-                         └────────────────┼────────────────┘
-                                          │
-                                    meteo_store
-                                   (composed Store)
-                                          │
-                    ┌─────────────────────┼─────────────────────┐
-                    │                     │                     │
-              ext.transfer          ext.transfer          ext.transfer
-              (HTTP → Local)        (HTTP → Local)        (HTTP → Local)
-                    │                     │                     │
-                    ▼                     ▼                     ▼
-             ┌──────────┐         ┌──────────┐         ┌──────────┐
-             │  Bronze   │         │  Silver   │         │  Gold    │
-             │  Store    │────────▶│  Store    │────────▶│  Store   │
-             │  (local)  │ Dagster │  (local)  │ Dagster │  (local) │
-             └──────────┘  asset  └──────────┘  asset  └──────────┘
-                raw CSV           cleaned Parquet       aggregated Parquet
+```mermaid
+graph TD
+    HTTP["ReadOnlyHttpBackend (ID-082)<br/>data.geo.admin.ch/ch.meteoschweiz.ogd-smn/"]
+
+    subgraph compose["Extension Composition"]
+        direction TB
+        CACHE["ext.cache<br/>(TTL: 1h)"]
+        OTEL["ext.otel<br/>(spans + metrics)"]
+    end
+    HTTP --> CACHE --> OTEL
+
+    METEO["meteo_store<br/>(composed Store)"]
+    OTEL --> METEO
+
+    subgraph lake["Local Medallion Lake (lake.child)"]
+        BRONZE["Bronze Store<br/>raw CSV"]
+        SILVER["Silver Store<br/>cleaned Parquet"]
+        GOLD["Gold Store<br/>aggregated Parquet"]
+        BRONZE -- "Dagster asset" --> SILVER
+        SILVER -- "Dagster asset" --> GOLD
+    end
+
+    METEO -- "ext.transfer<br/>(HTTP → Local)" --> BRONZE
+    METEO -. "ext.transfer<br/>(HTTP → Local)" .-> SILVER
+    METEO -. "ext.transfer<br/>(HTTP → Local)" .-> GOLD
 ```
 
 ### 4.2 Store Construction
@@ -201,39 +197,33 @@ monkey-patching. That's the story.
 
 ### 5.1 Assets
 
-```
-                    ┌────────────────────┐
-                    │ meteo_stations     │  (metadata)
-                    │ HTTP → Bronze      │
-                    └────────┬───────────┘
-                             │
-    ┌────────────────────────┼────────────────────────┐
-    │                        │                        │
-    ▼                        ▼                        ▼
-┌──────────┐          ┌──────────┐          ┌──────────┐
-│ bronze_  │          │ bronze_  │          │ bronze_  │
-│ bern     │          │ zurich   │          │ lugano   │
-│ (daily)  │          │ (daily)  │          │ (daily)  │
-└────┬─────┘          └────┬─────┘          └────┬─────┘
-     │                     │                     │
-     └─────────────────────┼─────────────────────┘
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │ silver_      │
-                    │ measurements │
-                    │ (cleaned,    │
-                    │  unified)    │
-                    └──────┬───────┘
-                           │
-              ┌────────────┼────────────┐
-              │            │            │
-              ▼            ▼            ▼
-       ┌───────────┐ ┌──────────┐ ┌──────────┐
-       │ gold_     │ │ gold_    │ │ gold_    │
-       │ daily_    │ │ station_ │ │ alerts   │
-       │ summary   │ │ stats    │ │          │
-       └───────────┘ └──────────┘ └──────────┘
+```mermaid
+graph TD
+    subgraph bronze["Bronze (raw ingest)"]
+        META["meteo_stations<br/>(metadata CSV)"]
+        BERN["bronze_bern<br/>(daily)"]
+        ZUR["bronze_zurich<br/>(daily)"]
+        LUG["bronze_lugano<br/>(daily)"]
+    end
+
+    subgraph silver["Silver (clean + unify)"]
+        SILVER["silver_measurements<br/>(cleaned, unified Parquet)"]
+    end
+
+    subgraph gold["Gold (analytics)"]
+        DAILY["gold_daily_summary"]
+        STATS["gold_station_stats"]
+        ALERTS["gold_alerts"]
+    end
+
+    META --> SILVER
+    BERN --> SILVER
+    ZUR --> SILVER
+    LUG --> SILVER
+
+    SILVER --> DAILY
+    SILVER --> STATS
+    SILVER --> ALERTS
 ```
 
 ### 5.2 Asset Definitions (Sketch)
