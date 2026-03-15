@@ -11,9 +11,8 @@ from remote_store._models import FileInfo
 from remote_store.backends._http import ReadOnlyHttpBackend, UrllibTransport
 
 if TYPE_CHECKING:
-    from werkzeug.wrappers import Request, Response
-
     from pytest_httpserver import HTTPServer
+    from werkzeug.wrappers import Request, Response
 
 
 @pytest.fixture()
