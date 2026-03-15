@@ -425,7 +425,7 @@ class ReadOnlyHttpBackend(Backend):
 
     def _classify_status(self, status: int, path: str) -> RemoteStoreError:
         """Map an HTTP status code to a remote-store error."""
-        if status == 404:
+        if status == 404:  # pragma: no cover — 404 handled inline before _classify_status
             return NotFound(f"Not found: {path}", path=path, backend=self.name)
         if status in (401, 403):
             return PermissionDenied(f"Access denied: {path}", path=path, backend=self.name)
@@ -449,7 +449,7 @@ class ReadOnlyHttpBackend(Backend):
         if last_modified:
             with contextlib.suppress(Exception):
                 modified_at = parsedate_to_datetime(last_modified)
-                if modified_at.tzinfo is None:
+                if modified_at.tzinfo is None:  # pragma: no cover — defensive for non-standard dates
                     modified_at = modified_at.replace(tzinfo=timezone.utc)
 
         checksum = headers.get("etag")

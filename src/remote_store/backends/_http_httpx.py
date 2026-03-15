@@ -24,18 +24,14 @@ class HttpxTransport:
     def get(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse:
         """Send a GET request."""
         try:
-            resp = self._client.send(
-                self._client.build_request("GET", url, headers=headers),
-                stream=True,
-                timeout=timeout,
-            )
+            resp = self._client.get(url, headers=headers, timeout=timeout)
         except (httpx.ConnectError, httpx.TimeoutException, OSError) as exc:
             raise BackendUnavailable(f"HTTP request failed: {exc}", backend="http") from exc
         resp_headers = {k.lower(): v for k, v in resp.headers.items()}
         return HttpResponse(
             status=resp.status_code,
             headers=resp_headers,
-            body=cast("BinaryIO", io.BytesIO(resp.read())),
+            body=cast("BinaryIO", io.BytesIO(resp.content)),
         )
 
     def head(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse:

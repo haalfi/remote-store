@@ -6,9 +6,21 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from remote_store._errors import BackendUnavailable, CapabilityNotSupported, NotFound, PermissionDenied
-from remote_store._models import FileInfo
-from remote_store.backends._http import ReadOnlyHttpBackend, UrllibTransport
+pytest.importorskip("pytest_httpserver", reason="pytest-httpserver not installed")
+
+from remote_store._errors import BackendUnavailable, CapabilityNotSupported, NotFound, PermissionDenied  # noqa: E402
+from remote_store._models import FileInfo  # noqa: E402
+from remote_store.backends._http import ReadOnlyHttpBackend, UrllibTransport  # noqa: E402
+
+
+def _httpx_installed() -> bool:
+    try:
+        import httpx  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
 
 if TYPE_CHECKING:
     from pytest_httpserver import HTTPServer
@@ -416,3 +428,339 @@ class TestHttpConstructor:
         assert "secret-token" not in r
         assert "***" in r
         assert "Authorization" in r
+
+    def test_verify_ssl_false(self) -> None:
+        """verify_ssl=False creates a permissive SSL context."""
+        b = ReadOnlyHttpBackend(
+            base_url="http://example.com/",
+            http_client="urllib",
+            verify_ssl=False,
+        )
+        transport = b.unwrap(UrllibTransport)
+        assert transport._ssl_context is not None
+        assert transport._ssl_context.check_hostname is False
+
+
+class TestHttpRetry:
+    """HTTP-RETRY-001: Retry with backoff and Retry-After."""
+
+    def test_retry_on_transient_status(self, httpserver: HTTPServer) -> None:
+        """Transient 503 is retried and succeeds on next attempt."""
+        from werkzeug.wrappers import Response as WerkzeugResponse
+
+        call_count = 0
+
+        def handler(request: Request) -> Response:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return WerkzeugResponse(b"unavailable", status=503)
+            return WerkzeugResponse(b"ok", status=200, content_type="text/plain")
+
+        httpserver.expect_request("/retry/file.txt", method="GET").respond_with_handler(handler)
+        from remote_store._config import RetryPolicy
+
+        b = ReadOnlyHttpBackend(
+            base_url=httpserver.url_for("/retry/"),
+            http_client="urllib",
+            retry=RetryPolicy(max_attempts=3, backoff_base=0.01, backoff_max=0.02, jitter=0.0),
+        )
+        assert b.read_bytes("file.txt") == b"ok"
+        assert call_count == 2
+
+    def test_retry_exhausted_returns_last_response(self, httpserver: HTTPServer) -> None:
+        """All attempts fail with transient error -> raises."""
+        httpserver.expect_request("/retry/fail.txt", method="GET").respond_with_data(b"", status=503)
+        from remote_store._config import RetryPolicy
+
+        b = ReadOnlyHttpBackend(
+            base_url=httpserver.url_for("/retry/"),
+            http_client="urllib",
+            retry=RetryPolicy(max_attempts=2, backoff_base=0.01, backoff_max=0.02, jitter=0.0),
+        )
+        with pytest.raises(BackendUnavailable):
+            b.read_bytes("fail.txt")
+
+    def test_retry_honours_retry_after_header(self, httpserver: HTTPServer) -> None:
+        """Retry-After header is used as delay floor."""
+        from werkzeug.wrappers import Response as WerkzeugResponse
+
+        call_count = 0
+
+        def handler(request: Request) -> Response:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return WerkzeugResponse(
+                    b"rate limited",
+                    status=429,
+                    headers={"Retry-After": "0"},
+                )
+            return WerkzeugResponse(b"ok", status=200, content_type="text/plain")
+
+        httpserver.expect_request("/retry/rate.txt", method="GET").respond_with_handler(handler)
+        from remote_store._config import RetryPolicy
+
+        b = ReadOnlyHttpBackend(
+            base_url=httpserver.url_for("/retry/"),
+            http_client="urllib",
+            retry=RetryPolicy(max_attempts=3, backoff_base=0.01, backoff_max=0.02, jitter=0.0),
+        )
+        assert b.read_bytes("rate.txt") == b"ok"
+        assert call_count == 2
+
+    def test_retry_on_connection_error(self, httpserver: HTTPServer) -> None:
+        """Connection errors are retried."""
+        from remote_store._config import RetryPolicy
+
+        # Point at a port that's not listening
+        b = ReadOnlyHttpBackend(
+            base_url="http://127.0.0.1:1/retry/",
+            http_client="urllib",
+            timeout=0.1,
+            retry=RetryPolicy(max_attempts=2, backoff_base=0.01, backoff_max=0.02, jitter=0.0),
+        )
+        with pytest.raises(BackendUnavailable):
+            b.read_bytes("file.txt")
+
+    def test_retry_timeout_aborts_early(self, httpserver: HTTPServer) -> None:
+        """Retry stops when total timeout is exceeded."""
+        httpserver.expect_request("/retry/slow.txt", method="GET").respond_with_data(b"", status=503)
+        from remote_store._config import RetryPolicy
+
+        b = ReadOnlyHttpBackend(
+            base_url=httpserver.url_for("/retry/"),
+            http_client="urllib",
+            retry=RetryPolicy(max_attempts=100, backoff_base=0.01, backoff_max=0.02, jitter=0.0, timeout=0.01),
+        )
+        with pytest.raises(BackendUnavailable):
+            b.read_bytes("slow.txt")
+
+
+class TestHttpErrorPaths:
+    """Additional error path coverage."""
+
+    def test_exists_raises_on_server_error(self, httpserver: HTTPServer) -> None:
+        """exists() raises on 500."""
+        httpserver.expect_request("/errp/err.txt", method="HEAD").respond_with_data(b"", status=500)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/errp/"), http_client="urllib")
+        with pytest.raises(BackendUnavailable):
+            b.exists("err.txt")
+
+    def test_read_raises_on_403(self, httpserver: HTTPServer) -> None:
+        """read() raises PermissionDenied on 403."""
+        httpserver.expect_request("/errp/secret.txt", method="GET").respond_with_data(b"", status=403)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/errp/"), http_client="urllib")
+        with pytest.raises(PermissionDenied):
+            b.read("secret.txt")
+
+    def test_get_file_info_raises_on_403(self, httpserver: HTTPServer) -> None:
+        """get_file_info() raises PermissionDenied on 403."""
+        httpserver.expect_request("/errp/secret.txt", method="HEAD").respond_with_data(b"", status=403)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/errp/"), http_client="urllib")
+        with pytest.raises(PermissionDenied):
+            b.get_file_info("secret.txt")
+
+    def test_health_check_non_2xx_raises(self, httpserver: HTTPServer) -> None:
+        """Health check rejects 403."""
+        httpserver.expect_request("/hc403/", method="HEAD").respond_with_data(b"", status=403)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/hc403/"), http_client="urllib")
+        with pytest.raises(BackendUnavailable, match="403"):
+            b.check_health()
+
+    def test_health_check_connection_refused(self) -> None:
+        """Health check raises BackendUnavailable on connection error."""
+        b = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", http_client="urllib", timeout=0.1)
+        with pytest.raises(BackendUnavailable):
+            b.check_health()
+
+    def test_health_check_generic_exception(self) -> None:
+        """Health check wraps non-BackendUnavailable exceptions."""
+        from unittest.mock import patch
+
+        b = ReadOnlyHttpBackend(base_url="http://example.com/", http_client="urllib")
+        with (
+            patch.object(b._transport, "head", side_effect=RuntimeError("unexpected")),
+            pytest.raises(BackendUnavailable, match="unexpected"),
+        ):
+            b.check_health()
+
+    def test_classify_status_generic(self, httpserver: HTTPServer) -> None:
+        """Unknown status codes map to RemoteStoreError."""
+        from remote_store._errors import RemoteStoreError
+
+        httpserver.expect_request("/errp/teapot.txt", method="GET").respond_with_data(b"", status=418)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/errp/"), http_client="urllib")
+        with pytest.raises(RemoteStoreError, match="418"):
+            b.read_bytes("teapot.txt")
+
+    def test_file_info_simple_name(self, httpserver: HTTPServer) -> None:
+        """FileInfo name for a non-nested path."""
+        httpserver.expect_request("/simple/file.txt", method="HEAD").respond_with_data(
+            b"", status=200, headers={"Content-Length": "5"}
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/simple/"), http_client="urllib")
+        fi = b.get_file_info("file.txt")
+        assert fi.name == "file.txt"
+
+    def test_stream_error_is_mapped(self, httpserver: HTTPServer) -> None:
+        """Stream read errors are mapped to BackendUnavailable."""
+        from unittest.mock import MagicMock
+
+        from remote_store.backends._http import HttpResponse
+
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/stream/"), http_client="urllib")
+        # Create a mock response whose body raises on read
+        broken_body = MagicMock()
+        broken_body.read.side_effect = OSError("connection reset")
+        mock_resp = HttpResponse(status=200, headers={}, body=broken_body)
+        from unittest.mock import patch
+
+        with patch.object(b, "_get", return_value=mock_resp):
+            stream = b.read("data.bin")
+            with pytest.raises(BackendUnavailable, match="Stream error"):
+                stream.read()
+
+
+class TestParseRetryAfter:
+    """Unit tests for _parse_retry_after."""
+
+    def test_integer_seconds(self) -> None:
+        from remote_store.backends._http import _parse_retry_after
+
+        assert _parse_retry_after("120") == 120.0
+
+    def test_none_value(self) -> None:
+        from remote_store.backends._http import _parse_retry_after
+
+        assert _parse_retry_after(None) is None
+
+    def test_empty_string(self) -> None:
+        from remote_store.backends._http import _parse_retry_after
+
+        assert _parse_retry_after("") is None
+
+    def test_http_date(self) -> None:
+        from remote_store.backends._http import _parse_retry_after
+
+        # A date in the past should return 0.0
+        result = _parse_retry_after("Sun, 15 Mar 2020 12:00:00 GMT")
+        assert result == 0.0
+
+    def test_unparseable(self) -> None:
+        from remote_store.backends._http import _parse_retry_after
+
+        assert _parse_retry_after("not-a-date-or-number") is None
+
+
+class TestHttpTransportAutoDetection:
+    """Transport resolution and factory coverage."""
+
+    def test_resolve_requests_transport(self) -> None:
+        """Explicit requests transport can be created (if installed)."""
+        try:
+            b = ReadOnlyHttpBackend(base_url="http://example.com/", http_client="requests")
+            b.close()
+        except ImportError:
+            pytest.skip("requests not installed")
+
+    def test_resolve_httpx_transport(self) -> None:
+        """Explicit httpx transport can be created (if installed)."""
+        try:
+            b = ReadOnlyHttpBackend(base_url="http://example.com/", http_client="httpx")
+            b.close()
+        except ImportError:
+            pytest.skip("httpx not installed")
+
+    def test_auto_detect_falls_back_to_urllib(self) -> None:
+        """Auto-detection eventually falls back to urllib."""
+        from unittest.mock import patch
+
+        with (
+            patch("remote_store.backends._http._make_httpx_transport", side_effect=ImportError),
+            patch("remote_store.backends._http._make_requests_transport", side_effect=ImportError),
+        ):
+            b = ReadOnlyHttpBackend(base_url="http://example.com/")
+            assert isinstance(b.unwrap(UrllibTransport), UrllibTransport)
+            b.close()
+
+
+class TestRequestsTransport:
+    """Tests for the requests-based HTTP transport."""
+
+    def test_get_returns_body(self, httpserver: HTTPServer) -> None:
+        """GET via requests transport returns correct body."""
+        httpserver.expect_request("/req/data.txt", method="GET").respond_with_data(
+            b"requests-body", content_type="text/plain"
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/req/"), http_client="requests")
+        assert b.read_bytes("data.txt") == b"requests-body"
+        b.close()
+
+    def test_head_succeeds(self, httpserver: HTTPServer) -> None:
+        """HEAD via requests transport returns valid FileInfo."""
+        httpserver.expect_request("/req/info.txt", method="HEAD").respond_with_data(
+            b"", status=200, headers={"ETag": '"req-etag"'}
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/req/"), http_client="requests")
+        fi = b.get_file_info("info.txt")
+        assert fi.checksum == '"req-etag"'
+        b.close()
+
+    def test_connection_error_raises(self) -> None:
+        """Connection error raises BackendUnavailable."""
+        b = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", http_client="requests", timeout=0.1)
+        with pytest.raises(BackendUnavailable):
+            b.read_bytes("file.txt")
+        b.close()
+
+    def test_head_connection_error_raises(self) -> None:
+        """HEAD connection error raises BackendUnavailable."""
+        b = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", http_client="requests", timeout=0.1)
+        with pytest.raises(BackendUnavailable):
+            b.exists("file.txt")
+        b.close()
+
+
+_httpx_available = pytest.mark.skipif(
+    not _httpx_installed(),
+    reason="httpx not installed",
+)
+
+
+@_httpx_available
+class TestHttpxTransport:
+    """Tests for the httpx-based HTTP transport."""
+
+    def test_get_returns_body(self, httpserver: HTTPServer) -> None:
+        """GET via httpx transport returns correct body."""
+        httpserver.expect_request("/hx/data.txt", method="GET").respond_with_data(
+            b"httpx-body", content_type="text/plain"
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/hx/"), http_client="httpx")
+        assert b.read_bytes("data.txt") == b"httpx-body"
+        b.close()
+
+    def test_head_succeeds(self, httpserver: HTTPServer) -> None:
+        """HEAD via httpx transport returns valid FileInfo."""
+        httpserver.expect_request("/hx/info.txt", method="HEAD").respond_with_data(
+            b"", status=200, headers={"ETag": '"hx-etag"'}
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/hx/"), http_client="httpx")
+        fi = b.get_file_info("info.txt")
+        assert fi.checksum == '"hx-etag"'
+        b.close()
+
+    def test_connection_error_raises(self) -> None:
+        """Connection error raises BackendUnavailable."""
+        b = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", http_client="httpx", timeout=0.1)
+        with pytest.raises(BackendUnavailable):
+            b.read_bytes("file.txt")
+        b.close()
+
+    def test_head_connection_error_raises(self) -> None:
+        """HEAD connection error raises BackendUnavailable."""
+        b = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", http_client="httpx", timeout=0.1)
+        with pytest.raises(BackendUnavailable):
+            b.exists("file.txt")
+        b.close()
