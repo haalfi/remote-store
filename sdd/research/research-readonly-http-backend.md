@@ -162,7 +162,7 @@ Three implementations: `UrllibTransport`, `RequestsTransport`, `HttpxTransport`.
   `ssl._create_unverified_context()`.
 - **Redirects handled.** `urllib` follows redirects automatically (up to a
   built-in limit). Custom `max_redirects` requires a subclassed handler.
-- **Streaming works.** Response object supports chunked `read(size)`. See SS6
+- **Streaming works.** Response object supports chunked `read(size)`. See §11
   for details.
 
 ---
@@ -191,12 +191,12 @@ Every Backend ABC method and its HTTP implementation:
 
 | Method | Implementation | Notes |
 |--------|---------------|-------|
-| `name` | `"http"` | See SS7 Q1 for naming rationale |
+| `name` | `"http"` | See §18 Q1 for naming rationale |
 | `capabilities` | `{READ, METADATA}` | Fixed set |
 | `exists(path)` | `HEAD` -> 200=True, 404=False | |
 | `is_file(path)` | `HEAD` -> 200=True, 404=False | HTTP resources are always "files" |
 | `is_folder(path)` | Always `False` | No folder concept without LIST |
-| `read(path)` | `GET` -> `_ErrorMappingStream(response)` | Non-seekable stream, see SS6 |
+| `read(path)` | `GET` -> `_ErrorMappingStream(response)` | Non-seekable stream, see §11 |
 | `read_bytes(path)` | `GET` -> `response.read()` | Fully buffered |
 | `write(...)` | Raise `CapabilityNotSupported` | |
 | `write_atomic(...)` | Raise `CapabilityNotSupported` | |
@@ -206,7 +206,7 @@ Every Backend ABC method and its HTTP implementation:
 | `list_files(...)` | Raise `CapabilityNotSupported` | |
 | `list_folders(...)` | Raise `CapabilityNotSupported` | |
 | `iter_children(...)` | Raise `CapabilityNotSupported` | Default impl calls list_files+list_folders; override to raise directly |
-| `get_file_info(path)` | `HEAD` -> `FileInfo(...)` | See SS6.3 for field mapping |
+| `get_file_info(path)` | `HEAD` -> `FileInfo(...)` | See §12 for field mapping |
 | `get_folder_info(path)` | Raise `CapabilityNotSupported` | No folder concept |
 | `move(...)` | Raise `CapabilityNotSupported` | |
 | `copy(...)` | Raise `CapabilityNotSupported` | |
@@ -296,14 +296,14 @@ Note: `ext.glob` requires LIST capability, so it won't work with this backend.
 
 ### 10.1 Current state of capability-gating
 
-The conformance suite (`tests/backends/test_conformance.py`) has 15 test
-classes with ~59 test methods. Only two capabilities are currently gated:
+The conformance suite (`tests/backends/test_conformance.py`) has 19 test
+classes with 69 test methods. Only two capabilities are currently gated:
 
 | Capability | Gated? | Tests |
 |------------|--------|-------|
 | ATOMIC_WRITE | Yes | 7 tests skip cleanly |
 | GLOB | Yes | 2 tests skip cleanly |
-| WRITE, DELETE, LIST, MOVE, COPY, METADATA | **No** | ~40 tests have no capability checks |
+| WRITE, DELETE, LIST, MOVE, COPY, METADATA | **No** | ~50 tests have no capability checks |
 
 ### 10.2 What breaks for a {READ, METADATA} backend
 
@@ -331,6 +331,7 @@ because the backend can't read, but because the test can't set up fixtures.
 | Test Class | Why |
 |------------|-----|
 | `TestBackendIdentity` | Only checks name, capabilities, repr |
+| `TestStreamingConformance` | Tests chunked read, context manager; no seekability requirement |
 | `TestBackendWriteAtomic` | Already gated on ATOMIC_WRITE |
 | `TestBackendOpenAtomic` | Already gated on ATOMIC_WRITE |
 | `TestBackendLifecycle` | Only checks that `close()` is callable |
@@ -431,8 +432,13 @@ close.
 | `extra` | All response headers | `{"headers": dict(response.headers)}` |
 
 **Notes:**
-- `Content-Length` is absent for chunked responses and some CDNs. Using `0`
-  is honest -- the size is unknown, not zero. Document this.
+- `Content-Length` is absent for chunked responses and some CDNs. Using `0` as
+  a fallback is imperfect -- code checking `file_info.size == 0` (e.g.,
+  skip-empty-file logic, progress bars, `ext.transfer` pre-allocation) would
+  misinterpret "unknown" as "zero bytes". Since `FileInfo.size` is `int` (not
+  `Optional[int]`), there is no clean sentinel today. The spec should note this
+  as a known limitation that may warrant making `size` Optional in a future
+  `FileInfo` revision.
 - `Last-Modified` is absent on many static file hosts and CDNs. Using
   `datetime.min` signals "unknown" without requiring an Optional field change.
 - `ETag` maps naturally to `checksum` -- both are opaque identifiers for
@@ -526,7 +532,7 @@ Tested against representative public endpoints to validate assumptions:
 | urllib can't produce conformant streams | **Low** | High | Verified: `_ErrorMappingStream` wraps HTTPResponse correctly (SS11) |
 | Conformance suite changes break other backends | Low | Medium | Changes are additive (capability gates); existing backends unaffected |
 | Scope creep toward WebDAV/write support | Medium | Medium | Hard boundary: backend name is `http`, not `webdav`; no write methods |
-| `Content-Length` missing breaks FileInfo | **Low** | Low | Use `size=0` fallback; document in API docs |
+| `Content-Length` missing breaks FileInfo | **Low** | Medium | Use `size=0` fallback; document as known limitation (see §12) |
 | Connection leak from unclosed streams | Medium | Medium | Same risk as S3/SFTP; `_ErrorMappingStream.close()` handles cleanup |
 | urllib SSL issues on older Python | Low | Low | `ssl.create_default_context()` works on Python 3.10+ |
 
