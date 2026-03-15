@@ -37,7 +37,7 @@ Project convention: `Yes` / `--` (dash), never `Yes` / `No`.
 
 - [ ] **T-12** `docs-src/capabilities-matrix.md` lines 12-20 -- replace HTML entity checkmarks with `Yes` / `--`
 - [ ] **T-13** `guides/cache.md` line 45 -- replace bold `**No**` with `--`
-- [ ] **T-14** Normalize all 7 files to `Yes` / `--` convention
+- [ ] **T-14** Normalize all 6 files to `Yes` / `--` convention
 
 ---
 

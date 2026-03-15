@@ -37,7 +37,7 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **ID-085 — Docs quick fixes: dashes, See also, table booleans, SFTP blockquotes**
+- [ ] **BK-007 — Docs quick fixes: dashes, See also, table booleans, SFTP blockquotes**
   Fix the four medium-severity findings from
   [Audit 004](audits/audit-004-docs-structural-consistency.md):
   AF-041 (normalize `—` → `--` in 6 guides),
