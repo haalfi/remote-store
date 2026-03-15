@@ -2,7 +2,7 @@
 
 **Item ID:** ID-082
 **Date:** 2026-03-15
-**Status:** Research draft — open for discussion
+**Status:** Research complete -- ready for spec consideration
 
 ---
 
@@ -13,17 +13,16 @@ government open data portals (opendata.swiss, data.gov), dataset registries,
 static file servers, CDN-hosted assets, package registries, etc.
 
 Today, consuming these in remote-store requires downloading files first and
-pointing a `LocalBackend` at them — or writing ad-hoc `requests` code outside
+pointing a `LocalBackend` at them -- or writing ad-hoc `requests` code outside
 the store abstraction entirely. This means users lose composability with
 extensions like `ext.cache`, `ext.transfer`, `ext.observe`, and `ext.batch`.
 
 A `ReadOnlyHttpBackend` would bring HTTP-hosted content into the store
-abstraction with minimal capabilities: **READ** and **METADATA**, and
-optionally **LIST** where the server supports directory-style listings.
+abstraction with minimal capabilities: **READ** and **METADATA**.
 
 ### Why a backend, not an extension?
 
-An extension cannot provide `Store.read()` — it would need to reimplement the
+An extension cannot provide `Store.read()` -- it would need to reimplement the
 entire `Store` interface. A backend slots into the existing architecture
 naturally: capability gating, error mapping, registry lifecycle, and all
 extensions work out of the box.
@@ -33,32 +32,31 @@ extensions work out of the box.
 - Core package has **zero runtime dependencies** (`dependencies = []`).
 - HTTP library must be optional (`urllib` from stdlib as baseline, `requests`
   or `httpx` as optional extras).
-- The backend is **read-only** — write, delete, move, copy operations raise
+- The backend is **read-only** -- write, delete, move, copy operations raise
   `CapabilityNotSupported`.
 - Must handle real-world HTTP concerns: redirects, content-type, timeouts,
-  retries, auth headers.
+  auth headers.
 
 ---
 
 ## 2. Capability Profile
 
-| Capability     | Supported | Notes |
-|----------------|:---------:|-------|
-| READ           | Yes       | Core value: `GET` request, return body as stream |
-| WRITE          | No        | Raises `CapabilityNotSupported` |
-| DELETE         | No        | Raises `CapabilityNotSupported` |
-| LIST           | Maybe     | Only if server exposes an index (see §5) |
-| MOVE           | No        | Raises `CapabilityNotSupported` |
-| COPY           | No        | Raises `CapabilityNotSupported` |
-| ATOMIC_WRITE   | No        | Raises `CapabilityNotSupported` |
-| METADATA       | Yes       | `HEAD` request → size, content-type, last-modified, ETag |
-| GLOB           | No        | No server-side pattern matching |
+| Capability   | Supported | Notes |
+|--------------|:---------:|-------|
+| READ         | Yes       | Core value: `GET` request, return body as stream |
+| WRITE        | --        | Raises `CapabilityNotSupported` |
+| DELETE       | --        | Raises `CapabilityNotSupported` |
+| LIST         | --        | No reliable server-side mechanism (see SS5) |
+| MOVE         | --        | Raises `CapabilityNotSupported` |
+| COPY         | --        | Raises `CapabilityNotSupported` |
+| ATOMIC_WRITE | --        | Raises `CapabilityNotSupported` |
+| METADATA     | Yes       | `HEAD` request -> size, content-type, last-modified, ETag |
+| GLOB         | --        | No server-side pattern matching |
 
-**Minimum capability set:** `{READ, METADATA}`
-**Extended capability set:** `{READ, METADATA, LIST}` (when listing is available)
+**Capability set:** `{READ, METADATA}`
 
-This would be the first backend with fewer than 8 capabilities. The capability
-system already handles this — `Store` gates every operation and raises
+This would be the first backend with only 2 capabilities. The capability
+system already handles this -- `Store` gates every operation and raises
 `CapabilityNotSupported` with clear context.
 
 ---
@@ -72,29 +70,46 @@ The backend takes a `base_url` at construction. Paths are appended:
 ```python
 backend = ReadOnlyHttpBackend(base_url="https://data.example.com/datasets/")
 # store.read("population/2024.csv")
-# → GET https://data.example.com/datasets/population/2024.csv
+# -> GET https://data.example.com/datasets/population/2024.csv
 ```
 
-Path joining uses `urllib.parse.urljoin` with care for trailing slashes.
+### 3.2 The `urljoin` trailing-slash footgun
 
-### 3.2 Path validation
+`urllib.parse.urljoin` has surprising behavior with trailing slashes:
+
+```python
+urljoin("https://example.com/data", "file.csv")
+# -> "https://example.com/file.csv"  (WRONG -- replaces last segment)
+
+urljoin("https://example.com/data/", "file.csv")
+# -> "https://example.com/data/file.csv"  (correct)
+```
+
+**Mitigation:** The constructor normalizes `base_url` to always end with `/`.
+Path construction uses simple string concatenation (`base_url + quote(path)`)
+rather than `urljoin`, avoiding the footgun entirely. `urljoin` is only needed
+if we ever support relative `../` paths, which we don't (path validation
+rejects `..`).
+
+### 3.3 Path validation
 
 - Standard remote-store path rules apply (no `..`, no null bytes, no absolute
   paths).
-- The backend does **not** URL-encode user-visible paths — encoding happens
-  internally when constructing the request URL.
+- The backend URL-encodes paths internally via `urllib.parse.quote(path,
+  safe="/")` when constructing request URLs. User-visible paths remain
+  unencoded.
 
-### 3.3 `native_path()` and `to_key()`
+### 3.4 `native_path()` and `to_key()`
 
-- `native_path(path)` → full URL string (e.g.,
+- `native_path(path)` -> full URL string (e.g.,
   `"https://data.example.com/datasets/population/2024.csv"`)
-- `to_key(native_path)` → strips `base_url` prefix, returns relative key
+- `to_key(native_path)` -> strips `base_url` prefix, returns relative key
 
 ---
 
 ## 4. HTTP Library Strategy
 
-### 4.1 Tiered approach (like S3 vs S3-PyArrow)
+### 4.1 Tiered approach
 
 | Tier | Library | Dependency | Pros | Cons |
 |------|---------|------------|------|------|
@@ -108,9 +123,9 @@ Path joining uses `urllib.parse.urljoin` with care for trailing slashes.
 library (the S3 vs S3-PyArrow model), use a single `ReadOnlyHttpBackend` that
 auto-detects the best available library at init:
 
-1. If `httpx` is installed → use it (best feature set)
-2. Else if `requests` is installed → use it (most common)
-3. Else → fall back to `urllib.request` (always available)
+1. If `httpx` is installed -> use it (best feature set)
+2. Else if `requests` is installed -> use it (most common)
+3. Else -> fall back to `urllib.request` (always available)
 
 User can override: `ReadOnlyHttpBackend(base_url=..., http_client="urllib")`.
 
@@ -127,116 +142,95 @@ Internal protocol (not user-facing):
 class HttpTransport(Protocol):
     def get(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse: ...
     def head(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse: ...
+    def close(self) -> None: ...
 
 @dataclass
 class HttpResponse:
     status: int
     headers: dict[str, str]
-    body: BinaryIO  # streaming body
+    body: BinaryIO  # streaming body (only meaningful for GET)
 ```
 
 Three implementations: `UrllibTransport`, `RequestsTransport`, `HttpxTransport`.
 
----
+### 4.4 urllib limitations (verified)
 
-## 5. LIST Capability — The Hard Question
-
-HTTP has no native directory listing. Options:
-
-### 5.1 No LIST at all
-
-Simplest. The backend declares `{READ, METADATA}` only. Users who need listing
-use an external catalog (API, manifest file, database) to discover paths, then
-`store.read()` each one.
-
-**Pro:** Clean, honest, no hacks.
-**Con:** Many real use cases need "give me all CSVs in this folder."
-
-### 5.2 Manifest-based LIST
-
-The backend reads a sidecar file (e.g., `_manifest.json`, `_index.txt`) that
-lists available paths. The manifest is fetched on first `list_files()` call and
-cached.
-
-```json
-// _manifest.json at base_url root
-{
-  "files": [
-    {"path": "population/2024.csv", "size": 14200, "modified": "2024-01-15T10:00:00Z"},
-    {"path": "population/2023.csv", "size": 13800, "modified": "2023-01-10T08:00:00Z"}
-  ]
-}
-```
-
-**Pro:** Works with any static file host. Users control the manifest.
-**Con:** Requires manifest maintenance. Stale manifest = stale listing.
-
-### 5.3 HTML index parsing
-
-Some HTTP servers (Apache, nginx) serve directory listings as HTML. The backend
-could parse `<a href="...">` links from `GET base_url/path/`.
-
-**Pro:** Works with many static servers out of the box.
-**Con:** Fragile (HTML parsing), unreliable (servers differ), security risk
-(arbitrary HTML).
-
-### 5.4 API-specific listing
-
-For known APIs (CKAN, OData, S3-compatible), implement listing via the API's
-native mechanism. This belongs in **extensions**, not the core backend.
-
-### 5.5 Recommendation
-
-**Start with no LIST.** The backend declares `{READ, METADATA}`. Add
-manifest-based LIST later if demand justifies it, via an optional
-`manifest_path` constructor argument that upgrades the capability set to
-`{READ, METADATA, LIST}`.
-
-HTML parsing is too fragile for a library. API-specific listing belongs in
-focused extensions (e.g., `ext.opendata`, `ext.ckan`).
+- **No connection pooling.** Each request opens a new TCP connection. Fine for
+  occasional reads; poor for batch operations. `requests`/`httpx` sessions
+  solve this.
+- **No async.** Acceptable -- all existing backends are sync.
+- **SSL works.** `urllib.request.urlopen` validates TLS certificates by default
+  via `ssl.create_default_context()`. `verify_ssl=False` would use
+  `ssl._create_unverified_context()`.
+- **Redirects handled.** `urllib` follows redirects automatically (up to a
+  built-in limit). Custom `max_redirects` requires a subclassed handler.
+- **Streaming works.** Response object supports chunked `read(size)`. See SS6
+  for details.
 
 ---
 
-## 6. Abstract Method Implementation Plan
+## 5. LIST Capability -- Why Not
 
-How each Backend ABC method maps to HTTP:
+HTTP has no native directory listing. The options considered:
 
-| Method | Implementation |
-|--------|---------------|
-| `name` | `"http"` |
-| `capabilities` | `{READ, METADATA}` (or `+LIST` with manifest) |
-| `exists(path)` | `HEAD` request → `True` if 200, `False` if 404 |
-| `is_file(path)` | `HEAD` request → `True` if 200, `False` if 404 (HTTP resources are always "files") |
-| `is_folder(path)` | `False` unless LIST is enabled and path is a known prefix |
-| `read(path)` | `GET` → return response body as `BinaryIO` stream |
-| `read_bytes(path)` | `GET` → return response body as `bytes` |
-| `write(...)` | Raise `CapabilityNotSupported` |
-| `write_atomic(...)` | Raise `CapabilityNotSupported` |
-| `open_atomic(...)` | Raise `CapabilityNotSupported` |
-| `delete(...)` | Raise `CapabilityNotSupported` |
-| `delete_folder(...)` | Raise `CapabilityNotSupported` |
-| `list_files(...)` | Raise `CapabilityNotSupported` (or manifest-based) |
-| `list_folders(...)` | Raise `CapabilityNotSupported` (or manifest-based) |
-| `get_file_info(path)` | `HEAD` → `FileInfo(size=Content-Length, modified_at=Last-Modified, content_type=Content-Type, checksum=ETag)` |
-| `get_folder_info(path)` | Raise `CapabilityNotSupported` (or manifest-based) |
-| `move(...)` | Raise `CapabilityNotSupported` |
-| `copy(...)` | Raise `CapabilityNotSupported` |
-| `check_health()` | `HEAD base_url` → raise `BackendUnavailable` on failure |
-| `native_path(path)` | Return full URL |
-| `to_key(url)` | Strip `base_url` prefix |
+| Approach | Verdict | Reason |
+|----------|---------|--------|
+| No LIST | **Chosen** | Clean, honest, no hacks |
+| Manifest-based LIST | Deferred | Requires user to maintain sidecar file; could add later via `manifest_path` param |
+| HTML index parsing | Rejected | Fragile (HTML varies by server), security risk (arbitrary HTML) |
+| API-specific listing | Out of scope | Belongs in focused extensions (e.g., `ext.ckan`) |
+
+Users who need listing use an external catalog (API, manifest, database) to
+discover paths, then `store.read()` each one. If demand justifies it, a
+`manifest_path` constructor argument could upgrade the capability set to
+`{READ, METADATA, LIST}` in a future phase.
+
+---
+
+## 6. Complete Method Mapping
+
+Every Backend ABC method and its HTTP implementation:
+
+| Method | Implementation | Notes |
+|--------|---------------|-------|
+| `name` | `"http"` | See SS7 Q1 for naming rationale |
+| `capabilities` | `{READ, METADATA}` | Fixed set |
+| `exists(path)` | `HEAD` -> 200=True, 404=False | |
+| `is_file(path)` | `HEAD` -> 200=True, 404=False | HTTP resources are always "files" |
+| `is_folder(path)` | Always `False` | No folder concept without LIST |
+| `read(path)` | `GET` -> `_ErrorMappingStream(response)` | Non-seekable stream, see SS6 |
+| `read_bytes(path)` | `GET` -> `response.read()` | Fully buffered |
+| `write(...)` | Raise `CapabilityNotSupported` | |
+| `write_atomic(...)` | Raise `CapabilityNotSupported` | |
+| `open_atomic(...)` | Raise `CapabilityNotSupported` | |
+| `delete(...)` | Raise `CapabilityNotSupported` | |
+| `delete_folder(...)` | Raise `CapabilityNotSupported` | |
+| `list_files(...)` | Raise `CapabilityNotSupported` | |
+| `list_folders(...)` | Raise `CapabilityNotSupported` | |
+| `iter_children(...)` | Raise `CapabilityNotSupported` | Default impl calls list_files+list_folders; override to raise directly |
+| `get_file_info(path)` | `HEAD` -> `FileInfo(...)` | See SS6.3 for field mapping |
+| `get_folder_info(path)` | Raise `CapabilityNotSupported` | No folder concept |
+| `move(...)` | Raise `CapabilityNotSupported` | |
+| `copy(...)` | Raise `CapabilityNotSupported` | |
+| `glob(...)` | Raise `CapabilityNotSupported` | Default impl already does this |
+| `check_health()` | `HEAD base_url` -> raise `BackendUnavailable` on failure | |
+| `native_path(path)` | Return full URL string | |
+| `to_key(url)` | Strip `base_url` prefix | |
+| `close()` | Close transport (connection pool if applicable) | No-op for urllib |
+| `unwrap(type_hint)` | Return underlying transport if type matches | e.g., `unwrap(httpx.Client)` |
 
 ---
 
 ## 7. Error Mapping
 
-| HTTP Status | remote-store Error |
-|-------------|-------------------|
-| 200, 204    | Success |
-| 301, 302, 307, 308 | Follow redirect (up to limit), then map final status |
-| 401, 403    | `PermissionDenied` |
-| 404         | `NotFound` |
-| 408, 429, 500, 502, 503, 504 | `BackendUnavailable` (transient, retryable) |
-| Other 4xx   | `RemoteStoreError` (generic) |
+| HTTP Status | remote-store Error | Notes |
+|-------------|-------------------|-------|
+| 200, 204 | Success | |
+| 301, 302, 307, 308 | Follow redirect (up to limit) | Map final status |
+| 401, 403 | `PermissionDenied` | |
+| 404 | `NotFound` | |
+| 408, 429, 500, 502, 503, 504 | `BackendUnavailable` | Transient |
+| Other 4xx | `RemoteStoreError` | Generic |
 
 ---
 
@@ -286,115 +280,378 @@ This is the primary value of making it a backend vs. standalone code:
 
 | Extension | Benefit |
 |-----------|---------|
-| `ext.cache` | TTL-based caching of `read()` results — critical for HTTP, avoids repeated downloads |
-| `ext.transfer` | `download(store, "dataset.csv", local_path)` — works out of the box |
+| `ext.cache` | TTL-based caching of `read()` results -- critical for HTTP, avoids repeated downloads |
+| `ext.transfer` | `download(store, "dataset.csv", local_path)` -- works out of the box |
 | `ext.observe` | Instrument HTTP reads with callbacks (timing, logging) |
-| `ext.batch` | `batch_exists(store, paths)` — check multiple resources |
-| `ext.glob` | `glob_files(store, "*.csv")` — works if LIST is available |
+| `ext.batch` | `batch_exists(store, paths)` -- check multiple resources |
+| `ext.arrow` | `read_table(store, "data.parquet")` -- read remote Parquet/CSV via PyArrow |
 
 The `ext.cache` composability alone justifies the backend approach over ad-hoc
 HTTP code.
 
----
-
-## 10. Testing Strategy
-
-### 10.1 Unit tests (no network)
-
-- Mock the `HttpTransport` protocol
-- Verify path construction, error mapping, capability gating
-- Test all three transport implementations against a mock server
-
-### 10.2 Integration tests
-
-- Use `pytest-httpserver` or `responses` / `respx` for deterministic HTTP
-  mocking
-- Test redirects, auth headers, timeouts, error codes
-- No real network calls in CI
-
-### 10.3 Conformance tests
-
-- Run the shared backend conformance suite
-- Expected: all read/metadata tests pass, all write/delete tests raise
-  `CapabilityNotSupported`
-- This will be the first backend where the conformance suite has a significant
-  number of expected `CapabilityNotSupported` results — may need conformance
-  suite adjustments
+Note: `ext.glob` requires LIST capability, so it won't work with this backend.
 
 ---
 
-## 11. Open Questions
+## 10. Conformance Suite Impact
 
-1. **Backend name:** `"http"` or `"http-readonly"` or `"web"`?
-   `"http"` is cleanest but could be confused with a future read-write
-   WebDAV backend.
+### 10.1 Current state of capability-gating
 
-2. **Should `is_folder()` always return `False`?** HTTP doesn't have folders.
-   But if we add manifest-based LIST, folder prefixes become meaningful.
-   Starting with `False` and evolving seems safest.
+The conformance suite (`tests/backends/test_conformance.py`) has 15 test
+classes with ~59 test methods. Only two capabilities are currently gated:
 
-3. **Streaming vs. buffered reads:** Should `read()` return a streaming
-   response (memory-efficient for large files) or buffer the full response?
-   Other backends stream, so streaming is consistent — but HTTP streaming
-   requires keeping the connection open, which has lifecycle implications.
+| Capability | Gated? | Tests |
+|------------|--------|-------|
+| ATOMIC_WRITE | Yes | 7 tests skip cleanly |
+| GLOB | Yes | 2 tests skip cleanly |
+| WRITE, DELETE, LIST, MOVE, COPY, METADATA | **No** | ~40 tests have no capability checks |
 
-4. **Retry policy:** Should the backend have its own retry logic, or defer to
-   the future `RetryPolicy` from ID-010? Deferring is cleaner but means no
-   retries until ID-010 lands. A simple 1-retry for 429/503 with
-   `Retry-After` header respect might be pragmatic.
+### 10.2 What breaks for a {READ, METADATA} backend
 
-5. **Extra dependency group name:** `pip install remote-store[http]`? The
-   baseline works with zero deps (urllib), so the extra is truly optional.
-   Maybe `pip install remote-store[httpx]` to align with the library name.
+Most test classes set up test data by calling `backend.write()` before
+asserting read behavior. This means even read/metadata tests will fail -- not
+because the backend can't read, but because the test can't set up fixtures.
 
-6. **Conformance suite changes:** The current conformance tests likely assume
-   all backends support write. Need to check whether the suite handles
-   partial capabilities or needs gating.
+**Tests that would need changes:**
+
+| Test Class | Issue | Fix |
+|------------|-------|-----|
+| `TestBackendExists` | Calls `write()` in setup | Gate on WRITE or use pre-seeded fixture |
+| `TestBackendFileFolder` | Calls `write()` in setup | Gate on WRITE |
+| `TestBackendRead` | Calls `write()` in setup | Gate on WRITE or pre-seed |
+| `TestBackendWrite` | Tests write operations | Gate on WRITE |
+| `TestBackendDelete` | Tests delete operations | Gate on DELETE |
+| `TestBackendListing` | Tests list operations | Gate on LIST |
+| `TestBackendIterChildren` | Tests list operations | Gate on LIST |
+| `TestBackendMetadata` | Calls `write()` in setup | Gate on WRITE or pre-seed |
+| `TestBackendMove` | Tests move operations | Gate on MOVE |
+| `TestBackendCopy` | Tests copy operations | Gate on COPY |
+
+**Tests that pass as-is:**
+
+| Test Class | Why |
+|------------|-----|
+| `TestBackendIdentity` | Only checks name, capabilities, repr |
+| `TestBackendWriteAtomic` | Already gated on ATOMIC_WRITE |
+| `TestBackendOpenAtomic` | Already gated on ATOMIC_WRITE |
+| `TestBackendLifecycle` | Only checks that `close()` is callable |
+| `TestBackendGlob` | Already gated on GLOB |
+| `TestBackendUnwrap` | Only checks unwrap raises or returns |
+| `TestBackendNativePath` | Only checks path round-trip |
+| `TestBackendToKey` | Only checks key conversion |
+
+### 10.3 Proposed conformance changes
+
+Two-pronged approach:
+
+1. **Add capability gates** to test classes that test write/delete/move/copy
+   operations. Pattern: `if not backend.capabilities.supports(Capability.X):
+   pytest.skip(...)`. This is the same pattern already used for ATOMIC_WRITE
+   and GLOB. Straightforward, ~15 lines of changes.
+
+2. **Pre-seeded fixture for read-only backends.** Tests that verify read
+   behavior (`TestBackendRead`, `TestBackendMetadata`, `TestBackendExists`)
+   need test data. For writable backends, they create it inline. For
+   read-only backends, provide a `conftest.py` fixture that pre-seeds the
+   HTTP mock server with test files. The conformance test checks
+   `backend.capabilities.supports(Capability.WRITE)` -- if true, write
+   inline; if false, assume the fixture pre-seeded the data.
+
+**Estimated effort:** Small. The capability-gating pattern is established.
+The pre-seeded fixture is the only new concept, and it's just a
+`pytest-httpserver` fixture that serves a few static files.
 
 ---
 
-## 12. Phased Approach
+## 11. Stream Lifecycle (`read()` return value)
 
-### Phase 1 — Minimal viable backend
-- `ReadOnlyHttpBackend` with `{READ, METADATA}` capabilities
-- `urllib.request` transport only (zero deps)
-- Basic error mapping, timeout, custom headers
-- Unit tests with mocked HTTP
+### 11.1 What the spec requires (SIO-001)
 
-### Phase 2 — Transport options
-- `RequestsTransport` and `HttpxTransport`
-- Optional extras: `remote-store[requests]`, `remote-store[httpx]`
-- Connection pooling, session reuse
+From spec `006-streaming-io.md`: "The returned stream is not guaranteed to be
+seekable. Seekability is a backend-level property (e.g. local files are
+seekable, HTTP-based streams typically are not), not a Store API contract."
 
-### Phase 3 — LIST support
-- Optional manifest-based listing (`manifest_path` parameter)
-- Capability set upgrades to `{READ, METADATA, LIST}` when manifest is
-  configured
+The streaming conformance tests (`TestStreamingConformance`) verify:
+- Stream is not a `BytesIO` wrapper (must be a real stream)
+- Chunked `read(size)` works
+- Stream supports context manager protocol
+- **Seekability is NOT tested as a requirement**
 
-### Phase 4 — Ecosystem extensions (separate items)
-- `ext.opendata` — CKAN/DCAT API wrapper (opendata.swiss, data.gov)
-- `ext.webdav` — read-write HTTP backend (different backend entirely)
+### 11.2 urllib.request response as BinaryIO
+
+`urllib.request.urlopen()` returns `http.client.HTTPResponse`, which:
+- Inherits from `io.BufferedIOBase` (not `RawIOBase`)
+- Supports: `read(size)`, `readline(size)`, `readinto(b)`, `close()`
+- Reports `seekable() -> False`
+- Has `__enter__`/`__exit__` (context manager)
+
+### 11.3 Wrapping with `_ErrorMappingStream`
+
+`_ErrorMappingStream` delegates all I/O to the inner stream and maps
+exceptions to remote-store errors. It handles imperfect streams gracefully:
+- `seek()` returning `None` (paramiko quirk) -> falls back to `tell()`
+- `seekable()` missing -> returns `False`
+- `tell()` returning `None` -> returns `0`
+- `close()` exceptions -> suppressed
+
+**Verdict: `_ErrorMappingStream(http_response, ...)` works directly.**
+
+Do NOT wrap in `io.BufferedReader` -- unlike S3/SFTP backends, the HTTP
+response is already buffered (`BufferedIOBase`). Double-buffering would be
+wasteful and could cause issues.
+
+Return pattern:
+```python
+def read(self, path: str) -> BinaryIO:
+    response = self._transport.get(self._url(path), ...)
+    return cast("BinaryIO", _ErrorMappingStream(response.body, self._classify_error, path))
+```
+
+### 11.4 Connection lifecycle
+
+The HTTP connection stays open while the stream is open. This is the same
+pattern as S3 (s3fs holds the connection) and SFTP (paramiko holds the
+channel). The stream's `close()` releases the connection.
+
+For urllib, this means one TCP connection per open stream. For
+requests/httpx with session pooling, the connection returns to the pool on
+close.
 
 ---
 
-## 13. Prior Art & References
+## 12. FileInfo Field Mapping from HTTP Headers
 
-- **fsspec `HTTPFileSystem`:** Read-only HTTP filesystem in the fsspec
-  ecosystem. Supports directory listing via HTML parsing. Good validation
-  that the concept works, but we'd avoid HTML parsing.
-- **smart_open:** Supports HTTP URLs for reading. Streaming-focused.
-- **CKAN API:** `/api/3/action/package_show`, `/api/3/action/resource_show` —
-  structured JSON endpoints for dataset discovery.
+| FileInfo field | HTTP header | Handling when missing |
+|---------------|-------------|---------------------|
+| `path` | From request path | Always available |
+| `name` | From path | Always available |
+| `size` | `Content-Length` | `0` if missing (chunked transfer, dynamic content) |
+| `modified_at` | `Last-Modified` | `datetime.min` if missing (epoch fallback) |
+| `checksum` | `ETag` | `None` (optional field) |
+| `content_type` | `Content-Type` | `None` (optional field) |
+| `extra` | All response headers | `{"headers": dict(response.headers)}` |
+
+**Notes:**
+- `Content-Length` is absent for chunked responses and some CDNs. Using `0`
+  is honest -- the size is unknown, not zero. Document this.
+- `Last-Modified` is absent on many static file hosts and CDNs. Using
+  `datetime.min` signals "unknown" without requiring an Optional field change.
+- `ETag` maps naturally to `checksum` -- both are opaque identifiers for
+  content versioning. Useful for `ext.cache` integration.
 
 ---
 
-## 14. Recommendation
+## 13. Prior Art
 
-**Proceed with a spec.** The backend fits naturally into the existing
-architecture, the capability system handles read-only gracefully, and the
-composability with `ext.cache` and `ext.transfer` delivers real value. The
-phased approach keeps scope manageable.
+### 13.1 fsspec `HTTPFileSystem`
 
-Suggested next steps:
-1. Add **ID-082** to `BACKLOG.md` (Parking Lot)
-2. Write spec when ready to prioritize
+The most directly comparable implementation. Key observations:
+
+- **Scope:** Read-only HTTP access with optional directory listing via HTML
+  parsing. Also supports `aiohttp` for async.
+- **Listing:** Parses `<a href="...">` from HTML directory indexes. Fragile --
+  different servers produce different HTML. Many endpoints don't serve
+  directory listings at all.
+- **Streaming:** Uses `aiohttp` / `requests` response objects directly. Wraps
+  in a custom `HTTPFile` class that supports seeking via HTTP Range requests.
+- **Range requests:** `HTTPFile` implements `seek()` + `read()` via
+  `Range: bytes=N-M` headers. Clever but adds complexity and depends on server
+  support (`Accept-Ranges: bytes`).
+- **Relevance to us:** Validates the concept. We skip HTML listing (fragile)
+  and Range-based seeking (complexity without clear demand). Can revisit Range
+  requests later if users need seekable HTTP streams.
+
+### 13.2 smart_open
+
+- **Scope:** Unified `open()` for local, S3, GCS, Azure, HTTP, HDFS.
+- **HTTP support:** `smart_open.open("https://...")` returns a streaming
+  reader. Uses `requests` under the hood.
+- **Design:** Single function, not a filesystem abstraction. No listing,
+  metadata, or composability story.
+- **Relevance:** Confirms that a simple HTTP read adapter has demand. Our
+  backend adds the full store abstraction on top.
+
+### 13.3 Hugging Face Hub
+
+- **Scope:** `hf_hub_download()` downloads model/dataset files from the HF
+  Hub API.
+- **Design:** API-specific (uses HF's Git-LFS-backed API), not generic HTTP.
+  Handles auth, caching, resumable downloads.
+- **Relevance:** Shows that domain-specific HTTP access belongs in extensions,
+  not the base backend. Validates our "generic HTTP backend + domain extensions"
+  architecture.
+
+### 13.4 DVC (Data Version Control)
+
+- **Scope:** `dvc import-url https://...` imports remote files into DVC
+  tracking.
+- **HTTP support:** Downloads via `requests`, stores hash, can check
+  `If-None-Match` / `ETag` for change detection.
+- **Relevance:** Validates ETag -> checksum mapping and the `ext.cache`
+  integration pattern (check ETag before re-downloading).
+
+---
+
+## 14. Real-World HTTP Endpoint Behavior
+
+Tested against representative public endpoints to validate assumptions:
+
+| Endpoint | Content-Length | Last-Modified | ETag | HEAD | Redirects |
+|----------|:-------------:|:-------------:|:----:|:----:|:---------:|
+| GitHub raw (raw.githubusercontent.com) | Yes | Yes | Yes (weak) | Yes | Yes (1 redirect from github.com) |
+| PyPI simple index (pypi.org) | Yes | -- | Yes | Yes | Yes (http->https) |
+| PyPI package files (files.pythonhosted.org) | Yes | Yes | Yes | Yes | -- |
+| opendata.swiss (lindas API) | Varies | -- | -- | Yes | -- |
+| CDN-hosted static files (typical) | Yes | Yes | Yes | Yes | -- |
+
+**Findings:**
+- `HEAD` is universally supported -- `exists()` and `get_file_info()` are safe.
+- `Content-Length` is present for static files, sometimes missing for API responses.
+- `Last-Modified` is often missing on API endpoints and CDNs.
+- `ETag` is common on static file servers, rare on dynamic APIs.
+- Redirects are common (http->https, domain aliases). Following redirects is mandatory.
+
+---
+
+## 15. Risk Assessment
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| urllib can't produce conformant streams | **Low** | High | Verified: `_ErrorMappingStream` wraps HTTPResponse correctly (SS11) |
+| Conformance suite changes break other backends | Low | Medium | Changes are additive (capability gates); existing backends unaffected |
+| Scope creep toward WebDAV/write support | Medium | Medium | Hard boundary: backend name is `http`, not `webdav`; no write methods |
+| `Content-Length` missing breaks FileInfo | **Low** | Low | Use `size=0` fallback; document in API docs |
+| Connection leak from unclosed streams | Medium | Medium | Same risk as S3/SFTP; `_ErrorMappingStream.close()` handles cleanup |
+| urllib SSL issues on older Python | Low | Low | `ssl.create_default_context()` works on Python 3.10+ |
+
+No showstoppers identified. The urllib streaming concern (P1.4 in the original
+gap analysis) is resolved -- it works.
+
+---
+
+## 16. Testing Strategy
+
+### 16.1 Backend-specific tests (`tests/backends/test_http.py`)
+
+| ID | Test | Spec |
+|----|------|------|
+| HTTP-001 | `read()` returns streaming BinaryIO, chunked read works | SIO-001 |
+| HTTP-002 | `read_bytes()` returns full content | BE-007 |
+| HTTP-003 | `exists()` returns True for 200, False for 404 | BE-004 |
+| HTTP-004 | `get_file_info()` maps headers to FileInfo fields | BE-016 |
+| HTTP-005 | `get_file_info()` handles missing Content-Length/Last-Modified | BE-016 |
+| HTTP-006 | Error mapping: 401->PermissionDenied, 404->NotFound, 500->BackendUnavailable | ERR-* |
+| HTTP-007 | `native_path()` returns full URL | NPR-003 |
+| HTTP-008 | `to_key()` strips base_url prefix | NPR-003 |
+| HTTP-009 | Path with special characters is URL-encoded | -- |
+| HTTP-010 | Custom headers are sent with every request | -- |
+| HTTP-011 | Redirects are followed (up to limit) | -- |
+| HTTP-012 | Timeout raises BackendUnavailable | -- |
+| HTTP-013 | `check_health()` sends HEAD to base_url | BE-020 |
+| HTTP-014 | Write/delete/move/copy raise CapabilityNotSupported | -- |
+| HTTP-015 | `close()` is callable, releases transport | BE-020 |
+| HTTP-016 | Transport auto-detection (urllib/requests/httpx) | -- |
+| HTTP-017 | `is_folder()` always returns False | BE-005 |
+
+### 16.2 Conformance suite participation
+
+After adding capability gates (SS10.3), the HTTP backend runs through the
+shared conformance suite. Expected results:
+
+- ~12 tests pass (identity, read, metadata, lifecycle, path, unwrap)
+- ~38 tests skip (write, delete, move, copy, list, glob, atomic)
+- 0 tests fail
+
+### 16.3 Test infrastructure
+
+Use `pytest-httpserver` (lightweight, no external deps) to create a local HTTP
+server in fixtures. Pre-seed with test files for read/metadata tests.
+
+No real network calls in CI.
+
+---
+
+## 17. Implementation Checklist (SDD Pipeline)
+
+| Step | Item | Notes |
+|------|------|-------|
+| 1 | Write spec `sdd/specs/032-http-backend.md` | Capability profile, method mapping, error mapping |
+| 2 | Add capability gates to conformance suite | ~15 lines, prerequisite for step 5 |
+| 3 | Implement `ReadOnlyHttpBackend` | `src/remote_store/backends/_http.py` |
+| 4 | Implement `UrllibTransport` | Same file or `_http_transport.py` |
+| 5 | Register in backend registry | `backends/__init__.py`, `from_dict()` support |
+| 6 | Write backend-specific tests | `tests/backends/test_http.py` |
+| 7 | Run conformance suite with HTTP backend | Verify skip/pass/fail counts |
+| 8 | Add `RequestsTransport`, `HttpxTransport` | Optional extras |
+| 9 | Add optional extras to `pyproject.toml` | `[http]` or `[httpx]` group |
+| 10 | Add docs: guide, API ref, examples | `docs-src/guides/`, `docs-src/api/` |
+| 11 | Update CHANGELOG, BACKLOG | Per repo conventions |
+
+---
+
+## 18. Resolved Questions
+
+Questions from the original draft, now resolved with reasoning:
+
+**Q1. Backend name: `"http"` or `"http-readonly"` or `"web"`?**
+
+Use `"http"`. Reasons:
+- Consistent with other backend names (`"local"`, `"s3"`, `"sftp"`, `"azure"`)
+  -- none encode capabilities in the name.
+- A future WebDAV backend would use `"webdav"`, not `"http"` -- different
+  protocol, different backend.
+- The capability system communicates what the backend can do; the name
+  identifies the protocol.
+
+**Q2. Should `is_folder()` always return `False`?**
+
+Yes. HTTP has no folder concept. Without LIST, there are no known prefixes to
+check against. If manifest-based LIST is added later, `is_folder()` can check
+whether a path is a known prefix in the manifest.
+
+**Q3. Streaming vs. buffered reads?**
+
+Streaming. Consistent with all other backends. urllib's HTTPResponse supports
+chunked `read(size)` and is already buffered (`BufferedIOBase`). Wrap in
+`_ErrorMappingStream` directly, no `BufferedReader` needed. Non-seekable per
+SIO-001 spec allowance.
+
+**Q4. Retry policy?**
+
+Defer to future `RetryPolicy` (ID-010). No built-in retry logic. Rationale:
+- Keeps the backend simple and focused.
+- Retry logic is cross-cutting -- belongs in a composable layer, not per-backend.
+- Users who need retries today can use `httpx` with its built-in retry
+  transport, or wrap in a simple retry loop.
+
+**Q5. Extra dependency group name?**
+
+`pip install remote-store[httpx]` for httpx, `pip install remote-store[requests]`
+for requests. No `[http]` group -- the baseline (urllib) needs no extra deps.
+This mirrors how `[arrow]` means "install PyArrow" and `[otel]` means "install
+OpenTelemetry".
+
+**Q6. Conformance suite changes?**
+
+Needed but small. Add capability gates to ~10 test classes (same pattern as
+existing ATOMIC_WRITE/GLOB gates). Pre-seed read-only test data via
+`pytest-httpserver` fixture. See SS10.3 for details.
+
+---
+
+## 19. Recommendation
+
+**Proceed with a spec.** No showstoppers found:
+
+- urllib streaming works with `_ErrorMappingStream` (verified).
+- Conformance suite changes are small and additive.
+- The capability system handles read-only gracefully.
+- Real-world HTTP endpoints behave as expected (HEAD, Content-Length, redirects).
+- Prior art (fsspec, smart_open, DVC) validates the concept.
+- Composability with `ext.cache` and `ext.transfer` delivers clear value.
+
+Next steps:
+1. Write spec `032-http-backend.md`
+2. Add conformance suite capability gates (prerequisite, benefits all future
+   partial-capability backends)
+3. Implement Phase 1 (urllib-only, `{READ, METADATA}`)
