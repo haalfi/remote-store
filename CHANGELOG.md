@@ -16,6 +16,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **Medallion + Dagster showcase** (`examples/showcase_medallion_dagster/`) —
+  self-contained Dagster project demonstrating 6 extensions composing over live
+  MeteoSwiss weather data in a Bronze/Silver/Gold medallion architecture.
+  Uses `ReadOnlyHttpBackend`, `ext.cache`, `ext.otel`, `ext.transfer`,
+  `ext.arrow`, and `ext.dagster`. (BK-008)
 - **Read-only HTTP backend** (`ReadOnlyHttpBackend`) — read files from
   HTTP/HTTPS URLs. Capabilities: `{READ, METADATA}`. Zero runtime dependencies
   (uses stdlib `urllib`); optional `requests` and `httpx` transports via extras

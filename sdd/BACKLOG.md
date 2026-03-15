@@ -37,7 +37,7 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-008 — Medallion + Dagster showcase implementation**
+- [~] **BK-008 — Medallion + Dagster showcase implementation**
   Implement the runnable showcase described in
   [showcase architecture](research/research-medallion-dagster-showcase.md).
   Self-contained Dagster project in `examples/showcase_medallion_dagster/`
