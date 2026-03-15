@@ -1019,6 +1019,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/http-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/batch-operations/" class="md-nav__link">
         
   
@@ -1457,6 +1485,34 @@
     
   
     Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/http/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP
   
 
     
@@ -2230,6 +2286,34 @@
     
   
     Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/http-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ReadOnlyHttpBackend
   
 
     
@@ -4950,6 +5034,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/032-http-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    032: HTTP Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -7062,6 +7174,14 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>Read-only HTTP backend</strong> (<code>ReadOnlyHttpBackend</code>) — read files from
+  HTTP/HTTPS URLs. Capabilities: <code>{READ, METADATA}</code>. Zero runtime dependencies
+  (uses stdlib <code>urllib</code>); optional <code>requests</code> and <code>httpx</code> transports via extras
+  for connection pooling. Install with <code>pip install "remote-store[requests]"</code> or
+  <code>pip install "remote-store[httpx]"</code>. (ID-082)</li>
+<li><strong>Conformance suite capability gates</strong> — WRITE, DELETE, LIST, MOVE, COPY
+  capabilities are now gated in the backend conformance suite, enabling testing
+  of partial-capability backends.</li>
 <li><strong><code>ext.dagster</code> — Dagster IO Manager adapter</strong> (ID-075 v1) — wraps any
   existing <code>Store</code> as a Dagster <code>IOManager</code> via <code>remote_store_io_manager()</code>.
   Pluggable serialization (pickle, JSON, Parquet). Install with

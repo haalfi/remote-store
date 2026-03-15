@@ -169,6 +169,10 @@
          <lastmod>2026-03-15</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/api/http-backend/</loc>
+         <lastmod>2026-03-15</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/api/models/</loc>
          <lastmod>2026-03-15</lastmod>
     </url>
@@ -194,6 +198,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/backends/azure/</loc>
+         <lastmod>2026-03-15</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/backends/http/</loc>
          <lastmod>2026-03-15</lastmod>
     </url>
     <url>
@@ -493,6 +501,10 @@
          <lastmod>2026-03-15</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/specs/032-http-backend/</loc>
+         <lastmod>2026-03-15</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/examples/</loc>
          <lastmod>2026-03-15</lastmod>
     </url>
@@ -542,6 +554,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/health-check/</loc>
+         <lastmod>2026-03-15</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/examples/http-backend/</loc>
          <lastmod>2026-03-15</lastmod>
     </url>
     <url>

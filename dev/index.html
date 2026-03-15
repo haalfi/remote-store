@@ -1222,6 +1222,34 @@
   
   
     <li class="md-nav__item">
+      <a href="examples/http-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="examples/batch-operations/" class="md-nav__link">
         
   
@@ -1660,6 +1688,34 @@
     
   
     Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="backends/http/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP
   
 
     
@@ -2428,6 +2484,34 @@
     
   
     Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api/http-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ReadOnlyHttpBackend
   
 
     
@@ -4188,6 +4272,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="design/specs/032-http-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    032: HTTP Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5577,11 +5689,13 @@ and <code>azure-storage-file-datalake</code> do the real work.</p>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[azure]&quot;</span><span class="w">        </span><span class="c1"># Azure Blob / ADLS Gen2</span>
 </code></pre></div>
 <p>Optional extras for integrations:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[arrow]&quot;</span><span class="w">          </span><span class="c1"># PyArrow filesystem adapter</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[otel]&quot;</span><span class="w">           </span><span class="c1"># OpenTelemetry instrumentation</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[yaml]&quot;</span><span class="w">           </span><span class="c1"># YAML config support</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[pydantic]&quot;</span><span class="w">       </span><span class="c1"># Pydantic BaseSettings config</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[toml]&quot;</span><span class="w">           </span><span class="c1"># TOML config on Python &lt; 3.11</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[requests]&quot;</span><span class="w">       </span><span class="c1"># HTTP backend with requests (connection pooling)</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[httpx]&quot;</span><span class="w">          </span><span class="c1"># HTTP backend with httpx (HTTP/2)</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[arrow]&quot;</span><span class="w">          </span><span class="c1"># PyArrow filesystem adapter</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[otel]&quot;</span><span class="w">           </span><span class="c1"># OpenTelemetry instrumentation</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[yaml]&quot;</span><span class="w">           </span><span class="c1"># YAML config support</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[pydantic]&quot;</span><span class="w">       </span><span class="c1"># Pydantic BaseSettings config</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[toml]&quot;</span><span class="w">           </span><span class="c1"># TOML config on Python &lt; 3.11</span>
 </code></pre></div>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <p>The simplest way to use <code>remote-store</code> (<a href="https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py"><code>examples/quickstart.py</code></a>):</p>
@@ -5686,6 +5800,14 @@ use a Registry with declarative config:</p>
 <td style="text-align: center;">Yes</td>
 </tr>
 <tr>
+<td>HTTP/HTTPS (read-only)</td>
+<td><em>(built-in)</em></td>
+<td>stdlib</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
 <td>Amazon S3 / MinIO</td>
 <td><code>remote-store[s3]</code></td>
 <td><code>s3fs</code></td>
@@ -5721,7 +5843,7 @@ use a Registry with declarative config:</p>
 </table>
 <p>* Same-filesystem only; cross-filesystem falls back to copy+delete.
 ** Via <code>posix_rename</code> on most OpenSSH servers; falls back to copy+delete.</p>
-<p>All backends support read, write, delete, list, copy, move, and metadata. Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback <code>ext.glob.glob_files()</code>. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
+<p>All backends except HTTP support read, write, delete, list, copy, move, and metadata. The HTTP backend is read-only (<code>{READ, METADATA}</code>). Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback <code>ext.glob.glob_files()</code>. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
 <h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
 <p>The Store provides 27 methods across read/write, browsing, management, and utility. Key highlights:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>             <span class="c1"># → str</span>
