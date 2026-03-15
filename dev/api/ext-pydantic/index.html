@@ -5295,17 +5295,11 @@
 <p>Calls <code>model.model_dump()</code> to produce a plain dict, then delegates to
 <code>RegistryConfig.from_dict()</code>. Secret wrapping, unknown-key warnings,
 and validation all happen in <code>from_dict()</code>.</p>
+<p>Pydantic <code>SecretStr</code> fields in backend <code>options</code> dicts are
+automatically unwrapped to plain strings before reaching <code>from_dict()</code>,
+so <code>from_dict()</code>'s sensitive-key detection works correctly. Users may
+use either <code>str</code> or <code>SecretStr</code> for credential values in their models.</p>
 
-
-<details class="note" open>
-  <summary>Note</summary>
-  <p>Pydantic <code>SecretStr</code> fields are <strong>not</strong> auto-unwrapped.
-<code>model_dump()</code> returns <code>SecretStr</code> objects (not plain strings),
-which bypass <code>from_dict()</code>'s <code>isinstance(v, str)</code> check and are
-<strong>not</strong> re-wrapped in <code>Secret</code>. Use plain <code>str</code> for
-credential values in your model's <code>options</code> dicts -- <code>from_dict()</code>
-handles Secret wrapping at the config-registry boundary.</p>
-</details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
     <ul>
