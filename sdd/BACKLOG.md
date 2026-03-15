@@ -61,9 +61,12 @@ Items graduate through the SDD pipeline:
 - [~] **ID-082 — Read-only HTTP backend**
   Backend for reading files from HTTP/HTTPS URLs. Capabilities: `{READ, METADATA}`.
   - Done: [research](research/research-readonly-http-backend.md),
-    [showcase architecture](research/research-medallion-dagster-showcase.md).
-  - Remaining: spec, conformance suite capability gates, implementation,
-    tests, docs.
+    [showcase architecture](research/research-medallion-dagster-showcase.md),
+    [spec](specs/032-http-backend.md), conformance suite capability gates,
+    implementation (`ReadOnlyHttpBackend` + `UrllibTransport`),
+    optional transports (requests, httpx), backend-specific tests,
+    conformance integration, guide, CHANGELOG.
+  - Remaining: review, merge.
 
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.

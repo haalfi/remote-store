@@ -51,6 +51,8 @@ pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
 Optional extras for integrations:
 
 ```bash
+pip install "remote-store[requests]"       # HTTP backend with requests (connection pooling)
+pip install "remote-store[httpx]"          # HTTP backend with httpx (HTTP/2)
 pip install "remote-store[arrow]"          # PyArrow filesystem adapter
 pip install "remote-store[otel]"           # OpenTelemetry instrumentation
 pip install "remote-store[yaml]"           # YAML config support
@@ -156,6 +158,7 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 |---------|-------|---------|:------------:|:-----------:|:---------------:|
 | Local filesystem | *(built-in)* | stdlib | Yes | Yes | Yes* |
 | Memory (in-process) | *(built-in)* | — | Yes | — | Yes |
+| HTTP/HTTPS (read-only) | *(built-in)* | stdlib | — | — | — |
 | Amazon S3 / MinIO | `remote-store[s3]` | `s3fs` | Yes | Yes | — (copy+delete) |
 | S3 (PyArrow) | `remote-store[s3-pyarrow]` | `pyarrow` + `s3fs` | Yes | Yes | — (copy+delete) |
 | SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | — | Yes** |
@@ -164,7 +167,7 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Via `posix_rename` on most OpenSSH servers; falls back to copy+delete.
 
-All backends support read, write, delete, list, copy, move, and metadata. Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback `ext.glob.glob_files()`. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
+All backends except HTTP support read, write, delete, list, copy, move, and metadata. The HTTP backend is read-only (`{READ, METADATA}`). Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback `ext.glob.glob_files()`. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
 
 ## Store API
 

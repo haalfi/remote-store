@@ -16,6 +16,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **Read-only HTTP backend** (`ReadOnlyHttpBackend`) — read files from
+  HTTP/HTTPS URLs. Capabilities: `{READ, METADATA}`. Zero runtime dependencies
+  (uses stdlib `urllib`); optional `requests` and `httpx` transports via extras
+  for connection pooling. Install with `pip install "remote-store[requests]"` or
+  `pip install "remote-store[httpx]"`. (ID-082)
+- **Conformance suite capability gates** — WRITE, DELETE, LIST, MOVE, COPY
+  capabilities are now gated in the backend conformance suite, enabling testing
+  of partial-capability backends.
 - **`ext.dagster` — Dagster IO Manager adapter** (ID-075 v1) — wraps any
   existing `Store` as a Dagster `IOManager` via `remote_store_io_manager()`.
   Pluggable serialization (pickle, JSON, Parquet). Install with
