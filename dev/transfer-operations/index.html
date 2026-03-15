@@ -1902,6 +1902,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5330,6 +5341,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5354,9 +5376,9 @@
 <p>The <code>ext.transfer</code> module provides three functions for moving data between
 local files and Stores, or between two Stores: <code>upload</code>, <code>download</code>, and
 <code>transfer</code>.</p>
-<p>All functions stream data -- no file is ever fully loaded into memory.
+<p>All functions stream data — no file is ever fully loaded into memory.
 An optional <code>on_progress</code> callback fires per chunk with the byte count.
-No extra dependencies are required -- the module is pure Python and always
+No extra dependencies are required — the module is pure Python and always
 available.</p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span><span class="p">,</span> <span class="n">upload</span><span class="p">,</span> <span class="n">download</span><span class="p">,</span> <span class="n">transfer</span>
@@ -5446,10 +5468,11 @@ correctly with <code>Store.child()</code>, capability gating, and path rebasing:
 <a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">upload</span><span class="p">(</span><span class="n">reports</span><span class="p">,</span> <span class="s2">&quot;local/q1.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;q1.csv&quot;</span><span class="p">)</span>
 <a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># File is at &quot;reports/q1.csv&quot; in the root store</span>
 </code></pre></div>
-<hr />
-<p><strong>See also:</strong>
-<a href="../api/ext-transfer/">API reference</a> --
-<a href="https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py">Example script</a></p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../api/ext-transfer/">API reference</a></li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py">Example script</a></li>
+</ul>
 
 
 

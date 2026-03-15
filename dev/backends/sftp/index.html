@@ -1694,6 +1694,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#api-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5387,6 +5398,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#api-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5661,11 +5683,22 @@
 </tr>
 </tbody>
 </table>
-<blockquote>
-<p><strong>Atomic write caveat:</strong> Atomic writes use a temp file (<code>.~tmp.&lt;name&gt;.&lt;uuid&gt;</code>) and rename. If the connection drops between write and rename, the orphan temp file will remain on the server.</p>
-<p><strong>Move fallback:</strong> <code>move()</code> tries <code>posix_rename</code> (atomic), then standard <code>rename()</code>, then copy + delete as a last resort. Most servers support at least <code>rename()</code>.</p>
-<p><strong>TOCTOU on <code>overwrite=False</code>:</strong> Like all backends, the exists-check and write are separate operations. Concurrent writers can both pass the check.</p>
-</blockquote>
+<div class="admonition warning">
+<p class="admonition-title">Atomic write caveat</p>
+<p>Atomic writes use a temp file (<code>.~tmp.&lt;name&gt;.&lt;uuid&gt;</code>) and rename. If the
+connection drops between write and rename, the orphan temp file will remain
+on the server.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Move fallback</p>
+<p><code>move()</code> tries <code>posix_rename</code> (atomic), then standard <code>rename()</code>, then
+copy + delete as a last resort. Most servers support at least <code>rename()</code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">TOCTOU on <code>overwrite=False</code></p>
+<p>Like all backends, the exists-check and write are separate operations.
+Concurrent writers can both pass the check.</p>
+</div>
 <p>See the <a href="../../concurrency/">Concurrency and Atomicity Guarantees</a> guide for details and workarounds.</p>
 <h2 id="escape-hatch">Escape Hatch<a class="headerlink" href="#escape-hatch" title="Permanent link">&para;</a></h2>
 <p>Access the underlying <code>paramiko.SFTPClient</code> when you need protocol-level features:</p>
@@ -5674,11 +5707,12 @@
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">sftp_client</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">paramiko</span><span class="o">.</span><span class="n">SFTPClient</span><span class="p">)</span>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">sftp_client</span><span class="o">.</span><span class="n">listdir_attr</span><span class="p">(</span><span class="s2">&quot;/custom/path&quot;</span><span class="p">)</span>
 </code></pre></div>
-<hr />
-<p><strong>See also:</strong>
-<a href="../../capabilities-matrix/">Capabilities matrix</a> --
-<a href="../../api/store/">API reference</a> --
-<a href="https://github.com/haalfi/remote-store/blob/master/examples/backends/sftp_backend.py">Example script</a></p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../capabilities-matrix/">Capabilities matrix</a></li>
+<li><a href="../../api/store/">API reference</a></li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/examples/backends/sftp_backend.py">Example script</a></li>
+</ul>
 <h2 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
 
 

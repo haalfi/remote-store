@@ -5580,7 +5580,7 @@ use a Registry with declarative config:</p>
 </code></pre></div>
 <h3 id="same-code-different-environment">Same code, different environment<a class="headerlink" href="#same-code-different-environment" title="Permanent link">&para;</a></h3>
 <p>Switch from local to S3 by changing the config file. The application code stays the same:</p>
-<p><strong>Dev -- local filesystem:</strong></p>
+<p><strong>Dev — local filesystem:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">[backends.main]</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;local&quot;</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">root</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;/tmp/data&quot;</span><span class="w"> </span><span class="p">}</span>
@@ -5589,7 +5589,7 @@ use a Registry with declarative config:</p>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;main&quot;</span>
 <a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;reports&quot;</span>
 </code></pre></div>
-<p><strong>Production -- S3:</strong></p>
+<p><strong>Production — S3:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[backends.main]</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3&quot;</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">bucket</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;analytics-data&quot;</span><span class="w"> </span><span class="p">}</span>
@@ -5607,15 +5607,15 @@ use a Registry with declarative config:</p>
 <p>Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Credentials are automatically masked in <code>repr()</code>/<code>str()</code> to prevent leakage in logs.</p>
 <h2 id="who-this-is-for">Who this is for<a class="headerlink" href="#who-this-is-for" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Platform and internal tooling teams</strong> -- provide one stable storage interface across environments</li>
-<li><strong>Data engineering teams</strong> -- pipelines that run against local storage, S3, or SFTP depending on the environment</li>
-<li><strong>Teams that include citizen developers</strong> -- analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files</li>
+<li><strong>Platform and internal tooling teams</strong> — provide one stable storage interface across environments</li>
+<li><strong>Data engineering teams</strong> — pipelines that run against local storage, S3, or SFTP depending on the environment</li>
+<li><strong>Teams that include citizen developers</strong> — analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files</li>
 <li><strong>Anyone tired of writing storage wrappers in every project</strong></li>
 </ul>
 <h2 id="what-you-get">What you get<a class="headerlink" href="#what-you-get" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>One interface, many backends:</strong> local filesystem, S3, SFTP, Azure, in-memory</li>
-<li><strong>Folder-scoped stores:</strong> each Store is rooted at a folder -- compose layouts with multiple stores or narrow scope with <code>child()</code></li>
+<li><strong>Folder-scoped stores:</strong> each Store is rooted at a folder — compose layouts with multiple stores or narrow scope with <code>child()</code></li>
 <li><strong>Swap backends via config:</strong> move between environments without changing code</li>
 <li><strong>Streaming by default:</strong> large files just work without blowing up memory</li>
 <li><strong>Atomic writes where supported:</strong> safer updates for file-producing workflows</li>
@@ -5626,7 +5626,7 @@ use a Registry with declarative config:</p>
 <ul>
 <li>Not a query engine (no SQL, no predicate pushdown)</li>
 <li>Not a table format (no Delta Lake log, no Iceberg manifests)</li>
-<li>Not a filesystem reimplementation (delegates to <code>s3fs</code>, <code>paramiko</code>, <code>pyarrow</code>, etc. -- the libraries you'd pick anyway)</li>
+<li>Not a filesystem reimplementation (delegates to <code>s3fs</code>, <code>paramiko</code>, <code>pyarrow</code>, etc. — the libraries you'd pick anyway)</li>
 </ul>
 <h2 id="supported-backends">Supported Backends<a class="headerlink" href="#supported-backends" title="Permanent link">&para;</a></h2>
 <table>
@@ -5652,9 +5652,9 @@ use a Registry with declarative config:</p>
 <tr>
 <td>Memory (in-process)</td>
 <td><em>(built-in)</em></td>
-<td>--</td>
+<td>—</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">Yes</td>
 </tr>
 <tr>
@@ -5663,7 +5663,7 @@ use a Registry with declarative config:</p>
 <td><code>s3fs</code></td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">No (copy+delete)</td>
+<td style="text-align: center;">— (copy+delete)</td>
 </tr>
 <tr>
 <td>S3 (PyArrow)</td>
@@ -5671,14 +5671,14 @@ use a Registry with declarative config:</p>
 <td><code>pyarrow</code> + <code>s3fs</code></td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">No (copy+delete)</td>
+<td style="text-align: center;">— (copy+delete)</td>
 </tr>
 <tr>
 <td>SFTP / SSH</td>
 <td><code>remote-store[sftp]</code></td>
 <td><code>paramiko</code></td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">Yes**</td>
 </tr>
 <tr>
@@ -5687,7 +5687,7 @@ use a Registry with declarative config:</p>
 <td><code>azure-storage-file-datalake</code></td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">HNS: Yes / non-HNS: No</td>
+<td style="text-align: center;">HNS: Yes / non-HNS: —</td>
 </tr>
 </tbody>
 </table>
@@ -5715,7 +5715,7 @@ use a Registry with declarative config:</p>
 </code></pre></div>
 <p>For the full method list, see the <a href="https://docs.remotestore.dev/stable/api/store/">API reference</a>. All write, move, and copy methods accept <code>overwrite=True</code> to replace existing files.</p>
 <h2 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">&para;</a></h2>
-<p>The core library handles storage operations. Extensions add optional capabilities on top -- e.g. PyArrow integration, observability, caching, or bulk operations. All live in <code>remote_store.ext</code>; import only what you need.</p>
+<p>The core library handles storage operations. Extensions add optional capabilities on top — e.g. PyArrow integration, observability, caching, or bulk operations. All live in <code>remote_store.ext</code>; import only what you need.</p>
 <table>
 <thead>
 <tr>
@@ -5728,7 +5728,7 @@ use a Registry with declarative config:</p>
 <tr>
 <td>PyArrow adapter</td>
 <td><code>remote-store[arrow]</code></td>
-<td>Use any Store as a <code>pyarrow.fs.FileSystem</code> -- works with Parquet, Pandas, Polars, DuckDB</td>
+<td>Use any Store as a <code>pyarrow.fs.FileSystem</code> — works with Parquet, Pandas, Polars, DuckDB</td>
 </tr>
 <tr>
 <td>Batch operations</td>
@@ -5804,40 +5804,40 @@ use a Registry with declarative config:</p>
 <td>SFTP</td>
 <td>via sshfs</td>
 <td>Yes</td>
-<td>No</td>
-<td>No</td>
+<td>—</td>
+<td>—</td>
 <td>Built-in</td>
 </tr>
 <tr>
 <td>Streaming I/O</td>
 <td>Yes</td>
 <td>Yes</td>
-<td>No (downloads)</td>
+<td>— (downloads)</td>
 <td>Bytes-oriented</td>
 <td>Yes (BinaryIO)</td>
 </tr>
 <tr>
 <td>Atomic writes</td>
-<td>No</td>
-<td>No</td>
-<td>No</td>
-<td>No</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
 <td>Yes (capability-gated)</td>
 </tr>
 <tr>
 <td>Async</td>
 <td>Yes</td>
-<td>No</td>
-<td>No</td>
+<td>—</td>
+<td>—</td>
 <td>Yes (first-class)</td>
 <td>Sync-only (for now)</td>
 </tr>
 <tr>
 <td>Observability</td>
-<td>No</td>
-<td>No</td>
-<td>No</td>
-<td>No</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
 <td><code>ext.observe</code> + OTel</td>
 </tr>
 <tr>

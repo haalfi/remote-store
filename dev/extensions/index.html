@@ -1785,6 +1785,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5320,6 +5331,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5357,42 +5379,42 @@ on top of the core Store API.</p>
 <tbody>
 <tr>
 <td><code>ext.batch</code></td>
-<td>--</td>
+<td><em>(none)</em></td>
 <td>Bulk delete, copy, and exists operations</td>
 <td><a href="../batch-operations/">Guide</a></td>
 <td><a href="../examples/batch-operations/">Example</a></td>
 </tr>
 <tr>
 <td><code>ext.cache</code></td>
-<td>--</td>
+<td><em>(none)</em></td>
 <td>Store-level caching with TTL and auto-invalidation</td>
 <td><a href="../cache/">Guide</a></td>
 <td><a href="../examples/caching/">Example</a></td>
 </tr>
 <tr>
 <td><code>ext.glob</code></td>
-<td>--</td>
+<td><em>(none)</em></td>
 <td>Portable glob pattern matching for file listing</td>
 <td><a href="../glob-pattern-matching/">Guide</a></td>
 <td><a href="../examples/glob-pattern-matching/">Example</a></td>
 </tr>
 <tr>
 <td><code>ext.observe</code></td>
-<td>--</td>
+<td><em>(none)</em></td>
 <td>Callback-based observability hooks for Store operations</td>
 <td><a href="../observe/">Guide</a></td>
 <td><a href="../examples/observe-hooks/">Example</a></td>
 </tr>
 <tr>
 <td><code>ext.partition</code></td>
-<td>--</td>
+<td><em>(none)</em></td>
 <td>Hive-style partition path helpers</td>
-<td>--</td>
-<td>--</td>
+<td>—</td>
+<td>—</td>
 </tr>
 <tr>
 <td><code>ext.transfer</code></td>
-<td>--</td>
+<td><em>(none)</em></td>
 <td>Upload, download, and cross-store transfer</td>
 <td><a href="../transfer-operations/">Guide</a></td>
 <td><a href="../examples/transfer-operations/">Example</a></td>
@@ -5415,14 +5437,14 @@ on top of the core Store API.</p>
 <td><code>ext.pydantic</code></td>
 <td><code>pydantic</code></td>
 <td>Pydantic BaseModel/BaseSettings adapter</td>
-<td>--</td>
+<td>—</td>
 <td><a href="../examples/config-loaders/">Example</a></td>
 </tr>
 <tr>
 <td><code>ext.yaml</code></td>
 <td><code>yaml</code></td>
 <td>YAML config file loader</td>
-<td>--</td>
+<td>—</td>
 <td><a href="../examples/config-loaders/">Example</a></td>
 </tr>
 <tr>
@@ -5473,15 +5495,20 @@ module raises a <code>ModuleNotFoundError</code> with installation instructions.
 <h2 id="extension-guarantees">Extension Guarantees<a class="headerlink" href="#extension-guarantees" title="Permanent link">&para;</a></h2>
 <p>All extensions follow the same contract (ADR-0008, ADR-0013):</p>
 <ul>
-<li><strong>Public API only</strong> -- extensions use only the public Store / Backend
+<li><strong>Public API only</strong> — extensions use only the public Store / Backend
   API.  They never access private internals.</li>
-<li><strong>No lifecycle ownership</strong> -- extensions never close the Store.  The
+<li><strong>No lifecycle ownership</strong> — extensions never close the Store.  The
   caller owns the Store's lifecycle.</li>
-<li><strong>CapabilityNotSupported propagates</strong> -- if a backend lacks a required
+<li><strong>CapabilityNotSupported propagates</strong> — if a backend lacks a required
   capability, the error reaches the caller immediately.</li>
 </ul>
 <h2 id="writing-your-own-extension">Writing Your Own Extension<a class="headerlink" href="#writing-your-own-extension" title="Permanent link">&para;</a></h2>
 <p>See the "Adding an Extension" checklist in CONTRIBUTING.md.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../api/store/">API reference</a> — core Store interface that extensions build on</li>
+<li><a href="../architecture/">Architecture</a> — extension design principles</li>
+</ul>
 
 
 

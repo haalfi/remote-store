@@ -5561,7 +5561,7 @@ retry multiplication.</p>
 </code></pre></div>
 <h2 id="per-backend-mapping">Per-Backend Mapping<a class="headerlink" href="#per-backend-mapping" title="Permanent link">&para;</a></h2>
 <p>Each backend translates <code>RetryPolicy</code> to its native retry mechanism.
-Not all fields are mappable to every backend -- unmappable fields are
+Not all fields are mappable to every backend — unmappable fields are
 logged at debug level.</p>
 <h3 id="sftp">SFTP<a class="headerlink" href="#sftp" title="Permanent link">&para;</a></h3>
 <p>Full mapping via tenacity:</p>
@@ -5637,13 +5637,13 @@ botocore internally and cannot be overridden.</p>
 a minimum of 1 for <code>initial_backoff</code>).</p>
 <p><code>backoff_max</code> and <code>timeout</code> are not mappable.</p>
 <h3 id="local-and-memory">Local and Memory<a class="headerlink" href="#local-and-memory" title="Permanent link">&para;</a></h3>
-<p>These backends do not accept a <code>retry</code> parameter -- passing one raises
+<p>These backends do not accept a <code>retry</code> parameter — passing one raises
 <code>TypeError</code>. Local filesystem and in-memory operations do not have
 transient failures that benefit from retry.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../examples/retry-policy/">Retry policy example</a> -- runnable script</li>
-<li><a href="../backends/">Backend guides</a> -- per-backend configuration details</li>
+<li><a href="../examples/retry-policy/">Retry policy example</a> — runnable script</li>
+<li><a href="../backends/">Backend guides</a> — per-backend configuration details</li>
 </ul>
 
 

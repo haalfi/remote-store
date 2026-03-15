@@ -5423,10 +5423,10 @@ policies.</p>
 <p>All credentials are wrapped in <code>Secret</code> objects at the configuration layer.
 The <code>Secret</code> class provides:</p>
 <ul>
-<li><strong>Masked output</strong> -- <code>repr()</code> and <code>str()</code> return <code>***</code>, never plain text</li>
-<li><strong>Explicit reveal</strong> -- <code>secret.reveal()</code> is the only way to access the
+<li><strong>Masked output</strong> — <code>repr()</code> and <code>str()</code> return <code>***</code>, never plain text</li>
+<li><strong>Explicit reveal</strong> — <code>secret.reveal()</code> is the only way to access the
   plain-text value, making credential access auditable</li>
-<li><strong>Immutability</strong> -- <code>Secret</code> uses <code>__slots__</code> with <code>__setattr__</code> and
+<li><strong>Immutability</strong> — <code>Secret</code> uses <code>__slots__</code> with <code>__setattr__</code> and
   <code>__delattr__</code> overrides to prevent modification after creation</li>
 </ul>
 <h3 id="automatic-wrapping">Automatic wrapping<a class="headerlink" href="#automatic-wrapping" title="Permanent link">&para;</a></h3>
@@ -5451,7 +5451,7 @@ leakage:</p>
 <h2 id="trust-boundaries">Trust boundaries<a class="headerlink" href="#trust-boundaries" title="Permanent link">&para;</a></h2>
 <h3 id="backend-isolation">Backend isolation<a class="headerlink" href="#backend-isolation" title="Permanent link">&para;</a></h3>
 <ul>
-<li>User code interacts with <code>Store</code> only -- backend instances are internal</li>
+<li>User code interacts with <code>Store</code> only — backend instances are internal</li>
 <li>Backend-specific exceptions are mapped to <code>remote-store</code> error types and
   <strong>never leak</strong> to user code</li>
 <li><code>Store.unwrap()</code> is the explicit escape hatch for direct backend access;
@@ -5465,7 +5465,7 @@ leakage:</p>
 </ul>
 <h3 id="configuration-isolation">Configuration isolation<a class="headerlink" href="#configuration-isolation" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Config-as-code has absolute priority -- no environment variable overrides
+<li>Config-as-code has absolute priority — no environment variable overrides
   unless explicitly opted in</li>
 <li>No config merging prevents accidental credential exposure from layered
   sources</li>
@@ -5483,7 +5483,7 @@ not public issues.</p>
 for the full policy.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../architecture/">Architecture Overview</a> -- system design and error model</li>
+<li><a href="../architecture/">Architecture Overview</a> — system design and error model</li>
 <li><a href="../api/config/#remote_store.Secret">API Reference: Secret</a></li>
 <li><a href="../design/specs/020-credential-hygiene/">Spec 020: Credential Hygiene</a></li>
 </ul>

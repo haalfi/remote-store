@@ -3057,6 +3057,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#comparative-results-remote-store-vs-raw-sdk-vs-fsspec" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5480,6 +5491,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#comparative-results-remote-store-vs-raw-sdk-vs-fsspec" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5567,7 +5589,7 @@ remote-store against raw SDK calls and fsspec implementations.</p>
 <h2 id="methodology">Methodology<a class="headerlink" href="#methodology" title="Permanent link">&para;</a></h2>
 <p>Benchmarks use <a href="https://pytest-benchmark.readthedocs.io/">pytest-benchmark</a>
 with Docker-hosted services (MinIO for S3, Azurite for Azure, OpenSSH for SFTP).
-Each test runs in an isolated environment -- fresh buckets, containers, and
+Each test runs in an isolated environment — fresh buckets, containers, and
 directories are created per test fixture and cleaned up after.</p>
 <h3 id="what-we-measure">What We Measure<a class="headerlink" href="#what-we-measure" title="Permanent link">&para;</a></h3>
 <table>
@@ -5610,9 +5632,9 @@ directories are created per test fixture and cleaned up after.</p>
 <p>For operations where comparison is meaningful (write, read, exists, list, delete),
 the suite runs the same operation through three interfaces:</p>
 <ol>
-<li><strong>remote-store</strong> -- the <code>Backend</code> API</li>
-<li><strong>Raw SDK</strong> -- direct boto3/paramiko/azure-storage-blob/pathlib calls</li>
-<li><strong>fsspec</strong> -- s3fs/sshfs/adlfs/fsspec.local</li>
+<li><strong>remote-store</strong> — the <code>Backend</code> API</li>
+<li><strong>Raw SDK</strong> — direct boto3/paramiko/azure-storage-blob/pathlib calls</li>
+<li><strong>fsspec</strong> — s3fs/sshfs/adlfs/fsspec.local</li>
 </ol>
 <p>This quantifies the overhead remote-store adds on top of each SDK.</p>
 <h2 id="running-benchmarks">Running Benchmarks<a class="headerlink" href="#running-benchmarks" title="Permanent link">&para;</a></h2>
@@ -5790,7 +5812,7 @@ Docker Desktop (MinIO, Azurite, OpenSSH) running locally. All values are
 </table>
 <p><em>* 64KB write values for S3-PyArrow and Azure are outlier-skewed (high variance,
 stddev &gt; mean). The medians are monotonic (17ms and 6ms respectively). The raw
-SDK shows the same pattern -- this is a Dockerized-service cold-start artifact,
+SDK shows the same pattern — this is a Dockerized-service cold-start artifact,
 not real non-monotonic performance.</em></p>
 <p>Generate this table from your own saved results with <code>hatch run bench-report</code>.</p>
 <p><strong>Key observations:</strong></p>
@@ -5800,9 +5822,9 @@ not real non-monotonic performance.</em></p>
   single-part upload overhead. At 1MB the gap narrows from ~7x to ~1.6x
   (31.6ms vs 20.1ms for S3).</li>
 <li>S3-PyArrow reads are competitive with S3 (1.7ms vs 1.5ms at 1KB, 11.4ms vs
-  5.9ms at 1MB) -- the RFC-0003 <code>BufferedReader</code> removal keeps overhead modest.</li>
+  5.9ms at 1MB) — the RFC-0003 <code>BufferedReader</code> removal keeps overhead modest.</li>
 <li>SFTP read latency scales steeply with file size (3.0ms at 1KB, 13.5ms at 1MB).</li>
-<li>Azure listing is slowest (11.4ms for 50 files, 145ms for 1000) -- Azurite
+<li>Azure listing is slowest (11.4ms for 50 files, 145ms for 1000) — Azurite
   emulation overhead.</li>
 <li>S3 listing is faster than local for flat directories (pagination is efficient).</li>
 <li>Streaming reads keep memory constant regardless of file size.</li>
@@ -5812,26 +5834,26 @@ not real non-monotonic performance.</em></p>
 through remote-store, the raw SDK, and the fsspec equivalent. Measured findings
 from Docker benchmarks (MinIO, Azurite, OpenSSH):</p>
 <ul>
-<li><strong>Azure: near-zero overhead</strong> -- remote-store matches the raw azure-blob SDK
+<li><strong>Azure: near-zero overhead</strong> — remote-store matches the raw azure-blob SDK
   within measurement noise for writes, reads, and exists. adlfs is 1.9x slower
   for reads and 2.2x slower for deletes.</li>
-<li><strong>S3: competitive or faster for writes</strong> -- Write 1MB is 1.5x faster than raw
+<li><strong>S3: competitive or faster for writes</strong> — Write 1MB is 1.5x faster than raw
   boto3 (20ms vs 30ms, likely due to S3Backend's persistent client session via
   s3fs). Read overhead is ~15% (5.9ms vs 5.1ms). Exists within noise
   (1.4ms vs 1.3ms).</li>
-<li><strong>SFTP: moderate overhead</strong> -- ~5% for writes and ~8% for reads vs raw
+<li><strong>SFTP: moderate overhead</strong> — ~5% for writes and ~8% for reads vs raw
   paramiko. Metadata ops show ~2x overhead from error-mapping stat calls
   (exists 859us vs 413us, delete 988us vs 422us).</li>
-<li><strong>Local: expected abstraction cost</strong> -- ~20% I/O overhead vs bare pathlib
+<li><strong>Local: expected abstraction cost</strong> — ~20% I/O overhead vs bare pathlib
   (484us vs 404us for Write 1MB). Metadata ops show higher relative overhead
   (exists 55us vs 5us), but absolute latencies are sub-millisecond.</li>
-<li><strong>Caveats:</strong> listing anomalies exist in the comparative data -- some fsspec
+<li><strong>Caveats:</strong> listing anomalies exist in the comparative data — some fsspec
   implementations (s3fs at 67us, adlfs at 83us for 50 files) show sub-100us
   listing times that likely reflect client-side caching in the test harness,
   not real-world performance (see ID-032). Similarly, raw boto3 listing at
   4.4ms (18.4x slower than remote-store) uses the paginator API without
   caching, while remote-store benefits from s3fs's cached <code>ls()</code>. Delete
-  overhead is 2-3x vs raw SDK across all backends -- this is expected
+  overhead is 2-3x vs raw SDK across all backends — this is expected
   abstraction cost from the error-mapping layer and not an optimization target.</li>
 </ul>
 <p>Regenerate for your hardware:</p>
@@ -5866,6 +5888,12 @@ produces charts:</p>
 </code></pre></div>
 <p>For cloud benchmarks, set the appropriate environment variables (see
 <code>benchmarks/README.md</code> for the full reference table) and use <code>--infra cloud</code>.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../capabilities-matrix/">Capabilities Matrix</a> — feature support per backend</li>
+<li><a href="../choosing-a-backend/">Choosing a Backend</a> — decision guide with trade-offs</li>
+<li><a href="../pyarrow-adapter/">PyArrow Adapter</a> — tiered read strategy and S3 direct I/O</li>
+</ul>
 <h2 id="comparative-results-remote-store-vs-raw-sdk-vs-fsspec">Comparative Results: remote-store vs Raw SDK vs fsspec<a class="headerlink" href="#comparative-results-remote-store-vs-raw-sdk-vs-fsspec" title="Permanent link">&para;</a></h2>
 <!-- Generated 2026-03-07 09:59 UTC -->
 <!-- Hardware: Intel(R) Core(TM) Ultra 7 265K, Python 3.13.11, Windows -->

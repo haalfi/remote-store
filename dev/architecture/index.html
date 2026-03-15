@@ -5444,7 +5444,7 @@ instructions, see the Guides section in the sidebar.</p>
 <h3 id="store">Store<a class="headerlink" href="#store" title="Permanent link">&para;</a></h3>
 <p>The primary user-facing abstraction. A Store is a <strong>logical remote folder</strong>
 scoped to a root path. All operations use relative paths within that scope.</p>
-<p>Stores are <strong>immutable and thread-safe</strong> -- cheap to create, safe to share
+<p>Stores are <strong>immutable and thread-safe</strong> — cheap to create, safe to share
 across threads. A Store does not own its backend; multiple stores can share
 one backend instance.</p>
 <p><code>Store.child(subpath)</code> creates a sub-scoped store without additional backend
@@ -5456,7 +5456,7 @@ connections.</p>
 <li>Lazily creates backend instances (one per backend config, shared across stores)</li>
 <li>Manages cleanup via <code>close()</code></li>
 </ul>
-<p>The Registry is a <strong>passive resource</strong> -- it does not spawn threads or async
+<p>The Registry is a <strong>passive resource</strong> — it does not spawn threads or async
 tasks, making it compatible with any concurrency model.</p>
 <h3 id="backend">Backend<a class="headerlink" href="#backend" title="Permanent link">&para;</a></h3>
 <p>The storage adapter layer. Each backend encapsulates all provider-specific
@@ -5467,7 +5467,7 @@ behavior:</p>
 <li>Error mapping (native exceptions to <code>remote-store</code> error types)</li>
 <li>Capability declaration</li>
 </ul>
-<p>Backends are an <strong>implementation detail</strong> -- user code never interacts with
+<p>Backends are an <strong>implementation detail</strong> — user code never interacts with
 backends directly (except via <code>Store.unwrap()</code> for escape-hatch access).</p>
 <h2 id="error-hierarchy">Error hierarchy<a class="headerlink" href="#error-hierarchy" title="Permanent link">&para;</a></h2>
 <p>All backend-specific exceptions are normalized into a small set of errors.
@@ -5496,10 +5496,10 @@ no singleton state, no global registries, composable with the core Store API.</p
 <h2 id="capability-system">Capability system<a class="headerlink" href="#capability-system" title="Permanent link">&para;</a></h2>
 <p>Backends declare supported operations via the <code>Capability</code> enum. This enables:</p>
 <ul>
-<li><strong>Compile-time clarity</strong> -- users know what to expect from each backend</li>
-<li><strong>Runtime guards</strong> -- operations fail fast with <code>CapabilityNotSupported</code>
+<li><strong>Compile-time clarity</strong> — users know what to expect from each backend</li>
+<li><strong>Runtime guards</strong> — operations fail fast with <code>CapabilityNotSupported</code>
   instead of mysterious backend errors</li>
-<li><strong>Portable fallbacks</strong> -- extensions like <code>ext.glob</code> provide software
+<li><strong>Portable fallbacks</strong> — extensions like <code>ext.glob</code> provide software
   implementations for backends that lack native support</li>
 </ul>
 <p>See the <a href="../capabilities-matrix/">Capabilities Matrix</a> for the full table.</p>
@@ -5509,27 +5509,27 @@ no singleton state, no global registries, composable with the core Store API.</p
 <ol>
 <li>Config-as-code has absolute priority (TOML, YAML, or dict)</li>
 <li>No merging, no overrides, no magic environment variable layering</li>
-<li>Deterministic and test-safe -- same config always produces same behavior</li>
+<li>Deterministic and test-safe — same config always produces same behavior</li>
 </ol>
 <h2 id="design-decisions">Design decisions<a class="headerlink" href="#design-decisions" title="Permanent link">&para;</a></h2>
 <p>Detailed rationale lives in the ADRs:</p>
 <ul>
-<li><a href="../design/adrs/0001-architecture-store-registry-backends/">ADR-0001</a> --
+<li><a href="../design/adrs/0001-architecture-store-registry-backends/">ADR-0001</a> —
   Store / Registry / Backend layering</li>
-<li><a href="../design/adrs/0002-config-resolution-no-merge/">ADR-0002</a> --
+<li><a href="../design/adrs/0002-config-resolution-no-merge/">ADR-0002</a> —
   No config merging</li>
-<li><a href="../design/adrs/0004-empty-path-semantics/">ADR-0004</a> --
+<li><a href="../design/adrs/0004-empty-path-semantics/">ADR-0004</a> —
   Empty path semantics</li>
-<li><a href="../design/adrs/0008-extension-architecture/">ADR-0008</a> --
+<li><a href="../design/adrs/0008-extension-architecture/">ADR-0008</a> —
   Extension architecture</li>
-<li><a href="../design/adrs/0009-glob-three-tier-design/">ADR-0009</a> --
+<li><a href="../design/adrs/0009-glob-three-tier-design/">ADR-0009</a> —
   Glob three-tier design</li>
 </ul>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../security-model/">Security Model</a> -- credential handling and trust boundaries</li>
-<li><a href="../performance/">Performance</a> -- benchmark data and optimization guidance</li>
-<li><a href="../concurrency/">Concurrency</a> -- thread safety and atomicity guarantees</li>
+<li><a href="../security-model/">Security Model</a> — credential handling and trust boundaries</li>
+<li><a href="../performance/">Performance</a> — benchmark data and optimization guidance</li>
+<li><a href="../concurrency/">Concurrency</a> — thread safety and atomicity guarantees</li>
 </ul>
 
 

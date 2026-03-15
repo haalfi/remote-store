@@ -6069,7 +6069,7 @@ numbered and named after the feature it describes (e.g. <code>008-s3-backend.md<
 <p>All dev scripts are defined in <code>pyproject.toml</code> under <code>[tool.hatch.envs.default.scripts]</code>. Run <code>hatch run</code> to see available commands.</p>
 <h2 id="commit-signing">Commit Signing<a class="headerlink" href="#commit-signing" title="Permanent link">&para;</a></h2>
 <p>All commits should be signed for supply chain transparency. GitHub Vigilant
-Mode is enabled on the repository -- unsigned commits show as "Unverified".</p>
+Mode is enabled on the repository — unsigned commits show as "Unverified".</p>
 <h3 id="setup-ssh-signing-one-time">Setup (SSH signing, one-time)<a class="headerlink" href="#setup-ssh-signing-one-time" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Tell Git to use SSH for signing</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>gpg.format<span class="w"> </span>ssh
@@ -6087,7 +6087,7 @@ Settings &gt; SSH and GPG keys &gt; New SSH key &gt; Key type: <strong>Signing K
 <p>On Windows, you can also enable the OpenSSH Authentication Agent service
 (via <code>Set-Service ssh-agent -StartupType Automatic</code> in an elevated PowerShell)
 for persistence across sessions.</p>
-<p>Verify with <code>echo "test" | git commit-tree HEAD^{tree} -S</code> -- a commit hash without passphrase prompt means signing works.</p>
+<p>Verify with <code>echo "test" | git commit-tree HEAD^{tree} -S</code> — a commit hash without passphrase prompt means signing works.</p>
 <h2 id="code-style">Code Style<a class="headerlink" href="#code-style" title="Permanent link">&para;</a></h2>
 <p>See <a href="../design/design-spec/"><code>sdd/DESIGN.md</code></a> for the full code style conventions.</p>
 <ul>
@@ -6106,7 +6106,7 @@ for persistence across sessions.</p>
 <p>The <code>examples/</code> directory contains runnable Python scripts that are validated in CI. Example scripts must remain self-contained and use <code>tempfile.TemporaryDirectory</code> for cleanup.</p>
 <p>Jupyter notebooks in <code>examples/notebooks/</code> are validated in CI via
 <code>hatch run notebooks</code> (code cells executed with <code>exec()</code>, no Jupyter needed).
-Visual output is not checked -- the runner validates that cells execute without
+Visual output is not checked — the runner validates that cells execute without
 errors.</p>
 <h2 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permanent link">&para;</a></h2>
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes. The public API surface is everything in <code>remote_store.__init__.__all__</code>.</p>
@@ -6191,7 +6191,7 @@ errors.</p>
 <li>[ ] Master is clean: <code>git status</code> shows no uncommitted changes</li>
 <li>[ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)</li>
 <li>[ ] <code>hatch run all</code> passes <strong>locally</strong> (lint + format-check + typecheck + test-cov + examples). Local runs without Docker backends are stricter than CI for coverage — CI has Azurite which inflates Azure backend coverage, potentially masking gaps in new code</li>
-<li>[ ] No open <code>[~]</code> items shipping in this release in <code>sdd/BACKLOG.md</code> -- complete and move to <code>BACKLOG-DONE.md</code>, or defer (<code>[ ]</code>)</li>
+<li>[ ] No open <code>[~]</code> items shipping in this release in <code>sdd/BACKLOG.md</code> — complete and move to <code>BACKLOG-DONE.md</code>, or defer (<code>[ ]</code>)</li>
 <li>[ ] <code>[Unreleased]</code> section in CHANGELOG.md is non-empty</li>
 <li>[ ] Decide bump level (patch / minor / major) per the table above</li>
 </ul>

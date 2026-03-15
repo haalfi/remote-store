@@ -1851,6 +1851,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5396,6 +5407,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5425,7 +5447,7 @@ objects for I/O.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[arrow]&quot;</span>
 </code></pre></div>
 <p>This installs <code>pyarrow &gt;= 12.0.0</code> as an optional dependency. The adapter works
-with any backend -- no extra configuration needed.</p>
+with any backend — no extra configuration needed.</p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.parquet</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pq</span>
@@ -5540,13 +5562,13 @@ with any backend -- no extra configuration needed.</p>
 </table>
 <p><strong>Tier 1</strong> is automatically enabled for backends that expose a native PyArrow
 filesystem via <code>unwrap()</code> (currently <code>S3PyArrowBackend</code>). The handler detects
-this at construction time and bypasses Python I/O entirely for reads -- the full
+this at construction time and bypasses Python I/O entirely for reads — the full
 C++ <code>ReadAt</code> -&gt; HTTP Range request -&gt; I/O coalescing pipeline runs with zero GIL
 overhead.</p>
 <h2 id="thread-safety">Thread Safety<a class="headerlink" href="#thread-safety" title="Permanent link">&para;</a></h2>
 <p>The handler holds no shared mutable state. PyArrow's C++ layer may call handler
 methods from background threads (with the GIL acquired). Thread safety depends
-on the backend -- all built-in backends (Memory, Local, S3, SFTP, Azure) are
+on the backend — all built-in backends (Memory, Local, S3, SFTP, Azure) are
 safe under concurrent calls. If using a custom backend, ensure its methods are
 thread-safe.</p>
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
@@ -5555,7 +5577,7 @@ thread-safe.</p>
   Most backends (S3, Azure) lack native append semantics.</li>
 <li><strong>Root deletion blocked.</strong> <code>delete_dir("")</code>, <code>delete_dir_contents("")</code>, and
   <code>delete_root_dir_contents()</code> raise <code>NotImplementedError</code> as a safety guard.</li>
-<li><strong>Write buffering.</strong> Writes are buffered until <code>close()</code> -- data is not
+<li><strong>Write buffering.</strong> Writes are buffered until <code>close()</code> — data is not
   visible in the Store during the write. This is inherent to the Store's
   single-shot <code>write()</code> API.</li>
 <li><strong>Tier 1 limited to S3-PyArrow.</strong> <code>S3PyArrowBackend</code> exposes a native PyArrow
@@ -5602,12 +5624,13 @@ thread-safe.</p>
 </tr>
 </tbody>
 </table>
-<p>No <code>RemoteStoreError</code> leaks to PyArrow callers -- all exceptions are mapped
+<p>No <code>RemoteStoreError</code> leaks to PyArrow callers — all exceptions are mapped
 with <code>from</code> chaining for debuggability.</p>
-<hr />
-<p><strong>See also:</strong>
-<a href="../api/ext-arrow/">API reference</a> --
-<a href="https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py">Example script</a></p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../api/ext-arrow/">API reference</a></li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py">Example script</a></li>
+</ul>
 
 
 

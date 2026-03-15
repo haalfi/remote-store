@@ -1744,6 +1744,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#api-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5431,6 +5442,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#api-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5599,10 +5621,10 @@
 <h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h2>
 <p>The backend resolves credentials in this order:</p>
 <ol>
-<li><strong><code>account_key</code></strong> -- if provided, used directly</li>
-<li><strong><code>sas_token</code></strong> -- if provided, used directly</li>
-<li><strong><code>credential</code></strong> -- any credential object (e.g. <code>DefaultAzureCredential()</code>)</li>
-<li><strong><code>DefaultAzureCredential</code></strong> -- auto-detected from environment (requires <code>azure-identity</code>)</li>
+<li><strong><code>account_key</code></strong> — if provided, used directly</li>
+<li><strong><code>sas_token</code></strong> — if provided, used directly</li>
+<li><strong><code>credential</code></strong> — any credential object (e.g. <code>DefaultAzureCredential()</code>)</li>
+<li><strong><code>DefaultAzureCredential</code></strong> — auto-detected from environment (requires <code>azure-identity</code>)</li>
 </ol>
 <p><code>DefaultAzureCredential</code> automatically tries environment variables, managed identity, Azure CLI, and other sources. See the <a href="https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential">Azure Identity docs</a> for details.</p>
 <h2 id="hns-vs-non-hns">HNS vs Non-HNS<a class="headerlink" href="#hns-vs-non-hns" title="Permanent link">&para;</a></h2>
@@ -5723,11 +5745,12 @@
 <a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="p">)</span>
 </code></pre></div>
 <p>Note: Azurite does not support Hierarchical Namespace. HNS-specific features (atomic rename, real directories) are tested with mocked SDK objects.</p>
-<hr />
-<p><strong>See also:</strong>
-<a href="../../capabilities-matrix/">Capabilities matrix</a> --
-<a href="../../api/store/">API reference</a> --
-<a href="https://github.com/haalfi/remote-store/blob/master/examples/backends/azure_backend.py">Example script</a></p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../capabilities-matrix/">Capabilities matrix</a></li>
+<li><a href="../../api/store/">API reference</a></li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/examples/backends/azure_backend.py">Example script</a></li>
+</ul>
 <h2 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
 
 

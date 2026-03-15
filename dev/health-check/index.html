@@ -2037,6 +2037,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5306,6 +5317,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5338,10 +5360,10 @@ processing requests.</p>
 </code></pre></div>
 <h2 id="use-cases">Use cases<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Startup gates</strong> -- fail fast before accepting traffic if the backend is
+<li><strong>Startup gates</strong> — fail fast before accepting traffic if the backend is
   unreachable or credentials are invalid.</li>
-<li><strong>Liveness probes</strong> -- Kubernetes <code>livenessProbe</code> or similar health endpoints.</li>
-<li><strong>Connection validation</strong> -- verify config after loading from TOML/YAML.</li>
+<li><strong>Liveness probes</strong> — Kubernetes <code>livenessProbe</code> or similar health endpoints.</li>
+<li><strong>Connection validation</strong> — verify config after loading from TOML/YAML.</li>
 </ul>
 <h2 id="error-handling">Error handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
 <p><code>ping()</code> raises the same exceptions as other Store operations:</p>
@@ -5433,11 +5455,16 @@ processing requests.</p>
 </code></pre></div>
 <h2 id="design-notes">Design notes<a class="headerlink" href="#design-notes" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>No return value</strong> -- success is silent (<code>None</code>), failure raises. This
+<li><strong>No return value</strong> — success is silent (<code>None</code>), failure raises. This
   matches the Go convention of <code>Ping() error</code> and keeps the API minimal.</li>
-<li><strong>No caching</strong> -- every call performs a real connectivity check.</li>
-<li><strong>No timeout parameter</strong> -- use backend-level timeouts (e.g. <code>RetryPolicy</code>).</li>
-<li><strong>Not capability-gated</strong> -- all backends support health checks.</li>
+<li><strong>No caching</strong> — every call performs a real connectivity check.</li>
+<li><strong>No timeout parameter</strong> — use backend-level timeouts (e.g. <code>RetryPolicy</code>).</li>
+<li><strong>Not capability-gated</strong> — all backends support health checks.</li>
+</ul>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../api/store/">API reference</a> — <code>Store.ping()</code> method</li>
+<li><a href="../backends/">Backends guide</a> — per-backend configuration and timeouts</li>
 </ul>
 
 

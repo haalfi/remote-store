@@ -2086,6 +2086,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5642,6 +5653,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5677,7 +5699,7 @@ code.</p>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">observed</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;data/report.csv&quot;</span><span class="p">,</span> <span class="n">csv_bytes</span><span class="p">)</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># prints: Wrote data/report.csv in 12.3ms</span>
 </code></pre></div>
-<p>The returned <code>ObservedStore</code> is a full <code>Store</code> subclass -- it passes
+<p>The returned <code>ObservedStore</code> is a full <code>Store</code> subclass — it passes
 <code>isinstance(observed, Store)</code> and works everywhere a Store is expected.</p>
 <h2 id="hook-types">Hook Types<a class="headerlink" href="#hook-types" title="Permanent link">&para;</a></h2>
 <h3 id="per-operation-hooks-after-only">Per-operation hooks (after-only)<a class="headerlink" href="#per-operation-hooks-after-only" title="Permanent link">&para;</a></h3>
@@ -5802,7 +5824,7 @@ thread-safe queue and flushes them in batches:</p>
 A <code>NullHandler</code> is attached to the root <code>"remote_store"</code> logger so
 the library is silent by default.</p>
 <h3 id="showing-only-warnings">Showing only warnings<a class="headerlink" href="#showing-only-warnings" title="Permanent link">&para;</a></h3>
-<p>Set the level on the <code>"remote_store"</code> logger -- this applies to all
+<p>Set the level on the <code>"remote_store"</code> logger — this applies to all
 child loggers in the hierarchy:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
@@ -5975,10 +5997,11 @@ production setup exports to an OTLP-compatible collector:</p>
 <a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="c1"># Now otel_observe() spans flow to your collector</span>
 <a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">otel_observe</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
 </code></pre></div>
-<hr />
-<p><strong>See also:</strong>
-<a href="../api/ext-observe/">API reference</a> --
-<a href="https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py">Example script</a></p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../api/ext-observe/">API reference</a></li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py">Example script</a></li>
+</ul>
 
 
 

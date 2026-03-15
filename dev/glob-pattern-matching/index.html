@@ -1823,7 +1823,7 @@
   <a href="#tier-2-storeglob-native-backend-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tier 2: Store.glob() -- native backend glob
+        Tier 2: Store.glob() — native backend glob
       
     </span>
   </a>
@@ -1834,7 +1834,7 @@
   <a href="#tier-3-glob_files-portable-full-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tier 3: glob_files() -- portable full glob
+        Tier 3: glob_files() — portable full glob
       
     </span>
   </a>
@@ -1868,6 +1868,17 @@
     <span class="md-ellipsis">
       
         Choosing the Right Tier
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -5279,7 +5290,7 @@
   <a href="#tier-2-storeglob-native-backend-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tier 2: Store.glob() -- native backend glob
+        Tier 2: Store.glob() — native backend glob
       
     </span>
   </a>
@@ -5290,7 +5301,7 @@
   <a href="#tier-3-glob_files-portable-full-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tier 3: glob_files() -- portable full glob
+        Tier 3: glob_files() — portable full glob
       
     </span>
   </a>
@@ -5330,6 +5341,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5353,14 +5375,14 @@
 <h1 id="glob-pattern-matching">Glob Pattern Matching<a class="headerlink" href="#glob-pattern-matching" title="Permanent link">&para;</a></h1>
 <p>The <code>ext.glob</code> module provides portable pattern matching for file listing
 across all backends. For simple name-based filtering, use
-<code>Store.list_files(pattern=...)</code> directly -- it works with every backend.</p>
+<code>Store.list_files(pattern=...)</code> directly — it works with every backend.</p>
 <p>Three tiers of pattern matching are available (ADR-0009):</p>
 <ol>
-<li><strong><code>list_files(pattern=...)</code></strong> -- <code>fnmatch</code> name filtering at the Store level</li>
-<li><strong><code>Store.glob(pattern)</code></strong> -- native backend glob, capability-gated</li>
-<li><strong><code>ext.glob.glob_files()</code></strong> -- portable full glob with recursive patterns</li>
+<li><strong><code>list_files(pattern=...)</code></strong> — <code>fnmatch</code> name filtering at the Store level</li>
+<li><strong><code>Store.glob(pattern)</code></strong> — native backend glob, capability-gated</li>
+<li><strong><code>ext.glob.glob_files()</code></strong> — portable full glob with recursive patterns</li>
 </ol>
-<p>No extra dependencies are required -- the module is pure Python and always
+<p>No extra dependencies are required — the module is pure Python and always
 available.</p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span><span class="p">,</span> <span class="n">glob_files</span>
@@ -5400,9 +5422,9 @@ filtering is applied at the Store level after path rebasing.</p>
 <p><strong>Limitation:</strong> <code>pattern</code> matches against the file's <strong>name</strong> (basename),
 not the full path. For path-based patterns like <code>data/**/*.csv</code>, use
 <code>glob_files()</code> (Tier 3).</p>
-<h2 id="tier-2-storeglob-native-backend-glob">Tier 2: Store.glob() -- native backend glob<a class="headerlink" href="#tier-2-storeglob-native-backend-glob" title="Permanent link">&para;</a></h2>
+<h2 id="tier-2-storeglob-native-backend-glob">Tier 2: Store.glob() — native backend glob<a class="headerlink" href="#tier-2-storeglob-native-backend-glob" title="Permanent link">&para;</a></h2>
 <p>For backends with native pattern matching, <code>Store.glob()</code> provides direct
-access. It is capability-gated on <code>Capability.GLOB</code> -- like <code>Store.unwrap()</code>,
+access. It is capability-gated on <code>Capability.GLOB</code> — like <code>Store.unwrap()</code>,
 it is an opt-in feature for users who know their backend:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
@@ -5413,7 +5435,7 @@ it is an opt-in feature for users who know their backend:</p>
 <p><code>LocalBackend</code>, <code>S3Backend</code>, <code>S3PyArrowBackend</code>, and <code>AzureBackend</code> implement
 native glob. <code>LocalBackend</code> uses <code>pathlib.Path.glob()</code>; the cloud backends use
 prefix-optimized listing with client-side regex filtering.</p>
-<h2 id="tier-3-glob_files-portable-full-glob">Tier 3: glob_files() -- portable full glob<a class="headerlink" href="#tier-3-glob_files-portable-full-glob" title="Permanent link">&para;</a></h2>
+<h2 id="tier-3-glob_files-portable-full-glob">Tier 3: glob_files() — portable full glob<a class="headerlink" href="#tier-3-glob_files-portable-full-glob" title="Permanent link">&para;</a></h2>
 <p><code>glob_files()</code> is the recommended API when <code>list_files(pattern=)</code> isn't
 enough and you want code that works across all backends:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.glob</span><span class="w"> </span><span class="kn">import</span> <span class="n">glob_files</span>
@@ -5512,10 +5534,11 @@ Patterns like <code>**error</code> where <code>**</code> is embedded within a se
 </tr>
 </tbody>
 </table>
-<hr />
-<p><strong>See also:</strong>
-<a href="../api/ext-glob/">API reference</a> --
-<a href="https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py">Example script</a></p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../api/ext-glob/">API reference</a></li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py">Example script</a></li>
+</ul>
 
 
 

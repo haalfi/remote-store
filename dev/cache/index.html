@@ -1980,6 +1980,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5374,6 +5385,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5481,7 +5503,7 @@ round-trips for read-heavy and metadata-heavy workloads.</p>
 </tr>
 <tr>
 <td><code>read()</code></td>
-<td><strong>No</strong></td>
+<td>—</td>
 <td>Returns <code>BinaryIO</code> stream</td>
 </tr>
 </tbody>
@@ -5492,13 +5514,13 @@ cached content reads.</p>
 <h2 id="automatic-invalidation">Automatic Invalidation<a class="headerlink" href="#automatic-invalidation" title="Permanent link">&para;</a></h2>
 <p>Mutating operations automatically invalidate affected cache entries:</p>
 <ul>
-<li><strong><code>write</code>, <code>write_atomic</code>, <code>open_atomic</code></strong> -- invalidate the written
+<li><strong><code>write</code>, <code>write_atomic</code>, <code>open_atomic</code></strong> — invalidate the written
   path and all listing/folder caches.</li>
-<li><strong><code>delete</code></strong> -- invalidate the deleted path and all listings.</li>
-<li><strong><code>delete_folder</code></strong> -- clear the entire cache (folder deletion can
+<li><strong><code>delete</code></strong> — invalidate the deleted path and all listings.</li>
+<li><strong><code>delete_folder</code></strong> — clear the entire cache (folder deletion can
   affect any cached path).</li>
-<li><strong><code>move</code></strong> -- invalidate both source and destination paths plus listings.</li>
-<li><strong><code>copy</code></strong> -- invalidate destination path plus listings.</li>
+<li><strong><code>move</code></strong> — invalidate both source and destination paths plus listings.</li>
+<li><strong><code>copy</code></strong> — invalidate destination path plus listings.</li>
 </ul>
 <h2 id="limiting-memory-usage">Limiting Memory Usage<a class="headerlink" href="#limiting-memory-usage" title="Permanent link">&para;</a></h2>
 <p>By default, <code>read_bytes()</code> caches files of any size. For workloads with
@@ -5506,7 +5528,7 @@ large files, set <code>max_content_size</code> to prevent memory pressure:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Only cache files up to 1 MB</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">cached</span> <span class="o">=</span> <span class="n">cached_store</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">max_content_size</span><span class="o">=</span><span class="mi">1_048_576</span><span class="p">)</span>
 </code></pre></div>
-<p>Files larger than the limit are still returned correctly -- they just
+<p>Files larger than the limit are still returned correctly — they just
 bypass the cache.</p>
 <h2 id="cache-statistics">Cache Statistics<a class="headerlink" href="#cache-statistics" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">cached</span><span class="o">.</span><span class="n">stats</span>
@@ -5543,10 +5565,11 @@ what gets observed:</p>
 <p><code>CachedStore</code> and <code>MemoryCache</code> are thread-safe. They work correctly
 with <code>batch_exists(concurrent=True)</code> and similar concurrent access
 patterns.</p>
-<hr />
-<p><strong>See also:</strong>
-<a href="../api/ext-cache/">API reference</a> --
-<a href="https://github.com/haalfi/remote-store/blob/master/examples/caching.py">Example script</a></p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../api/ext-cache/">API reference</a></li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/examples/caching.py">Example script</a></li>
+</ul>
 
 
 

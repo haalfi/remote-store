@@ -6153,12 +6153,6 @@ protocol (<code>with Store(...) as s:</code>) which calls <code>close()</code> o
           </div>
         </li>
     </ul>
-        <p><code>Store</code> is immutable after construction and can be shared across
-threads.  Backend thread safety depends on the backend implementation.</p>
-<p>The root path does not need to exist before constructing the store.
-<code>write()</code> creates intermediate folders implicitly on all backends,
-so files written under a new <code>root_path</code> will work without any
-explicit folder-creation step.</p>
 
 
 
@@ -7964,7 +7958,7 @@ the requested type.</p>
 
 </div><div class="admonition note">
 <p class="admonition-title">Note</p>
-<p><code>supports()</code> itself is portable -- it works on all backends. Only the
+<p><code>supports()</code> itself is portable — it works on all backends. Only the
 capability-gated methods it guards are backend-specific.</p>
 </div>
 <hr />
@@ -7998,9 +7992,9 @@ relying on these in production.</p>
 <td>Yes (<code>copy2</code>)</td>
 <td>Yes</td>
 <td>Yes</td>
-<td>No</td>
+<td>—</td>
 <td>Yes</td>
-<td>No</td>
+<td>—</td>
 </tr>
 <tr>
 <td><code>write_atomic()</code> mechanism</td>
@@ -8016,9 +8010,9 @@ relying on these in production.</p>
 <td>Yes</td>
 <td>Yes</td>
 <td>Yes</td>
-<td>No</td>
+<td>—</td>
 <td>Yes</td>
-<td>No</td>
+<td>—</td>
 </tr>
 <tr>
 <td><code>list_files()</code> ordering</td>
