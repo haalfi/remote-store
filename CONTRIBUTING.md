@@ -87,7 +87,7 @@ Extensions live in `src/remote_store/ext/` and follow the contract in [ADR-0008]
 9. Add the page to `docs-src/_nav.yml`
 10. Add a runnable example in `examples/`
 11. Add an example docs wrapper in `docs-src/examples/<name>.md` and add it to `docs-src/examples/_nav.yml`
-12. Update `CHANGELOG.md` and `sdd/BACKLOG.md` in the same commit
+12. Update `CHANGELOG.md` and `sdd/BACKLOG.md` (or `sdd/BACKLOG-DONE.md`) in the same commit
 
 ### Export patterns
 
@@ -265,14 +265,14 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] Master is clean: `git status` shows no uncommitted changes
 - [ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)
 - [ ] `hatch run all` passes **locally** (lint + format-check + typecheck + test-cov + examples). Local runs without Docker backends are stricter than CI for coverage — CI has Azurite which inflates Azure backend coverage, potentially masking gaps in new code
-- [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete (`[x]`) or defer (`[ ]`)
+- [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` -- complete and move to `BACKLOG-DONE.md`, or defer (`[ ]`)
 - [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
 - [ ] Decide bump level (patch / minor / major) per the table above
 
 #### Phase 1: Content freeze
 
 - [ ] CHANGELOG.md `[Unreleased]` is complete — every user-facing change listed with its backlog ID
-- [ ] `sdd/BACKLOG.md`: all shipping items marked `[x]` with version (e.g. `(v0.8.0)`)
+- [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here, marked `[x]` with version (e.g. `(v0.8.0)`)
 - [ ] README.md: backends table, installation extras, API table, badges are current
 - [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
 - [ ] Examples: `hatch run examples` passes; manually review notebooks if API surface changed

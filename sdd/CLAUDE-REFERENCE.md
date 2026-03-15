@@ -62,7 +62,7 @@ Before committing, check whether your change has cross-file dependencies:
 
 | I need to…                               | Go here                                              |
 |------------------------------------------|------------------------------------------------------|
-| Find out what work is pending            | `sdd/BACKLOG.md`                                     |
+| Find out what work is pending            | `sdd/BACKLOG.md` (active), `sdd/BACKLOG-DONE.md` (archive) |
 | Understand how a feature should behave   | `sdd/specs/` (NNN-topic.md; IDs use STORE-, S3-, ERR- etc.) |
 | Learn why a design decision was made     | `sdd/adrs/`                                          |
 | Propose a significant new feature        | Write an RFC in `sdd/rfcs/` (see `rfc-template.md`)  |

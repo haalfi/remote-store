@@ -22,14 +22,14 @@ If not provided, ask them. Refer to CONTRIBUTING.md § Versioning for guidance:
 
 - [ ] Master is clean: `git status` shows no uncommitted changes
 - [ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)
-- [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete (`[x]`) or defer (`[ ]`)
+- [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` -- complete and move to `BACKLOG-DONE.md`, or defer (`[ ]`)
 - [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
 - [ ] Decide bump level (patch / minor / major)
 
 ## Phase 1: Content freeze
 
 - [ ] CHANGELOG.md `[Unreleased]` is complete — every user-facing change listed with its backlog ID
-- [ ] `sdd/BACKLOG.md`: all shipping items marked `[x]` with version (e.g. `(v0.8.0)`)
+- [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here, marked `[x]` with version (e.g. `(v0.8.0)`)
 - [ ] README.md: backends table, installation extras, API table, badges are current
 - [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
 - [ ] Examples: `hatch run examples` passes; manually review notebooks if API surface changed

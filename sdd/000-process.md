@@ -53,22 +53,13 @@ def test_double_dot_rejected():
 
 `pytest -m "spec"` runs all spec-derived tests.
 
-### Backlog tiers
+### Backlog
 
-All work is tracked in `sdd/BACKLOG.md`:
+Active work and ideas are tracked in [`sdd/BACKLOG.md`](BACKLOG.md).
+Completed items live in [`sdd/BACKLOG-DONE.md`](BACKLOG-DONE.md).
 
-| Tier | Prefix | Meaning |
-|------|--------|---------|
-| **Release Blockers** | `BL-NNN` | Must be resolved before the next PyPI publish. |
-| **Backlog** | `BK-NNN` | Committed work, queued behind blockers. |
-| **Known Bugs** | `BUG-NNN` | Confirmed defects with reproduction steps. |
-| **Ideas** | `ID-NNN` | Parking lot: not evaluated, not committed to. |
-| **Done** | (original prefix) | Completed items kept for reference. |
-
-Items within each section are ordered newest-first (most recently completed at the top).
-
-When completing work: mark items `[x]` (with version) or `[~]` (with what remains).
-Move completed items to the matching section under Done. Same commit as the code change.
+`BACKLOG.md` is the single source of truth for ID prefixes, status conventions,
+completion workflow, and section structure. See its "How this file works" header.
 
 ### ADRs, RFCs, research, and audits
 

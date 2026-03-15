@@ -1,0 +1,317 @@
+# Development Backlog — Done
+
+Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
+
+---
+
+## Post-v0.17.0
+
+- [x] **ID-075 — Dagster integration v1 (`ext.dagster`)**
+  Thin Dagster IO manager adapter: `remote_store_io_manager(store)` factory,
+  serializers (pickle, JSON, Parquet), [spec 031](specs/031-ext-dagster.md)
+  (DAG-001 -- DAG-011), tests, guide, docs wiring.
+  v2 tracked as ID-083.
+  [Research](research/research-dagster-extension.md).
+
+- [x] **ID-081 — README medium pass: trim density, add backend behavior matrix**
+  Streamlined onboarding flow: trimmed duplicate explanations, added backend
+  comparison matrix, restored correct extras list, fixed method count (27).
+
+- [x] **ID-064 — Docs site enhancements (colored types, Material features, Fira Code)**
+  Applied findings from [research](research/research-fastapi-docs.md).
+  P1: `separate_signature`, `signature_crossrefs`, `show_symbol_type_heading`,
+  `show_symbol_type_toc`. P3: Fira Code font via `extra_css`. P4: `navigation.tabs.sticky`,
+  `search.suggest`, `search.highlight`. Also added `show_signature_annotations` for
+  property return type visibility.
+
+- [x] **ID-080 — Migrate docstrings from Sphinx to Google style**
+  Converted 367 Sphinx markers across 25 files to Google-style sections.
+  Updated `mkdocs.yml` (`docstring_style: google`) and `sdd/DESIGN.md` §4.
+  [Research](research/research-google-docstring-migration.md).
+
+- [x] **ID-062 — Remove redundant `exists()` guard from S3 listing methods**
+  Removed `exists()` pre-check from `list_files`, `list_folders`, and
+  `iter_children` in S3Backend and S3PyArrowBackend. Halves API calls
+  for listing operations.
+
+- [x] **ID-076 — AzureBackend `max_concurrency` parameter**
+  Added `max_concurrency: int = 1` constructor parameter to `AzureBackend`.
+  Threaded through to `upload_blob()`, `download_blob()`, and HNS
+  `upload_data()` calls. [Spec AZ-033](specs/012-azure-backend.md).
+
+- [x] **ID-079 — FolderInfo.name property and PathEntry protocol notes**
+  Added `name` property to `FolderInfo` so it satisfies `PathEntry`
+  alongside `FileInfo` and `FolderEntry`.
+
+- [x] **ID-080b — Document lazy-import pattern for mixed optional deps**
+  Superseded by ADR-0013: optional-dependency extensions are no longer
+  re-exported from `__init__.py` at all.
+
+- [x] **ID-071 — Store API refinement: Phase 1**
+  Subsumed by ID-074. Kept for traceability.
+  [Research](research/research-store-api-refinement.md).
+
+## v0.17.0
+
+- [x] **ID-072 — Store API refinement: listing normalization (Option D)**
+  `list_folders()` returns `Iterator[FolderEntry]`, `iter_children()` returns
+  `Iterator[FileInfo | FolderEntry]`. Added `FolderEntry` dataclass and
+  `PathEntry` protocol. All 6 backends updated.
+  [Research](research/research-store-api-refinement.md).
+
+## v0.16.0
+
+- [x] **ID-078 — Document Store at a new root**
+  Added docstring note on `Store` class and admonition in
+  `docs-src/api/store.md`.
+
+- [x] **ID-077 — Switch docstring rendering from tables to lists**
+  Changed `docstring_section_style` to `list` in mkdocstrings config.
+
+- [x] **ID-074 — Store API refinement (pre-v1 audit)**
+  Systematic pre-v1 audit of the Store public API. Rewrote all Store
+  docstrings, implemented `write_text()`, restructured `store.md` with
+  per-method `:::` directives, built backend behavior matrix.
+  Subsumes ID-071 Phase 1.
+
+- [x] **ID-073 — Use uv as hatch installer backend**
+  Set `installer = "uv"` in `[tool.hatch.envs.default]`. ~10x faster
+  env creation.
+
+- [x] **ID-063 — `write_text()` convenience method**
+  Shipped as part of ID-074.
+
+## v0.15.0
+
+- [x] **ID-056 — `read_text()` convenience method**
+  [Spec 028](specs/028-read-text.md) (RTXT-001 -- RTXT-006).
+
+- [x] **ID-055 — `iter_children()` — combined file + folder listing**
+  [Spec 027](specs/027-iter-children.md) (ITER-001 -- ITER-008).
+
+- [x] **ID-025 — `ext.cache` — store-level caching middleware**
+  `cached_store(store, ttl=300)`. Auto-invalidation on writes/deletes/moves/copies.
+  [Spec 023](specs/023-ext-cache.md) (CACHE-001 -- CACHE-015). 52 tests.
+
+- [x] **ID-035 — Parallel batch operations**
+  `concurrent=True` and `max_workers=N` on batch operations.
+  [Spec](specs/016-ext-batch.md) BATCH-020 -- BATCH-025. 20 new tests.
+
+- [x] **ID-036 — Hive-style partition path helpers**
+  `partition_path()` and `parse_partition()`.
+  [Spec 024](specs/024-ext-partition.md) (PART-001 -- PART-013). 23 tests.
+
+- [x] **ID-048 — Verify notebook examples in CI**
+  `tests/scripts/run_notebooks.py` executes notebook code cells via `exec()`.
+
+- [x] **ID-026 — Streaming atomic writes**
+  `Store.open_atomic()` and `Backend.open_atomic()`.
+  [RFC-0004](rfcs/rfc-0004-streaming-atomic-writes.md),
+  [spec 022](specs/022-streaming-atomic-writes.md) (SAW-001 -- SAW-015).
+
+- [x] **ID-037 — PyArrow adapter Phase 2 — Tier 1 native fast-path reads**
+  `Backend.native_path()` (BE-025), `Store.native_path()` (STORE-015).
+
+- [x] **ID-038 — Re-run comparative benchmarks post-cache-invalidation fix**
+
+- [x] **DOC-001 — Documentation overhaul per Documentation Master**
+  Full Diataxis restructure of the docs site (Phase 1--7).
+
+## v0.14.0
+
+- [x] **ID-002 — YAML config support** (moved to `ext/yaml.py` post-v0.15.0)
+  [Spec 021](specs/021-config-loaders.md) (CFG-010/CFG-011).
+
+- [x] **ID-003 — Pydantic BaseSettings integration**
+  [Spec 021](specs/021-config-loaders.md) (CFG-015 -- CFG-017).
+
+- [x] **ID-005 — Built-in `from_toml()` config loader**
+  [Spec 021](specs/021-config-loaders.md) (CFG-008/CFG-009).
+
+- [x] **ID-034 — Parquet lake guide (Bronze / Silver / Gold patterns)**
+
+- [x] **ID-040 — `move(src, dst)` and `copy(src, dst)` same-path consistency**
+  Spec: STORE-008a.
+
+- [x] **ID-041 — `Registry.get_store()` backend ownership foot-gun**
+  `get_store()` now sets `_owns_backend = False`.
+
+- [x] **ID-042 — Document Secret usage in README and examples**
+
+- [x] **ID-043 — Remove `_stacklevel` from public `from_dict()` signature**
+
+- [x] **ID-046 — Audit version-conditional imports for mypy coverage**
+
+- [x] **ID-047 — Spec accuracy fixes**
+
+- [x] **BK-005 — SFTP backend test coverage gaps**
+  Coverage improved from 90% to 100%. 35 new tests.
+
+- [x] **BK-006 — Memory backend test coverage gaps**
+  Coverage improved from 90% to 100%. 30 new tests.
+
+## v0.13.0
+
+- [x] **ID-004 — Structured logging & metrics hooks**
+  Superseded by ID-024.
+
+- [x] **ID-024 — `ext.observe` — hooks / middleware / instrumentation**
+  [ADR-0010](adrs/0010-observe-hooks-middleware.md),
+  [spec 019](specs/019-ext-observe.md) (OBS-001 -- OBS-014).
+
+- [x] **ID-039 — Credential hygiene: `Secret` wrapper and central redaction**
+  [Spec 020](specs/020-credential-hygiene.md) (SEC-001 -- SEC-008).
+
+## v0.12.0
+
+- [x] **ID-007 — `Store.glob()` surface API**
+  [ADR-0009](adrs/0009-glob-three-tier-design.md),
+  [spec 018](specs/018-glob.md).
+
+- [x] **BK-002 — Glob / pattern matching strategy**
+  Related: ID-007.
+
+- [x] **ID-032 — Fix listing benchmark fixture caching**
+- [x] **ID-033 — Cloud benchmark quick tier timing budget**
+
+## v0.10.0
+
+- [x] **ID-020 — Benchmark tiered modes and single-backend filtering**
+- [x] **ID-027 — Extension architecture (`ext.*` namespace)**
+  [ADR-0008](adrs/0008-extension-architecture.md).
+- [x] **ID-028 — Release-triggered publish and docs deploy**
+  Subsumes AF-014.
+- [x] **ID-029 — Versioned documentation (mike + RTD tags)**
+- [x] **ID-031 — S3-PyArrow read path optimization**
+  [RFC-0003](rfcs/rfc-0003-s3-pyarrow-read-optimization.md).
+
+## v0.9.0
+
+- [x] **ID-001 — Cross-store transfer** *(subsumed by ID-023)*
+- [x] **ID-009 — `Store.upload()` / `Store.download()`** *(subsumed by ID-023)*
+- [x] **ID-015 — Audit external deep links**
+- [x] **ID-016 — PyArrow FileSystemHandler adapter (Phase 1)**
+  [RFC-0002](rfcs/rfc-0002-pyarrow-filesystem-adapter.md),
+  [spec 014](specs/014-pyarrow-filesystem-adapter.md). 89 tests.
+- [x] **ID-019 — Update stale CAP-001 in spec 003**
+- [x] **ID-022 — `ext.batch` — batch operations**
+  [Spec 016](specs/016-ext-batch.md).
+- [x] **ID-023 — `ext.transfer` — cross-store and local-path transfers**
+  [Spec 017](specs/017-ext-transfer.md).
+
+## v0.8.0
+
+- [x] **ID-021 — `Store.child(subpath)` — runtime sub-scoping**
+  [Spec 015](specs/015-store-child.md).
+- [x] **ID-030 — Claude Code reusable skills**
+- [x] **DONE-005 — Reorganize examples into core + backends groups**
+
+## v0.7.0
+
+- [x] **ID-017 — Memory backend**
+- [x] **AF-008 — Add credential masking to backend `__repr__`**
+- [x] **AF-009 — Fix `Registry.close()` to close all backends on error**
+- [x] **AF-011 — Remove dead `RemoteFile`/`RemoteFolder`**
+- [x] **AF-015 — Update stale v0.5.0 docs**
+
+## v0.6.0
+
+- [x] **AF-001 — Auto-register S3/SFTP/S3-PyArrow in Registry**
+- [x] **AF-002 — Remove GLOB/RECURSIVE_LIST ghost capabilities**
+- [x] **AF-003 — Fix `S3Backend.close()` global cache side effect**
+- [x] **AF-004 — Unify `get_folder_info` on empty folders**
+- [x] **AF-005 — Fix `delete_folder` error types**
+- [x] **AF-006 — Fix native exception leakage through lazy streams**
+- [x] **AF-007 — Wire Azure backend into docs site**
+
+## v0.5.0
+
+- [x] **BK-001 — Azure backend**
+  [RFC-0001](rfcs/rfc-0001-azure-backend.md),
+  [spec 012](specs/012-azure-backend.md).
+- [x] **ID-012 — Performance benchmarks**
+- [x] **DONE-004 — S3-PyArrow hybrid backend**
+  [Spec 011](specs/011-s3-pyarrow-backend.md).
+
+## v0.4.x
+
+- [x] **ID-014 — Streaming conformance tests** (v0.4.4)
+- [x] **ID-011 — Python 3.14 support** → graduated to BK-004
+- [x] **DONE-001 — PEP 604 type hints**
+
+## v0.3.0
+
+- [x] **BK-003 — Native path resolution (`to_key`)**
+  [Spec 010](specs/010-native-path-resolution.md).
+- [x] **BK-004 — Python 3.14 support** (graduated from ID-011)
+- [x] **BL-001 — PyPI publish workflow**
+- [x] **BL-002 — SFTP backend documentation**
+- [x] **BL-003 — README backends table outdated**
+- [x] **BL-004 — README & project description tone rework**
+- [x] **BL-005 — CITATION.cff**
+- [x] **BL-006 — Protect master branch with ruleset**
+- [x] **BL-007 — Pin minimum dependency versions & clean up extras**
+- [x] **BL-008 — Set up docs hosting**
+- [x] **BL-009 — Fix broken PyPI logo and badges**
+- [x] **BL-010 — Publish documentation to Read the Docs**
+
+## Post-release housekeeping
+
+Items that shipped outside a version bump, newest first.
+
+- [x] **ID-070 — Add third-party doc links in extension module docstrings**
+- [x] **ID-069 — Automated Claude PR review workflow** (reverted)
+- [x] **ID-068 — Replace `dorny/paths-filter` with bash path filtering**
+- [x] **ID-065 — Use uv in docs deployment workflow**
+- [x] **ID-061 — Use uv for CI dependency installs**
+- [x] **ID-060 — Multi-platform CI (Linux, Windows, macOS)**
+- [x] **ID-059 — Restructure authoritative docs to ADF standard**
+- [x] **ID-054 — `store.ping()` / backend health check**
+  [Spec 026](specs/026-health-check.md).
+- [x] **ID-053 — Fix code block highlighting in docs**
+- [x] **ID-052 — Custom domain: remotestore.dev**
+- [x] **ID-051 — Sweep stale backlog references in docs and guides**
+- [x] **ID-050 — End-to-end integration tests against Docker backends**
+- [x] **ID-049 — Enable GitHub Vigilant Mode**
+- [x] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
+- [x] **ID-044 — Harden examples into assertion-based expectation tests**
+- [x] **ID-010 — Retry policy configuration**
+  [Spec 025](specs/025-retry-policy.md), [ADR-0011](adrs/0011-retry-policy.md).
+- [x] **BUG-002 — Windows drive letter case mismatch in `warnings` module**
+- [x] **BUG-001 — `get_folder_info("")` fails for empty-root stores**
+
+## Audit findings
+
+From [adversarial review](audits/audit-001-adversarial-review.md) (v0.5.0),
+[design-compliance audit](audits/audit-002-design-compliance.md) (v0.13.0), and
+[documentation audit](audits/audit-003-documentation.md) (v0.15.0).
+
+- [x] **AF-010 — Document TOCTOU and non-atomic move limitations** (v0.9.0)
+- [x] **AF-012 — Add capability gating tests (STORE-006)** (v0.9.0)
+- [x] **AF-013 — Add PermissionDenied/BackendUnavailable error path tests** (v0.9.0)
+- [x] **AF-014 — Add CI gate to publish workflow** (v0.9.0)
+- [x] **AF-016 — Fix stale capability sections in specs** (v0.14.0)
+- [x] **AF-017 — Add ID-043 to CHANGELOG** (v0.14.0)
+- [x] **AF-018 — Correct BACKLOG version tags** (v0.14.0)
+- [x] **AF-019 — Fix spec count in DEVELOPMENT_STORY.md** (v0.14.0)
+- [x] **AF-020 — Fix §11.6 method ordering** (v0.14.0)
+- [x] **AF-021 — Add backlog ID to unlinked TODO** (v0.14.0)
+- [x] **AF-022 — 7 example scripts missing from docs-site nav**
+- [x] **AF-023 — ObservedStore: proxy overrides lack docstrings** (resolved via config)
+- [x] **AF-024 — CachedStore: proxy overrides lack docstrings** (resolved via config)
+- [x] **AF-025 — CacheBackend protocol: 6 methods undocumented**
+- [x] **AF-026 — 6 guides missing API reference links** (closed -- not a defect)
+- [x] **AF-027 — `guides/retry.md` missing "See also" section**
+- [x] **AF-028 — `guides/backends/index.md` sparse**
+- [x] **AF-029 — `guides/performance.md` guide-style violations** (closed -- not a defect)
+- [x] **AF-030 — Research nested 3 levels deep in nav** (closed -- not a defect)
+- [x] **AF-031 — `transfer()` missing `:returns:` docstring**
+- [x] **AF-032 — `guides/observe.md` on_write hook table omits `open_atomic`**
+- [x] **AF-033 — `guides/observe.md` on_ping hook row missing**
+- [x] **AF-034 — `observe()` docstring on_write omits `open_atomic`**
+- [x] **AF-035 — `guides/cache.md` private import**
+- [x] **AF-036 — `guides/health-check.md` private import**
+- [x] **AF-037 — `guides/backends/sftp.md` private imports** (created SFTPUtils)
+- [x] **AF-038 — `CONTRIBUTING.md` stale counts**
+- [x] **AF-039 — `sdd/CLAUDE-REFERENCE.md` wrong path**
+- [x] **AF-040 — `guides/migration.md` documents unreleased v0.16.0**
