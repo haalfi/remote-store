@@ -146,12 +146,11 @@ format-to-dict translators.
 **Postconditions:** The returned `RegistryConfig` is identical to calling
 `RegistryConfig.from_dict(model.model_dump())`.
 
-**SecretStr note:** Pydantic `SecretStr` fields are **not** auto-unwrapped.
-`model_dump()` returns `SecretStr` objects (not plain strings), which bypass
-`from_dict()`'s `isinstance(v, str)` check and are **not** re-wrapped in
-`Secret`. Users should use plain `str` for credential values in their
-model's `options` dicts — `from_dict()` handles Secret wrapping at the
-config→registry boundary.
+**SecretStr handling:** Pydantic `SecretStr` fields in backend `options`
+dicts are automatically unwrapped to plain strings before reaching
+`from_dict()`, so `from_dict()`'s sensitive-key detection works correctly.
+Users may use either `str` or `SecretStr` for credential values in their
+models.
 
 ### CFG-016: ADR-0002 Compatibility
 

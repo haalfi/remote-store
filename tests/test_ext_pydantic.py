@@ -71,6 +71,40 @@ class TestPydanticToRegistryConfig:
         assert not isinstance(opts["bucket"], Secret)
 
     @pytest.mark.spec("CFG-015")
+    def test_secretstr_unwrapped_and_wrapped(self) -> None:
+        """SecretStr values in options are unwrapped to str, then wrapped in Secret by from_dict()."""
+        from pydantic import SecretStr
+
+        class SecretStrBackend(BaseModel):
+            type: str
+            options: dict[str, Any] = {}
+
+        class SecretStrConfig(BaseModel):
+            backends: dict[str, SecretStrBackend] = {}
+            stores: dict[str, StoreEntry] = {}
+
+        model = SecretStrConfig(
+            backends={
+                "s3": SecretStrBackend(
+                    type="s3",
+                    options={
+                        "bucket": "b",
+                        "key": SecretStr("AKID"),
+                        "secret": SecretStr("SK"),
+                    },
+                )
+            },
+            stores={},
+        )
+        rc = pydantic_to_registry_config(model)
+        opts = rc.backends["s3"].options
+        assert isinstance(opts["key"], Secret)
+        assert isinstance(opts["secret"], Secret)
+        assert opts["key"].reveal() == "AKID"  # type: ignore[union-attr]
+        assert opts["secret"].reveal() == "SK"  # type: ignore[union-attr]
+        assert not isinstance(opts["bucket"], Secret)
+
+    @pytest.mark.spec("CFG-015")
     def test_multiple_backends_and_stores(self) -> None:
         model = SimpleConfig(
             backends={
