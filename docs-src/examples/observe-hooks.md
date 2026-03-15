@@ -1,6 +1,6 @@
 # Observe Hooks
 
-Callback-based instrumentation for Store operations -- logging, metrics,
+Callback-based instrumentation for Store operations — logging, metrics,
 auditing, and error tracking.
 
 ```python

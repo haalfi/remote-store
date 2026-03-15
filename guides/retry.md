@@ -95,7 +95,7 @@ store = registry.get_store("my-store")
 ## Per-Backend Mapping
 
 Each backend translates `RetryPolicy` to its native retry mechanism.
-Not all fields are mappable to every backend -- unmappable fields are
+Not all fields are mappable to every backend — unmappable fields are
 logged at debug level.
 
 ### SFTP
@@ -149,11 +149,11 @@ a minimum of 1 for `initial_backoff`).
 
 ### Local and Memory
 
-These backends do not accept a `retry` parameter -- passing one raises
+These backends do not accept a `retry` parameter — passing one raises
 `TypeError`. Local filesystem and in-memory operations do not have
 transient failures that benefit from retry.
 
 ## See also
 
-- [Retry policy example](examples/retry-policy.md) -- runnable script
-- [Backend guides](backends/index.md) -- per-backend configuration details
+- [Retry policy example](examples/retry-policy.md) — runnable script
+- [Backend guides](backends/index.md) — per-backend configuration details

@@ -2,15 +2,15 @@
 
 The `ext.glob` module provides portable pattern matching for file listing
 across all backends. For simple name-based filtering, use
-`Store.list_files(pattern=...)` directly -- it works with every backend.
+`Store.list_files(pattern=...)` directly — it works with every backend.
 
 Three tiers of pattern matching are available (ADR-0009):
 
-1. **`list_files(pattern=...)`** -- `fnmatch` name filtering at the Store level
-2. **`Store.glob(pattern)`** -- native backend glob, capability-gated
-3. **`ext.glob.glob_files()`** -- portable full glob with recursive patterns
+1. **`list_files(pattern=...)`** — `fnmatch` name filtering at the Store level
+2. **`Store.glob(pattern)`** — native backend glob, capability-gated
+3. **`ext.glob.glob_files()`** — portable full glob with recursive patterns
 
-No extra dependencies are required -- the module is pure Python and always
+No extra dependencies are required — the module is pure Python and always
 available.
 
 ## Quick Start
@@ -60,10 +60,10 @@ filtering is applied at the Store level after path rebasing.
 not the full path. For path-based patterns like `data/**/*.csv`, use
 `glob_files()` (Tier 3).
 
-## Tier 2: Store.glob() -- native backend glob
+## Tier 2: Store.glob() — native backend glob
 
 For backends with native pattern matching, `Store.glob()` provides direct
-access. It is capability-gated on `Capability.GLOB` -- like `Store.unwrap()`,
+access. It is capability-gated on `Capability.GLOB` — like `Store.unwrap()`,
 it is an opt-in feature for users who know their backend:
 
 ```python
@@ -78,7 +78,7 @@ if store.supports(Capability.GLOB):
 native glob. `LocalBackend` uses `pathlib.Path.glob()`; the cloud backends use
 prefix-optimized listing with client-side regex filtering.
 
-## Tier 3: glob_files() -- portable full glob
+## Tier 3: glob_files() — portable full glob
 
 `glob_files()` is the recommended API when `list_files(pattern=)` isn't
 enough and you want code that works across all backends:
@@ -151,5 +151,5 @@ list(glob_files(reports, "**/*.csv"))
 ---
 
 **See also:**
-[API reference](api/ext-glob.md) --
+[API reference](api/ext-glob.md) —
 [Example script](https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py)

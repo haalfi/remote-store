@@ -4,9 +4,9 @@ The `ext.transfer` module provides three functions for moving data between
 local files and Stores, or between two Stores: `upload`, `download`, and
 `transfer`.
 
-All functions stream data -- no file is ever fully loaded into memory.
+All functions stream data — no file is ever fully loaded into memory.
 An optional `on_progress` callback fires per chunk with the byte count.
-No extra dependencies are required -- the module is pure Python and always
+No extra dependencies are required — the module is pure Python and always
 available.
 
 ## Quick Start
@@ -130,5 +130,5 @@ upload(reports, "local/q1.csv", "q1.csv")
 ---
 
 **See also:**
-[API reference](api/ext-transfer.md) --
+[API reference](api/ext-transfer.md) —
 [Example script](https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py)

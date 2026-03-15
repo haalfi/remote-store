@@ -23,7 +23,7 @@ instructions, see the Guides section in the sidebar.
 The primary user-facing abstraction. A Store is a **logical remote folder**
 scoped to a root path. All operations use relative paths within that scope.
 
-Stores are **immutable and thread-safe** -- cheap to create, safe to share
+Stores are **immutable and thread-safe** — cheap to create, safe to share
 across threads. A Store does not own its backend; multiple stores can share
 one backend instance.
 
@@ -38,7 +38,7 @@ The lifecycle manager. It:
 - Lazily creates backend instances (one per backend config, shared across stores)
 - Manages cleanup via `close()`
 
-The Registry is a **passive resource** -- it does not spawn threads or async
+The Registry is a **passive resource** — it does not spawn threads or async
 tasks, making it compatible with any concurrency model.
 
 ### Backend
@@ -51,7 +51,7 @@ behavior:
 - Error mapping (native exceptions to `remote-store` error types)
 - Capability declaration
 
-Backends are an **implementation detail** -- user code never interacts with
+Backends are an **implementation detail** — user code never interacts with
 backends directly (except via `Store.unwrap()` for escape-hatch access).
 
 ## Error hierarchy
@@ -89,10 +89,10 @@ no singleton state, no global registries, composable with the core Store API.
 
 Backends declare supported operations via the `Capability` enum. This enables:
 
-- **Compile-time clarity** -- users know what to expect from each backend
-- **Runtime guards** -- operations fail fast with `CapabilityNotSupported`
+- **Compile-time clarity** — users know what to expect from each backend
+- **Runtime guards** — operations fail fast with `CapabilityNotSupported`
   instead of mysterious backend errors
-- **Portable fallbacks** -- extensions like `ext.glob` provide software
+- **Portable fallbacks** — extensions like `ext.glob` provide software
   implementations for backends that lack native support
 
 See the [Capabilities Matrix](capabilities-matrix.md) for the full table.
@@ -104,25 +104,25 @@ Configuration follows strict rules
 
 1. Config-as-code has absolute priority (TOML, YAML, or dict)
 2. No merging, no overrides, no magic environment variable layering
-3. Deterministic and test-safe -- same config always produces same behavior
+3. Deterministic and test-safe — same config always produces same behavior
 
 ## Design decisions
 
 Detailed rationale lives in the ADRs:
 
-- [ADR-0001](design/adrs/0001-architecture-store-registry-backends.md) --
+- [ADR-0001](design/adrs/0001-architecture-store-registry-backends.md) —
   Store / Registry / Backend layering
-- [ADR-0002](design/adrs/0002-config-resolution-no-merge.md) --
+- [ADR-0002](design/adrs/0002-config-resolution-no-merge.md) —
   No config merging
-- [ADR-0004](design/adrs/0004-empty-path-semantics.md) --
+- [ADR-0004](design/adrs/0004-empty-path-semantics.md) —
   Empty path semantics
-- [ADR-0008](design/adrs/0008-extension-architecture.md) --
+- [ADR-0008](design/adrs/0008-extension-architecture.md) —
   Extension architecture
-- [ADR-0009](design/adrs/0009-glob-three-tier-design.md) --
+- [ADR-0009](design/adrs/0009-glob-three-tier-design.md) —
   Glob three-tier design
 
 ## See also
 
-- [Security Model](security-model.md) -- credential handling and trust boundaries
-- [Performance](performance.md) -- benchmark data and optimization guidance
-- [Concurrency](concurrency.md) -- thread safety and atomicity guarantees
+- [Security Model](security-model.md) — credential handling and trust boundaries
+- [Performance](performance.md) — benchmark data and optimization guidance
+- [Concurrency](concurrency.md) — thread safety and atomicity guarantees

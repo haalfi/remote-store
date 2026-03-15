@@ -26,7 +26,7 @@ Optional-dependency extensions are no longer re-exported from
 - New: `from remote_store.ext.yaml import from_yaml`
 
 Pure-Python extensions (`ext.batch`, `ext.transfer`, `ext.glob`, `ext.observe`,
-`ext.cache`, `ext.partition`) are unchanged -- they were already unconditionally
+`ext.cache`, `ext.partition`) are unchanged — they were already unconditionally
 exported from `remote_store.__init__`.
 
 ## v0.15.0 to v0.16.0
@@ -73,10 +73,10 @@ exported from `remote_store.__init__`.
 1. Pin to a specific minor version in production: `remote-store>=0.16,<0.17`.
 2. Read the [CHANGELOG](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
    for each version you skip.
-3. Run your test suite after upgrading -- the library has 95%+ coverage and
+3. Run your test suite after upgrading — the library has 95%+ coverage and
    you should too.
 
 ## See also
 
 - [CHANGELOG](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
-- [Contributing](contributing.md) -- stability tiers and versioning policy
+- [Contributing](contributing.md) — stability tiers and versioning policy

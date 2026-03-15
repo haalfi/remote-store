@@ -22,7 +22,7 @@ at runtime before calling an operation.
 **Full support (9/9):** Local, S3, S3-PyArrow, Azure.
 
 **Partial (8/9):** Memory and SFTP lack native `GLOB`. Use the portable
-fallback `ext.glob.glob_files()` instead -- see the
+fallback `ext.glob.glob_files()` instead — see the
 [Glob Pattern Matching](glob-pattern-matching.md) guide.
 
 ## Querying capabilities at runtime
@@ -39,6 +39,6 @@ else:
 
 ## See also
 
-- [Choosing a Backend](choosing-a-backend.md) -- decision tree for picking
+- [Choosing a Backend](choosing-a-backend.md) — decision tree for picking
   the right backend
 - [API Reference: Capability](api/capabilities.md)

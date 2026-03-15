@@ -146,6 +146,6 @@ sftp_client.listdir_attr("/custom/path")
 ---
 
 **See also:**
-[Capabilities matrix](../capabilities-matrix.md) --
-[API reference](../api/store.md) --
+[Capabilities matrix](../capabilities-matrix.md) —
+[API reference](../api/store.md) —
 [Example script](https://github.com/haalfi/remote-store/blob/master/examples/backends/sftp_backend.py)

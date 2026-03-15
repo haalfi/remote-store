@@ -3,7 +3,7 @@
 `remote-store` uses a pluggable backend system. Each backend implements the
 `Backend` abstract class and declares its capabilities. Pick a backend based
 on where your files live, install the optional extra, and everything else
-stays the same -- the `Store` API is identical across all backends.
+stays the same — the `Store` API is identical across all backends.
 
 ## Supported Backends
 
@@ -34,5 +34,5 @@ interface to implement.
 
 ## See also
 
-- [Choosing a Backend](../choosing-a-backend.md) -- decision guide with trade-offs
-- [Capabilities Matrix](../capabilities-matrix.md) -- full backend x capability table
+- [Choosing a Backend](../choosing-a-backend.md) — decision guide with trade-offs
+- [Capabilities Matrix](../capabilities-matrix.md) — full backend x capability table

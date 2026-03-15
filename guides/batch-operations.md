@@ -155,5 +155,5 @@ assert result.all_succeeded
 ---
 
 **See also:**
-[API reference](api/ext-batch.md) --
+[API reference](api/ext-batch.md) —
 [Example script](https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py)

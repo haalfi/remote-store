@@ -77,6 +77,6 @@ def test_write_and_read(store):
 ---
 
 **See also:**
-[Capabilities matrix](../capabilities-matrix.md) --
-[API reference](../api/store.md) --
+[Capabilities matrix](../capabilities-matrix.md) —
+[API reference](../api/store.md) —
 [Example script](https://github.com/haalfi/remote-store/blob/master/examples/memory_backend.py)

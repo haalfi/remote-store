@@ -15,10 +15,10 @@ store.ping()  # raises on failure, silent on success
 
 ## Use cases
 
-- **Startup gates** -- fail fast before accepting traffic if the backend is
+- **Startup gates** — fail fast before accepting traffic if the backend is
   unreachable or credentials are invalid.
-- **Liveness probes** -- Kubernetes `livenessProbe` or similar health endpoints.
-- **Connection validation** -- verify config after loading from TOML/YAML.
+- **Liveness probes** — Kubernetes `livenessProbe` or similar health endpoints.
+- **Connection validation** — verify config after loading from TOML/YAML.
 
 ## Error handling
 
@@ -72,8 +72,8 @@ observed.ping()
 
 ## Design notes
 
-- **No return value** -- success is silent (`None`), failure raises. This
+- **No return value** — success is silent (`None`), failure raises. This
   matches the Go convention of `Ping() error` and keeps the API minimal.
-- **No caching** -- every call performs a real connectivity check.
-- **No timeout parameter** -- use backend-level timeouts (e.g. `RetryPolicy`).
-- **Not capability-gated** -- all backends support health checks.
+- **No caching** — every call performs a real connectivity check.
+- **No timeout parameter** — use backend-level timeouts (e.g. `RetryPolicy`).
+- **Not capability-gated** — all backends support health checks.

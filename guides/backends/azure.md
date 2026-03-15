@@ -86,10 +86,10 @@ At least one of `account_name`, `account_url`, or `connection_string` must be pr
 
 The backend resolves credentials in this order:
 
-1. **`account_key`** -- if provided, used directly
-2. **`sas_token`** -- if provided, used directly
-3. **`credential`** -- any credential object (e.g. `DefaultAzureCredential()`)
-4. **`DefaultAzureCredential`** -- auto-detected from environment (requires `azure-identity`)
+1. **`account_key`** — if provided, used directly
+2. **`sas_token`** — if provided, used directly
+3. **`credential`** — any credential object (e.g. `DefaultAzureCredential()`)
+4. **`DefaultAzureCredential`** — auto-detected from environment (requires `azure-identity`)
 
 `DefaultAzureCredential` automatically tries environment variables, managed identity, Azure CLI, and other sources. See the [Azure Identity docs](https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential) for details.
 
@@ -171,6 +171,6 @@ Note: Azurite does not support Hierarchical Namespace. HNS-specific features (at
 ---
 
 **See also:**
-[Capabilities matrix](../capabilities-matrix.md) --
-[API reference](../api/store.md) --
+[Capabilities matrix](../capabilities-matrix.md) —
+[API reference](../api/store.md) —
 [Example script](https://github.com/haalfi/remote-store/blob/master/examples/backends/azure_backend.py)

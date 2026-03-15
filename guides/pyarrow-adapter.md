@@ -12,7 +12,7 @@ pip install "remote-store[arrow]"
 ```
 
 This installs `pyarrow >= 12.0.0` as an optional dependency. The adapter works
-with any backend -- no extra configuration needed.
+with any backend — no extra configuration needed.
 
 ## Quick Start
 
@@ -102,7 +102,7 @@ fs = pyarrow_fs(
 
 **Tier 1** is automatically enabled for backends that expose a native PyArrow
 filesystem via `unwrap()` (currently `S3PyArrowBackend`). The handler detects
-this at construction time and bypasses Python I/O entirely for reads -- the full
+this at construction time and bypasses Python I/O entirely for reads — the full
 C++ `ReadAt` -> HTTP Range request -> I/O coalescing pipeline runs with zero GIL
 overhead.
 
@@ -110,7 +110,7 @@ overhead.
 
 The handler holds no shared mutable state. PyArrow's C++ layer may call handler
 methods from background threads (with the GIL acquired). Thread safety depends
-on the backend -- all built-in backends (Memory, Local, S3, SFTP, Azure) are
+on the backend — all built-in backends (Memory, Local, S3, SFTP, Azure) are
 safe under concurrent calls. If using a custom backend, ensure its methods are
 thread-safe.
 
@@ -120,7 +120,7 @@ thread-safe.
   Most backends (S3, Azure) lack native append semantics.
 - **Root deletion blocked.** `delete_dir("")`, `delete_dir_contents("")`, and
   `delete_root_dir_contents()` raise `NotImplementedError` as a safety guard.
-- **Write buffering.** Writes are buffered until `close()` -- data is not
+- **Write buffering.** Writes are buffered until `close()` — data is not
   visible in the Store during the write. This is inherent to the Store's
   single-shot `write()` API.
 - **Tier 1 limited to S3-PyArrow.** `S3PyArrowBackend` exposes a native PyArrow
@@ -144,11 +144,11 @@ Store errors are translated to standard Python exceptions:
 | `CapabilityNotSupported` | `NotImplementedError` |
 | Other `RemoteStoreError` | `OSError` |
 
-No `RemoteStoreError` leaks to PyArrow callers -- all exceptions are mapped
+No `RemoteStoreError` leaks to PyArrow callers — all exceptions are mapped
 with `from` chaining for debuggability.
 
 ---
 
 **See also:**
-[API reference](api/ext-arrow.md) --
+[API reference](api/ext-arrow.md) —
 [Example script](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py)

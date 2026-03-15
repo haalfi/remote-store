@@ -8,7 +8,7 @@ remote-store against raw SDK calls and fsspec implementations.
 
 Benchmarks use [pytest-benchmark](https://pytest-benchmark.readthedocs.io/)
 with Docker-hosted services (MinIO for S3, Azurite for Azure, OpenSSH for SFTP).
-Each test runs in an isolated environment -- fresh buckets, containers, and
+Each test runs in an isolated environment — fresh buckets, containers, and
 directories are created per test fixture and cleaned up after.
 
 ### What We Measure
@@ -26,9 +26,9 @@ directories are created per test fixture and cleaned up after.
 For operations where comparison is meaningful (write, read, exists, list, delete),
 the suite runs the same operation through three interfaces:
 
-1. **remote-store** -- the `Backend` API
-2. **Raw SDK** -- direct boto3/paramiko/azure-storage-blob/pathlib calls
-3. **fsspec** -- s3fs/sshfs/adlfs/fsspec.local
+1. **remote-store** — the `Backend` API
+2. **Raw SDK** — direct boto3/paramiko/azure-storage-blob/pathlib calls
+3. **fsspec** — s3fs/sshfs/adlfs/fsspec.local
 
 This quantifies the overhead remote-store adds on top of each SDK.
 
@@ -107,7 +107,7 @@ Docker Desktop (MinIO, Azurite, OpenSSH) running locally. All values are
 
 *\* 64KB write values for S3-PyArrow and Azure are outlier-skewed (high variance,
 stddev > mean). The medians are monotonic (17ms and 6ms respectively). The raw
-SDK shows the same pattern -- this is a Dockerized-service cold-start artifact,
+SDK shows the same pattern — this is a Dockerized-service cold-start artifact,
 not real non-monotonic performance.*
 
 Generate this table from your own saved results with `hatch run bench-report`.
@@ -119,9 +119,9 @@ Generate this table from your own saved results with `hatch run bench-report`.
   single-part upload overhead. At 1MB the gap narrows from ~7x to ~1.6x
   (31.6ms vs 20.1ms for S3).
 - S3-PyArrow reads are competitive with S3 (1.7ms vs 1.5ms at 1KB, 11.4ms vs
-  5.9ms at 1MB) -- the RFC-0003 `BufferedReader` removal keeps overhead modest.
+  5.9ms at 1MB) — the RFC-0003 `BufferedReader` removal keeps overhead modest.
 - SFTP read latency scales steeply with file size (3.0ms at 1KB, 13.5ms at 1MB).
-- Azure listing is slowest (11.4ms for 50 files, 145ms for 1000) -- Azurite
+- Azure listing is slowest (11.4ms for 50 files, 145ms for 1000) — Azurite
   emulation overhead.
 - S3 listing is faster than local for flat directories (pagination is efficient).
 - Streaming reads keep memory constant regardless of file size.
@@ -132,26 +132,26 @@ For every comparative operation, the benchmark suite runs the same workload
 through remote-store, the raw SDK, and the fsspec equivalent. Measured findings
 from Docker benchmarks (MinIO, Azurite, OpenSSH):
 
-- **Azure: near-zero overhead** -- remote-store matches the raw azure-blob SDK
+- **Azure: near-zero overhead** — remote-store matches the raw azure-blob SDK
   within measurement noise for writes, reads, and exists. adlfs is 1.9x slower
   for reads and 2.2x slower for deletes.
-- **S3: competitive or faster for writes** -- Write 1MB is 1.5x faster than raw
+- **S3: competitive or faster for writes** — Write 1MB is 1.5x faster than raw
   boto3 (20ms vs 30ms, likely due to S3Backend's persistent client session via
   s3fs). Read overhead is ~15% (5.9ms vs 5.1ms). Exists within noise
   (1.4ms vs 1.3ms).
-- **SFTP: moderate overhead** -- ~5% for writes and ~8% for reads vs raw
+- **SFTP: moderate overhead** — ~5% for writes and ~8% for reads vs raw
   paramiko. Metadata ops show ~2x overhead from error-mapping stat calls
   (exists 859us vs 413us, delete 988us vs 422us).
-- **Local: expected abstraction cost** -- ~20% I/O overhead vs bare pathlib
+- **Local: expected abstraction cost** — ~20% I/O overhead vs bare pathlib
   (484us vs 404us for Write 1MB). Metadata ops show higher relative overhead
   (exists 55us vs 5us), but absolute latencies are sub-millisecond.
-- **Caveats:** listing anomalies exist in the comparative data -- some fsspec
+- **Caveats:** listing anomalies exist in the comparative data — some fsspec
   implementations (s3fs at 67us, adlfs at 83us for 50 files) show sub-100us
   listing times that likely reflect client-side caching in the test harness,
   not real-world performance (see ID-032). Similarly, raw boto3 listing at
   4.4ms (18.4x slower than remote-store) uses the paginator API without
   caching, while remote-store benefits from s3fs's cached `ls()`. Delete
-  overhead is 2-3x vs raw SDK across all backends -- this is expected
+  overhead is 2-3x vs raw SDK across all backends — this is expected
   abstraction cost from the error-mapping layer and not an optimization target.
 
 Regenerate for your hardware:

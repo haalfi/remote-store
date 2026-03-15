@@ -4,7 +4,7 @@ remote-store wraps multiple storage backends behind a single API, but each backe
 
 ## `overwrite=False` and TOCTOU
 
-When you call `store.write(path, data, overwrite=False)`, the backend checks whether the file exists and then writes it. These are two separate operations -- a classic **Time-Of-Check-to-Time-Of-Use (TOCTOU)** race window:
+When you call `store.write(path, data, overwrite=False)`, the backend checks whether the file exists and then writes it. These are two separate operations — a classic **Time-Of-Check-to-Time-Of-Use (TOCTOU)** race window:
 
 ```text
 Thread A: exists("report.csv") -> False
@@ -13,7 +13,7 @@ Thread A: write("report.csv", data_a)      # succeeds
 Thread B: write("report.csv", data_b)      # also succeeds -- overwrites A's file
 ```
 
-This affects **all backends**. The check-then-act pattern cannot be made race-free without an external coordination mechanism. `overwrite=False` is a convenience guard against accidental overwrites in single-writer scenarios -- it is **not** a mutual exclusion mechanism.
+This affects **all backends**. The check-then-act pattern cannot be made race-free without an external coordination mechanism. `overwrite=False` is a convenience guard against accidental overwrites in single-writer scenarios — it is **not** a mutual exclusion mechanism.
 
 ### Mitigations
 

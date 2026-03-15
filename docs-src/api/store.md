@@ -211,7 +211,7 @@
       heading_level: 3
 
 !!! note
-    `supports()` itself is portable -- it works on all backends. Only the
+    `supports()` itself is portable — it works on all backends. Only the
     capability-gated methods it guards are backend-specific.
 
 ---
