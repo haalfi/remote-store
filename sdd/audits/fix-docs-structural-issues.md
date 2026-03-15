@@ -23,13 +23,13 @@ The 6 files below already use `—` — they are *correct*. The remaining `docs-
 
 ## 2. "See also" format (AF-042)
 
-Pick Pattern A (`**See also:**` bold + inline links) or Pattern B (`## See also` heading + bullet list). Convert all to the winner. Add to the 4 files that lack it.
+**Decision:** Pattern B (`## See also` heading + bullet list). Shows in page TOC, easier to extend.
 
-- [ ] **T-07** `guides/concurrency.md` -- add See also section
-- [ ] **T-08** `guides/health-check.md` -- add See also section
-- [ ] **T-09** `guides/performance.md` -- add See also section
-- [ ] **T-10** `guides/extensions.md` -- add See also section
-- [ ] **T-11** Convert all 22 existing "See also" sections to the chosen format
+- [x] **T-07** `guides/concurrency.md` — added See also section
+- [x] **T-08** `guides/health-check.md` — added See also section
+- [x] **T-09** `guides/performance.md` — added See also section
+- [x] **T-10** `guides/extensions.md` — added See also section
+- [x] **T-11** Converted all 12 Pattern A files to Pattern B; 9 existing Pattern B files already consistent
 
 ---
 

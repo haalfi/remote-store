@@ -281,8 +281,7 @@ trace.get_tracer_provider().add_span_processor(
 observed = otel_observe(store)
 ```
 
----
+## See also
 
-**See also:**
-[API reference](api/ext-observe.md) —
-[Example script](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py)
+- [API reference](api/ext-observe.md)
+- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py)

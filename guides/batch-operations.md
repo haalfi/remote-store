@@ -152,8 +152,7 @@ result = batch_delete(reports, ["q1.csv", "q2.csv"])
 assert result.all_succeeded
 ```
 
----
+## See also
 
-**See also:**
-[API reference](api/ext-batch.md) —
-[Example script](https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py)
+- [API reference](api/ext-batch.md)
+- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py)

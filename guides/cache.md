@@ -121,8 +121,7 @@ observed = observe(cached_store(store, ttl=300), on_read=my_hook)
 with `batch_exists(concurrent=True)` and similar concurrent access
 patterns.
 
----
+## See also
 
-**See also:**
-[API reference](api/ext-cache.md) —
-[Example script](https://github.com/haalfi/remote-store/blob/master/examples/caching.py)
+- [API reference](api/ext-cache.md)
+- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/caching.py)

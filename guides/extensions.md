@@ -85,3 +85,8 @@ All extensions follow the same contract (ADR-0008, ADR-0013):
 ## Writing Your Own Extension
 
 See the "Adding an Extension" checklist in CONTRIBUTING.md.
+
+## See also
+
+- [API reference](api/store.md) — core Store interface that extensions build on
+- [Architecture](architecture.md) — extension design principles

@@ -193,3 +193,9 @@ docker compose -f benchmarks/infra/docker-compose.yml down -v
 
 For cloud benchmarks, set the appropriate environment variables (see
 `benchmarks/README.md` for the full reference table) and use `--infra cloud`.
+
+## See also
+
+- [Capabilities Matrix](capabilities-matrix.md) — feature support per backend
+- [Choosing a Backend](choosing-a-backend.md) — decision guide with trade-offs
+- [PyArrow Adapter](pyarrow-adapter.md) — tiered read strategy and S3 direct I/O

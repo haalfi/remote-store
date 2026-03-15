@@ -77,3 +77,8 @@ observed.ping()
 - **No caching** — every call performs a real connectivity check.
 - **No timeout parameter** — use backend-level timeouts (e.g. `RetryPolicy`).
 - **Not capability-gated** — all backends support health checks.
+
+## See also
+
+- [API reference](api/store.md) — `Store.ping()` method
+- [Backends guide](backends/index.md) — per-backend configuration and timeouts

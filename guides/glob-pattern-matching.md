@@ -148,8 +148,7 @@ list(glob_files(reports, "**/*.csv"))
 | Native backend glob (Local, S3, S3-PyArrow, Azure) | `store.glob("**/*.csv")` |
 | Works with every backend | `list_files(pattern=)` or `glob_files()` |
 
----
+## See also
 
-**See also:**
-[API reference](api/ext-glob.md) —
-[Example script](https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py)
+- [API reference](api/ext-glob.md)
+- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py)

@@ -58,3 +58,8 @@ SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename(
 \* Local `move()` uses `shutil.move()`, which delegates to `os.rename()` on the same filesystem (atomic) but falls back to copy+delete across filesystems. Only `write_atomic()` uses `os.replace()`.
 
 \*\* SFTP `move()` is atomic when `posix_rename` or `rename()` succeeds; falls back to copy+delete as a last resort. `write_atomic()` has an orphan-file risk if the connection drops between write and rename (see the [SFTP backend guide](backends/sftp.md)).
+
+## See also
+
+- [Capabilities Matrix](capabilities-matrix.md) — atomicity and move semantics per backend
+- [Architecture](architecture.md) — threading model and Store immutability
