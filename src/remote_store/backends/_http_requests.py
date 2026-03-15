@@ -10,9 +10,41 @@ from remote_store.backends._http import HttpResponse
 
 try:
     import requests
+    import urllib3
 except ImportError as exc:  # pragma: no cover
     msg = "requests is required for RequestsTransport. Install it with: pip install remote-store[requests]"
     raise ImportError(msg) from exc
+
+
+class _Urllib3StreamAdapter(io.RawIOBase):
+    """Wraps ``urllib3.HTTPResponse`` to convert urllib3 exceptions to ``OSError``.
+
+    ``urllib3.exceptions.ProtocolError`` and ``IncompleteRead`` are not
+    ``OSError`` subclasses, so ``_ErrorMappingStream`` cannot catch them.
+    This adapter re-raises them as ``OSError``.
+    """
+
+    def __init__(self, raw: urllib3.HTTPResponse) -> None:
+        self._raw = raw
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
+        try:
+            return self._raw.readinto(b)  # type: ignore[union-attr,arg-type]
+        except urllib3.exceptions.HTTPError as exc:
+            raise OSError(str(exc)) from exc
+
+    def read(self, size: int = -1) -> bytes:  # type: ignore[override]
+        try:
+            return self._raw.read(amt=size if size >= 0 else None)  # type: ignore[return-value]
+        except urllib3.exceptions.HTTPError as exc:
+            raise OSError(str(exc)) from exc
+
+    def close(self) -> None:
+        self._raw.close()
+        super().close()
 
 
 class RequestsTransport:
@@ -34,7 +66,7 @@ class RequestsTransport:
         return HttpResponse(
             status=resp.status_code,
             headers=resp_headers,
-            body=cast("BinaryIO", resp.raw),
+            body=cast("BinaryIO", _Urllib3StreamAdapter(resp.raw)),
         )
 
     def head(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse:

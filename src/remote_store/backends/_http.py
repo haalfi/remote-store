@@ -107,12 +107,14 @@ class UrllibTransport:
     """HTTP transport using stdlib ``urllib.request``."""
 
     def __init__(self, *, verify_ssl: bool = True, max_redirects: int = 5) -> None:
-        self._ssl_context: ssl.SSLContext | None = None
+        self._redirect_handler = _LimitedRedirectHandler(max_redirects)
+        handlers: list[urllib.request.BaseHandler] = [self._redirect_handler]
         if not verify_ssl:
-            self._ssl_context = ssl.create_default_context()
-            self._ssl_context.check_hostname = False
-            self._ssl_context.verify_mode = ssl.CERT_NONE
-        self._max_redirects = max_redirects
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            handlers.append(urllib.request.HTTPSHandler(context=ctx))
+        self._opener = urllib.request.build_opener(*handlers)
 
     def get(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse:
         """Send a GET request."""
@@ -127,14 +129,10 @@ class UrllibTransport:
 
     def _request(self, url: str, headers: dict[str, str], timeout: float, *, method: str) -> HttpResponse:
         """Execute an HTTP request."""
-        redirect_handler = _LimitedRedirectHandler(self._max_redirects)
-        handlers: list[urllib.request.BaseHandler] = [redirect_handler]
-        if self._ssl_context is not None:
-            handlers.append(urllib.request.HTTPSHandler(context=self._ssl_context))
-        opener = urllib.request.build_opener(*handlers)
+        self._redirect_handler._redirect_count = 0
         req = urllib.request.Request(url, headers=headers, method=method)
         try:
-            resp = opener.open(  # noqa: S310 — URL is user-provided base_url + validated path
+            resp = self._opener.open(  # noqa: S310 — URL is user-provided base_url + validated path
                 req,
                 timeout=timeout,
             )
@@ -182,20 +180,16 @@ def _resolve_transport(
 
 def _make_requests_transport(*, verify_ssl: bool, max_redirects: int) -> HttpTransport:
     """Create a RequestsTransport (raises ImportError if requests not installed)."""
-    import importlib
+    from remote_store.backends._http_requests import RequestsTransport
 
-    mod = importlib.import_module("remote_store.backends._http_requests")
-    cls = mod.RequestsTransport
-    return cls(verify_ssl=verify_ssl, max_redirects=max_redirects)  # type: ignore[no-any-return]
+    return RequestsTransport(verify_ssl=verify_ssl, max_redirects=max_redirects)
 
 
 def _make_httpx_transport(*, verify_ssl: bool, max_redirects: int) -> HttpTransport:
     """Create an HttpxTransport (raises ImportError if httpx not installed)."""
-    import importlib
+    from remote_store.backends._http_httpx import HttpxTransport
 
-    mod = importlib.import_module("remote_store.backends._http_httpx")
-    cls = mod.HttpxTransport
-    return cls(verify_ssl=verify_ssl, max_redirects=max_redirects)  # type: ignore[no-any-return]
+    return HttpxTransport(verify_ssl=verify_ssl, max_redirects=max_redirects)
 
 
 # ---------------------------------------------------------------------------
@@ -264,7 +258,7 @@ class ReadOnlyHttpBackend(Backend):
         resp = self._head(path)
         if resp.status == 404:
             return False
-        if 200 <= resp.status < 400:
+        if 200 <= resp.status < 300:
             return True
         raise self._classify_status(resp.status, path)
 
@@ -382,7 +376,7 @@ class ReadOnlyHttpBackend(Backend):
     def to_key(self, native_path: str) -> str:
         """Strip base_url prefix to get a backend-relative key."""
         if native_path.startswith(self._base_url):
-            return native_path[len(self._base_url) :]
+            return urllib.parse.unquote(native_path[len(self._base_url) :])
         return native_path
 
     # endregion

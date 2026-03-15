@@ -260,6 +260,12 @@ class TestHttpPaths:
         b = ReadOnlyHttpBackend(base_url="http://example.com/data/", http_client="urllib")
         assert b.to_key("http://other.com/file.txt") == "http://other.com/file.txt"
 
+    def test_round_trip_with_special_chars(self) -> None:
+        """to_key(native_path(key)) == key for paths with spaces and unicode."""
+        b = ReadOnlyHttpBackend(base_url="http://example.com/data/", http_client="urllib")
+        for key in ("file name.txt", "path/with spaces/file.txt", "données/résumé.csv"):
+            assert b.to_key(b.native_path(key)) == key
+
 
 class TestHttpCustomHeaders:
     """HTTP-010: Custom headers are sent with every request."""
@@ -288,22 +294,27 @@ class TestHttpTimeout:
 
     def test_timeout_raises_backend_unavailable(self, httpserver: HTTPServer) -> None:
         """HTTP-012: Connection timeout raises BackendUnavailable."""
-        import time
+        import threading
+
+        gate = threading.Event()
 
         def slow_handler(request: Request) -> Response:
             from werkzeug.wrappers import Response
 
-            time.sleep(5)
+            gate.wait(timeout=5)  # blocks until client disconnects or test ends
             return Response(b"slow", status=200)
 
         httpserver.expect_request("/slow/data.txt").respond_with_handler(slow_handler)
         b = ReadOnlyHttpBackend(
             base_url=httpserver.url_for("/slow/"),
-            timeout=0.1,
+            timeout=0.05,
             http_client="urllib",
         )
-        with pytest.raises(BackendUnavailable):
-            b.read_bytes("data.txt")
+        try:
+            with pytest.raises(BackendUnavailable):
+                b.read_bytes("data.txt")
+        finally:
+            gate.set()  # unblock the server thread
 
 
 class TestHttpHealthCheck:
@@ -450,15 +461,18 @@ class TestHttpConstructor:
         assert "Authorization" in r
 
     def test_verify_ssl_false(self) -> None:
-        """verify_ssl=False creates a permissive SSL context."""
+        """verify_ssl=False creates an opener with a permissive SSL handler."""
+        import urllib.request
+
         b = ReadOnlyHttpBackend(
             base_url="http://example.com/",
             http_client="urllib",
             verify_ssl=False,
         )
         transport = b.unwrap(UrllibTransport)
-        assert transport._ssl_context is not None
-        assert transport._ssl_context.check_hostname is False
+        https_handlers = [h for h in transport._opener.handlers if isinstance(h, urllib.request.HTTPSHandler)]
+        assert len(https_handlers) == 1
+        assert https_handlers[0]._context.check_hostname is False
 
 
 class TestHttpRetry:
@@ -740,38 +754,58 @@ class TestHttpTransportAutoDetection:
             b.close()
 
 
-class TestRequestsTransport:
-    """Tests for the requests-based HTTP transport."""
+def _requests_installed() -> bool:
+    try:
+        import requests  # noqa: F401
 
-    def test_get_returns_body(self, httpserver: HTTPServer) -> None:
-        """GET via requests transport returns correct body."""
-        httpserver.expect_request("/req/data.txt", method="GET").respond_with_data(
-            b"requests-body", content_type="text/plain"
+        return True
+    except ImportError:
+        return False
+
+
+_TRANSPORT_IDS = ["requests", "httpx"]
+_TRANSPORT_MARKS = [
+    pytest.param("requests", marks=pytest.mark.skipif(not _requests_installed(), reason="requests not installed")),
+    pytest.param("httpx", marks=pytest.mark.skipif(not _httpx_installed(), reason="httpx not installed")),
+]
+
+
+class TestOptionalTransports:
+    """Shared tests for requests and httpx transports (parametrized)."""
+
+    @pytest.mark.parametrize("http_client", _TRANSPORT_MARKS)
+    def test_get_returns_body(self, httpserver: HTTPServer, http_client: str) -> None:
+        """GET returns correct body."""
+        httpserver.expect_request("/tp/data.txt", method="GET").respond_with_data(
+            b"transport-body", content_type="text/plain"
         )
-        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/req/"), http_client="requests")
-        assert b.read_bytes("data.txt") == b"requests-body"
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/tp/"), http_client=http_client)
+        assert b.read_bytes("data.txt") == b"transport-body"
         b.close()
 
-    def test_head_succeeds(self, httpserver: HTTPServer) -> None:
-        """HEAD via requests transport returns valid FileInfo."""
-        httpserver.expect_request("/req/info.txt", method="HEAD").respond_with_data(
-            b"", status=200, headers={"ETag": '"req-etag"'}
+    @pytest.mark.parametrize("http_client", _TRANSPORT_MARKS)
+    def test_head_succeeds(self, httpserver: HTTPServer, http_client: str) -> None:
+        """HEAD returns valid FileInfo."""
+        httpserver.expect_request("/tp/info.txt", method="HEAD").respond_with_data(
+            b"", status=200, headers={"ETag": '"tp-etag"'}
         )
-        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/req/"), http_client="requests")
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/tp/"), http_client=http_client)
         fi = b.get_file_info("info.txt")
-        assert fi.checksum == '"req-etag"'
+        assert fi.checksum == '"tp-etag"'
         b.close()
 
-    def test_connection_error_raises(self) -> None:
-        """Connection error raises BackendUnavailable."""
-        b = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", http_client="requests", timeout=0.1)
+    @pytest.mark.parametrize("http_client", _TRANSPORT_MARKS)
+    def test_connection_error_get(self, http_client: str) -> None:
+        """Connection error on GET raises BackendUnavailable."""
+        b = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", http_client=http_client, timeout=0.1)
         with pytest.raises(BackendUnavailable):
             b.read_bytes("file.txt")
         b.close()
 
-    def test_head_connection_error_raises(self) -> None:
-        """HEAD connection error raises BackendUnavailable."""
-        b = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", http_client="requests", timeout=0.1)
+    @pytest.mark.parametrize("http_client", _TRANSPORT_MARKS)
+    def test_connection_error_head(self, http_client: str) -> None:
+        """Connection error on HEAD raises BackendUnavailable."""
+        b = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", http_client=http_client, timeout=0.1)
         with pytest.raises(BackendUnavailable):
             b.exists("file.txt")
         b.close()
@@ -784,41 +818,8 @@ _httpx_available = pytest.mark.skipif(
 
 
 @_httpx_available
-class TestHttpxTransport:
-    """Tests for the httpx-based HTTP transport."""
-
-    def test_get_returns_body(self, httpserver: HTTPServer) -> None:
-        """GET via httpx transport returns correct body."""
-        httpserver.expect_request("/hx/data.txt", method="GET").respond_with_data(
-            b"httpx-body", content_type="text/plain"
-        )
-        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/hx/"), http_client="httpx")
-        assert b.read_bytes("data.txt") == b"httpx-body"
-        b.close()
-
-    def test_head_succeeds(self, httpserver: HTTPServer) -> None:
-        """HEAD via httpx transport returns valid FileInfo."""
-        httpserver.expect_request("/hx/info.txt", method="HEAD").respond_with_data(
-            b"", status=200, headers={"ETag": '"hx-etag"'}
-        )
-        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/hx/"), http_client="httpx")
-        fi = b.get_file_info("info.txt")
-        assert fi.checksum == '"hx-etag"'
-        b.close()
-
-    def test_connection_error_raises(self) -> None:
-        """Connection error raises BackendUnavailable."""
-        b = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", http_client="httpx", timeout=0.1)
-        with pytest.raises(BackendUnavailable):
-            b.read_bytes("file.txt")
-        b.close()
-
-    def test_head_connection_error_raises(self) -> None:
-        """HEAD connection error raises BackendUnavailable."""
-        b = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", http_client="httpx", timeout=0.1)
-        with pytest.raises(BackendUnavailable):
-            b.exists("file.txt")
-        b.close()
+class TestHttpxStreaming:
+    """httpx-specific streaming tests."""
 
     def test_streaming_read(self, httpserver: HTTPServer) -> None:
         """GET via httpx transport streams data (not buffered in memory)."""
@@ -828,7 +829,6 @@ class TestHttpxTransport:
         )
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/hx/"), http_client="httpx")
         stream = b.read("stream.bin")
-        # Read in small chunks to exercise the stream adapter
         chunks = []
         while True:
             chunk = stream.read(256)

@@ -91,13 +91,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v6
       - run: uv pip install -e ".[dev]"
-      # Coverage threshold enforced only on 3.13 (primary). Other versions may
-      # lack dev-dep wheels (pytest-httpserver, dagster, …) causing silent test
-      # skips that drop coverage below 95%. Tests themselves still fail hard.
+      # Full 95% threshold on 3.13 (primary). Other versions enforce a lower
+      # floor (85%) because some dev deps may lack wheels, causing test skips
+      # that reduce coverage. Tests themselves still fail hard on all versions.
       - name: Run tests with coverage
         run: >-
           pytest --cov=remote_store --cov-report=term-missing
-          ${{ matrix.python-version == '3.13' && '--cov-fail-under=95' || '' }}
+          ${{ matrix.python-version == '3.13' && '--cov-fail-under=95' || '--cov-fail-under=85' }}
 
   test-cross-platform:
     needs: [changes]

@@ -21,6 +21,9 @@ class _HttpxStreamAdapter(io.RawIOBase):
     Reads chunks from ``httpx.Response.iter_bytes()`` and buffers them
     so callers get a standard ``read()`` / ``readinto()`` interface
     without loading the full response into memory.
+
+    httpx stream errors (``ReadError``, ``RemoteProtocolError``, etc.)
+    are converted to ``OSError`` so ``_ErrorMappingStream`` can catch them.
     """
 
     def __init__(self, response: httpx.Response) -> None:
@@ -30,6 +33,15 @@ class _HttpxStreamAdapter(io.RawIOBase):
 
     def readable(self) -> bool:
         return True
+
+    def _next_chunk(self) -> bytes:
+        """Get the next chunk, converting httpx errors to OSError."""
+        try:
+            return next(self._iter)  # type: ignore[no-any-return]
+        except StopIteration:
+            raise
+        except httpx.StreamError as exc:
+            raise OSError(str(exc)) from exc
 
     def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
         """Read up to len(b) bytes into *b*."""
@@ -45,13 +57,16 @@ class _HttpxStreamAdapter(io.RawIOBase):
         if size < 0:
             chunks = [self._buf]
             self._buf = b""
-            for chunk in self._iter:
-                chunks.append(chunk)
+            try:
+                for chunk in self._iter:
+                    chunks.append(chunk)
+            except httpx.StreamError as exc:
+                raise OSError(str(exc)) from exc
             return b"".join(chunks)
 
         while len(self._buf) < size:
             try:
-                self._buf += next(self._iter)
+                self._buf += self._next_chunk()
             except StopIteration:
                 break
 
@@ -77,7 +92,7 @@ class HttpxTransport:
                 self._client.build_request("GET", url, headers=headers, timeout=timeout),
                 stream=True,
             )
-        except (httpx.ConnectError, httpx.TimeoutException, OSError) as exc:
+        except (httpx.TransportError, httpx.HTTPStatusError, OSError) as exc:
             raise BackendUnavailable(f"HTTP request failed: {exc}", backend="http") from exc
         resp_headers = {k.lower(): v for k, v in resp.headers.items()}
         return HttpResponse(
@@ -90,7 +105,7 @@ class HttpxTransport:
         """Send a HEAD request."""
         try:
             resp = self._client.head(url, headers=headers, timeout=timeout)
-        except (httpx.ConnectError, httpx.TimeoutException, OSError) as exc:
+        except (httpx.TransportError, httpx.HTTPStatusError, OSError) as exc:
             raise BackendUnavailable(f"HTTP request failed: {exc}", backend="http") from exc
         resp_headers = {k.lower(): v for k, v in resp.headers.items()}
         return HttpResponse(

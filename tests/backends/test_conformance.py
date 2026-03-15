@@ -12,6 +12,13 @@ from remote_store._errors import AlreadyExists, CapabilityNotSupported, NotFound
 from remote_store._models import FileInfo, FolderEntry, FolderInfo
 
 
+def _require(backend: Backend, *caps: Capability) -> None:
+    """Skip the test if the backend lacks any of the given capabilities."""
+    for cap in caps:
+        if not backend.capabilities.supports(cap):
+            pytest.skip(f"Backend does not support {cap.name}")
+
+
 class TestBackendIdentity:
     """BE-001 through BE-003: backend identity and capabilities."""
 
@@ -224,8 +231,7 @@ class TestBackendDelete:
 
     @pytest.mark.spec("BE-012")
     def test_delete_removes_file(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.DELETE):
-            pytest.skip("Backend does not support DELETE")
+        _require(backend, Capability.DELETE, Capability.WRITE)
         backend.write("del.txt", b"bye")
         backend.delete("del.txt")
         assert backend.exists("del.txt") is False
@@ -245,8 +251,7 @@ class TestBackendDelete:
 
     @pytest.mark.spec("BE-013")
     def test_delete_folder_empty(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.DELETE):
-            pytest.skip("Backend does not support DELETE")
+        _require(backend, Capability.DELETE, Capability.WRITE)
         if backend.name in ("s3", "s3-pyarrow", "azure"):
             pytest.skip("Virtual folders vanish when last object is deleted (S3-009/AZ-006)")
         backend.write("dir/file.txt", b"x")
@@ -256,8 +261,7 @@ class TestBackendDelete:
 
     @pytest.mark.spec("BE-013")
     def test_delete_folder_recursive(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.DELETE):
-            pytest.skip("Backend does not support DELETE")
+        _require(backend, Capability.DELETE, Capability.WRITE)
         backend.write("dir2/a.txt", b"a")
         backend.write("dir2/sub/b.txt", b"b")
         backend.delete_folder("dir2", recursive=True)
@@ -282,8 +286,7 @@ class TestBackendListing:
 
     @pytest.mark.spec("BE-014")
     def test_list_files_non_recursive(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.LIST):
-            pytest.skip("Backend does not support LIST")
+        _require(backend, Capability.LIST, Capability.WRITE)
         backend.write("lf/a.txt", b"a")
         backend.write("lf/b.txt", b"b")
         backend.write("lf/sub/c.txt", b"c")
@@ -295,8 +298,7 @@ class TestBackendListing:
 
     @pytest.mark.spec("BE-014")
     def test_list_files_recursive(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.LIST):
-            pytest.skip("Backend does not support LIST")
+        _require(backend, Capability.LIST, Capability.WRITE)
         backend.write("lfr/a.txt", b"a")
         backend.write("lfr/sub/b.txt", b"b")
         files = list(backend.list_files("lfr", recursive=True))
@@ -305,8 +307,7 @@ class TestBackendListing:
 
     @pytest.mark.spec("BE-015")
     def test_list_folders(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.LIST):
-            pytest.skip("Backend does not support LIST")
+        _require(backend, Capability.LIST, Capability.WRITE)
         backend.write("lfd/sub1/a.txt", b"a")
         backend.write("lfd/sub2/b.txt", b"b")
         backend.write("lfd/file.txt", b"f")
@@ -321,8 +322,7 @@ class TestBackendIterChildren:
 
     @pytest.mark.spec("ITER-004")
     def test_iter_children(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.LIST):
-            pytest.skip("Backend does not support LIST")
+        _require(backend, Capability.LIST, Capability.WRITE)
         backend.write("ic/a.txt", b"a")
         backend.write("ic/b.txt", b"b")
         backend.write("ic/sub/c.txt", b"c")
@@ -341,8 +341,7 @@ class TestBackendIterChildren:
 
     @pytest.mark.spec("ITER-004")
     def test_iter_children_only_files(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.LIST):
-            pytest.skip("Backend does not support LIST")
+        _require(backend, Capability.LIST, Capability.WRITE)
         backend.write("icf/x.txt", b"x")
         children = list(backend.iter_children("icf"))
         files = [c for c in children if isinstance(c, FileInfo)]
@@ -353,8 +352,7 @@ class TestBackendIterChildren:
 
     @pytest.mark.spec("ITER-004")
     def test_iter_children_only_folders(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.LIST):
-            pytest.skip("Backend does not support LIST")
+        _require(backend, Capability.LIST, Capability.WRITE)
         backend.write("ico/sub/y.txt", b"y")
         children = list(backend.iter_children("ico"))
         files = [c for c in children if isinstance(c, FileInfo)]
@@ -403,8 +401,7 @@ class TestBackendMove:
 
     @pytest.mark.spec("BE-018")
     def test_move(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.MOVE):
-            pytest.skip("Backend does not support MOVE")
+        _require(backend, Capability.MOVE, Capability.WRITE)
         backend.write("mv_src.txt", b"data")
         backend.move("mv_src.txt", "mv_dst.txt")
         assert backend.exists("mv_src.txt") is False
@@ -419,8 +416,7 @@ class TestBackendMove:
 
     @pytest.mark.spec("BE-018")
     def test_move_already_exists(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.MOVE):
-            pytest.skip("Backend does not support MOVE")
+        _require(backend, Capability.MOVE, Capability.WRITE)
         backend.write("mv1.txt", b"a")
         backend.write("mv2.txt", b"b")
         with pytest.raises(AlreadyExists):
@@ -428,8 +424,7 @@ class TestBackendMove:
 
     @pytest.mark.spec("BE-018")
     def test_move_overwrite(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.MOVE):
-            pytest.skip("Backend does not support MOVE")
+        _require(backend, Capability.MOVE, Capability.WRITE)
         backend.write("mvo1.txt", b"a")
         backend.write("mvo2.txt", b"b")
         backend.move("mvo1.txt", "mvo2.txt", overwrite=True)
@@ -441,8 +436,7 @@ class TestBackendCopy:
 
     @pytest.mark.spec("BE-019")
     def test_copy(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.COPY):
-            pytest.skip("Backend does not support COPY")
+        _require(backend, Capability.COPY, Capability.WRITE)
         backend.write("cp_src.txt", b"data")
         backend.copy("cp_src.txt", "cp_dst.txt")
         assert backend.read_bytes("cp_src.txt") == b"data"
@@ -457,8 +451,7 @@ class TestBackendCopy:
 
     @pytest.mark.spec("BE-019")
     def test_copy_already_exists(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.COPY):
-            pytest.skip("Backend does not support COPY")
+        _require(backend, Capability.COPY, Capability.WRITE)
         backend.write("cp1.txt", b"a")
         backend.write("cp2.txt", b"b")
         with pytest.raises(AlreadyExists):
@@ -466,8 +459,7 @@ class TestBackendCopy:
 
     @pytest.mark.spec("BE-019")
     def test_copy_overwrite(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.COPY):
-            pytest.skip("Backend does not support COPY")
+        _require(backend, Capability.COPY, Capability.WRITE)
         backend.write("cpo1.txt", b"a")
         backend.write("cpo2.txt", b"b")
         backend.copy("cpo1.txt", "cpo2.txt", overwrite=True)
@@ -504,10 +496,7 @@ class TestBackendToKey:
     @pytest.mark.spec("NPR-003")
     def test_to_key_round_trip_with_listing(self, backend: Backend) -> None:
         """Paths from list_files can be converted back via to_key."""
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
-        if not backend.capabilities.supports(Capability.LIST):
-            pytest.skip("Backend does not support LIST")
+        _require(backend, Capability.LIST, Capability.WRITE)
         backend.write("tk/a.txt", b"a")
         files = list(backend.list_files("tk"))
         assert len(files) == 1
@@ -597,8 +586,7 @@ class TestBackendGlob:
 
     @pytest.mark.spec("GLOB-018")
     def test_glob_basic(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.GLOB):
-            pytest.skip("Backend does not support GLOB")
+        _require(backend, Capability.GLOB, Capability.WRITE)
         backend.write("g/a.txt", b"a")
         backend.write("g/b.csv", b"b")
         results = sorted(str(f.path) for f in backend.glob("g/*.txt"))
@@ -606,8 +594,7 @@ class TestBackendGlob:
 
     @pytest.mark.spec("GLOB-018")
     def test_glob_recursive_conformance(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.GLOB):
-            pytest.skip("Backend does not support GLOB")
+        _require(backend, Capability.GLOB, Capability.WRITE)
         backend.write("gr/a.txt", b"a")
         backend.write("gr/sub/b.txt", b"b")
         backend.write("gr/sub/c.csv", b"c")
