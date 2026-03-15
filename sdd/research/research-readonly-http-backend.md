@@ -8,17 +8,15 @@
 
 ## 1. Problem Statement
 
-Many useful data sources are exposed as static files or simple HTTP APIs:
-government open data portals (opendata.swiss, data.gov), dataset registries,
-static file servers, CDN-hosted assets, package registries, etc.
+Users already use remote-store for storage (local, S3, SFTP, Azure). Sometimes
+another kind of "remote stored thing" enters the picture: files hosted at an
+HTTP URL -- government open data portals, dataset registries, static file
+servers, CDN-hosted assets, package archives, etc.
 
-Today, consuming these in remote-store requires downloading files first and
-pointing a `LocalBackend` at them -- or writing ad-hoc `requests` code outside
-the store abstraction entirely. This means users lose composability with
-extensions like `ext.cache`, `ext.transfer`, `ext.observe`, and `ext.batch`.
-
-A `ReadOnlyHttpBackend` would bring HTTP-hosted content into the store
-abstraction with minimal capabilities: **READ** and **METADATA**.
+A `ReadOnlyHttpBackend` would treat an HTTP endpoint as just another backend.
+Files behind a URL become accessible through the same `Store` interface, with
+the same composability (`ext.cache`, `ext.transfer`, `ext.observe`,
+`ext.batch`) that users already rely on for other backends.
 
 ### Why a backend, not an extension?
 
@@ -244,6 +242,7 @@ ReadOnlyHttpBackend(
     *,
     headers: dict[str, str] | None = None,   # custom headers (API keys, auth tokens)
     timeout: float = 30.0,                     # request timeout in seconds
+    retry: RetryPolicy | None = None,          # retry config (same as S3/SFTP/Azure)
     http_client: str | None = None,            # force "urllib", "requests", or "httpx"
     verify_ssl: bool = True,                   # TLS verification
     max_redirects: int = 5,                    # redirect follow limit
@@ -441,54 +440,61 @@ close.
 
 ---
 
-## 13. Prior Art
+## 13. Prior Art -- Build vs. Reuse
 
-### 13.1 fsspec `HTTPFileSystem`
+The key question is: can we use an existing library instead of writing our own
+HTTP backend? The answer is no -- but the implementation is small enough that
+this is fine.
 
-The most directly comparable implementation. Key observations:
+### 13.1 Why not wrap fsspec `HTTPFileSystem`?
 
-- **Scope:** Read-only HTTP access with optional directory listing via HTML
-  parsing. Also supports `aiohttp` for async.
-- **Listing:** Parses `<a href="...">` from HTML directory indexes. Fragile --
-  different servers produce different HTML. Many endpoints don't serve
-  directory listings at all.
-- **Streaming:** Uses `aiohttp` / `requests` response objects directly. Wraps
-  in a custom `HTTPFile` class that supports seeking via HTTP Range requests.
-- **Range requests:** `HTTPFile` implements `seek()` + `read()` via
-  `Range: bytes=N-M` headers. Clever but adds complexity and depends on server
-  support (`Accept-Ranges: bytes`).
-- **Relevance to us:** Validates the concept. We skip HTML listing (fragile)
-  and Range-based seeking (complexity without clear demand). Can revisit Range
-  requests later if users need seekable HTTP streams.
+fsspec's HTTP support is the closest match. It provides read-only HTTP access,
+streaming, and even directory listing via HTML parsing.
 
-### 13.2 smart_open
+**Why it doesn't fit:**
+- fsspec is a **heavyweight dependency** (pulls in `aiohttp` for HTTP).
+  remote-store's core has zero runtime deps.
+- fsspec's `HTTPFileSystem` exposes an `AbstractFileSystem` interface, not
+  our `Backend` interface. Wrapping it would mean adapting every method --
+  the wrapper would be roughly the same size as a direct implementation.
+- Its HTML-based directory listing is fragile and not something we'd want.
+- Its Range-based seeking adds complexity we don't need.
 
-- **Scope:** Unified `open()` for local, S3, GCS, Azure, HTTP, HDFS.
-- **HTTP support:** `smart_open.open("https://...")` returns a streaming
-  reader. Uses `requests` under the hood.
-- **Design:** Single function, not a filesystem abstraction. No listing,
-  metadata, or composability story.
-- **Relevance:** Confirms that a simple HTTP read adapter has demand. Our
-  backend adds the full store abstraction on top.
+fsspec validates that the concept works, but there's nothing to reuse.
 
-### 13.3 Hugging Face Hub
+### 13.2 Why not wrap smart_open?
 
-- **Scope:** `hf_hub_download()` downloads model/dataset files from the HF
-  Hub API.
-- **Design:** API-specific (uses HF's Git-LFS-backed API), not generic HTTP.
-  Handles auth, caching, resumable downloads.
-- **Relevance:** Shows that domain-specific HTTP access belongs in extensions,
-  not the base backend. Validates our "generic HTTP backend + domain extensions"
-  architecture.
+`smart_open.open("https://...")` gives a streaming reader. But:
+- It's a single `open()` function, not a filesystem abstraction. No
+  `exists()`, `get_file_info()`, `check_health()`, or any metadata support.
+- Wrapping it would provide only `read()` -- we'd still implement everything
+  else ourselves.
+- It requires `requests` as a dependency.
 
-### 13.4 DVC (Data Version Control)
+### 13.3 Why not use requests/httpx directly as the backend?
 
-- **Scope:** `dvc import-url https://...` imports remote files into DVC
-  tracking.
-- **HTTP support:** Downloads via `requests`, stores hash, can check
-  `If-None-Match` / `ETag` for change detection.
-- **Relevance:** Validates ETag -> checksum mapping and the `ext.cache`
-  integration pattern (check ETag before re-downloading).
+We do -- that's exactly the transport layer (SS4). The "build" here is the
+thin Backend adapter (~150 lines) that maps HTTP semantics to remote-store's
+interface. The actual HTTP work is delegated to urllib/requests/httpx.
+
+### 13.4 What we learn from prior art
+
+| Project | Lesson for us |
+|---------|--------------|
+| fsspec HTTPFileSystem | Concept is proven. Skip HTML listing and Range seeking. |
+| smart_open | Simple HTTP read adapter has demand. We add metadata + composability on top. |
+| Hugging Face Hub | Domain-specific HTTP access belongs in extensions, not the base backend. |
+| DVC | ETag -> checksum mapping works well. Validates `ext.cache` integration pattern. |
+
+### 13.5 Implementation size estimate
+
+The HTTP backend is a thin adapter over standard HTTP libraries. Estimated:
+- Backend class: ~150 lines (method mapping, error mapping, path handling)
+- Transport protocol + urllib impl: ~80 lines
+- requests/httpx transports: ~50 lines each (optional)
+
+This is comparable to `MemoryBackend` (~140 lines) and much simpler than
+`S3Backend` (~300 lines). Not a wheel worth importing -- simpler to build.
 
 ---
 
@@ -618,11 +624,14 @@ SIO-001 spec allowance.
 
 **Q4. Retry policy?**
 
-Defer to future `RetryPolicy` (ID-010). No built-in retry logic. Rationale:
-- Keeps the backend simple and focused.
-- Retry logic is cross-cutting -- belongs in a composable layer, not per-backend.
-- Users who need retries today can use `httpx` with its built-in retry
-  transport, or wrap in a simple retry loop.
+Accept the existing `RetryPolicy` in the constructor (like S3, SFTP, Azure do).
+Map its fields to urllib/requests/httpx retry mechanisms:
+- **urllib:** Implement a simple retry loop around `urlopen()`, respecting
+  `max_attempts`, `backoff_base`, `backoff_max`, `jitter`, and `timeout`.
+  Retry on transient HTTP statuses (429, 500, 502, 503, 504) and connection
+  errors. Honour `Retry-After` header when present.
+- **requests/httpx:** Delegate to `urllib3.Retry` / `httpx` transport retry
+  config, mapping `RetryPolicy` fields to native parameters.
 
 **Q5. Extra dependency group name?**
 
