@@ -352,9 +352,10 @@ Silver/Gold demonstrates that both patterns coexist naturally.
 ### 6.3 `ext.observe` / `ext.otel`
 
 - Every `read()`, `exists()`, `get_file_info()` emits an OTel span
-- Span attributes: `operation`, `backend` ("http"), `path`, `duration_ms`
+- Span attributes: `remote_store.operation`, `remote_store.backend`, `remote_store.path`
+  (duration is inherent in the span itself)
 - Counter metrics: `remote_store.operations`, `remote_store.errors`
-- Duration histogram: `remote_store.duration_ms`
+- Duration histogram: `remote_store.operation.duration` (unit: seconds)
 - The showcase includes a minimal OTel setup (console exporter) so traces are
   visible in terminal output without requiring Jaeger/Grafana
 
