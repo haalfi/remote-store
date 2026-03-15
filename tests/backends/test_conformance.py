@@ -50,6 +50,8 @@ class TestBackendExists:
 
     @pytest.mark.spec("BE-004")
     def test_true_after_write(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("hello.txt", b"hello")
         assert backend.exists("hello.txt") is True
 
@@ -59,12 +61,16 @@ class TestBackendFileFolder:
 
     @pytest.mark.spec("BE-005")
     def test_is_file(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("a.txt", b"data")
         assert backend.is_file("a.txt") is True
         assert backend.is_folder("a.txt") is False
 
     @pytest.mark.spec("BE-005")
     def test_is_folder(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("dir/a.txt", b"data")
         assert backend.is_folder("dir") is True
         assert backend.is_file("dir") is False
@@ -83,6 +89,8 @@ class TestBackendRead:
 
     @pytest.mark.spec("BE-006")
     def test_read_returns_binary_stream(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("data.bin", b"\x00\x01\x02")
         stream = backend.read("data.bin")
         assert stream.read() == b"\x00\x01\x02"
@@ -94,6 +102,8 @@ class TestBackendRead:
 
     @pytest.mark.spec("BE-007")
     def test_read_bytes(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("file.txt", b"content")
         assert backend.read_bytes("file.txt") == b"content"
 
@@ -108,28 +118,38 @@ class TestBackendWrite:
 
     @pytest.mark.spec("BE-008")
     def test_write_creates_file(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("new.txt", b"hello")
         assert backend.read_bytes("new.txt") == b"hello"
 
     @pytest.mark.spec("BE-008")
     def test_write_raises_already_exists(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("exists.txt", b"first")
         with pytest.raises(AlreadyExists):
             backend.write("exists.txt", b"second", overwrite=False)
 
     @pytest.mark.spec("BE-008")
     def test_write_overwrite(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("over.txt", b"first")
         backend.write("over.txt", b"second", overwrite=True)
         assert backend.read_bytes("over.txt") == b"second"
 
     @pytest.mark.spec("BE-008")
     def test_write_from_binaryio(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("stream.txt", io.BytesIO(b"streamed"))
         assert backend.read_bytes("stream.txt") == b"streamed"
 
     @pytest.mark.spec("BE-009")
     def test_write_creates_intermediate_dirs(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("a/b/c/deep.txt", b"deep")
         assert backend.read_bytes("a/b/c/deep.txt") == b"deep"
 
@@ -204,21 +224,29 @@ class TestBackendDelete:
 
     @pytest.mark.spec("BE-012")
     def test_delete_removes_file(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.DELETE):
+            pytest.skip("Backend does not support DELETE")
         backend.write("del.txt", b"bye")
         backend.delete("del.txt")
         assert backend.exists("del.txt") is False
 
     @pytest.mark.spec("BE-012")
     def test_delete_not_found(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.DELETE):
+            pytest.skip("Backend does not support DELETE")
         with pytest.raises(NotFound):
             backend.delete("missing.txt")
 
     @pytest.mark.spec("BE-012")
     def test_delete_missing_ok(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.DELETE):
+            pytest.skip("Backend does not support DELETE")
         backend.delete("missing.txt", missing_ok=True)
 
     @pytest.mark.spec("BE-013")
     def test_delete_folder_empty(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.DELETE):
+            pytest.skip("Backend does not support DELETE")
         if backend.name in ("s3", "s3-pyarrow", "azure"):
             pytest.skip("Virtual folders vanish when last object is deleted (S3-009/AZ-006)")
         backend.write("dir/file.txt", b"x")
@@ -228,6 +256,8 @@ class TestBackendDelete:
 
     @pytest.mark.spec("BE-013")
     def test_delete_folder_recursive(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.DELETE):
+            pytest.skip("Backend does not support DELETE")
         backend.write("dir2/a.txt", b"a")
         backend.write("dir2/sub/b.txt", b"b")
         backend.delete_folder("dir2", recursive=True)
@@ -235,11 +265,15 @@ class TestBackendDelete:
 
     @pytest.mark.spec("BE-013")
     def test_delete_folder_not_found(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.DELETE):
+            pytest.skip("Backend does not support DELETE")
         with pytest.raises(NotFound):
             backend.delete_folder("nodir")
 
     @pytest.mark.spec("BE-013")
     def test_delete_folder_missing_ok(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.DELETE):
+            pytest.skip("Backend does not support DELETE")
         backend.delete_folder("nodir", missing_ok=True)
 
 
@@ -248,6 +282,8 @@ class TestBackendListing:
 
     @pytest.mark.spec("BE-014")
     def test_list_files_non_recursive(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.LIST):
+            pytest.skip("Backend does not support LIST")
         backend.write("lf/a.txt", b"a")
         backend.write("lf/b.txt", b"b")
         backend.write("lf/sub/c.txt", b"c")
@@ -259,6 +295,8 @@ class TestBackendListing:
 
     @pytest.mark.spec("BE-014")
     def test_list_files_recursive(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.LIST):
+            pytest.skip("Backend does not support LIST")
         backend.write("lfr/a.txt", b"a")
         backend.write("lfr/sub/b.txt", b"b")
         files = list(backend.list_files("lfr", recursive=True))
@@ -267,6 +305,8 @@ class TestBackendListing:
 
     @pytest.mark.spec("BE-015")
     def test_list_folders(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.LIST):
+            pytest.skip("Backend does not support LIST")
         backend.write("lfd/sub1/a.txt", b"a")
         backend.write("lfd/sub2/b.txt", b"b")
         backend.write("lfd/file.txt", b"f")
@@ -281,6 +321,8 @@ class TestBackendIterChildren:
 
     @pytest.mark.spec("ITER-004")
     def test_iter_children(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.LIST):
+            pytest.skip("Backend does not support LIST")
         backend.write("ic/a.txt", b"a")
         backend.write("ic/b.txt", b"b")
         backend.write("ic/sub/c.txt", b"c")
@@ -293,10 +335,14 @@ class TestBackendIterChildren:
 
     @pytest.mark.spec("ITER-004")
     def test_iter_children_empty_or_nonexistent(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.LIST):
+            pytest.skip("Backend does not support LIST")
         assert list(backend.iter_children("nonexistent")) == []
 
     @pytest.mark.spec("ITER-004")
     def test_iter_children_only_files(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.LIST):
+            pytest.skip("Backend does not support LIST")
         backend.write("icf/x.txt", b"x")
         children = list(backend.iter_children("icf"))
         files = [c for c in children if isinstance(c, FileInfo)]
@@ -307,6 +353,8 @@ class TestBackendIterChildren:
 
     @pytest.mark.spec("ITER-004")
     def test_iter_children_only_folders(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.LIST):
+            pytest.skip("Backend does not support LIST")
         backend.write("ico/sub/y.txt", b"y")
         children = list(backend.iter_children("ico"))
         files = [c for c in children if isinstance(c, FileInfo)]
@@ -320,6 +368,8 @@ class TestBackendMetadata:
 
     @pytest.mark.spec("BE-016")
     def test_get_file_info(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("info.txt", b"hello world")
         fi = backend.get_file_info("info.txt")
         assert isinstance(fi, FileInfo)
@@ -333,6 +383,8 @@ class TestBackendMetadata:
 
     @pytest.mark.spec("BE-017")
     def test_get_folder_info(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("fi/a.txt", b"aaa")
         backend.write("fi/b.txt", b"bb")
         fi = backend.get_folder_info("fi")
@@ -351,6 +403,8 @@ class TestBackendMove:
 
     @pytest.mark.spec("BE-018")
     def test_move(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.MOVE):
+            pytest.skip("Backend does not support MOVE")
         backend.write("mv_src.txt", b"data")
         backend.move("mv_src.txt", "mv_dst.txt")
         assert backend.exists("mv_src.txt") is False
@@ -358,11 +412,15 @@ class TestBackendMove:
 
     @pytest.mark.spec("BE-018")
     def test_move_not_found(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.MOVE):
+            pytest.skip("Backend does not support MOVE")
         with pytest.raises(NotFound):
             backend.move("missing.txt", "dst.txt")
 
     @pytest.mark.spec("BE-018")
     def test_move_already_exists(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.MOVE):
+            pytest.skip("Backend does not support MOVE")
         backend.write("mv1.txt", b"a")
         backend.write("mv2.txt", b"b")
         with pytest.raises(AlreadyExists):
@@ -370,6 +428,8 @@ class TestBackendMove:
 
     @pytest.mark.spec("BE-018")
     def test_move_overwrite(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.MOVE):
+            pytest.skip("Backend does not support MOVE")
         backend.write("mvo1.txt", b"a")
         backend.write("mvo2.txt", b"b")
         backend.move("mvo1.txt", "mvo2.txt", overwrite=True)
@@ -381,6 +441,8 @@ class TestBackendCopy:
 
     @pytest.mark.spec("BE-019")
     def test_copy(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.COPY):
+            pytest.skip("Backend does not support COPY")
         backend.write("cp_src.txt", b"data")
         backend.copy("cp_src.txt", "cp_dst.txt")
         assert backend.read_bytes("cp_src.txt") == b"data"
@@ -388,11 +450,15 @@ class TestBackendCopy:
 
     @pytest.mark.spec("BE-019")
     def test_copy_not_found(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.COPY):
+            pytest.skip("Backend does not support COPY")
         with pytest.raises(NotFound):
             backend.copy("missing.txt", "dst.txt")
 
     @pytest.mark.spec("BE-019")
     def test_copy_already_exists(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.COPY):
+            pytest.skip("Backend does not support COPY")
         backend.write("cp1.txt", b"a")
         backend.write("cp2.txt", b"b")
         with pytest.raises(AlreadyExists):
@@ -400,6 +466,8 @@ class TestBackendCopy:
 
     @pytest.mark.spec("BE-019")
     def test_copy_overwrite(self, backend: Backend) -> None:
+        if not backend.capabilities.supports(Capability.COPY):
+            pytest.skip("Backend does not support COPY")
         backend.write("cpo1.txt", b"a")
         backend.write("cpo2.txt", b"b")
         backend.copy("cpo1.txt", "cpo2.txt", overwrite=True)
@@ -436,6 +504,10 @@ class TestBackendToKey:
     @pytest.mark.spec("NPR-003")
     def test_to_key_round_trip_with_listing(self, backend: Backend) -> None:
         """Paths from list_files can be converted back via to_key."""
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
+        if not backend.capabilities.supports(Capability.LIST):
+            pytest.skip("Backend does not support LIST")
         backend.write("tk/a.txt", b"a")
         files = list(backend.list_files("tk"))
         assert len(files) == 1
@@ -450,6 +522,8 @@ class TestStreamingConformance:
     @pytest.mark.spec("SIO-001")
     def test_read_returns_true_stream_not_bytesio(self, backend: Backend) -> None:
         """read() must return a true streaming handle, not a BytesIO wrapper."""
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("stream_test.bin", b"hello streaming")
         stream = backend.read("stream_test.bin")
         assert not isinstance(stream, io.BytesIO), "read() must not wrap content in BytesIO -- this defeats streaming"
@@ -459,6 +533,8 @@ class TestStreamingConformance:
     @pytest.mark.spec("SIO-001")
     def test_read_supports_chunked_reads(self, backend: Backend) -> None:
         """Streams must support reading in fixed-size chunks."""
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         content = b"A" * 1000
         backend.write("chunks.bin", content)
         stream = backend.read("chunks.bin")
@@ -475,6 +551,8 @@ class TestStreamingConformance:
     @pytest.mark.spec("SIO-001")
     def test_read_stream_position_starts_at_zero(self, backend: Backend) -> None:
         """Stream must be positioned at the start on return."""
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("pos.bin", b"0123456789")
         stream = backend.read("pos.bin")
         first = stream.read(3)
@@ -486,6 +564,8 @@ class TestStreamingConformance:
     @pytest.mark.spec("SIO-001")
     def test_read_stream_supports_context_manager(self, backend: Backend) -> None:
         """read() stream supports context manager protocol for reliable cleanup."""
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         backend.write("ctx.bin", b"context manager test")
         with backend.read("ctx.bin") as stream:
             content = stream.read()
@@ -495,6 +575,8 @@ class TestStreamingConformance:
     @pytest.mark.spec("SIO-003")
     def test_write_from_binaryio_streams_content(self, backend: Backend) -> None:
         """write() with BinaryIO must not require the caller to materialize bytes."""
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         content = b"X" * 8192
         backend.write("binio_write.bin", io.BytesIO(content))
         assert backend.read_bytes("binio_write.bin") == content
@@ -502,6 +584,8 @@ class TestStreamingConformance:
     @pytest.mark.spec("SIO-003")
     def test_write_binaryio_reads_from_current_position(self, backend: Backend) -> None:
         """write() must read BinaryIO from its current position, not from start."""
+        if not backend.capabilities.supports(Capability.WRITE):
+            pytest.skip("Backend does not support WRITE")
         buf = io.BytesIO(b"HEADER_PAYLOAD")
         buf.seek(7)  # Skip past "HEADER_"
         backend.write("partial_pos.bin", buf)
