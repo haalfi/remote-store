@@ -74,7 +74,7 @@ Project convention: `Yes` / `--` (dash), never `Yes` / `No`.
 | T-01..T-06 | Normalize dash convention | 6 | AF-041 |
 | T-07..T-10 | Add missing "See also" sections | 4 | AF-042 |
 | T-11 | Unify "See also" format | 22 | AF-042 |
-| T-12..T-14 | Unify table boolean style | 7 | AF-043 |
+| T-12..T-14 | Unify table boolean style | 6 | AF-043 |
 | T-15 | Convert blockquotes to admonitions | 1 | AF-044 |
 | T-16 | Clarify `--` in extensions table | 1 | AF-046 |
 | T-17..T-19 | Harmonize backend page structure | 6 | AF-047 |
