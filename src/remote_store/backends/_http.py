@@ -281,54 +281,34 @@ class ReadOnlyHttpBackend(Backend):
     # region: unsupported operations
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        raise CapabilityNotSupported(
-            "HTTP backend is read-only", capability="write", backend=self.name
-        )
+        raise CapabilityNotSupported("HTTP backend is read-only", capability="write", backend=self.name)
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        raise CapabilityNotSupported(
-            "HTTP backend is read-only", capability="atomic_write", backend=self.name
-        )
+        raise CapabilityNotSupported("HTTP backend is read-only", capability="atomic_write", backend=self.name)
 
     def open_atomic(self, path: str, *, overwrite: bool = False) -> AbstractContextManager[BinaryIO]:
-        raise CapabilityNotSupported(
-            "HTTP backend is read-only", capability="atomic_write", backend=self.name
-        )
+        raise CapabilityNotSupported("HTTP backend is read-only", capability="atomic_write", backend=self.name)
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
-        raise CapabilityNotSupported(
-            "HTTP backend is read-only", capability="delete", backend=self.name
-        )
+        raise CapabilityNotSupported("HTTP backend is read-only", capability="delete", backend=self.name)
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
-        raise CapabilityNotSupported(
-            "HTTP backend is read-only", capability="delete", backend=self.name
-        )
+        raise CapabilityNotSupported("HTTP backend is read-only", capability="delete", backend=self.name)
 
     def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
-        raise CapabilityNotSupported(
-            "HTTP backend does not support listing", capability="list", backend=self.name
-        )
+        raise CapabilityNotSupported("HTTP backend does not support listing", capability="list", backend=self.name)
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
-        raise CapabilityNotSupported(
-            "HTTP backend does not support listing", capability="list", backend=self.name
-        )
+        raise CapabilityNotSupported("HTTP backend does not support listing", capability="list", backend=self.name)
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
-        raise CapabilityNotSupported(
-            "HTTP backend does not support listing", capability="list", backend=self.name
-        )
+        raise CapabilityNotSupported("HTTP backend does not support listing", capability="list", backend=self.name)
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        raise CapabilityNotSupported(
-            "HTTP backend is read-only", capability="move", backend=self.name
-        )
+        raise CapabilityNotSupported("HTTP backend is read-only", capability="move", backend=self.name)
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        raise CapabilityNotSupported(
-            "HTTP backend is read-only", capability="copy", backend=self.name
-        )
+        raise CapabilityNotSupported("HTTP backend is read-only", capability="copy", backend=self.name)
 
     # endregion
 
@@ -341,13 +321,9 @@ class ReadOnlyHttpBackend(Backend):
         except BackendUnavailable:
             raise
         except Exception as exc:
-            raise BackendUnavailable(
-                f"Health check failed: {exc}", backend=self.name
-            ) from exc
+            raise BackendUnavailable(f"Health check failed: {exc}", backend=self.name) from exc
         if resp.status >= 500:
-            raise BackendUnavailable(
-                f"Health check returned HTTP {resp.status}", backend=self.name
-            )
+            raise BackendUnavailable(f"Health check returned HTTP {resp.status}", backend=self.name)
 
     def close(self) -> None:
         """Close the underlying transport."""
@@ -377,11 +353,7 @@ class ReadOnlyHttpBackend(Backend):
 
     def __repr__(self) -> str:
         masked_headers = {k: "***" for k in self._headers} if self._headers else {}
-        return (
-            f"ReadOnlyHttpBackend(base_url={self._base_url!r}, "
-            f"headers={masked_headers!r}, "
-            f"timeout={self._timeout})"
-        )
+        return f"ReadOnlyHttpBackend(base_url={self._base_url!r}, headers={masked_headers!r}, timeout={self._timeout})"
 
     # endregion
 
@@ -434,7 +406,7 @@ class ReadOnlyHttpBackend(Backend):
 
             if attempt < self._retry.max_attempts - 1:
                 delay = min(
-                    self._retry.backoff_base * (2 ** attempt),
+                    self._retry.backoff_base * (2**attempt),
                     self._retry.backoff_max,
                 )
                 delay += random.uniform(0, self._retry.jitter)  # noqa: S311
