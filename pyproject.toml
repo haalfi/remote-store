@@ -150,6 +150,7 @@ dependencies = [
   "polars>=0.20",
   "duckdb>=0.9",
   "dagster>=1.9",
+  "pytest-httpserver>=1.0.0",
 ]
 
 [tool.hatch.envs.default.scripts]
