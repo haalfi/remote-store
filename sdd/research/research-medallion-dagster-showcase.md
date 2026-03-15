@@ -146,7 +146,9 @@ _http = Store(ReadOnlyHttpBackend(
     base_url="https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/",
     timeout=60.0,
 ))
-meteo_store = otel_observe(cached_store(_http, ttl=3600))
+_cached = cached_store(_http, ttl=3600)
+meteo_store = otel_observe(_cached)
+# Access cache stats after Bronze ingestion: _cached.stats
 
 # --- Sink: local medallion lake ---
 lake = Store(LocalBackend(root="./data/showcase"))
@@ -300,25 +302,16 @@ def gold_alerts() -> pl.DataFrame:
 ### 5.3 IO Manager Integration
 
 ```python
-from dagster import Definitions, IOManager, io_manager
+from dagster import Definitions
 from remote_store.ext.dagster import remote_store_io_manager
-
-@io_manager
-def silver_io_manager() -> IOManager:
-    """Silver/Gold assets stored as Parquet via remote-store."""
-    return remote_store_io_manager(silver, serializer="parquet")
-
-@io_manager
-def gold_io_manager() -> IOManager:
-    return remote_store_io_manager(gold, serializer="parquet")
 
 defs = Definitions(
     assets=[meteo_stations, bronze_bern, bronze_zurich, bronze_lugano,
             silver_measurements, gold_daily_summary, gold_station_stats,
             gold_alerts],
     resources={
-        "silver_io_manager": silver_io_manager,
-        "gold_io_manager": gold_io_manager,
+        "silver_io_manager": remote_store_io_manager(silver, serializer="parquet"),
+        "gold_io_manager": remote_store_io_manager(gold, serializer="parquet"),
     },
 )
 ```
