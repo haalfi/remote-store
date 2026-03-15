@@ -6,6 +6,26 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
+## v0.17.0 to next
+
+**Extension imports moved (ADR-0013):**
+
+Optional-dependency extensions are no longer re-exported from
+`remote_store.__init__`. Import them directly from their extension module:
+
+- Old: `from remote_store import pyarrow_fs, StoreFileSystemHandler`
+- New: `from remote_store.ext.arrow import pyarrow_fs, StoreFileSystemHandler`
+
+- Old: `from remote_store import otel_hooks, otel_observe`
+- New: `from remote_store.ext.otel import otel_hooks, otel_observe`
+
+- Old: `from remote_store import pydantic_to_registry_config`
+- New: `from remote_store.ext.pydantic import pydantic_to_registry_config`
+
+Pure-Python extensions (`ext.batch`, `ext.transfer`, `ext.glob`, `ext.observe`,
+`ext.cache`, `ext.partition`) are unchanged -- they were already unconditionally
+exported from `remote_store.__init__`.
+
 ## v0.15.0 to v0.16.0
 
 **YAML config loader moved to extension:**
