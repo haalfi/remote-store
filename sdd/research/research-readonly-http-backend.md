@@ -303,7 +303,7 @@ classes with 69 test methods. Only two capabilities are currently gated:
 |------------|--------|-------|
 | ATOMIC_WRITE | Yes | 7 tests skip cleanly |
 | GLOB | Yes | 2 tests skip cleanly |
-| WRITE, DELETE, LIST, MOVE, COPY, METADATA | **No** | ~50 tests have no capability checks |
+| WRITE, DELETE, LIST, MOVE, COPY, METADATA | **No** | ~60 tests have no capability checks |
 
 ### 10.2 What breaks for a {READ, METADATA} backend
 
@@ -325,13 +325,13 @@ because the backend can't read, but because the test can't set up fixtures.
 | `TestBackendMetadata` | Calls `write()` in setup | Gate on WRITE or pre-seed |
 | `TestBackendMove` | Tests move operations | Gate on MOVE |
 | `TestBackendCopy` | Tests copy operations | Gate on COPY |
+| `TestStreamingConformance` | All 6 methods call `write()` for fixture setup | Gate on WRITE or pre-seed |
 
 **Tests that pass as-is:**
 
 | Test Class | Why |
 |------------|-----|
 | `TestBackendIdentity` | Only checks name, capabilities, repr |
-| `TestStreamingConformance` | Tests chunked read, context manager; no seekability requirement |
 | `TestBackendWriteAtomic` | Already gated on ATOMIC_WRITE |
 | `TestBackendOpenAtomic` | Already gated on ATOMIC_WRITE |
 | `TestBackendLifecycle` | Only checks that `close()` is callable |
@@ -499,8 +499,8 @@ The HTTP backend is a thin adapter over standard HTTP libraries. Estimated:
 - Transport protocol + urllib impl: ~80 lines
 - requests/httpx transports: ~50 lines each (optional)
 
-This is comparable to `MemoryBackend` (~140 lines) and much simpler than
-`S3Backend` (~300 lines). Not a wheel worth importing -- simpler to build.
+This is much smaller than `MemoryBackend` (~505 lines) and `S3Backend`
+(~300 lines). Not a wheel worth importing -- simpler to build.
 
 ---
 
@@ -570,8 +570,10 @@ gap analysis) is resolved -- it works.
 After adding capability gates (SS10.3), the HTTP backend runs through the
 shared conformance suite. Expected results:
 
-- ~12 tests pass (identity, read, metadata, lifecycle, path, unwrap)
-- ~38 tests skip (write, delete, move, copy, list, glob, atomic)
+- ~12 tests pass (identity 4, lifecycle 1, to_key 4, unwrap 1, native_path 2)
+- ~48 tests need capability gates (60 ungated minus 12 pass)
+- 9 tests already gated and skip (ATOMIC_WRITE 7 + GLOB 2)
+- Total: 12 + 48 + 9 = 69 ✓
 - 0 tests fail
 
 ### 16.3 Test infrastructure
