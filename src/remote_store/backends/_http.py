@@ -1,0 +1,491 @@
+"""Read-only HTTP backend — fetch files from HTTP/HTTPS URLs."""
+
+from __future__ import annotations
+
+import contextlib
+import dataclasses
+import io
+import ssl
+import urllib.error
+import urllib.parse
+import urllib.request
+from collections.abc import Callable
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+from typing import TYPE_CHECKING, BinaryIO, Protocol, TypeVar, cast, runtime_checkable
+
+from remote_store._backend import Backend
+from remote_store._capabilities import Capability, CapabilitySet
+from remote_store._errors import (
+    BackendUnavailable,
+    CapabilityNotSupported,
+    NotFound,
+    PermissionDenied,
+    RemoteStoreError,
+)
+from remote_store._models import FileInfo
+from remote_store._path import RemotePath
+from remote_store._stream import _ErrorMappingStream
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from contextlib import AbstractContextManager
+
+    from remote_store._config import RetryPolicy
+    from remote_store._models import FolderEntry, FolderInfo
+    from remote_store._types import WritableContent
+
+T = TypeVar("T")
+
+_CAPABILITIES = CapabilitySet({Capability.READ, Capability.METADATA})
+
+_TRANSIENT_STATUSES = frozenset({408, 429, 500, 502, 503, 504})
+
+
+# ---------------------------------------------------------------------------
+# Transport abstraction
+# ---------------------------------------------------------------------------
+
+
+@dataclasses.dataclass
+class HttpResponse:
+    """Transport-level HTTP response."""
+
+    status: int
+    headers: dict[str, str]
+    body: BinaryIO
+
+
+@runtime_checkable
+class HttpTransport(Protocol):
+    """Internal protocol for pluggable HTTP transports."""
+
+    def get(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse: ...
+
+    def head(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse: ...
+
+    def close(self) -> None: ...
+
+
+_TransportMethod = Callable[[str, dict[str, str], float], HttpResponse]
+
+
+# ---------------------------------------------------------------------------
+# urllib transport (stdlib, zero deps)
+# ---------------------------------------------------------------------------
+
+
+class UrllibTransport:
+    """HTTP transport using stdlib ``urllib.request``."""
+
+    def __init__(self, *, verify_ssl: bool = True, max_redirects: int = 5) -> None:
+        self._ssl_context: ssl.SSLContext | None = None
+        if not verify_ssl:
+            self._ssl_context = ssl.create_default_context()
+            self._ssl_context.check_hostname = False
+            self._ssl_context.verify_mode = ssl.CERT_NONE
+        self._max_redirects = max_redirects
+
+    def get(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse:
+        """Send a GET request."""
+        return self._request(url, headers, timeout, method="GET")
+
+    def head(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse:
+        """Send a HEAD request."""
+        return self._request(url, headers, timeout, method="HEAD")
+
+    def close(self) -> None:
+        """No-op — urllib has no connection pool to close."""
+
+    def _request(self, url: str, headers: dict[str, str], timeout: float, *, method: str) -> HttpResponse:
+        """Execute an HTTP request."""
+        req = urllib.request.Request(url, headers=headers, method=method)
+        try:
+            resp = urllib.request.urlopen(  # noqa: S310 — URL is user-provided base_url + validated path
+                req, timeout=timeout, context=self._ssl_context
+            )
+            resp_headers = {k.lower(): v for k, v in resp.getheaders()}
+            return HttpResponse(status=resp.status, headers=resp_headers, body=cast("BinaryIO", resp))
+        except urllib.error.HTTPError as exc:
+            resp_headers = {k.lower(): v for k, v in exc.headers.items()} if exc.headers else {}
+            return HttpResponse(status=exc.code, headers=resp_headers, body=cast("BinaryIO", io.BytesIO(b"")))
+        except (urllib.error.URLError, OSError, TimeoutError) as exc:
+            raise BackendUnavailable(
+                f"HTTP request failed: {exc}",
+                backend="http",
+            ) from exc
+
+
+# ---------------------------------------------------------------------------
+# Transport auto-detection
+# ---------------------------------------------------------------------------
+
+
+def _resolve_transport(
+    http_client: str | None,
+    *,
+    verify_ssl: bool,
+    max_redirects: int,
+) -> HttpTransport:
+    """Select and instantiate the best available HTTP transport."""
+    if http_client is not None:
+        if http_client == "urllib":
+            return UrllibTransport(verify_ssl=verify_ssl, max_redirects=max_redirects)
+        if http_client == "requests":
+            return _make_requests_transport(verify_ssl=verify_ssl, max_redirects=max_redirects)
+        if http_client == "httpx":
+            return _make_httpx_transport(verify_ssl=verify_ssl, max_redirects=max_redirects)
+        msg = f"Unknown http_client: {http_client!r}. Choose 'urllib', 'requests', or 'httpx'."
+        raise ValueError(msg)
+
+    # Auto-detect: httpx -> requests -> urllib
+    with contextlib.suppress(ImportError):
+        return _make_httpx_transport(verify_ssl=verify_ssl, max_redirects=max_redirects)
+    with contextlib.suppress(ImportError):
+        return _make_requests_transport(verify_ssl=verify_ssl, max_redirects=max_redirects)
+    return UrllibTransport(verify_ssl=verify_ssl, max_redirects=max_redirects)
+
+
+def _make_requests_transport(*, verify_ssl: bool, max_redirects: int) -> HttpTransport:
+    """Create a RequestsTransport (raises ImportError if requests not installed)."""
+    import importlib
+
+    mod = importlib.import_module("remote_store.backends._http_requests")
+    cls = mod.RequestsTransport
+    return cls(verify_ssl=verify_ssl, max_redirects=max_redirects)  # type: ignore[no-any-return]
+
+
+def _make_httpx_transport(*, verify_ssl: bool, max_redirects: int) -> HttpTransport:
+    """Create an HttpxTransport (raises ImportError if httpx not installed)."""
+    import importlib
+
+    mod = importlib.import_module("remote_store.backends._http_httpx")
+    cls = mod.HttpxTransport
+    return cls(verify_ssl=verify_ssl, max_redirects=max_redirects)  # type: ignore[no-any-return]
+
+
+# ---------------------------------------------------------------------------
+# ReadOnlyHttpBackend
+# ---------------------------------------------------------------------------
+
+
+class ReadOnlyHttpBackend(Backend):
+    """Read-only backend for HTTP/HTTPS URLs.
+
+    Treats an HTTP endpoint as a file store with ``{READ, METADATA}``
+    capabilities. Write, delete, list, move, and copy operations raise
+    ``CapabilityNotSupported``.
+
+    Args:
+        base_url: Root URL. A trailing ``/`` is appended if missing.
+        headers: Custom headers sent with every request (e.g. API keys).
+        timeout: Request timeout in seconds.
+        retry: Retry policy for transient errors.
+        http_client: Force a specific transport (``"urllib"``, ``"requests"``,
+            or ``"httpx"``). Auto-detected if ``None``.
+        verify_ssl: Whether to verify TLS certificates.
+        max_redirects: Maximum number of redirects to follow.
+    """
+
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        headers: dict[str, str] | None = None,
+        timeout: float = 30.0,
+        retry: RetryPolicy | None = None,
+        http_client: str | None = None,
+        verify_ssl: bool = True,
+        max_redirects: int = 5,
+    ) -> None:
+        if not base_url:
+            msg = "base_url must not be empty"
+            raise ValueError(msg)
+        self._base_url = base_url if base_url.endswith("/") else base_url + "/"
+        self._headers = dict(headers) if headers else {}
+        self._timeout = timeout
+        self._retry = retry
+        self._transport = _resolve_transport(http_client, verify_ssl=verify_ssl, max_redirects=max_redirects)
+
+    # region: properties
+
+    @property
+    def name(self) -> str:
+        return "http"
+
+    @property
+    def capabilities(self) -> CapabilitySet:
+        return _CAPABILITIES
+
+    # endregion
+
+    # region: read operations
+
+    def exists(self, path: str) -> bool:
+        """Check existence via HEAD request."""
+        resp = self._head(path)
+        if resp.status == 404:
+            return False
+        if 200 <= resp.status < 400:
+            return True
+        raise self._classify_status(resp.status, path)
+
+    def is_file(self, path: str) -> bool:
+        """HTTP resources are always files."""
+        return self.exists(path)
+
+    def is_folder(self, path: str) -> bool:
+        """HTTP has no folder concept — always returns False."""
+        return False
+
+    def read(self, path: str) -> BinaryIO:
+        """Stream-read a file via GET."""
+        resp = self._get(path)
+        if resp.status == 404:
+            raise NotFound(f"Not found: {path}", path=path, backend=self.name)
+        if resp.status >= 400:
+            raise self._classify_status(resp.status, path)
+        return cast("BinaryIO", _ErrorMappingStream(resp.body, self._map_stream_error, path))
+
+    def read_bytes(self, path: str) -> bytes:
+        """Buffered-read a file via GET."""
+        resp = self._get(path)
+        if resp.status == 404:
+            raise NotFound(f"Not found: {path}", path=path, backend=self.name)
+        if resp.status >= 400:
+            raise self._classify_status(resp.status, path)
+        try:
+            return resp.body.read()
+        finally:
+            resp.body.close()
+
+    # endregion
+
+    # region: metadata
+
+    def get_file_info(self, path: str) -> FileInfo:
+        """Get file metadata via HEAD request."""
+        resp = self._head(path)
+        if resp.status == 404:
+            raise NotFound(f"Not found: {path}", path=path, backend=self.name)
+        if resp.status >= 400:
+            raise self._classify_status(resp.status, path)
+        return self._build_file_info(path, resp.headers)
+
+    def get_folder_info(self, path: str) -> FolderInfo:
+        """HTTP has no folder concept — always raises NotFound."""
+        raise NotFound(f"No folder concept in HTTP backend: {path}", path=path, backend=self.name)
+
+    # endregion
+
+    # region: unsupported operations
+
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+        raise CapabilityNotSupported(
+            "HTTP backend is read-only", capability="write", backend=self.name
+        )
+
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+        raise CapabilityNotSupported(
+            "HTTP backend is read-only", capability="atomic_write", backend=self.name
+        )
+
+    def open_atomic(self, path: str, *, overwrite: bool = False) -> AbstractContextManager[BinaryIO]:
+        raise CapabilityNotSupported(
+            "HTTP backend is read-only", capability="atomic_write", backend=self.name
+        )
+
+    def delete(self, path: str, *, missing_ok: bool = False) -> None:
+        raise CapabilityNotSupported(
+            "HTTP backend is read-only", capability="delete", backend=self.name
+        )
+
+    def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
+        raise CapabilityNotSupported(
+            "HTTP backend is read-only", capability="delete", backend=self.name
+        )
+
+    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
+        raise CapabilityNotSupported(
+            "HTTP backend does not support listing", capability="list", backend=self.name
+        )
+
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
+        raise CapabilityNotSupported(
+            "HTTP backend does not support listing", capability="list", backend=self.name
+        )
+
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
+        raise CapabilityNotSupported(
+            "HTTP backend does not support listing", capability="list", backend=self.name
+        )
+
+    def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        raise CapabilityNotSupported(
+            "HTTP backend is read-only", capability="move", backend=self.name
+        )
+
+    def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        raise CapabilityNotSupported(
+            "HTTP backend is read-only", capability="copy", backend=self.name
+        )
+
+    # endregion
+
+    # region: lifecycle
+
+    def check_health(self) -> None:
+        """Verify connectivity by sending HEAD to base_url."""
+        try:
+            resp = self._transport.head(self._base_url, self._headers, self._timeout)
+        except BackendUnavailable:
+            raise
+        except Exception as exc:
+            raise BackendUnavailable(
+                f"Health check failed: {exc}", backend=self.name
+            ) from exc
+        if resp.status >= 500:
+            raise BackendUnavailable(
+                f"Health check returned HTTP {resp.status}", backend=self.name
+            )
+
+    def close(self) -> None:
+        """Close the underlying transport."""
+        self._transport.close()
+
+    def unwrap(self, type_hint: type[T]) -> T:
+        """Return the transport if it matches the requested type."""
+        if isinstance(self._transport, type_hint):
+            return self._transport
+        return super().unwrap(type_hint)
+
+    def native_path(self, path: str) -> str:
+        """Return the full URL for a backend-relative key."""
+        if not path:
+            return self._base_url
+        return self._base_url + urllib.parse.quote(path, safe="/")
+
+    def to_key(self, native_path: str) -> str:
+        """Strip base_url prefix to get a backend-relative key."""
+        if native_path.startswith(self._base_url):
+            return native_path[len(self._base_url) :]
+        return native_path
+
+    # endregion
+
+    # region: dunder methods
+
+    def __repr__(self) -> str:
+        masked_headers = {k: "***" for k in self._headers} if self._headers else {}
+        return (
+            f"ReadOnlyHttpBackend(base_url={self._base_url!r}, "
+            f"headers={masked_headers!r}, "
+            f"timeout={self._timeout})"
+        )
+
+    # endregion
+
+    # region: private helpers
+
+    def _url(self, path: str) -> str:
+        """Build a full URL from a backend-relative path."""
+        return self._base_url + urllib.parse.quote(path, safe="/")
+
+    def _get(self, path: str) -> HttpResponse:
+        """Send a GET request with retry support."""
+        return self._request_with_retry(self._transport.get, path)
+
+    def _head(self, path: str) -> HttpResponse:
+        """Send a HEAD request with retry support."""
+        return self._request_with_retry(self._transport.head, path)
+
+    def _request_with_retry(
+        self,
+        transport_method: _TransportMethod,
+        path: str,
+    ) -> HttpResponse:
+        """Execute a request with optional retry on transient errors."""
+        import random
+        import time
+
+        url = self._url(path)
+
+        if self._retry is None or self._retry.max_attempts <= 1:
+            return transport_method(url, self._headers, self._timeout)
+
+        last_exc: Exception | None = None
+        last_resp: HttpResponse | None = None
+        start = time.monotonic()
+
+        for attempt in range(self._retry.max_attempts):
+            if self._retry.timeout is not None and time.monotonic() - start >= self._retry.timeout:
+                break
+
+            try:
+                resp = transport_method(url, self._headers, self._timeout)
+            except BackendUnavailable as exc:
+                last_exc = exc
+                last_resp = None
+            else:
+                if resp.status not in _TRANSIENT_STATUSES:
+                    return resp
+                last_resp = resp
+                last_exc = None
+
+            if attempt < self._retry.max_attempts - 1:
+                delay = min(
+                    self._retry.backoff_base * (2 ** attempt),
+                    self._retry.backoff_max,
+                )
+                delay += random.uniform(0, self._retry.jitter)  # noqa: S311
+                time.sleep(delay)
+
+        if last_exc is not None:
+            raise last_exc
+        if last_resp is not None:
+            return last_resp
+        raise BackendUnavailable("All retry attempts exhausted", backend=self.name)  # pragma: no cover
+
+    def _classify_status(self, status: int, path: str) -> RemoteStoreError:
+        """Map an HTTP status code to a remote-store error."""
+        if status == 404:
+            return NotFound(f"Not found: {path}", path=path, backend=self.name)
+        if status in (401, 403):
+            return PermissionDenied(f"Access denied: {path}", path=path, backend=self.name)
+        if status in _TRANSIENT_STATUSES:
+            return BackendUnavailable(f"HTTP {status}: {path}", path=path, backend=self.name)
+        return RemoteStoreError(f"HTTP {status}: {path}", path=path, backend=self.name)
+
+    def _map_stream_error(self, exc: Exception, path: str) -> RemoteStoreError:
+        """Error mapper for _ErrorMappingStream."""
+        return BackendUnavailable(f"Stream error: {exc}", path=path, backend=self.name)
+
+    def _build_file_info(self, path: str, headers: dict[str, str]) -> FileInfo:
+        """Build a FileInfo from HTTP response headers."""
+        name = path.rsplit("/", 1)[-1] if "/" in path else path
+
+        size_str = headers.get("content-length", "")
+        size = int(size_str) if size_str.isdigit() else 0
+
+        modified_at = datetime.min.replace(tzinfo=timezone.utc)
+        last_modified = headers.get("last-modified")
+        if last_modified:
+            with contextlib.suppress(Exception):
+                modified_at = parsedate_to_datetime(last_modified)
+                if modified_at.tzinfo is None:
+                    modified_at = modified_at.replace(tzinfo=timezone.utc)
+
+        checksum = headers.get("etag")
+        content_type = headers.get("content-type")
+
+        return FileInfo(
+            path=RemotePath(path),
+            name=name,
+            size=size,
+            modified_at=modified_at,
+            checksum=checksum,
+            content_type=content_type,
+            extra={"headers": dict(headers)},
+        )
+
+    # endregion

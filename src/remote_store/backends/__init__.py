@@ -1,9 +1,10 @@
 """Backend implementations."""
 
+from remote_store.backends._http import ReadOnlyHttpBackend
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
 
-__all__ = ["LocalBackend", "MemoryBackend"]
+__all__ = ["LocalBackend", "MemoryBackend", "ReadOnlyHttpBackend"]
 
 try:
     from remote_store.backends._s3 import S3Backend
