@@ -6,6 +6,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- **`pydantic_to_registry_config()` now unwraps `SecretStr` fields** --
+  Pydantic `SecretStr` values in backend `options` dicts are automatically
+  converted to plain strings before reaching `from_dict()`, so sensitive-key
+  detection wraps them in `Secret` correctly. Previously, `SecretStr` objects
+  bypassed the `isinstance(v, str)` check and were not wrapped.
+
 ### Added
 
 - **`ext.dagster` — Dagster IO Manager adapter** (ID-075 v1) -- wraps any

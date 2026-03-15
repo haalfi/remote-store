@@ -19,10 +19,11 @@ config = pydantic_to_registry_config(MySettings())
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 try:
     import pydantic  # noqa: F401
+    from pydantic import SecretStr
 except ModuleNotFoundError as _exc:  # pragma: no cover
     raise ModuleNotFoundError(
         "Pydantic is required for the pydantic extension. Install it with: pip install 'remote-store[pydantic]'"
@@ -38,6 +39,11 @@ __all__ = [
 ]
 
 
+def _unwrap_secret_strs(d: dict[str, Any]) -> dict[str, Any]:
+    """Unwrap ``SecretStr`` values to plain ``str`` so ``from_dict()`` can wrap them as ``Secret``."""
+    return {k: v.get_secret_value() if isinstance(v, SecretStr) else v for k, v in d.items()}
+
+
 def pydantic_to_registry_config(model: BaseModel) -> RegistryConfig:
     """Convert a Pydantic model to a ``RegistryConfig``.
 
@@ -45,13 +51,10 @@ def pydantic_to_registry_config(model: BaseModel) -> RegistryConfig:
     ``RegistryConfig.from_dict()``. Secret wrapping, unknown-key warnings,
     and validation all happen in ``from_dict()``.
 
-    Note:
-        Pydantic ``SecretStr`` fields are **not** auto-unwrapped.
-        ``model_dump()`` returns ``SecretStr`` objects (not plain strings),
-        which bypass ``from_dict()``'s ``isinstance(v, str)`` check and are
-        **not** re-wrapped in ``Secret``. Use plain ``str`` for
-        credential values in your model's ``options`` dicts -- ``from_dict()``
-        handles Secret wrapping at the config-registry boundary.
+    Pydantic ``SecretStr`` fields in backend ``options`` dicts are
+    automatically unwrapped to plain strings before reaching ``from_dict()``,
+    so ``from_dict()``'s sensitive-key detection works correctly. Users may
+    use either ``str`` or ``SecretStr`` for credential values in their models.
 
     Args:
         model: A Pydantic model whose ``model_dump()`` output has
@@ -63,4 +66,10 @@ def pydantic_to_registry_config(model: BaseModel) -> RegistryConfig:
     Raises:
         TypeError: If the model dump does not conform to the expected schema.
     """
-    return RegistryConfig.from_dict(model.model_dump())
+    data = model.model_dump()
+    backends = data.get("backends", {})
+    if isinstance(backends, dict):
+        for cfg in backends.values():
+            if isinstance(cfg, dict) and "options" in cfg and isinstance(cfg["options"], dict):
+                cfg["options"] = _unwrap_secret_strs(cfg["options"])
+    return RegistryConfig.from_dict(data)
