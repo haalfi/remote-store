@@ -42,7 +42,7 @@ data = cached.read_bytes("config.json")  # b'{"key": "new"}'
 | `list_folders()` | Yes | Materialized on first call |
 | `iter_children()` | Yes | Materialized on first call |
 | `glob()` | Yes | Materialized on first call |
-| `read()` | **No** | Returns `BinaryIO` stream |
+| `read()` | — | Returns `BinaryIO` stream |
 
 `read()` is deliberately not cached because it returns a `BinaryIO`
 stream that may be lazily consumed. Use `read_bytes()` when you want

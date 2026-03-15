@@ -6,6 +6,13 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Post-v0.17.0
 
+- [x] **BK-007 — Docs quick fixes: dashes, See also, table booleans, SFTP blockquotes**
+  All 20 items from the Audit 004 fix list resolved:
+  AF-041 (`--` → `—` across 33 files), AF-042 (See also unified to Pattern B),
+  AF-043 (table booleans to `Yes` / `—`), AF-044 (SFTP blockquotes → admonitions),
+  AF-046 (extensions table disambiguation), AF-047/048 (Installation stubs),
+  AF-049 (`!!! tip` accepted as intentional). Added `.editorconfig` (UTF-8, LF).
+
 - [x] **BUG-001 — `pydantic_to_registry_config()` fails to wrap `SecretStr` in `Secret`**
   `model_dump()` returns `SecretStr` objects (not a `str` subclass), which
   bypassed `from_dict()`'s `isinstance(v, str)` check. Added

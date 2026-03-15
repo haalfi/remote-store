@@ -37,16 +37,6 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-007 — Docs quick fixes: dashes, See also, table booleans, SFTP blockquotes**
-  Fix the four medium-severity findings from
-  [Audit 004](audits/audit-004-docs-structural-consistency.md):
-  AF-041 (normalize `--` → `—` across docs),
-  AF-042 (unify "See also" format, add to 4 missing files),
-  AF-043 (normalize table booleans to `Yes` / `--` convention),
-  AF-044 (convert SFTP blockquotes to `!!! note` admonitions).
-  Fix list: T-01 through T-15 in
-  [fix-docs-structural-issues.md](audits/fix-docs-structural-issues.md).
-
 ---
 
 ## Known Bugs

@@ -17,7 +17,7 @@ The 6 files below already use `—` — they are *correct*. The remaining `docs-
 - [x] **T-04** `guides/backends/sftp.md` — already uses `—` ✓
 - [x] **T-05** `guides/backends/memory.md` — already uses `—` ✓
 - [x] **T-06** `guides/backends/s3-pyarrow.md` — already uses `—` ✓
-- [ ] **T-01b** Convert remaining `--` → `—` in `docs-src/` and `guides/` prose (see AF-041 for full scope)
+- [x] **T-01b** Converted remaining `--` → `—` across 33 files (319 replacements)
 
 ---
 
@@ -35,37 +35,37 @@ The 6 files below already use `—` — they are *correct*. The remaining `docs-
 
 ## 3. Table boolean values (AF-043)
 
-Project convention: `Yes` / `--` (dash), never `Yes` / `No`.
+Project convention: `Yes` / `—` (em dash), never `Yes` / `No`.
 
-- [ ] **T-12** `docs-src/capabilities-matrix.md` lines 12-20 -- replace HTML entity checkmarks with `Yes` / `--`
-- [ ] **T-13** `guides/cache.md` line 45 -- replace bold `**No**` with `--`
-- [ ] **T-14** Normalize all 6 files to `Yes` / `--` convention
+- [x] **T-12** `docs-src/capabilities-matrix.md` — replaced HTML entity checkmarks with `Yes` / `—`
+- [x] **T-13** `guides/cache.md` — replaced bold `**No**` with `—`
+- [x] **T-14** Normalized all tables: `docs-src/api/store.md`, `guides/concurrency.md`, `README.md`
 
 ---
 
 ## 4. Blockquotes to admonitions (AF-044)
 
-- [ ] **T-15** `guides/backends/sftp.md` lines 127-131 -- convert three `>` blockquotes to `!!! warning` or `!!! note` admonitions
+- [x] **T-15** `guides/backends/sftp.md` — converted three `>` blockquotes to `!!! warning` / `!!! note` admonitions
 
 ---
 
 ## 5. Extensions table (AF-046)
 
-- [ ] **T-16** `guides/extensions.md` lines 10-19 -- replace `--` cell values with "none", empty cell, or a distinct glyph
+- [x] **T-16** `guides/extensions.md` — Extra column uses `*(none)*` for built-in, `—` for not available
 
 ---
 
 ## 6. Backend page structure (AF-047, AF-048, AF-050)
 
-- [ ] **T-17** `guides/backends/local.md` -- add `## Installation` stub ("Built-in -- no extra dependencies")
-- [ ] **T-18** `guides/backends/memory.md` -- add `## Installation` stub; review whether extra sections should follow standard ones
-- [ ] **T-19** Audit all 6 backend pages: ensure core sections (Installation, Usage, Options, Capabilities, Caveats, See also) appear in consistent order
+- [x] **T-17** `guides/backends/local.md` — added `## Installation` stub
+- [x] **T-18** `guides/backends/memory.md` — added `## Installation` stub
+- [x] **T-19** Audited all 6 backend pages — core sections (Installation, Usage, Options, ..., See also) consistent; backend-specific sections vary appropriately
 
 ---
 
 ## 7. Admonition type (AF-049)
 
-- [ ] **T-20** `docs-src/api/models.md` line 3 -- convert lone `!!! tip` to `!!! note`, or accept as intentional
+- [x] **T-20** `docs-src/api/models.md` — accepted as intentional (`!!! tip` is correct for a usage hint)
 
 ---
 

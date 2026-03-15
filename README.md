@@ -156,10 +156,10 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 |---------|-------|---------|:------------:|:-----------:|:---------------:|
 | Local filesystem | *(built-in)* | stdlib | Yes | Yes | Yes* |
 | Memory (in-process) | *(built-in)* | — | Yes | — | Yes |
-| Amazon S3 / MinIO | `remote-store[s3]` | `s3fs` | Yes | Yes | No (copy+delete) |
-| S3 (PyArrow) | `remote-store[s3-pyarrow]` | `pyarrow` + `s3fs` | Yes | Yes | No (copy+delete) |
+| Amazon S3 / MinIO | `remote-store[s3]` | `s3fs` | Yes | Yes | — (copy+delete) |
+| S3 (PyArrow) | `remote-store[s3-pyarrow]` | `pyarrow` + `s3fs` | Yes | Yes | — (copy+delete) |
 | SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | — | Yes** |
-| Azure Blob / ADLS | `remote-store[azure]` | `azure-storage-file-datalake` | Yes | Yes | HNS: Yes / non-HNS: No |
+| Azure Blob / ADLS | `remote-store[azure]` | `azure-storage-file-datalake` | Yes | Yes | HNS: Yes / non-HNS: — |
 
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Via `posix_rename` on most OpenSSH servers; falls back to copy+delete.
@@ -223,11 +223,11 @@ There are several excellent Python libraries for file I/O across backends. Here 
 |---|---|---|---|---|---|
 | API surface | ~56 methods | `open()` only | pathlib-style | ~10 methods | 27 methods |
 | Backends | 30+ filesystems | S3, GCS, Az, SFTP | S3, GCS, Azure | S3, GCS, Azure | Local, S3, SFTP, Az, Memory |
-| SFTP | via sshfs | Yes | No | No | Built-in |
-| Streaming I/O | Yes | Yes | No (downloads) | Bytes-oriented | Yes (BinaryIO) |
-| Atomic writes | No | No | No | No | Yes (capability-gated) |
-| Async | Yes | No | No | Yes (first-class) | Sync-only (for now) |
-| Observability | No | No | No | No | `ext.observe` + OTel |
+| SFTP | via sshfs | Yes | — | — | Built-in |
+| Streaming I/O | Yes | Yes | — (downloads) | Bytes-oriented | Yes (BinaryIO) |
+| Atomic writes | — | — | — | — | Yes (capability-gated) |
+| Async | Yes | — | — | Yes (first-class) | Sync-only (for now) |
+| Observability | — | — | — | — | `ext.observe` + OTel |
 | Config model | Per-filesystem | URI-based | Per-client | Per-store kwargs | Immutable Registry |
 | Runtime deps | Yes | Minimal | SDK-based | Rust binary | Zero (core) |
 

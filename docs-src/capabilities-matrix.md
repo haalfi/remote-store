@@ -9,15 +9,15 @@ at runtime before calling an operation.
 
 | Capability | Local | Memory | S3 | S3-PyArrow | SFTP | Azure |
 |------------|:-----:|:------:|:--:|:----------:|:----:|:-----:|
-| READ           | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; |
-| WRITE          | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; |
-| DELETE         | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; |
-| LIST           | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; |
-| MOVE           | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; |
-| COPY           | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; |
-| ATOMIC_WRITE   | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; |
-| METADATA       | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; | &#x2705; |
-| GLOB           | &#x2705; | &#x274C; | &#x2705; | &#x2705; | &#x274C; | &#x2705; |
+| READ           | Yes | Yes | Yes | Yes | Yes | Yes |
+| WRITE          | Yes | Yes | Yes | Yes | Yes | Yes |
+| DELETE         | Yes | Yes | Yes | Yes | Yes | Yes |
+| LIST           | Yes | Yes | Yes | Yes | Yes | Yes |
+| MOVE           | Yes | Yes | Yes | Yes | Yes | Yes |
+| COPY           | Yes | Yes | Yes | Yes | Yes | Yes |
+| ATOMIC_WRITE   | Yes | Yes | Yes | Yes | Yes | Yes |
+| METADATA       | Yes | Yes | Yes | Yes | Yes | Yes |
+| GLOB           | Yes | —  | Yes | Yes | —  | Yes |
 
 **Full support (9/9):** Local, S3, S3-PyArrow, Azure.
 

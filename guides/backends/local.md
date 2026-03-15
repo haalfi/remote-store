@@ -2,6 +2,10 @@
 
 The local backend stores files on the local filesystem. It is built-in and requires no extra dependencies.
 
+## Installation
+
+Built-in — no extra dependencies. Available with any `remote-store` install.
+
 ## Usage
 
 ```python

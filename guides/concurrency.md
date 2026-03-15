@@ -28,13 +28,13 @@ Several backends implement `move(src, dst)` as a **copy followed by a delete**. 
 | Backend | `move()` implementation | Atomic? |
 |---------|------------------------|---------|
 | Local | `shutil.move()` (`os.rename()` on same filesystem, copy+delete across) | Yes* |
-| S3 | Copy object + delete object | No |
-| S3-PyArrow | Copy object + delete object | No |
+| S3 | Copy object + delete object | — |
+| S3-PyArrow | Copy object + delete object | — |
 | Azure (HNS) | `rename_file()` | Yes |
-| Azure (non-HNS) | Copy blob + delete blob | No |
+| Azure (non-HNS) | Copy blob + delete blob | — |
 | SFTP (`posix_rename`) | `posix_rename` | Yes |
 | SFTP (`rename`) | `rename()` | Yes (but not guaranteed atomic on all servers) |
-| SFTP (final fallback) | Read + write + delete | No |
+| SFTP (final fallback) | Read + write + delete | — |
 
 SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename()`, and finally copy+delete. Most OpenSSH servers support `posix_rename`. Servers that lack it usually still support `rename()`, which is atomic on most POSIX filesystems.
 

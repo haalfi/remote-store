@@ -4,6 +4,10 @@ The memory backend stores files in an in-process tree data structure. Zero depen
 
 **Primary use cases:** unit testing (no temp-dir setup/teardown), interactive exploration, documentation examples, CI speed.
 
+## Installation
+
+Built-in — no extra dependencies. Available with any `remote-store` install.
+
 ## Usage
 
 ```python
