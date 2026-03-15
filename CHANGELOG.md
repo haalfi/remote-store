@@ -14,11 +14,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `pip install "remote-store[dagster]"`. Spec `031-ext-dagster.md`
   (DAG-001 through DAG-011).
 
-### Changed
+### Removed
 
-- **Optional-dependency extensions no longer re-exported from top-level
-  package** (ADR-0013) -- `from remote_store import pyarrow_fs` and similar
-  shortcuts for arrow, otel, pydantic, and yaml extensions are removed.
+- **Top-level re-exports of optional-dependency extensions** (ADR-0013) --
+  `from remote_store import pyarrow_fs` and similar shortcuts for arrow, otel,
+  pydantic, and yaml extensions are removed.
   Use the canonical import path instead:
   `from remote_store.ext.arrow import pyarrow_fs`.  Pure-Python extensions
   (batch, cache, glob, observe, partition, transfer) are unchanged.
