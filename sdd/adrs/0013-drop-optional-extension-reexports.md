@@ -21,7 +21,7 @@ provides negligible value and introduces real costs:
   module (and its dependency) at `import remote_store` time.  Heavy
   dependencies like Dagster (~2-5 s) penalise every user who happens to
   have the package installed, even when the extension is unused.  The
-  dagster extension was deliberately excluded from this pattern (ID-080),
+  dagster extension was deliberately excluded from this pattern (ID-075),
   creating an inconsistency.
 
 - **No internal usage.** A codebase-wide search confirms that no source

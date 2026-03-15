@@ -187,6 +187,8 @@ process_text = _rewrite_links(
     (ROOT / "sdd" / "000-process.md").read_text(encoding="utf-8"),
     {
         "](../CONTRIBUTING.md#versioning)": "](../contributing.md#versioning)",
+        "](BACKLOG.md)": "](https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md)",
+        "](BACKLOG-DONE.md)": "](https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md)",
     },
 )
 with mkdocs_gen_files.open("design/process.md", "w") as f:
