@@ -207,7 +207,7 @@ Every Backend ABC method and its HTTP implementation:
 | `list_folders(...)` | Raise `CapabilityNotSupported` | |
 | `iter_children(...)` | Raise `CapabilityNotSupported` | Default impl calls list_files+list_folders; override to raise directly |
 | `get_file_info(path)` | `HEAD` -> `FileInfo(...)` | See §12 for field mapping |
-| `get_folder_info(path)` | Raise `CapabilityNotSupported` | No folder concept |
+| `get_folder_info(path)` | Raise `NotFound` | No folder concept; consistent with `is_folder()` returning `False` |
 | `move(...)` | Raise `CapabilityNotSupported` | |
 | `copy(...)` | Raise `CapabilityNotSupported` | |
 | `glob(...)` | Raise `CapabilityNotSupported` | Default impl already does this |
@@ -426,7 +426,7 @@ close.
 | `path` | From request path | Always available |
 | `name` | From path | Always available |
 | `size` | `Content-Length` | `0` if missing (chunked transfer, dynamic content) |
-| `modified_at` | `Last-Modified` | `datetime.min` if missing (epoch fallback) |
+| `modified_at` | `Last-Modified` | `datetime.min.replace(tzinfo=timezone.utc)` if missing |
 | `checksum` | `ETag` | `None` (optional field) |
 | `content_type` | `Content-Type` | `None` (optional field) |
 | `extra` | All response headers | `{"headers": dict(response.headers)}` |
@@ -439,12 +439,15 @@ close.
   `Optional[int]`), there is no clean sentinel today. The spec should note this
   as a known limitation that may warrant making `size` Optional in a future
   `FileInfo` revision.
-- `Last-Modified` is absent on many static file hosts and CDNs. Using
-  `datetime.min` signals "unknown" without requiring an Optional field change,
-  but has its own issues: sorting by `modified_at` would place HTTP files at the
-  beginning of any list. `datetime(1970, 1, 1, tzinfo=UTC)` (Unix epoch) is a
-  more conventional sentinel but carries the same ambiguity. Like `size`, both
-  fields may warrant `Optional` treatment in a future `FileInfo` revision.
+- `Last-Modified` is absent on many static file hosts and CDNs. The sentinel
+  must be timezone-aware (`datetime.min.replace(tzinfo=timezone.utc)`) because
+  S3 and Azure backends return timezone-aware `modified_at` values -- mixing
+  naive and aware datetimes raises `TypeError` in user code (sorting, filtering,
+  `ext.transfer` comparisons). Sorting by `modified_at` would still place HTTP
+  files at the beginning of any list. `datetime(1970, 1, 1, tzinfo=UTC)` (Unix
+  epoch) is a more conventional sentinel but carries the same ambiguity. Like
+  `size`, both fields may warrant `Optional` treatment in a future `FileInfo`
+  revision.
 - `ETag` maps naturally to `checksum` -- both are opaque identifiers for
   content versioning. Useful for `ext.cache` integration.
 
