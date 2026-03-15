@@ -558,18 +558,41 @@ class TestHealthCheck:
 class TestHttpBackend:
     @pytest.mark.spec("HTTP-001")
     def test_demo(self):
+        pytest.importorskip("pytest_httpserver", reason="pytest-httpserver not installed")
+
+        from pytest_httpserver import HTTPServer
+
         from examples.http_backend import demo
         from remote_store.backends import ReadOnlyHttpBackend
 
-        # Use a memory-backed HTTP-like test: create backend pointed at nothing,
-        # just verify the capability check and error handling paths.
-        backend = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", timeout=0.1)
-        store = Store(backend=backend)
-        results = demo(store)
-        store.close()
+        server = HTTPServer(host="127.0.0.1")
+        server.expect_request("/files/hello.txt", method="GET").respond_with_data(
+            b"Hello, HTTP world!", content_type="text/plain",
+            headers={"Content-Length": "18"},
+        )
+        server.expect_request("/files/hello.txt", method="HEAD").respond_with_data(
+            b"", content_type="text/plain",
+            headers={"Content-Length": "18"},
+        )
+        server.start()
+
+        try:
+            backend = ReadOnlyHttpBackend(
+                base_url=server.url_for("/files/"), http_client="urllib",
+            )
+            store = Store(backend=backend)
+            results = demo(store)
+            store.close()
+        finally:
+            server.clear()
+            if server.is_running():
+                server.stop()
 
         assert results["supports_read"] is True
         assert results["supports_write"] is False
+        assert results["read_content"] == b"Hello, HTTP world!"
+        assert results["read_text"] == "Hello, HTTP world!"
+        assert results["content_type"] == "text/plain"
         assert "write" in results["write_error"]
 
 

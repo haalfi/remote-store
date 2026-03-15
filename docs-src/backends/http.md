@@ -2,3 +2,7 @@
    include-markdown "../../guides/backends/http.md"
    rewrite-relative-urls=false
 %}
+
+## API Reference
+
+::: remote_store.backends.ReadOnlyHttpBackend
