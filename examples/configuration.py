@@ -2,7 +2,7 @@
 
 Demonstrates different ways to create and use RegistryConfig, including
 credential hygiene with Secret, from_dict() auto-wrapping, and
-configuration for S3, S3-PyArrow, SFTP, and Azure backends.
+configuration for S3, S3-PyArrow, SFTP, Azure, and HTTP backends.
 """
 
 from __future__ import annotations
@@ -138,6 +138,20 @@ def demo():
         stores={"documents": StoreProfile(backend="azure", root_path="documents")},
     )
     print(f"Azure config: {len(azure_config.stores)} store(s)")
+
+    http_config = RegistryConfig(
+        backends={
+            "http": BackendConfig(
+                type="http",
+                options={
+                    "base_url": "https://data.example.com/files/",
+                    "timeout": 15.0,
+                },
+            ),
+        },
+        stores={"public": StoreProfile(backend="http", root_path="datasets")},
+    )
+    print(f"HTTP config: {len(http_config.stores)} store(s)")
 
     memory_config = RegistryConfig(
         backends={"mem": BackendConfig(type="memory")},

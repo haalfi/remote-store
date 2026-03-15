@@ -104,7 +104,13 @@ class _LimitedRedirectHandler(urllib.request.HTTPRedirectHandler):
 
 
 class UrllibTransport:
-    """HTTP transport using stdlib ``urllib.request``."""
+    """HTTP transport using stdlib ``urllib.request``.
+
+    Note:
+        Not thread-safe. The shared redirect handler's counter is reset
+        per request, so concurrent calls to ``_request()`` would race on
+        ``_redirect_count``. urllib openers are not thread-safe in general.
+    """
 
     def __init__(self, *, verify_ssl: bool = True, max_redirects: int = 5) -> None:
         self._redirect_handler = _LimitedRedirectHandler(max_redirects)
@@ -273,14 +279,18 @@ class ReadOnlyHttpBackend(Backend):
     def read(self, path: str) -> BinaryIO:
         """Stream-read a file via GET."""
         resp = self._get(path)
-        self._check_status(resp, path)
+        try:
+            self._check_status(resp, path)
+        except Exception:
+            resp.body.close()
+            raise
         return cast("BinaryIO", _ErrorMappingStream(resp.body, self._map_stream_error, path))
 
     def read_bytes(self, path: str) -> bytes:
         """Buffered-read a file via GET."""
         resp = self._get(path)
-        self._check_status(resp, path)
         try:
+            self._check_status(resp, path)
             return resp.body.read()
         finally:
             resp.body.close()
