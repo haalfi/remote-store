@@ -42,8 +42,7 @@ Items graduate through the SDD pipeline:
   [showcase architecture](research/research-medallion-dagster-showcase.md).
   Self-contained Dagster project in `examples/showcase_medallion_dagster/`
   demonstrating 6 extensions composing over live MeteoSwiss data.
-  Blocked by: ID-082 (ReadOnlyHttpBackend).
-  Depends on: ID-075, ext.cache, ext.observe, ext.otel, ext.transfer,
+  Depends on: ID-075, ID-082, ext.cache, ext.observe, ext.otel, ext.transfer,
   ext.arrow, ext.dagster (all shipped).
 
 ---
@@ -58,6 +57,12 @@ Items graduate through the SDD pipeline:
 
 ### Integrations
 
+- [ ] **ID-087 — Speed up macOS & Windows CI test runs**
+  Cross-platform test jobs take too long, inflating total CI time.
+  Investigate: run only `@pytest.mark.cross_platform`-marked tests on
+  macOS/Windows, full suite on Linux only. Or split into fast/slow tiers.
+  HTTP backend tests alone take ~96s locally on Windows with no CPU stress.
+
 - [ ] **ID-085 — HTTP backend: HEAD fallback for CDN-blocked servers**
   Some CDN-fronted servers (e.g. Cloudflare) return 403 on HEAD while allowing
   GET. `exists()` and `get_file_info()` fail with `PermissionDenied` in these
@@ -65,16 +70,6 @@ Items graduate through the SDD pipeline:
   returns 403. At minimum document the HEAD requirement in the HTTP backend
   guide. Discovered during live testing against Swiss Open Transport Data.
   Depends on: ID-082.
-
-- [~] **ID-082 — Read-only HTTP backend**
-  Backend for reading files from HTTP/HTTPS URLs. Capabilities: `{READ, METADATA}`.
-  - Done: [research](research/research-readonly-http-backend.md),
-    [showcase architecture](research/research-medallion-dagster-showcase.md),
-    [spec](specs/032-http-backend.md), conformance suite capability gates,
-    implementation (`ReadOnlyHttpBackend` + `UrllibTransport`),
-    optional transports (requests, httpx), backend-specific tests,
-    conformance integration, guide, CHANGELOG.
-  - Remaining: review, merge.
 
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.

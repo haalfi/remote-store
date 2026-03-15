@@ -6,6 +6,23 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Post-v0.17.0
 
+- [x] **ID-082 — Read-only HTTP backend (`ReadOnlyHttpBackend`)**
+  7th backend: read-only access to HTTP/HTTPS URLs with `{READ, METADATA}`
+  capabilities. [Spec 032](specs/032-http-backend.md), 3 transports
+  (urllib/requests/httpx), streaming adapters (`_HttpxStreamAdapter`,
+  `_Urllib3StreamAdapter`), conformance suite capability gates, 85 tests,
+  [guide](../guides/backends/http.md), [example](../examples/http_backend.py),
+  API docs. 4 review rounds (31 threads). Resource leak fix, thread-safety
+  docs, CI coverage floor adjustment (90% non-primary, 95% primary).
+  [Research](research/research-readonly-http-backend.md),
+  [plan](plans/plan-readonly-http-backend.md).
+  Lesson learned: research and initial estimation significantly underestimated
+  complexity — transport abstraction, streaming adapters, error mapping across
+  3 HTTP libraries, CDN edge cases, and conformance suite changes made this
+  ~2,700 lines across 32 files, far beyond the initial "simple read-only
+  wrapper" estimate.
+  Follow-up: ID-085 (HEAD fallback for CDN-blocked servers).
+
 - [x] **BK-007 — Docs quick fixes: dashes, See also, table booleans, SFTP blockquotes**
   All 20 items from the Audit 004 fix list resolved:
   AF-041 (`--` → `—` across 33 files), AF-042 (See also unified to Pattern B),
