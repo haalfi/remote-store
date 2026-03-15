@@ -567,18 +567,21 @@ class TestHttpBackend:
 
         server = HTTPServer(host="127.0.0.1")
         server.expect_request("/files/hello.txt", method="GET").respond_with_data(
-            b"Hello, HTTP world!", content_type="text/plain",
+            b"Hello, HTTP world!",
+            content_type="text/plain",
             headers={"Content-Length": "18"},
         )
         server.expect_request("/files/hello.txt", method="HEAD").respond_with_data(
-            b"", content_type="text/plain",
+            b"",
+            content_type="text/plain",
             headers={"Content-Length": "18"},
         )
         server.start()
 
         try:
             backend = ReadOnlyHttpBackend(
-                base_url=server.url_for("/files/"), http_client="urllib",
+                base_url=server.url_for("/files/"),
+                http_client="urllib",
             )
             store = Store(backend=backend)
             results = demo(store)
