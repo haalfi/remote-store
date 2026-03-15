@@ -131,8 +131,6 @@ graph TD
     end
 
     METEO -- "ext.transfer<br/>(HTTP → Local)" --> BRONZE
-    METEO -. "ext.transfer<br/>(HTTP → Local)" .-> SILVER
-    METEO -. "ext.transfer<br/>(HTTP → Local)" .-> GOLD
 ```
 
 ### 4.2 Store Construction
@@ -229,8 +227,8 @@ graph TD
 ### 5.2 Asset Definitions (Sketch)
 
 ```python
-from dagster import asset, AssetKey, DailyPartitionsDefinition
-from remote_store.ext.transfer import download, transfer
+from dagster import asset, AssetKey
+from remote_store.ext.transfer import transfer
 from remote_store.ext.dagster import remote_store_io_manager
 
 STATIONS = {"ber": "Bern-Zollikofen", "klo": "Zurich-Kloten", "lug": "Lugano"}
@@ -265,6 +263,7 @@ def bronze_lugano() -> None:
 
 @asset(
     group_name="silver",
+    io_manager_key="silver_io_manager",
     deps=[AssetKey("bronze_bern"), AssetKey("bronze_zurich"),
           AssetKey("bronze_lugano"), AssetKey("meteo_stations")],
 )
@@ -282,17 +281,17 @@ def silver_measurements() -> pl.DataFrame:
 
 # --- Gold: analytics ---
 
-@asset(group_name="gold", deps=[AssetKey("silver_measurements")])
+@asset(group_name="gold", io_manager_key="gold_io_manager", deps=[AssetKey("silver_measurements")])
 def gold_daily_summary() -> pl.DataFrame:
     """Daily aggregates per station: avg/min/max temperature, precipitation sum."""
     ...
 
-@asset(group_name="gold", deps=[AssetKey("silver_measurements")])
+@asset(group_name="gold", io_manager_key="gold_io_manager", deps=[AssetKey("silver_measurements")])
 def gold_station_stats() -> pl.DataFrame:
     """Per-station statistics: data coverage, mean elevation-adjusted temp."""
     ...
 
-@asset(group_name="gold", deps=[AssetKey("silver_measurements")])
+@asset(group_name="gold", io_manager_key="gold_io_manager", deps=[AssetKey("silver_measurements")])
 def gold_alerts() -> pl.DataFrame:
     """Flag days where measurements exceed thresholds (heat, frost, wind)."""
     ...
