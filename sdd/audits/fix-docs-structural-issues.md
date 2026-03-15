@@ -65,7 +65,7 @@ Project convention: `Yes` / `—` (em dash), never `Yes` / `No`.
 
 ## 7. Admonition type (AF-049)
 
-- [x] **T-20** `docs-src/api/models.md` — accepted as intentional (`!!! tip` is correct for a usage hint)
+- [x] **T-20** `docs-src/api/models.md` — removed (content already in `_models.py` module docstring and each class docstring; triple redundancy on rendered page). AF-049 admonition type was correct (`!!! tip`)
 
 ---
 
