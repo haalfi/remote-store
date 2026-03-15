@@ -50,7 +50,9 @@ Six guide files use the Unicode em dash `—` (U+2014) while all `docs-src/` ori
 | `guides/backends/memory.md` | 3, 43 |
 | `guides/backends/s3-pyarrow.md` | 60 |
 
-All other docs use `--`. Decision needed: which convention wins.
+All other docs use `--`.
+
+**Decision (2026-03-15):** Standardize on UTF-8 em dash `—` (U+2014). Tested on Windows cp1252 with MkDocs strict build — renders correctly. The earlier mojibake concern (see DEVELOPMENT_STORY.md) was environment-specific and no longer reproduces. `.editorconfig` and `.vscode/settings.json` now enforce `charset = utf-8`.
 
 ### AF-042. Two incompatible "See also" formats -- *confirmed, Medium*
 

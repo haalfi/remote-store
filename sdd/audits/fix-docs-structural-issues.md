@@ -7,15 +7,17 @@ Companion to **Audit 004** (`audit-004-docs-structural-consistency.md`).
 
 ## 1. Dash convention (AF-041, AF-045)
 
-Pick one convention and apply globally.
-`—` is typographically correct; `--` is ASCII-safe and matches docs-src originals.
+**Decision:** Standardize on UTF-8 em dash `—` (U+2014). Typographically correct, and the earlier MkDocs/cp1252 mojibake concern no longer reproduces. `.editorconfig` enforces `charset = utf-8`.
 
-- [ ] **T-01** `guides/data-lake-patterns.md` -- convert `—` to chosen convention (lines 4, 32, 49, 62, 69, 96, 215, 302-307)
-- [ ] **T-02** `guides/dagster.md` -- convert `—` (lines 12, 67, 123, 147, 149, 154)
-- [ ] **T-03** `guides/batch-operations.md` -- convert `—` (lines 8, 10, 37, 115, 120)
-- [ ] **T-04** `guides/backends/sftp.md` -- convert `—` (lines 108-110)
-- [ ] **T-05** `guides/backends/memory.md` -- convert `—` (lines 3, 43)
-- [ ] **T-06** `guides/backends/s3-pyarrow.md` -- convert `—` (line 60)
+The 6 files below already use `—` — they are *correct*. The remaining `docs-src/` and guide files that use `--` need converting to `—`.
+
+- [x] **T-01** `guides/data-lake-patterns.md` — already uses `—` ✓
+- [x] **T-02** `guides/dagster.md` — already uses `—` ✓
+- [x] **T-03** `guides/batch-operations.md` — already uses `—` ✓
+- [x] **T-04** `guides/backends/sftp.md` — already uses `—` ✓
+- [x] **T-05** `guides/backends/memory.md` — already uses `—` ✓
+- [x] **T-06** `guides/backends/s3-pyarrow.md` — already uses `—` ✓
+- [ ] **T-01b** Convert remaining `--` → `—` in `docs-src/` and `guides/` prose (see AF-041 for full scope)
 
 ---
 
