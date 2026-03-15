@@ -26,6 +26,11 @@ This guide helps you pick the right `remote-store` backend for your use case.
    Legacy systems, on-prem file servers. Supports password and key-based auth.
    Lacks native glob (use `ext.glob` fallback).
 
+6. **Read-only HTTP/HTTPS endpoint?** Use **HTTP**.
+   Public data, static file servers, REST APIs. Read and metadata only — no
+   write, list, or delete. Zero required dependencies (stdlib `urllib`);
+   optional `requests` or `httpx` transports for connection pooling.
+
 ## Trade-offs at a glance
 
 | Backend | Dependencies | Glob | Throughput | Best for |
@@ -36,6 +41,7 @@ This guide helps you pick the right `remote-store` backend for your use case.
 | S3-PyArrow | `pyarrow` | Native | High (C++) | Data lake, Parquet |
 | SFTP | `paramiko` | Fallback | Network | Legacy, on-prem |
 | Azure | `azure-storage-blob` | Native | Network | Azure workloads |
+| HTTP | None | — | Network | Read-only public data |
 
 ## Switching backends at runtime
 

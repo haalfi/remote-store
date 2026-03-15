@@ -58,12 +58,23 @@ Items graduate through the SDD pipeline:
 
 ### Integrations
 
+- [ ] **ID-085 — HTTP backend: HEAD fallback for CDN-blocked servers**
+  Some CDN-fronted servers (e.g. Cloudflare) return 403 on HEAD while allowing
+  GET. `exists()` and `get_file_info()` fail with `PermissionDenied` in these
+  cases. Add a fallback strategy: try GET with `Range: bytes=0-0` when HEAD
+  returns 403. At minimum document the HEAD requirement in the HTTP backend
+  guide. Discovered during live testing against Swiss Open Transport Data.
+  Depends on: ID-082.
+
 - [~] **ID-082 — Read-only HTTP backend**
   Backend for reading files from HTTP/HTTPS URLs. Capabilities: `{READ, METADATA}`.
   - Done: [research](research/research-readonly-http-backend.md),
-    [showcase architecture](research/research-medallion-dagster-showcase.md).
-  - Remaining: spec, conformance suite capability gates, implementation,
-    tests, docs.
+    [showcase architecture](research/research-medallion-dagster-showcase.md),
+    [spec](specs/032-http-backend.md), conformance suite capability gates,
+    implementation (`ReadOnlyHttpBackend` + `UrllibTransport`),
+    optional transports (requests, httpx), backend-specific tests,
+    conformance integration, guide, CHANGELOG.
+  - Remaining: review, merge.
 
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.

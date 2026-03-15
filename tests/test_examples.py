@@ -555,6 +555,24 @@ class TestHealthCheck:
 # ---------------------------------------------------------------------------
 
 
+class TestHttpBackend:
+    @pytest.mark.spec("HTTP-001")
+    def test_demo(self):
+        from examples.http_backend import demo
+        from remote_store.backends import ReadOnlyHttpBackend
+
+        # Use a memory-backed HTTP-like test: create backend pointed at nothing,
+        # just verify the capability check and error handling paths.
+        backend = ReadOnlyHttpBackend(base_url="http://127.0.0.1:1/", timeout=0.1)
+        store = Store(backend=backend)
+        results = demo(store)
+        store.close()
+
+        assert results["supports_read"] is True
+        assert results["supports_write"] is False
+        assert "write" in results["write_error"]
+
+
 class TestDagsterIOManager:
     @pytest.mark.spec("DAG-002,DAG-003,DAG-005")
     def test_demo(self):

@@ -61,6 +61,8 @@ toml = ["tomli>=1.1.0; python_version < '3.11'"]
 yaml = ["pyyaml>=5.1"]
 pydantic = ["pydantic-settings>=2.0.0"]
 dagster = ["dagster>=1.9"]
+requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
+httpx = ["httpx>=0.24.0"]
 
 bench = [
   "pytest-benchmark>=4.0",
@@ -113,6 +115,9 @@ dev = [
   "polars>=0.20",
   "duckdb>=0.9",
   "dagster>=1.9",
+  "pytest-httpserver>=1.0.0",
+  "requests>=2.25.0",
+  "httpx>=0.24.0",
 ]
 
 [tool.hatch.envs.default]
@@ -150,6 +155,9 @@ dependencies = [
   "polars>=0.20",
   "duckdb>=0.9",
   "dagster>=1.9",
+  "pytest-httpserver>=1.0.0",
+  "requests>=2.25.0",
+  "httpx>=0.24.0",
 ]
 
 [tool.hatch.envs.default.scripts]
@@ -233,6 +241,14 @@ warn_unused_ignores = false
 
 [[tool.mypy.overrides]]
 module = "remote_store.ext.yaml"
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = ["requests.*", "httpx", "httpx.*", "urllib3", "urllib3.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["remote_store.backends._http_requests", "remote_store.backends._http_httpx"]
 warn_unused_ignores = false
 
 [[tool.mypy.overrides]]

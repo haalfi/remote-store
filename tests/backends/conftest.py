@@ -18,6 +18,16 @@ if TYPE_CHECKING:
     from remote_store._backend import Backend
 
 
+def _http_server_available() -> bool:
+    try:
+        import pytest_httpserver  # noqa: F401
+        import werkzeug  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def _s3_available() -> bool:
     try:
         import moto  # noqa: F401
@@ -147,6 +157,11 @@ _azure_param = pytest.param(
 )
 
 
+_http_param = pytest.param(
+    "http",
+    marks=pytest.mark.skipif(not _http_server_available(), reason="pytest-httpserver not installed"),
+)
+
 _AZURITE_CONN_STR = (
     "DefaultEndpointsProtocol=http;"
     "AccountName=devstoreaccount1;"
@@ -166,7 +181,7 @@ def azurite_server() -> Iterator[str | None]:
     yield _AZURITE_CONN_STR
 
 
-@pytest.fixture(params=["local", "memory", _s3_param, _s3_pyarrow_param, _sftp_param, _azure_param])
+@pytest.fixture(params=["local", "memory", _http_param, _s3_param, _s3_pyarrow_param, _sftp_param, _azure_param])
 def backend(
     request: pytest.FixtureRequest,
     moto_server: str | None,
@@ -244,6 +259,24 @@ def backend(
         )
         yield b
         b.close()
+    elif request.param == "http":
+        from pytest_httpserver import HTTPServer
+        from werkzeug.wrappers import Response as WerkzeugResponse
+
+        from remote_store.backends._http import ReadOnlyHttpBackend
+
+        server = HTTPServer(host="127.0.0.1")
+        # Return 404 for unregistered paths (default is 500)
+        server.respond_nohandler = lambda request, extra_message="": WerkzeugResponse(  # type: ignore[assignment]
+            b"Not Found", status=404
+        )
+        server.start()
+        b = ReadOnlyHttpBackend(base_url=server.url_for("/conformance/"), http_client="urllib")
+        yield b
+        b.close()
+        server.clear()
+        if server.is_running():
+            server.stop()
     elif request.param == "azure":
         from remote_store.backends._azure import AzureBackend
 

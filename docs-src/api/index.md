@@ -14,6 +14,7 @@ Complete reference for all public exports of `remote-store`.
 
 | Class | Description |
 |-------|-------------|
+| [ReadOnlyHttpBackend](http-backend.md) | Read-only backend for HTTP/HTTPS URLs |
 | [SFTPUtils](sftp-utils.md) | Key loading and host-key verification helpers for SFTP |
 
 ## Configuration

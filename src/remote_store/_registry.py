@@ -37,6 +37,11 @@ def _register_builtin_backends() -> None:
     if "memory" not in _BACKEND_FACTORIES:
         register_backend("memory", MemoryBackend)
 
+    if "http" not in _BACKEND_FACTORIES:
+        from remote_store.backends._http import ReadOnlyHttpBackend
+
+        register_backend("http", ReadOnlyHttpBackend)
+
     if "azure" not in _BACKEND_FACTORIES:
         try:
             from remote_store.backends._azure import AzureBackend

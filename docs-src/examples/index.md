@@ -27,6 +27,7 @@ These require a running service (AWS, MinIO, an SFTP server, Azure, Azurite, etc
 | [S3-PyArrow Backend](s3-pyarrow-backend.md) | High-throughput S3 via PyArrow C++ + escape hatch |
 | [SFTP Backend](sftp-backend.md) | SSH/SFTP: config, host key policies, `unwrap()` |
 | [Azure Backend](azure-backend.md) | Azure Blob / ADLS Gen2: config, auth methods, `unwrap()` |
+| [HTTP Backend](http-backend.md) | Read-only HTTP/HTTPS: capabilities, transport selection |
 
 Interactive Jupyter notebooks are also available in the
 [`examples/notebooks/`](https://github.com/haalfi/remote-store/tree/master/examples/notebooks)
