@@ -61,6 +61,8 @@ toml = ["tomli>=1.1.0; python_version < '3.11'"]
 yaml = ["pyyaml>=5.1"]
 pydantic = ["pydantic-settings>=2.0.0"]
 dagster = ["dagster>=1.9"]
+requests = ["requests>=2.25.0"]
+httpx = ["httpx>=0.24.0"]
 
 bench = [
   "pytest-benchmark>=4.0",
@@ -234,6 +236,14 @@ warn_unused_ignores = false
 
 [[tool.mypy.overrides]]
 module = "remote_store.ext.yaml"
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = ["requests.*", "httpx", "httpx.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["remote_store.backends._http_requests", "remote_store.backends._http_httpx"]
 warn_unused_ignores = false
 
 [[tool.mypy.overrides]]
