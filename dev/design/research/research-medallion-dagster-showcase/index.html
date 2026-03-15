@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-retry-policy/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-medallion-dagster-showcase/">
       
       
-        <link rel="prev" href="../research-readonly-http-backend/">
+        <link rel="prev" href="../research-logging-monitoring-tracing/">
       
       
-        <link rel="next" href="../research-store-api-refinement/">
+        <link rel="next" href="../research-readonly-http-backend/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Retry Policy Configuration (ID-010) - remote-store</title>
+        <title>Architecture: Medallion + Dagster Showcase - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#research-retry-policy-configuration-id-010" class="md-skip">
+        <a href="#architecture-medallion-dagster-showcase" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Retry Policy Configuration (ID-010)
+              Architecture: Medallion + Dagster Showcase
             
           </span>
         </div>
@@ -4865,10 +4865,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture: Medallion + Dagster Showcase
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4884,6 +4911,464 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Purpose
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-what-this-replaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. What This Replaces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-data-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Data Sources
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Data Sources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-meteoswiss-automatic-weather-stations-smn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 MeteoSwiss Automatic Weather Stations (SMN)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-why-meteoswiss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Why MeteoSwiss
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-future-additional-sources-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Future: Additional Sources (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-store-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Store Topology
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-store-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Store Construction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-extension-composition-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Extension Composition Chain
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-dagster-asset-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Dagster Asset Graph
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Dagster Asset Graph">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Assets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-asset-definitions-sketch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Asset Definitions (Sketch)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-io-manager-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 IO Manager Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-why-not-use-io-manager-for-bronze" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Why Not Use IO Manager for Bronze?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-what-each-extension-demonstrates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. What Each Extension Demonstrates
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. What Each Extension Demonstrates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-readonlyhttpbackend-id-082" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 ReadOnlyHttpBackend (ID-082)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-extcache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 ext.cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-extobserve-extotel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 ext.observe / ext.otel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-exttransfer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 ext.transfer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65-extarrow-pyarrow_fs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 ext.arrow / pyarrow_fs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#66-extdagster" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.6 ext.dagster
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-file-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. File Layout
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. File Layout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-why-a-separate-directory-not-a-notebook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Why a Separate Directory (Not a Notebook)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-otel-setup-minimal-no-external-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. OTel Setup (Minimal, No External Services)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Dependencies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Dependencies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-showcase-specific-not-added-to-remote-store-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Showcase-specific (not added to remote-store core)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-remote-store-extras-used" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 remote-store extras used
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-sequencing-and-prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Sequencing and Prerequisites
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Sequencing and Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-hard-prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Hard Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-already-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Already Done
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-implementation-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Implementation Order
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-what-the-showcase-proves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. What the Showcase Proves
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-risks-and-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Risks and Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-non-goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Non-Goals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-relationship-to-existing-notebook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Relationship to Existing Notebook
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4921,37 +5406,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Retry Policy Configuration (ID-010)
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../research-retry-policy/" class="md-nav__link">
         
   
   
@@ -4967,514 +5425,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-problem-statement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Problem Statement
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. Problem Statement">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#why-this-matters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why this matters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#design-constraints" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Design constraints
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-current-state-how-each-backend-handles-retry" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Current State: How Each Backend Handles Retry
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Current State: How Each Backend Handles Retry">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#21-sftp-explicit-tenacity-on-connect-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.1 SFTP — Explicit tenacity on connect only
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#22-s3-relies-on-botocore-built-in-retry" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.2 S3 — Relies on botocore built-in retry
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#23-azure-relies-on-azure-sdk-built-in-retry" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.3 Azure — Relies on Azure SDK built-in retry
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#24-s3-pyarrow-hybrid-partially-configurable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.4 S3-PyArrow — Hybrid, partially configurable
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#25-local-memory-no-retry-correct" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.5 Local / Memory — No retry (correct)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#summary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Summary
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-survey-how-the-python-ecosystem-handles-retry" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Survey: How the Python Ecosystem Handles Retry
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Survey: How the Python Ecosystem Handles Retry">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#31-google-api-core-retry-gold-standard" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.1 google-api-core Retry (gold standard)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#32-urllib3-retry-most-widely-used" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.2 urllib3 Retry (most widely used)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#33-obstore-retryconfig-closest-analog" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.3 obstore RetryConfig (closest analog)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#34-tenacity-our-existing-dependency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.4 tenacity (our existing dependency)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#35-fsspec-ecosystem-fragmented" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.5 fsspec ecosystem (fragmented)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#summary-table" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Summary table
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-design-space-where-should-retry-live" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Design Space: Where Should Retry Live?
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. Design Space: Where Should Retry Live?">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#41-option-a-unified-tenacity-layer-at-store-level" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.1 Option A: Unified tenacity layer at Store level
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#42-option-b-per-backend-native-retry-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.2 Option B: Per-backend native retry configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#43-option-c-retry-aware-store-middleware-ext-layer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.3 Option C: Retry-aware Store middleware (ext layer)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#44-option-d-hybrid-backend-native-defaults-store-level-override" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.4 Option D: Hybrid — Backend-native defaults + Store-level override
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-recommendation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Recommendation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="5. Recommendation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#primary-option-b-per-backend-native-retry-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Primary: Option B (per-backend native retry configuration)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#secondary-consideration-option-c-as-a-future-extension" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Secondary consideration: Option C as a future extension
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#not-recommended-option-a" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Not recommended: Option A
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-proposed-retrypolicy-dataclass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Proposed RetryPolicy Dataclass
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. Proposed RetryPolicy Dataclass">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#mapping-to-each-backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mapping to each backend
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#where-it-lives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where it lives
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-users-configure-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How users configure it
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-scope-question-connect-retry-vs-operation-retry" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Scope Question: Connect Retry vs Operation Retry
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="7. Scope Question: Connect Retry vs Operation Retry">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#arguments-for-operation-retry-sftp" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Arguments for operation retry (SFTP)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#arguments-against-operation-retry-sftp" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Arguments against operation retry (SFTP)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#arguments-for-operation-retry-s3azure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Arguments for operation retry (S3/Azure)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#recommendation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Recommendation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#8-open-questions-for-specadr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. Open Questions for Spec/ADR
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#9-implementation-estimate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        9. Implementation Estimate
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#10-references" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        10. References
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="10. References">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#python-ecosystem" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Python ecosystem
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#internal" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Internal
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -5695,22 +5645,44 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-problem-statement" class="md-nav__link">
+  <a href="#1-purpose" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Problem Statement
+        1. Purpose
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Problem Statement">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-what-this-replaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. What This Replaces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-data-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Data Sources
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Data Sources">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-this-matters" class="md-nav__link">
+  <a href="#31-meteoswiss-automatic-weather-stations-smn" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why this matters
+        3.1 MeteoSwiss Automatic Weather Stations (SMN)
       
     </span>
   </a>
@@ -5718,10 +5690,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#design-constraints" class="md-nav__link">
+  <a href="#32-why-meteoswiss" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Design constraints
+        3.2 Why MeteoSwiss
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-future-additional-sources-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Future: Additional Sources (Optional)
       
     </span>
   </a>
@@ -5734,22 +5717,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-current-state-how-each-backend-handles-retry" class="md-nav__link">
+  <a href="#4-architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Current State: How Each Backend Handles Retry
+        4. Architecture
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. Current State: How Each Backend Handles Retry">
+    <nav class="md-nav" aria-label="4. Architecture">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#21-sftp-explicit-tenacity-on-connect-only" class="md-nav__link">
+  <a href="#41-store-topology" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.1 SFTP — Explicit tenacity on connect only
+        4.1 Store Topology
       
     </span>
   </a>
@@ -5757,10 +5740,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-s3-relies-on-botocore-built-in-retry" class="md-nav__link">
+  <a href="#42-store-construction" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 S3 — Relies on botocore built-in retry
+        4.2 Store Construction
       
     </span>
   </a>
@@ -5768,43 +5751,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#23-azure-relies-on-azure-sdk-built-in-retry" class="md-nav__link">
+  <a href="#43-extension-composition-chain" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.3 Azure — Relies on Azure SDK built-in retry
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#24-s3-pyarrow-hybrid-partially-configurable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.4 S3-PyArrow — Hybrid, partially configurable
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#25-local-memory-no-retry-correct" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.5 Local / Memory — No retry (correct)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#summary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Summary
+        4.3 Extension Composition Chain
       
     </span>
   </a>
@@ -5817,22 +5767,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-survey-how-the-python-ecosystem-handles-retry" class="md-nav__link">
+  <a href="#5-dagster-asset-graph" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Survey: How the Python Ecosystem Handles Retry
+        5. Dagster Asset Graph
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. Survey: How the Python Ecosystem Handles Retry">
+    <nav class="md-nav" aria-label="5. Dagster Asset Graph">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#31-google-api-core-retry-gold-standard" class="md-nav__link">
+  <a href="#51-assets" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1 google-api-core Retry (gold standard)
+        5.1 Assets
       
     </span>
   </a>
@@ -5840,10 +5790,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-urllib3-retry-most-widely-used" class="md-nav__link">
+  <a href="#52-asset-definitions-sketch" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2 urllib3 Retry (most widely used)
+        5.2 Asset Definitions (Sketch)
       
     </span>
   </a>
@@ -5851,10 +5801,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#33-obstore-retryconfig-closest-analog" class="md-nav__link">
+  <a href="#53-io-manager-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.3 obstore RetryConfig (closest analog)
+        5.3 IO Manager Integration
       
     </span>
   </a>
@@ -5862,32 +5812,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#34-tenacity-our-existing-dependency" class="md-nav__link">
+  <a href="#54-why-not-use-io-manager-for-bronze" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.4 tenacity (our existing dependency)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#35-fsspec-ecosystem-fragmented" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.5 fsspec ecosystem (fragmented)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#summary-table" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Summary table
+        5.4 Why Not Use IO Manager for Bronze?
       
     </span>
   </a>
@@ -5900,22 +5828,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-design-space-where-should-retry-live" class="md-nav__link">
+  <a href="#6-what-each-extension-demonstrates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Design Space: Where Should Retry Live?
+        6. What Each Extension Demonstrates
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="4. Design Space: Where Should Retry Live?">
+    <nav class="md-nav" aria-label="6. What Each Extension Demonstrates">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#41-option-a-unified-tenacity-layer-at-store-level" class="md-nav__link">
+  <a href="#61-readonlyhttpbackend-id-082" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.1 Option A: Unified tenacity layer at Store level
+        6.1 ReadOnlyHttpBackend (ID-082)
       
     </span>
   </a>
@@ -5923,10 +5851,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#42-option-b-per-backend-native-retry-configuration" class="md-nav__link">
+  <a href="#62-extcache" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.2 Option B: Per-backend native retry configuration
+        6.2 ext.cache
       
     </span>
   </a>
@@ -5934,10 +5862,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#43-option-c-retry-aware-store-middleware-ext-layer" class="md-nav__link">
+  <a href="#63-extobserve-extotel" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.3 Option C: Retry-aware Store middleware (ext layer)
+        6.3 ext.observe / ext.otel
       
     </span>
   </a>
@@ -5945,10 +5873,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#44-option-d-hybrid-backend-native-defaults-store-level-override" class="md-nav__link">
+  <a href="#64-exttransfer" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.4 Option D: Hybrid — Backend-native defaults + Store-level override
+        6.4 ext.transfer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65-extarrow-pyarrow_fs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 ext.arrow / pyarrow_fs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#66-extdagster" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.6 ext.dagster
       
     </span>
   </a>
@@ -5961,44 +5911,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-recommendation" class="md-nav__link">
+  <a href="#7-file-layout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Recommendation
+        7. File Layout
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="5. Recommendation">
+    <nav class="md-nav" aria-label="7. File Layout">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#primary-option-b-per-backend-native-retry-configuration" class="md-nav__link">
+  <a href="#71-why-a-separate-directory-not-a-notebook" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Primary: Option B (per-backend native retry configuration)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#secondary-consideration-option-c-as-a-future-extension" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Secondary consideration: Option C as a future extension
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#not-recommended-option-a" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Not recommended: Option A
+        7.1 Why a Separate Directory (Not a Notebook)
       
     </span>
   </a>
@@ -6011,22 +5939,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#6-proposed-retrypolicy-dataclass" class="md-nav__link">
+  <a href="#8-otel-setup-minimal-no-external-services" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. Proposed RetryPolicy Dataclass
+        8. OTel Setup (Minimal, No External Services)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="6. Proposed RetryPolicy Dataclass">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Dependencies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Dependencies">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mapping-to-each-backend" class="md-nav__link">
+  <a href="#91-showcase-specific-not-added-to-remote-store-core" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mapping to each backend
+        9.1 Showcase-specific (not added to remote-store core)
       
     </span>
   </a>
@@ -6034,21 +5973,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#where-it-lives" class="md-nav__link">
+  <a href="#92-remote-store-extras-used" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Where it lives
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-users-configure-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How users configure it
+        9.2 remote-store extras used
       
     </span>
   </a>
@@ -6061,22 +5989,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7-scope-question-connect-retry-vs-operation-retry" class="md-nav__link">
+  <a href="#10-sequencing-and-prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. Scope Question: Connect Retry vs Operation Retry
+        10. Sequencing and Prerequisites
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="7. Scope Question: Connect Retry vs Operation Retry">
+    <nav class="md-nav" aria-label="10. Sequencing and Prerequisites">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#arguments-for-operation-retry-sftp" class="md-nav__link">
+  <a href="#101-hard-prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Arguments for operation retry (SFTP)
+        10.1 Hard Prerequisites
       
     </span>
   </a>
@@ -6084,10 +6012,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#arguments-against-operation-retry-sftp" class="md-nav__link">
+  <a href="#102-already-done" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Arguments against operation retry (SFTP)
+        10.2 Already Done
       
     </span>
   </a>
@@ -6095,21 +6023,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#arguments-for-operation-retry-s3azure" class="md-nav__link">
+  <a href="#103-implementation-order" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Arguments for operation retry (S3/Azure)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#recommendation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Recommendation
+        10.3 Implementation Order
       
     </span>
   </a>
@@ -6122,10 +6039,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-open-questions-for-specadr" class="md-nav__link">
+  <a href="#11-what-the-showcase-proves" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8. Open Questions for Spec/ADR
+        11. What the Showcase Proves
       
     </span>
   </a>
@@ -6133,10 +6050,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#9-implementation-estimate" class="md-nav__link">
+  <a href="#12-risks-and-mitigations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        9. Implementation Estimate
+        12. Risks and Mitigations
       
     </span>
   </a>
@@ -6144,41 +6061,24 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#10-references" class="md-nav__link">
+  <a href="#13-non-goals" class="md-nav__link">
     <span class="md-ellipsis">
       
-        10. References
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="10. References">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#python-ecosystem" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Python ecosystem
+        13. Non-Goals
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#internal" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#14-relationship-to-existing-notebook" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Internal
+        14. Relationship to Existing Notebook
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -6199,672 +6099,759 @@
 
 
 
-<h1 id="research-retry-policy-configuration-id-010">Research: Retry Policy Configuration (ID-010)<a class="headerlink" href="#research-retry-policy-configuration-id-010" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> 2026-03-05
-<strong>Backlog items:</strong> ID-010 (Retry policy configuration)
-<strong>Status:</strong> Research complete — ready for design decisions</p>
+<h1 id="architecture-medallion-dagster-showcase">Architecture: Medallion + Dagster Showcase<a class="headerlink" href="#architecture-medallion-dagster-showcase" title="Permanent link">&para;</a></h1>
+<p><strong>Item ID:</strong> ID-082 (HTTP backend), ID-083 (Dagster extension v2), ID-075
+(Dagster extension v1)
+<strong>Date:</strong> 2026-03-15
+<strong>Status:</strong> Architecture draft -- pending ID-082 implementation</p>
 <hr />
-<h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
-<p>The SFTP backend has hardcoded retry logic (3 attempts, 2–10 s exponential
-backoff via <code>tenacity</code>). S3 and Azure rely on their SDK's built-in retry.
-There is no unified retry surface — each backend does (or doesn't do) its own
-thing, and users have zero knobs to tune retry behavior through <code>remote-store</code>.</p>
-<p>The backlog item states:</p>
-<blockquote>
-<p>SFTP has hardcoded retry logic (3 attempts, 2–10 s backoff via <code>tenacity</code>).
-Expose a <code>RetryPolicy</code> dataclass in <code>BackendConfig.options</code> so users can tune
-attempts, backoff, and jitter per-backend.</p>
-</blockquote>
-<h3 id="why-this-matters">Why this matters<a class="headerlink" href="#why-this-matters" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Production workloads need tunable retries.</strong> Batch jobs want aggressive
-   retry (10 attempts, long backoff). Request-serving code wants fast failure
-   (2 attempts, short backoff). One-size-fits-all is wrong for both.</li>
-<li><strong>Flaky networks are common.</strong> SFTP over WAN, S3 behind a VPN, Azure in
-   cross-region setups — transient failures are routine, not exceptional.</li>
-<li><strong>Rate limiting.</strong> Cloud backends throttle (S3 503 SlowDown, Azure 429).
-   Users need backoff tuning to avoid hammering a throttled endpoint.</li>
-<li><strong>Observability.</strong> Users want to know <em>that</em> retries happened and <em>why</em>,
-   not discover them via unexplained latency spikes.</li>
-</ol>
-<h3 id="design-constraints">Design constraints<a class="headerlink" href="#design-constraints" title="Permanent link">&para;</a></h3>
+<h2 id="1-purpose">1. Purpose<a class="headerlink" href="#1-purpose" title="Permanent link">&para;</a></h2>
+<p>A runnable showcase demonstrating remote-store's value proposition through a
+real-world <strong>medallion architecture</strong> orchestrated by Dagster, using:</p>
 <ul>
-<li>Core package has <strong>zero runtime dependencies</strong> (<code>dependencies = []</code>).</li>
-<li><code>tenacity&gt;=4.0</code> is an optional dependency (part of the <code>sftp</code> extra).</li>
-<li><code>BackendConfig.options</code> is a <code>dict[str, object]</code> — the natural injection
-  point for retry configuration.</li>
-<li>S3 and Azure SDKs have their own built-in retry mechanisms — a naive
-  tenacity wrapper on top creates "retry multiplication."</li>
+<li><strong><code>ReadOnlyHttpBackend</code></strong> (ID-082) to read live Swiss open-government data</li>
+<li><strong><code>ext.cache</code></strong> to avoid redundant downloads</li>
+<li><strong><code>ext.observe</code> / <code>ext.otel</code></strong> to trace every storage operation</li>
+<li><strong><code>ext.transfer</code></strong> to move data across backend boundaries</li>
+<li><strong><code>ext.arrow</code></strong> to bridge PyArrow/Polars for Parquet I/O</li>
+<li><strong><code>ext.dagster</code></strong> to integrate with Dagster's asset framework</li>
 </ul>
+<p>The showcase replaces the synthetic SFTP-based approach with real HTTP data
+sources, eliminating all artificial infrastructure while demonstrating more
+library features.</p>
 <hr />
-<h2 id="2-current-state-how-each-backend-handles-retry">2. Current State: How Each Backend Handles Retry<a class="headerlink" href="#2-current-state-how-each-backend-handles-retry" title="Permanent link">&para;</a></h2>
-<h3 id="21-sftp-explicit-tenacity-on-connect-only">2.1 SFTP — Explicit tenacity on connect only<a class="headerlink" href="#21-sftp-explicit-tenacity-on-connect-only" title="Permanent link">&para;</a></h3>
-<p><strong>File:</strong> <code>src/remote_store/backends/_sftp.py</code> — <code>_connect()</code> method (lines 519–566)</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@retry</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">retry</span><span class="o">=</span><span class="n">retry_if_exception_type</span><span class="p">((</span><span class="n">paramiko</span><span class="o">.</span><span class="n">SSHException</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">,</span> <span class="ne">EOFError</span><span class="p">)),</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">stop</span><span class="o">=</span><span class="n">stop_after_attempt</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">wait</span><span class="o">=</span><span class="n">wait_exponential</span><span class="p">(</span><span class="n">multiplier</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">before_sleep</span><span class="o">=</span><span class="n">before_sleep_log</span><span class="p">(</span><span class="n">log</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">),</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">reraise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">_do_connect</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">ssh</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-</code></pre></div>
+<h2 id="2-what-this-replaces">2. What This Replaces<a class="headerlink" href="#2-what-this-replaces" title="Permanent link">&para;</a></h2>
+<p>The existing notebook <code>examples/notebooks/04_data_lake_medallion.ipynb</code> uses
+<code>MemoryBackend</code> with synthetic sensor data. It's a good tutorial but:</p>
 <ul>
-<li><strong>Scope:</strong> Connection establishment only. Individual file operations
-  (read, write, delete, list) are NOT retried.</li>
-<li><strong>Hardcoded:</strong> 3 attempts, 2–10 s exponential backoff, no jitter.</li>
-<li><strong>Spec:</strong> SFTP-009 (Tenacity Retry on Connect).</li>
-<li><strong>Audit note:</strong> M-17 flags that this retry logic is untested.</li>
-<li><strong>Liveness check:</strong> The <code>_sftp</code> property also calls <code>stat('.')</code> to detect
-  stale connections and auto-reconnects. This is recovery, not retry.</li>
+<li>No network I/O (everything in-process)</li>
+<li>No caching (nothing to cache)</li>
+<li>No observability (nothing crosses a boundary worth tracing)</li>
+<li>No Dagster orchestration (imperative notebook cells)</li>
+<li>No cross-backend transfer (single MemoryBackend)</li>
 </ul>
-<h3 id="22-s3-relies-on-botocore-built-in-retry">2.2 S3 — Relies on botocore built-in retry<a class="headerlink" href="#22-s3-relies-on-botocore-built-in-retry" title="Permanent link">&para;</a></h3>
-<p><strong>File:</strong> <code>src/remote_store/backends/_s3.py</code></p>
-<p>s3fs delegates to botocore, which has its own retry layer:</p>
-<ul>
-<li><strong>Default mode:</strong> <code>legacy</code> (5 attempts, exponential backoff).</li>
-<li><strong>Standard mode:</strong> Configurable via <code>botocore.config.Config(retries={"max_attempts": N, "mode": "standard"})</code>.</li>
-<li><strong>Adaptive mode:</strong> Dynamic token-bucket rate limiting.</li>
-<li><strong>Retried errors:</strong> Throttling (503 SlowDown, 429), transient errors (500,
-  502, 503, 504), connection errors, timeout errors.</li>
-</ul>
-<p>Users can <em>already</em> pass retry config through <code>client_options</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">S3Backend</span><span class="p">(</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="s2">&quot;client_kwargs&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>            <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="n">botocore</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">retries</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;max_attempts&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;adaptive&quot;</span><span class="p">})</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="p">}</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="p">},</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">)</span>
-</code></pre></div>
-<p>But this is undiscoverable, botocore-specific, and doesn't help with
-non-botocore errors (e.g., s3fs's own network handling).</p>
-<p>Additionally, s3fs has a module-level <code>retries</code> parameter (default 5) and
-functions <code>s3fs.add_retryable_error()</code> / <code>s3fs.set_custom_error_handler()</code>
-for registering retryable exception types. These are global — not per-instance.</p>
-<h3 id="23-azure-relies-on-azure-sdk-built-in-retry">2.3 Azure — Relies on Azure SDK built-in retry<a class="headerlink" href="#23-azure-relies-on-azure-sdk-built-in-retry" title="Permanent link">&para;</a></h3>
-<p><strong>File:</strong> <code>src/remote_store/backends/_azure.py</code></p>
-<p>Azure Storage SDK uses HTTP pipeline policies for retry:</p>
-<ul>
-<li><strong>Default:</strong> <code>ExponentialRetry(initial_backoff=15, increment_base=3, retry_total=3, random_jitter_range=3)</code>.</li>
-<li><strong>Alternative:</strong> <code>LinearRetry(backoff=15, retry_total=3, random_jitter_range=3)</code>.</li>
-<li><strong>Retried errors:</strong> HTTP 408, 429, 500, 502, 503, 504, connection errors.</li>
-</ul>
-<p>Users can pass retry config through <code>client_options</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">azure.storage.blob</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExponentialRetry</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">AzureBackend</span><span class="p">(</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">container</span><span class="o">=</span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;retry_policy&quot;</span><span class="p">:</span> <span class="n">ExponentialRetry</span><span class="p">(</span><span class="n">retry_total</span><span class="o">=</span><span class="mi">10</span><span class="p">)},</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">)</span>
-</code></pre></div>
-<p>Again, undiscoverable and SDK-specific.</p>
-<h3 id="24-s3-pyarrow-hybrid-partially-configurable">2.4 S3-PyArrow — Hybrid, partially configurable<a class="headerlink" href="#24-s3-pyarrow-hybrid-partially-configurable" title="Permanent link">&para;</a></h3>
-<p><strong>File:</strong> <code>src/remote_store/backends/_s3_pyarrow.py</code></p>
-<ul>
-<li><strong>Data path (PyArrow C++ S3):</strong> PyArrow exposes <code>retry_strategy</code> on
-  <code>S3FileSystem</code> with two strategy classes:</li>
-<li><code>AwsStandardS3RetryStrategy(max_attempts=3)</code> — default, exponential
-    backoff, broad error coverage (recommended).</li>
-<li><code>AwsDefaultS3RetryStrategy(max_attempts=N)</code> — legacy, narrower coverage.
-  The <strong>only configurable knob</strong> is <code>max_attempts</code>. Backoff timing, jitter,
-  and error classification are not configurable through PyArrow's API.
-  Related timeout parameters: <code>request_timeout</code>, <code>connect_timeout</code>.</li>
-<li><strong>Control path (s3fs):</strong> Same as S3 backend above.</li>
-</ul>
-<h3 id="25-local-memory-no-retry-correct">2.5 Local / Memory — No retry (correct)<a class="headerlink" href="#25-local-memory-no-retry-correct" title="Permanent link">&para;</a></h3>
-<p>Local filesystem and in-memory operations don't have transient failures
-worth retrying. No retry needed.</p>
-<h3 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Backend</th>
-<th>Retry mechanism</th>
-<th>Scope</th>
-<th>User-configurable?</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>SFTP</strong></td>
-<td>tenacity (hardcoded)</td>
-<td>Connect only</td>
-<td>No</td>
-</tr>
-<tr>
-<td><strong>S3</strong></td>
-<td>botocore built-in</td>
-<td>All SDK calls</td>
-<td>Yes, but buried in <code>client_options</code></td>
-</tr>
-<tr>
-<td><strong>Azure</strong></td>
-<td>Azure SDK policies</td>
-<td>All SDK calls</td>
-<td>Yes, but buried in <code>client_options</code></td>
-</tr>
-<tr>
-<td><strong>S3-PyArrow</strong></td>
-<td>C++ internal + botocore</td>
-<td>Partial</td>
-<td>Minimal</td>
-</tr>
-<tr>
-<td><strong>Local</strong></td>
-<td>None</td>
-<td>N/A</td>
-<td>N/A</td>
-</tr>
-<tr>
-<td><strong>Memory</strong></td>
-<td>None</td>
-<td>N/A</td>
-<td>N/A</td>
-</tr>
-</tbody>
-</table>
+<p>A previously considered SFTP approach would have required Docker Compose, SSH
+keys, and a simulated drop-zone -- infrastructure that obscures the library
+features it's supposed to showcase.</p>
 <hr />
-<h2 id="3-survey-how-the-python-ecosystem-handles-retry">3. Survey: How the Python Ecosystem Handles Retry<a class="headerlink" href="#3-survey-how-the-python-ecosystem-handles-retry" title="Permanent link">&para;</a></h2>
-<h3 id="31-google-api-core-retry-gold-standard">3.1 google-api-core <code>Retry</code> (gold standard)<a class="headerlink" href="#31-google-api-core-retry-gold-standard" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">Retry</span><span class="p">(</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">predicate</span><span class="o">=</span><span class="n">if_transient_error</span><span class="p">,</span>  <span class="c1"># Callable[[Exception], bool]</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">initial</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>                   <span class="c1"># initial delay (seconds)</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">maximum</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span>                  <span class="c1"># max delay cap (seconds)</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">multiplier</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>                <span class="c1"># exponential multiplier</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">timeout</span><span class="o">=</span><span class="mf">120.0</span><span class="p">,</span>                 <span class="c1"># total retry window (seconds)</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">on_error</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>                 <span class="c1"># callback on each error</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="p">)</span>
+<h2 id="3-data-sources">3. Data Sources<a class="headerlink" href="#3-data-sources" title="Permanent link">&para;</a></h2>
+<p>All data comes from Swiss open-government portals via HTTP. No credentials
+required.</p>
+<h3 id="31-meteoswiss-automatic-weather-stations-smn">3.1 MeteoSwiss Automatic Weather Stations (SMN)<a class="headerlink" href="#31-meteoswiss-automatic-weather-stations-smn" title="Permanent link">&para;</a></h3>
+<p><strong>Base URL:</strong> <code>https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/</code></p>
+<p>MeteoSwiss publishes station measurements as CSV via the FSDI (Federal Spatial
+Data Infrastructure). URL pattern:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/{station}/ogd-smn_{station}_{granularity}.csv
 </code></pre></div>
-<p>Key decisions:
-- Uses <strong>timeout</strong> (total wall-clock window) rather than max_attempts.
-- <strong>Predicate-based</strong> retryability — <code>if_exception_type(Exc1, Exc2)</code> builds
-  predicates.
-- <strong>Immutable with <code>with_XXX</code> builders:</strong> <code>retry.with_timeout(500)</code> returns
-  a new instance.
-- <code>ConditionalRetryPolicy</code> activates retry only for idempotent operations.</p>
-<p><strong>Strengths:</strong> Most thoughtful design. Predicate composability is powerful.
-<strong>Weaknesses:</strong> Timeout-only (no attempt count) is confusing for some users.</p>
-<h3 id="32-urllib3-retry-most-widely-used">3.2 urllib3 <code>Retry</code> (most widely used)<a class="headerlink" href="#32-urllib3-retry-most-widely-used" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">Retry</span><span class="p">(</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">total</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>              <span class="c1"># total retries</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">backoff_factor</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>    <span class="c1"># exponential backoff multiplier</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">backoff_max</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>       <span class="c1"># backoff ceiling (seconds)</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">backoff_jitter</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>    <span class="c1"># random jitter</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">status_forcelist</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="c1"># HTTP status codes to retry</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="p">)</span>
-</code></pre></div>
-<p>Backoff formula: <code>backoff_factor * (2 ** num_previous_retries) + uniform(0, backoff_jitter)</code></p>
-<p><strong>Strengths:</strong> Battle-tested, explicit jitter, attempt-based.
-<strong>Weaknesses:</strong> HTTP-specific knobs (status codes, methods) don't map to
-storage operations.</p>
-<h3 id="33-obstore-retryconfig-closest-analog">3.3 obstore <code>RetryConfig</code> (closest analog)<a class="headerlink" href="#33-obstore-retryconfig-closest-analog" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">RetryConfig</span><span class="p">(</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">max_retries</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">retry_timeout</span><span class="o">=</span><span class="s2">&quot;60s&quot;</span><span class="p">,</span>          <span class="c1"># total wall-clock cap</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">backoff</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;init_backoff&quot;</span><span class="p">:</span> <span class="s2">&quot;1s&quot;</span><span class="p">,</span> <span class="s2">&quot;max_backoff&quot;</span><span class="p">:</span> <span class="s2">&quot;30s&quot;</span><span class="p">,</span> <span class="s2">&quot;base&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">},</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">)</span>
-</code></pre></div>
-<p>The only multi-backend storage library with a unified retry config object.
-Backed by the Rust <code>object_store</code> crate.</p>
-<p><strong>Strengths:</strong> Simple, storage-specific, proven in production.
-<strong>Weaknesses:</strong> No predicate customization, no jitter knob.</p>
-<h3 id="34-tenacity-our-existing-dependency">3.4 tenacity (our existing dependency)<a class="headerlink" href="#34-tenacity-our-existing-dependency" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">retry</span><span class="p">(</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">retry</span><span class="o">=</span><span class="n">retry_if_exception_type</span><span class="p">(</span><span class="ne">OSError</span><span class="p">),</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">stop</span><span class="o">=</span><span class="n">stop_after_attempt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">|</span> <span class="n">stop_after_delay</span><span class="p">(</span><span class="mi">60</span><span class="p">),</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">wait</span><span class="o">=</span><span class="n">wait_exponential</span><span class="p">(</span><span class="n">multiplier</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="o">+</span> <span class="n">wait_random</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">before_sleep</span><span class="o">=</span><span class="n">before_sleep_log</span><span class="p">(</span><span class="n">log</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">),</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">reraise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">)</span>
-</code></pre></div>
-<p><strong>Strengths:</strong> Maximum composability — combinable stop/wait/retry conditions.
-<strong>Weaknesses:</strong> Not a config object — it's a decorator. Hard to
-serialize/deserialize for config files.</p>
-<h3 id="35-fsspec-ecosystem-fragmented">3.5 fsspec ecosystem (fragmented)<a class="headerlink" href="#35-fsspec-ecosystem-fragmented" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>s3fs:</strong> Module-level <code>retries</code> parameter (default 5),
-  <code>add_retryable_error()</code> for exception types. No per-instance config.</li>
-<li><strong>adlfs:</strong> Delegates to Azure SDK.</li>
-<li><strong>sshfs:</strong> No retry.</li>
-<li><strong>No shared retry abstraction across fsspec.</strong></li>
-</ul>
-<h3 id="summary-table">Summary table<a class="headerlink" href="#summary-table" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Library</th>
-<th>Type</th>
-<th>Limit style</th>
-<th>Backoff params</th>
-<th>Jitter</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>google-api-core</strong></td>
-<td>Class</td>
-<td>timeout (seconds)</td>
-<td>initial, maximum, multiplier</td>
-<td>Internal</td>
-</tr>
-<tr>
-<td><strong>urllib3</strong></td>
-<td>Class</td>
-<td>total (count)</td>
-<td>backoff_factor, backoff_max</td>
-<td>Explicit</td>
-</tr>
-<tr>
-<td><strong>obstore</strong></td>
-<td>Dict</td>
-<td>max_retries + retry_timeout</td>
-<td>init_backoff, max_backoff, base</td>
-<td>Internal</td>
-</tr>
-<tr>
-<td><strong>tenacity</strong></td>
-<td>Decorator</td>
-<td>stop_after_attempt / stop_after_delay</td>
-<td>wait_exponential(multiplier, min, max)</td>
-<td>Additive</td>
-</tr>
-<tr>
-<td><strong>s3fs</strong></td>
-<td>Module-level</td>
-<td>retries (count)</td>
-<td>Fixed</td>
-<td>None</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="4-design-space-where-should-retry-live">4. Design Space: Where Should Retry Live?<a class="headerlink" href="#4-design-space-where-should-retry-live" title="Permanent link">&para;</a></h2>
-<p>The central tension: <strong>S3 and Azure already retry internally.</strong> Adding a
-retry layer on top creates multiplication. There are three viable approaches.</p>
-<h3 id="41-option-a-unified-tenacity-layer-at-store-level">4.1 Option A: Unified tenacity layer at Store level<a class="headerlink" href="#41-option-a-unified-tenacity-layer-at-store-level" title="Permanent link">&para;</a></h3>
-<p>Wrap every <code>Store</code> method call with a configurable tenacity retry decorator.
-The Store becomes the retry boundary.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">store</span><span class="o">.</span><span class="n">retry_policy</span> <span class="o">=</span> <span class="n">RetryPolicy</span><span class="p">(</span><span class="n">max_attempts</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">backoff_base</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">backoff_max</span><span class="o">=</span><span class="mf">30.0</span><span class="p">)</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># Every store.read(), store.write(), etc. is retried on transient errors</span>
-</code></pre></div>
-<p><strong>Pros:</strong>
-- Single retry config for all backends.
-- Users don't need to think about per-backend differences.
-- Works with any backend, including future ones.</p>
-<p><strong>Cons:</strong>
-- <strong>Retry multiplication:</strong> S3 has 5 botocore retries × 5 Store retries = 25
-  actual attempts. Azure has 3 SDK retries × 5 Store retries = 15 attempts.
-  This is wasteful and can cause extremely long waits.
-- <strong>Wrong error types:</strong> Store methods raise <code>remote-store</code> errors (<code>NotFound</code>,
-  <code>BackendUnavailable</code>, etc.), not SDK exceptions. Retrying on <code>NotFound</code>
-  makes no sense. The retryable-error predicate must be carefully curated.
-- <strong>Conflates levels:</strong> Connection retry (SFTP) vs operation retry (S3 503)
-  vs application retry (idempotency) are different concerns.
-- Adds tenacity as a <strong>core</strong> dependency (currently it's SFTP-only optional).</p>
-<h3 id="42-option-b-per-backend-native-retry-configuration">4.2 Option B: Per-backend native retry configuration<a class="headerlink" href="#42-option-b-per-backend-native-retry-configuration" title="Permanent link">&para;</a></h3>
-<p>Expose each SDK's native retry configuration through a unified
-<code>RetryPolicy</code> dataclass that maps to backend-specific settings.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">policy</span> <span class="o">=</span> <span class="n">RetryPolicy</span><span class="p">(</span><span class="n">max_attempts</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">backoff_base</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">backoff_max</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span> <span class="n">jitter</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># S3: maps to botocore Config(retries={&quot;max_attempts&quot;: 5, &quot;mode&quot;: &quot;standard&quot;})</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1"># Azure: maps to ExponentialRetry(retry_total=5, initial_backoff=2, increment_base=2)</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># SFTP: maps to tenacity @retry(stop=stop_after_attempt(5), wait=wait_exponential(...))</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="n">SFTPBackend</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
-</code></pre></div>
-<p><strong>Pros:</strong>
-- No retry multiplication — replaces SDK defaults, doesn't stack on top.
-- Each backend interprets the policy in the most efficient way for its SDK.
-- Clean separation — retry stays at the transport level where it belongs.</p>
-<p><strong>Cons:</strong>
-- Lossy mapping: a <code>RetryPolicy</code> can't express everything botocore or Azure
-  SDK supports (status code lists, conditional retry, adaptive mode).
-- PyArrow C++ S3 retry is barely configurable — mapping is very limited.
-- Users who need full SDK control still use <code>client_options</code> (which already
-  works today).
-- Different backends may interpret the same policy slightly differently.</p>
-<h3 id="43-option-c-retry-aware-store-middleware-ext-layer">4.3 Option C: Retry-aware Store middleware (ext layer)<a class="headerlink" href="#43-option-c-retry-aware-store-middleware-ext-layer" title="Permanent link">&para;</a></h3>
-<p>Instead of building retry into backends, offer it as an observable middleware
-in <code>ext/</code>, similar to how <code>ext.observe</code> wraps Store with hooks.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.retry</span><span class="w"> </span><span class="kn">import</span> <span class="n">RetryPolicy</span><span class="p">,</span> <span class="n">retry_store</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">policy</span> <span class="o">=</span> <span class="n">RetryPolicy</span><span class="p">(</span><span class="n">max_attempts</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">backoff_base</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">backoff_max</span><span class="o">=</span><span class="mf">30.0</span><span class="p">)</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">retry_store</span><span class="p">(</span><span class="n">base_store</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># store.write() now retries on BackendUnavailable</span>
-</code></pre></div>
-<p>Under the hood, <code>retry_store()</code> returns a <code>RetryStore(Store)</code> proxy that
-wraps each method with tenacity retry, filtering on retryable error types
-(<code>BackendUnavailable</code>, <code>PermissionDenied</code> on rate-limit, etc.).</p>
-<p><strong>Pros:</strong>
-- Zero change to backends or Store — purely additive.
-- Composable with <code>ext.observe</code> — <code>observe(retry_store(base))</code>.
-- Explicit opt-in — users who want retry get it; others don't pay for it.
-- Can be combined with SDK-level retry (intentionally — the ext layer
-  catches errors that escape the SDK retry).
-- tenacity stays optional (part of an ext extra, not core).</p>
-<p><strong>Cons:</strong>
-- Two retry layers (SDK + middleware) are harder to reason about.
-- Retry at the Store level means the full method re-executes, including
-  path validation, logging, etc. (minor overhead).
-- <code>read()</code> returns <code>BinaryIO</code> — retrying a streaming read is tricky
-  (must discard the partial stream and re-open).</p>
-<h3 id="44-option-d-hybrid-backend-native-defaults-store-level-override">4.4 Option D: Hybrid — Backend-native defaults + Store-level override<a class="headerlink" href="#44-option-d-hybrid-backend-native-defaults-store-level-override" title="Permanent link">&para;</a></h3>
-<p>Combine B and C: backends configure their SDK's native retry from the policy
-(eliminating SDK defaults), and the Store middleware handles cross-cutting
-retry (e.g., reconnect-and-retry for SFTP connection drops mid-operation).</p>
-<p><strong>Pros:</strong> Theoretically cleanest — each layer does what it's best at.
-<strong>Cons:</strong> Most complex. Two places to configure retry. Hard to explain.</p>
-<hr />
-<h2 id="5-recommendation">5. Recommendation<a class="headerlink" href="#5-recommendation" title="Permanent link">&para;</a></h2>
-<h3 id="primary-option-b-per-backend-native-retry-configuration">Primary: Option B (per-backend native retry configuration)<a class="headerlink" href="#primary-option-b-per-backend-native-retry-configuration" title="Permanent link">&para;</a></h3>
-<p>This is the most natural fit for the library's architecture:</p>
-<ol>
-<li><strong>Backends own their transport</strong> — retry is a transport concern.</li>
-<li><strong>No retry multiplication</strong> — the policy replaces SDK defaults.</li>
-<li><strong>Minimal API surface</strong> — one dataclass, one constructor parameter.</li>
-<li><strong>No new core dependencies</strong> — tenacity stays in the SFTP extra.</li>
-</ol>
-<h3 id="secondary-consideration-option-c-as-a-future-extension">Secondary consideration: Option C as a future extension<a class="headerlink" href="#secondary-consideration-option-c-as-a-future-extension" title="Permanent link">&para;</a></h3>
-<p>A Store-level retry middleware in <code>ext/</code> could handle higher-level retry
-(e.g., "reconnect SFTP and retry the operation" or "retry a write that
-failed mid-stream"). This is orthogonal to backend-level retry and can be
-added later without changing the backend-level design.</p>
-<h3 id="not-recommended-option-a">Not recommended: Option A<a class="headerlink" href="#not-recommended-option-a" title="Permanent link">&para;</a></h3>
-<p>Store-level retry as the primary mechanism causes retry multiplication and
-is at the wrong abstraction level. Rejected.</p>
-<hr />
-<h2 id="6-proposed-retrypolicy-dataclass">6. Proposed <code>RetryPolicy</code> Dataclass<a class="headerlink" href="#6-proposed-retrypolicy-dataclass" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">RetryPolicy</span><span class="p">:</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Retry configuration for transient backend errors.</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="sd">    Backends map these parameters to their native retry mechanisms.</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="sd">    Backends that don&#39;t support a parameter silently ignore it.</span>
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="n">max_attempts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>
-<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Maximum number of attempts (including the initial attempt).</span>
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="sd">    Set to 1 to disable retry.&quot;&quot;&quot;</span>
-<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>
-<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="n">backoff_base</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
-<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Base delay in seconds for exponential backoff.</span>
-<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="sd">    Delay = backoff_base * (2 ** attempt) capped at backoff_max.&quot;&quot;&quot;</span>
-<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>
-<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>    <span class="n">backoff_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.0</span>
-<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Maximum delay between retries in seconds.&quot;&quot;&quot;</span>
-<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>
-<a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>    <span class="n">jitter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
-<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Maximum random jitter added to each delay in seconds.</span>
-<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a><span class="sd">    Set to 0.0 to disable jitter.&quot;&quot;&quot;</span>
-<a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a>
-<a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Total wall-clock timeout in seconds for all attempts combined.</span>
-<a id="__codelineno-10-26" name="__codelineno-10-26" href="#__codelineno-10-26"></a><span class="sd">    None means no total timeout (only max_attempts limits retries).&quot;&quot;&quot;</span>
-</code></pre></div>
-<h3 id="mapping-to-each-backend">Mapping to each backend<a class="headerlink" href="#mapping-to-each-backend" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Parameter</th>
-<th>SFTP (tenacity)</th>
-<th>S3 (botocore)</th>
-<th>Azure SDK</th>
-<th>S3-PyArrow</th>
+<th>Values</th>
+<th>Example</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>max_attempts</code></td>
-<td><code>stop_after_attempt(N)</code></td>
-<td><code>Config(retries={"max_attempts": N})</code></td>
-<td><code>retry_total=N-1</code></td>
-<td><code>AwsStandardS3RetryStrategy(max_attempts=N)</code> + s3fs side</td>
+<td><code>{station}</code></td>
+<td>3-letter code, lowercase</td>
+<td><code>ber</code> (Bern-Zollikofen), <code>klo</code> (Zurich-Kloten), <code>lug</code> (Lugano)</td>
 </tr>
 <tr>
-<td><code>backoff_base</code></td>
-<td><code>wait_exponential(min=N)</code></td>
-<td>Not directly mapped¹</td>
-<td><code>initial_backoff=N</code></td>
-<td>Not configurable (C++ internal)</td>
-</tr>
-<tr>
-<td><code>backoff_max</code></td>
-<td><code>wait_exponential(max=N)</code></td>
-<td>Not directly mapped¹</td>
-<td>Implicit via increment</td>
-<td>Not configurable (C++ internal)</td>
-</tr>
-<tr>
-<td><code>jitter</code></td>
-<td><code>wait_random(0, N)</code></td>
-<td>Built-in (not configurable)</td>
-<td><code>random_jitter_range=N</code></td>
-<td>Not configurable (C++ internal)</td>
-</tr>
-<tr>
-<td><code>timeout</code></td>
-<td><code>stop_after_delay(N)</code></td>
-<td>Not supported</td>
-<td>Not supported</td>
-<td>Not supported</td>
+<td><code>{granularity}</code></td>
+<td><code>t</code> (10-min), <code>h</code> (hourly), <code>d</code> (daily), <code>m</code> (monthly), <code>y</code> (yearly)</td>
+<td><code>d</code> for daily</td>
 </tr>
 </tbody>
 </table>
-<p>¹ botocore uses fixed backoff: <code>min(base * 2^attempt, 20)</code> where base is
-<code>random() * 2^attempt</code>. The <code>backoff_base</code> and <code>backoff_max</code> cannot be
-directly set. For S3, the mapping is best-effort.</p>
-<h3 id="where-it-lives">Where it lives<a class="headerlink" href="#where-it-lives" title="Permanent link">&para;</a></h3>
+<p><strong>Example URLs:</strong>
+- <code>ber/ogd-smn_ber_d.csv</code> -- Bern daily measurements
+- <code>klo/ogd-smn_klo_d.csv</code> -- Zurich-Kloten daily
+- <code>lug/ogd-smn_lug_d.csv</code> -- Lugano daily</p>
+<p><strong>Metadata files</strong> (at collection root):
+- <code>ogd-smn_meta_stations.csv</code> -- station inventory (coordinates, elevation, name)
+- <code>ogd-smn_meta_parameters.csv</code> -- parameter codes (what each column means)</p>
+<p><strong>Format:</strong> Semicolon-delimited CSV (<code>;</code>), decimal separator <code>.</code>, timestamps in
+UTC. <code>Content-Length</code> and <code>Last-Modified</code> headers present. Assets cached for 2
+hours server-side (10-second cache for 10-min granularity).</p>
+<h3 id="32-why-meteoswiss">3.2 Why MeteoSwiss<a class="headerlink" href="#32-why-meteoswiss" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Type definition:</strong> <code>src/remote_store/_config.py</code> (alongside <code>BackendConfig</code>)</li>
-<li><strong>No new dependencies</strong> for the dataclass itself.</li>
-<li>SFTP uses tenacity (already an optional dep) to implement the policy.</li>
-<li>S3/Azure map to their SDK's native config objects.</li>
+<li><strong>Real data, real quirks</strong> -- missing values, station gaps, varying column
+  sets across granularities. Cleaning is non-trivial.</li>
+<li><strong>Static file pattern</strong> -- simple <code>GET</code> requests, no API keys, no pagination.
+  Perfect fit for <code>ReadOnlyHttpBackend</code>.</li>
+<li><strong>Multiple granularities</strong> -- daily vs. monthly vs. yearly naturally maps to
+  medallion layers (ingest daily, aggregate to monthly in Silver, derive
+  analytics in Gold).</li>
+<li><strong>Known dataset</strong> -- MeteoSwiss is referenced in Swiss data engineering
+  tutorials; familiar to the target audience.</li>
 </ul>
-<h3 id="how-users-configure-it">How users configure it<a class="headerlink" href="#how-users-configure-it" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">RetryPolicy</span><span class="p">,</span> <span class="n">BackendConfig</span><span class="p">,</span> <span class="n">RegistryConfig</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="c1"># Direct backend construction</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTPBackend</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SFTPBackend</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;sftp.example.com&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">RetryPolicy</span><span class="p">(</span><span class="n">max_attempts</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="c1"># Via BackendConfig</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="n">config</span> <span class="o">=</span> <span class="n">BackendConfig</span><span class="p">(</span>
-<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>    <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;sftp&quot;</span><span class="p">,</span>
-<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="s2">&quot;sftp.example.com&quot;</span><span class="p">},</span>
-<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="n">retry</span><span class="o">=</span><span class="n">RetryPolicy</span><span class="p">(</span><span class="n">max_attempts</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
-<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="p">)</span>
-<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
-<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="c1"># Via dict config (from_dict / YAML / TOML)</span>
-<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span>
-<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>    <span class="s2">&quot;stores&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>        <span class="s2">&quot;remote&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>            <span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;sftp&quot;</span><span class="p">,</span>
-<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>                <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="s2">&quot;sftp.example.com&quot;</span><span class="p">},</span>
-<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a>                <span class="s2">&quot;retry&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;max_attempts&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;backoff_base&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">},</span>
-<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a>            <span class="p">}</span>
-<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>        <span class="p">}</span>
-<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a>    <span class="p">}</span>
-<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="p">})</span>
-<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a>
-<a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a><span class="c1"># Disable retry entirely</span>
-<a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SFTPBackend</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">RetryPolicy</span><span class="p">(</span><span class="n">max_attempts</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
-</code></pre></div>
-<hr />
-<h2 id="7-scope-question-connect-retry-vs-operation-retry">7. Scope Question: Connect Retry vs Operation Retry<a class="headerlink" href="#7-scope-question-connect-retry-vs-operation-retry" title="Permanent link">&para;</a></h2>
-<p>SFTP currently retries <em>connection</em> only. Should <code>RetryPolicy</code> also cover
-individual <em>operations</em> (read, write, delete)?</p>
-<h3 id="arguments-for-operation-retry-sftp">Arguments for operation retry (SFTP)<a class="headerlink" href="#arguments-for-operation-retry-sftp" title="Permanent link">&para;</a></h3>
-<ul>
-<li>SSH connections drop mid-session (network blip, server restart).</li>
-<li>A <code>write()</code> that fails with <code>OSError</code> or <code>SSHException</code> mid-transfer is
-  retryable if the backend reconnects first.</li>
-<li>The liveness check (<code>stat('.')</code>) already detects stale connections — retry
-  could trigger reconnect + re-attempt.</li>
-</ul>
-<h3 id="arguments-against-operation-retry-sftp">Arguments against operation retry (SFTP)<a class="headerlink" href="#arguments-against-operation-retry-sftp" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Non-idempotent operations (<code>write</code> with <code>overwrite=False</code>, <code>move</code>) are
-  unsafe to retry blindly.</li>
-<li>Partial writes may leave orphaned data — retry without cleanup causes
-  corruption.</li>
-<li>The current SFTP-009 spec explicitly limits retry to connection.</li>
-</ul>
-<h3 id="arguments-for-operation-retry-s3azure">Arguments for operation retry (S3/Azure)<a class="headerlink" href="#arguments-for-operation-retry-s3azure" title="Permanent link">&para;</a></h3>
-<ul>
-<li>S3 and Azure SDKs already retry individual operations at the HTTP level.</li>
-<li><code>RetryPolicy</code> naturally configures this existing behavior.</li>
-<li>No additional code needed — just pass config to the SDK.</li>
-</ul>
-<h3 id="recommendation">Recommendation<a class="headerlink" href="#recommendation" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>S3/Azure:</strong> <code>RetryPolicy</code> configures the SDK's existing operation-level
-  retry. This is safe because the SDKs already handle idempotency.</li>
-<li><strong>SFTP:</strong> <code>RetryPolicy</code> configures <em>connection</em> retry (replacing the
-  hardcoded values). Operation retry is a separate, more complex feature
-  that requires idempotency analysis and should be a follow-up if needed.
-  The liveness check + auto-reconnect already handles the most common case
-  (stale connection on next operation).</li>
-</ul>
-<hr />
-<h2 id="8-open-questions-for-specadr">8. Open Questions for Spec/ADR<a class="headerlink" href="#8-open-questions-for-specadr" title="Permanent link">&para;</a></h2>
-<ol>
-<li>
-<p><strong>Should <code>RetryPolicy</code> be a field on <code>BackendConfig</code> or nested in <code>options</code>?</strong>
-   The backlog item says <code>BackendConfig.options</code>. A dedicated field
-   (<code>BackendConfig.retry: RetryPolicy | None</code>) is cleaner and type-safe,
-   but changes the <code>BackendConfig</code> schema. Recommendation: dedicated field.</p>
-</li>
-<li>
-<p><strong>Should <code>RetryPolicy</code> be a core type or live in an optional module?</strong>
-   As a frozen dataclass with no imports, it has zero dependency cost.
-   Recommendation: core type in <code>_config.py</code>.</p>
-</li>
-<li>
-<p><strong>What about <code>RetryPolicy.disabled()</code> class method?</strong>
-   <code>RetryPolicy(max_attempts=1)</code> works but reads poorly. A
-   <code>RetryPolicy.disabled()</code> factory (returns <code>RetryPolicy(max_attempts=1)</code>)
-   is more expressive. Nice-to-have, not critical.</p>
-</li>
-<li>
-<p><strong>Should backends accept <code>retry</code> as a constructor parameter?</strong>
-   Currently backends take individual kwargs (<code>host</code>, <code>port</code>, etc.) not
-   config objects. Adding <code>retry: RetryPolicy | None = None</code> to each
-   backend constructor is the cleanest API. Backends that ignore retry
-   (Local, Memory) simply don't accept the parameter.</p>
-</li>
-<li>
-<p><strong>Should the default <code>RetryPolicy()</code> match current SFTP behavior?</strong>
-   Current SFTP: 3 attempts, 2–10 s exponential. Proposed default:
-   3 attempts, 1–60 s exponential, 1 s jitter. The defaults should be
-   reasonable for all backends, not SFTP-specific. SFTP's current behavior
-   can be preserved with <code>RetryPolicy(max_attempts=3, backoff_base=2.0, backoff_max=10.0)</code>.</p>
-</li>
-<li>
-<p><strong>How does this interact with <code>ext.observe</code>?</strong>
-   Retry happens inside the backend, below the observe middleware.
-   <code>ext.observe</code> sees the final result (success after N retries, or failure
-   after exhausting retries). If users want retry-level observability,
-   they need backend-level logging (which SFTP's <code>before_sleep_log</code> already
-   provides). The <code>RetryPolicy</code> could optionally accept an <code>on_retry</code>
-   callback, but this adds complexity — defer unless there's demand.</p>
-</li>
-<li>
-<p><strong>Should <code>from_dict()</code> auto-parse <code>retry</code> from nested dicts?</strong>
-   Yes — <code>{"retry": {"max_attempts": 5}}</code> should produce
-   <code>BackendConfig(retry=RetryPolicy(max_attempts=5))</code>. This keeps YAML/TOML
-   config ergonomic.</p>
-</li>
-</ol>
-<hr />
-<h2 id="9-implementation-estimate">9. Implementation Estimate<a class="headerlink" href="#9-implementation-estimate" title="Permanent link">&para;</a></h2>
+<h3 id="33-future-additional-sources-optional">3.3 Future: Additional Sources (Optional)<a class="headerlink" href="#33-future-additional-sources-optional" title="Permanent link">&para;</a></h3>
+<p>These are not required for the initial showcase but could enrich it later:</p>
 <table>
 <thead>
 <tr>
-<th>Work item</th>
-<th>Effort</th>
-<th>Dependencies</th>
+<th>Source</th>
+<th>URL pattern</th>
+<th>Data</th>
+<th>Use in showcase</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>RetryPolicy</code> dataclass in <code>_config.py</code></td>
-<td>Small</td>
-<td>None</td>
+<td>LINDAS SPARQL</td>
+<td><code>POST https://ld.admin.ch/query</code> with <code>Accept: text/csv</code></td>
+<td>Zürich population, municipality stats</td>
+<td>Gold-layer enrichment (join weather + population)</td>
 </tr>
 <tr>
-<td><code>BackendConfig.retry</code> field + <code>from_dict()</code> parsing</td>
-<td>Small</td>
-<td>RetryPolicy</td>
-</tr>
-<tr>
-<td>SFTP: read policy from constructor, replace hardcoded values</td>
-<td>Medium</td>
-<td>RetryPolicy</td>
-</tr>
-<tr>
-<td>S3: map policy to botocore <code>Config(retries=...)</code></td>
-<td>Small</td>
-<td>RetryPolicy</td>
-</tr>
-<tr>
-<td>Azure: map policy to <code>ExponentialRetry(...)</code></td>
-<td>Small</td>
-<td>RetryPolicy</td>
-</tr>
-<tr>
-<td>S3-PyArrow: map policy to s3fs side</td>
-<td>Small</td>
-<td>RetryPolicy</td>
-</tr>
-<tr>
-<td>Tests: unit tests for RetryPolicy, integration tests per backend</td>
-<td>Medium</td>
-<td>All above</td>
-</tr>
-<tr>
-<td>Spec: <code>sdd/specs/0XX-retry-policy.md</code></td>
-<td>Medium</td>
-<td>Design decisions</td>
-</tr>
-<tr>
-<td>Docs: user guide, config examples</td>
-<td>Small</td>
-<td>Spec</td>
-</tr>
-<tr>
-<td>CHANGELOG, BACKLOG update</td>
-<td>Small</td>
-<td>All above</td>
+<td>opendata.swiss</td>
+<td>Various CSV download URLs</td>
+<td>Swiss statistical datasets</td>
+<td>Additional dimension tables</td>
 </tr>
 </tbody>
 </table>
-<p>Total: Medium-sized feature. Comparable to ID-039 (Secret/credential hygiene).</p>
+<p>LINDAS requires a POST request with a SPARQL query body, which doesn't fit
+<code>ReadOnlyHttpBackend</code>'s GET-only model. If needed, a small helper function
+fetches the CSV and writes it to a local Store; the showcase then reads from
+that Store. This is an honest pattern -- not everything is a backend.</p>
 <hr />
-<h2 id="10-references">10. References<a class="headerlink" href="#10-references" title="Permanent link">&para;</a></h2>
-<h3 id="python-ecosystem">Python ecosystem<a class="headerlink" href="#python-ecosystem" title="Permanent link">&para;</a></h3>
+<h2 id="4-architecture">4. Architecture<a class="headerlink" href="#4-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="41-store-topology">4.1 Store Topology<a class="headerlink" href="#41-store-topology" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>graph TD
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    HTTP[&quot;ReadOnlyHttpBackend (ID-082)&lt;br/&gt;data.geo.admin.ch/ch.meteoschweiz.ogd-smn/&quot;]
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    subgraph compose[&quot;Extension Composition&quot;]
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        direction TB
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        CACHE[&quot;ext.cache&lt;br/&gt;(TTL: 1h)&quot;]
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        OTEL[&quot;ext.otel&lt;br/&gt;(spans + metrics)&quot;]
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    end
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    HTTP --&gt; CACHE --&gt; OTEL
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    METEO[&quot;meteo_store&lt;br/&gt;(composed Store)&quot;]
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    OTEL --&gt; METEO
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    subgraph lake[&quot;Local Medallion Lake (lake.child)&quot;]
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        BRONZE[&quot;Bronze Store&lt;br/&gt;raw CSV&quot;]
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>        SILVER[&quot;Silver Store&lt;br/&gt;cleaned Parquet&quot;]
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>        GOLD[&quot;Gold Store&lt;br/&gt;aggregated Parquet&quot;]
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>        BRONZE -- &quot;Dagster asset&quot; --&gt; SILVER
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>        SILVER -- &quot;Dagster asset&quot; --&gt; GOLD
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    end
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    METEO -- &quot;ext.transfer&lt;br/&gt;(HTTP → Local)&quot; --&gt; BRONZE
+</code></pre></div>
+<h3 id="42-store-construction">4.2 Store Construction<a class="headerlink" href="#42-store-construction" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalBackend</span><span class="p">,</span> <span class="n">ReadOnlyHttpBackend</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_store</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_observe</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># --- Source: MeteoSwiss open data (read-only, zero credentials) ---</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">_http</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">ReadOnlyHttpBackend</span><span class="p">(</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">timeout</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">))</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">_cached</span> <span class="o">=</span> <span class="n">cached_store</span><span class="p">(</span><span class="n">_http</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">meteo_store</span> <span class="o">=</span> <span class="n">otel_observe</span><span class="p">(</span><span class="n">_cached</span><span class="p">)</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># Access cache stats after Bronze ingestion: _cached.stats</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="c1"># --- Sink: local medallion lake ---</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">lake</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;./data/showcase&quot;</span><span class="p">))</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">bronze</span> <span class="o">=</span> <span class="n">lake</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="n">silver</span> <span class="o">=</span> <span class="n">lake</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;silver&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="n">gold</span> <span class="o">=</span> <span class="n">lake</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;gold&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Key design choices:</strong></p>
+<ol>
+<li>
+<p><strong><code>ext.cache</code> with 1-hour TTL.</strong> MeteoSwiss caches assets server-side for
+   2 hours. Our 1-hour client TTL means re-materialization within the hour
+   hits the cache, but we still pick up new data within 2 server cycles.
+   This is a real optimization -- not a toy demo.</p>
+</li>
+<li>
+<p><strong><code>ext.otel</code> wraps the cached store.</strong> Traces show cache hits vs. actual
+   HTTP requests, making the caching benefit visible in the OTel dashboard.</p>
+</li>
+<li>
+<p><strong><code>lake.child()</code> for layer isolation.</strong> Same backend, separate namespaces.
+   Identical to the existing notebook pattern.</p>
+</li>
+<li>
+<p><strong><code>LocalBackend</code> for the lake.</strong> The showcase runs locally with zero cloud
+   credentials. Users swap to S3/Azure by changing one line. This is the
+   same "swap the backend" story the existing notebook demonstrates, but now
+   the source is also a real remote backend.</p>
+</li>
+</ol>
+<h3 id="43-extension-composition-chain">4.3 Extension Composition Chain<a class="headerlink" href="#43-extension-composition-chain" title="Permanent link">&para;</a></h3>
+<p>The showcase demonstrates this composition, from innermost to outermost:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Extension</th>
+<th>What it adds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 (inner)</td>
+<td><code>ReadOnlyHttpBackend</code></td>
+<td><code>GET</code>/<code>HEAD</code> to data.geo.admin.ch</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>ext.cache</code></td>
+<td>TTL-based read caching (avoids re-download)</td>
+</tr>
+<tr>
+<td>3 (outer)</td>
+<td><code>ext.observe</code> (via <code>otel_observe</code>)</td>
+<td>OTel spans + metrics on every op</td>
+</tr>
+<tr>
+<td>cross-store</td>
+<td><code>ext.transfer</code></td>
+<td>Stream data from HTTP store to local store</td>
+</tr>
+<tr>
+<td>bridge</td>
+<td><code>ext.arrow</code> (<code>pyarrow_fs</code>)</td>
+<td>Expose local store as PyArrow filesystem</td>
+</tr>
+<tr>
+<td>orchestration</td>
+<td><code>ext.dagster</code></td>
+<td>Dagster IO manager for Silver/Gold assets</td>
+</tr>
+</tbody>
+</table>
+<p>This is 6 extensions composing naturally. No glue code, no adapters, no
+monkey-patching. That's the story.</p>
+<hr />
+<h2 id="5-dagster-asset-graph">5. Dagster Asset Graph<a class="headerlink" href="#5-dagster-asset-graph" title="Permanent link">&para;</a></h2>
+<h3 id="51-assets">5.1 Assets<a class="headerlink" href="#51-assets" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>graph TD
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    subgraph bronze[&quot;Bronze (raw ingest)&quot;]
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        META[&quot;meteo_stations&lt;br/&gt;(metadata CSV)&quot;]
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        BERN[&quot;bronze_bern&lt;br/&gt;(daily)&quot;]
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        ZUR[&quot;bronze_zurich&lt;br/&gt;(daily)&quot;]
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        LUG[&quot;bronze_lugano&lt;br/&gt;(daily)&quot;]
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    end
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    subgraph silver[&quot;Silver (clean + unify)&quot;]
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        SILVER[&quot;silver_measurements&lt;br/&gt;(cleaned, unified Parquet)&quot;]
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    end
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    subgraph gold[&quot;Gold (analytics)&quot;]
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        DAILY[&quot;gold_daily_summary&quot;]
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        STATS[&quot;gold_station_stats&quot;]
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>        ALERTS[&quot;gold_alerts&quot;]
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    end
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    META --&gt; SILVER
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>    BERN --&gt; SILVER
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>    ZUR --&gt; SILVER
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>    LUG --&gt; SILVER
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>    SILVER --&gt; DAILY
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>    SILVER --&gt; STATS
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>    SILVER --&gt; ALERTS
+</code></pre></div>
+<h3 id="52-asset-definitions-sketch">5.2 Asset Definitions (Sketch)<a class="headerlink" href="#52-asset-definitions-sketch" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">asset</span><span class="p">,</span> <span class="n">AssetKey</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.transfer</span><span class="w"> </span><span class="kn">import</span> <span class="n">transfer</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">remote_store_io_manager</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">STATIONS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ber&quot;</span><span class="p">:</span> <span class="s2">&quot;Bern-Zollikofen&quot;</span><span class="p">,</span> <span class="s2">&quot;klo&quot;</span><span class="p">:</span> <span class="s2">&quot;Zurich-Kloten&quot;</span><span class="p">,</span> <span class="s2">&quot;lug&quot;</span><span class="p">:</span> <span class="s2">&quot;Lugano&quot;</span><span class="p">}</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># --- Bronze: raw ingest via ext.transfer ---</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">meteo_stations</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Download station metadata CSV from MeteoSwiss.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">transfer</span><span class="p">(</span><span class="n">meteo_store</span><span class="p">,</span> <span class="s2">&quot;ogd-smn_meta_stations.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>             <span class="n">bronze</span><span class="p">,</span> <span class="s2">&quot;meta/stations.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">bronze_bern</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Ingest Bern daily weather data.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>    <span class="n">transfer</span><span class="p">(</span><span class="n">meteo_store</span><span class="p">,</span> <span class="s2">&quot;ber/ogd-smn_ber_d.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>             <span class="n">bronze</span><span class="p">,</span> <span class="s2">&quot;stations/ber/daily.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="k">def</span><span class="w"> </span><span class="nf">bronze_zurich</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Ingest Zurich-Kloten daily weather data.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>    <span class="n">transfer</span><span class="p">(</span><span class="n">meteo_store</span><span class="p">,</span> <span class="s2">&quot;klo/ogd-smn_klo_d.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>             <span class="n">bronze</span><span class="p">,</span> <span class="s2">&quot;stations/klo/daily.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="k">def</span><span class="w"> </span><span class="nf">bronze_lugano</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Ingest Lugano daily weather data.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>    <span class="n">transfer</span><span class="p">(</span><span class="n">meteo_store</span><span class="p">,</span> <span class="s2">&quot;lug/ogd-smn_lug_d.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>             <span class="n">bronze</span><span class="p">,</span> <span class="s2">&quot;stations/lug/daily.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a>
+<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="c1"># --- Silver: clean + unify ---</span>
+<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>
+<a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="nd">@asset</span><span class="p">(</span>
+<a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a>    <span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;silver&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a>    <span class="n">io_manager_key</span><span class="o">=</span><span class="s2">&quot;silver_io_manager&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a>    <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;bronze_bern&quot;</span><span class="p">),</span> <span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;bronze_zurich&quot;</span><span class="p">),</span>
+<a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a>          <span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;bronze_lugano&quot;</span><span class="p">),</span> <span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;meteo_stations&quot;</span><span class="p">)],</span>
+<a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a><span class="p">)</span>
+<a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a><span class="k">def</span><span class="w"> </span><span class="nf">silver_measurements</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Clean and unify all station data into a single Parquet dataset.</span>
+<a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a>
+<a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a><span class="sd">    - Parse timestamps (UTC)</span>
+<a id="__codelineno-4-45" name="__codelineno-4-45" href="#__codelineno-4-45"></a><span class="sd">    - Normalize semicolon-delimited CSV to columnar Parquet</span>
+<a id="__codelineno-4-46" name="__codelineno-4-46" href="#__codelineno-4-46"></a><span class="sd">    - Map parameter codes to human-readable names via metadata</span>
+<a id="__codelineno-4-47" name="__codelineno-4-47" href="#__codelineno-4-47"></a><span class="sd">    - Drop rows with missing critical measurements</span>
+<a id="__codelineno-4-48" name="__codelineno-4-48" href="#__codelineno-4-48"></a><span class="sd">    - Deduplicate by (station, timestamp, parameter)</span>
+<a id="__codelineno-4-49" name="__codelineno-4-49" href="#__codelineno-4-49"></a><span class="sd">    - Add station metadata (name, elevation, coordinates)</span>
+<a id="__codelineno-4-50" name="__codelineno-4-50" href="#__codelineno-4-50"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-4-51" name="__codelineno-4-51" href="#__codelineno-4-51"></a>    <span class="o">...</span>  <span class="c1"># Implementation reads from bronze store, returns cleaned DataFrame</span>
+<a id="__codelineno-4-52" name="__codelineno-4-52" href="#__codelineno-4-52"></a>
+<a id="__codelineno-4-53" name="__codelineno-4-53" href="#__codelineno-4-53"></a><span class="c1"># --- Gold: analytics ---</span>
+<a id="__codelineno-4-54" name="__codelineno-4-54" href="#__codelineno-4-54"></a>
+<a id="__codelineno-4-55" name="__codelineno-4-55" href="#__codelineno-4-55"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;gold&quot;</span><span class="p">,</span> <span class="n">io_manager_key</span><span class="o">=</span><span class="s2">&quot;gold_io_manager&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;silver_measurements&quot;</span><span class="p">)])</span>
+<a id="__codelineno-4-56" name="__codelineno-4-56" href="#__codelineno-4-56"></a><span class="k">def</span><span class="w"> </span><span class="nf">gold_daily_summary</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<a id="__codelineno-4-57" name="__codelineno-4-57" href="#__codelineno-4-57"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Daily aggregates per station: avg/min/max temperature, precipitation sum.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-58" name="__codelineno-4-58" href="#__codelineno-4-58"></a>    <span class="o">...</span>
+<a id="__codelineno-4-59" name="__codelineno-4-59" href="#__codelineno-4-59"></a>
+<a id="__codelineno-4-60" name="__codelineno-4-60" href="#__codelineno-4-60"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;gold&quot;</span><span class="p">,</span> <span class="n">io_manager_key</span><span class="o">=</span><span class="s2">&quot;gold_io_manager&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;silver_measurements&quot;</span><span class="p">)])</span>
+<a id="__codelineno-4-61" name="__codelineno-4-61" href="#__codelineno-4-61"></a><span class="k">def</span><span class="w"> </span><span class="nf">gold_station_stats</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<a id="__codelineno-4-62" name="__codelineno-4-62" href="#__codelineno-4-62"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Per-station statistics: data coverage, mean elevation-adjusted temp.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-63" name="__codelineno-4-63" href="#__codelineno-4-63"></a>    <span class="o">...</span>
+<a id="__codelineno-4-64" name="__codelineno-4-64" href="#__codelineno-4-64"></a>
+<a id="__codelineno-4-65" name="__codelineno-4-65" href="#__codelineno-4-65"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;gold&quot;</span><span class="p">,</span> <span class="n">io_manager_key</span><span class="o">=</span><span class="s2">&quot;gold_io_manager&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;silver_measurements&quot;</span><span class="p">)])</span>
+<a id="__codelineno-4-66" name="__codelineno-4-66" href="#__codelineno-4-66"></a><span class="k">def</span><span class="w"> </span><span class="nf">gold_alerts</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<a id="__codelineno-4-67" name="__codelineno-4-67" href="#__codelineno-4-67"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Flag days where measurements exceed thresholds (heat, frost, wind).&quot;&quot;&quot;</span>
+<a id="__codelineno-4-68" name="__codelineno-4-68" href="#__codelineno-4-68"></a>    <span class="o">...</span>
+</code></pre></div>
+<h3 id="53-io-manager-integration">5.3 IO Manager Integration<a class="headerlink" href="#53-io-manager-integration" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">Definitions</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">remote_store_io_manager</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">defs</span> <span class="o">=</span> <span class="n">Definitions</span><span class="p">(</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">assets</span><span class="o">=</span><span class="p">[</span><span class="n">meteo_stations</span><span class="p">,</span> <span class="n">bronze_bern</span><span class="p">,</span> <span class="n">bronze_zurich</span><span class="p">,</span> <span class="n">bronze_lugano</span><span class="p">,</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>            <span class="n">silver_measurements</span><span class="p">,</span> <span class="n">gold_daily_summary</span><span class="p">,</span> <span class="n">gold_station_stats</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>            <span class="n">gold_alerts</span><span class="p">],</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">resources</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>        <span class="s2">&quot;silver_io_manager&quot;</span><span class="p">:</span> <span class="n">remote_store_io_manager</span><span class="p">(</span><span class="n">silver</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">),</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>        <span class="s2">&quot;gold_io_manager&quot;</span><span class="p">:</span> <span class="n">remote_store_io_manager</span><span class="p">(</span><span class="n">gold</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">),</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="p">},</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="p">)</span>
+</code></pre></div>
+<p><strong>Note on Bronze assets:</strong> Bronze assets use <code>ext.transfer</code> directly (no IO
+manager) because they're raw file ingestion, not DataFrame serialization. This
+is intentional -- it shows both integration patterns.</p>
+<h3 id="54-why-not-use-io-manager-for-bronze">5.4 Why Not Use IO Manager for Bronze?<a class="headerlink" href="#54-why-not-use-io-manager-for-bronze" title="Permanent link">&para;</a></h3>
+<p>Bronze ingestion is a file-level <code>transfer()</code> (CSV from HTTP to local). The IO
+manager's serialize/deserialize model assumes Python objects, not raw file
+copies. Using <code>ext.transfer</code> for Bronze and <code>ext.dagster</code> IO manager for
+Silver/Gold demonstrates that both patterns coexist naturally.</p>
+<hr />
+<h2 id="6-what-each-extension-demonstrates">6. What Each Extension Demonstrates<a class="headerlink" href="#6-what-each-extension-demonstrates" title="Permanent link">&para;</a></h2>
+<h3 id="61-readonlyhttpbackend-id-082">6.1 <code>ReadOnlyHttpBackend</code> (ID-082)<a class="headerlink" href="#61-readonlyhttpbackend-id-082" title="Permanent link">&para;</a></h3>
 <ul>
-<li><a href="https://googleapis.dev/python/google-api-core/latest/retry.html">google-api-core Retry</a></li>
-<li><a href="https://urllib3.readthedocs.io/en/stable/reference/urllib3.util.html">urllib3 Retry</a></li>
-<li><a href="https://docs.rs/object_store/latest/object_store/struct.RetryConfig.html">obstore RetryConfig</a></li>
-<li><a href="https://tenacity.readthedocs.io/">tenacity docs</a></li>
-<li><a href="https://botocore.amazonaws.com/v1/documentation/api/latest/reference/config.html">botocore retry configuration</a></li>
-<li><a href="https://learn.microsoft.com/en-us/python/api/azure-storage-blob/azure.storage.blob.exponentialretry">Azure Storage retry policies</a></li>
+<li>Backend with only <code>{READ, METADATA}</code> capabilities -- first read-only backend</li>
+<li><code>store.read("ber/ogd-smn_ber_d.csv")</code> fetches live data from
+  <code>data.geo.admin.ch</code></li>
+<li><code>store.exists()</code> uses HTTP <code>HEAD</code></li>
+<li><code>store.get_file_info()</code> returns <code>Content-Length</code>, <code>Last-Modified</code>, <code>ETag</code></li>
+<li>Write/delete/list raise <code>CapabilityNotSupported</code> with clear messages</li>
 </ul>
-<h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
+<h3 id="62-extcache">6.2 <code>ext.cache</code><a class="headerlink" href="#62-extcache" title="Permanent link">&para;</a></h3>
 <ul>
-<li>SFTP spec: <code>sdd/specs/009-sftp-backend.md</code> (SFTP-009)</li>
-<li>Audit: M-17 (SFTP retry untested)</li>
-<li>BackendConfig: <code>src/remote_store/_config.py</code></li>
-<li>SFTP retry code: <code>src/remote_store/backends/_sftp.py</code> (lines 519–566)</li>
+<li>Without cache: every Dagster re-materialization re-downloads ~100KB CSVs</li>
+<li>With cache (1h TTL): first run downloads, subsequent runs within the hour
+  hit cache</li>
+<li><code>cached_store.stats</code> shows hit/miss ratio -- visible in logs</li>
+<li>The showcase prints cache stats after Bronze ingestion to make the benefit
+  concrete</li>
 </ul>
+<h3 id="63-extobserve-extotel">6.3 <code>ext.observe</code> / <code>ext.otel</code><a class="headerlink" href="#63-extobserve-extotel" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Every <code>read()</code>, <code>exists()</code>, <code>get_file_info()</code> emits an OTel span</li>
+<li>Span attributes: <code>remote_store.operation</code>, <code>remote_store.backend</code>, <code>remote_store.path</code>
+  (duration is inherent in the span itself)</li>
+<li>Counter metrics: <code>remote_store.operations</code>, <code>remote_store.errors</code></li>
+<li>Duration histogram: <code>remote_store.operation.duration</code> (unit: seconds)</li>
+<li>The showcase includes a minimal OTel setup (console exporter) so traces are
+  visible in terminal output without requiring Jaeger/Grafana</li>
+</ul>
+<h3 id="64-exttransfer">6.4 <code>ext.transfer</code><a class="headerlink" href="#64-exttransfer" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>transfer(meteo_store, src_path, bronze, dst_path)</code> streams HTTP response
+  directly to local file</li>
+<li>Cross-backend transfer: HTTP → Local (Bronze), or HTTP → S3 with one config
+  change</li>
+<li><code>on_progress</code> callback shows download progress</li>
+</ul>
+<h3 id="65-extarrow-pyarrow_fs">6.5 <code>ext.arrow</code> / <code>pyarrow_fs</code><a class="headerlink" href="#65-extarrow-pyarrow_fs" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>pyarrow_fs(silver)</code> exposes the local Silver store as a PyArrow filesystem</li>
+<li><code>pq.write_table(table, "measurements.parquet", filesystem=silver_fs)</code> writes
+  Parquet through the Store abstraction</li>
+<li>DuckDB reads Parquet through the same PyArrow bridge</li>
+</ul>
+<h3 id="66-extdagster">6.6 <code>ext.dagster</code><a class="headerlink" href="#66-extdagster" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>remote_store_io_manager(store, serializer="parquet")</code> wraps any Store as
+  a Dagster IO manager</li>
+<li>Silver/Gold assets return DataFrames; the IO manager handles
+  serialization to Parquet and storage to the correct path</li>
+<li>Asset materialization metadata shows path and size</li>
+</ul>
+<hr />
+<h2 id="7-file-layout">7. File Layout<a class="headerlink" href="#7-file-layout" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>examples/
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  showcase_medallion_dagster/
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    README.md                   # Setup instructions, what it demonstrates
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    definitions.py              # Dagster Definitions (assets, resources, jobs)
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    stores.py                   # Store construction (HTTP + cache + otel + local)
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    assets/
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>      bronze.py                 # Bronze assets (HTTP → local via ext.transfer)
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>      silver.py                 # Silver assets (clean, unify, Parquet)
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>      gold.py                   # Gold assets (aggregation, alerts)
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    otel_setup.py               # Minimal OTel console exporter configuration
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    pyproject.toml              # Showcase-specific deps (dagster, polars, etc.)
+</code></pre></div>
+<p>The showcase is a self-contained Dagster project. Users run it with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">cd</span><span class="w"> </span>examples/showcase_medallion_dagster
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;../../[dagster,arrow,otel]&quot;</span><span class="w"> </span>polars<span class="w"> </span>duckdb
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>dagster<span class="w"> </span>dev<span class="w"> </span>-f<span class="w"> </span>definitions.py
+</code></pre></div>
+<h3 id="71-why-a-separate-directory-not-a-notebook">7.1 Why a Separate Directory (Not a Notebook)<a class="headerlink" href="#71-why-a-separate-directory-not-a-notebook" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Dagster needs a <code>Definitions</code> object in a Python module, not notebook cells</li>
+<li>The asset graph is the demo -- Dagster's web UI visualizes it</li>
+<li>Users can <code>dagster dev</code> and see the full pipeline in their browser</li>
+<li>The existing notebook (<code>04_data_lake_medallion.ipynb</code>) remains as the
+  "no Dagster, no network" tutorial</li>
+</ul>
+<hr />
+<h2 id="8-otel-setup-minimal-no-external-services">8. OTel Setup (Minimal, No External Services)<a class="headerlink" href="#8-otel-setup-minimal-no-external-services" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># otel_setup.py</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span><span class="p">,</span> <span class="n">metrics</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.trace</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerProvider</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.trace.export</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">SimpleSpanProcessor</span><span class="p">,</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="n">ConsoleSpanExporter</span><span class="p">,</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="p">)</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeterProvider</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.metrics.export</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    <span class="n">ConsoleMetricExporter</span><span class="p">,</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="n">PeriodicExportingMetricReader</span><span class="p">,</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="p">)</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">configure_otel</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up OTel with console exporters (no Jaeger/Grafana needed).&quot;&quot;&quot;</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>    <span class="n">trace</span><span class="o">.</span><span class="n">set_tracer_provider</span><span class="p">(</span><span class="n">TracerProvider</span><span class="p">())</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>    <span class="n">trace</span><span class="o">.</span><span class="n">get_tracer_provider</span><span class="p">()</span><span class="o">.</span><span class="n">add_span_processor</span><span class="p">(</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>        <span class="n">SimpleSpanProcessor</span><span class="p">(</span><span class="n">ConsoleSpanExporter</span><span class="p">())</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>    <span class="p">)</span>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>    <span class="n">metrics</span><span class="o">.</span><span class="n">set_meter_provider</span><span class="p">(</span><span class="n">MeterProvider</span><span class="p">(</span>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>        <span class="n">metric_readers</span><span class="o">=</span><span class="p">[</span><span class="n">PeriodicExportingMetricReader</span><span class="p">(</span>
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>            <span class="n">ConsoleMetricExporter</span><span class="p">(),</span> <span class="n">export_interval_millis</span><span class="o">=</span><span class="mi">10_000</span>
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>        <span class="p">)]</span>
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>    <span class="p">))</span>
+</code></pre></div>
+<p>Users see OTel output in the terminal alongside Dagster logs. For production,
+swap <code>ConsoleSpanExporter</code> for <code>OTLPSpanExporter</code> pointing at Jaeger/Tempo.</p>
+<hr />
+<h2 id="9-dependencies">9. Dependencies<a class="headerlink" href="#9-dependencies" title="Permanent link">&para;</a></h2>
+<h3 id="91-showcase-specific-not-added-to-remote-store-core">9.1 Showcase-specific (not added to remote-store core)<a class="headerlink" href="#91-showcase-specific-not-added-to-remote-store-core" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Version</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dagster</code></td>
+<td><code>&gt;=1.9</code></td>
+<td>Orchestration, asset framework, web UI</td>
+</tr>
+<tr>
+<td><code>dagster-webserver</code></td>
+<td><code>&gt;=1.9</code></td>
+<td><code>dagster dev</code> web UI</td>
+</tr>
+<tr>
+<td><code>polars</code></td>
+<td><code>&gt;=0.20</code></td>
+<td>DataFrame transforms (Silver, Gold)</td>
+</tr>
+<tr>
+<td><code>duckdb</code></td>
+<td><code>&gt;=0.10</code></td>
+<td>Ad-hoc Gold queries (optional)</td>
+</tr>
+<tr>
+<td><code>opentelemetry-sdk</code></td>
+<td><code>&gt;=1.20</code></td>
+<td>OTel trace/metrics SDK</td>
+</tr>
+<tr>
+<td><code>opentelemetry-exporter-otlp</code></td>
+<td><code>&gt;=1.20</code></td>
+<td>Optional: OTLP export</td>
+</tr>
+</tbody>
+</table>
+<h3 id="92-remote-store-extras-used">9.2 remote-store extras used<a class="headerlink" href="#92-remote-store-extras-used" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[dagster,arrow,otel]&quot;</span>
+</code></pre></div>
+<ul>
+<li><code>[dagster]</code> -- ext.dagster (IO manager adapter)</li>
+<li><code>[arrow]</code> -- ext.arrow (PyArrow filesystem bridge) + ParquetSerializer</li>
+<li><code>[otel]</code> -- ext.otel (OpenTelemetry instrumentation)</li>
+</ul>
+<p>No <code>[httpx]</code> or <code>[requests]</code> extra needed -- the HTTP backend's urllib
+baseline works with zero additional deps.</p>
+<hr />
+<h2 id="10-sequencing-and-prerequisites">10. Sequencing and Prerequisites<a class="headerlink" href="#10-sequencing-and-prerequisites" title="Permanent link">&para;</a></h2>
+<h3 id="101-hard-prerequisites">10.1 Hard Prerequisites<a class="headerlink" href="#101-hard-prerequisites" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Prerequisite</th>
+<th>Status</th>
+<th>Blocks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ID-082: <code>ReadOnlyHttpBackend</code> (urllib baseline)</td>
+<td>In progress (parallel)</td>
+<td>Bronze assets, all HTTP reads</td>
+</tr>
+<tr>
+<td>ID-082: Conformance suite capability gates</td>
+<td>In progress (parallel)</td>
+<td>Backend registration</td>
+</tr>
+<tr>
+<td>Backend registry entry for <code>"http"</code></td>
+<td>Part of ID-082</td>
+<td><code>from_dict()</code> config support</td>
+</tr>
+</tbody>
+</table>
+<h3 id="102-already-done">10.2 Already Done<a class="headerlink" href="#102-already-done" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ID-075: <code>ext.dagster</code> v1 (IO manager adapter)</td>
+<td>Shipped in v0.17.0</td>
+</tr>
+<tr>
+<td><code>ext.cache</code></td>
+<td>Shipped</td>
+</tr>
+<tr>
+<td><code>ext.observe</code> / <code>ext.otel</code></td>
+<td>Shipped</td>
+</tr>
+<tr>
+<td><code>ext.transfer</code></td>
+<td>Shipped</td>
+</tr>
+<tr>
+<td><code>ext.arrow</code> / <code>pyarrow_fs</code></td>
+<td>Shipped</td>
+</tr>
+<tr>
+<td><code>Store.child()</code></td>
+<td>Shipped</td>
+</tr>
+</tbody>
+</table>
+<h3 id="103-implementation-order">10.3 Implementation Order<a class="headerlink" href="#103-implementation-order" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Wait for ID-082</strong> -- HTTP backend with urllib transport</li>
+<li><strong><code>stores.py</code></strong> -- Store construction with full composition chain</li>
+<li><strong><code>assets/bronze.py</code></strong> -- HTTP → local transfer assets</li>
+<li><strong><code>assets/silver.py</code></strong> -- CSV → cleaned Parquet transforms</li>
+<li><strong><code>assets/gold.py</code></strong> -- Aggregation assets</li>
+<li><strong><code>definitions.py</code></strong> -- Dagster wiring</li>
+<li><strong><code>otel_setup.py</code></strong> -- Console exporter config</li>
+<li><strong><code>README.md</code></strong> -- Setup and walkthrough</li>
+<li><strong>Verify end-to-end</strong> -- <code>dagster dev</code>, materialize all, check OTel output</li>
+</ol>
+<hr />
+<h2 id="11-what-the-showcase-proves">11. What the Showcase Proves<a class="headerlink" href="#11-what-the-showcase-proves" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Claim</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"Unified interface across backends"</td>
+<td>Same <code>Store</code> API reads from HTTP and writes to local</td>
+</tr>
+<tr>
+<td>"Composable extensions"</td>
+<td>6 extensions stacked without conflict</td>
+</tr>
+<tr>
+<td>"Zero-config backend swap"</td>
+<td>Change <code>LocalBackend</code> to <code>S3Backend</code> → same pipeline</td>
+</tr>
+<tr>
+<td>"Works with real data"</td>
+<td>Live MeteoSwiss measurements, not synthetic</td>
+</tr>
+<tr>
+<td>"Production-grade observability"</td>
+<td>OTel spans on every operation</td>
+</tr>
+<tr>
+<td>"Caching matters"</td>
+<td>Cache stats prove repeated reads don't re-download</td>
+</tr>
+<tr>
+<td>"Dagster integration is thin"</td>
+<td>3-line IO manager setup, not a framework rewrite</td>
+</tr>
+<tr>
+<td>"Read-only backends are first-class"</td>
+<td>HTTP backend works naturally in the capability system</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="12-risks-and-mitigations">12. Risks and Mitigations<a class="headerlink" href="#12-risks-and-mitigations" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Likelihood</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MeteoSwiss changes URL structure</td>
+<td>Low</td>
+<td>Medium</td>
+<td>Pin known-good URLs in README; add fallback to cached sample data</td>
+</tr>
+<tr>
+<td>MeteoSwiss rate-limits or blocks</td>
+<td>Low</td>
+<td>Medium</td>
+<td><code>ext.cache</code> TTL reduces requests; urllib sends no unusual headers</td>
+</tr>
+<tr>
+<td>ID-082 ships with breaking API changes</td>
+<td>Low</td>
+<td>Low</td>
+<td>Showcase is downstream; adapts to final API</td>
+</tr>
+<tr>
+<td>CSV format changes (columns, delimiter)</td>
+<td>Low</td>
+<td>Medium</td>
+<td>Silver cleaning code is explicit about expected format; fails loudly</td>
+</tr>
+<tr>
+<td>Dagster version incompatibility</td>
+<td>Medium</td>
+<td>Low</td>
+<td>Floor at <code>dagster&gt;=1.9</code>; tested against latest</td>
+</tr>
+<tr>
+<td>OTel setup complexity deters users</td>
+<td>Low</td>
+<td>Low</td>
+<td>Console exporter = zero infrastructure; optional section</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="13-non-goals">13. Non-Goals<a class="headerlink" href="#13-non-goals" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Cloud deployment.</strong> The showcase runs locally. Cloud deployment is the
+  user's problem (and remote-store makes it easy via backend swap).</li>
+<li><strong>Production-grade error handling.</strong> The showcase prioritizes clarity over
+  resilience. No retry loops, no dead-letter queues.</li>
+<li><strong>Complete MeteoSwiss coverage.</strong> Three stations, one granularity. Enough
+  to demonstrate the pattern without overwhelming.</li>
+<li><strong>Dagster sensors or schedules.</strong> Assets are materialized manually via the
+  UI or CLI. Sensor-based triggering is a Dagster concern, not a
+  remote-store one.</li>
+<li><strong>Performance benchmarking.</strong> The showcase is about correctness and
+  composability, not throughput.</li>
+</ul>
+<hr />
+<h2 id="14-relationship-to-existing-notebook">14. Relationship to Existing Notebook<a class="headerlink" href="#14-relationship-to-existing-notebook" title="Permanent link">&para;</a></h2>
+<p>The existing <code>04_data_lake_medallion.ipynb</code> and this showcase are
+complementary:</p>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Notebook</th>
+<th>Showcase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Orchestration</td>
+<td>None (imperative cells)</td>
+<td>Dagster asset graph</td>
+</tr>
+<tr>
+<td>Data source</td>
+<td>Synthetic (generated in code)</td>
+<td>Live HTTP (MeteoSwiss)</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td>MemoryBackend</td>
+<td>HTTP (source) + Local (lake)</td>
+</tr>
+<tr>
+<td>Extensions used</td>
+<td><code>ext.arrow</code></td>
+<td><code>ext.cache</code>, <code>ext.observe</code>, <code>ext.otel</code>, <code>ext.transfer</code>, <code>ext.arrow</code>, <code>ext.dagster</code></td>
+</tr>
+<tr>
+<td>Network I/O</td>
+<td>None</td>
+<td>Real HTTP requests</td>
+</tr>
+<tr>
+<td>Prerequisites</td>
+<td><code>pip install "remote-store[arrow]" polars duckdb</code></td>
+<td><code>pip install "remote-store[dagster,arrow,otel]" polars dagster-webserver</code></td>
+</tr>
+<tr>
+<td>Audience</td>
+<td>"What is medallion + remote-store?"</td>
+<td>"How does remote-store work in a real pipeline?"</td>
+</tr>
+</tbody>
+</table>
+<p>The notebook is the tutorial. The showcase is the proof.</p>
 
 
 
