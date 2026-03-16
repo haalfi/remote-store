@@ -125,50 +125,6 @@
          <lastmod>2026-03-16</lastmod>
     </url>
     <url>
-         <loc>https://docs.remotestore.dev/dev/api/ext-arrow/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.remotestore.dev/dev/api/ext-batch/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.remotestore.dev/dev/api/ext-cache/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.remotestore.dev/dev/api/ext-dagster/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.remotestore.dev/dev/api/ext-glob/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.remotestore.dev/dev/api/ext-observe/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.remotestore.dev/dev/api/ext-otel/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.remotestore.dev/dev/api/ext-partition/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.remotestore.dev/dev/api/ext-pydantic/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.remotestore.dev/dev/api/ext-transfer/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.remotestore.dev/dev/api/ext-yaml/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
          <loc>https://docs.remotestore.dev/dev/api/models/</loc>
          <lastmod>2026-03-16</lastmod>
     </url>
@@ -218,6 +174,54 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/backends/sftp/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/arrow/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/batch/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/cache/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/dagster/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/glob/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/observe/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/otel/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/partition/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/pydantic/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/transfer/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/yaml/</loc>
          <lastmod>2026-03-16</lastmod>
     </url>
     <url>

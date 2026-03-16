@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/api/ext-batch/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/api/extensions/otel/">
       
       
-        <link rel="prev" href="../ext-arrow/">
+        <link rel="prev" href="../observe/">
       
       
-        <link rel="next" href="../ext-cache/">
+        <link rel="next" href="../partition/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/logo.png">
+      <link rel="icon" href="../../../assets/logo.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
-        <title>ext.batch - remote-store</title>
+        <title>ext.otel - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../css/custom.css">
+      <link rel="stylesheet" href="../../../css/custom.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#extbatch" class="md-skip">
+        <a href="#extotel" class="md-skip">
           Skip to content
         </a>
       
@@ -102,9 +102,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../assets/logo.png" alt="logo">
+  <img src="../../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ext.batch
+              ext.otel
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href="../../.." class="md-tabs__link">
         
   
   
@@ -249,7 +249,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../getting-started/" class="md-tabs__link">
+        <a href="../../../getting-started/" class="md-tabs__link">
           
   
   
@@ -269,7 +269,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../backends/" class="md-tabs__link">
+        <a href="../../../backends/" class="md-tabs__link">
           
   
   
@@ -291,7 +291,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+        <a href="../../" class="md-tabs__link">
           
   
   
@@ -311,7 +311,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../architecture/" class="md-tabs__link">
+        <a href="../../../architecture/" class="md-tabs__link">
           
   
   
@@ -329,7 +329,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../contributing/" class="md-tabs__link">
+      <a href="../../../contributing/" class="md-tabs__link">
         
   
   
@@ -348,7 +348,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../further-reading/" class="md-tabs__link">
+      <a href="../../../further-reading/" class="md-tabs__link">
         
   
   
@@ -367,7 +367,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../development-story/" class="md-tabs__link">
+      <a href="../../../development-story/" class="md-tabs__link">
         
   
   
@@ -408,9 +408,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../assets/logo.png" alt="logo">
+  <img src="../../../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -437,7 +437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -514,7 +514,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/" class="md-nav__link">
+      <a href="../../../getting-started/" class="md-nav__link">
         
   
   
@@ -557,7 +557,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../examples/" class="md-nav__link ">
+            <a href="../../../examples/" class="md-nav__link ">
               
   
   
@@ -599,7 +599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/quickstart/" class="md-nav__link">
+      <a href="../../../examples/quickstart/" class="md-nav__link">
         
   
   
@@ -627,7 +627,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/file-operations/" class="md-nav__link">
+      <a href="../../../examples/file-operations/" class="md-nav__link">
         
   
   
@@ -655,7 +655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/streaming-io/" class="md-nav__link">
+      <a href="../../../examples/streaming-io/" class="md-nav__link">
         
   
   
@@ -683,7 +683,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/atomic-writes/" class="md-nav__link">
+      <a href="../../../examples/atomic-writes/" class="md-nav__link">
         
   
   
@@ -711,7 +711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/configuration/" class="md-nav__link">
+      <a href="../../../examples/configuration/" class="md-nav__link">
         
   
   
@@ -739,7 +739,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/config-loaders/" class="md-nav__link">
+      <a href="../../../examples/config-loaders/" class="md-nav__link">
         
   
   
@@ -767,7 +767,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/error-handling/" class="md-nav__link">
+      <a href="../../../examples/error-handling/" class="md-nav__link">
         
   
   
@@ -795,7 +795,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/capabilities-and-errors/" class="md-nav__link">
+      <a href="../../../examples/capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -823,7 +823,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/path-model/" class="md-nav__link">
+      <a href="../../../examples/path-model/" class="md-nav__link">
         
   
   
@@ -851,7 +851,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/memory-backend/" class="md-nav__link">
+      <a href="../../../examples/memory-backend/" class="md-nav__link">
         
   
   
@@ -879,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/store-child/" class="md-nav__link">
+      <a href="../../../examples/store-child/" class="md-nav__link">
         
   
   
@@ -907,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/s3-backend/" class="md-nav__link">
+      <a href="../../../examples/s3-backend/" class="md-nav__link">
         
   
   
@@ -935,7 +935,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../../examples/s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -963,7 +963,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/sftp-backend/" class="md-nav__link">
+      <a href="../../../examples/sftp-backend/" class="md-nav__link">
         
   
   
@@ -991,7 +991,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/azure-backend/" class="md-nav__link">
+      <a href="../../../examples/azure-backend/" class="md-nav__link">
         
   
   
@@ -1019,7 +1019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/http-backend/" class="md-nav__link">
+      <a href="../../../examples/http-backend/" class="md-nav__link">
         
   
   
@@ -1047,7 +1047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/batch-operations/" class="md-nav__link">
+      <a href="../../../examples/batch-operations/" class="md-nav__link">
         
   
   
@@ -1075,7 +1075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/transfer-operations/" class="md-nav__link">
+      <a href="../../../examples/transfer-operations/" class="md-nav__link">
         
   
   
@@ -1103,7 +1103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../examples/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1131,7 +1131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/caching/" class="md-nav__link">
+      <a href="../../../examples/caching/" class="md-nav__link">
         
   
   
@@ -1159,7 +1159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/observe-hooks/" class="md-nav__link">
+      <a href="../../../examples/observe-hooks/" class="md-nav__link">
         
   
   
@@ -1187,7 +1187,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/otel-tracing/" class="md-nav__link">
+      <a href="../../../examples/otel-tracing/" class="md-nav__link">
         
   
   
@@ -1215,7 +1215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../examples/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1243,7 +1243,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/dagster-io-manager/" class="md-nav__link">
+      <a href="../../../examples/dagster-io-manager/" class="md-nav__link">
         
   
   
@@ -1271,7 +1271,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/medallion-dagster/" class="md-nav__link">
+      <a href="../../../examples/medallion-dagster/" class="md-nav__link">
         
   
   
@@ -1299,7 +1299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/retry-policy/" class="md-nav__link">
+      <a href="../../../examples/retry-policy/" class="md-nav__link">
         
   
   
@@ -1327,7 +1327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/health-check/" class="md-nav__link">
+      <a href="../../../examples/health-check/" class="md-nav__link">
         
   
   
@@ -1435,7 +1435,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../backends/" class="md-nav__link ">
+            <a href="../../../backends/" class="md-nav__link ">
               
   
   
@@ -1477,7 +1477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/local/" class="md-nav__link">
+      <a href="../../../backends/local/" class="md-nav__link">
         
   
   
@@ -1505,7 +1505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/memory/" class="md-nav__link">
+      <a href="../../../backends/memory/" class="md-nav__link">
         
   
   
@@ -1533,7 +1533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/http/" class="md-nav__link">
+      <a href="../../../backends/http/" class="md-nav__link">
         
   
   
@@ -1561,7 +1561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/s3/" class="md-nav__link">
+      <a href="../../../backends/s3/" class="md-nav__link">
         
   
   
@@ -1589,7 +1589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -1617,7 +1617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/sftp/" class="md-nav__link">
+      <a href="../../../backends/sftp/" class="md-nav__link">
         
   
   
@@ -1645,7 +1645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/azure/" class="md-nav__link">
+      <a href="../../../backends/azure/" class="md-nav__link">
         
   
   
@@ -1731,7 +1731,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../extensions/" class="md-nav__link">
+      <a href="../../../extensions/" class="md-nav__link">
         
   
   
@@ -1759,7 +1759,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1787,7 +1787,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../batch-operations/" class="md-nav__link">
+      <a href="../../../batch-operations/" class="md-nav__link">
         
   
   
@@ -1815,7 +1815,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1843,7 +1843,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../transfer-operations/" class="md-nav__link">
+      <a href="../../../transfer-operations/" class="md-nav__link">
         
   
   
@@ -1871,7 +1871,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observe/" class="md-nav__link">
+      <a href="../../../observe/" class="md-nav__link">
         
   
   
@@ -1899,7 +1899,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cache/" class="md-nav__link">
+      <a href="../../../cache/" class="md-nav__link">
         
   
   
@@ -1927,7 +1927,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dagster/" class="md-nav__link">
+      <a href="../../../dagster/" class="md-nav__link">
         
   
   
@@ -1955,7 +1955,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../retry/" class="md-nav__link">
+      <a href="../../../retry/" class="md-nav__link">
         
   
   
@@ -1991,7 +1991,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../health-check/" class="md-nav__link">
+      <a href="../../../health-check/" class="md-nav__link">
         
   
   
@@ -2019,7 +2019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../data-lake-patterns/" class="md-nav__link">
+      <a href="../../../data-lake-patterns/" class="md-nav__link">
         
   
   
@@ -2047,7 +2047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../troubleshooting/" class="md-nav__link">
+      <a href="../../../troubleshooting/" class="md-nav__link">
         
   
   
@@ -2075,7 +2075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../choosing-a-backend/" class="md-nav__link">
+      <a href="../../../choosing-a-backend/" class="md-nav__link">
         
   
   
@@ -2103,7 +2103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../migration/" class="md-nav__link">
+      <a href="../../../migration/" class="md-nav__link">
         
   
   
@@ -2210,7 +2210,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -2252,7 +2252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/" class="md-nav__link">
+      <a href="../../store/" class="md-nav__link">
         
   
   
@@ -2280,7 +2280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../registry/" class="md-nav__link">
+      <a href="../../registry/" class="md-nav__link">
         
   
   
@@ -2308,7 +2308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backend/" class="md-nav__link">
+      <a href="../../backend/" class="md-nav__link">
         
   
   
@@ -2336,7 +2336,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sftp-utils/" class="md-nav__link">
+      <a href="../../sftp-utils/" class="md-nav__link">
         
   
   
@@ -2364,7 +2364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../config/" class="md-nav__link">
+      <a href="../../config/" class="md-nav__link">
         
   
   
@@ -2392,7 +2392,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../models/" class="md-nav__link">
+      <a href="../../models/" class="md-nav__link">
         
   
   
@@ -2420,7 +2420,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../path/" class="md-nav__link">
+      <a href="../../path/" class="md-nav__link">
         
   
   
@@ -2448,7 +2448,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../capabilities/" class="md-nav__link">
+      <a href="../../capabilities/" class="md-nav__link">
         
   
   
@@ -2476,7 +2476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../errors/" class="md-nav__link">
+      <a href="../../errors/" class="md-nav__link">
         
   
   
@@ -2519,7 +2519,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../backends/" class="md-nav__link ">
+            <a href="../../backends/" class="md-nav__link ">
               
   
   
@@ -2561,7 +2561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/local/" class="md-nav__link">
+      <a href="../../backends/local/" class="md-nav__link">
         
   
   
@@ -2589,7 +2589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/memory/" class="md-nav__link">
+      <a href="../../backends/memory/" class="md-nav__link">
         
   
   
@@ -2617,7 +2617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/http/" class="md-nav__link">
+      <a href="../../backends/http/" class="md-nav__link">
         
   
   
@@ -2645,7 +2645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/s3/" class="md-nav__link">
+      <a href="../../backends/s3/" class="md-nav__link">
         
   
   
@@ -2673,7 +2673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -2701,7 +2701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/sftp/" class="md-nav__link">
+      <a href="../../backends/sftp/" class="md-nav__link">
         
   
   
@@ -2729,7 +2729,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/azure/" class="md-nav__link">
+      <a href="../../backends/azure/" class="md-nav__link">
         
   
   
@@ -2762,10 +2762,69 @@
                 
   
   
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_1_11" id="__nav_4_1_11_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_11_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_1_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Extensions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
   
   
     <li class="md-nav__item">
-      <a href="../ext-arrow/" class="md-nav__link">
+      <a href="../arrow/" class="md-nav__link">
         
   
   
@@ -2773,6 +2832,146 @@
     
   
     ext.arrow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../batch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.batch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dagster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.dagster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glob/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.glob
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.observe
   
 
     
@@ -2809,7 +3008,7 @@
   <span class="md-ellipsis">
     
   
-    ext.batch
+    ext.otel
   
 
     
@@ -2827,7 +3026,7 @@
   <span class="md-ellipsis">
     
   
-    ext.batch
+    ext.otel
   
 
     
@@ -2853,34 +3052,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#remote_store.ext.batch" class="md-nav__link">
+  <a href="#remote_store.ext.otel" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;batch
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;otel
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" batch">
+    <nav class="md-nav" aria-label=" otel">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#remote_store.ext.batch.BatchResult" class="md-nav__link">
+  <a href="#remote_store.ext.otel.otel_hooks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;BatchResult
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" BatchResult">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.ext.batch.BatchResult.all_succeeded" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;all_succeeded
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;otel_hooks
       
     </span>
   </a>
@@ -2888,48 +3075,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#remote_store.ext.batch.BatchResult.total" class="md-nav__link">
+  <a href="#remote_store.ext.otel.otel_observe" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;total
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.ext.batch.batch_delete" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;batch_delete
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.ext.batch.batch_copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;batch_copy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.ext.batch.batch_exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;batch_exists
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;otel_observe
       
     </span>
   </a>
@@ -2957,147 +3106,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ext-cache/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ext.cache
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ext-dagster/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ext.dagster
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ext-glob/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ext.glob
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ext-observe/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ext.observe
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ext-otel/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ext.otel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ext-partition/" class="md-nav__link">
+      <a href="../partition/" class="md-nav__link">
         
   
   
@@ -3125,7 +3134,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ext-pydantic/" class="md-nav__link">
+      <a href="../pydantic/" class="md-nav__link">
         
   
   
@@ -3153,7 +3162,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ext-transfer/" class="md-nav__link">
+      <a href="../transfer/" class="md-nav__link">
         
   
   
@@ -3181,7 +3190,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ext-yaml/" class="md-nav__link">
+      <a href="../yaml/" class="md-nav__link">
         
   
   
@@ -3210,6 +3219,14 @@
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
               
                 
   
@@ -3217,7 +3234,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../capabilities-matrix/" class="md-nav__link">
+      <a href="../../../capabilities-matrix/" class="md-nav__link">
         
   
   
@@ -3245,7 +3262,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../changelog/" class="md-nav__link">
+      <a href="../../../changelog/" class="md-nav__link">
         
   
   
@@ -3330,7 +3347,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/" class="md-nav__link">
+      <a href="../../../architecture/" class="md-nav__link">
         
   
   
@@ -3358,7 +3375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../performance/" class="md-nav__link">
+      <a href="../../../performance/" class="md-nav__link">
         
   
   
@@ -3386,7 +3403,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concurrency/" class="md-nav__link">
+      <a href="../../../concurrency/" class="md-nav__link">
         
   
   
@@ -3414,7 +3431,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security-model/" class="md-nav__link">
+      <a href="../../../security-model/" class="md-nav__link">
         
   
   
@@ -3457,7 +3474,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../design/" class="md-nav__link ">
+            <a href="../../../design/" class="md-nav__link ">
               
   
   
@@ -3499,7 +3516,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/design-spec/" class="md-nav__link">
+      <a href="../../../design/design-spec/" class="md-nav__link">
         
   
   
@@ -3527,7 +3544,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/process/" class="md-nav__link">
+      <a href="../../../design/process/" class="md-nav__link">
         
   
   
@@ -3570,7 +3587,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../design/specs/" class="md-nav__link ">
+            <a href="../../../design/specs/" class="md-nav__link ">
               
   
   
@@ -3612,7 +3629,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/001-store-api/" class="md-nav__link">
+      <a href="../../../design/specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -3640,7 +3657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/002-registry-config/" class="md-nav__link">
+      <a href="../../../design/specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -3668,7 +3685,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../../design/specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -3696,7 +3713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/004-path-model/" class="md-nav__link">
+      <a href="../../../design/specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -3724,7 +3741,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/005-error-model/" class="md-nav__link">
+      <a href="../../../design/specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -3752,7 +3769,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/006-streaming-io/" class="md-nav__link">
+      <a href="../../../design/specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -3780,7 +3797,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/007-atomic-writes/" class="md-nav__link">
+      <a href="../../../design/specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -3808,7 +3825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/008-s3-backend/" class="md-nav__link">
+      <a href="../../../design/specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -3836,7 +3853,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/009-sftp-backend/" class="md-nav__link">
+      <a href="../../../design/specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -3864,7 +3881,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/010-native-path-resolution/" class="md-nav__link">
+      <a href="../../../design/specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -3892,7 +3909,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../../design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -3920,7 +3937,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/012-azure-backend/" class="md-nav__link">
+      <a href="../../../design/specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -3948,7 +3965,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/013-memory-backend/" class="md-nav__link">
+      <a href="../../../design/specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -3976,7 +3993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../../design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -4004,7 +4021,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/015-store-child/" class="md-nav__link">
+      <a href="../../../design/specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -4032,7 +4049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/016-ext-batch/" class="md-nav__link">
+      <a href="../../../design/specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -4060,7 +4077,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/017-ext-transfer/" class="md-nav__link">
+      <a href="../../../design/specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -4088,7 +4105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/018-glob/" class="md-nav__link">
+      <a href="../../../design/specs/018-glob/" class="md-nav__link">
         
   
   
@@ -4116,7 +4133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/019-ext-observe/" class="md-nav__link">
+      <a href="../../../design/specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -4144,7 +4161,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/020-credential-hygiene/" class="md-nav__link">
+      <a href="../../../design/specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -4172,7 +4189,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/021-config-loaders/" class="md-nav__link">
+      <a href="../../../design/specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -4200,7 +4217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../../design/specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -4228,7 +4245,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/023-ext-cache/" class="md-nav__link">
+      <a href="../../../design/specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -4256,7 +4273,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/024-ext-partition/" class="md-nav__link">
+      <a href="../../../design/specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -4284,7 +4301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/025-retry-policy/" class="md-nav__link">
+      <a href="../../../design/specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -4312,7 +4329,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/026-health-check/" class="md-nav__link">
+      <a href="../../../design/specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -4340,7 +4357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/027-iter-children/" class="md-nav__link">
+      <a href="../../../design/specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -4368,7 +4385,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/028-read-text/" class="md-nav__link">
+      <a href="../../../design/specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -4396,7 +4413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../../design/specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -4424,7 +4441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/030-write-text/" class="md-nav__link">
+      <a href="../../../design/specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -4452,7 +4469,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/031-ext-dagster/" class="md-nav__link">
+      <a href="../../../design/specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -4480,7 +4497,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/specs/032-http-backend/" class="md-nav__link">
+      <a href="../../../design/specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -4531,7 +4548,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../design/adrs/" class="md-nav__link ">
+            <a href="../../../design/adrs/" class="md-nav__link ">
               
   
   
@@ -4573,7 +4590,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../../design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -4601,7 +4618,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../../design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -4629,7 +4646,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../../design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -4657,7 +4674,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../../design/adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -4685,7 +4702,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../../design/adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -4713,7 +4730,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../../design/adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -4741,7 +4758,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../../design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -4769,7 +4786,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../../../design/adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -4797,7 +4814,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../../design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -4825,7 +4842,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../../design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -4853,7 +4870,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../../../design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -4881,7 +4898,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../../design/adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -4909,7 +4926,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../../design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -4960,7 +4977,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../design/rfcs/" class="md-nav__link ">
+            <a href="../../../design/rfcs/" class="md-nav__link ">
               
   
   
@@ -5002,7 +5019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../../../design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -5030,7 +5047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../../design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -5058,7 +5075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../../../design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -5086,7 +5103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../../design/rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -5137,7 +5154,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../design/research/" class="md-nav__link ">
+            <a href="../../../design/research/" class="md-nav__link ">
               
   
   
@@ -5179,7 +5196,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-async-store-api/" class="md-nav__link">
+      <a href="../../../design/research/research-async-store-api/" class="md-nav__link">
         
   
   
@@ -5207,7 +5224,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-dagster-extension/" class="md-nav__link">
+      <a href="../../../design/research/research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -5235,7 +5252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-example-testing/" class="md-nav__link">
+      <a href="../../../design/research/research-example-testing/" class="md-nav__link">
         
   
   
@@ -5263,7 +5280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../../../design/research/research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -5291,7 +5308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../../../design/research/research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -5319,7 +5336,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-health-check/" class="md-nav__link">
+      <a href="../../../design/research/research-health-check/" class="md-nav__link">
         
   
   
@@ -5347,7 +5364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../../../design/research/research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -5375,7 +5392,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../../../design/research/research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -5403,7 +5420,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../../../design/research/research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -5431,7 +5448,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-retry-policy/" class="md-nav__link">
+      <a href="../../../design/research/research-retry-policy/" class="md-nav__link">
         
   
   
@@ -5459,7 +5476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../../../design/research/research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -5487,7 +5504,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-store-config/" class="md-nav__link">
+      <a href="../../../design/research/research-store-config/" class="md-nav__link">
         
   
   
@@ -5515,7 +5532,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../../../design/research/research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -5566,7 +5583,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../contributing/" class="md-nav__link">
+      <a href="../../../contributing/" class="md-nav__link">
         
   
   
@@ -5593,7 +5610,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../further-reading/" class="md-nav__link">
+      <a href="../../../further-reading/" class="md-nav__link">
         
   
   
@@ -5620,7 +5637,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development-story/" class="md-nav__link">
+      <a href="../../../development-story/" class="md-nav__link">
         
   
   
@@ -5667,34 +5684,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#remote_store.ext.batch" class="md-nav__link">
+  <a href="#remote_store.ext.otel" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;batch
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;otel
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" batch">
+    <nav class="md-nav" aria-label=" otel">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#remote_store.ext.batch.BatchResult" class="md-nav__link">
+  <a href="#remote_store.ext.otel.otel_hooks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;BatchResult
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" BatchResult">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.ext.batch.BatchResult.all_succeeded" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;all_succeeded
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;otel_hooks
       
     </span>
   </a>
@@ -5702,48 +5707,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#remote_store.ext.batch.BatchResult.total" class="md-nav__link">
+  <a href="#remote_store.ext.otel.otel_observe" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;total
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.ext.batch.batch_delete" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;batch_delete
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.ext.batch.batch_copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;batch_copy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.ext.batch.batch_exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;batch_exists
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;otel_observe
       
     </span>
   </a>
@@ -5775,35 +5742,37 @@
   
 
 
-<h1 id="extbatch">ext.batch<a class="headerlink" href="#extbatch" title="Permanent link">&para;</a></h1>
+<h1 id="extotel">ext.otel<a class="headerlink" href="#extotel" title="Permanent link">&para;</a></h1>
 
 
 <div class="doc doc-object doc-module">
 
 
 
-<h2 id="remote_store.ext.batch" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">batch</span>
+<h2 id="remote_store.ext.otel" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">otel</span>
 
 
-<a href="#remote_store.ext.batch" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#remote_store.ext.otel" class="headerlink" title="Permanent link">&para;</a></h2>
 
     <div class="doc doc-contents first">
 
-        <p>Batch operations — convenience wrappers for bulk delete, copy, and exists.</p>
-<p>All functions call Store methods one-by-one by default (sequential). Pass
-<code>concurrent=True</code> to use a <code>ThreadPoolExecutor</code>
-for parallel I/O — cloud backends benefit significantly from this.</p>
+        <p><a href="https://opentelemetry.io/">OpenTelemetry</a> bridge -- pre-built hooks emitting OTel spans and metrics.</p>
+<p>Provides ready-made <code>around</code> and <code>on_any</code> hooks for <code>observe()</code> that
+emit OpenTelemetry traces and metrics.  Depends only on <code>opentelemetry-api</code>
+(not the SDK); if no SDK is configured at runtime, all OTel calls become
+zero-cost no-ops.</p>
 <p>Usage:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.batch</span><span class="w"> </span><span class="kn">import</span> <span class="n">batch_delete</span><span class="p">,</span> <span class="n">batch_copy</span><span class="p">,</span> <span class="n">batch_exists</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">result</span> <span class="o">=</span> <span class="n">batch_delete</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;a.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;b.txt&quot;</span><span class="p">],</span> <span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">result</span> <span class="o">=</span> <span class="n">batch_copy</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="p">[(</span><span class="s2">&quot;a.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;copy.txt&quot;</span><span class="p">)],</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">exists_map</span> <span class="o">=</span> <span class="n">batch_exists</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;a.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;missing.txt&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Parallel execution (cloud backends):</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">result</span> <span class="o">=</span> <span class="n">batch_delete</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">keys</span><span class="p">,</span> <span class="n">concurrent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">observe</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="o">**</span><span class="n">otel_hooks</span><span class="p">())</span>
 </code></pre></div>
+<p>Or as a one-liner:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_observe</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">otel_observe</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
+</code></pre></div>
+<p>Requires: <code>pip install "remote-store[otel]"</code></p>
 
 
 
@@ -5824,204 +5793,71 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
 
 
 
-<div class="doc doc-object doc-class">
-
-
-
-<h3 id="remote_store.ext.batch.BatchResult" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">BatchResult</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
-  </span>
-
-<a href="#remote_store.ext.batch.BatchResult" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BatchResult</span><span class="p">(</span><span class="n">succeeded</span><span class="p">:</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">failed</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            RemoteStoreError (remote_store._errors.RemoteStoreError)" href="../errors/#remote_store.RemoteStoreError">RemoteStoreError</a></span><span class="p">])</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-
-
-        <p>Outcome of a batch operation.</p>
-
-
-<p><span class="doc-section-title">Attributes:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-          <b><code><span title="remote_store.ext.batch.BatchResult.succeeded">succeeded</span></code></b>
-              (<code><span title="tuple">tuple</span>[<span title="str">str</span>, ...]</code>)
-          –
-          <div class="doc-md-description">
-            <p>Paths that completed without error.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-          <b><code><span title="remote_store.ext.batch.BatchResult.failed">failed</span></code></b>
-              (<code><span title="dict">dict</span>[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="            RemoteStoreError (remote_store._errors.RemoteStoreError)" href="../errors/#remote_store.RemoteStoreError">RemoteStoreError</a>]</code>)
-          –
-          <div class="doc-md-description">
-            <p>Mapping from path to the error that occurred.</p>
-          </div>
-        </li>
-    </ul>
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="remote_store.ext.batch.BatchResult.all_succeeded" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">all_succeeded</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-property"><code>property</code></small>
-  </span>
-
-<a href="#remote_store.ext.batch.BatchResult.all_succeeded" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">all_succeeded</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p><code>True</code> when every path succeeded.</p>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="remote_store.ext.batch.BatchResult.total" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">total</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-property"><code>property</code></small>
-  </span>
-
-<a href="#remote_store.ext.batch.BatchResult.total" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">total</span><span class="p">:</span> <span class="n"><span title="int">int</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Total number of paths processed (succeeded + failed).</p>
-
-    </div>
-
-</div>
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-</div>
-
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.ext.batch.batch_delete" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">batch_delete</span>
+<h3 id="remote_store.ext.otel.otel_hooks" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">otel_hooks</span>
 
 
-<a href="#remote_store.ext.batch.batch_delete" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">batch_delete</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="n"><span title="collections.abc.Iterable">Iterable</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">missing_ok</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">stop_on_error</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">concurrent</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">max_workers</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            BatchResult
-
-
-  
-      dataclass
-   (remote_store.ext.batch.BatchResult)" href="#remote_store.ext.batch.BatchResult">BatchResult</a></span>
+<a href="#remote_store.ext.otel.otel_hooks" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">otel_hooks</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">tracer_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;remote_store&#39;</span><span class="p">,</span> <span class="n">meter_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;remote_store&#39;</span><span class="p">,</span> <span class="n">tracer</span><span class="p">:</span> <span class="n"><span title="opentelemetry.trace.Tracer">Tracer</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">meter</span><span class="p">:</span> <span class="n"><span title="opentelemetry.metrics.Meter">Meter</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Delete multiple files, collecting errors.</p>
+        <p>Return hook kwargs for <code>observe()</code>.</p>
+<p>The returned dict contains an <code>around</code> context-manager hook (tracing)
+and an <code>on_any</code> callback (metrics).  Unpack it into <code>observe()</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="o">**</span><span class="n">otel_hooks</span><span class="p">())</span>
+</code></pre></div>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-            <b><code>store</code></b>
-              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>)
-          –
-          <div class="doc-md-description">
-            <p>The Store to delete from.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>paths</code></b>
-              (<code><span title="collections.abc.Iterable">Iterable</span>[<span title="str">str</span>]</code>)
-          –
-          <div class="doc-md-description">
-            <p>File paths to delete.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>missing_ok</code></b>
-              (<code><span title="bool">bool</span></code>, default:
-                  <code>False</code>
+            <b><code>tracer_name</code></b>
+              (<code><span title="str">str</span></code>, default:
+                  <code>&#39;remote_store&#39;</code>
 )
           –
           <div class="doc-md-description">
-            <p>Forwarded to each <code>store.delete()</code> call.</p>
+            <p>OTel tracer name (default <code>"remote_store"</code>).
+Ignored when <em>tracer</em> is provided.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>stop_on_error</code></b>
-              (<code><span title="bool">bool</span></code>, default:
-                  <code>False</code>
+            <b><code>meter_name</code></b>
+              (<code><span title="str">str</span></code>, default:
+                  <code>&#39;remote_store&#39;</code>
 )
           –
           <div class="doc-md-description">
-            <p>Stop on first <code>RemoteStoreError</code> (sequential only).</p>
+            <p>OTel meter name (default <code>"remote_store"</code>).
+Ignored when <em>meter</em> is provided.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>concurrent</code></b>
-              (<code><span title="bool">bool</span></code>, default:
-                  <code>False</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Use a thread pool for parallel execution.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>max_workers</code></b>
-              (<code><span title="int">int</span> | None</code>, default:
+            <b><code>tracer</code></b>
+              (<code><span title="opentelemetry.trace.Tracer">Tracer</span> | None</code>, default:
                   <code>None</code>
 )
           –
           <div class="doc-md-description">
-            <p>Max threads (forwarded to <code>ThreadPoolExecutor</code>).</p>
+            <p>Explicit tracer instance. When <code>None</code> (default),
+obtained from the global <code>TracerProvider</code> via <em>tracer_name</em>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>meter</code></b>
+              (<code><span title="opentelemetry.metrics.Meter">Meter</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Explicit meter instance. When <code>None</code> (default),
+obtained from the global <code>MeterProvider</code> via <em>meter_name</em>.</p>
           </div>
         </li>
     </ul>
@@ -6030,27 +5866,10 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            BatchResult
-
-
-  
-      dataclass
-   (remote_store.ext.batch.BatchResult)" href="#remote_store.ext.batch.BatchResult">BatchResult</a></code>
+              <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>
           –
           <div class="doc-md-description">
-            <p>A <code>BatchResult</code> with succeeded/failed paths.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Raises:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="ValueError">ValueError</span></code>
-            –
-          <div class="doc-md-description">
-            <p>If both <code>concurrent</code> and <code>stop_on_error</code> are True.</p>
+            <p>A dict with <code>around</code> and <code>on_any</code> keys.</p>
           </div>
         </li>
     </ul>
@@ -6063,80 +5882,70 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.ext.batch.batch_copy" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">batch_copy</span>
+<h3 id="remote_store.ext.otel.otel_observe" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">otel_observe</span>
 
 
-<a href="#remote_store.ext.batch.batch_copy" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">batch_copy</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="n">pairs</span><span class="p">:</span> <span class="n"><span title="collections.abc.Iterable">Iterable</span></span><span class="p">[</span><span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]],</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">stop_on_error</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">concurrent</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">max_workers</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            BatchResult
-
-
-  
-      dataclass
-   (remote_store.ext.batch.BatchResult)" href="#remote_store.ext.batch.BatchResult">BatchResult</a></span>
+<a href="#remote_store.ext.otel.otel_observe" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">otel_observe</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tracer_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;remote_store&#39;</span><span class="p">,</span> <span class="n">meter_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;remote_store&#39;</span><span class="p">,</span> <span class="n">tracer</span><span class="p">:</span> <span class="n"><span title="opentelemetry.trace.Tracer">Tracer</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">meter</span><span class="p">:</span> <span class="n"><span title="opentelemetry.metrics.Meter">Meter</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            ObservedStore (remote_store.ext.observe.ObservedStore)" href="../observe/#remote_store.ext.observe.ObservedStore">ObservedStore</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Copy multiple files, collecting errors.</p>
+        <p>Convenience: wrap a Store with OTel tracing + metrics in one call.</p>
+<p>Equivalent to <code>observe(store, **otel_hooks(...))</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>store</code></b>
-              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>)
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></code>)
           –
           <div class="doc-md-description">
-            <p>The Store to copy within.</p>
+            <p>The Store to observe.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>pairs</code></b>
-              (<code><span title="collections.abc.Iterable">Iterable</span>[<span title="tuple">tuple</span>[<span title="str">str</span>, <span title="str">str</span>]]</code>)
-          –
-          <div class="doc-md-description">
-            <p><code>(src, dst)</code> tuples.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>overwrite</code></b>
-              (<code><span title="bool">bool</span></code>, default:
-                  <code>False</code>
+            <b><code>tracer_name</code></b>
+              (<code><span title="str">str</span></code>, default:
+                  <code>&#39;remote_store&#39;</code>
 )
           –
           <div class="doc-md-description">
-            <p>Forwarded to each <code>store.copy()</code> call.</p>
+            <p>OTel tracer name (default <code>"remote_store"</code>).
+Ignored when <em>tracer</em> is provided.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>stop_on_error</code></b>
-              (<code><span title="bool">bool</span></code>, default:
-                  <code>False</code>
+            <b><code>meter_name</code></b>
+              (<code><span title="str">str</span></code>, default:
+                  <code>&#39;remote_store&#39;</code>
 )
           –
           <div class="doc-md-description">
-            <p>Stop on first <code>RemoteStoreError</code> (sequential only).</p>
+            <p>OTel meter name (default <code>"remote_store"</code>).
+Ignored when <em>meter</em> is provided.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>concurrent</code></b>
-              (<code><span title="bool">bool</span></code>, default:
-                  <code>False</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Use a thread pool for parallel execution.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>max_workers</code></b>
-              (<code><span title="int">int</span> | None</code>, default:
+            <b><code>tracer</code></b>
+              (<code><span title="opentelemetry.trace.Tracer">Tracer</span> | None</code>, default:
                   <code>None</code>
 )
           –
           <div class="doc-md-description">
-            <p>Max threads (forwarded to <code>ThreadPoolExecutor</code>).</p>
+            <p>Explicit tracer instance (see <code>otel_hooks()</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>meter</code></b>
+              (<code><span title="opentelemetry.metrics.Meter">Meter</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Explicit meter instance (see <code>otel_hooks()</code>).</p>
           </div>
         </li>
     </ul>
@@ -6145,103 +5954,10 @@ for parallel I/O — cloud backends benefit significantly from this.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            BatchResult
-
-
-  
-      dataclass
-   (remote_store.ext.batch.BatchResult)" href="#remote_store.ext.batch.BatchResult">BatchResult</a></code>
+              <code><a class="autorefs autorefs-internal" title="            ObservedStore (remote_store.ext.observe.ObservedStore)" href="../observe/#remote_store.ext.observe.ObservedStore">ObservedStore</a></code>
           –
           <div class="doc-md-description">
-            <p>A <code>BatchResult</code> with succeeded/failed source paths.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Raises:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="ValueError">ValueError</span></code>
-            –
-          <div class="doc-md-description">
-            <p>If both <code>concurrent</code> and <code>stop_on_error</code> are True.</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.ext.batch.batch_exists" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">batch_exists</span>
-
-
-<a href="#remote_store.ext.batch.batch_exists" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">batch_exists</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="n"><span title="collections.abc.Iterable">Iterable</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">concurrent</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">max_workers</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="bool">bool</span></span><span class="p">]</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Check existence of multiple paths.</p>
-<p>Unlike <code>batch_delete()</code> and <code>batch_copy()</code>, this function does
-<strong>not</strong> catch errors — any exception from <code>store.exists()</code> propagates
-immediately.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>store</code></b>
-              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../store/#remote_store.Store">Store</a></code>)
-          –
-          <div class="doc-md-description">
-            <p>The Store to query.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>paths</code></b>
-              (<code><span title="collections.abc.Iterable">Iterable</span>[<span title="str">str</span>]</code>)
-          –
-          <div class="doc-md-description">
-            <p>Paths to check.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>concurrent</code></b>
-              (<code><span title="bool">bool</span></code>, default:
-                  <code>False</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Use a thread pool for parallel execution.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>max_workers</code></b>
-              (<code><span title="int">int</span> | None</code>, default:
-                  <code>None</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Max threads (forwarded to <code>ThreadPoolExecutor</code>).</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Returns:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="bool">bool</span>]</code>
-          –
-          <div class="doc-md-description">
-            <p>Dict mapping each path to <code>True</code>/<code>False</code>.</p>
+            <p>An <code>ObservedStore</code> with OTel instrumentation.</p>
           </div>
         </li>
     </ul>
@@ -6313,10 +6029,10 @@ immediately.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
