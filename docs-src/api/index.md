@@ -79,14 +79,14 @@ Complete reference for all public exports of `remote-store`.
 
 | Module | Description |
 |--------|-------------|
-| [ext.arrow](ext-arrow.md) | PyArrow `FileSystemHandler` adapter for Store |
-| [ext.batch](ext-batch.md) | Batch delete, copy, and exists operations |
-| [ext.cache](ext-cache.md) | Store-level caching middleware with TTL |
-| [ext.dagster](ext-dagster.md) | Dagster IO Manager adapter for Store |
-| [ext.glob](ext-glob.md) | Portable glob pattern matching fallback |
-| [ext.observe](ext-observe.md) | Callback hooks for store operations |
-| [ext.otel](ext-otel.md) | OpenTelemetry bridge for ext.observe |
-| [ext.partition](ext-partition.md) | Hive-style partition path helpers |
-| [ext.pydantic](ext-pydantic.md) | Pydantic model to RegistryConfig adapter |
-| [ext.transfer](ext-transfer.md) | Upload, download, and cross-store transfer |
-| [ext.yaml](ext-yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |
+| [ext.arrow](extensions/arrow.md) | PyArrow `FileSystemHandler` adapter for Store |
+| [ext.batch](extensions/batch.md) | Batch delete, copy, and exists operations |
+| [ext.cache](extensions/cache.md) | Store-level caching middleware with TTL |
+| [ext.dagster](extensions/dagster.md) | Dagster IO Manager adapter for Store |
+| [ext.glob](extensions/glob.md) | Portable glob pattern matching fallback |
+| [ext.observe](extensions/observe.md) | Callback hooks for store operations |
+| [ext.otel](extensions/otel.md) | OpenTelemetry bridge for ext.observe |
+| [ext.partition](extensions/partition.md) | Hive-style partition path helpers |
+| [ext.pydantic](extensions/pydantic.md) | Pydantic model to RegistryConfig adapter |
+| [ext.transfer](extensions/transfer.md) | Upload, download, and cross-store transfer |
+| [ext.yaml](extensions/yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |

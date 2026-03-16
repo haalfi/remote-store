@@ -283,5 +283,5 @@ observed = otel_observe(store)
 
 ## See also
 
-- [API reference](api/ext-observe.md)
+- [API reference](api/extensions/observe.md)
 - [Example script](https://github.com/haalfi/remote-store/blob/master/examples/observe_hooks.py)

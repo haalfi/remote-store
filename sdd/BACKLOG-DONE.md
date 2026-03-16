@@ -6,6 +6,11 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Post-v0.17.0
 
+- [x] **ID-089 — Extensions API reference section**
+  Moved all 11 extension API pages into a nested "Extensions" section under
+  the API reference, with an index page and summary table. Updated cross-links
+  from 7 guide pages. Matches the Backends section structure from ID-088.
+
 - [x] **ID-087 — Speed up macOS & Windows CI test runs**
   Replaced the broad `pytest -m "not requires_docker"` filter with a focused
   `@pytest.mark.os_sensitive` marker. Tests that exercise OS-specific behaviour

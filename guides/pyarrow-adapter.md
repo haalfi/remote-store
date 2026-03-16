@@ -149,5 +149,5 @@ with `from` chaining for debuggability.
 
 ## See also
 
-- [API reference](api/ext-arrow.md)
+- [API reference](api/extensions/arrow.md)
 - [Example script](https://github.com/haalfi/remote-store/blob/master/examples/pyarrow_adapter.py)

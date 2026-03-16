@@ -129,5 +129,5 @@ upload(reports, "local/q1.csv", "q1.csv")
 
 ## See also
 
-- [API reference](api/ext-transfer.md)
+- [API reference](api/extensions/transfer.md)
 - [Example script](https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py)
