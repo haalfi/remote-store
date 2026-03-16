@@ -6,6 +6,17 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Post-v0.17.0
 
+- [x] **ID-087 — Speed up macOS & Windows CI test runs**
+  Replaced the broad `pytest -m "not requires_docker"` filter with a focused
+  `@pytest.mark.os_sensitive` marker. Tests that exercise OS-specific behaviour
+  (path separators, `os.replace` atomicity, `tempfile`, local filesystem) are
+  marked at module level (`test_path.py`, `test_open_atomic.py`, `test_glob.py`,
+  `backends/test_local.py`) or at fixture-param level (`local` and `memory`
+  params in `backends/conftest.py`, propagating to the full conformance suite
+  for those backends). macOS and Windows CI now run only `-m os_sensitive`.
+  Network-protocol backends (HTTP, S3, SFTP) have no OS-specific behaviour and
+  are Linux-only. Ripple-check guidance added to `sdd/CLAUDE-REFERENCE.md`.
+
 - [x] **ID-088 — Backend classes in API reference**
   Added class documentation for all 7 backends (Local, Memory, HTTP, S3,
   S3-PyArrow, SFTP, Azure) under a new "Backends" section in the API reference.

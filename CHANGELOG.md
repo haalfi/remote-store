@@ -16,6 +16,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`@pytest.mark.os_sensitive` CI marker** — macOS and Windows CI jobs now run
+  only tests that exercise OS-specific behaviour (path separators, atomic writes
+  via `os.replace`, local filesystem operations). Network-protocol backends
+  (HTTP, S3, SFTP) are Linux-only. Reduces cross-platform CI time significantly.
+  (ID-087)
 - **Medallion + Dagster showcase** (`examples/medallion_dagster/`) —
   self-contained Dagster project demonstrating 4 extensions composing over live
   MeteoSwiss weather data in a Bronze/Silver/Gold medallion architecture.

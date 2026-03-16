@@ -37,12 +37,6 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **ID-087 — Speed up macOS & Windows CI test runs**
-  Cross-platform test jobs take too long, inflating total CI time.
-  Investigate: run only `@pytest.mark.cross_platform`-marked tests on
-  macOS/Windows, full suite on Linux only. Or split into fast/slow tiers.
-  HTTP backend tests alone take ~96s locally on Windows with no CPU stress.
-
 ---
 
 ## Known Bugs

@@ -23,6 +23,8 @@ from remote_store.ext.glob import _extract_prefix, _needs_recursive, _pattern_to
 if TYPE_CHECKING:
     from pathlib import Path
 
+pytestmark = pytest.mark.os_sensitive
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

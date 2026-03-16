@@ -15,6 +15,11 @@ def pytest_configure(config: object) -> None:
         config.addinivalue_line("markers", "spec(id): links test to a spec section ID")
         config.addinivalue_line("markers", "integration: requires external services")
         config.addinivalue_line("markers", "requires_docker: test needs Docker services (e.g. Azurite)")
+        config.addinivalue_line(
+            "markers",
+            "os_sensitive: exercises OS-specific behaviour (paths, atomic writes, local filesystem); "
+            "run on macOS and Windows CI",
+        )
 
 
 # region: shared fixtures
