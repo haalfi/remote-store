@@ -113,8 +113,8 @@ jobs:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@v7
       - run: uv pip install -e ".[dev]"
-      - name: Run unit tests (no Docker services)
-        run: pytest -m "not requires_docker" --ignore=tests/e2e
+      - name: Run OS-sensitive tests
+        run: pytest -m "os_sensitive"
 
   notebooks:
     needs: [changes]

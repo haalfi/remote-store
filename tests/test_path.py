@@ -7,6 +7,8 @@ import pytest
 from remote_store._errors import InvalidPath
 from remote_store._path import RemotePath
 
+pytestmark = pytest.mark.os_sensitive
+
 
 class TestRemotePathImmutability:
     """PATH-001: immutability."""

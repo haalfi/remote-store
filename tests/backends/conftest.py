@@ -181,7 +181,21 @@ def azurite_server() -> Iterator[str | None]:
     yield _AZURITE_CONN_STR
 
 
-@pytest.fixture(params=["local", "memory", _http_param, _s3_param, _s3_pyarrow_param, _sftp_param, _azure_param])
+_local_param = pytest.param("local", marks=pytest.mark.os_sensitive)
+_memory_param = pytest.param("memory", marks=pytest.mark.os_sensitive)
+
+
+@pytest.fixture(
+    params=[
+        _local_param,
+        _memory_param,
+        _http_param,
+        _s3_param,
+        _s3_pyarrow_param,
+        _sftp_param,
+        _azure_param,
+    ]
+)
 def backend(
     request: pytest.FixtureRequest,
     moto_server: str | None,

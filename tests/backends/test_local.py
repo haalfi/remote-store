@@ -10,6 +10,8 @@ from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath
 from remote_store.backends._local import LocalBackend
 
+pytestmark = pytest.mark.os_sensitive
+
 
 @pytest.fixture
 def local_backend() -> LocalBackend:

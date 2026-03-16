@@ -56,6 +56,13 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | `guides/backends/index.md`,                               |
 |                            | `sdd/DOCUMENTATION.md` § Content homes                    |
 | **Source/test/spec counts**| `DEVELOPMENT_STORY.md` "The Numbers" table                |
+| **A new test file**        | Ask: does it exercise OS-specific code (path separators,  |
+|                            | `os.replace`, `tempfile`, local filesystem, atomic writes)?|
+|                            | If yes → add `pytestmark = pytest.mark.os_sensitive` at   |
+|                            | module level (or mark fixture params for parameterized     |
+|                            | suites). Periodically re-audit existing files for          |
+|                            | correctness — see `@pytest.mark.os_sensitive` in          |
+|                            | `pyproject.toml` for rationale.                           |
 
 ---
 

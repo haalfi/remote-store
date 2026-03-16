@@ -12,6 +12,8 @@ from remote_store.backends._memory import MemoryBackend
 
 from .conftest import make_restricted_store
 
+pytestmark = pytest.mark.os_sensitive
+
 
 @pytest.fixture
 def local_store(tmp_path: object) -> Store:
