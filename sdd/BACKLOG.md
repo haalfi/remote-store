@@ -103,7 +103,6 @@ Items graduate through the SDD pipeline:
 
 ### Documentation & Developer Experience
 
-
 - [ ] **ID-057 — Tested code snippets in docs (single-source snippets)**
   All code snippets in the docs site should come from real, tested Python
   source files — not hand-written markdown fences. One or more "snippet

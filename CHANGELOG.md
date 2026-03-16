@@ -35,6 +35,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `pip install "remote-store[dagster]"`. Spec `031-ext-dagster.md`
   (DAG-001 through DAG-011).
 
+### Documentation
+
+- **Backend API reference pages** (ID-088) — added class documentation for all
+  7 backends (Local, Memory, HTTP, S3, S3-PyArrow, SFTP, Azure) under a new
+  "Backends" section in the API reference. Each page links to the corresponding
+  backend guide.
+
 ### Removed
 
 - **Top-level re-exports of optional-dependency extensions** (ADR-0013) —

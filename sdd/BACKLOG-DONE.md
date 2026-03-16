@@ -6,6 +6,13 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Post-v0.17.0
 
+- [x] **ID-088 — Backend classes in API reference**
+  Added class documentation for all 7 backends (Local, Memory, HTTP, S3,
+  S3-PyArrow, SFTP, Azure) under a new "Backends" section in the API reference.
+  Each page: hand-written intro linking to the backend guide, then mkdocstrings
+  `:::` directive with `show_bases: false`. Backends index page with summary
+  table. Old standalone `http-backend.md` removed.
+
 - [x] **BK-008 — Medallion + Dagster showcase implementation**
   Self-contained Dagster project in `examples/medallion_dagster/`
   demonstrating 4 extensions composing over live MeteoSwiss data
