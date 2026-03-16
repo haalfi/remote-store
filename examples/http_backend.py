@@ -24,6 +24,26 @@ def demo(store: Store) -> dict:
     print(f"READ supported: {results['supports_read']}")
     print(f"WRITE supported: {results['supports_write']}")
 
+    # --- Read files ---
+    print("\n=== Reading Files ===\n")
+    content = store.read_bytes("hello.txt")
+    results["read_content"] = content
+    print(f"Content of hello.txt: {content!r}")
+
+    text = store.read_text("hello.txt")
+    results["read_text"] = text
+    print(f"Text: {text}")
+
+    # --- Metadata ---
+    print("\n=== File Metadata ===\n")
+    info = store.get_file_info("hello.txt")
+    results["size"] = info.size
+    results["content_type"] = info.content_type
+    print(f"Size: {info.size} bytes")
+    print(f"Content-Type: {info.content_type}")
+    print(f"Modified: {info.modified_at}")
+    print(f"ETag: {info.checksum}")
+
     # --- Unsupported operations raise CapabilityNotSupported ---
     print("\n=== Write Attempt (read-only) ===\n")
     try:
@@ -36,9 +56,16 @@ def demo(store: Store) -> dict:
 
 
 if __name__ == "__main__":
-    # Point at a public HTTP endpoint (httpbin for demonstration)
+    # --- Transport selection ---
+    # The backend auto-detects the best HTTP library (httpx > requests > urllib).
+    # Override with http_client= to force a specific transport:
+    #
+    #   ReadOnlyHttpBackend(base_url=..., http_client="urllib")
+    #   ReadOnlyHttpBackend(base_url=..., http_client="requests")
+    #   ReadOnlyHttpBackend(base_url=..., http_client="httpx")
+
     backend = ReadOnlyHttpBackend(
-        base_url="https://httpbin.org/",
+        base_url="https://data.example.com/datasets/",
         timeout=10.0,
     )
     store = Store(backend=backend)
