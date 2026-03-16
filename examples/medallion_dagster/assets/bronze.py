@@ -15,13 +15,6 @@ from remote_store.ext.transfer import transfer
 
 log = logging.getLogger(__name__)
 
-# Station codes and their MeteoSwiss URL paths (daily granularity).
-STATIONS: dict[str, str] = {
-    "ber": "Bern-Zollikofen",
-    "klo": "Zurich-Kloten",
-    "lug": "Lugano",
-}
-
 
 def _bytes_transferred(n: int) -> None:
     """Progress callback for transfer — logs chunk sizes."""

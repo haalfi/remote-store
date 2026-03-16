@@ -25,7 +25,7 @@ Six remote-store extensions composing without conflict:
 ## Setup
 
 ```bash
-cd examples/showcase_medallion_dagster
+cd examples/medallion_dagster
 
 # Install remote-store with required extras + showcase dependencies
 pip install -e "../../[dagster,arrow,otel,requests]" polars dagster-webserver opentelemetry-sdk

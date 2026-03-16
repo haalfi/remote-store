@@ -95,8 +95,8 @@ def gold_alerts(silver_measurements: Any) -> pl.DataFrame:
         alert_exprs.append((pl.col("tre200dx").max() > 30).alias("heat_alert"))
 
     if not alert_exprs:
-        # No temperature columns available — return empty frame.
-        return pl.DataFrame({"station": [], "date": [], "note": []})
+        # No temperature columns available — return empty frame matching normal schema.
+        return pl.DataFrame({"station": [], "date": [], "frost_alert": [], "heat_alert": []})
 
     result = df.group_by(["station", "date"]).agg(alert_exprs).sort(["station", "date"])
 

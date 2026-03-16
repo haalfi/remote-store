@@ -53,8 +53,8 @@ def _read_station_csv(station: str) -> pl.DataFrame:
 
 def _parse_timestamp(df: pl.DataFrame) -> pl.DataFrame:
     """Parse the 'time' column to a proper datetime."""
-    # MeteoSwiss daily data uses YYYYMMDDHHmm format (e.g., 202601010000)
-    # or YYYYMMDD. We handle both by converting to string and parsing.
+    # MeteoSwiss daily data uses YYYYMMDDHHmm format (e.g., 202601010000).
+    # 8-char YYYYMMDD dates will not match and become null (filtered downstream).
     return df.with_columns(
         pl.col("time").cast(pl.String).str.strptime(pl.Datetime, "%Y%m%d%H%M", strict=False).alias("timestamp")
     )
