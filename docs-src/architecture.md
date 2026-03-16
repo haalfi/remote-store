@@ -108,18 +108,7 @@ Configuration follows strict rules
 
 ## Design decisions
 
-Detailed rationale lives in the ADRs:
-
-- [ADR-0001](design/adrs/0001-architecture-store-registry-backends.md) —
-  Store / Registry / Backend layering
-- [ADR-0002](design/adrs/0002-config-resolution-no-merge.md) —
-  No config merging
-- [ADR-0004](design/adrs/0004-empty-path-semantics.md) —
-  Empty path semantics
-- [ADR-0008](design/adrs/0008-extension-architecture.md) —
-  Extension architecture
-- [ADR-0009](design/adrs/0009-glob-three-tier-design.md) —
-  Glob three-tier design
+Detailed rationale lives in the [ADRs](design/adrs/index.md).
 
 ## See also
 
