@@ -6592,49 +6592,48 @@ that Store. This is an honest pattern -- not everything is a backend.</p>
 <hr />
 <h2 id="4-architecture">4. Architecture<a class="headerlink" href="#4-architecture" title="Permanent link">&para;</a></h2>
 <h3 id="41-store-topology">4.1 Store Topology<a class="headerlink" href="#41-store-topology" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>graph TD
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    HTTP[&quot;ReadOnlyHttpBackend (ID-082)&lt;br/&gt;data.geo.admin.ch/ch.meteoschweiz.ogd-smn/&quot;]
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    subgraph compose[&quot;Extension Composition&quot;]
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        direction TB
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        CACHE[&quot;ext.cache&lt;br/&gt;(TTL: 1h)&quot;]
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        OTEL[&quot;ext.otel&lt;br/&gt;(spans + metrics)&quot;]
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    end
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    HTTP --&gt; CACHE --&gt; OTEL
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    METEO[&quot;meteo_store&lt;br/&gt;(composed Store)&quot;]
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    OTEL --&gt; METEO
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    subgraph lake[&quot;Local Medallion Lake (lake.child)&quot;]
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        BRONZE[&quot;Bronze Store&lt;br/&gt;raw CSV&quot;]
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>        SILVER[&quot;Silver Store&lt;br/&gt;cleaned Parquet&quot;]
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>        GOLD[&quot;Gold Store&lt;br/&gt;aggregated Parquet&quot;]
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>        BRONZE -- &quot;Dagster asset&quot; --&gt; SILVER
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>        SILVER -- &quot;Dagster asset&quot; --&gt; GOLD
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    end
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    METEO -- &quot;ext.transfer&lt;br/&gt;(HTTP → Local)&quot; --&gt; BRONZE
-</code></pre></div>
+<pre class="mermaid"><code>graph TD
+    HTTP["ReadOnlyHttpBackend (ID-082)&lt;br/&gt;data.geo.admin.ch/ch.meteoschweiz.ogd-smn/"]
+
+    subgraph compose["Extension Composition"]
+        direction TB
+        CACHE["ext.cache&lt;br/&gt;(TTL: 1h)"]
+        OTEL["ext.otel&lt;br/&gt;(spans + metrics)"]
+    end
+    HTTP --&gt; CACHE --&gt; OTEL
+
+    METEO["meteo_store&lt;br/&gt;(composed Store)"]
+    OTEL --&gt; METEO
+
+    subgraph lake["Local Medallion Lake (lake.child)"]
+        BRONZE["Bronze Store&lt;br/&gt;raw CSV"]
+        SILVER["Silver Store&lt;br/&gt;cleaned Parquet"]
+        GOLD["Gold Store&lt;br/&gt;aggregated Parquet"]
+        BRONZE -- "Dagster asset" --&gt; SILVER
+        SILVER -- "Dagster asset" --&gt; GOLD
+    end
+
+    METEO -- "ext.transfer&lt;br/&gt;(HTTP → Local)" --&gt; BRONZE</code></pre>
 <h3 id="42-store-construction">4.2 Store Construction<a class="headerlink" href="#42-store-construction" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalBackend</span><span class="p">,</span> <span class="n">ReadOnlyHttpBackend</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_store</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_observe</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># --- Source: MeteoSwiss open data (read-only, zero credentials) ---</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">_http</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">ReadOnlyHttpBackend</span><span class="p">(</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">timeout</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">))</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">_cached</span> <span class="o">=</span> <span class="n">cached_store</span><span class="p">(</span><span class="n">_http</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">meteo_store</span> <span class="o">=</span> <span class="n">otel_observe</span><span class="p">(</span><span class="n">_cached</span><span class="p">)</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># Access cache stats after Bronze ingestion: _cached.stats</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="c1"># --- Sink: local medallion lake ---</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">lake</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;./data/showcase&quot;</span><span class="p">))</span>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">bronze</span> <span class="o">=</span> <span class="n">lake</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="n">silver</span> <span class="o">=</span> <span class="n">lake</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;silver&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="n">gold</span> <span class="o">=</span> <span class="n">lake</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;gold&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalBackend</span><span class="p">,</span> <span class="n">ReadOnlyHttpBackend</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_store</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_observe</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># --- Source: MeteoSwiss open data (read-only, zero credentials) ---</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">_http</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">ReadOnlyHttpBackend</span><span class="p">(</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">timeout</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">))</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">_cached</span> <span class="o">=</span> <span class="n">cached_store</span><span class="p">(</span><span class="n">_http</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">meteo_store</span> <span class="o">=</span> <span class="n">otel_observe</span><span class="p">(</span><span class="n">_cached</span><span class="p">)</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="c1"># Access cache stats after Bronze ingestion: _cached.stats</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="c1"># --- Sink: local medallion lake ---</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="n">lake</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;./data/showcase&quot;</span><span class="p">))</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">bronze</span> <span class="o">=</span> <span class="n">lake</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">silver</span> <span class="o">=</span> <span class="n">lake</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;silver&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="n">gold</span> <span class="o">=</span> <span class="n">lake</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;gold&quot;</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Key design choices:</strong></p>
 <ol>
@@ -6707,116 +6706,115 @@ monkey-patching. That's the story.</p>
 <hr />
 <h2 id="5-dagster-asset-graph">5. Dagster Asset Graph<a class="headerlink" href="#5-dagster-asset-graph" title="Permanent link">&para;</a></h2>
 <h3 id="51-assets">5.1 Assets<a class="headerlink" href="#51-assets" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>graph TD
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    subgraph bronze[&quot;Bronze (raw ingest)&quot;]
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        META[&quot;meteo_stations&lt;br/&gt;(metadata CSV)&quot;]
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        BERN[&quot;bronze_bern&lt;br/&gt;(daily)&quot;]
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        ZUR[&quot;bronze_zurich&lt;br/&gt;(daily)&quot;]
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        LUG[&quot;bronze_lugano&lt;br/&gt;(daily)&quot;]
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    end
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    subgraph silver[&quot;Silver (clean + unify)&quot;]
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        SILVER[&quot;silver_measurements&lt;br/&gt;(cleaned, unified Parquet)&quot;]
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    end
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    subgraph gold[&quot;Gold (analytics)&quot;]
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        DAILY[&quot;gold_daily_summary&quot;]
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        STATS[&quot;gold_station_stats&quot;]
-<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>        ALERTS[&quot;gold_alerts&quot;]
-<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    end
-<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>
-<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    META --&gt; SILVER
-<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>    BERN --&gt; SILVER
-<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>    ZUR --&gt; SILVER
-<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>    LUG --&gt; SILVER
-<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>
-<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>    SILVER --&gt; DAILY
-<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>    SILVER --&gt; STATS
-<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>    SILVER --&gt; ALERTS
-</code></pre></div>
+<pre class="mermaid"><code>graph TD
+    subgraph bronze["Bronze (raw ingest)"]
+        META["meteo_stations&lt;br/&gt;(metadata CSV)"]
+        BERN["bronze_bern&lt;br/&gt;(daily)"]
+        ZUR["bronze_zurich&lt;br/&gt;(daily)"]
+        LUG["bronze_lugano&lt;br/&gt;(daily)"]
+    end
+
+    subgraph silver["Silver (clean + unify)"]
+        SILVER["silver_measurements&lt;br/&gt;(cleaned, unified Parquet)"]
+    end
+
+    subgraph gold["Gold (analytics)"]
+        DAILY["gold_daily_summary"]
+        STATS["gold_station_stats"]
+        ALERTS["gold_alerts"]
+    end
+
+    META --&gt; SILVER
+    BERN --&gt; SILVER
+    ZUR --&gt; SILVER
+    LUG --&gt; SILVER
+
+    SILVER --&gt; DAILY
+    SILVER --&gt; STATS
+    SILVER --&gt; ALERTS</code></pre>
 <h3 id="52-asset-definitions-sketch">5.2 Asset Definitions (Sketch)<a class="headerlink" href="#52-asset-definitions-sketch" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">asset</span><span class="p">,</span> <span class="n">AssetKey</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.transfer</span><span class="w"> </span><span class="kn">import</span> <span class="n">transfer</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">remote_store_io_manager</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">STATIONS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ber&quot;</span><span class="p">:</span> <span class="s2">&quot;Bern-Zollikofen&quot;</span><span class="p">,</span> <span class="s2">&quot;klo&quot;</span><span class="p">:</span> <span class="s2">&quot;Zurich-Kloten&quot;</span><span class="p">,</span> <span class="s2">&quot;lug&quot;</span><span class="p">:</span> <span class="s2">&quot;Lugano&quot;</span><span class="p">}</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># --- Bronze: raw ingest via ext.transfer ---</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">meteo_stations</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Download station metadata CSV from MeteoSwiss.&quot;&quot;&quot;</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">transfer</span><span class="p">(</span><span class="n">meteo_store</span><span class="p">,</span> <span class="s2">&quot;ogd-smn_meta_stations.csv&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>             <span class="n">bronze</span><span class="p">,</span> <span class="s2">&quot;meta/stations.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">bronze_bern</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Ingest Bern daily weather data.&quot;&quot;&quot;</span>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>    <span class="n">transfer</span><span class="p">(</span><span class="n">meteo_store</span><span class="p">,</span> <span class="s2">&quot;ber/ogd-smn_ber_d.csv&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>             <span class="n">bronze</span><span class="p">,</span> <span class="s2">&quot;stations/ber/daily.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>
-<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
-<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="k">def</span><span class="w"> </span><span class="nf">bronze_zurich</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Ingest Zurich-Kloten daily weather data.&quot;&quot;&quot;</span>
-<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>    <span class="n">transfer</span><span class="p">(</span><span class="n">meteo_store</span><span class="p">,</span> <span class="s2">&quot;klo/ogd-smn_klo_d.csv&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>             <span class="n">bronze</span><span class="p">,</span> <span class="s2">&quot;stations/klo/daily.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>
-<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
-<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="k">def</span><span class="w"> </span><span class="nf">bronze_lugano</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Ingest Lugano daily weather data.&quot;&quot;&quot;</span>
-<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>    <span class="n">transfer</span><span class="p">(</span><span class="n">meteo_store</span><span class="p">,</span> <span class="s2">&quot;lug/ogd-smn_lug_d.csv&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>             <span class="n">bronze</span><span class="p">,</span> <span class="s2">&quot;stations/lug/daily.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a>
-<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="c1"># --- Silver: clean + unify ---</span>
-<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>
-<a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="nd">@asset</span><span class="p">(</span>
-<a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a>    <span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;silver&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a>    <span class="n">io_manager_key</span><span class="o">=</span><span class="s2">&quot;silver_io_manager&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a>    <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;bronze_bern&quot;</span><span class="p">),</span> <span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;bronze_zurich&quot;</span><span class="p">),</span>
-<a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a>          <span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;bronze_lugano&quot;</span><span class="p">),</span> <span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;meteo_stations&quot;</span><span class="p">)],</span>
-<a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a><span class="p">)</span>
-<a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a><span class="k">def</span><span class="w"> </span><span class="nf">silver_measurements</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Clean and unify all station data into a single Parquet dataset.</span>
-<a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a>
-<a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a><span class="sd">    - Parse timestamps (UTC)</span>
-<a id="__codelineno-4-45" name="__codelineno-4-45" href="#__codelineno-4-45"></a><span class="sd">    - Normalize semicolon-delimited CSV to columnar Parquet</span>
-<a id="__codelineno-4-46" name="__codelineno-4-46" href="#__codelineno-4-46"></a><span class="sd">    - Map parameter codes to human-readable names via metadata</span>
-<a id="__codelineno-4-47" name="__codelineno-4-47" href="#__codelineno-4-47"></a><span class="sd">    - Drop rows with missing critical measurements</span>
-<a id="__codelineno-4-48" name="__codelineno-4-48" href="#__codelineno-4-48"></a><span class="sd">    - Deduplicate by (station, timestamp, parameter)</span>
-<a id="__codelineno-4-49" name="__codelineno-4-49" href="#__codelineno-4-49"></a><span class="sd">    - Add station metadata (name, elevation, coordinates)</span>
-<a id="__codelineno-4-50" name="__codelineno-4-50" href="#__codelineno-4-50"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-4-51" name="__codelineno-4-51" href="#__codelineno-4-51"></a>    <span class="o">...</span>  <span class="c1"># Implementation reads from bronze store, returns cleaned DataFrame</span>
-<a id="__codelineno-4-52" name="__codelineno-4-52" href="#__codelineno-4-52"></a>
-<a id="__codelineno-4-53" name="__codelineno-4-53" href="#__codelineno-4-53"></a><span class="c1"># --- Gold: analytics ---</span>
-<a id="__codelineno-4-54" name="__codelineno-4-54" href="#__codelineno-4-54"></a>
-<a id="__codelineno-4-55" name="__codelineno-4-55" href="#__codelineno-4-55"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;gold&quot;</span><span class="p">,</span> <span class="n">io_manager_key</span><span class="o">=</span><span class="s2">&quot;gold_io_manager&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;silver_measurements&quot;</span><span class="p">)])</span>
-<a id="__codelineno-4-56" name="__codelineno-4-56" href="#__codelineno-4-56"></a><span class="k">def</span><span class="w"> </span><span class="nf">gold_daily_summary</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<a id="__codelineno-4-57" name="__codelineno-4-57" href="#__codelineno-4-57"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Daily aggregates per station: avg/min/max temperature, precipitation sum.&quot;&quot;&quot;</span>
-<a id="__codelineno-4-58" name="__codelineno-4-58" href="#__codelineno-4-58"></a>    <span class="o">...</span>
-<a id="__codelineno-4-59" name="__codelineno-4-59" href="#__codelineno-4-59"></a>
-<a id="__codelineno-4-60" name="__codelineno-4-60" href="#__codelineno-4-60"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;gold&quot;</span><span class="p">,</span> <span class="n">io_manager_key</span><span class="o">=</span><span class="s2">&quot;gold_io_manager&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;silver_measurements&quot;</span><span class="p">)])</span>
-<a id="__codelineno-4-61" name="__codelineno-4-61" href="#__codelineno-4-61"></a><span class="k">def</span><span class="w"> </span><span class="nf">gold_station_stats</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<a id="__codelineno-4-62" name="__codelineno-4-62" href="#__codelineno-4-62"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Per-station statistics: data coverage, mean elevation-adjusted temp.&quot;&quot;&quot;</span>
-<a id="__codelineno-4-63" name="__codelineno-4-63" href="#__codelineno-4-63"></a>    <span class="o">...</span>
-<a id="__codelineno-4-64" name="__codelineno-4-64" href="#__codelineno-4-64"></a>
-<a id="__codelineno-4-65" name="__codelineno-4-65" href="#__codelineno-4-65"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;gold&quot;</span><span class="p">,</span> <span class="n">io_manager_key</span><span class="o">=</span><span class="s2">&quot;gold_io_manager&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;silver_measurements&quot;</span><span class="p">)])</span>
-<a id="__codelineno-4-66" name="__codelineno-4-66" href="#__codelineno-4-66"></a><span class="k">def</span><span class="w"> </span><span class="nf">gold_alerts</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<a id="__codelineno-4-67" name="__codelineno-4-67" href="#__codelineno-4-67"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Flag days where measurements exceed thresholds (heat, frost, wind).&quot;&quot;&quot;</span>
-<a id="__codelineno-4-68" name="__codelineno-4-68" href="#__codelineno-4-68"></a>    <span class="o">...</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">asset</span><span class="p">,</span> <span class="n">AssetKey</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.transfer</span><span class="w"> </span><span class="kn">import</span> <span class="n">transfer</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">remote_store_io_manager</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">STATIONS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ber&quot;</span><span class="p">:</span> <span class="s2">&quot;Bern-Zollikofen&quot;</span><span class="p">,</span> <span class="s2">&quot;klo&quot;</span><span class="p">:</span> <span class="s2">&quot;Zurich-Kloten&quot;</span><span class="p">,</span> <span class="s2">&quot;lug&quot;</span><span class="p">:</span> <span class="s2">&quot;Lugano&quot;</span><span class="p">}</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># --- Bronze: raw ingest via ext.transfer ---</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">meteo_stations</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Download station metadata CSV from MeteoSwiss.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">transfer</span><span class="p">(</span><span class="n">meteo_store</span><span class="p">,</span> <span class="s2">&quot;ogd-smn_meta_stations.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>             <span class="n">bronze</span><span class="p">,</span> <span class="s2">&quot;meta/stations.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">bronze_bern</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Ingest Bern daily weather data.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="n">transfer</span><span class="p">(</span><span class="n">meteo_store</span><span class="p">,</span> <span class="s2">&quot;ber/ogd-smn_ber_d.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>             <span class="n">bronze</span><span class="p">,</span> <span class="s2">&quot;stations/ber/daily.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="k">def</span><span class="w"> </span><span class="nf">bronze_zurich</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Ingest Zurich-Kloten daily weather data.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>    <span class="n">transfer</span><span class="p">(</span><span class="n">meteo_store</span><span class="p">,</span> <span class="s2">&quot;klo/ogd-smn_klo_d.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>             <span class="n">bronze</span><span class="p">,</span> <span class="s2">&quot;stations/klo/daily.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;bronze&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="k">def</span><span class="w"> </span><span class="nf">bronze_lugano</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Ingest Lugano daily weather data.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>    <span class="n">transfer</span><span class="p">(</span><span class="n">meteo_store</span><span class="p">,</span> <span class="s2">&quot;lug/ogd-smn_lug_d.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>             <span class="n">bronze</span><span class="p">,</span> <span class="s2">&quot;stations/lug/daily.csv&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="c1"># --- Silver: clean + unify ---</span>
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>
+<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a><span class="nd">@asset</span><span class="p">(</span>
+<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>    <span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;silver&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>    <span class="n">io_manager_key</span><span class="o">=</span><span class="s2">&quot;silver_io_manager&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>    <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;bronze_bern&quot;</span><span class="p">),</span> <span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;bronze_zurich&quot;</span><span class="p">),</span>
+<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>          <span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;bronze_lugano&quot;</span><span class="p">),</span> <span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;meteo_stations&quot;</span><span class="p">)],</span>
+<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a><span class="p">)</span>
+<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a><span class="k">def</span><span class="w"> </span><span class="nf">silver_measurements</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Clean and unify all station data into a single Parquet dataset.</span>
+<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>
+<a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a><span class="sd">    - Parse timestamps (UTC)</span>
+<a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a><span class="sd">    - Normalize semicolon-delimited CSV to columnar Parquet</span>
+<a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a><span class="sd">    - Map parameter codes to human-readable names via metadata</span>
+<a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a><span class="sd">    - Drop rows with missing critical measurements</span>
+<a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a><span class="sd">    - Deduplicate by (station, timestamp, parameter)</span>
+<a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a><span class="sd">    - Add station metadata (name, elevation, coordinates)</span>
+<a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-2-51" name="__codelineno-2-51" href="#__codelineno-2-51"></a>    <span class="o">...</span>  <span class="c1"># Implementation reads from bronze store, returns cleaned DataFrame</span>
+<a id="__codelineno-2-52" name="__codelineno-2-52" href="#__codelineno-2-52"></a>
+<a id="__codelineno-2-53" name="__codelineno-2-53" href="#__codelineno-2-53"></a><span class="c1"># --- Gold: analytics ---</span>
+<a id="__codelineno-2-54" name="__codelineno-2-54" href="#__codelineno-2-54"></a>
+<a id="__codelineno-2-55" name="__codelineno-2-55" href="#__codelineno-2-55"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;gold&quot;</span><span class="p">,</span> <span class="n">io_manager_key</span><span class="o">=</span><span class="s2">&quot;gold_io_manager&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;silver_measurements&quot;</span><span class="p">)])</span>
+<a id="__codelineno-2-56" name="__codelineno-2-56" href="#__codelineno-2-56"></a><span class="k">def</span><span class="w"> </span><span class="nf">gold_daily_summary</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<a id="__codelineno-2-57" name="__codelineno-2-57" href="#__codelineno-2-57"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Daily aggregates per station: avg/min/max temperature, precipitation sum.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-58" name="__codelineno-2-58" href="#__codelineno-2-58"></a>    <span class="o">...</span>
+<a id="__codelineno-2-59" name="__codelineno-2-59" href="#__codelineno-2-59"></a>
+<a id="__codelineno-2-60" name="__codelineno-2-60" href="#__codelineno-2-60"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;gold&quot;</span><span class="p">,</span> <span class="n">io_manager_key</span><span class="o">=</span><span class="s2">&quot;gold_io_manager&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;silver_measurements&quot;</span><span class="p">)])</span>
+<a id="__codelineno-2-61" name="__codelineno-2-61" href="#__codelineno-2-61"></a><span class="k">def</span><span class="w"> </span><span class="nf">gold_station_stats</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<a id="__codelineno-2-62" name="__codelineno-2-62" href="#__codelineno-2-62"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Per-station statistics: data coverage, mean elevation-adjusted temp.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-63" name="__codelineno-2-63" href="#__codelineno-2-63"></a>    <span class="o">...</span>
+<a id="__codelineno-2-64" name="__codelineno-2-64" href="#__codelineno-2-64"></a>
+<a id="__codelineno-2-65" name="__codelineno-2-65" href="#__codelineno-2-65"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">group_name</span><span class="o">=</span><span class="s2">&quot;gold&quot;</span><span class="p">,</span> <span class="n">io_manager_key</span><span class="o">=</span><span class="s2">&quot;gold_io_manager&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">AssetKey</span><span class="p">(</span><span class="s2">&quot;silver_measurements&quot;</span><span class="p">)])</span>
+<a id="__codelineno-2-66" name="__codelineno-2-66" href="#__codelineno-2-66"></a><span class="k">def</span><span class="w"> </span><span class="nf">gold_alerts</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<a id="__codelineno-2-67" name="__codelineno-2-67" href="#__codelineno-2-67"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Flag days where measurements exceed thresholds (heat, frost, wind).&quot;&quot;&quot;</span>
+<a id="__codelineno-2-68" name="__codelineno-2-68" href="#__codelineno-2-68"></a>    <span class="o">...</span>
 </code></pre></div>
 <h3 id="53-io-manager-integration">5.3 IO Manager Integration<a class="headerlink" href="#53-io-manager-integration" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">Definitions</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">remote_store_io_manager</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">defs</span> <span class="o">=</span> <span class="n">Definitions</span><span class="p">(</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">assets</span><span class="o">=</span><span class="p">[</span><span class="n">meteo_stations</span><span class="p">,</span> <span class="n">bronze_bern</span><span class="p">,</span> <span class="n">bronze_zurich</span><span class="p">,</span> <span class="n">bronze_lugano</span><span class="p">,</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>            <span class="n">silver_measurements</span><span class="p">,</span> <span class="n">gold_daily_summary</span><span class="p">,</span> <span class="n">gold_station_stats</span><span class="p">,</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>            <span class="n">gold_alerts</span><span class="p">],</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">resources</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>        <span class="s2">&quot;silver_io_manager&quot;</span><span class="p">:</span> <span class="n">remote_store_io_manager</span><span class="p">(</span><span class="n">silver</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">),</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>        <span class="s2">&quot;gold_io_manager&quot;</span><span class="p">:</span> <span class="n">remote_store_io_manager</span><span class="p">(</span><span class="n">gold</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">),</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="p">},</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">Definitions</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">remote_store_io_manager</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">defs</span> <span class="o">=</span> <span class="n">Definitions</span><span class="p">(</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">assets</span><span class="o">=</span><span class="p">[</span><span class="n">meteo_stations</span><span class="p">,</span> <span class="n">bronze_bern</span><span class="p">,</span> <span class="n">bronze_zurich</span><span class="p">,</span> <span class="n">bronze_lugano</span><span class="p">,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>            <span class="n">silver_measurements</span><span class="p">,</span> <span class="n">gold_daily_summary</span><span class="p">,</span> <span class="n">gold_station_stats</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>            <span class="n">gold_alerts</span><span class="p">],</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">resources</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="s2">&quot;silver_io_manager&quot;</span><span class="p">:</span> <span class="n">remote_store_io_manager</span><span class="p">(</span><span class="n">silver</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">),</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="s2">&quot;gold_io_manager&quot;</span><span class="p">:</span> <span class="n">remote_store_io_manager</span><span class="p">(</span><span class="n">gold</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">),</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="p">},</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="p">)</span>
 </code></pre></div>
 <p><strong>Note on Bronze assets:</strong> Bronze assets use <code>ext.transfer</code> directly (no IO
 manager) because they're raw file ingestion, not DataFrame serialization. This
@@ -6881,22 +6879,22 @@ Silver/Gold demonstrates that both patterns coexist naturally.</p>
 </ul>
 <hr />
 <h2 id="7-file-layout">7. File Layout<a class="headerlink" href="#7-file-layout" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>examples/
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  medallion_dagster/
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    README.md                   # Setup instructions, what it demonstrates
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    definitions.py              # Dagster Definitions (assets, resources, jobs)
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    stores.py                   # Store construction (HTTP + cache + otel + local)
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    assets/
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>      bronze.py                 # Bronze assets (HTTP → local via ext.transfer)
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>      silver.py                 # Silver assets (clean, unify, Parquet)
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>      gold.py                   # Gold assets (aggregation, alerts)
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    otel_setup.py               # Minimal OTel console exporter configuration
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    pyproject.toml              # Showcase-specific deps (dagster, polars, etc.)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>examples/
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  medallion_dagster/
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    README.md                   # Setup instructions, what it demonstrates
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    definitions.py              # Dagster Definitions (assets, resources, jobs)
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    stores.py                   # Store construction (HTTP + cache + otel + local)
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    assets/
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>      bronze.py                 # Bronze assets (HTTP → local via ext.transfer)
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>      silver.py                 # Silver assets (clean, unify, Parquet)
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>      gold.py                   # Gold assets (aggregation, alerts)
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    otel_setup.py               # Minimal OTel console exporter configuration
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    pyproject.toml              # Showcase-specific deps (dagster, polars, etc.)
 </code></pre></div>
 <p>The showcase is a self-contained Dagster project. Users run it with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">cd</span><span class="w"> </span>examples/medallion_dagster
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;../../[dagster,arrow,otel]&quot;</span><span class="w"> </span>polars<span class="w"> </span>duckdb
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>dagster<span class="w"> </span>dev<span class="w"> </span>-f<span class="w"> </span>definitions.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">cd</span><span class="w"> </span>examples/medallion_dagster
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;../../[dagster,arrow,otel]&quot;</span><span class="w"> </span>polars<span class="w"> </span>duckdb
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>dagster<span class="w"> </span>dev<span class="w"> </span>-f<span class="w"> </span>definitions.py
 </code></pre></div>
 <h3 id="71-why-a-separate-directory-not-a-notebook">7.1 Why a Separate Directory (Not a Notebook)<a class="headerlink" href="#71-why-a-separate-directory-not-a-notebook" title="Permanent link">&para;</a></h3>
 <ul>
@@ -6908,30 +6906,30 @@ Silver/Gold demonstrates that both patterns coexist naturally.</p>
 </ul>
 <hr />
 <h2 id="8-otel-setup-minimal-no-external-services">8. OTel Setup (Minimal, No External Services)<a class="headerlink" href="#8-otel-setup-minimal-no-external-services" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># otel_setup.py</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span><span class="p">,</span> <span class="n">metrics</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.trace</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerProvider</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.trace.export</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">SimpleSpanProcessor</span><span class="p">,</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="n">ConsoleSpanExporter</span><span class="p">,</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="p">)</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeterProvider</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.metrics.export</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    <span class="n">ConsoleMetricExporter</span><span class="p">,</span>
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="n">PeriodicExportingMetricReader</span><span class="p">,</span>
-<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="p">)</span>
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>
-<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">configure_otel</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up OTel with console exporters (no Jaeger/Grafana needed).&quot;&quot;&quot;</span>
-<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>    <span class="n">trace</span><span class="o">.</span><span class="n">set_tracer_provider</span><span class="p">(</span><span class="n">TracerProvider</span><span class="p">())</span>
-<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>    <span class="n">trace</span><span class="o">.</span><span class="n">get_tracer_provider</span><span class="p">()</span><span class="o">.</span><span class="n">add_span_processor</span><span class="p">(</span>
-<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>        <span class="n">SimpleSpanProcessor</span><span class="p">(</span><span class="n">ConsoleSpanExporter</span><span class="p">())</span>
-<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>    <span class="p">)</span>
-<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>    <span class="n">metrics</span><span class="o">.</span><span class="n">set_meter_provider</span><span class="p">(</span><span class="n">MeterProvider</span><span class="p">(</span>
-<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>        <span class="n">metric_readers</span><span class="o">=</span><span class="p">[</span><span class="n">PeriodicExportingMetricReader</span><span class="p">(</span>
-<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>            <span class="n">ConsoleMetricExporter</span><span class="p">(),</span> <span class="n">export_interval_millis</span><span class="o">=</span><span class="mi">10_000</span>
-<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>        <span class="p">)]</span>
-<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>    <span class="p">))</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># otel_setup.py</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span><span class="p">,</span> <span class="n">metrics</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.trace</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerProvider</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.trace.export</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">SimpleSpanProcessor</span><span class="p">,</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">ConsoleSpanExporter</span><span class="p">,</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeterProvider</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.metrics.export</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">ConsoleMetricExporter</span><span class="p">,</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">PeriodicExportingMetricReader</span><span class="p">,</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="p">)</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">configure_otel</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up OTel with console exporters (no Jaeger/Grafana needed).&quot;&quot;&quot;</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>    <span class="n">trace</span><span class="o">.</span><span class="n">set_tracer_provider</span><span class="p">(</span><span class="n">TracerProvider</span><span class="p">())</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>    <span class="n">trace</span><span class="o">.</span><span class="n">get_tracer_provider</span><span class="p">()</span><span class="o">.</span><span class="n">add_span_processor</span><span class="p">(</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>        <span class="n">SimpleSpanProcessor</span><span class="p">(</span><span class="n">ConsoleSpanExporter</span><span class="p">())</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="p">)</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>    <span class="n">metrics</span><span class="o">.</span><span class="n">set_meter_provider</span><span class="p">(</span><span class="n">MeterProvider</span><span class="p">(</span>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>        <span class="n">metric_readers</span><span class="o">=</span><span class="p">[</span><span class="n">PeriodicExportingMetricReader</span><span class="p">(</span>
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>            <span class="n">ConsoleMetricExporter</span><span class="p">(),</span> <span class="n">export_interval_millis</span><span class="o">=</span><span class="mi">10_000</span>
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>        <span class="p">)]</span>
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>    <span class="p">))</span>
 </code></pre></div>
 <p>Users see OTel output in the terminal alongside Dagster logs. For production,
 swap <code>ConsoleSpanExporter</code> for <code>OTLPSpanExporter</code> pointing at Jaeger/Tempo.</p>
@@ -6980,7 +6978,7 @@ swap <code>ConsoleSpanExporter</code> for <code>OTLPSpanExporter</code> pointing
 </tbody>
 </table>
 <h3 id="92-remote-store-extras-used">9.2 remote-store extras used<a class="headerlink" href="#92-remote-store-extras-used" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[dagster,arrow,otel]&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[dagster,arrow,otel]&quot;</span>
 </code></pre></div>
 <ul>
 <li><code>[dagster]</code> -- ext.dagster (IO manager adapter)</li>
