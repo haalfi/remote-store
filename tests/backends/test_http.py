@@ -625,15 +625,17 @@ class TestHttpErrorPaths:
             b.read("secret.txt")
 
     def test_get_file_info_raises_on_403(self, httpserver: HTTPServer) -> None:
-        """get_file_info() raises PermissionDenied on 403."""
+        """get_file_info() raises PermissionDenied when HEAD and GET both 403."""
         httpserver.expect_request("/errp/secret.txt", method="HEAD").respond_with_data(b"", status=403)
+        httpserver.expect_request("/errp/secret.txt", method="GET").respond_with_data(b"", status=403)
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/errp/"), http_client="urllib")
         with pytest.raises(PermissionDenied):
             b.get_file_info("secret.txt")
 
     def test_health_check_non_2xx_raises(self, httpserver: HTTPServer) -> None:
-        """Health check rejects 403."""
+        """Health check rejects 403 when both HEAD and GET fail."""
         httpserver.expect_request("/hc403/", method="HEAD").respond_with_data(b"", status=403)
+        httpserver.expect_request("/hc403/", method="GET").respond_with_data(b"", status=403)
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/hc403/"), http_client="urllib")
         with pytest.raises(BackendUnavailable, match="403"):
             b.check_health()
@@ -690,6 +692,192 @@ class TestHttpErrorPaths:
             stream = b.read("data.bin")
             with pytest.raises(BackendUnavailable, match="Stream error"):
                 stream.read()
+
+
+class TestHeadFallback:
+    """HTTP-FALLBACK-001: HEAD 403 falls back to ranged GET."""
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_exists_falls_back_on_head_403(self, httpserver: HTTPServer) -> None:
+        """exists() succeeds via ranged GET when HEAD returns 403."""
+        httpserver.expect_request("/cdn/file.txt", method="HEAD").respond_with_data(b"", status=403)
+        httpserver.expect_request("/cdn/file.txt", method="GET").respond_with_data(
+            b"\x00", status=206, headers={"Content-Range": "bytes 0-0/1024"}
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        assert b.exists("file.txt") is True
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_exists_fallback_returns_false_on_404(self, httpserver: HTTPServer) -> None:
+        """exists() returns False when HEAD 403 but GET 404."""
+        httpserver.expect_request("/cdn/gone.txt", method="HEAD").respond_with_data(b"", status=403)
+        httpserver.expect_request("/cdn/gone.txt", method="GET").respond_with_data(b"", status=404)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        assert b.exists("gone.txt") is False
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_exists_raises_when_both_fail(self, httpserver: HTTPServer) -> None:
+        """exists() raises PermissionDenied when HEAD and GET both 403."""
+        httpserver.expect_request("/cdn/locked.txt", method="HEAD").respond_with_data(b"", status=403)
+        httpserver.expect_request("/cdn/locked.txt", method="GET").respond_with_data(b"", status=403)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        with pytest.raises(PermissionDenied):
+            b.exists("locked.txt")
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_get_file_info_falls_back_on_head_403(self, httpserver: HTTPServer) -> None:
+        """get_file_info() extracts metadata from ranged GET response."""
+        httpserver.expect_request("/cdn/info.csv", method="HEAD").respond_with_data(b"", status=403)
+        httpserver.expect_request("/cdn/info.csv", method="GET").respond_with_data(
+            b"a",
+            status=206,
+            headers={
+                "Content-Range": "bytes 0-0/5000",
+                "Content-Type": "text/csv",
+                "ETag": '"cdn-etag"',
+                "Last-Modified": "Sun, 15 Mar 2026 12:00:00 GMT",
+            },
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        fi = b.get_file_info("info.csv")
+        assert fi.size == 5000
+        assert fi.checksum == '"cdn-etag"'
+        assert fi.content_type == "text/csv"
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_fallback_200_when_server_ignores_range(self, httpserver: HTTPServer) -> None:
+        """get_file_info() works when server returns 200 ignoring Range."""
+        httpserver.expect_request("/cdn/full.txt", method="HEAD").respond_with_data(b"", status=403)
+        httpserver.expect_request("/cdn/full.txt", method="GET").respond_with_data(
+            b"full content",
+            status=200,
+            headers={"Content-Length": "12", "Content-Type": "text/plain"},
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        fi = b.get_file_info("full.txt")
+        assert fi.size == 12
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_head_blocked_cached_across_calls(self, httpserver: HTTPServer) -> None:
+        """After first fallback, subsequent calls skip HEAD entirely."""
+        httpserver.expect_request("/cdn/a.txt", method="HEAD").respond_with_data(b"", status=403)
+        httpserver.expect_request("/cdn/a.txt", method="GET").respond_with_data(
+            b"\x00", status=206, headers={"Content-Range": "bytes 0-0/10"}
+        )
+        httpserver.expect_request("/cdn/b.txt", method="GET").respond_with_data(
+            b"\x00", status=206, headers={"Content-Range": "bytes 0-0/20"}
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        # First call triggers fallback
+        assert b.exists("a.txt") is True
+        assert b._head_blocked is True
+        # Second call skips HEAD — no HEAD handler needed for b.txt
+        fi = b.get_file_info("b.txt")
+        assert fi.size == 20
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_head_401_also_triggers_fallback(self, httpserver: HTTPServer) -> None:
+        """401 on HEAD also triggers ranged GET fallback."""
+        httpserver.expect_request("/cdn/auth.txt", method="HEAD").respond_with_data(b"", status=401)
+        httpserver.expect_request("/cdn/auth.txt", method="GET").respond_with_data(
+            b"\x00", status=206, headers={"Content-Range": "bytes 0-0/100"}
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        assert b.exists("auth.txt") is True
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_check_health_falls_back_on_head_403(self, httpserver: HTTPServer) -> None:
+        """check_health() succeeds via ranged GET when HEAD returns 403."""
+        httpserver.expect_request("/cdn/", method="HEAD").respond_with_data(b"", status=403)
+        httpserver.expect_request("/cdn/", method="GET").respond_with_data(b"\x00", status=206)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        b.check_health()  # Should not raise
+        assert b._head_blocked is True
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_check_health_cached_skips_head(self, httpserver: HTTPServer) -> None:
+        """check_health() skips HEAD when _head_blocked is already True."""
+        httpserver.expect_request("/cdn/", method="GET").respond_with_data(b"\x00", status=200)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        b._head_blocked = True
+        b.check_health()  # Should not raise, no HEAD handler needed
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_check_health_raises_when_both_fail(self, httpserver: HTTPServer) -> None:
+        """check_health() raises when HEAD and GET both fail."""
+        httpserver.expect_request("/cdn/", method="HEAD").respond_with_data(b"", status=403)
+        httpserver.expect_request("/cdn/", method="GET").respond_with_data(b"", status=403)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        with pytest.raises(BackendUnavailable, match="403"):
+            b.check_health()
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_fallback_get_network_error_closes_head_resp(self, httpserver: HTTPServer) -> None:
+        """HEAD resp.body is closed if fallback GET raises a network error."""
+        from unittest.mock import patch
+
+        httpserver.expect_request("/cdn/err.txt", method="HEAD").respond_with_data(b"", status=403)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        with (
+            patch.object(b, "_range_get", side_effect=BackendUnavailable("connection reset", backend="http")),
+            pytest.raises(BackendUnavailable, match="connection reset"),
+        ):
+            b.exists("err.txt")
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_check_health_fallback_network_error_closes_head_resp(self, httpserver: HTTPServer) -> None:
+        """check_health() closes HEAD resp.body if fallback GET raises."""
+        from unittest.mock import patch
+
+        httpserver.expect_request("/cdn/", method="HEAD").respond_with_data(b"", status=403)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        with (
+            patch.object(b._transport, "get", side_effect=BackendUnavailable("timeout", backend="http")),
+            pytest.raises(BackendUnavailable, match="timeout"),
+        ):
+            b.check_health()
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_content_range_unknown_total(self, httpserver: HTTPServer) -> None:
+        """Content-Range with unknown total (*) falls back to Content-Length."""
+        httpserver.expect_request("/cdn/unk.txt", method="HEAD").respond_with_data(b"", status=403)
+        httpserver.expect_request("/cdn/unk.txt", method="GET").respond_with_data(
+            b"\x00",
+            status=206,
+            headers={"Content-Range": "bytes 0-0/*", "Content-Length": "1"},
+        )
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        fi = b.get_file_info("unk.txt")
+        assert fi.size == 1
+
+
+class TestParseContentRangeTotal:
+    """Unit tests for _parse_content_range_total."""
+
+    def test_standard_range(self) -> None:
+        from remote_store.backends._http import _parse_content_range_total
+
+        assert _parse_content_range_total("bytes 0-0/12345") == 12345
+
+    def test_unknown_total(self) -> None:
+        from remote_store.backends._http import _parse_content_range_total
+
+        assert _parse_content_range_total("bytes 0-0/*") is None
+
+    def test_none(self) -> None:
+        from remote_store.backends._http import _parse_content_range_total
+
+        assert _parse_content_range_total(None) is None
+
+    def test_empty(self) -> None:
+        from remote_store.backends._http import _parse_content_range_total
+
+        assert _parse_content_range_total("") is None
+
+    def test_star_total(self) -> None:
+        from remote_store.backends._http import _parse_content_range_total
+
+        assert _parse_content_range_total("bytes */5000") == 5000
 
 
 class TestParseRetryAfter:

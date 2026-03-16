@@ -91,11 +91,27 @@ HTTP has no folder concept. `is_folder()` always returns `False`. `get_folder_in
 
 | FileInfo field | HTTP header | Fallback |
 |---|---|---|
-| `size` | `Content-Length` | `0` |
+| `size` | `Content-Range` total, then `Content-Length` | `0` |
 | `modified_at` | `Last-Modified` | `datetime.min` (UTC) |
 | `checksum` | `ETag` | `None` |
 | `content_type` | `Content-Type` | `None` |
 | `extra` | All headers | `{"headers": {...}}` |
+
+## CDN Compatibility
+
+Some CDN-fronted servers (e.g. Cloudflare) return 403 on `HEAD` requests while
+allowing `GET`. The backend handles this transparently: when `HEAD` returns
+401 or 403, it retries with `GET` + `Range: bytes=0-0` (downloading at most
+1 byte). If the ranged `GET` succeeds, the backend remembers that HEAD is
+blocked and skips it for subsequent calls. This applies to `exists()`,
+`get_file_info()`, and `check_health()`.
+
+If both `HEAD` and `GET` fail, the original error is raised.
+
+Note that `check_health()` probes `base_url` (the root), not a specific file.
+Many HTTP servers and CDNs return 403 or 404 for directory URLs while serving
+individual files normally. A failing health check does not necessarily mean
+`read()` or `exists()` will fail on actual file paths.
 
 ## Composability
 
