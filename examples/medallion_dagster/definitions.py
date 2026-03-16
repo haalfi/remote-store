@@ -30,7 +30,7 @@ class PolarsParquetSerializer(ParquetSerializer):
 
 defs = Definitions(
     assets=[
-        # Bronze (raw ingest via ext.transfer)
+        # Bronze (raw ingest via read_bytes + write)
         meteo_stations,
         bronze_bern,
         bronze_zurich,

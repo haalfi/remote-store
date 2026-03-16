@@ -6,14 +6,13 @@ live [MeteoSwiss](https://www.meteoswiss.admin.ch/) weather station data.
 
 ## What This Demonstrates
 
-Five remote-store extensions composing without conflict:
+Four remote-store extensions composing without conflict:
 
 | Extension | Role |
 |-----------|------|
 | `ReadOnlyHttpBackend` | Read-only backend fetching live CSV data via HTTP |
-| `ext.cache` | TTL-based caching — avoids redundant downloads |
+| `ext.cache` | TTL-based caching — avoids redundant HTTP downloads |
 | `ext.otel` | OpenTelemetry spans + metrics on every storage operation |
-| `ext.transfer` | Stream files across backend boundaries (HTTP → Local) |
 | `ext.dagster` | 3-line IO manager wrapping any Store for Dagster |
 
 ## Prerequisites
@@ -43,17 +42,17 @@ Open the Dagster UI (typically http://localhost:3000) and materialize all assets
 ```
 MeteoSwiss HTTP ──→ ext.cache (1h TTL) ──→ ext.otel (traces)
        │
-       └──→ ext.transfer ──→ Bronze (raw CSV)
-                                │
-                                ├──→ Silver (cleaned Parquet)
-                                │
-                                └──→ Gold (aggregated Parquet)
+       └──→ read_bytes + write ──→ Bronze (raw CSV)
+                                      │
+                                      ├──→ Silver (cleaned Parquet)
+                                      │
+                                      └──→ Gold (aggregated Parquet)
 ```
 
 ### Bronze Layer (raw ingest)
 - **`meteo_stations`** — station metadata CSV
 - **`bronze_bern`**, **`bronze_zurich`**, **`bronze_lugano`** — daily weather CSVs
-- Uses `ext.transfer` directly (file-level copy, no IO manager)
+- Uses `read_bytes` + `write` directly (file-level copy, no IO manager)
 
 ### Silver Layer (clean + unify)
 - **`silver_measurements`** — all stations cleaned, unified, stored as Parquet
@@ -72,13 +71,14 @@ MeteoSwiss HTTP ──→ ext.cache (1h TTL) ──→ ext.otel (traces)
 - Materialization metadata (path, size) on Silver/Gold assets
 
 ### Terminal Output
-- OTel spans (JSON lines) for every `read()`, `exists()`, `get_file_info()` call
-- Cache hit/miss stats after each Bronze transfer
+- OTel spans (JSON lines) for every `read_bytes()`, `exists()`, `get_file_info()` call
+- Cache hit/miss stats after each Bronze ingest
 - Row counts from Silver and Gold transforms
 
 ### Cache Benefit
 Run materialization twice within one hour. The second run hits the cache for
-all HTTP reads — visible in both cache stats and OTel span durations.
+all Bronze `read_bytes()` calls — visible in cache stats (4 hits, 0 misses)
+and shorter OTel span durations.
 
 ## Swapping Backends
 
@@ -93,7 +93,7 @@ lake = Store(LocalBackend(root="./data/showcase"))
 lake = Store(S3Backend(bucket="my-bucket", prefix="showcase"))
 ```
 
-Everything else — caching, observability, transfers, Dagster integration —
+Everything else — caching, observability, Dagster integration —
 works unchanged.
 
 ## Data Source
