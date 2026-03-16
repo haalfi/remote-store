@@ -18,6 +18,17 @@ if TYPE_CHECKING:
     from remote_store._backend import Backend
 
 
+# ---------------------------------------------------------------------------
+# Force pytest-httpserver to bind on 127.0.0.1 instead of "localhost".
+# On Windows, "localhost" resolves to both IPv4 and IPv6; urllib tries
+# IPv6 first and waits ~2 s for the connection to time out before falling
+# back to IPv4.  Using 127.0.0.1 directly avoids the dual-stack penalty.
+# ---------------------------------------------------------------------------
+@pytest.fixture(scope="session")
+def httpserver_listen_address() -> tuple[str, int]:
+    return ("127.0.0.1", 0)
+
+
 def _http_server_available() -> bool:
     try:
         import pytest_httpserver  # noqa: F401
@@ -181,6 +192,27 @@ def azurite_server() -> Iterator[str | None]:
     yield _AZURITE_CONN_STR
 
 
+@pytest.fixture(scope="session")
+def http_server() -> Iterator[object | None]:
+    """Start a long-lived HTTP server for conformance tests.
+
+    Session-scoped to avoid the ~0.5 s start/stop overhead per test.
+    Individual tests clear handlers via the function-scoped backend fixture.
+    """
+    if not _http_server_available():
+        yield None
+        return
+
+    from pytest_httpserver import HTTPServer
+
+    server = HTTPServer(host="127.0.0.1")
+    server.start()
+    yield server
+    server.clear()
+    if server.is_running():
+        server.stop()
+
+
 _local_param = pytest.param("local", marks=pytest.mark.os_sensitive)
 _memory_param = pytest.param("memory")
 
@@ -201,6 +233,7 @@ def backend(
     moto_server: str | None,
     sftp_server: tuple[int, str] | None,
     azurite_server: str | None,
+    http_server: object | None,
 ) -> Iterator[Backend]:
     """Parameterized backend fixture. Add new backends here."""
     if request.param == "local":
@@ -279,18 +312,15 @@ def backend(
 
         from remote_store.backends._http import ReadOnlyHttpBackend
 
-        server = HTTPServer(host="127.0.0.1")
-        # Return 404 for unregistered paths (default is 500)
-        server.respond_nohandler = lambda request, extra_message="": WerkzeugResponse(  # type: ignore[assignment]
+        assert isinstance(http_server, HTTPServer)
+        # Clear handlers from previous test, set 404 default
+        http_server.clear()
+        http_server.respond_nohandler = lambda request, extra_message="": WerkzeugResponse(  # type: ignore[assignment]
             b"Not Found", status=404
         )
-        server.start()
-        b = ReadOnlyHttpBackend(base_url=server.url_for("/conformance/"), http_client="urllib")
+        b = ReadOnlyHttpBackend(base_url=http_server.url_for("/conformance/"), http_client="urllib")
         yield b
         b.close()
-        server.clear()
-        if server.is_running():
-            server.stop()
     elif request.param == "azure":
         from remote_store.backends._azure import AzureBackend
 
