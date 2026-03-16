@@ -40,7 +40,7 @@ def bronze_bern() -> None:
     """Ingest Bern daily weather data."""
     transfer(
         meteo_store,
-        "ber/ogd-smn_ber_d.csv",
+        "ber/ogd-smn_ber_d_recent.csv",
         bronze,
         "stations/ber/daily.csv",
         overwrite=True,
@@ -54,7 +54,7 @@ def bronze_zurich() -> None:
     """Ingest Zurich-Kloten daily weather data."""
     transfer(
         meteo_store,
-        "klo/ogd-smn_klo_d.csv",
+        "klo/ogd-smn_klo_d_recent.csv",
         bronze,
         "stations/klo/daily.csv",
         overwrite=True,
@@ -68,7 +68,7 @@ def bronze_lugano() -> None:
     """Ingest Lugano daily weather data."""
     transfer(
         meteo_store,
-        "lug/ogd-smn_lug_d.csv",
+        "lug/ogd-smn_lug_d_recent.csv",
         bronze,
         "stations/lug/daily.csv",
         overwrite=True,

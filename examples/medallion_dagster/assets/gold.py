@@ -2,35 +2,21 @@
 
 All assets read from the Silver layer via the Dagster IO manager and
 return Polars DataFrames serialized to Parquet.
-
-Note: ParquetSerializer.deserialize() returns a pandas DataFrame, so
-the IO manager delivers pandas. We convert to Polars at the top of
-each asset for a consistent Polars-based transform pipeline.
 """
 
 from __future__ import annotations
-
-from typing import Any
 
 import polars as pl
 from dagster import AssetIn, asset
 
 
-def _to_polars(df: Any) -> pl.DataFrame:
-    """Convert pandas or Polars DataFrame to Polars."""
-    if isinstance(df, pl.DataFrame):
-        return df
-    return pl.from_pandas(df)
-
-
 @asset(
     group_name="gold",
     io_manager_key="gold_io_manager",
-    ins={"silver_measurements": AssetIn(key_prefix=[])},
+    ins={"silver_measurements": AssetIn(key_prefix=[], input_manager_key="silver_io_manager")},
 )
-def gold_daily_summary(silver_measurements: Any) -> pl.DataFrame:
+def gold_daily_summary(silver_measurements: pl.DataFrame) -> pl.DataFrame:
     """Daily aggregates per station: avg/min/max temperature, precipitation sum."""
-    silver_measurements = _to_polars(silver_measurements)
     # Extract date from timestamp.
     df = silver_measurements.with_columns(pl.col("timestamp").dt.date().alias("date"))
 
@@ -53,11 +39,10 @@ def gold_daily_summary(silver_measurements: Any) -> pl.DataFrame:
 @asset(
     group_name="gold",
     io_manager_key="gold_io_manager",
-    ins={"silver_measurements": AssetIn(key_prefix=[])},
+    ins={"silver_measurements": AssetIn(key_prefix=[], input_manager_key="silver_io_manager")},
 )
-def gold_station_stats(silver_measurements: Any) -> pl.DataFrame:
+def gold_station_stats(silver_measurements: pl.DataFrame) -> pl.DataFrame:
     """Per-station statistics: row count, date range, mean temperature."""
-    silver_measurements = _to_polars(silver_measurements)
     agg_exprs: list[pl.Expr] = [
         pl.len().alias("row_count"),
         pl.col("timestamp").min().alias("earliest"),
@@ -76,16 +61,15 @@ def gold_station_stats(silver_measurements: Any) -> pl.DataFrame:
 @asset(
     group_name="gold",
     io_manager_key="gold_io_manager",
-    ins={"silver_measurements": AssetIn(key_prefix=[])},
+    ins={"silver_measurements": AssetIn(key_prefix=[], input_manager_key="silver_io_manager")},
 )
-def gold_alerts(silver_measurements: Any) -> pl.DataFrame:
+def gold_alerts(silver_measurements: pl.DataFrame) -> pl.DataFrame:
     """Flag days where measurements exceed thresholds.
 
     Thresholds:
-    - Frost: min temperature < 0°C
-    - Heat: max temperature > 30°C
+    - Frost: min temperature < 0 C
+    - Heat: max temperature > 30 C
     """
-    silver_measurements = _to_polars(silver_measurements)
     df = silver_measurements.with_columns(pl.col("timestamp").dt.date().alias("date"))
 
     alert_exprs: list[pl.Expr] = []

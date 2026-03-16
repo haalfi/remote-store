@@ -14,14 +14,14 @@ from dagster import AssetKey, asset
 from stores import bronze
 
 # MeteoSwiss CSV uses semicolon delimiter. Key columns present in daily data:
-# - station/nat_abbr: 3-letter station code
-# - time: timestamp (YYYYMMDD or YYYYMMDDHHmm)
-# - tre200d0: daily mean temperature (°C)
-# - tre200dn: daily min temperature (°C)
-# - tre200dx: daily max temperature (°C)
+# - station_abbr: 3-letter station code (uppercase)
+# - reference_timestamp: timestamp (DD.MM.YYYY HH:MM)
+# - tre200d0: daily mean temperature (C)
+# - tre200dn: daily min temperature (C)
+# - tre200dx: daily max temperature (C)
 # - rre150d0: daily precipitation sum (mm)
 # - ure200d0: daily mean relative humidity (%)
-# - prestas0: daily mean station pressure (hPa)
+# - prestad0: daily mean station pressure (hPa)
 
 # Columns we keep. Not all stations have all columns; we use a safe subset.
 _MEASUREMENT_COLS = [
@@ -30,7 +30,7 @@ _MEASUREMENT_COLS = [
     "tre200dx",  # max temp
     "rre150d0",  # precipitation
     "ure200d0",  # humidity
-    "prestas0",  # pressure
+    "prestad0",  # pressure
 ]
 
 _STATION_CODES = ["ber", "klo", "lug"]
@@ -46,17 +46,19 @@ def _read_station_csv(station: str) -> pl.DataFrame:
         try_parse_dates=False,
         null_values=["-"],
     )
-    # Add station code column.
-    df = df.with_columns(pl.lit(station).alias("station"))
+    # Rename station_abbr to station and lowercase for consistency.
+    df = df.with_columns(pl.col("station_abbr").str.to_lowercase().alias("station"))
     return df
 
 
 def _parse_timestamp(df: pl.DataFrame) -> pl.DataFrame:
-    """Parse the 'time' column to a proper datetime."""
-    # MeteoSwiss daily data uses YYYYMMDDHHmm format (e.g., 202601010000).
-    # 8-char YYYYMMDD dates will not match and become null (filtered downstream).
+    """Parse the 'reference_timestamp' column to a proper datetime."""
+    # MeteoSwiss daily data uses DD.MM.YYYY HH:MM format (e.g., 01.01.2026 00:00).
     return df.with_columns(
-        pl.col("time").cast(pl.String).str.strptime(pl.Datetime, "%Y%m%d%H%M", strict=False).alias("timestamp")
+        pl.col("reference_timestamp")
+        .cast(pl.String)
+        .str.strptime(pl.Datetime, "%d.%m.%Y %H:%M", strict=False)
+        .alias("timestamp")
     )
 
 
