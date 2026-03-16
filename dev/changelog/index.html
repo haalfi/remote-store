@@ -1271,6 +1271,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/medallion-dagster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Medallion + Dagster Showcase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/retry-policy/" class="md-nav__link">
         
   
@@ -7174,6 +7202,11 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>Medallion + Dagster showcase</strong> (<code>examples/medallion_dagster/</code>) —
+  self-contained Dagster project demonstrating 4 extensions composing over live
+  MeteoSwiss weather data in a Bronze/Silver/Gold medallion architecture.
+  Uses <code>ReadOnlyHttpBackend</code>, <code>ext.cache</code>, <code>ext.otel</code>,
+  and <code>ext.dagster</code>. (BK-008)</li>
 <li><strong>Read-only HTTP backend</strong> (<code>ReadOnlyHttpBackend</code>) — read files from
   HTTP/HTTPS URLs. Capabilities: <code>{READ, METADATA}</code>. Zero runtime dependencies
   (uses stdlib <code>urllib</code>); optional <code>requests</code> and <code>httpx</code> transports via extras

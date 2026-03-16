@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/024-ext-partition/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/examples/medallion-dagster/">
       
       
-        <link rel="prev" href="../023-ext-cache/">
+        <link rel="prev" href="../dagster-io-manager/">
       
       
-        <link rel="next" href="../025-retry-policy/">
+        <link rel="next" href="../retry-policy/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/logo.png">
+      <link rel="icon" href="../../assets/logo.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
-        <title>024: ext.partition - Hive-Style Partition Path Helpers Specification - remote-store</title>
+        <title>Medallion + Dagster Showcase - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../css/custom.css">
+      <link rel="stylesheet" href="../../css/custom.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#extpartition-hive-style-partition-path-helpers-specification" class="md-skip">
+        <a href="#medallion-dagster-showcase" class="md-skip">
           Skip to content
         </a>
       
@@ -102,9 +102,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../../assets/logo.png" alt="logo">
+  <img src="../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              024: ext.partition - Hive-Style Partition Path Helpers Specification
+              Medallion + Dagster Showcase
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../.." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -245,11 +245,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../../getting-started/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../getting-started/" class="md-tabs__link">
           
   
   
@@ -269,7 +271,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../backends/" class="md-tabs__link">
+        <a href="../../backends/" class="md-tabs__link">
           
   
   
@@ -289,7 +291,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../api/" class="md-tabs__link">
+        <a href="../../api/" class="md-tabs__link">
           
   
   
@@ -305,13 +307,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../architecture/" class="md-tabs__link">
           
   
   
@@ -329,7 +329,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../contributing/" class="md-tabs__link">
+      <a href="../../contributing/" class="md-tabs__link">
         
   
   
@@ -348,7 +348,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../further-reading/" class="md-tabs__link">
+      <a href="../../further-reading/" class="md-tabs__link">
         
   
   
@@ -367,7 +367,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../development-story/" class="md-tabs__link">
+      <a href="../../development-story/" class="md-tabs__link">
         
   
   
@@ -408,9 +408,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../../assets/logo.png" alt="logo">
+  <img src="../../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -437,7 +437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -461,24 +461,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -496,7 +501,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -514,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/" class="md-nav__link">
+      <a href="../../getting-started/" class="md-nav__link">
         
   
   
@@ -539,6 +544,8 @@
                 
   
   
+    
+  
   
   
     
@@ -549,15 +556,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../examples/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -581,7 +588,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -599,7 +606,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/quickstart/" class="md-nav__link">
+      <a href="../quickstart/" class="md-nav__link">
         
   
   
@@ -627,7 +634,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/file-operations/" class="md-nav__link">
+      <a href="../file-operations/" class="md-nav__link">
         
   
   
@@ -655,7 +662,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/streaming-io/" class="md-nav__link">
+      <a href="../streaming-io/" class="md-nav__link">
         
   
   
@@ -683,7 +690,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/atomic-writes/" class="md-nav__link">
+      <a href="../atomic-writes/" class="md-nav__link">
         
   
   
@@ -711,7 +718,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   
@@ -739,7 +746,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/config-loaders/" class="md-nav__link">
+      <a href="../config-loaders/" class="md-nav__link">
         
   
   
@@ -767,7 +774,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/error-handling/" class="md-nav__link">
+      <a href="../error-handling/" class="md-nav__link">
         
   
   
@@ -795,7 +802,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/capabilities-and-errors/" class="md-nav__link">
+      <a href="../capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -823,7 +830,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/path-model/" class="md-nav__link">
+      <a href="../path-model/" class="md-nav__link">
         
   
   
@@ -851,7 +858,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/memory-backend/" class="md-nav__link">
+      <a href="../memory-backend/" class="md-nav__link">
         
   
   
@@ -879,7 +886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/store-child/" class="md-nav__link">
+      <a href="../store-child/" class="md-nav__link">
         
   
   
@@ -907,7 +914,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/s3-backend/" class="md-nav__link">
+      <a href="../s3-backend/" class="md-nav__link">
         
   
   
@@ -935,7 +942,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -963,7 +970,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/sftp-backend/" class="md-nav__link">
+      <a href="../sftp-backend/" class="md-nav__link">
         
   
   
@@ -991,7 +998,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/azure-backend/" class="md-nav__link">
+      <a href="../azure-backend/" class="md-nav__link">
         
   
   
@@ -1019,7 +1026,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/http-backend/" class="md-nav__link">
+      <a href="../http-backend/" class="md-nav__link">
         
   
   
@@ -1047,7 +1054,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/batch-operations/" class="md-nav__link">
+      <a href="../batch-operations/" class="md-nav__link">
         
   
   
@@ -1075,7 +1082,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/transfer-operations/" class="md-nav__link">
+      <a href="../transfer-operations/" class="md-nav__link">
         
   
   
@@ -1103,7 +1110,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/glob-pattern-matching/" class="md-nav__link">
+      <a href="../glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1131,7 +1138,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/caching/" class="md-nav__link">
+      <a href="../caching/" class="md-nav__link">
         
   
   
@@ -1159,7 +1166,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/observe-hooks/" class="md-nav__link">
+      <a href="../observe-hooks/" class="md-nav__link">
         
   
   
@@ -1187,7 +1194,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/otel-tracing/" class="md-nav__link">
+      <a href="../otel-tracing/" class="md-nav__link">
         
   
   
@@ -1215,7 +1222,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/pyarrow-adapter/" class="md-nav__link">
+      <a href="../pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1243,7 +1250,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/dagster-io-manager/" class="md-nav__link">
+      <a href="../dagster-io-manager/" class="md-nav__link">
         
   
   
@@ -1268,10 +1275,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../examples/medallion-dagster/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Medallion + Dagster Showcase
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1287,6 +1321,209 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#medallion-dagster-showcase_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Medallion + Dagster Showcase
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Medallion + Dagster Showcase">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-this-demonstrates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What This Demonstrates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bronze-layer-raw-ingest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bronze Layer (raw ingest)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#silver-layer-clean-unify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Silver Layer (clean + unify)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gold-layer-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gold Layer (analytics)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-to-observe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What to Observe
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What to Observe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dagster-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dagster UI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#terminal-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terminal Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cache-benefit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache Benefit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#swapping-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Swapping Backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Source
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1299,7 +1536,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/retry-policy/" class="md-nav__link">
+      <a href="../retry-policy/" class="md-nav__link">
         
   
   
@@ -1327,7 +1564,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/health-check/" class="md-nav__link">
+      <a href="../health-check/" class="md-nav__link">
         
   
   
@@ -1435,7 +1672,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../backends/" class="md-nav__link ">
+            <a href="../../backends/" class="md-nav__link ">
               
   
   
@@ -1477,7 +1714,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/local/" class="md-nav__link">
+      <a href="../../backends/local/" class="md-nav__link">
         
   
   
@@ -1505,7 +1742,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/memory/" class="md-nav__link">
+      <a href="../../backends/memory/" class="md-nav__link">
         
   
   
@@ -1533,7 +1770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/http/" class="md-nav__link">
+      <a href="../../backends/http/" class="md-nav__link">
         
   
   
@@ -1561,7 +1798,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/s3/" class="md-nav__link">
+      <a href="../../backends/s3/" class="md-nav__link">
         
   
   
@@ -1589,7 +1826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -1617,7 +1854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/sftp/" class="md-nav__link">
+      <a href="../../backends/sftp/" class="md-nav__link">
         
   
   
@@ -1645,7 +1882,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/azure/" class="md-nav__link">
+      <a href="../../backends/azure/" class="md-nav__link">
         
   
   
@@ -1731,7 +1968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/" class="md-nav__link">
+      <a href="../../extensions/" class="md-nav__link">
         
   
   
@@ -1759,7 +1996,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../pyarrow-adapter/" class="md-nav__link">
+      <a href="../../pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1787,7 +2024,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../batch-operations/" class="md-nav__link">
+      <a href="../../batch-operations/" class="md-nav__link">
         
   
   
@@ -1815,7 +2052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../glob-pattern-matching/" class="md-nav__link">
+      <a href="../../glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1843,7 +2080,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../transfer-operations/" class="md-nav__link">
+      <a href="../../transfer-operations/" class="md-nav__link">
         
   
   
@@ -1871,7 +2108,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observe/" class="md-nav__link">
+      <a href="../../observe/" class="md-nav__link">
         
   
   
@@ -1899,7 +2136,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../cache/" class="md-nav__link">
+      <a href="../../cache/" class="md-nav__link">
         
   
   
@@ -1927,7 +2164,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../dagster/" class="md-nav__link">
+      <a href="../../dagster/" class="md-nav__link">
         
   
   
@@ -1955,7 +2192,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../retry/" class="md-nav__link">
+      <a href="../../retry/" class="md-nav__link">
         
   
   
@@ -1991,7 +2228,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../health-check/" class="md-nav__link">
+      <a href="../../health-check/" class="md-nav__link">
         
   
   
@@ -2019,7 +2256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../data-lake-patterns/" class="md-nav__link">
+      <a href="../../data-lake-patterns/" class="md-nav__link">
         
   
   
@@ -2047,7 +2284,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../troubleshooting/" class="md-nav__link">
+      <a href="../../troubleshooting/" class="md-nav__link">
         
   
   
@@ -2075,7 +2312,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../choosing-a-backend/" class="md-nav__link">
+      <a href="../../choosing-a-backend/" class="md-nav__link">
         
   
   
@@ -2103,7 +2340,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../migration/" class="md-nav__link">
+      <a href="../../migration/" class="md-nav__link">
         
   
   
@@ -2203,7 +2440,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../api/" class="md-nav__link ">
+            <a href="../../api/" class="md-nav__link ">
               
   
   
@@ -2245,7 +2482,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/store/" class="md-nav__link">
+      <a href="../../api/store/" class="md-nav__link">
         
   
   
@@ -2273,7 +2510,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/registry/" class="md-nav__link">
+      <a href="../../api/registry/" class="md-nav__link">
         
   
   
@@ -2301,7 +2538,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backend/" class="md-nav__link">
+      <a href="../../api/backend/" class="md-nav__link">
         
   
   
@@ -2329,7 +2566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/http-backend/" class="md-nav__link">
+      <a href="../../api/http-backend/" class="md-nav__link">
         
   
   
@@ -2357,7 +2594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/sftp-utils/" class="md-nav__link">
+      <a href="../../api/sftp-utils/" class="md-nav__link">
         
   
   
@@ -2385,7 +2622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/config/" class="md-nav__link">
+      <a href="../../api/config/" class="md-nav__link">
         
   
   
@@ -2413,7 +2650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/models/" class="md-nav__link">
+      <a href="../../api/models/" class="md-nav__link">
         
   
   
@@ -2441,7 +2678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/path/" class="md-nav__link">
+      <a href="../../api/path/" class="md-nav__link">
         
   
   
@@ -2469,7 +2706,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/capabilities/" class="md-nav__link">
+      <a href="../../api/capabilities/" class="md-nav__link">
         
   
   
@@ -2497,7 +2734,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/errors/" class="md-nav__link">
+      <a href="../../api/errors/" class="md-nav__link">
         
   
   
@@ -2525,7 +2762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/ext-arrow/" class="md-nav__link">
+      <a href="../../api/ext-arrow/" class="md-nav__link">
         
   
   
@@ -2553,7 +2790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/ext-batch/" class="md-nav__link">
+      <a href="../../api/ext-batch/" class="md-nav__link">
         
   
   
@@ -2581,7 +2818,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/ext-cache/" class="md-nav__link">
+      <a href="../../api/ext-cache/" class="md-nav__link">
         
   
   
@@ -2609,7 +2846,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/ext-dagster/" class="md-nav__link">
+      <a href="../../api/ext-dagster/" class="md-nav__link">
         
   
   
@@ -2637,7 +2874,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/ext-glob/" class="md-nav__link">
+      <a href="../../api/ext-glob/" class="md-nav__link">
         
   
   
@@ -2665,7 +2902,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/ext-observe/" class="md-nav__link">
+      <a href="../../api/ext-observe/" class="md-nav__link">
         
   
   
@@ -2693,7 +2930,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/ext-otel/" class="md-nav__link">
+      <a href="../../api/ext-otel/" class="md-nav__link">
         
   
   
@@ -2721,7 +2958,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/ext-partition/" class="md-nav__link">
+      <a href="../../api/ext-partition/" class="md-nav__link">
         
   
   
@@ -2749,7 +2986,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/ext-pydantic/" class="md-nav__link">
+      <a href="../../api/ext-pydantic/" class="md-nav__link">
         
   
   
@@ -2777,7 +3014,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/ext-transfer/" class="md-nav__link">
+      <a href="../../api/ext-transfer/" class="md-nav__link">
         
   
   
@@ -2805,7 +3042,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/ext-yaml/" class="md-nav__link">
+      <a href="../../api/ext-yaml/" class="md-nav__link">
         
   
   
@@ -2841,7 +3078,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../capabilities-matrix/" class="md-nav__link">
+      <a href="../../capabilities-matrix/" class="md-nav__link">
         
   
   
@@ -2869,7 +3106,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../changelog/" class="md-nav__link">
+      <a href="../../changelog/" class="md-nav__link">
         
   
   
@@ -2901,29 +3138,24 @@
       
   
   
-    
   
   
-  
     
     
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -2941,7 +3173,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2959,7 +3191,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/" class="md-nav__link">
+      <a href="../../architecture/" class="md-nav__link">
         
   
   
@@ -2987,7 +3219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../performance/" class="md-nav__link">
+      <a href="../../performance/" class="md-nav__link">
         
   
   
@@ -3015,7 +3247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../concurrency/" class="md-nav__link">
+      <a href="../../concurrency/" class="md-nav__link">
         
   
   
@@ -3043,7 +3275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../security-model/" class="md-nav__link">
+      <a href="../../security-model/" class="md-nav__link">
         
   
   
@@ -3068,8 +3300,6 @@
                 
   
   
-    
-  
   
   
     
@@ -3080,15 +3310,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../../design/" class="md-nav__link ">
               
   
   
@@ -3112,7 +3342,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3130,7 +3360,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design-spec/" class="md-nav__link">
+      <a href="../../design/design-spec/" class="md-nav__link">
         
   
   
@@ -3158,7 +3388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../process/" class="md-nav__link">
+      <a href="../../design/process/" class="md-nav__link">
         
   
   
@@ -3183,8 +3413,6 @@
                 
   
   
-    
-  
   
   
     
@@ -3195,15 +3423,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_3" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../design/specs/" class="md-nav__link ">
               
   
   
@@ -3227,7 +3455,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3245,7 +3473,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../001-store-api/" class="md-nav__link">
+      <a href="../../design/specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -3273,7 +3501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../002-registry-config/" class="md-nav__link">
+      <a href="../../design/specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -3301,7 +3529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../design/specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -3329,7 +3557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../004-path-model/" class="md-nav__link">
+      <a href="../../design/specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -3357,7 +3585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../005-error-model/" class="md-nav__link">
+      <a href="../../design/specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -3385,7 +3613,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../006-streaming-io/" class="md-nav__link">
+      <a href="../../design/specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -3413,7 +3641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../007-atomic-writes/" class="md-nav__link">
+      <a href="../../design/specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -3441,7 +3669,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../008-s3-backend/" class="md-nav__link">
+      <a href="../../design/specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -3469,7 +3697,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../009-sftp-backend/" class="md-nav__link">
+      <a href="../../design/specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -3497,7 +3725,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../010-native-path-resolution/" class="md-nav__link">
+      <a href="../../design/specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -3525,7 +3753,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -3553,7 +3781,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../012-azure-backend/" class="md-nav__link">
+      <a href="../../design/specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -3581,7 +3809,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-memory-backend/" class="md-nav__link">
+      <a href="../../design/specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -3609,7 +3837,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -3637,7 +3865,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../015-store-child/" class="md-nav__link">
+      <a href="../../design/specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -3665,7 +3893,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-ext-batch/" class="md-nav__link">
+      <a href="../../design/specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -3693,7 +3921,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-ext-transfer/" class="md-nav__link">
+      <a href="../../design/specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -3721,7 +3949,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../018-glob/" class="md-nav__link">
+      <a href="../../design/specs/018-glob/" class="md-nav__link">
         
   
   
@@ -3749,7 +3977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../019-ext-observe/" class="md-nav__link">
+      <a href="../../design/specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -3777,7 +4005,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../020-credential-hygiene/" class="md-nav__link">
+      <a href="../../design/specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -3805,7 +4033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../021-config-loaders/" class="md-nav__link">
+      <a href="../../design/specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -3833,7 +4061,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../design/specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -3861,7 +4089,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../023-ext-cache/" class="md-nav__link">
+      <a href="../../design/specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -3886,37 +4114,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    024: ext.partition - Hive-Style Partition Path Helpers Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../design/specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -3932,197 +4133,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Requirements
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Requirements">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#part-001-partition_path-signature" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-001: partition_path() Signature
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-002-partition_path-column-ordering" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-002: partition_path() Column Ordering
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-003-partition_path-value-coercion" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-003: partition_path() Value Coercion
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-004-partition_path-empty-partitions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-004: partition_path() Empty Partitions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-005-partition_path-validation-filename" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-005: partition_path() Validation — filename
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-006-partition_path-validation-keys" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-006: partition_path() Validation — keys
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-007-parse_partition-signature" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-007: parse_partition() Signature
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-008-parse_partition-segment-matching" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-008: parse_partition() Segment Matching
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-009-parse_partition-multiple-non-partition-segments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-009: parse_partition() Multiple Non-Partition Segments
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-010-parse_partition-empty-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-010: parse_partition() Empty Path
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-011-parse_partition-round-trip" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-011: parse_partition() Round-Trip
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-012-parsedpartition-dataclass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-012: ParsedPartition Dataclass
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-013-module-exports" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-013: Module Exports
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4135,7 +4145,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../025-retry-policy/" class="md-nav__link">
+      <a href="../../design/specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -4163,7 +4173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../026-health-check/" class="md-nav__link">
+      <a href="../../design/specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -4191,7 +4201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../027-iter-children/" class="md-nav__link">
+      <a href="../../design/specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -4219,7 +4229,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../028-read-text/" class="md-nav__link">
+      <a href="../../design/specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -4247,7 +4257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../design/specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -4275,7 +4285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../030-write-text/" class="md-nav__link">
+      <a href="../../design/specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -4303,7 +4313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../031-ext-dagster/" class="md-nav__link">
+      <a href="../../design/specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -4331,7 +4341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../032-http-backend/" class="md-nav__link">
+      <a href="../../design/specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -4382,7 +4392,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../adrs/" class="md-nav__link ">
+            <a href="../../design/adrs/" class="md-nav__link ">
               
   
   
@@ -4424,7 +4434,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -4452,7 +4462,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -4480,7 +4490,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -4508,7 +4518,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../design/adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -4536,7 +4546,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../design/adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -4564,7 +4574,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../design/adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -4592,7 +4602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -4620,7 +4630,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../../design/adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -4648,7 +4658,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -4676,7 +4686,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -4704,7 +4714,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../../design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -4732,7 +4742,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../design/adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -4760,7 +4770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -4811,7 +4821,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../rfcs/" class="md-nav__link ">
+            <a href="../../design/rfcs/" class="md-nav__link ">
               
   
   
@@ -4853,7 +4863,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -4881,7 +4891,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -4909,7 +4919,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -4937,7 +4947,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -4988,7 +4998,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
+            <a href="../../design/research/" class="md-nav__link ">
               
   
   
@@ -5030,7 +5040,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
+      <a href="../../design/research/research-async-store-api/" class="md-nav__link">
         
   
   
@@ -5058,7 +5068,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-dagster-extension/" class="md-nav__link">
+      <a href="../../design/research/research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -5086,7 +5096,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
+      <a href="../../design/research/research-example-testing/" class="md-nav__link">
         
   
   
@@ -5114,7 +5124,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../../design/research/research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -5142,7 +5152,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../../design/research/research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -5170,7 +5180,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
+      <a href="../../design/research/research-health-check/" class="md-nav__link">
         
   
   
@@ -5198,7 +5208,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../../design/research/research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -5226,7 +5236,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../../design/research/research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -5254,7 +5264,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../../design/research/research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -5282,7 +5292,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
+      <a href="../../design/research/research-retry-policy/" class="md-nav__link">
         
   
   
@@ -5310,7 +5320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../../design/research/research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -5338,7 +5348,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
+      <a href="../../design/research/research-store-config/" class="md-nav__link">
         
   
   
@@ -5366,7 +5376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../../design/research/research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -5417,7 +5427,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/" class="md-nav__link">
+      <a href="../../contributing/" class="md-nav__link">
         
   
   
@@ -5444,7 +5454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../further-reading/" class="md-nav__link">
+      <a href="../../further-reading/" class="md-nav__link">
         
   
   
@@ -5471,7 +5481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development-story/" class="md-nav__link">
+      <a href="../../development-story/" class="md-nav__link">
         
   
   
@@ -5518,33 +5528,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#medallion-dagster-showcase_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Medallion + Dagster Showcase
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Requirements
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Requirements">
+    <nav class="md-nav" aria-label="Medallion + Dagster Showcase">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#part-001-partition_path-signature" class="md-nav__link">
+  <a href="#what-this-demonstrates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PART-001: partition_path() Signature
+        What This Demonstrates
       
     </span>
   </a>
@@ -5552,10 +5551,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#part-002-partition_path-column-ordering" class="md-nav__link">
+  <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PART-002: partition_path() Column Ordering
+        Prerequisites
       
     </span>
   </a>
@@ -5563,10 +5562,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#part-003-partition_path-value-coercion" class="md-nav__link">
+  <a href="#setup" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PART-003: partition_path() Value Coercion
+        Setup
       
     </span>
   </a>
@@ -5574,10 +5573,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#part-004-partition_path-empty-partitions" class="md-nav__link">
+  <a href="#running" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PART-004: partition_path() Empty Partitions
+        Running
       
     </span>
   </a>
@@ -5585,10 +5584,22 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#part-005-partition_path-validation-filename" class="md-nav__link">
+  <a href="#architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PART-005: partition_path() Validation — filename
+        Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bronze-layer-raw-ingest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bronze Layer (raw ingest)
       
     </span>
   </a>
@@ -5596,10 +5607,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#part-006-partition_path-validation-keys" class="md-nav__link">
+  <a href="#silver-layer-clean-unify" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PART-006: partition_path() Validation — keys
+        Silver Layer (clean + unify)
       
     </span>
   </a>
@@ -5607,10 +5618,38 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#part-007-parse_partition-signature" class="md-nav__link">
+  <a href="#gold-layer-analytics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PART-007: parse_partition() Signature
+        Gold Layer (analytics)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-to-observe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What to Observe
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What to Observe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dagster-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dagster UI
       
     </span>
   </a>
@@ -5618,10 +5657,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#part-008-parse_partition-segment-matching" class="md-nav__link">
+  <a href="#terminal-output" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PART-008: parse_partition() Segment Matching
+        Terminal Output
       
     </span>
   </a>
@@ -5629,10 +5668,26 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#part-009-parse_partition-multiple-non-partition-segments" class="md-nav__link">
+  <a href="#cache-benefit" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PART-009: parse_partition() Multiple Non-Partition Segments
+        Cache Benefit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#swapping-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Swapping Backends
       
     </span>
   </a>
@@ -5640,43 +5695,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#part-010-parse_partition-empty-path" class="md-nav__link">
+  <a href="#data-source" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PART-010: parse_partition() Empty Path
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-011-parse_partition-round-trip" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-011: parse_partition() Round-Trip
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-012-parsedpartition-dataclass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-012: ParsedPartition Dataclass
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#part-013-module-exports" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PART-013: Module Exports
+        Data Source
       
     </span>
   </a>
@@ -5704,81 +5726,119 @@
                   
 
 
+  
+  
 
-<h1 id="extpartition-hive-style-partition-path-helpers-specification">ext.partition - Hive-Style Partition Path Helpers Specification<a class="headerlink" href="#extpartition-hive-style-partition-path-helpers-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>ext.partition</code> provides utilities for building and parsing Hive-style partition
-paths (e.g., <code>year=2026/month=03/day=01/data.parquet</code>), commonly used in
-Parquet data lake workflows alongside PyArrow datasets.</p>
-<p>Two functions: <code>partition_path()</code> builds a full path from a filename and
-partition key-value pairs, <code>parse_partition()</code> extracts partition pairs from
-a path string.</p>
-<p><strong>Module:</strong> <code>src/remote_store/ext/partition.py</code>
-<strong>Dependencies:</strong> None (pure Python, always available)
-<strong>Related:</strong> <a href="../001-store-api/">001-store-api.md</a> (Store API),
-<a href="../014-pyarrow-filesystem-adapter/">014-pyarrow-filesystem-adapter.md</a> (PyArrow adapter),
-ID-036, data-lake patterns guide.</p>
-<hr />
-<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<h3 id="part-001-partition_path-signature">PART-001: partition_path() Signature<a class="headerlink" href="#part-001-partition_path-signature" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>partition_path(filename: str, /, **partitions: str | int) -&gt; str</code>.</p>
+
+<h1 id="medallion-dagster-showcase">Medallion + Dagster Showcase<a class="headerlink" href="#medallion-dagster-showcase" title="Permanent link">&para;</a></h1>
+<p>End-to-end Bronze/Silver/Gold pipeline with Dagster orchestration, demonstrating 4 remote-store extensions composing over live MeteoSwiss weather data.</p>
+<h2 id="medallion-dagster-showcase_1">Medallion + Dagster Showcase<a class="headerlink" href="#medallion-dagster-showcase_1" title="Permanent link">&para;</a></h2>
+<p>A self-contained Dagster project demonstrating remote-store's value proposition
+through a real-world <strong>medallion architecture</strong> (Bronze → Silver → Gold) over
+live <a href="https://www.meteoswiss.admin.ch/">MeteoSwiss</a> weather station data.</p>
+<h3 id="what-this-demonstrates">What This Demonstrates<a class="headerlink" href="#what-this-demonstrates" title="Permanent link">&para;</a></h3>
+<p>Four remote-store extensions composing without conflict:</p>
+<table>
+<thead>
+<tr>
+<th>Extension</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ReadOnlyHttpBackend</code></td>
+<td>Read-only backend fetching live CSV data via HTTP</td>
+</tr>
+<tr>
+<td><code>ext.cache</code></td>
+<td>TTL-based caching — avoids redundant HTTP downloads</td>
+</tr>
+<tr>
+<td><code>ext.otel</code></td>
+<td>OpenTelemetry spans + metrics on every storage operation</td>
+</tr>
+<tr>
+<td><code>ext.dagster</code></td>
+<td>3-line IO manager wrapping any Store for Dagster</td>
+</tr>
+</tbody>
+</table>
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>filename</code>: The leaf file name (e.g., <code>"data.parquet"</code>).</li>
-<li><code>**partitions</code>: Keyword arguments for partition columns. Values are
-  coerced to <code>str</code>.</li>
-<li>Returns a forward-slash-joined path: <code>col1=val1/col2=val2/.../filename</code>.</li>
+<li>Python 3.10+</li>
+<li>Network access to <code>data.geo.admin.ch</code> (Swiss open government data, no credentials)</li>
 </ul>
-<h3 id="part-002-partition_path-column-ordering">PART-002: partition_path() Column Ordering<a class="headerlink" href="#part-002-partition_path-column-ordering" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Partition columns appear in <code>**kwargs</code> insertion order (Python
-3.7+ dict ordering guarantee). The same keyword arguments always produce the
-same path.</p>
-<h3 id="part-003-partition_path-value-coercion">PART-003: partition_path() Value Coercion<a class="headerlink" href="#part-003-partition_path-value-coercion" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Integer values are converted via <code>str()</code>. The resulting segment
-is <code>key=str(value)</code>. No padding, quoting, or escaping is applied.</p>
-<h3 id="part-004-partition_path-empty-partitions">PART-004: partition_path() Empty Partitions<a class="headerlink" href="#part-004-partition_path-empty-partitions" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When no <code>**partitions</code> are given, <code>partition_path(filename)</code>
-returns <code>filename</code> unchanged.</p>
-<h3 id="part-005-partition_path-validation-filename">PART-005: partition_path() Validation — filename<a class="headerlink" href="#part-005-partition_path-validation-filename" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>filename</code> must be a non-empty string containing no <code>/</code>
-characters. Raises <code>ValueError</code> if empty or contains <code>/</code>.</p>
-<h3 id="part-006-partition_path-validation-keys">PART-006: partition_path() Validation — keys<a class="headerlink" href="#part-006-partition_path-validation-keys" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Partition keys must be non-empty strings. Partition values
-must be non-empty after <code>str()</code> coercion and must not contain <code>=</code> (breaks
-round-trip parsing per PART-011 / PART-008). Raises <code>ValueError</code> on empty
-key, empty value, or value containing <code>=</code>.</p>
-<h3 id="part-007-parse_partition-signature">PART-007: parse_partition() Signature<a class="headerlink" href="#part-007-parse_partition-signature" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>parse_partition(path: str) -&gt; ParsedPartition</code>.</p>
-<p><code>ParsedPartition</code> is a frozen dataclass with:
-- <code>partitions: dict[str, str]</code> — ordered mapping of column names to values.
-- <code>filename: str</code> — the trailing non-partition segment (may be empty if the
-  path consists only of partition segments).</p>
-<h3 id="part-008-parse_partition-segment-matching">PART-008: parse_partition() Segment Matching<a class="headerlink" href="#part-008-parse_partition-segment-matching" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> A path segment is a partition segment if and only if it
-contains exactly one <code>=</code> character and the portion before <code>=</code> is non-empty.
-Segments not matching this pattern are treated as the filename.</p>
-<h3 id="part-009-parse_partition-multiple-non-partition-segments">PART-009: parse_partition() Multiple Non-Partition Segments<a class="headerlink" href="#part-009-parse_partition-multiple-non-partition-segments" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Only the final contiguous group of non-partition segments
-is treated as the filename (joined with <code>/</code>). All <code>key=value</code> segments
-preceding the filename are treated as partitions. If a <code>key=value</code> segment
-appears after a non-partition segment, it is part of the filename, not a
-partition.</p>
-<h3 id="part-010-parse_partition-empty-path">PART-010: parse_partition() Empty Path<a class="headerlink" href="#part-010-parse_partition-empty-path" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Raises <code>ValueError</code> when <code>path</code> is empty.</p>
-<h3 id="part-011-parse_partition-round-trip">PART-011: parse_partition() Round-Trip<a class="headerlink" href="#part-011-parse_partition-round-trip" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> For a path built by <code>partition_path()</code>, <code>parse_partition()</code>
-recovers the same partitions and filename:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">path</span> <span class="o">=</span> <span class="n">partition_path</span><span class="p">(</span><span class="s2">&quot;data.parquet&quot;</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="s2">&quot;2026&quot;</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="s2">&quot;03&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">parsed</span> <span class="o">=</span> <span class="n">parse_partition</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">assert</span> <span class="n">parsed</span><span class="o">.</span><span class="n">partitions</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;2026&quot;</span><span class="p">,</span> <span class="s2">&quot;month&quot;</span><span class="p">:</span> <span class="s2">&quot;03&quot;</span><span class="p">}</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">assert</span> <span class="n">parsed</span><span class="o">.</span><span class="n">filename</span> <span class="o">==</span> <span class="s2">&quot;data.parquet&quot;</span>
+<h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>examples/medallion_dagster
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Install remote-store with required extras + showcase dependencies</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;../../[dagster,arrow,otel,requests]&quot;</span><span class="w"> </span>polars<span class="w"> </span>dagster-webserver<span class="w"> </span>opentelemetry-sdk
 </code></pre></div>
-<h3 id="part-012-parsedpartition-dataclass">PART-012: ParsedPartition Dataclass<a class="headerlink" href="#part-012-parsedpartition-dataclass" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>ParsedPartition</code> is a frozen dataclass. <code>partitions</code> is a
-plain <code>dict</code> (not a view or proxy). Mutation of the returned dict does not
-affect the original.</p>
-<h3 id="part-013-module-exports">PART-013: Module Exports<a class="headerlink" href="#part-013-module-exports" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>__all__ = ["ParsedPartition", "parse_partition", "partition_path"]</code>.
-All three symbols are re-exported unconditionally from <code>remote_store.__init__</code>.</p>
+<h3 id="running">Running<a class="headerlink" href="#running" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>dagster<span class="w"> </span>dev<span class="w"> </span>-f<span class="w"> </span>definitions.py
+</code></pre></div>
+<p>Open the Dagster UI (typically http://localhost:3000) and materialize all assets.</p>
+<h3 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>MeteoSwiss HTTP ──→ ext.cache (1h TTL) ──→ ext.otel (traces)
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>       │
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>       └──→ read_bytes + write ──→ Bronze (raw CSV)
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>                                      │
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>                                      ├──→ Silver (cleaned Parquet)
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>                                      │
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>                                      └──→ Gold (aggregated Parquet)
+</code></pre></div>
+<h4 id="bronze-layer-raw-ingest">Bronze Layer (raw ingest)<a class="headerlink" href="#bronze-layer-raw-ingest" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong><code>meteo_stations</code></strong> — station metadata CSV</li>
+<li><strong><code>bronze_bern</code></strong>, <strong><code>bronze_zurich</code></strong>, <strong><code>bronze_lugano</code></strong> — daily weather CSVs</li>
+<li>Uses <code>read_bytes</code> + <code>write</code> directly (file-level copy, no IO manager)</li>
+</ul>
+<h4 id="silver-layer-clean-unify">Silver Layer (clean + unify)<a class="headerlink" href="#silver-layer-clean-unify" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong><code>silver_measurements</code></strong> — all stations cleaned, unified, stored as Parquet</li>
+<li>Parses semicolon-delimited CSV, normalizes timestamps, drops null rows</li>
+<li>Uses Dagster IO manager with <code>ParquetSerializer</code></li>
+</ul>
+<h4 id="gold-layer-analytics">Gold Layer (analytics)<a class="headerlink" href="#gold-layer-analytics" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong><code>gold_daily_summary</code></strong> — daily avg/min/max temperature, precipitation per station</li>
+<li><strong><code>gold_station_stats</code></strong> — per-station row counts, date ranges, mean temperature</li>
+<li><strong><code>gold_alerts</code></strong> — frost (&lt; 0°C) and heat (&gt; 30°C) alert days</li>
+</ul>
+<h3 id="what-to-observe">What to Observe<a class="headerlink" href="#what-to-observe" title="Permanent link">&para;</a></h3>
+<h4 id="dagster-ui">Dagster UI<a class="headerlink" href="#dagster-ui" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Asset graph showing Bronze → Silver → Gold dependencies</li>
+<li>Materialization metadata (path, size) on Silver/Gold assets</li>
+</ul>
+<h4 id="terminal-output">Terminal Output<a class="headerlink" href="#terminal-output" title="Permanent link">&para;</a></h4>
+<ul>
+<li>OTel spans (JSON lines) for every <code>read_bytes()</code>, <code>exists()</code>, <code>get_file_info()</code> call</li>
+<li>Cache hit/miss stats after each Bronze ingest</li>
+<li>Row counts from Silver and Gold transforms</li>
+</ul>
+<h4 id="cache-benefit">Cache Benefit<a class="headerlink" href="#cache-benefit" title="Permanent link">&para;</a></h4>
+<p>Run materialization twice within one hour. The second run hits the cache for
+all Bronze <code>read_bytes()</code> calls — visible in cache stats (4 hits, 0 misses)
+and shorter OTel span durations.</p>
+<h3 id="swapping-backends">Swapping Backends<a class="headerlink" href="#swapping-backends" title="Permanent link">&para;</a></h3>
+<p>The core value proposition: change one line in <code>stores.py</code> to swap the lake
+backend from local filesystem to S3 or Azure:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Before (local)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">lake</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;./data/showcase&quot;</span><span class="p">))</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># After (S3)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">lake</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;showcase&quot;</span><span class="p">))</span>
+</code></pre></div>
+<p>Everything else — caching, observability, Dagster integration —
+works unchanged.</p>
+<h3 id="data-source">Data Source<a class="headerlink" href="#data-source" title="Permanent link">&para;</a></h3>
+<p><a href="https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/">MeteoSwiss Automatic Weather Stations (SMN)</a>
+— Swiss Federal Office of Meteorology and Climatology. Public domain data,
+no API keys required.</p>
+<p>Stations used: Bern-Zollikofen (<code>ber</code>), Zurich-Kloten (<code>klo</code>), Lugano (<code>lug</code>).
+Granularity: daily measurements.</p>
 
 
 
@@ -5834,10 +5894,10 @@ All three symbols are re-exported unconditionally from <code>remote_store.__init
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

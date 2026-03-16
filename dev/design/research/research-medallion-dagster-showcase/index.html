@@ -1271,6 +1271,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../examples/medallion-dagster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Medallion + Dagster Showcase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../examples/retry-policy/" class="md-nav__link">
         
   
@@ -6621,7 +6649,7 @@ Silver/Gold demonstrates that both patterns coexist naturally.</p>
 <hr />
 <h2 id="7-file-layout">7. File Layout<a class="headerlink" href="#7-file-layout" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>examples/
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  showcase_medallion_dagster/
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  medallion_dagster/
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    README.md                   # Setup instructions, what it demonstrates
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    definitions.py              # Dagster Definitions (assets, resources, jobs)
 <a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    stores.py                   # Store construction (HTTP + cache + otel + local)
@@ -6633,7 +6661,7 @@ Silver/Gold demonstrates that both patterns coexist naturally.</p>
 <a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    pyproject.toml              # Showcase-specific deps (dagster, polars, etc.)
 </code></pre></div>
 <p>The showcase is a self-contained Dagster project. Users run it with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">cd</span><span class="w"> </span>examples/showcase_medallion_dagster
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">cd</span><span class="w"> </span>examples/medallion_dagster
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;../../[dagster,arrow,otel]&quot;</span><span class="w"> </span>polars<span class="w"> </span>duckdb
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>dagster<span class="w"> </span>dev<span class="w"> </span>-f<span class="w"> </span>definitions.py
 </code></pre></div>

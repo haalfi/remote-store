@@ -22,5 +22,6 @@
 - OpenTelemetry Tracing: otel-tracing.md
 - PyArrow Adapter: pyarrow-adapter.md
 - Dagster IO Manager: dagster-io-manager.md
+- "Medallion + Dagster Showcase": medallion-dagster.md
 - Retry Policy: retry-policy.md
 - Health Check: health-check.md
