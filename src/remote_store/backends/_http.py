@@ -355,7 +355,15 @@ class ReadOnlyHttpBackend(Backend):
     # region: lifecycle
 
     def check_health(self) -> None:
-        """Verify connectivity by sending HEAD to base_url (or GET if HEAD is blocked)."""
+        """Verify connectivity by sending HEAD to base_url (or GET if HEAD is blocked).
+
+        Note:
+            The health check probes ``base_url`` (the root), not a specific
+            file.  Many HTTP servers and CDNs return 403 or 404 for directory
+            URLs while serving individual files normally.  A failing health
+            check therefore does not necessarily mean ``read()`` or
+            ``exists()`` will fail on actual file paths.
+        """
         try:
             if self._head_blocked:
                 resp = self._transport.get(self._base_url, {**self._headers, "Range": "bytes=0-0"}, self._timeout)

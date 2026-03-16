@@ -108,6 +108,11 @@ blocked and skips it for subsequent calls. This applies to `exists()`,
 
 If both `HEAD` and `GET` fail, the original error is raised.
 
+Note that `check_health()` probes `base_url` (the root), not a specific file.
+Many HTTP servers and CDNs return 403 or 404 for directory URLs while serving
+individual files normally. A failing health check does not necessarily mean
+`read()` or `exists()` will fail on actual file paths.
+
 ## Composability
 
 The primary value of making HTTP a backend (vs. standalone code):
