@@ -10,11 +10,22 @@ Complete reference for all public exports of `remote-store`.
 | [Registry](registry.md) | Creates and manages backend instances and stores |
 | [Backend](backend.md) | Abstract base class for storage backends |
 
-## Backend Utilities
+## Backends
 
 | Class | Description |
 |-------|-------------|
-| [ReadOnlyHttpBackend](http-backend.md) | Read-only backend for HTTP/HTTPS URLs |
+| [LocalBackend](backends/local.md) | Local filesystem storage |
+| [MemoryBackend](backends/memory.md) | In-process storage for testing |
+| [ReadOnlyHttpBackend](backends/http.md) | Read-only access to HTTP/HTTPS URLs |
+| [S3Backend](backends/s3.md) | Amazon S3 and S3-compatible services |
+| [S3PyArrowBackend](backends/s3-pyarrow.md) | S3 via PyArrow C++ for higher throughput |
+| [SFTPBackend](backends/sftp.md) | SSH/SFTP server storage via paramiko |
+| [AzureBackend](backends/azure.md) | Azure Blob Storage and ADLS Gen2 |
+
+## Utilities
+
+| Class | Description |
+|-------|-------------|
 | [SFTPUtils](sftp-utils.md) | Key loading and host-key verification helpers for SFTP |
 
 ## Configuration
