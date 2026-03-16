@@ -383,8 +383,11 @@ class ReadOnlyHttpBackend(Backend):
             raise
         except Exception as exc:
             raise BackendUnavailable(f"Health check failed: {exc}", backend=self.name) from exc
-        if not (200 <= resp.status < 300):
-            raise BackendUnavailable(f"Health check returned HTTP {resp.status}", backend=self.name)
+        try:
+            if not (200 <= resp.status < 300):
+                raise BackendUnavailable(f"Health check returned HTTP {resp.status}", backend=self.name)
+        finally:
+            resp.body.close()
 
     def close(self) -> None:
         """Close the underlying transport."""
