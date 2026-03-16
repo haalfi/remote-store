@@ -1683,6 +1683,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cdn-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CDN Compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#composability" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5980,6 +5991,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cdn-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CDN Compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#composability" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6333,7 +6355,7 @@
 <tbody>
 <tr>
 <td><code>size</code></td>
-<td><code>Content-Length</code></td>
+<td><code>Content-Range</code> total, then <code>Content-Length</code></td>
 <td><code>0</code></td>
 </tr>
 <tr>
@@ -6358,6 +6380,18 @@
 </tr>
 </tbody>
 </table>
+<h2 id="cdn-compatibility">CDN Compatibility<a class="headerlink" href="#cdn-compatibility" title="Permanent link">&para;</a></h2>
+<p>Some CDN-fronted servers (e.g. Cloudflare) return 403 on <code>HEAD</code> requests while
+allowing <code>GET</code>. The backend handles this transparently: when <code>HEAD</code> returns
+401 or 403, it retries with <code>GET</code> + <code>Range: bytes=0-0</code> (downloading at most
+1 byte). If the ranged <code>GET</code> succeeds, the backend remembers that HEAD is
+blocked and skips it for subsequent calls. This applies to <code>exists()</code>,
+<code>get_file_info()</code>, and <code>check_health()</code>.</p>
+<p>If both <code>HEAD</code> and <code>GET</code> fail, the original error is raised.</p>
+<p>Note that <code>check_health()</code> probes <code>base_url</code> (the root), not a specific file.
+Many HTTP servers and CDNs return 403 or 404 for directory URLs while serving
+individual files normally. A failing health check does not necessarily mean
+<code>read()</code> or <code>exists()</code> will fail on actual file paths.</p>
 <h2 id="composability">Composability<a class="headerlink" href="#composability" title="Permanent link">&para;</a></h2>
 <p>The primary value of making HTTP a backend (vs. standalone code):</p>
 <ul>
@@ -6515,7 +6549,7 @@ or <code>"httpx"</code>). Auto-detected if <code>None</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Check existence via HEAD request.</p>
+        <p>Check existence via HEAD request (falls back to ranged GET).</p>
 
 
     </div>
@@ -6620,7 +6654,7 @@ or <code>"httpx"</code>). Auto-detected if <code>None</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Get file metadata via HEAD request.</p>
+        <p>Get file metadata via HEAD request (falls back to ranged GET).</p>
 
 
     </div>
@@ -6665,8 +6699,17 @@ or <code>"httpx"</code>). Auto-detected if <code>None</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Verify connectivity by sending HEAD to base_url.</p>
+        <p>Verify connectivity by sending HEAD to base_url (or GET if HEAD is blocked).</p>
 
+
+<details class="note" open>
+  <summary>Note</summary>
+  <p>The health check probes <code>base_url</code> (the root), not a specific
+file.  Many HTTP servers and CDNs return 403 or 404 for directory
+URLs while serving individual files normally.  A failing health
+check therefore does not necessarily mean <code>read()</code> or
+<code>exists()</code> will fail on actual file paths.</p>
+</details>
 
     </div>
 

@@ -7522,6 +7522,10 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>HTTP backend: HEAD fallback for CDN-blocked servers</strong> — when <code>HEAD</code> returns
+  401/403, <code>exists()</code>, <code>get_file_info()</code>, and <code>check_health()</code> retry with
+  <code>GET</code> + <code>Range: bytes=0-0</code>. The result is cached for the backend's lifetime.
+  Discovered during live testing against CDN-fronted endpoints. (ID-085)</li>
 <li><strong><code>@pytest.mark.os_sensitive</code> CI marker</strong> — macOS and Windows CI jobs now run
   only tests that exercise OS-specific behaviour (path separators, atomic writes
   via <code>os.replace</code>, local filesystem operations). Network-protocol backends

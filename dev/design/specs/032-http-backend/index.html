@@ -4860,6 +4860,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#head-fallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HEAD Fallback
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HEAD Fallback">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#http-fallback-001-ranged-get-fallback-for-head-blocked-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP-FALLBACK-001: Ranged GET Fallback for HEAD-Blocked Servers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#health-check" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6546,6 +6574,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#head-fallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HEAD Fallback
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HEAD Fallback">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#http-fallback-001-ranged-get-fallback-for-head-blocked-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP-FALLBACK-001: Ranged GET Fallback for HEAD-Blocked Servers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#health-check" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6792,7 +6848,8 @@ remote-store errors during stream reads.</p>
 <h2 id="existence-checks">Existence Checks<a class="headerlink" href="#existence-checks" title="Permanent link">&para;</a></h2>
 <h3 id="http-exist-001-existspath">HTTP-EXIST-001: <code>exists(path)</code><a class="headerlink" href="#http-exist-001-existspath" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Sends <code>HEAD base_url + path</code>. Returns <code>True</code> for HTTP 200,
-<code>False</code> for 404. Other errors raise the mapped exception.</p>
+<code>False</code> for 404. On 401/403, falls back per HTTP-FALLBACK-001 before raising.
+Other errors raise the mapped exception.</p>
 <h3 id="http-exist-002-is_filepath">HTTP-EXIST-002: <code>is_file(path)</code><a class="headerlink" href="#http-exist-002-is_filepath" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Same as <code>exists(path)</code>. HTTP resources are always "files".</p>
 <h3 id="http-exist-003-is_folderpath">HTTP-EXIST-003: <code>is_folder(path)</code><a class="headerlink" href="#http-exist-003-is_folderpath" title="Permanent link">&para;</a></h3>
@@ -6802,8 +6859,8 @@ no known prefixes to check against.</p>
 <hr />
 <h2 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h2>
 <h3 id="http-meta-001-get_file_infopath">HTTP-META-001: <code>get_file_info(path)</code><a class="headerlink" href="#http-meta-001-get_file_infopath" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Sends <code>HEAD base_url + path</code>. Maps response headers to
-<code>FileInfo</code>:</p>
+<p><strong>Invariant:</strong> Sends <code>HEAD base_url + path</code> (falls back per HTTP-FALLBACK-001
+on 401/403). Maps response headers to <code>FileInfo</code>:</p>
 <table>
 <thead>
 <tr>
@@ -6825,7 +6882,7 @@ no known prefixes to check against.</p>
 </tr>
 <tr>
 <td><code>size</code></td>
-<td><code>Content-Length</code></td>
+<td><code>Content-Range</code> total, then <code>Content-Length</code></td>
 <td><code>0</code></td>
 </tr>
 <tr>
@@ -6912,10 +6969,26 @@ directly, avoiding confusing intermediate errors.</p>
 <p><strong>Invariant:</strong> Network-level failures (DNS resolution, connection refused,
 timeout) raise <code>BackendUnavailable</code>.</p>
 <hr />
+<h2 id="head-fallback">HEAD Fallback<a class="headerlink" href="#head-fallback" title="Permanent link">&para;</a></h2>
+<h3 id="http-fallback-001-ranged-get-fallback-for-head-blocked-servers">HTTP-FALLBACK-001: Ranged GET Fallback for HEAD-Blocked Servers<a class="headerlink" href="#http-fallback-001-ranged-get-fallback-for-head-blocked-servers" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> When <code>HEAD</code> returns 401 or 403, <code>exists()</code>, <code>get_file_info()</code>,
+and <code>check_health()</code> retry with <code>GET</code> + <code>Range: bytes=0-0</code> (single byte).
+If the <code>GET</code> succeeds (2xx) or returns 404, the result is used and the backend
+caches the fact that HEAD is blocked for its remaining lifetime. If <code>GET</code> also
+returns 401/403, the original <code>PermissionDenied</code> (or <code>BackendUnavailable</code> for
+health checks) is raised.</p>
+<p><strong>Rationale:</strong> Some CDN-fronted servers (e.g. Cloudflare) return 403 on HEAD
+while allowing GET. A ranged GET downloads at most 1 byte, making it a cheap
+probe. Caching avoids redundant HEAD requests on subsequent calls.</p>
+<p>For ranged GET responses (HTTP 206), <code>Content-Range</code> total takes precedence
+over <code>Content-Length</code> when building <code>FileInfo.size</code> (the latter reflects the
+byte range, not the full file).</p>
+<hr />
 <h2 id="health-check">Health Check<a class="headerlink" href="#health-check" title="Permanent link">&para;</a></h2>
 <h3 id="http-health-001-check_health">HTTP-HEALTH-001: <code>check_health()</code><a class="headerlink" href="#http-health-001-check_health" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Sends <code>HEAD base_url</code>. Raises <code>BackendUnavailable</code> if the
-request fails (network error or non-2xx status).</p>
+<p><strong>Invariant:</strong> Sends <code>HEAD base_url</code> (falls back per HTTP-FALLBACK-001 on
+401/403). Raises <code>BackendUnavailable</code> if the request fails (network error or
+non-2xx status).</p>
 <hr />
 <h2 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h2>
 <h3 id="http-life-001-close">HTTP-LIFE-001: <code>close()</code><a class="headerlink" href="#http-life-001-close" title="Permanent link">&para;</a></h3>
