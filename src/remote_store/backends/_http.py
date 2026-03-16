@@ -370,9 +370,13 @@ class ReadOnlyHttpBackend(Backend):
             else:
                 resp = self._transport.head(self._base_url, self._headers, self._timeout)
                 if resp.status in (401, 403):
-                    fallback = self._transport.get(
-                        self._base_url, {**self._headers, "Range": "bytes=0-0"}, self._timeout
-                    )
+                    try:
+                        fallback = self._transport.get(
+                            self._base_url, {**self._headers, "Range": "bytes=0-0"}, self._timeout
+                        )
+                    except Exception:
+                        resp.body.close()
+                        raise
                     if 200 <= fallback.status < 300:
                         resp.body.close()
                         self._head_blocked = True
@@ -456,7 +460,11 @@ class ReadOnlyHttpBackend(Backend):
         if resp.status not in (401, 403):
             return resp
         # HEAD was denied — try ranged GET before raising.
-        fallback = self._range_get(path)
+        try:
+            fallback = self._range_get(path)
+        except Exception:
+            resp.body.close()
+            raise
         if 200 <= fallback.status < 300 or fallback.status == 404:
             resp.body.close()
             self._head_blocked = True

@@ -811,6 +811,32 @@ class TestHeadFallback:
             b.check_health()
 
     @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_fallback_get_network_error_closes_head_resp(self, httpserver: HTTPServer) -> None:
+        """HEAD resp.body is closed if fallback GET raises a network error."""
+        from unittest.mock import patch
+
+        httpserver.expect_request("/cdn/err.txt", method="HEAD").respond_with_data(b"", status=403)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        with (
+            patch.object(b, "_range_get", side_effect=BackendUnavailable("connection reset", backend="http")),
+            pytest.raises(BackendUnavailable, match="connection reset"),
+        ):
+            b.exists("err.txt")
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
+    def test_check_health_fallback_network_error_closes_head_resp(self, httpserver: HTTPServer) -> None:
+        """check_health() closes HEAD resp.body if fallback GET raises."""
+        from unittest.mock import patch
+
+        httpserver.expect_request("/cdn/", method="HEAD").respond_with_data(b"", status=403)
+        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
+        with (
+            patch.object(b._transport, "get", side_effect=BackendUnavailable("timeout", backend="http")),
+            pytest.raises(BackendUnavailable, match="timeout"),
+        ):
+            b.check_health()
+
+    @pytest.mark.spec("HTTP-FALLBACK-001")
     def test_content_range_unknown_total(self, httpserver: HTTPServer) -> None:
         """Content-Range with unknown total (*) falls back to Content-Length."""
         httpserver.expect_request("/cdn/unk.txt", method="HEAD").respond_with_data(b"", status=403)
