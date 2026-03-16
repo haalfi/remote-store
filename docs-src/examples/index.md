@@ -35,7 +35,7 @@ Full project examples demonstrating multiple extensions working together.
 
 | Example | Description |
 |---------|-------------|
-| [Medallion + Dagster Showcase](medallion-dagster.md) | End-to-end Bronze/Silver/Gold pipeline with Dagster, 6 extensions, live MeteoSwiss data |
+| [Medallion + Dagster Showcase](medallion-dagster.md) | End-to-end Bronze/Silver/Gold pipeline with Dagster, 5 extensions, live MeteoSwiss data |
 
 Interactive Jupyter notebooks are also available in the
 [`examples/notebooks/`](https://github.com/haalfi/remote-store/tree/master/examples/notebooks)

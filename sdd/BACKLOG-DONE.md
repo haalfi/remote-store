@@ -8,10 +8,10 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 - [x] **BK-008 — Medallion + Dagster showcase implementation**
   Self-contained Dagster project in `examples/medallion_dagster/`
-  demonstrating 6 extensions composing over live MeteoSwiss data
+  demonstrating 5 extensions composing over live MeteoSwiss data
   (Bronze/Silver/Gold medallion architecture).
   Uses `ReadOnlyHttpBackend`, `ext.cache`, `ext.otel`, `ext.transfer`,
-  `ext.arrow`, and `ext.dagster`.
+  and `ext.dagster`.
   [Showcase architecture](research/research-medallion-dagster-showcase.md),
   [docs page](../docs-src/examples/medallion-dagster.md).
 

@@ -6,7 +6,7 @@ live [MeteoSwiss](https://www.meteoswiss.admin.ch/) weather station data.
 
 ## What This Demonstrates
 
-Six remote-store extensions composing without conflict:
+Five remote-store extensions composing without conflict:
 
 | Extension | Role |
 |-----------|------|
@@ -14,7 +14,6 @@ Six remote-store extensions composing without conflict:
 | `ext.cache` | TTL-based caching — avoids redundant downloads |
 | `ext.otel` | OpenTelemetry spans + metrics on every storage operation |
 | `ext.transfer` | Stream files across backend boundaries (HTTP → Local) |
-| `ext.arrow` | PyArrow filesystem bridge (used by Parquet serializer) |
 | `ext.dagster` | 3-line IO manager wrapping any Store for Dagster |
 
 ## Prerequisites
