@@ -7,7 +7,7 @@ in Jupyter.  No Jupyter/nbclient dependency required.
 Skips ``benchmark_analysis.ipynb`` which needs pre-generated benchmark
 data and matplotlib.
 
-Usage::
+Usage:
 
     python tests/scripts/run_notebooks.py
 """

@@ -41,7 +41,7 @@ New how-to guides always go in `guides/`. New explanation pages that synthesize 
 
 Format and style rules are in `sdd/DESIGN.md` § 4. This section covers what mkdocstrings requires per symbol type:
 
-| Symbol | `:param:` | `:returns:` | `:raises:` | Example |
+| Symbol | `Args` | `Returns` | `Raises` | Example |
 |---|---|---|---|---|
 | Public method | Yes | Yes | Yes | Yes (short) |
 | Property | -- | Yes (in summary) | If applicable | Optional |
