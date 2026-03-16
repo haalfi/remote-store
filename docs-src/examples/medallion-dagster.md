@@ -7,3 +7,7 @@ End-to-end Bronze/Silver/Gold pipeline with Dagster orchestration, demonstrating
    heading-offset=1
    rewrite-relative-urls=false
 %}
+
+## See also
+
+- [Architecture: Medallion + Dagster Showcase](../design/research/research-medallion-dagster-showcase.md) — detailed design rationale, store topology, and Dagster asset graph
