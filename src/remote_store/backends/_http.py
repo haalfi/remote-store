@@ -377,7 +377,7 @@ class ReadOnlyHttpBackend(Backend):
                     except Exception:
                         resp.body.close()
                         raise
-                    if 200 <= fallback.status < 300:
+                    if 200 <= fallback.status < 300 or fallback.status == 404:
                         resp.body.close()
                         self._head_blocked = True
                         resp = fallback

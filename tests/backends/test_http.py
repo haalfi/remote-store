@@ -633,8 +633,9 @@ class TestHttpErrorPaths:
             b.get_file_info("secret.txt")
 
     def test_health_check_non_2xx_raises(self, httpserver: HTTPServer) -> None:
-        """Health check rejects 403."""
+        """Health check rejects 403 when both HEAD and GET fail."""
         httpserver.expect_request("/hc403/", method="HEAD").respond_with_data(b"", status=403)
+        httpserver.expect_request("/hc403/", method="GET").respond_with_data(b"", status=403)
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/hc403/"), http_client="urllib")
         with pytest.raises(BackendUnavailable, match="403"):
             b.check_health()
