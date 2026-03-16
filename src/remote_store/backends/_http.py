@@ -244,6 +244,7 @@ class ReadOnlyHttpBackend(Backend):
         self._timeout = timeout
         self._retry = retry
         self._transport = _resolve_transport(http_client, verify_ssl=verify_ssl, max_redirects=max_redirects)
+        self._head_blocked = False
 
     # region: properties
 
@@ -260,13 +261,16 @@ class ReadOnlyHttpBackend(Backend):
     # region: read operations
 
     def exists(self, path: str) -> bool:
-        """Check existence via HEAD request."""
-        resp = self._head(path)
-        if resp.status == 404:
-            return False
-        if 200 <= resp.status < 300:
-            return True
-        raise self._classify_status(resp.status, path)
+        """Check existence via HEAD request (falls back to ranged GET)."""
+        resp = self._head_or_range_get(path)
+        try:
+            if resp.status == 404:
+                return False
+            if 200 <= resp.status < 300:
+                return True
+            raise self._classify_status(resp.status, path)
+        finally:
+            resp.body.close()
 
     def is_file(self, path: str) -> bool:
         """HTTP resources are always files."""
@@ -300,10 +304,13 @@ class ReadOnlyHttpBackend(Backend):
     # region: metadata
 
     def get_file_info(self, path: str) -> FileInfo:
-        """Get file metadata via HEAD request."""
-        resp = self._head(path)
-        self._check_status(resp, path)
-        return self._build_file_info(path, resp.headers)
+        """Get file metadata via HEAD request (falls back to ranged GET)."""
+        resp = self._head_or_range_get(path)
+        try:
+            self._check_status(resp, path)
+            return self._build_file_info(path, resp.headers)
+        finally:
+            resp.body.close()
 
     def get_folder_info(self, path: str) -> FolderInfo:
         """HTTP has no folder concept — always raises NotFound."""
@@ -348,9 +355,19 @@ class ReadOnlyHttpBackend(Backend):
     # region: lifecycle
 
     def check_health(self) -> None:
-        """Verify connectivity by sending HEAD to base_url."""
+        """Verify connectivity by sending HEAD to base_url (or GET if HEAD is blocked)."""
         try:
-            resp = self._transport.head(self._base_url, self._headers, self._timeout)
+            if self._head_blocked:
+                resp = self._transport.get(self._base_url, {**self._headers, "Range": "bytes=0-0"}, self._timeout)
+            else:
+                resp = self._transport.head(self._base_url, self._headers, self._timeout)
+                if resp.status in (401, 403):
+                    fallback = self._transport.get(
+                        self._base_url, {**self._headers, "Range": "bytes=0-0"}, self._timeout
+                    )
+                    if 200 <= fallback.status < 300:
+                        self._head_blocked = True
+                        resp = fallback
         except BackendUnavailable:
             raise
         except Exception as exc:
@@ -410,6 +427,34 @@ class ReadOnlyHttpBackend(Backend):
     def _head(self, path: str) -> HttpResponse:
         """Send a HEAD request with retry support."""
         return self._request_with_retry(self._transport.head, path)
+
+    def _head_or_range_get(self, path: str) -> HttpResponse:
+        """HEAD with transparent fallback to ranged GET on 403.
+
+        Some CDN-fronted servers (e.g. Cloudflare) block HEAD while allowing
+        GET.  When HEAD returns 403, a ``GET`` with ``Range: bytes=0-0`` is
+        tried instead — downloading at most 1 byte.  On success the result
+        is cached for the backend's lifetime so subsequent calls skip HEAD.
+        """
+        if self._head_blocked:
+            return self._range_get(path)
+        resp = self._head(path)
+        if resp.status not in (401, 403):
+            return resp
+        # HEAD was denied — try ranged GET before raising.
+        fallback = self._range_get(path)
+        if 200 <= fallback.status < 300 or fallback.status == 404:
+            self._head_blocked = True
+            return fallback
+        # Ranged GET also failed — raise from the original HEAD status.
+        fallback.body.close()
+        return resp
+
+    def _range_get(self, path: str) -> HttpResponse:
+        """Send a single GET with ``Range: bytes=0-0`` (no retry)."""
+        url = self._url(path)
+        headers = {**self._headers, "Range": "bytes=0-0"}
+        return self._transport.get(url, headers, self._timeout)
 
     def _request_with_retry(
         self,
@@ -481,8 +526,11 @@ class ReadOnlyHttpBackend(Backend):
         """Build a FileInfo from HTTP response headers."""
         name = path.rsplit("/", 1)[-1] if "/" in path else path
 
-        size_str = headers.get("content-length", "")
-        size = int(size_str) if size_str.isdigit() else 0
+        # Prefer Content-Range total (present in 206 ranged GET fallback).
+        size = _parse_content_range_total(headers.get("content-range"))
+        if size is None:
+            size_str = headers.get("content-length", "")
+            size = int(size_str) if size_str.isdigit() else 0
 
         modified_at = datetime.min.replace(tzinfo=timezone.utc)
         last_modified = headers.get("last-modified")
@@ -506,6 +554,21 @@ class ReadOnlyHttpBackend(Backend):
         )
 
     # endregion
+
+
+def _parse_content_range_total(value: str | None) -> int | None:
+    """Extract the total size from a ``Content-Range`` header.
+
+    Parses ``bytes 0-0/12345`` and returns ``12345``.  Returns ``None``
+    when the header is absent, unparseable, or uses ``*`` (unknown length).
+    """
+    if not value:
+        return None
+    # Format: "bytes 0-0/12345" or "bytes */12345"
+    parts = value.rsplit("/", 1)
+    if len(parts) == 2 and parts[1].isdigit():
+        return int(parts[1])
+    return None
 
 
 def _parse_retry_after(value: str | None) -> float | None:

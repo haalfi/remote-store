@@ -6,6 +6,14 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Post-v0.17.0
 
+- [x] **ID-085 — HTTP backend: HEAD fallback for CDN-blocked servers**
+  When `HEAD` returns 401/403, `exists()`, `get_file_info()`, and
+  `check_health()` retry with `GET` + `Range: bytes=0-0` (single byte).
+  On success, the backend caches that HEAD is blocked for its lifetime.
+  `_build_file_info` extracts total size from `Content-Range` header.
+  Spec HTTP-FALLBACK-001, 11 new tests, guide updated with CDN section.
+  Depends on: ID-082.
+
 - [x] **BK-009 — Fix slow local test suite (IPv6 dual-stack + HTTP server lifecycle)**
   Local test suite took ~2:41 due to two HTTP-related bottlenecks:
   (1) pytest-httpserver defaulted to `localhost` which triggers IPv6 dual-stack

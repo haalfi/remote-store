@@ -150,7 +150,8 @@ remote-store errors during stream reads.
 ### HTTP-EXIST-001: `exists(path)`
 
 **Invariant:** Sends `HEAD base_url + path`. Returns `True` for HTTP 200,
-`False` for 404. Other errors raise the mapped exception.
+`False` for 404. On 401/403, falls back per HTTP-FALLBACK-001 before raising.
+Other errors raise the mapped exception.
 
 ### HTTP-EXIST-002: `is_file(path)`
 
@@ -168,14 +169,14 @@ no known prefixes to check against.
 
 ### HTTP-META-001: `get_file_info(path)`
 
-**Invariant:** Sends `HEAD base_url + path`. Maps response headers to
-`FileInfo`:
+**Invariant:** Sends `HEAD base_url + path` (falls back per HTTP-FALLBACK-001
+on 401/403). Maps response headers to `FileInfo`:
 
 | FileInfo field | HTTP header | Fallback when missing |
 |---|---|---|
 | `path` | From request path | Always available |
 | `name` | From path | Always available |
-| `size` | `Content-Length` | `0` |
+| `size` | `Content-Range` total, then `Content-Length` | `0` |
 | `modified_at` | `Last-Modified` | `datetime.min.replace(tzinfo=timezone.utc)` |
 | `checksum` | `ETag` | `None` |
 | `content_type` | `Content-Type` | `None` |
@@ -234,12 +235,34 @@ timeout) raise `BackendUnavailable`.
 
 ---
 
+## HEAD Fallback
+
+### HTTP-FALLBACK-001: Ranged GET Fallback for HEAD-Blocked Servers
+
+**Invariant:** When `HEAD` returns 401 or 403, `exists()`, `get_file_info()`,
+and `check_health()` retry with `GET` + `Range: bytes=0-0` (single byte).
+If the `GET` succeeds (2xx) or returns 404, the result is used and the backend
+caches the fact that HEAD is blocked for its remaining lifetime. If `GET` also
+returns 401/403, the original `PermissionDenied` (or `BackendUnavailable` for
+health checks) is raised.
+
+**Rationale:** Some CDN-fronted servers (e.g. Cloudflare) return 403 on HEAD
+while allowing GET. A ranged GET downloads at most 1 byte, making it a cheap
+probe. Caching avoids redundant HEAD requests on subsequent calls.
+
+For ranged GET responses (HTTP 206), `Content-Range` total takes precedence
+over `Content-Length` when building `FileInfo.size` (the latter reflects the
+byte range, not the full file).
+
+---
+
 ## Health Check
 
 ### HTTP-HEALTH-001: `check_health()`
 
-**Invariant:** Sends `HEAD base_url`. Raises `BackendUnavailable` if the
-request fails (network error or non-2xx status).
+**Invariant:** Sends `HEAD base_url` (falls back per HTTP-FALLBACK-001 on
+401/403). Raises `BackendUnavailable` if the request fails (network error or
+non-2xx status).
 
 ---
 

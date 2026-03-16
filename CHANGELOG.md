@@ -16,6 +16,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **HTTP backend: HEAD fallback for CDN-blocked servers** — when `HEAD` returns
+  401/403, `exists()`, `get_file_info()`, and `check_health()` retry with
+  `GET` + `Range: bytes=0-0`. The result is cached for the backend's lifetime.
+  Discovered during live testing against CDN-fronted endpoints. (ID-085)
 - **`@pytest.mark.os_sensitive` CI marker** — macOS and Windows CI jobs now run
   only tests that exercise OS-specific behaviour (path separators, atomic writes
   via `os.replace`, local filesystem operations). Network-protocol backends
