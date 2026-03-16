@@ -447,10 +447,10 @@ class ReadOnlyHttpBackend(Backend):
         return self._request_with_retry(self._transport.head, path)
 
     def _head_or_range_get(self, path: str) -> HttpResponse:
-        """HEAD with transparent fallback to ranged GET on 403.
+        """HEAD with transparent fallback to ranged GET on 401/403.
 
         Some CDN-fronted servers (e.g. Cloudflare) block HEAD while allowing
-        GET.  When HEAD returns 403, a ``GET`` with ``Range: bytes=0-0`` is
+        GET.  When HEAD returns 401 or 403, a ``GET`` with ``Range: bytes=0-0`` is
         tried instead — downloading at most 1 byte.  On success the result
         is cached for the backend's lifetime so subsequent calls skip HEAD.
         """
