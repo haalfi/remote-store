@@ -2336,34 +2336,6 @@
   
   
     <li class="md-nav__item">
-      <a href="http-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ReadOnlyHttpBackend
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="sftp-utils/" class="md-nav__link">
         
   
@@ -2520,6 +2492,267 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_10" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="backends/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backends
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_1_10" id="__nav_4_1_10_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Backends
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="backends/local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LocalBackend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="backends/memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MemoryBackend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="backends/http/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ReadOnlyHttpBackend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="backends/s3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    S3Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="backends/s3-pyarrow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    S3PyArrowBackend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="backends/sftp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTPBackend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="backends/azure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AzureBackend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -5309,10 +5542,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#backend-utilities" class="md-nav__link">
+  <a href="#backends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Backend Utilities
+        Backends
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#utilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Utilities
       
     </span>
   </a>
@@ -5430,7 +5674,7 @@
 </tr>
 </tbody>
 </table>
-<h2 id="backend-utilities">Backend Utilities<a class="headerlink" href="#backend-utilities" title="Permanent link">&para;</a></h2>
+<h2 id="backends">Backends<a class="headerlink" href="#backends" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -5440,9 +5684,44 @@
 </thead>
 <tbody>
 <tr>
-<td><a href="http-backend/">ReadOnlyHttpBackend</a></td>
-<td>Read-only backend for HTTP/HTTPS URLs</td>
+<td><a href="backends/local/">LocalBackend</a></td>
+<td>Local filesystem storage</td>
 </tr>
+<tr>
+<td><a href="backends/memory/">MemoryBackend</a></td>
+<td>In-process storage for testing</td>
+</tr>
+<tr>
+<td><a href="backends/http/">ReadOnlyHttpBackend</a></td>
+<td>Read-only access to HTTP/HTTPS URLs</td>
+</tr>
+<tr>
+<td><a href="backends/s3/">S3Backend</a></td>
+<td>Amazon S3 and S3-compatible services</td>
+</tr>
+<tr>
+<td><a href="backends/s3-pyarrow/">S3PyArrowBackend</a></td>
+<td>S3 via PyArrow C++ for higher throughput</td>
+</tr>
+<tr>
+<td><a href="backends/sftp/">SFTPBackend</a></td>
+<td>SSH/SFTP server storage via paramiko</td>
+</tr>
+<tr>
+<td><a href="backends/azure/">AzureBackend</a></td>
+<td>Azure Blob Storage and ADLS Gen2</td>
+</tr>
+</tbody>
+</table>
+<h2 id="utilities">Utilities<a class="headerlink" href="#utilities" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
 <tr>
 <td><a href="sftp-utils/">SFTPUtils</a></td>
 <td>Key loading and host-key verification helpers for SFTP</td>

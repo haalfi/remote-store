@@ -1,13 +1,13 @@
 - Store: store.md
 - Registry: registry.md
 - Backend: backend.md
-- ReadOnlyHttpBackend: http-backend.md
 - SFTPUtils: sftp-utils.md
 - Config: config.md
 - Models: models.md
 - RemotePath: path.md
 - Capabilities: capabilities.md
 - Errors: errors.md
+- Backends: backends/
 - ext.arrow: ext-arrow.md
 - ext.batch: ext-batch.md
 - ext.cache: ext-cache.md

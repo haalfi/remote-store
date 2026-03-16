@@ -169,10 +169,6 @@
          <lastmod>2026-03-16</lastmod>
     </url>
     <url>
-         <loc>https://docs.remotestore.dev/dev/api/http-backend/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
          <loc>https://docs.remotestore.dev/dev/api/models/</loc>
          <lastmod>2026-03-16</lastmod>
     </url>
@@ -190,6 +186,38 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/store/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/backends/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/backends/azure/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/backends/http/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/backends/local/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/backends/memory/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/backends/s3-pyarrow/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/backends/s3/</loc>
+         <lastmod>2026-03-16</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/backends/sftp/</loc>
          <lastmod>2026-03-16</lastmod>
     </url>
     <url>
