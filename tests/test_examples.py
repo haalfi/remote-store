@@ -571,11 +571,11 @@ class TestHttpBackend:
             content_type="text/plain",
             headers={"Content-Length": "18"},
         )
-        server.expect_request("/files/hello.txt", method="HEAD").respond_with_data(
-            b"",
-            content_type="text/plain",
-            headers={"Content-Length": "18"},
-        )
+        from werkzeug.wrappers import Response as WerkzeugResponse
+
+        head_resp = WerkzeugResponse(b"", status=200, content_type="text/plain")
+        head_resp.content_length = 18
+        server.expect_request("/files/hello.txt", method="HEAD").respond_with_response(head_resp)
         server.start()
 
         try:
@@ -596,6 +596,7 @@ class TestHttpBackend:
         assert results["read_content"] == b"Hello, HTTP world!"
         assert results["read_text"] == "Hello, HTTP world!"
         assert results["content_type"] == "text/plain"
+        assert results["size"] == 18
         assert "write" in results["write_error"]
 
 
