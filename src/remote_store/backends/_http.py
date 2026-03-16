@@ -374,8 +374,11 @@ class ReadOnlyHttpBackend(Backend):
                         self._base_url, {**self._headers, "Range": "bytes=0-0"}, self._timeout
                     )
                     if 200 <= fallback.status < 300:
+                        resp.body.close()
                         self._head_blocked = True
                         resp = fallback
+                    else:
+                        fallback.body.close()
         except BackendUnavailable:
             raise
         except Exception as exc:
@@ -452,6 +455,7 @@ class ReadOnlyHttpBackend(Backend):
         # HEAD was denied — try ranged GET before raising.
         fallback = self._range_get(path)
         if 200 <= fallback.status < 300 or fallback.status == 404:
+            resp.body.close()
             self._head_blocked = True
             return fallback
         # Ranged GET also failed — raise from the original HEAD status.
