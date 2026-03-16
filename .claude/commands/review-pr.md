@@ -58,8 +58,8 @@ addressed. Common misses to look for explicitly:
 - **New/changed Store method?** → README API table row present? Comparison
   table method count still correct? CHANGELOG entry?
 - **New extension or extension moved?** → README extensions table row? API
-  reference page (`docs-src/api/ext-*.md`)? Nav entries (`_nav.yml`,
-  `api/index.md`)?
+  reference page (`docs-src/api/extensions/*.md`)? Nav entries (`_nav.yml`,
+  `api/extensions/index.md`)?
 - **New example script?** → README examples table row? Docs wrapper page
   (`docs-src/examples/*.md`)? `tests/test_examples.py` import?
 - **Any non-trivial work?** → Backlog item present?
