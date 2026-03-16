@@ -7457,6 +7457,11 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong><code>@pytest.mark.os_sensitive</code> CI marker</strong> — macOS and Windows CI jobs now run
+  only tests that exercise OS-specific behaviour (path separators, atomic writes
+  via <code>os.replace</code>, local filesystem operations). Network-protocol backends
+  (HTTP, S3, SFTP) are Linux-only. Reduces cross-platform CI time significantly.
+  (ID-087)</li>
 <li><strong>Medallion + Dagster showcase</strong> (<code>examples/medallion_dagster/</code>) —
   self-contained Dagster project demonstrating 4 extensions composing over live
   MeteoSwiss weather data in a Bronze/Silver/Gold medallion architecture.
