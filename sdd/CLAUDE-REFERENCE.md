@@ -46,8 +46,9 @@ Before committing, check whether your change has cross-file dependencies:
 | **An extension**           | `__init__.py` exports (pure-Python only; optional-dep     |
 |                            | extensions are NOT re-exported — ADR-0013),               |
 |                            | `pyproject.toml` extras (if optional dep),                |
-|                            | README extensions table, `docs-src/api/ext-*.md` +        |
-|                            | `api/index.md` + `api/_nav.yml`, `guides/`,               |
+|                            | README extensions table, `docs-src/api/extensions/*.md` +  |
+|                            | `api/extensions/index.md` + `api/extensions/_nav.yml`,    |
+|                            | `guides/`,               |
 |                            | `docs-src/` + `_nav.yml`, `examples/`,                    |
 |                            | CHANGELOG, BACKLOG                                        |
 | **An example script**      | README examples table, `docs-src/examples/*.md` wrapper,  |

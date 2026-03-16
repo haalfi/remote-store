@@ -123,5 +123,5 @@ patterns.
 
 ## See also
 
-- [API reference](api/ext-cache.md)
+- [API reference](api/extensions/cache.md)
 - [Example script](https://github.com/haalfi/remote-store/blob/master/examples/caching.py)

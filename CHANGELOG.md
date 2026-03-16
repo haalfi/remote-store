@@ -46,6 +46,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   7 backends (Local, Memory, HTTP, S3, S3-PyArrow, SFTP, Azure) under a new
   "Backends" section in the API reference. Each page links to the corresponding
   backend guide.
+- **Extensions API reference section** (ID-089) — moved all 11 extension API
+  pages into a nested "Extensions" section with an index page, matching the
+  Backends section structure.
 
 ### Removed
 

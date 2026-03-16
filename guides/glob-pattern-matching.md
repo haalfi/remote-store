@@ -150,5 +150,5 @@ list(glob_files(reports, "**/*.csv"))
 
 ## See also
 
-- [API reference](api/ext-glob.md)
+- [API reference](api/extensions/glob.md)
 - [Example script](https://github.com/haalfi/remote-store/blob/master/examples/glob_pattern_matching.py)
