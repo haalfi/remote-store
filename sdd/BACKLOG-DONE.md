@@ -6,6 +6,15 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Post-v0.17.0
 
+- [x] **BK-009 — Fix slow local test suite (IPv6 dual-stack + HTTP server lifecycle)**
+  Local test suite took ~2:41 due to two HTTP-related bottlenecks:
+  (1) pytest-httpserver defaulted to `localhost` which triggers IPv6 dual-stack
+  timeout on Windows (~2 s per urllib request); fixed by overriding
+  `httpserver_listen_address` to `("127.0.0.1", 0)`.
+  (2) Conformance HTTP backend started/stopped a new server per test (~0.5 s
+  teardown each); fixed by adding a session-scoped `http_server` fixture.
+  Result: 161 s → 37 s (4.3x speedup), no test changes needed.
+
 - [x] **ID-089 — Extensions API reference section**
   Moved all 11 extension API pages into a nested "Extensions" section under
   the API reference, with an index page and summary table. Updated cross-links
