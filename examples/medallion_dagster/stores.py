@@ -1,0 +1,49 @@
+"""Store construction — HTTP source + local medallion lake.
+
+Extension composition chain (innermost → outermost):
+  ReadOnlyHttpBackend → ext.cache (1h TTL) → ext.otel (spans + metrics)
+
+The local lake uses Store.child() for Bronze / Silver / Gold isolation.
+"""
+
+from __future__ import annotations
+
+from otel_setup import configure_otel
+
+# Activate OTel *before* any Store operations so traces are captured.
+configure_otel()
+
+from remote_store import Store  # noqa: E402
+from remote_store.backends import LocalBackend, ReadOnlyHttpBackend  # noqa: E402
+from remote_store.ext.cache import cached_store  # noqa: E402
+from remote_store.ext.otel import otel_observe  # noqa: E402
+
+# ---------------------------------------------------------------------------
+# Source: MeteoSwiss open data (read-only, zero credentials)
+# ---------------------------------------------------------------------------
+
+_http = Store(
+    ReadOnlyHttpBackend(
+        base_url="https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/",
+        timeout=60.0,
+    )
+)
+_cached = cached_store(_http, ttl=3600)
+meteo_store = otel_observe(_cached)
+
+# ---------------------------------------------------------------------------
+# Sink: local medallion lake
+# ---------------------------------------------------------------------------
+
+lake = Store(LocalBackend(root="./data/showcase"))
+bronze = lake.child("bronze")
+silver = lake.child("silver")
+gold = lake.child("gold")
+
+
+def print_cache_stats() -> None:
+    """Print cache hit/miss statistics (call after Bronze ingestion)."""
+    stats = _cached.stats
+    total = stats.hits + stats.misses
+    ratio = f"{stats.hits / total:.0%}" if total else "n/a"
+    print(f"  Cache stats: {stats.hits} hits, {stats.misses} misses, hit ratio {ratio}, {stats.size} entries cached")

@@ -29,6 +29,14 @@ These require a running service (AWS, MinIO, an SFTP server, Azure, Azurite, etc
 | [Azure Backend](azure-backend.md) | Azure Blob / ADLS Gen2: config, auth methods, `unwrap()` |
 | [HTTP Backend](http-backend.md) | Read-only HTTP/HTTPS: capabilities, transport selection |
 
+## Showcases
+
+Full project examples demonstrating multiple extensions working together.
+
+| Example | Description |
+|---------|-------------|
+| [Medallion + Dagster Showcase](medallion-dagster.md) | End-to-end Bronze/Silver/Gold pipeline with Dagster, 4 extensions, live MeteoSwiss data |
+
 Interactive Jupyter notebooks are also available in the
 [`examples/notebooks/`](https://github.com/haalfi/remote-store/tree/master/examples/notebooks)
 directory of the repository.

@@ -1,0 +1,18 @@
+# Showcase-specific dependencies (not part of remote-store core).
+# Install with:
+#   cd examples/medallion_dagster
+#   pip install -e "../../[dagster,arrow,otel,requests]" polars dagster-webserver opentelemetry-sdk
+
+[project]
+name = "medallion-dagster"
+version = "0.0.0"
+requires-python = ">=3.10"
+description = "Medallion + Dagster showcase for remote-store"
+
+[project.optional-dependencies]
+run = [
+    "dagster>=1.9",
+    "dagster-webserver>=1.9",
+    "polars>=0.20",
+    "opentelemetry-sdk>=1.20",
+]

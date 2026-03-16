@@ -37,13 +37,7 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-008 — Medallion + Dagster showcase implementation**
-  Implement the runnable showcase described in
-  [showcase architecture](research/research-medallion-dagster-showcase.md).
-  Self-contained Dagster project in `examples/showcase_medallion_dagster/`
-  demonstrating 6 extensions composing over live MeteoSwiss data.
-  Depends on: ID-075, ID-082, ext.cache, ext.observe, ext.otel, ext.transfer,
-  ext.arrow, ext.dagster (all shipped).
+*(none)*
 
 ---
 

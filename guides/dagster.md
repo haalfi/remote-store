@@ -144,6 +144,8 @@ was created inline, the caller is responsible for cleanup.
 
 ## See also
 
+- [Medallion + Dagster Showcase](examples/medallion-dagster.md) — end-to-end
+  Bronze/Silver/Gold pipeline demonstrating 4 extensions over live MeteoSwiss data
 - [Data Lake Patterns](data-lake-patterns.md) — medallion architecture with
   `Store.child()` and PyArrow, complementary to Dagster orchestration
 - [PyArrow Adapter](pyarrow-adapter.md) — use Store as a PyArrow filesystem

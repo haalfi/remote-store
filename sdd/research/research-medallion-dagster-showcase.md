@@ -388,7 +388,7 @@ Silver/Gold demonstrates that both patterns coexist naturally.
 
 ```
 examples/
-  showcase_medallion_dagster/
+  medallion_dagster/
     README.md                   # Setup instructions, what it demonstrates
     definitions.py              # Dagster Definitions (assets, resources, jobs)
     stores.py                   # Store construction (HTTP + cache + otel + local)
@@ -403,7 +403,7 @@ examples/
 The showcase is a self-contained Dagster project. Users run it with:
 
 ```bash
-cd examples/showcase_medallion_dagster
+cd examples/medallion_dagster
 pip install -e "../../[dagster,arrow,otel]" polars duckdb
 dagster dev -f definitions.py
 ```
