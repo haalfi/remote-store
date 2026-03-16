@@ -182,7 +182,7 @@ def azurite_server() -> Iterator[str | None]:
 
 
 _local_param = pytest.param("local", marks=pytest.mark.os_sensitive)
-_memory_param = pytest.param("memory", marks=pytest.mark.os_sensitive)
+_memory_param = pytest.param("memory")
 
 
 @pytest.fixture(
