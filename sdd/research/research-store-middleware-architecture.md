@@ -66,6 +66,51 @@ This raises several concerns:
 
 ---
 
+## 1b. Evidence and Urgency
+
+The concerns in Section 1 are real, but they differ in severity and
+immediacy. This section separates currently observed pain from
+anticipated future pain to avoid over-solving speculative problems.
+
+### Correctness issues (observed, fix now)
+
+| Issue | Evidence | Severity |
+|-------|----------|----------|
+| **`child()` breaks wrapper chain** | `cached_store(s).child("sub")` returns a plain `Store`. Any code that creates child stores silently loses caching/observation. | **High** — silent correctness bug. Users won't notice until they see uncached reads or missing observation events on child stores. |
+| **Ordering sensitivity** | `observe(cached_store(s))` vs `cached_store(observe(s))` have different semantics: the latter observes cache hits as real reads. No guard, no warning. | **Medium** — wrong composition silently degrades semantics. Currently only two wrappers, so the ordering space is small. |
+| **Dual progress mechanisms** | `ext.transfer` has its own `_ProgressReader`; ID-006 proposes Store-level callbacks. Two independent systems with no composition story. | **Medium** — not a bug yet (ID-006 is unimplemented), but the design gap is visible in the backlog. |
+
+### Maintainer-cost issues (observed, fix when convenient)
+
+| Issue | Evidence | Severity |
+|-------|----------|----------|
+| **Private-attribute coupling** | Both ObservedStore and CachedStore independently copy `_backend`, `_root`, `_owns_backend`. This is fragile — Store internals change, two places break. | **Medium** — coupling is real but has not caused a bug yet. Two consumers. |
+| **Method-override burden** | Each proxy overrides 25+ methods. CachedStore has ~10 pure pass-throughs that do nothing but `return self._inner.foo(...)`. | **Low-Medium** — boilerplate is annoying but the drift-protection tests catch omissions. Not blocking delivery. |
+| **Iterator materialization duplication** | Both proxies materialize iterators independently (`list()` in observe, `tuple()` in cache). Minor code duplication. | **Low** — functional, just repetitive. |
+
+### Speculative concerns (anticipated, do not solve preemptively)
+
+| Issue | Evidence | Severity |
+|-------|----------|----------|
+| **Four-layer nesting** | Only happens if we add ProgressStore + ChecksumStore as proxies (Option B). This research exists specifically to avoid that. | **N/A** — the four-layer scenario is the rejected design, not the current state. |
+| **Python call overhead** | Four proxy layers = four function calls per operation. Theoretical concern. | **Negligible** — four Python function calls add <1μs. Real I/O (network, disk) dominates by 3-6 orders of magnitude. Do not optimize this. |
+| **Double iterator materialization** | Two layers materializing the same iterator. Costs one extra list copy. | **Negligible** — the data is already in memory after the first materialization. The copy is O(n) pointers, not O(n) I/O. |
+
+### Implication for design choices
+
+- **Correctness issues** justify immediate work regardless of which
+  path we choose. `child()` propagation and ordering should not remain
+  optional.
+- **Maintainer-cost issues** justify extracting shared infrastructure
+  (ProxyStore or middleware base), but the urgency is low — two
+  consumers don't create crushing overhead.
+- **Speculative concerns** should not drive architectural decisions.
+  The performance argument in particular should be dropped from
+  decision criteria — it is not grounded in measurement and would
+  not survive profiling.
+
+---
+
 ## 2. Design Options
 
 ### Option A: Add ID-006/008 as Store Parameters
@@ -156,9 +201,17 @@ class StoreMiddleware(Protocol):
 - ASGI-style middleware is designed for a single request/response shape; Store has 27
   methods with different signatures — poor fit.
 
-**Verdict:** Intellectually appealing but over-engineered for the actual
-problem. The method signature diversity makes a generic pipeline
-clumsy. And stateful middleware (cache) needs more than before/after hooks.
+**Verdict:** The rejection is not of middleware as a concept, but of
+**generic per-method middleware** applied uniformly across 27 methods
+with diverse signatures. The real answer is **operation-family-scoped
+interception** (see Options F and H), where middleware protocols are
+typed per category (read, write, browse, manage) rather than generic
+`on_any(ctx, next)`. That preserves the composition benefit of
+middleware while respecting the signature diversity of Store.
+
+Additionally, stateful middleware like cache need short-circuit
+semantics (`return cached; skip next()`), which is natural in a typed
+per-category chain but awkward in a generic before/after pipeline.
 
 ---
 
@@ -257,6 +310,39 @@ def read_with_progress(store: Store, path: str,
     """Read with progress tracking. Caller must close the stream."""
     return ProgressReader(store.read(path), callback)
 ```
+
+#### E.1b: Ergonomics — Primitives vs Convenience
+
+The stream-wrapper approach (`ChecksumReader(store.read(...))`) is
+composable and pure, but it is a **low-level primitive**. Many users
+don't want to manage stream lifecycle manually. They want:
+
+```python
+data = store.read_bytes("file.bin", verify="sha256:abc123")  # ← they want this
+store.download(local, remote, on_progress=update_bar)         # ← or this
+```
+
+The design must be explicit about where each layer lives:
+
+| Layer | Module | Examples |
+|-------|--------|----------|
+| **Primitives** | `ext.streams` | `ProgressReader`, `ChecksumReader`, `ChecksumWriter` |
+| **Convenience helpers** | `ext.integrity` | `verify(store, path, expected)`, `checksum(store, path)` |
+| **High-level workflows** | `ext.transfer` | `upload(..., on_progress=...)`, `download(..., verify=...)` |
+| **Core Store** | `_store.py` | Stays minimal. No progress/checksum params. |
+
+The common case ("download and verify") belongs in `ext.transfer` and
+`ext.integrity`, not in raw stream wrappers. Stream wrappers are for
+users who need fine-grained control (e.g., streaming a 10GB file with
+rolling checksum + progress in a custom pipeline).
+
+This layering means:
+- Users who want simplicity use `ext.integrity.verify()` or
+  `ext.transfer.download(..., verify=...)`.
+- Users who want control compose `ChecksumReader(ProgressReader(stream))`.
+- Store stays thin.
+
+---
 
 #### E.2: Checksum (ID-008) — Dual Design
 
@@ -895,7 +981,7 @@ cache.
 |--------|----------|:------------:|
 | `ext.streams` | `ProgressReader`, `ProgressWriter`, `ChecksumReader`, `ChecksumWriter`, `read_with_progress()` | Yes (new spec) |
 | `ext.integrity` | `verify()`, `checksum()` | Yes (new spec) |
-| Backend changes | Populate `FileInfo.checksum` in S3, Azure, Local backends | Amend spec 001 |
+| Backend changes | Populate `FileInfo.digest` / `FileInfo.etag` per contract in §5 | Amend spec 001 (blocked on §5 decision) |
 
 ### What to Build (Path 1 only)
 
@@ -914,41 +1000,162 @@ cache.
 
 - No `ProgressStore` proxy.
 - No `ChecksumStore` proxy.
-- No changes to `Store.read()` or `Store.write()` signatures.
+- No changes to `Store.read()` or `Store.write()` signatures **for
+  ID-006 and ID-008**. This is a scoped decision, not a blanket
+  principle — future cross-cutting behaviors that are genuinely
+  first-class store semantics (e.g., `get_file_info(include_digest=True)`)
+  may warrant signature additions. The rule is: don't widen Store
+  for things that belong at the stream or extension layer, but don't
+  treat Store's signature as permanently frozen either.
 - No public middleware API (internal only — users use `observe()` and
   `cached_store()` as before).
 
+### Decision: `child()` Propagation
+
+**Default: child stores inherit wrapper behavior.** This is a
+correctness decision, not an optional enhancement.
+
+Rationale:
+- `child()` narrows scope — it does not create a new semantic identity.
+  A child of a cached store should be cached. A child of an observed
+  store should be observed.
+- Non-propagation is surprising and **silent**. Users will not notice
+  that `cached_store(s).child("sub")` is uncached until they observe
+  unexpected latency or missing events. That's a footgun.
+- Opt-out is fine for special cases (`child("sub", propagate=False)`
+  or unwrap-then-child), but the default must be propagation.
+
+Implementation:
+- **Path 1 (ProxyStore):** `ProxyStore.child()` wraps the inner child
+  in a new proxy instance with the same configuration. Each subclass
+  overrides `_wrap_child(inner_child)` to construct an appropriate
+  wrapper.
+- **Path 2 (Middleware):** `_MiddlewareProxy.child()` creates a new
+  `_MiddlewareProxy` around the inner child with the same middleware
+  chain. Trivial.
+
+This should ship in the same release as the ProxyStore extraction,
+not deferred to a follow-up.
+
+### Honest Assessment: Path 1 vs Path 2
+
+**Path 1 is only attractive if you believe Path 2 may never be
+needed.** If you already suspect retry, rate-limiting, fault
+injection, or other policy-like extensions are on the near-term
+roadmap, Path 1 is a temporary halfway house that adds:
+- Inheritance complexity now (ProxyStore base, method overrides).
+- Middleware complexity later (when the third concern arrives).
+- Migration cost to go from one to the other.
+
+The paper's G2 variant illustrates this convergence: once ProxyStore
+grows `_before_*` / `_after_*` / `_short_circuit_*` hooks, it **is**
+a dispatch framework — just inheritance-based rather than composition-
+based. At that point you've built most of Path 2's complexity without
+its benefits (composability, automatic merging).
+
+**State this plainly:**
+- Choose Path 1 if the extension roadmap is genuinely just observe +
+  cache for the medium term. ProxyStore + stream wrappers ships fast
+  and reduces maintenance cost.
+- Choose Path 2 if extensions are a strategic capability of the
+  library. The upfront cost is ~150 lines of framework code; the
+  payoff is that every future concern is additive, not multiplicative.
+- **Do not choose Path 1 "for now" with a vague plan to do Path 2
+  "later."** That's the worst outcome — you pay the cost of both.
+  Decide based on the extension roadmap, not on comfort level.
+
 ---
 
-## 5. Open Questions
+## 5. Blocking Decision: `FileInfo.checksum` Contract
 
-1. **`child()` propagation for ObservedStore / CachedStore.**
-   This is an existing issue (not introduced by this design) but worth
-   fixing. Both paths (G+E and H) enable `child()` propagation. Decision:
-   should child stores inherit the full wrapper config, or should it be
-   opt-in? (e.g., `observe(store, propagate_child=True)`)
+**This must be resolved before implementing ID-008 or backend checksum
+population.** The current design proposes `FileInfo.checksum: str | None`
+as a single opaque field populated per-backend. This is underspecified
+to the point of being misleading.
 
-2. **`FileInfo.checksum` population scope.**
-   Should `get_file_info()` always compute checksums (expensive for local
-   filesystem), or should it be opt-in? An `include_checksum=True`
-   parameter on `get_file_info()` would keep the default fast but allow
-   explicit requests. Alternatively, `ext.integrity.checksum()` covers
-   this without any API change.
+### The problem
 
-3. **Checksum algorithm consistency.**
-   S3 uses MD5-based ETags, Azure uses MD5, local would use SHA-256.
-   Should `FileInfo.checksum` include the algorithm prefix
-   (e.g., `sha256:abcdef...`) or should it be opaque? A prefix is more
-   useful for verification.
+The values that backends would populate are **not equivalent**:
 
-4. **Path 1 → Path 2 migration.**
+| Backend | Source | What it actually is |
+|---------|--------|---------------------|
+| S3 | ETag header | MD5 of content for single-part uploads; **opaque hash of hashes** for multipart uploads. Not a reliable content digest. |
+| Azure | Content-MD5 | MD5 of content, but **may be absent** if not set at upload time. |
+| Local | Computed | SHA-256 (or configurable), but **requires reading the entire file** — expensive and not cached. |
+| SFTP | None | No native checksum. Must be computed on demand (requires full read). |
+| HTTP | ETag | Often an opaque version identifier, **not a content digest at all**. |
+
+Putting these into a single `checksum: str` field implies comparability
+where none exists. A user who compares `s3_file.checksum == local_file.checksum`
+gets `False` even for identical content, because one is MD5-based and the
+other is SHA-256. Worse, a user who trusts an HTTP ETag as a content
+digest is relying on behavior that HTTP servers do not guarantee.
+
+### Proposed contract
+
+Replace the single field with a structured representation:
+
+```python
+@dataclass(frozen=True)
+class ContentDigest:
+    """Verified content digest with known algorithm."""
+    algorithm: str     # "sha256", "md5", etc.
+    value: str         # hex-encoded digest
+
+@dataclass(frozen=True)
+class FileInfo:
+    # ... existing fields ...
+    digest: ContentDigest | None = None   # verified content digest
+    etag: str | None = None               # backend-provided opaque tag (S3, HTTP)
+```
+
+**Key distinctions:**
+
+1. **`digest`** is a **verified content digest** — the actual hash of
+   the file's bytes, with a known algorithm. Backends populate this only
+   when they can guarantee it represents the content (e.g., S3 single-
+   part ETag → `ContentDigest("md5", value)`, Azure Content-MD5 →
+   `ContentDigest("md5", value)`, local → `ContentDigest("sha256", value)`).
+   S3 multipart ETags do **not** qualify — they are not content digests.
+
+2. **`etag`** is an **opaque backend tag** — useful for conditional
+   requests and change detection, but explicitly **not comparable across
+   backends** and **not guaranteed to be a content hash**.
+
+3. **Comparison rule:** Two `ContentDigest` values are comparable only
+   if their `algorithm` fields match. `ext.integrity.verify()` takes
+   an algorithm + expected value, never a raw opaque string.
+
+4. **Population is opt-in for expensive backends.** `get_file_info()`
+   does not compute digests by default on local/SFTP. Use
+   `ext.integrity.checksum(store, path)` for on-demand computation.
+
+### Why this blocks ID-008
+
+If we ship `FileInfo.checksum` as an opaque string now, changing it to
+a structured type later is a breaking change. Getting the contract right
+before any backend populates the field avoids a painful migration.
+
+### Decision needed
+
+- [ ] Adopt the `ContentDigest` + `etag` split above, or propose an
+  alternative that distinguishes verified digests from opaque tags.
+- [ ] Define which backends populate `digest` vs `etag` vs neither.
+- [ ] Decide whether `get_file_info()` ever computes digests, or whether
+  that's always `ext.integrity.checksum()`.
+
+---
+
+## 5b. Remaining Open Questions
+
+1. **Path 1 → Path 2 migration.**
    If we start with Path 1 (ProxyStore) and later want Path 2
    (middleware merging), how disruptive is the internal migration?
    ProxyStore's method-delegation pattern maps cleanly to middleware
    dispatch, so the migration should be internal-only (no public API
    change). But the test suite would need updating.
 
-5. **Middleware ordering in Path 2.**
+2. **Middleware ordering in Path 2.**
    When `observe(cached_store(store))` merges into one proxy, which
    middleware runs first? Cache should run before observe (so cache hits
    are observed). The merge logic needs a defined ordering strategy:
@@ -956,7 +1163,7 @@ cache.
 
 ---
 
-## 6. Impact on Existing Backlog Items
+## 6. Impact on Existing Backlog Items (unchanged)
 
 | Item | Impact |
 |------|--------|
@@ -970,24 +1177,44 @@ cache.
 
 ## 7. Next Steps
 
-1. **Decision:** Choose Path 1 (G+E) or Path 2 (H). See decision
-   criteria in Section 4.
-2. **Either path — shared first steps:**
-   a. Create spec for `ext.streams` (progress + checksum stream wrappers).
-   b. Create spec for `ext.integrity` (verify/checksum functions).
-   c. Amend ID-006 and ID-008 descriptions in BACKLOG.md to reference
-      this research.
-3. **Path 1 additional steps:**
-   a. Extract `ProxyStore` base class (internal refactor).
-   b. Amend ADR-0010 to document ProxyStore.
-   c. Refactor ObservedStore and CachedStore to extend ProxyStore.
-   d. Add `child()` propagation.
-4. **Path 2 additional steps:**
-   a. New ADR for internal middleware architecture.
-   b. Build `_MiddlewareProxy` with category dispatch + merging.
-   c. Reimplement observe and cache as middleware.
-   d. Update specs 019 (observe) and 023 (cache) for internal changes.
-5. **Both paths — implementation:**
-   a. Implement `ext.streams` (enables ID-006, refactors transfer).
-   b. Implement `ext.integrity` (enables ID-008).
-   c. Backend `FileInfo.checksum` population per backend.
+### Immediate (do now, regardless of path)
+
+1. **Resolve the `FileInfo` checksum contract (§5).** This blocks
+   ID-008 and all backend checksum population. Decide on
+   `ContentDigest` + `etag` split or an alternative.
+2. **Ship `ext.streams`** (ProgressReader, ChecksumReader, etc.).
+   This is the least controversial piece — pure stream-level
+   primitives with no architectural dependency on the path choice.
+3. **Ship `ext.integrity`** (verify, checksum). Pure functions over
+   Store's public API.
+4. **Refactor `ext.transfer`** to use public `ProgressReader` from
+   `ext.streams`, eliminating the private `_ProgressReader`.
+5. **Fix `child()` propagation** in ObservedStore and CachedStore.
+   This is a correctness bug (see §4 Decision). Ship independently
+   of the broader architecture work.
+
+### Path decision (make before investing in proxy/middleware infra)
+
+6. **Choose Path 1 or Path 2 based on the extension roadmap.**
+   - If extensions = observe + cache only → Path 1 (ProxyStore).
+   - If retry, rate-limit, or similar extensions are planned → Path 2
+     (middleware). Do not choose Path 1 as a stepping stone with a
+     vague intent to do Path 2 later.
+
+### Path 1 follow-up
+
+7a. Extract `ProxyStore` base class (internal refactor).
+7b. Amend ADR-0010 to document ProxyStore.
+7c. Refactor ObservedStore and CachedStore to extend ProxyStore.
+
+### Path 2 follow-up
+
+8a. New ADR for internal middleware architecture.
+8b. Build `_MiddlewareProxy` with category dispatch + merging.
+8c. Reimplement observe and cache as middleware.
+8d. Update specs 019 (observe) and 023 (cache) for internal changes.
+
+### Backend follow-up (after §5 contract is resolved)
+
+9. Populate `FileInfo.digest` / `FileInfo.etag` per backend
+   according to the resolved contract.
