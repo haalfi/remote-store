@@ -25,6 +25,13 @@ stream = ChecksumReader(ProgressReader(store.read("file.bin"), on_progress), "sh
 - Supports the context manager protocol (`__enter__`/`__exit__`),
   delegating `close()` to the inner stream.
 
+**Error behavior:**
+- If the inner stream's `read()` raises, the callback is not called and
+  the exception propagates unchanged.
+- If the callback raises, the exception propagates to the caller. The
+  bytes have already been read from the inner stream (they are not
+  pushed back).
+
 ## STR-002: ProgressWriter
 
 **Invariant:** `ProgressWriter` wraps a writable `BinaryIO` and calls
@@ -36,19 +43,34 @@ stream = ChecksumReader(ProgressReader(store.read("file.bin"), on_progress), "sh
 - All other attributes are delegated to the inner stream via `__getattr__`.
 - Supports the context manager protocol.
 
+**Error behavior:**
+- If the inner stream's `write()` raises, the callback is not called.
+- If the callback raises, the exception propagates. The bytes have
+  already been written to the inner stream.
+
 ## STR-003: ChecksumReader
 
 **Invariant:** `ChecksumReader` wraps a readable `BinaryIO` and
-computes a rolling hash of all bytes read.
+computes a rolling hash of all bytes read through intercepted methods.
 
 **Postconditions:**
 - `read(size)` delegates to the inner stream and feeds the returned
   bytes into a `hashlib` hash object.
+- `readline()` and `readlines()` delegate to the inner stream and feed
+  the returned bytes into the hash object. All data-reading methods
+  contribute to the digest — none bypass it.
 - `hexdigest()` returns the lowercase hex digest of all bytes read so far.
 - `algorithm` property returns the algorithm name (lowercase).
 - Default algorithm is `"sha256"`.
-- All other attributes are delegated to the inner stream.
+- Non-data attributes (e.g. `seek`, `tell`, `name`) are delegated to
+  the inner stream via `__getattr__`.
 - Supports the context manager protocol.
+
+**Error behavior:**
+- If the inner stream raises during any read method, the hash state
+  reflects only bytes successfully read before the error.
+- Construction raises `ValueError` if the algorithm is not supported
+  by `hashlib` (the `hashlib` error propagates unchanged).
 
 ## STR-004: ChecksumWriter
 
@@ -61,8 +83,14 @@ computes a rolling hash of all bytes written.
 - `hexdigest()` returns the lowercase hex digest of all bytes written so far.
 - `algorithm` property returns the algorithm name (lowercase).
 - Default algorithm is `"sha256"`.
-- All other attributes are delegated to the inner stream.
+- Non-data attributes are delegated to the inner stream via `__getattr__`.
 - Supports the context manager protocol.
+
+**Error behavior:**
+- If the inner stream's `write()` raises, the data is not fed into
+  the hash.
+- Construction raises `ValueError` if the algorithm is not supported
+  by `hashlib` (the `hashlib` error propagates unchanged).
 
 ## STR-005: read_with_progress Convenience
 
@@ -73,8 +101,22 @@ computes a rolling hash of all bytes written.
 
 ## STR-006: Composition
 
-**Invariant:** Stream wrappers compose in any order. Each wrapper
-delegates unknown attributes to its inner stream.
+**Invariant:** Stream wrappers compose by nesting. The outer wrapper
+intercepts its own methods and delegates all others to the inner wrapper
+via `__getattr__`.
+
+**Postconditions:**
+- Inner wrapper methods are accessible through the outer wrapper when
+  the outer does not define them. For example, `hexdigest()` on a
+  `ChecksumReader` that wraps a `ProgressReader` is resolved on the
+  `ChecksumReader` itself, while `close()` delegates inward.
+- Each wrapper independently maintains its own state (callback
+  reference, hash object). Nesting order affects which wrapper sees
+  the data first but does not affect correctness.
+- Wrappers compose in any order for orthogonal concerns (progress +
+  checksum). For two wrappers of the same kind (e.g. two
+  `ChecksumReader`s with different algorithms), each independently
+  computes its digest.
 
 **Example:**
 ```python

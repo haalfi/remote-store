@@ -7,44 +7,10 @@ from datetime import datetime, timezone
 
 import pytest
 
-from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, PathEntry
+from remote_store._models import FileInfo, FolderEntry, FolderInfo, PathEntry
 from remote_store._path import RemotePath
 
 NOW = datetime(2024, 1, 1, tzinfo=timezone.utc)
-
-
-class TestContentDigest:
-    """MOD-009: ContentDigest frozen dataclass with normalized fields."""
-
-    @pytest.mark.spec("MOD-009")
-    def test_frozen(self) -> None:
-        cd = ContentDigest(algorithm="sha256", value="abcd1234")
-        with pytest.raises(dataclasses.FrozenInstanceError):
-            cd.algorithm = "md5"  # type: ignore[misc]
-
-    @pytest.mark.spec("MOD-009")
-    def test_normalizes_lowercase(self) -> None:
-        cd = ContentDigest(algorithm="SHA256", value="ABCD1234")
-        assert cd.algorithm == "sha256"
-        assert cd.value == "abcd1234"
-
-    @pytest.mark.spec("MOD-009")
-    def test_equality(self) -> None:
-        a = ContentDigest("sha256", "abcd")
-        b = ContentDigest("SHA256", "ABCD")
-        assert a == b
-
-    @pytest.mark.spec("MOD-009")
-    def test_inequality_algorithm(self) -> None:
-        a = ContentDigest("sha256", "abcd")
-        b = ContentDigest("md5", "abcd")
-        assert a != b
-
-    @pytest.mark.spec("MOD-009")
-    def test_inequality_value(self) -> None:
-        a = ContentDigest("sha256", "abcd")
-        b = ContentDigest("sha256", "efgh")
-        assert a != b
 
 
 class TestFileInfoImmutability:
@@ -71,8 +37,7 @@ class TestFileInfoFields:
     @pytest.mark.spec("MOD-003")
     def test_defaults(self) -> None:
         fi = FileInfo(path=RemotePath("a.txt"), name="a.txt", size=0, modified_at=NOW)
-        assert fi.digest is None
-        assert fi.etag is None
+        assert fi.checksum is None
         assert fi.content_type is None
         assert fi.extra == {}
 
@@ -83,15 +48,13 @@ class TestFileInfoFields:
             name="a.txt",
             size=10,
             modified_at=NOW,
-            digest=ContentDigest("sha256", "abc123"),
-            etag='"xyz"',
+            checksum="abc123",
             content_type="text/plain",
-            extra={"key": "val"},
+            extra={"etag": "xyz"},
         )
-        assert fi.digest == ContentDigest("sha256", "abc123")
-        assert fi.etag == '"xyz"'
+        assert fi.checksum == "abc123"
         assert fi.content_type == "text/plain"
-        assert fi.extra == {"key": "val"}
+        assert fi.extra == {"etag": "xyz"}
 
 
 class TestFolderInfoFields:

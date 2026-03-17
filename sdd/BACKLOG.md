@@ -132,10 +132,11 @@ Items graduate through the SDD pipeline:
 ### Core API
 
 - [~] **ID-008 — Checksum verification on read/write**
-  Remaining: populate `FileInfo.digest` and `FileInfo.etag` per backend
-  (S3 `x-amz-checksum-*` → digest, Azure `Content-MD5` → digest, all
-  ETags → etag). Core model (`ContentDigest`), verification functions
-  (`ext.integrity`), and stream wrappers (`ext.streams`) are done.
+  Verification functions (`ext.integrity`) and stream wrappers
+  (`ext.streams`) are done. Remaining: introduce `ContentDigest` model,
+  replace `FileInfo.checksum` with `FileInfo.digest` + `FileInfo.etag`,
+  populate per backend (S3 `x-amz-checksum-*` → digest, Azure
+  `Content-MD5` → digest, all ETags → etag).
   See [middleware architecture research](research/research-store-middleware-architecture.md) §5.
 
 - [~] **ID-006 — Progress tracking via stream wrappers (`ext.streams`)**

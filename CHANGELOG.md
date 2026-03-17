@@ -14,11 +14,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   primitives that compose with any `BinaryIO`, including from `open_atomic()`.
   (ID-092)
 - **`ext.integrity` module** — pure functions for checksum verification over
-  Store's public API: `checksum()`, `verify()`, `verify_digest()`. (ID-093)
-- **`ContentDigest` model** — structured content digest with known algorithm
-  and lowercase-hex value. Replaces the underspecified `FileInfo.checksum`
-  field with `FileInfo.digest` (verified content hash) and `FileInfo.etag`
-  (opaque backend tag). (ID-008)
+  Store's public API: `checksum()`, `verify()`, `verify_hex()`. (ID-093)
 - **`ProxyStore` base class** — shared delegation base for `ObservedStore`
   and `CachedStore`. Centralizes private-attribute coupling, provides default
   delegation for all Store methods, and enables `child()` propagation.
@@ -26,10 +22,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Changed
 
-- **`FileInfo.checksum` replaced by `FileInfo.digest` and `FileInfo.etag`** —
-  `digest` is a `ContentDigest | None` for verified content hashes; `etag`
-  is `str | None` for opaque backend-provided version tags.
-  **Breaking change** for code that references `FileInfo.checksum`.
 - **`ext.transfer` now uses public `ProgressReader`** from `ext.streams`
   instead of its private `_ProgressReader`. No public API change. (ID-091)
 - **`ObservedStore` and `CachedStore` now extend `ProxyStore`** — reduces

@@ -58,10 +58,9 @@ Subclasses override only the methods they intercept.
 
 | Module | Contents |
 |--------|----------|
-| `_proxy.py` (internal) | `ProxyStore` base class |
+| `_proxy.py` (internal) | `ProxyStore` base class with `_wrap_child()` hook |
 | `ext.streams` (new) | `ProgressReader`, `ProgressWriter`, `ChecksumReader`, `ChecksumWriter` |
-| `ext.integrity` (new) | `verify()`, `checksum()`, `ContentDigest` |
-| `_models.py` (amended) | `ContentDigest` dataclass, `FileInfo.digest` / `FileInfo.etag` fields |
+| `ext.integrity` (new) | `checksum()`, `verify()` — pure functions returning strings |
 
 ### What we do NOT build
 
@@ -70,6 +69,36 @@ Subclasses override only the methods they intercept.
 - No category dispatch, no middleware merging, no public middleware API.
 - No changes to `Store.read()` or `Store.write()` signatures for
   progress or checksums.
+- No data model changes (`ContentDigest`, `FileInfo.digest`/`etag`) —
+  those ship separately under ID-008 when backends populate them.
+
+### ProxyStore contract
+
+`ProxyStore(Store)` is an internal abstract base class. It is not part
+of the public API and must not be subclassed by user code.
+
+**Construction:** `__init__(self, inner: Store)` copies `_backend`,
+`_root`, and `_owns_backend` from the inner store. Exposes
+`inner: Store` as a read-only property.
+
+**Delegation:** Every public `Store` method has a default implementation
+that delegates to `self._inner.<method>(...)`. Subclasses override only
+the methods they intercept. Drift-protection tests (from ADR-0010)
+verify that ProxyStore covers the full Store API surface.
+
+**`_wrap_child()` hook:** `ProxyStore.child(subpath)` calls
+`self._inner.child(subpath)` to create the inner child, then calls
+`self._wrap_child(inner_child) -> Store` to let the subclass wrap it.
+
+- The base `_wrap_child()` returns the inner child unwrapped (no-op).
+- `CachedStore._wrap_child()` returns a new `CachedStore` with the same
+  TTL, max_entries, and backend config.
+- `ObservedStore._wrap_child()` returns a new `ObservedStore` with the
+  same hooks.
+- Subclasses must not return `None`. The return value must be a `Store`.
+
+This fixes BUG-003: `cached_store(s).child("sub")` now returns a
+`CachedStore`, not a plain `Store`.
 
 ### Migration trigger for Path 2
 
@@ -90,16 +119,24 @@ Move to merged middleware only when one of these becomes true:
 - **Two-level inheritance** (`Store -> ProxyStore -> CachedStore`) adds
   one layer of indirection. Acceptable for two consumers.
 - **`child()` propagation ships with ProxyStore.** Default: child stores
-  inherit wrapper behavior. Each subclass implements `_wrap_child()`.
+  inherit wrapper behavior via `_wrap_child()`.
 - **Two proxy layers remain** when composing `observe(cached_store(store))`.
   The performance cost is two Python function calls per operation (<1us),
   negligible against real I/O.
 - **Stream wrappers** (`ext.streams`) are independently useful: they work
   with any `BinaryIO`, including from `open_atomic()` or third-party code.
 
+## Related work
+
+- **ID-008 (ContentDigest / FileInfo model change):** The research
+  document (§5) proposes replacing `FileInfo.checksum` with
+  `ContentDigest` (digest + etag). That model change is deferred to a
+  separate PR — it has its own ripple radius (backends, tests, docs) and
+  is not required for stream wrappers or integrity functions to ship.
+
 ## References
 
 - Research: `sdd/research/research-store-middleware-architecture.md`
-- Supersedes: ADR-0010 (proxy pattern stays, but ProxyStore becomes the
-  shared base; ADR-0010's drift-protection approach is preserved)
+- Extends: ADR-0010 (proxy-subclass pattern stays; ProxyStore becomes
+  the shared base; ADR-0010's drift-protection approach is preserved)
 - Backlog: ID-092, ID-093, ID-094, ID-091, BUG-003

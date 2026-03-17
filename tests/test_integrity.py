@@ -9,10 +9,9 @@ import hashlib
 
 import pytest
 
-from remote_store._models import ContentDigest
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
-from remote_store.ext.integrity import checksum, verify, verify_digest
+from remote_store.ext.integrity import checksum, verify, verify_hex
 
 
 @pytest.fixture
@@ -32,23 +31,23 @@ def store() -> Store:
 class TestChecksum:
     @pytest.mark.spec("INT-001")
     def test_sha256_default(self, store: Store) -> None:
-        result = checksum(store, "hello.txt")
+        algorithm, hex_digest = checksum(store, "hello.txt")
         expected = hashlib.sha256(b"hello world").hexdigest()
-        assert result.algorithm == "sha256"
-        assert result.value == expected
+        assert algorithm == "sha256"
+        assert hex_digest == expected
 
     @pytest.mark.spec("INT-001")
     def test_md5(self, store: Store) -> None:
-        result = checksum(store, "hello.txt", algorithm="md5")
+        algorithm, hex_digest = checksum(store, "hello.txt", algorithm="md5")
         expected = hashlib.md5(b"hello world").hexdigest()  # noqa: S324
-        assert result.algorithm == "md5"
-        assert result.value == expected
+        assert algorithm == "md5"
+        assert hex_digest == expected
 
     @pytest.mark.spec("INT-001")
     def test_empty_file(self, store: Store) -> None:
-        result = checksum(store, "empty.txt")
+        _, hex_digest = checksum(store, "empty.txt")
         expected = hashlib.sha256(b"").hexdigest()
-        assert result.value == expected
+        assert hex_digest == expected
 
     @pytest.mark.spec("INT-001")
     def test_not_found(self, store: Store) -> None:
@@ -58,9 +57,15 @@ class TestChecksum:
             checksum(store, "nonexistent.txt")
 
     @pytest.mark.spec("INT-001")
-    def test_returns_content_digest(self, store: Store) -> None:
+    def test_returns_tuple(self, store: Store) -> None:
         result = checksum(store, "hello.txt")
-        assert isinstance(result, ContentDigest)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+
+    @pytest.mark.spec("INT-001")
+    def test_unsupported_algorithm(self, store: Store) -> None:
+        with pytest.raises(ValueError):  # noqa: PT011
+            checksum(store, "hello.txt", algorithm="not_a_hash")
 
 
 # ---------------------------------------------------------------------------
@@ -95,29 +100,43 @@ class TestVerify:
         with pytest.raises(NotFound):
             verify(store, "nonexistent.txt", "abc")
 
+    @pytest.mark.spec("INT-002")
+    def test_unsupported_algorithm(self, store: Store) -> None:
+        with pytest.raises(ValueError):  # noqa: PT011
+            verify(store, "hello.txt", "abc", algorithm="not_a_hash")
+
 
 # ---------------------------------------------------------------------------
-# INT-003: verify_digest
+# INT-003: verify_hex
 # ---------------------------------------------------------------------------
 
 
-class TestVerifyDigest:
+class TestVerifyHex:
     @pytest.mark.spec("INT-003")
     def test_matching(self, store: Store) -> None:
         expected_hex = hashlib.sha256(b"hello world").hexdigest()
-        digest = ContentDigest("sha256", expected_hex)
-        assert verify_digest(store, "hello.txt", digest) is True
+        assert verify_hex(store, "hello.txt", "sha256", expected_hex) is True
 
     @pytest.mark.spec("INT-003")
     def test_not_matching(self, store: Store) -> None:
-        digest = ContentDigest("sha256", "0000")
-        assert verify_digest(store, "hello.txt", digest) is False
+        assert verify_hex(store, "hello.txt", "sha256", "0000") is False
 
     @pytest.mark.spec("INT-003")
-    def test_uses_digest_algorithm(self, store: Store) -> None:
+    def test_case_insensitive(self, store: Store) -> None:
+        expected_hex = hashlib.sha256(b"hello world").hexdigest().upper()
+        assert verify_hex(store, "hello.txt", "sha256", expected_hex) is True
+
+    @pytest.mark.spec("INT-003")
+    def test_uses_given_algorithm(self, store: Store) -> None:
         expected_hex = hashlib.md5(b"hello world").hexdigest()  # noqa: S324
-        digest = ContentDigest("md5", expected_hex)
-        assert verify_digest(store, "hello.txt", digest) is True
+        assert verify_hex(store, "hello.txt", "md5", expected_hex) is True
+
+    @pytest.mark.spec("INT-003")
+    def test_not_found(self, store: Store) -> None:
+        from remote_store._errors import NotFound
+
+        with pytest.raises(NotFound):
+            verify_hex(store, "nonexistent.txt", "sha256", "abc")
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +149,7 @@ class TestModuleExports:
     def test_all_exports(self) -> None:
         from remote_store.ext import integrity
 
-        assert set(integrity.__all__) == {"checksum", "verify", "verify_digest"}
+        assert set(integrity.__all__) == {"checksum", "verify", "verify_hex"}
 
     @pytest.mark.spec("INT-004")
     def test_top_level_import(self) -> None:
@@ -138,4 +157,4 @@ class TestModuleExports:
 
         assert hasattr(remote_store, "checksum")
         assert hasattr(remote_store, "verify")
-        assert hasattr(remote_store, "verify_digest")
+        assert hasattr(remote_store, "verify_hex")

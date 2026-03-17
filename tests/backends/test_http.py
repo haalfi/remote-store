@@ -147,7 +147,7 @@ class TestHttpMetadata:
         assert isinstance(fi, FileInfo)
         assert fi.name == "hello.txt"
         assert fi.size == 11
-        assert fi.etag == '"abc123"'
+        assert fi.checksum == '"abc123"'
         assert fi.content_type == "text/plain"
         assert fi.extra is not None
         assert "headers" in fi.extra
@@ -741,7 +741,7 @@ class TestHeadFallback:
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
         fi = b.get_file_info("info.csv")
         assert fi.size == 5000
-        assert fi.etag == '"cdn-etag"'
+        assert fi.checksum == '"cdn-etag"'
         assert fi.content_type == "text/csv"
 
     @pytest.mark.spec("HTTP-FALLBACK-001")
@@ -980,7 +980,7 @@ class TestOptionalTransports:
         )
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/tp/"), http_client=http_client)
         fi = b.get_file_info("info.txt")
-        assert fi.etag == '"tp-etag"'
+        assert fi.checksum == '"tp-etag"'
         b.close()
 
     @pytest.mark.parametrize("http_client", _TRANSPORT_MARKS)

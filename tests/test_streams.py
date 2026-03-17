@@ -19,7 +19,6 @@ from remote_store.ext.streams import (
     read_with_progress,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -159,6 +158,38 @@ class TestChecksumReader:
         stream = ChecksumReader(inner)
         assert stream.seekable() == inner.seekable()
 
+    @pytest.mark.spec("STR-003")
+    def test_readline_feeds_hash(self) -> None:
+        data = b"line1\nline2\n"
+        expected = hashlib.sha256(data).hexdigest()
+        stream = ChecksumReader(_make_stream(data))
+        stream.readline()
+        stream.readline()
+        assert stream.hexdigest() == expected
+
+    @pytest.mark.spec("STR-003")
+    def test_readlines_feeds_hash(self) -> None:
+        data = b"line1\nline2\nline3\n"
+        expected = hashlib.sha256(data).hexdigest()
+        stream = ChecksumReader(_make_stream(data))
+        lines = stream.readlines()
+        assert len(lines) == 3
+        assert stream.hexdigest() == expected
+
+    @pytest.mark.spec("STR-003")
+    def test_mixed_read_and_readline(self) -> None:
+        data = b"abc\ndef"
+        expected = hashlib.sha256(data).hexdigest()
+        stream = ChecksumReader(_make_stream(data))
+        stream.readline()  # reads b"abc\n"
+        stream.read()  # reads b"def"
+        assert stream.hexdigest() == expected
+
+    @pytest.mark.spec("STR-003")
+    def test_unsupported_algorithm(self) -> None:
+        with pytest.raises(ValueError):  # noqa: PT011
+            ChecksumReader(_make_stream(b""), algorithm="not_a_hash")
+
 
 # ---------------------------------------------------------------------------
 # STR-004: ChecksumWriter
@@ -199,6 +230,11 @@ class TestChecksumWriter:
         with ChecksumWriter(inner) as writer:
             writer.write(b"data")
         assert inner.closed
+
+    @pytest.mark.spec("STR-004")
+    def test_unsupported_algorithm(self) -> None:
+        with pytest.raises(ValueError):  # noqa: PT011
+            ChecksumWriter(io.BytesIO(), algorithm="not_a_hash")
 
 
 # ---------------------------------------------------------------------------

@@ -563,7 +563,7 @@ class ReadOnlyHttpBackend(Backend):
                 if modified_at.tzinfo is None:  # pragma: no cover — defensive for non-standard dates
                     modified_at = modified_at.replace(tzinfo=timezone.utc)
 
-        etag = headers.get("etag")
+        checksum = headers.get("etag")
         content_type = headers.get("content-type")
 
         return FileInfo(
@@ -571,7 +571,7 @@ class ReadOnlyHttpBackend(Backend):
             name=name,
             size=size,
             modified_at=modified_at,
-            etag=etag,
+            checksum=checksum,
             content_type=content_type,
             extra={"headers": dict(headers)},
         )

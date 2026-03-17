@@ -9,8 +9,8 @@ Usage:
 ```python
 from remote_store.ext.integrity import checksum, verify
 
-digest = checksum(store, "data/file.bin")
-print(digest.algorithm, digest.value)
+algorithm, hex_digest = checksum(store, "data/file.bin")
+print(algorithm, hex_digest)
 
 ok = verify(store, "data/file.bin", expected="a3f2b8...", algorithm="sha256")
 ```
@@ -20,22 +20,21 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from remote_store._models import ContentDigest
 from remote_store.ext.streams import ChecksumReader
 
 if TYPE_CHECKING:
     from remote_store._store import Store
 
-__all__ = ["checksum", "verify", "verify_digest"]
+__all__ = ["checksum", "verify", "verify_hex"]
 
 _CHUNK_SIZE = 1_048_576  # 1 MiB
 
 
-def checksum(store: Store, path: str, algorithm: str = "sha256") -> ContentDigest:
+def checksum(store: Store, path: str, algorithm: str = "sha256") -> tuple[str, str]:
     """Compute the checksum of a file in the store.
 
     Reads the file in chunks (never fully materialized in memory) and
-    returns a :class:`~remote_store.ContentDigest`.
+    returns a ``(algorithm, hex_digest)`` tuple.
 
     Args:
         store: The Store to read from.
@@ -43,17 +42,18 @@ def checksum(store: Store, path: str, algorithm: str = "sha256") -> ContentDiges
         algorithm: Hash algorithm name (default ``"sha256"``).
 
     Returns:
-        ``ContentDigest`` with the computed digest.
+        Tuple of ``(algorithm, hex_digest)`` with lowercase values.
 
     Raises:
         NotFound: If the file does not exist.
+        ValueError: If the algorithm is not supported by ``hashlib``.
     """
     stream = store.read(path)
     try:
         reader = ChecksumReader(stream, algorithm=algorithm)
         while reader.read(_CHUNK_SIZE):
             pass
-        return ContentDigest(algorithm=reader.algorithm, value=reader.hexdigest())
+        return (reader.algorithm, reader.hexdigest())
     finally:
         stream.close()
 
@@ -77,28 +77,32 @@ def verify(
 
     Raises:
         NotFound: If the file does not exist.
+        ValueError: If the algorithm is not supported by ``hashlib``.
     """
-    computed = checksum(store, path, algorithm=algorithm)
-    return computed.value == expected.lower()
+    _, hex_digest = checksum(store, path, algorithm=algorithm)
+    return hex_digest == expected.lower()
 
 
-def verify_digest(
+def verify_hex(
     store: Store,
     path: str,
-    expected: ContentDigest,
+    algorithm: str,
+    expected_hex: str,
 ) -> bool:
-    """Verify a file's checksum against an expected :class:`ContentDigest`.
+    """Verify a file's checksum given an algorithm and expected hex value.
 
     Args:
         store: The Store to read from.
         path: Store-relative file path.
-        expected: Expected ``ContentDigest`` (algorithm + hex value).
+        algorithm: Hash algorithm name.
+        expected_hex: Expected hex digest (case-insensitive).
 
     Returns:
-        ``True`` if the computed digest matches *expected*.
+        ``True`` if the computed digest matches *expected_hex*.
 
     Raises:
         NotFound: If the file does not exist.
+        ValueError: If the algorithm is not supported by ``hashlib``.
     """
-    computed = checksum(store, path, algorithm=expected.algorithm)
-    return computed == expected
+    _, hex_digest = checksum(store, path, algorithm=algorithm)
+    return hex_digest == expected_hex.lower()

@@ -142,6 +142,18 @@ class ChecksumReader:
             self._hash.update(data)
         return data
 
+    def readline(self, size: int = -1) -> bytes:
+        data = self._inner.readline(size)
+        if data:
+            self._hash.update(data)
+        return data
+
+    def readlines(self, hint: int = -1) -> list[bytes]:
+        lines = self._inner.readlines(hint)
+        for line in lines:
+            self._hash.update(line)
+        return lines
+
     def hexdigest(self) -> str:
         """Return the lowercase hex digest of all bytes read so far."""
         return self._hash.hexdigest()

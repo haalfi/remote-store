@@ -19,7 +19,7 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   propagation via `_wrap_child()`. ADR-0014.
 
 - [x] **ID-093 — `ext.integrity` module — checksum verification helpers**
-  `checksum()`, `verify()`, `verify_digest()`. Pure functions over
+  `checksum()`, `verify()`, `verify_hex()`. Pure functions over
   Store's public API. Spec 034.
 
 - [x] **ID-092 — `ext.streams` module — stream-level wrappers**
