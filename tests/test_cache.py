@@ -364,9 +364,36 @@ class TestNonCached:
         assert cached.supports(Capability.READ) is True
 
     @pytest.mark.spec("CACHE-007")
-    def test_child_delegates(self, cached: CachedStore) -> None:
+    def test_child_returns_cached_store(self, cached: CachedStore) -> None:
         child = cached.child("sub")
+        assert isinstance(child, CachedStore)
         assert isinstance(child, Store)
+
+    @pytest.mark.spec("CACHE-007")
+    def test_child_propagates_caching(self, cached: CachedStore) -> None:
+        """BUG-003: child() must propagate cache behavior."""
+        cached.inner.write("sub/file.txt", b"content", overwrite=True)
+        child = cached.child("sub")
+        assert isinstance(child, CachedStore)
+        # Read twice through child — second should be a cache hit
+        child.read_bytes("file.txt")
+        child.read_bytes("file.txt")
+        assert child.stats.hits >= 1
+
+    def test_child_propagates_max_entries(self) -> None:
+        """child() must preserve max_entries from parent."""
+        from remote_store.backends._memory import MemoryBackend
+
+        backend = MemoryBackend()
+        store = Store(backend)
+        store.write("sub/a.txt", b"a", overwrite=True)
+        store.write("sub/b.txt", b"b", overwrite=True)
+        store.write("sub/c.txt", b"c", overwrite=True)
+
+        parent = cached_store(store, max_entries=2)
+        child = parent.child("sub")
+        assert isinstance(child, CachedStore)
+        assert child._max_entries == 2  # noqa: SLF001
 
     @pytest.mark.spec("CACHE-007")
     def test_native_path_delegates(self, cached: CachedStore) -> None:
@@ -497,27 +524,34 @@ class TestMoveCopyInvalidation:
 class TestDriftProtection:
     @pytest.mark.spec("CACHE-011")
     def test_all_store_methods_overridden(self) -> None:
-        """CachedStore must override every public method of Store."""
+        """CachedStore (or ProxyStore) must override every public method of Store."""
+        from remote_store._proxy import ProxyStore
+
         store_public = {name for name in dir(Store) if not name.startswith("_") and callable(getattr(Store, name))}
-        cached_own = {
-            name for name in CachedStore.__dict__ if not name.startswith("_") and callable(CachedStore.__dict__[name])
-        }
-        missing = store_public - cached_own
-        assert not missing, f"CachedStore missing overrides for: {missing}"
+        # Methods overridden in CachedStore itself or in ProxyStore base
+        overridden = set()
+        for cls in (CachedStore, ProxyStore):
+            overridden |= {name for name in cls.__dict__ if not name.startswith("_") and callable(cls.__dict__[name])}
+        missing = store_public - overridden
+        assert not missing, f"CachedStore/ProxyStore missing overrides for: {missing}"
 
     @pytest.mark.spec("CACHE-011")
     def test_all_store_properties_overridden(self) -> None:
-        """CachedStore must override every public property of Store."""
+        """CachedStore (or ProxyStore) must override every public property of Store."""
+        from remote_store._proxy import ProxyStore
+
         store_props = {
             name for name in dir(Store) if not name.startswith("_") and isinstance(getattr(Store, name, None), property)
         }
-        cached_props = {
-            name
-            for name in CachedStore.__dict__
-            if not name.startswith("_") and isinstance(CachedStore.__dict__.get(name), property)
-        }
-        missing = store_props - cached_props
-        assert not missing, f"CachedStore missing property overrides for: {missing}"
+        overridden = set()
+        for cls in (CachedStore, ProxyStore):
+            overridden |= {
+                name
+                for name in cls.__dict__
+                if not name.startswith("_") and isinstance(cls.__dict__.get(name), property)
+            }
+        missing = store_props - overridden
+        assert not missing, f"CachedStore/ProxyStore missing property overrides for: {missing}"
 
 
 # ===========================================================================

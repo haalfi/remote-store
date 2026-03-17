@@ -29,6 +29,7 @@ from remote_store._store import Store
 from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_exists
 from remote_store.ext.cache import CacheBackend, CachedStore, CacheStats, MemoryCache, cached_store
 from remote_store.ext.glob import glob_files
+from remote_store.ext.integrity import checksum, verify, verify_hex
 from remote_store.ext.observe import (
     BufferedObserver,
     ObservedStore,
@@ -37,6 +38,7 @@ from remote_store.ext.observe import (
     set_correlation_id,
 )
 from remote_store.ext.partition import ParsedPartition, parse_partition, partition_path
+from remote_store.ext.streams import ChecksumReader, ChecksumWriter, ProgressReader, ProgressWriter, read_with_progress
 from remote_store.ext.transfer import download, transfer, upload
 
 __version__ = "0.17.0"
@@ -97,6 +99,16 @@ __all__ = [
     "StoreEvent",
     "observe",
     "set_correlation_id",
+    # Integrity helpers
+    "checksum",
+    "verify",
+    "verify_hex",
+    # Stream wrappers
+    "ProgressReader",
+    "ProgressWriter",
+    "ChecksumReader",
+    "ChecksumWriter",
+    "read_with_progress",
     # Transfer operations
     "upload",
     "download",

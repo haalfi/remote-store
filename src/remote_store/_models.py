@@ -42,7 +42,7 @@ class FileInfo:
         name: File name (final path component).
         size: File size in bytes.
         modified_at: Last modification time.
-        checksum: Optional checksum (e.g. ETag, MD5).
+        checksum: Optional checksum string (backend-specific format).
         content_type: Optional MIME type.
         extra: Backend-specific metadata.
     """

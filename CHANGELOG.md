@@ -6,7 +6,32 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **`ext.streams` module** — composable `BinaryIO` wrappers for progress
+  tracking and checksum computation: `ProgressReader`, `ProgressWriter`,
+  `ChecksumReader`, `ChecksumWriter`, `read_with_progress()`. Stream-level
+  primitives that compose with any `BinaryIO`, including from `open_atomic()`.
+  (ID-092)
+- **`ext.integrity` module** — pure functions for checksum verification over
+  Store's public API: `checksum()`, `verify()`, `verify_hex()`. (ID-093)
+- **`ProxyStore` base class** — shared delegation base for `ObservedStore`
+  and `CachedStore`. Centralizes private-attribute coupling, provides default
+  delegation for all Store methods, and enables `child()` propagation.
+  Internal only — not part of the public API. (ID-094, ADR-0014)
+
+### Changed
+
+- **`ext.transfer` now uses public `ProgressReader`** from `ext.streams`
+  instead of its private `_ProgressReader`. No public API change. (ID-091)
+- **`ObservedStore` and `CachedStore` now extend `ProxyStore`** — reduces
+  boilerplate, centralizes delegation, and removes duplicated init coupling.
+
 ### Fixed
+
+- **`child()` now propagates proxy behavior** in `ObservedStore` and
+  `CachedStore`. Previously, `cached_store(s).child("sub")` returned a plain
+  `Store`, silently losing caching/observation. (BUG-003)
 
 - **`pydantic_to_registry_config()` now unwraps `SecretStr` fields** —
   Pydantic `SecretStr` values in backend `options` dicts are automatically

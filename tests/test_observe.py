@@ -430,9 +430,15 @@ class TestBufferedObserver:
 
 @pytest.mark.spec("OBS-007")
 def test_observed_store_overrides_all_public_methods() -> None:
+    """ObservedStore must override every public Store method itself.
+
+    Unlike CachedStore (where ProxyStore pass-through is fine), ObservedStore
+    must intercept every method to fire hooks. A ProxyStore default would
+    silently bypass observation.
+    """
     store_public = {name for name, val in vars(Store).items() if not name.startswith("_") and callable(val)}
-    observed_overrides = set(vars(ObservedStore)) & store_public
-    missing = store_public - observed_overrides
+    overridden = set(vars(ObservedStore)) & store_public
+    missing = store_public - overridden
     assert not missing, f"ObservedStore missing overrides for: {sorted(missing)}"
 
 
@@ -634,3 +640,27 @@ def test_proxy_unwrap() -> None:
 
 def test_proxy_repr() -> None:
     assert "ObservedStore" in repr(observe(_make_store()))
+
+
+# ---------------------------------------------------------------------------
+# BUG-003: child() propagation
+# ---------------------------------------------------------------------------
+
+
+class TestChildPropagation:
+    """BUG-003: child() must return an ObservedStore, not a plain Store."""
+
+    def test_child_returns_observed_store(self) -> None:
+        store = _make_store()
+        observed = observe(store, on_any=lambda e: None)
+        child = observed.child("sub")
+        assert isinstance(child, ObservedStore)
+
+    def test_child_fires_hooks(self) -> None:
+        store = _make_store()
+        store.write("sub/file.txt", b"data")
+        events: list[StoreEvent] = []
+        observed = observe(store, on_read=events.append)
+        child = observed.child("sub")
+        child.read_bytes("file.txt")
+        assert any(e.operation == "read_bytes" for e in events)

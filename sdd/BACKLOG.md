@@ -41,12 +41,7 @@ Items graduate through the SDD pipeline:
 
 ## Known Bugs
 
-- [ ] **BUG-003 — `child()` does not propagate proxy behavior in ObservedStore/CachedStore**
-  `ObservedStore.child()` returns a plain `Store`, not an `ObservedStore` —
-  hooks are silently lost. `ext/observe.py:263` docstring explicitly says
-  "not observed". Same issue likely in `CachedStore`. High severity: users
-  who call `child()` on a proxied store silently lose all middleware behavior.
-  See [middleware architecture research](research/research-store-middleware-architecture.md) §4.
+*(none)*
 
 ---
 
@@ -136,40 +131,16 @@ Items graduate through the SDD pipeline:
 
 ### Core API
 
-- [ ] **ID-094 — Extract ProxyStore base class (Path 1 prerequisite)**
-  Extract a shared `ProxyStore` base from `ObservedStore` and `CachedStore`
-  that handles delegation, `child()` propagation, and wrapper re-application.
-  Prerequisite for Path 1 (recommended architecture). See
-  [middleware architecture research](research/research-store-middleware-architecture.md) §4.
-
-- [ ] **ID-093 — `ext.integrity` module — checksum verification helpers**
-  New module providing pure functions for checksum verification over Store's
-  public API: `verify()`, `checksum()`, `ContentDigest` dataclass. Prerequisite
-  for ID-008. See
-  [middleware architecture research](research/research-store-middleware-architecture.md) §5.
-
-- [ ] **ID-092 — `ext.streams` module — stream-level wrappers**
-  New module providing composable stream wrappers: `ProgressReader`,
-  `ProgressWriter`, `ChecksumReader`, `ChecksumWriter`. Prerequisite for
-  ID-006 and ID-008. See
-  [middleware architecture research](research/research-store-middleware-architecture.md) §3–§4.
-
-- [ ] **ID-091 — Refactor `ext.transfer` to use public `ProgressReader` from `ext.streams`**
-  Replace the private `_ProgressReader` in `ext.transfer` with the public
-  `ProgressReader` from `ext.streams` (ID-006). Follow-up to completed ID-023.
-  See [middleware architecture research](research/research-store-middleware-architecture.md) §7.
-
 - [~] **ID-008 — Checksum verification on read/write**
-  Provide checksum verification via `ext.integrity` (pure functions) and
-  `ext.streams` (stream wrappers). Populate `FileInfo.digest` (`ContentDigest`)
-  and `FileInfo.etag` consistently across backends (S3 ETag → etag, verified
-  hashes → digest). Verification logic lives in `ext.integrity`; rolling
-  checksums in `ext.streams`. See
-  [middleware architecture research](research/research-store-middleware-architecture.md) §5.
+  Verification functions (`ext.integrity`) and stream wrappers
+  (`ext.streams`) are done. Remaining: introduce `ContentDigest` model,
+  replace `FileInfo.checksum` with `FileInfo.digest` + `FileInfo.etag`,
+  populate per backend (S3 `x-amz-checksum-*` → digest, Azure
+  `Content-MD5` → digest, all ETags → etag).
+  See [middleware architecture research](research/research-store-middleware-architecture.md) §5.
 
 - [~] **ID-006 — Progress tracking via stream wrappers (`ext.streams`)**
-  Provide progress tracking as stream-level wrappers (`ProgressReader`,
-  `ProgressWriter`) in `ext.streams`, not as `read()`/`write()` parameters.
-  This avoids polluting the Store API and composes cleanly with checksumming
-  and other stream-level concerns. See
-  [middleware architecture research](research/research-store-middleware-architecture.md) §3–§4.
+  Core stream wrappers (`ProgressReader`, `ProgressWriter`) are done.
+  Remaining: integration with `ext.transfer.download()` to use
+  `ProgressReader` on the download path (currently uses inline callback).
+  See [middleware architecture research](research/research-store-middleware-architecture.md) §3–§4.

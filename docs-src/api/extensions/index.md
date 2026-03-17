@@ -11,9 +11,11 @@ to enable each one. For usage guides, see [Extensions](../../extensions.md).
 | [ext.cache](cache.md) | Store-level caching middleware with TTL |
 | [ext.dagster](dagster.md) | Dagster IO Manager adapter for Store |
 | [ext.glob](glob.md) | Portable glob pattern matching fallback |
+| [ext.integrity](integrity.md) | Checksum computation and verification helpers |
 | [ext.observe](observe.md) | Callback hooks for store operations |
 | [ext.otel](otel.md) | OpenTelemetry bridge for ext.observe |
 | [ext.partition](partition.md) | Hive-style partition path helpers |
 | [ext.pydantic](pydantic.md) | Pydantic model to RegistryConfig adapter |
+| [ext.streams](streams.md) | Composable BinaryIO wrappers for progress and checksums |
 | [ext.transfer](transfer.md) | Upload, download, and cross-store transfer |
 | [ext.yaml](yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |
