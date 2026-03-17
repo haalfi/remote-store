@@ -1,6 +1,6 @@
 # Research: Store Middleware Architecture
 
-**Date:** 2025-03-17
+**Date:** 2026-03-17
 **Scope:** ID-006 (progress callbacks), ID-008 (checksum verification),
 and the broader question of how cross-cutting concerns compose with the
 existing proxy-subclass pattern (ADR-0010).
@@ -1144,6 +1144,7 @@ class ContentDigest:
 - Two `ContentDigest` values are equal iff both `algorithm` and `value`
   match. This is safe because the format is fully normalized.
 
+```python
 @dataclass(frozen=True)
 class FileInfo:
     # ... existing fields ...
@@ -1213,8 +1214,8 @@ before any backend populates the field avoids a painful migration.
 | Item | Impact |
 |------|--------|
 | ID-006 (progress) | Redesigned as `ext.streams` (stream wrappers, not Store params) |
-| ID-008 (checksums) | Split: `ext.integrity` (functions) + `ext.streams` (stream wrappers) + backend `FileInfo.checksum` |
-| ID-023 (transfer) | Refactor to use public `ProgressReader` from `ext.streams` |
+| ID-008 (checksums) | Split: `ext.integrity` (functions) + `ext.streams` (stream wrappers) + backend `FileInfo.digest`/`FileInfo.etag` (§5 contract) |
+| ID-091 (transfer refactor) | Refactor `ext.transfer` to use public `ProgressReader` from `ext.streams` (ID-023 is completed; this is new follow-up work) |
 | ID-024 (observe) | No change; stays as proxy subclass |
 | ID-025 (cache) | No change; stays as proxy subclass |
 
@@ -1227,14 +1228,14 @@ before any backend populates the field avoids a painful migration.
 1. **Resolve the `FileInfo` checksum contract (§5).** This blocks
    ID-008 and all backend checksum population. Decide on
    `ContentDigest` + `etag` split or an alternative.
-2. **Ship `ext.streams`** (ProgressReader, ChecksumReader, etc.).
+2. **Ship `ext.streams`** (ID-092: ProgressReader, ChecksumReader, etc.).
    This is the least controversial piece — pure stream-level
    primitives with no architectural dependency on the path choice.
-3. **Ship `ext.integrity`** (verify, checksum). Pure functions over
+3. **Ship `ext.integrity`** (ID-093: verify, checksum). Pure functions over
    Store's public API.
-4. **Refactor `ext.transfer`** to use public `ProgressReader` from
+4. **Refactor `ext.transfer`** (ID-091) to use public `ProgressReader` from
    `ext.streams`, eliminating the private `_ProgressReader`.
-5. **Fix `child()` propagation** in ObservedStore and CachedStore.
+5. **Fix `child()` propagation** (BUG-003) in ObservedStore and CachedStore.
    This is a correctness bug (see §4 Decision). Ship independently
    of the broader architecture work.
 
@@ -1248,7 +1249,7 @@ before any backend populates the field avoids a painful migration.
 
 ### Path 1 follow-up
 
-7a. Extract `ProxyStore` base class (internal refactor).
+7a. Extract `ProxyStore` base class (ID-094, internal refactor).
 7b. Amend ADR-0010 to document ProxyStore.
 7c. Refactor ObservedStore and CachedStore to extend ProxyStore.
 
