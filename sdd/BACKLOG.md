@@ -144,10 +144,11 @@ Items graduate through the SDD pipeline:
   [middleware architecture research](research/research-store-middleware-architecture.md) §3–§4.
 
 - [~] **ID-008 — Checksum verification on read/write**
-  Add a `verify_checksum=True` option to `read()` / `write()`. Populate
-  `FileInfo.digest` (`ContentDigest`) and `FileInfo.etag` consistently across
-  backends (S3 ETag → etag, verified hashes → digest). Verification logic lives
-  in `ext.integrity`; rolling checksums in `ext.streams`. See
+  Provide checksum verification via `ext.integrity` (pure functions) and
+  `ext.streams` (stream wrappers). Populate `FileInfo.digest` (`ContentDigest`)
+  and `FileInfo.etag` consistently across backends (S3 ETag → etag, verified
+  hashes → digest). Verification logic lives in `ext.integrity`; rolling
+  checksums in `ext.streams`. See
   [middleware architecture research](research/research-store-middleware-architecture.md) §5.
 
 - [ ] **ID-091 — Refactor `ext.transfer` to use public `ProgressReader` from `ext.streams`**
