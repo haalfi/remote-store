@@ -84,6 +84,11 @@ class ProgressWriter:
     The callback receives the number of bytes written (not cumulative).
     Empty writes do not fire the callback.
 
+    Note:
+        Assumes buffered I/O semantics — ``write()`` consumes all data or
+        raises.  Wrapping a ``RawIOBase`` (partial-write) stream would cause
+        the reported byte count to diverge from the bytes actually written.
+
     Args:
         inner: Writable binary stream to wrap.
         callback: Called with ``len(data)`` after each non-empty ``write()``.
@@ -178,6 +183,11 @@ class ChecksumReader:
 
 class ChecksumWriter:
     """Writable ``BinaryIO`` wrapper that computes a rolling hash.
+
+    Note:
+        Assumes buffered I/O semantics — ``write()`` consumes all data or
+        raises.  Wrapping a ``RawIOBase`` (partial-write) stream would cause
+        the hash to include bytes that were not actually written.
 
     Args:
         inner: Writable binary stream to wrap.

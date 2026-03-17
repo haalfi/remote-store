@@ -90,7 +90,8 @@ verify that ProxyStore covers the full Store API surface.
 `self._inner.child(subpath)` to create the inner child, then calls
 `self._wrap_child(inner_child) -> Store` to let the subclass wrap it.
 
-- The base `_wrap_child()` returns the inner child unwrapped (no-op).
+- The base `_wrap_child()` raises `NotImplementedError` — subclasses
+  must provide an implementation.
 - `CachedStore._wrap_child()` returns a new `CachedStore` with the same
   TTL, max_entries, and backend config.
 - `ObservedStore._wrap_child()` returns a new `ObservedStore` with the

@@ -37,6 +37,10 @@ stream = ChecksumReader(ProgressReader(store.read("file.bin"), on_progress), "sh
 **Invariant:** `ProgressWriter` wraps a writable `BinaryIO` and calls
 `callback(bytes_written)` after each `write()`.
 
+**Assumption:** Buffered I/O semantics — `write()` consumes all data or
+raises. Wrapping a `RawIOBase` (partial-write) stream would cause the
+reported byte count to diverge from the bytes actually written.
+
 **Postconditions:**
 - `write(data)` delegates to the inner stream, fires `callback(len(data))`
   when `data` is non-empty, and returns the inner result.
@@ -76,6 +80,10 @@ computes a rolling hash of all bytes read through intercepted methods.
 
 **Invariant:** `ChecksumWriter` wraps a writable `BinaryIO` and
 computes a rolling hash of all bytes written.
+
+**Assumption:** Buffered I/O semantics — `write()` consumes all data or
+raises. Wrapping a `RawIOBase` (partial-write) stream would cause the
+hash to include bytes that were not actually written.
 
 **Postconditions:**
 - `write(data)` delegates to the inner stream and feeds the data

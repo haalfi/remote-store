@@ -67,9 +67,12 @@ class ProxyStore(Store):
         """Wrap an inner child store in a new proxy with the same config.
 
         Subclasses must override this to construct an appropriate wrapper.
-        The default returns the inner child unwrapped.
+
+        Raises:
+            NotImplementedError: Always — subclasses must provide an
+                implementation.
         """
-        return inner_child
+        raise NotImplementedError
 
     # ------------------------------------------------------------------
     # Helpers
