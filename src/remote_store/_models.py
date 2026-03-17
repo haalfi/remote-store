@@ -31,6 +31,31 @@ class PathEntry(typing.Protocol):
         ...
 
 
+@dataclasses.dataclass(frozen=True)
+class ContentDigest:
+    """Verified content digest with known algorithm.
+
+    Format rules (normative):
+
+    - ``algorithm`` is always lowercase (e.g. ``"sha256"``).
+    - ``value`` is always lowercase hexadecimal, no prefix, no separators.
+    - Two ``ContentDigest`` values are equal iff both fields match.
+    - Backends that receive non-hex encodings (e.g. Azure base64) must
+      decode and re-encode as lowercase hex before constructing this.
+
+    Attributes:
+        algorithm: Hash algorithm name, lowercase (e.g. ``"sha256"``, ``"md5"``).
+        value: Lowercase hex-encoded digest string.
+    """
+
+    algorithm: str
+    value: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "algorithm", self.algorithm.lower())
+        object.__setattr__(self, "value", self.value.lower())
+
+
 @dataclasses.dataclass(frozen=True, eq=False)
 class FileInfo:
     """Immutable snapshot of file metadata.
@@ -42,7 +67,9 @@ class FileInfo:
         name: File name (final path component).
         size: File size in bytes.
         modified_at: Last modification time.
-        checksum: Optional checksum (e.g. ETag, MD5).
+        digest: Verified content digest with known algorithm, or ``None``.
+        etag: Backend-provided opaque tag (S3 ETag, HTTP ETag), or ``None``.
+            Not guaranteed to be a content hash. Not comparable across backends.
         content_type: Optional MIME type.
         extra: Backend-specific metadata.
     """
@@ -51,7 +78,8 @@ class FileInfo:
     name: str
     size: int
     modified_at: datetime
-    checksum: str | None = None
+    digest: ContentDigest | None = None
+    etag: str | None = None
     content_type: str | None = None
     extra: dict[str, object] = dataclasses.field(default_factory=dict)
 

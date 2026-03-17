@@ -105,7 +105,13 @@
 
 ### MOD-003: FileInfo Optional Fields
 
-**Invariant:** `FileInfo` has optional fields: `checksum` (`str | None`, default `None`), `content_type` (`str | None`, default `None`), `extra` (`dict[str, object]`, default empty dict).
+**Invariant:** `FileInfo` has optional fields: `digest` (`ContentDigest | None`, default `None`), `etag` (`str | None`, default `None`), `content_type` (`str | None`, default `None`), `extra` (`dict[str, object]`, default empty dict).
+
+`digest` is a verified content hash with known algorithm (see `ContentDigest`). `etag` is a backend-provided opaque version tag (S3 ETag, HTTP ETag) — not comparable across backends. See ADR-0014.
+
+### MOD-009: ContentDigest
+
+**Invariant:** `ContentDigest` is a frozen dataclass with fields `algorithm` (`str`, lowercase) and `value` (`str`, lowercase hex). Both fields are normalized to lowercase on construction. Two instances are equal iff both fields match.
 
 ### MOD-004: FolderInfo Required Fields
 

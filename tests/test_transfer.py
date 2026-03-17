@@ -14,7 +14,8 @@ from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, CapabilityNotSupported, NotFound
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
-from remote_store.ext.transfer import _ProgressReader, download, transfer, upload
+from remote_store.ext.streams import ProgressReader
+from remote_store.ext.transfer import download, transfer, upload
 
 from .conftest import RestrictedBackend
 
@@ -333,7 +334,7 @@ def test_capability_gating(call: Any, tmp_path: Path) -> None:
 
 
 # ===========================================================================
-# _ProgressReader
+# ProgressReader (from ext.streams, used by ext.transfer)
 # ===========================================================================
 
 
@@ -341,7 +342,7 @@ class TestProgressReader:
     def test_delegates_attributes(self) -> None:
         store = _populated_store("file.txt", data=b"data")
         stream = store.read("file.txt")
-        reader = _ProgressReader(stream, lambda n: None)
+        reader = ProgressReader(stream, lambda n: None)
         assert reader.readable()
         stream.close()
 
@@ -350,7 +351,7 @@ class TestProgressReader:
         store.write("empty.txt", b"")
         stream = store.read("empty.txt")
         calls: list[int] = []
-        reader = _ProgressReader(stream, calls.append)
+        reader = ProgressReader(stream, calls.append)
         assert reader.read() == b"" and calls == []
         stream.close()
 

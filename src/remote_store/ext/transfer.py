@@ -18,7 +18,9 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
+
+from remote_store.ext.streams import ProgressReader
 
 log = logging.getLogger(__name__)
 
@@ -31,26 +33,6 @@ if TYPE_CHECKING:
 __all__ = ["download", "transfer", "upload"]
 
 _DOWNLOAD_CHUNK_SIZE = 1_048_576  # 1 MiB
-
-
-class _ProgressReader:
-    """Wrapper that calls *on_progress* with the byte count of each read().
-
-    Delegates all other attributes to the wrapped stream via ``__getattr__``.
-    """
-
-    def __init__(self, inner: BinaryIO, on_progress: Callable[[int], None]) -> None:
-        self._inner = inner
-        self._on_progress = on_progress
-
-    def read(self, size: int = -1) -> bytes:
-        data = self._inner.read(size)
-        if data:
-            self._on_progress(len(data))
-        return data
-
-    def __getattr__(self, name: str) -> Any:  # noqa: ANN401
-        return getattr(self._inner, name)
 
 
 def upload(
@@ -84,7 +66,7 @@ def upload(
     with open(path, "rb") as fh:
         source: BinaryIO = fh
         if on_progress is not None:
-            source = cast("BinaryIO", _ProgressReader(fh, on_progress))
+            source = cast("BinaryIO", ProgressReader(fh, on_progress))
         store.write(remote_path, source, overwrite=overwrite)
 
 
@@ -165,7 +147,7 @@ def transfer(
     try:
         source: BinaryIO = stream
         if on_progress is not None:
-            source = cast("BinaryIO", _ProgressReader(stream, on_progress))
+            source = cast("BinaryIO", ProgressReader(stream, on_progress))
         dst_store.write(dst_path, source, overwrite=overwrite)
     finally:
         stream.close()

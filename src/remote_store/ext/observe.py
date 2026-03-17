@@ -28,7 +28,7 @@ import time
 from contextvars import ContextVar, Token
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
 
-from remote_store._store import Store
+from remote_store._proxy import ProxyStore
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 
     from remote_store._capabilities import Capability
     from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._store import Store
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -133,7 +134,7 @@ _OP_HOOK_MAP: dict[str, str] = {
 }
 
 
-class ObservedStore(Store):
+class ObservedStore(ProxyStore):
     """Proxy Store that fires observation hooks on every public method.
 
     All ``Store`` methods are delegated to the inner store. Only methods
@@ -144,7 +145,6 @@ class ObservedStore(Store):
     Do not construct directly -- use ``observe()``.
     """
 
-    _inner: Store
     _hooks: dict[str, Any]
     _around: Any
 
@@ -155,20 +155,9 @@ class ObservedStore(Store):
         hooks: dict[str, Any],
         around: Any | None,
     ) -> None:
-        # Bypass Store.__init__ -- we delegate everything to inner.
-        # We still need _backend and _root so inherited helpers work
-        # if someone calls a dunder or property we didn't override.
-        self._inner = inner
+        super().__init__(inner)
         self._hooks = hooks
         self._around = around
-        self._backend = inner._backend
-        self._root = inner._root
-        self._owns_backend = False
-
-    @property
-    def inner(self) -> Store:
-        """The wrapped Store instance."""
-        return self._inner
 
     def __repr__(self) -> str:
         return f"ObservedStore(inner={self._inner!r})"
@@ -260,9 +249,12 @@ class ObservedStore(Store):
             self._inner.close()
 
     def child(self, subpath: str) -> Store:
-        """Return a child of the inner store (not observed)."""
+        """Return an observed child store."""
         with self._observe_op("child", subpath, {}):
-            return self._inner.child(subpath)
+            return super().child(subpath)
+
+    def _wrap_child(self, inner_child: Store) -> Store:
+        return ObservedStore(inner_child, hooks=dict(self._hooks), around=self._around)
 
     def to_key(self, path: str) -> str:
         with self._observe_op("to_key", path, {}):

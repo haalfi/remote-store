@@ -23,18 +23,16 @@ import dataclasses
 import logging
 import threading
 import time
-from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, runtime_checkable
+from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, runtime_checkable
 
-from remote_store._store import Store
+from remote_store._proxy import ProxyStore
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from remote_store._capabilities import Capability
     from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._store import Store
     from remote_store._types import WritableContent
-
-T = TypeVar("T")
 
 log = logging.getLogger(__name__)
 
@@ -211,7 +209,7 @@ class MemoryCache:
 # ---------------------------------------------------------------------------
 
 
-class CachedStore(Store):
+class CachedStore(ProxyStore):
     """Proxy Store that caches read operations with TTL-based expiration.
 
     All ``Store`` methods are delegated to the inner store. Read-only
@@ -222,7 +220,6 @@ class CachedStore(Store):
     Do not construct directly -- use ``cached_store()``.
     """
 
-    _inner: Store
     _cache: CacheBackend
     _ttl: float
     _max_content_size: int | None
@@ -238,28 +235,15 @@ class CachedStore(Store):
         max_entries: int | None,
         cache_backend: CacheBackend | None,
     ) -> None:
-        # Bypass Store.__init__ -- delegate everything to inner.
-        self._inner = inner
+        super().__init__(inner)
         self._cache = cache_backend if cache_backend is not None else MemoryCache(max_entries=max_entries)
         self._ttl = ttl
         self._max_content_size = max_content_size
         self._hits = 0
         self._misses = 0
         self._stats_lock = threading.Lock()
-        # Coupling: access private state so inherited helpers work if someone
-        # bypasses our overrides.  If Store's internals change, this breaks --
-        # the drift-protection test (CACHE-011) covers method/property surface
-        # but not these private attributes.
-        self._backend = inner._backend
-        self._root = inner._root
-        self._owns_backend = False
 
     # region: properties
-
-    @property
-    def inner(self) -> Store:
-        """The wrapped Store instance."""
-        return self._inner
 
     @property
     def stats(self) -> CacheStats:
@@ -429,32 +413,14 @@ class CachedStore(Store):
     def read_text(self, path: str, *, encoding: str = "utf-8", errors: str = "strict") -> str:
         return self.read_bytes(path).decode(encoding, errors)
 
-    def read(self, path: str) -> BinaryIO:
-        return self._inner.read(path)
-
-    def ping(self) -> None:  # noqa: D401
-        """Delegate ping to inner store (not cached)."""
-        self._inner.ping()
-
-    def close(self) -> None:  # noqa: D401
-        """Delegate close to inner store."""
-        self._inner.close()
-
-    def child(self, subpath: str) -> Store:
-        log.debug("CachedStore.child(%r) returns an unwrapped Store (no caching)", subpath)
-        return self._inner.child(subpath)
-
-    def to_key(self, path: str) -> str:
-        return self._inner.to_key(path)
-
-    def unwrap(self, type_hint: type[T]) -> T:
-        return self._inner.unwrap(type_hint)
-
-    def native_path(self, key: str) -> str:
-        return self._inner.native_path(key)
-
-    def supports(self, capability: Capability) -> bool:
-        return self._inner.supports(capability)
+    def _wrap_child(self, inner_child: Store) -> Store:
+        return CachedStore(
+            inner_child,
+            ttl=self._ttl,
+            max_content_size=self._max_content_size,
+            max_entries=None,
+            cache_backend=None,
+        )
 
     # endregion
 

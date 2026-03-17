@@ -4,6 +4,34 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Middleware Path 1 (Post-v0.17.0)
+
+- [x] **BUG-003 — `child()` now propagates proxy behavior in ObservedStore/CachedStore**
+  `ObservedStore.child()` and `CachedStore.child()` now return wrapped
+  stores that preserve observation/caching behavior. Previously, child
+  stores silently lost all middleware. Fixed via `_wrap_child()` in
+  `ProxyStore` base class.
+
+- [x] **ID-094 — Extract ProxyStore base class**
+  Shared delegation base for `ObservedStore` and `CachedStore` in
+  `_proxy.py`. Centralizes `_backend`/`_root`/`_owns_backend` coupling,
+  provides default delegation for all 27 Store methods, enables `child()`
+  propagation via `_wrap_child()`. ADR-0014.
+
+- [x] **ID-093 — `ext.integrity` module — checksum verification helpers**
+  `checksum()`, `verify()`, `verify_digest()`. Pure functions over
+  Store's public API. Spec 034.
+
+- [x] **ID-092 — `ext.streams` module — stream-level wrappers**
+  `ProgressReader`, `ProgressWriter`, `ChecksumReader`, `ChecksumWriter`,
+  `read_with_progress()`. Composable `BinaryIO` wrappers. Spec 033.
+
+- [x] **ID-091 — Refactor `ext.transfer` to use public `ProgressReader`**
+  Replaced private `_ProgressReader` with `ProgressReader` from
+  `ext.streams`. No public API change.
+
+---
+
 ## Post-v0.17.0
 
 - [x] **ID-085 — HTTP backend: HEAD fallback for CDN-blocked servers**
