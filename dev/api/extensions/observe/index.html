@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://docs.remotestore.dev/dev/api/extensions/observe/">
       
       
-        <link rel="prev" href="../glob/">
+        <link rel="prev" href="../integrity/">
       
       
         <link rel="next" href="../otel/">
@@ -2961,6 +2961,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.integrity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -3057,17 +3085,6 @@
   
     <nav class="md-nav" aria-label=" ObservedStore">
       <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.ext.observe.ObservedStore.inner" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;inner
-      
-    </span>
-  </a>
-  
-</li>
         
           <li class="md-nav__item">
   <a href="#remote_store.ext.observe.ObservedStore.ping" class="md-nav__link">
@@ -3264,6 +3281,34 @@
     
   
     ext.pydantic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../streams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.streams
   
 
     
@@ -4640,6 +4685,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../design/specs/033-ext-streams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    033: ext.streams — Stream-Level Wrappers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../design/specs/034-ext-integrity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    034: ext.integrity — Checksum Verification Helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5056,6 +5157,34 @@
     
   
     0013: Drop Optional-Extension Re-exports from __init__.py
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0014: Middleware Architecture — Path 1 (ProxyStore + Stream Wrappers)
   
 
     
@@ -5869,17 +5998,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#remote_store.ext.observe.ObservedStore.inner" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;inner
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#remote_store.ext.observe.ObservedStore.ping" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6127,7 +6245,7 @@ modifying business code.</p>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></code></p>
+              Bases: <code><span title="remote_store._proxy.ProxyStore">ProxyStore</span></code></p>
 
 
 
@@ -6155,30 +6273,6 @@ dispatch and are otherwise transparent.</p>
 
 
 
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="remote_store.ext.observe.ObservedStore.inner" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">inner</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-property"><code>property</code></small>
-  </span>
-
-<a href="#remote_store.ext.observe.ObservedStore.inner" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">inner</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>The wrapped Store instance.</p>
-
-    </div>
-
-</div>
 
 
 
@@ -6236,7 +6330,7 @@ dispatch and are otherwise transparent.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Return a child of the inner store (not observed).</p>
+        <p>Return an observed child store.</p>
 
 
     </div>

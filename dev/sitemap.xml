@@ -201,6 +201,10 @@
          <lastmod>2026-03-17</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/integrity/</loc>
+         <lastmod>2026-03-17</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/observe/</loc>
          <lastmod>2026-03-17</lastmod>
     </url>
@@ -214,6 +218,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/pydantic/</loc>
+         <lastmod>2026-03-17</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/streams/</loc>
          <lastmod>2026-03-17</lastmod>
     </url>
     <url>
@@ -322,6 +330,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0013-drop-optional-extension-reexports/</loc>
+         <lastmod>2026-03-17</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/</loc>
          <lastmod>2026-03-17</lastmod>
     </url>
     <url>
@@ -538,6 +550,14 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/032-http-backend/</loc>
+         <lastmod>2026-03-17</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/specs/033-ext-streams/</loc>
+         <lastmod>2026-03-17</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/specs/034-ext-integrity/</loc>
          <lastmod>2026-03-17</lastmod>
     </url>
     <url>

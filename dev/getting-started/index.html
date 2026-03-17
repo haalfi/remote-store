@@ -3123,6 +3123,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/extensions/integrity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.integrity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/extensions/observe/" class="md-nav__link">
         
   
@@ -3215,6 +3243,34 @@
     
   
     ext.pydantic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/extensions/streams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.streams
   
 
     
@@ -4591,6 +4647,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/033-ext-streams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    033: ext.streams — Stream-Level Wrappers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/034-ext-integrity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    034: ext.integrity — Checksum Verification Helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5007,6 +5119,34 @@
     
   
     0013: Drop Optional-Extension Re-exports from __init__.py
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0014: Middleware Architecture — Path 1 (ProxyStore + Stream Wrappers)
   
 
     
@@ -6146,6 +6286,16 @@ use a Registry with declarative config:</p>
 <td>Caching middleware</td>
 <td><em>(none)</em></td>
 <td>TTL-based read cache with automatic invalidation on mutations</td>
+</tr>
+<tr>
+<td>Stream wrappers</td>
+<td><em>(none)</em></td>
+<td>Composable BinaryIO wrappers for progress tracking and checksums</td>
+</tr>
+<tr>
+<td>Integrity helpers</td>
+<td><em>(none)</em></td>
+<td>Checksum computation and verification over Store's public API</td>
 </tr>
 <tr>
 <td>Dagster IO manager</td>
