@@ -84,9 +84,11 @@ Complete reference for all public exports of `remote-store`.
 | [ext.cache](extensions/cache.md) | Store-level caching middleware with TTL |
 | [ext.dagster](extensions/dagster.md) | Dagster IO Manager adapter for Store |
 | [ext.glob](extensions/glob.md) | Portable glob pattern matching fallback |
+| [ext.integrity](extensions/integrity.md) | Checksum computation and verification helpers |
 | [ext.observe](extensions/observe.md) | Callback hooks for store operations |
 | [ext.otel](extensions/otel.md) | OpenTelemetry bridge for ext.observe |
 | [ext.partition](extensions/partition.md) | Hive-style partition path helpers |
 | [ext.pydantic](extensions/pydantic.md) | Pydantic model to RegistryConfig adapter |
+| [ext.streams](extensions/streams.md) | Composable BinaryIO wrappers for progress and checksums |
 | [ext.transfer](extensions/transfer.md) | Upload, download, and cross-store transfer |
 | [ext.yaml](extensions/yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |

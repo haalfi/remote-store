@@ -75,16 +75,6 @@ class ProxyStore(Store):
         raise NotImplementedError
 
     # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _materialize_iter(it: Iterator[T]) -> Iterator[T]:
-        """Materialize an iterator for timing/caching, return a fresh iter."""
-        items = tuple(it)
-        return iter(items)
-
-    # ------------------------------------------------------------------
     # Default delegation — all public Store methods
     # ------------------------------------------------------------------
 

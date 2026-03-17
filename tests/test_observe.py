@@ -430,14 +430,16 @@ class TestBufferedObserver:
 
 @pytest.mark.spec("OBS-007")
 def test_observed_store_overrides_all_public_methods() -> None:
-    from remote_store._proxy import ProxyStore
+    """ObservedStore must override every public Store method itself.
 
+    Unlike CachedStore (where ProxyStore pass-through is fine), ObservedStore
+    must intercept every method to fire hooks. A ProxyStore default would
+    silently bypass observation.
+    """
     store_public = {name for name, val in vars(Store).items() if not name.startswith("_") and callable(val)}
-    overridden: set[str] = set()
-    for cls in (ObservedStore, ProxyStore):
-        overridden |= set(vars(cls)) & store_public
+    overridden = set(vars(ObservedStore)) & store_public
     missing = store_public - overridden
-    assert not missing, f"ObservedStore/ProxyStore missing overrides for: {sorted(missing)}"
+    assert not missing, f"ObservedStore missing overrides for: {sorted(missing)}"
 
 
 # ---------------------------------------------------------------------------
