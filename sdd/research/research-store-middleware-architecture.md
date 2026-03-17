@@ -1064,6 +1064,36 @@ its benefits (composability, automatic merging).
   "later."** That's the worst outcome — you pay the cost of both.
   Decide based on the extension roadmap, not on comfort level.
 
+### Concrete Recommendation: Path 1 (G+E)
+
+**Given the current roadmap, we choose Path 1.**
+
+The evidence:
+- **Retry is already shipped** (ID-010, v0.15.0) as per-backend native
+  configuration (`RetryPolicy` → botocore `Config`, Azure
+  `ExponentialRetry`, etc.). It is **not** a proxy wrapper and never
+  will be — retry belongs at the transport layer, not the Store layer.
+- **Circuit breaker, rate limiting, and fault injection** are
+  explicitly documented as future extensions with no committed
+  timeline. They are post-v1 extensibility ideas, not near-term
+  backlog items.
+- **The only proxy-based extensions that exist or are planned are
+  observe and cache.** Two wrappers. The composition pressure is real
+  (child() propagation, ordering) but bounded.
+
+This means the decision criteria's "if only observe + cache compose"
+condition is met. ProxyStore + stream wrappers is the right scope:
+- Fixes the correctness issues (child(), coupling).
+- Reduces maintainer cost (shared base, less boilerplate).
+- Does not over-invest in dispatch infrastructure for extensions
+  that are not on the roadmap.
+
+**If the roadmap changes** — specifically, if a third policy-like
+proxy wrapper becomes necessary — revisit this decision. The refactor
+from ProxyStore (G) to middleware merging (H) is internal-only and
+does not break public API. But do not build that infrastructure
+speculatively.
+
 ---
 
 ## 5. Blocking Decision: `FileInfo.checksum` Contract
@@ -1099,8 +1129,20 @@ Replace the single field with a structured representation:
 @dataclass(frozen=True)
 class ContentDigest:
     """Verified content digest with known algorithm."""
-    algorithm: str     # "sha256", "md5", etc.
-    value: str         # hex-encoded digest
+    algorithm: str     # "sha256", "md5", etc. — always lowercase
+    value: str         # lowercase hex-encoded digest, no prefix
+```
+
+**Format rules (normative):**
+- `algorithm` is always lowercase (e.g., `"sha256"`, not `"SHA-256"`).
+- `value` is always **lowercase hexadecimal**, no prefix, no separators.
+  Example: `"a3f2b8..."`, never `"A3F2B8..."` or `"sha256:a3f2b8..."`.
+- Non-hex encodings (base64, raw bytes) are **forbidden**. Backends
+  that receive non-hex digests (e.g., Azure's base64-encoded Content-MD5)
+  must decode and re-encode as lowercase hex before constructing a
+  `ContentDigest`.
+- Two `ContentDigest` values are equal iff both `algorithm` and `value`
+  match. This is safe because the format is fully normalized.
 
 @dataclass(frozen=True)
 class FileInfo:
@@ -1113,9 +1155,18 @@ class FileInfo:
 
 1. **`digest`** is a **verified content digest** — the actual hash of
    the file's bytes, with a known algorithm. Backends populate this only
-   when they can guarantee it represents the content (e.g., S3 single-
-   part ETag → `ContentDigest("md5", value)`, Azure Content-MD5 →
-   `ContentDigest("md5", value)`, local → `ContentDigest("sha256", value)`).
+   when they can **guarantee** it represents the content.
+
+   **Backend promotion rules:**
+
+   | Backend | When `digest` is populated | Guardrails |
+   |---------|---------------------------|------------|
+   | S3 | Only when the ETag is a plain 32-hex-char MD5 (no `-` suffix, which indicates multipart). | Check `ETag` format: if it matches `^"[0-9a-f]{32}"$`, promote to `ContentDigest("md5", value)`. If it contains `-` (e.g., `"abc123-3"`), it is a multipart composite hash — populate `etag` only, **never** `digest`. This is a backend inference rule, not a general truth about S3 ETags. |
+   | Azure | Only when Content-MD5 header is present and non-empty. | Decode from base64 to bytes, re-encode as lowercase hex. If header is absent, `digest` is `None`. |
+   | Local | On explicit request only (`ext.integrity.checksum()`). | Never computed automatically in `get_file_info()` — too expensive. |
+   | SFTP | On explicit request only (`ext.integrity.checksum()`). | Same as local — no native checksum support. |
+   | HTTP | **Never.** | HTTP ETags are opaque version identifiers. Always `etag` only, never `digest`. |
+
    S3 multipart ETags do **not** qualify — they are not content digests.
 
 2. **`etag`** is an **opaque backend tag** — useful for conditional
@@ -1148,18 +1199,12 @@ before any backend populates the field avoids a painful migration.
 
 ## 5b. Remaining Open Questions
 
-1. **Path 1 → Path 2 migration.**
-   If we start with Path 1 (ProxyStore) and later want Path 2
-   (middleware merging), how disruptive is the internal migration?
-   ProxyStore's method-delegation pattern maps cleanly to middleware
-   dispatch, so the migration should be internal-only (no public API
-   change). But the test suite would need updating.
-
-2. **Middleware ordering in Path 2.**
+1. **Middleware ordering (deferred, relevant only if Path 2 is ever needed).**
    When `observe(cached_store(store))` merges into one proxy, which
    middleware runs first? Cache should run before observe (so cache hits
    are observed). The merge logic needs a defined ordering strategy:
    insertion order (natural), explicit priority, or category-based rules.
+   Not blocking — Path 1 does not need this.
 
 ---
 
