@@ -136,12 +136,28 @@ Items graduate through the SDD pipeline:
 
 ### Core API
 
-- [~] **ID-006 — Progress tracking via stream wrappers (`ext.streams`)**
-  Provide progress tracking as stream-level wrappers (`ProgressReader`,
-  `ProgressWriter`) in `ext.streams`, not as `read()`/`write()` parameters.
-  This avoids polluting the Store API and composes cleanly with checksumming
-  and other stream-level concerns. See
+- [ ] **ID-094 — Extract ProxyStore base class (Path 1 prerequisite)**
+  Extract a shared `ProxyStore` base from `ObservedStore` and `CachedStore`
+  that handles delegation, `child()` propagation, and wrapper re-application.
+  Prerequisite for Path 1 (recommended architecture). See
+  [middleware architecture research](research/research-store-middleware-architecture.md) §4.
+
+- [ ] **ID-093 — `ext.integrity` module — checksum verification helpers**
+  New module providing pure functions for checksum verification over Store's
+  public API: `verify()`, `checksum()`, `ContentDigest` dataclass. Prerequisite
+  for ID-008. See
+  [middleware architecture research](research/research-store-middleware-architecture.md) §5.
+
+- [ ] **ID-092 — `ext.streams` module — stream-level wrappers**
+  New module providing composable stream wrappers: `ProgressReader`,
+  `ProgressWriter`, `ChecksumReader`, `ChecksumWriter`. Prerequisite for
+  ID-006 and ID-008. See
   [middleware architecture research](research/research-store-middleware-architecture.md) §3–§4.
+
+- [ ] **ID-091 — Refactor `ext.transfer` to use public `ProgressReader` from `ext.streams`**
+  Replace the private `_ProgressReader` in `ext.transfer` with the public
+  `ProgressReader` from `ext.streams` (ID-006). Follow-up to completed ID-023.
+  See [middleware architecture research](research/research-store-middleware-architecture.md) §7.
 
 - [~] **ID-008 — Checksum verification on read/write**
   Provide checksum verification via `ext.integrity` (pure functions) and
@@ -151,25 +167,9 @@ Items graduate through the SDD pipeline:
   checksums in `ext.streams`. See
   [middleware architecture research](research/research-store-middleware-architecture.md) §5.
 
-- [ ] **ID-091 — Refactor `ext.transfer` to use public `ProgressReader` from `ext.streams`**
-  Replace the private `_ProgressReader` in `ext.transfer` with the public
-  `ProgressReader` from `ext.streams` (ID-006). Follow-up to completed ID-023.
-  See [middleware architecture research](research/research-store-middleware-architecture.md) §7.
-
-- [ ] **ID-092 — `ext.streams` module — stream-level wrappers**
-  New module providing composable stream wrappers: `ProgressReader`,
-  `ProgressWriter`, `ChecksumReader`, `ChecksumWriter`. Prerequisite for
-  ID-006 and ID-008. See
+- [~] **ID-006 — Progress tracking via stream wrappers (`ext.streams`)**
+  Provide progress tracking as stream-level wrappers (`ProgressReader`,
+  `ProgressWriter`) in `ext.streams`, not as `read()`/`write()` parameters.
+  This avoids polluting the Store API and composes cleanly with checksumming
+  and other stream-level concerns. See
   [middleware architecture research](research/research-store-middleware-architecture.md) §3–§4.
-
-- [ ] **ID-093 — `ext.integrity` module — checksum verification helpers**
-  New module providing pure functions for checksum verification over Store's
-  public API: `verify()`, `checksum()`, `ContentDigest` dataclass. Prerequisite
-  for ID-008. See
-  [middleware architecture research](research/research-store-middleware-architecture.md) §5.
-
-- [ ] **ID-094 — Extract ProxyStore base class (Path 1 prerequisite)**
-  Extract a shared `ProxyStore` base from `ObservedStore` and `CachedStore`
-  that handles delegation, `child()` propagation, and wrapper re-application.
-  Prerequisite for Path 1 (recommended architecture). See
-  [middleware architecture research](research/research-store-middleware-architecture.md) §4.
