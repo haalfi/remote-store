@@ -516,9 +516,7 @@ class TestDriftProtection:
         # Methods overridden in CachedStore itself or in ProxyStore base
         overridden = set()
         for cls in (CachedStore, ProxyStore):
-            overridden |= {
-                name for name in cls.__dict__ if not name.startswith("_") and callable(cls.__dict__[name])
-            }
+            overridden |= {name for name in cls.__dict__ if not name.startswith("_") and callable(cls.__dict__[name])}
         missing = store_public - overridden
         assert not missing, f"CachedStore/ProxyStore missing overrides for: {missing}"
 
