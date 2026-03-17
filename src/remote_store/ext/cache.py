@@ -223,6 +223,7 @@ class CachedStore(ProxyStore):
     _cache: CacheBackend
     _ttl: float
     _max_content_size: int | None
+    _max_entries: int | None
     _hits: int
     _misses: int
 
@@ -239,6 +240,7 @@ class CachedStore(ProxyStore):
         self._cache = cache_backend if cache_backend is not None else MemoryCache(max_entries=max_entries)
         self._ttl = ttl
         self._max_content_size = max_content_size
+        self._max_entries = max_entries
         self._hits = 0
         self._misses = 0
         self._stats_lock = threading.Lock()
@@ -418,7 +420,7 @@ class CachedStore(ProxyStore):
             inner_child,
             ttl=self._ttl,
             max_content_size=self._max_content_size,
-            max_entries=None,
+            max_entries=self._max_entries,
             cache_backend=None,
         )
 

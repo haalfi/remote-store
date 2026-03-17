@@ -380,6 +380,21 @@ class TestNonCached:
         child.read_bytes("file.txt")
         assert child.stats.hits >= 1
 
+    def test_child_propagates_max_entries(self) -> None:
+        """child() must preserve max_entries from parent."""
+        from remote_store.backends._memory import MemoryBackend
+
+        backend = MemoryBackend()
+        store = Store(backend)
+        store.write("sub/a.txt", b"a", overwrite=True)
+        store.write("sub/b.txt", b"b", overwrite=True)
+        store.write("sub/c.txt", b"c", overwrite=True)
+
+        parent = cached_store(store, max_entries=2)
+        child = parent.child("sub")
+        assert isinstance(child, CachedStore)
+        assert child._max_entries == 2  # noqa: SLF001
+
     @pytest.mark.spec("CACHE-007")
     def test_native_path_delegates(self, cached: CachedStore) -> None:
         result = cached.native_path("a.txt")
