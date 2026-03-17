@@ -1158,17 +1158,21 @@ class FileInfo:
    the file's bytes, with a known algorithm. Backends populate this only
    when they can **guarantee** it represents the content.
 
-   **Backend promotion rules:**
+   **Backend population rules:**
 
-   | Backend | When `digest` is populated | Guardrails |
-   |---------|---------------------------|------------|
-   | S3 | Only when the ETag is a plain 32-hex-char MD5 (no `-` suffix, which indicates multipart). | Check `ETag` format: if it matches `^"[0-9a-f]{32}"$`, promote to `ContentDigest("md5", value)`. If it contains `-` (e.g., `"abc123-3"`), it is a multipart composite hash — populate `etag` only, **never** `digest`. This is a backend inference rule, not a general truth about S3 ETags. |
-   | Azure | Only when Content-MD5 header is present and non-empty. | Decode from base64 to bytes, re-encode as lowercase hex. If header is absent, `digest` is `None`. |
-   | Local | On explicit request only (`ext.integrity.checksum()`). | Never computed automatically in `get_file_info()` — too expensive. |
-   | SFTP | On explicit request only (`ext.integrity.checksum()`). | Same as local — no native checksum support. |
-   | HTTP | **Never.** | HTTP ETags are opaque version identifiers. Always `etag` only, never `digest`. |
+   ETags are opaque version/cache tokens in every backend. They go to
+   `etag`, never to `digest` — even when they *happen* to look like a
+   hex-encoded hash (e.g., S3 single-part uploads). `digest` is only
+   populated when the backend returns a checksum through a **dedicated
+   checksum API** that explicitly guarantees content integrity.
 
-   S3 multipart ETags do **not** qualify — they are not content digests.
+   | Backend | When `etag` is populated | When `digest` is populated |
+   |---------|--------------------------|---------------------------|
+   | S3 | Always — every `GetObject`/`HeadObject` returns an `ETag`. | Only from `x-amz-checksum-*` response headers (requires `ChecksumMode: ENABLED` on the request). Algorithm and value are explicit. |
+   | Azure | When `ETag` header is present (virtually always). | Only when `Content-MD5` header is present and non-empty. Decode from base64 to bytes, re-encode as lowercase hex → `ContentDigest("md5", value)`. |
+   | Local | N/A — no native ETag concept. | On explicit request only (`ext.integrity.checksum()`). Never computed automatically in `get_file_info()` — too expensive. |
+   | SFTP | N/A — no native ETag concept. | On explicit request only (`ext.integrity.checksum()`). Same as local — no native checksum support. |
+   | HTTP | Always — when `ETag` response header is present. | **Never.** HTTP ETags are opaque version identifiers with no content-hash guarantee. |
 
 2. **`etag`** is an **opaque backend tag** — useful for conditional
    requests and change detection, but explicitly **not comparable across
