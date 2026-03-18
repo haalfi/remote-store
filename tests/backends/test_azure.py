@@ -982,3 +982,97 @@ class TestAzureGlob:
 
 
 # endregion
+
+
+# region: ETag and Digest (AZ-034)
+class TestAzureETagAndDigest:
+    """AZ-034: ETag and Content-MD5 digest population in FileInfo."""
+
+    @pytest.mark.spec("AZ-034")
+    @_needs_azurite
+    def test_get_file_info_has_etag(self, azure_backend: Backend) -> None:
+        azure_backend.write("etag_test.txt", b"hello")
+        fi = azure_backend.get_file_info("etag_test.txt")
+        assert fi.etag is not None
+        assert isinstance(fi.etag, str)
+        assert '"' not in fi.etag
+        assert fi.etag == fi.etag.lower()
+
+    @pytest.mark.spec("AZ-034")
+    @_needs_azurite
+    def test_list_files_has_etag(self, azure_backend: Backend) -> None:
+        azure_backend.write("etag_list.txt", b"hello")
+        files = list(azure_backend.list_files(""))
+        matches = [f for f in files if f.name == "etag_list.txt"]
+        assert len(matches) == 1
+        assert matches[0].etag is not None
+        assert '"' not in matches[0].etag
+
+    @pytest.mark.spec("AZ-034")
+    def test_digest_from_content_md5(self) -> None:
+        """Blob properties with Content-MD5 bytes yield ContentDigest('md5', hex)."""
+        import hashlib
+        from datetime import datetime, timezone
+
+        from remote_store._models import ContentDigest
+
+        content = b"hello world"
+        md5_hex = hashlib.md5(content).hexdigest()
+        md5_bytes = bytes.fromhex(md5_hex)
+
+        mock_settings = MagicMock()
+        mock_settings.content_md5 = md5_bytes
+        mock_props = MagicMock()
+        mock_props.etag = '"abc123"'
+        mock_props.content_settings = mock_settings
+        mock_props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        mock_props.size = len(content)
+        mock_props.content_length = len(content)
+
+        backend = AzureBackend(container="c", account_name="fake")
+        fi = backend._props_to_fileinfo(mock_props, "test.txt")
+
+        assert isinstance(fi.digest, ContentDigest)
+        assert fi.digest.algorithm == "md5"
+        assert fi.digest.value == md5_hex
+
+    @pytest.mark.spec("AZ-034")
+    def test_digest_none_when_no_content_md5(self) -> None:
+        """Blob properties without Content-MD5 yield digest=None."""
+        from datetime import datetime, timezone
+
+        mock_settings = MagicMock()
+        mock_settings.content_md5 = None
+        mock_props = MagicMock()
+        mock_props.etag = '"abc123"'
+        mock_props.content_settings = mock_settings
+        mock_props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        mock_props.size = 0
+        mock_props.content_length = 0
+
+        backend = AzureBackend(container="c", account_name="fake")
+        fi = backend._props_to_fileinfo(mock_props, "test.txt")
+
+        assert fi.digest is None
+
+    @pytest.mark.spec("AZ-034")
+    def test_etag_stripped_and_lowercased(self) -> None:
+        """Raw Azure ETag (double-quoted) is stripped and lowercased in FileInfo.etag."""
+        from datetime import datetime, timezone
+
+        mock_settings = MagicMock()
+        mock_settings.content_md5 = None
+        mock_props = MagicMock()
+        mock_props.etag = '"0X8D4BCC2E4835CD0"'
+        mock_props.content_settings = mock_settings
+        mock_props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        mock_props.size = 0
+        mock_props.content_length = 0
+
+        backend = AzureBackend(container="c", account_name="fake")
+        fi = backend._props_to_fileinfo(mock_props, "test.txt")
+
+        assert fi.etag == "0x8d4bcc2e4835cd0"
+
+
+# endregion

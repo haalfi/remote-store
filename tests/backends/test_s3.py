@@ -627,6 +627,39 @@ class TestS3Delete:
 # endregion
 
 
+# region: ETag (S3-023)
+class TestS3ETag:
+    """S3-023: ETag population in FileInfo."""
+
+    @pytest.mark.spec("S3-023")
+    def test_get_file_info_has_etag(self, s3_backend: Backend) -> None:
+        s3_backend.write("etag.txt", b"hello")
+        fi = s3_backend.get_file_info("etag.txt")
+        assert fi.etag is not None
+        assert isinstance(fi.etag, str)
+        assert '"' not in fi.etag
+        assert fi.etag == fi.etag.lower()
+
+    @pytest.mark.spec("S3-023")
+    def test_list_files_has_etag(self, s3_backend: Backend) -> None:
+        s3_backend.write("etag_list.txt", b"hello")
+        files = list(s3_backend.list_files(""))
+        matches = [f for f in files if f.name == "etag_list.txt"]
+        assert len(matches) == 1
+        assert matches[0].etag is not None
+        assert '"' not in matches[0].etag
+
+    @pytest.mark.spec("S3-023")
+    def test_digest_is_none_without_checksum_header(self, s3_backend: Backend) -> None:
+        """Standard uploads do not carry x-amz-checksum-* without ChecksumMode: ENABLED."""
+        s3_backend.write("no_digest.txt", b"hello")
+        fi = s3_backend.get_file_info("no_digest.txt")
+        assert fi.digest is None
+
+
+# endregion
+
+
 # region: Glob (GLOB-018)
 class TestS3Glob:
     """GLOB-018: S3Backend native glob via prefix-optimized listing."""

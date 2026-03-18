@@ -24,7 +24,7 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderEntry, FolderInfo
+from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
 
@@ -782,11 +782,20 @@ class AzureBackend(Backend):
             modified = modified.replace(tzinfo=timezone.utc)  # pragma: no cover
         if modified is None:
             modified = datetime.now(tz=timezone.utc)  # pragma: no cover
+        # ETag: Azure returns it double-quoted (e.g. '"0x8D4BCC2E4835CD0"'); strip and lowercase.
+        raw_etag = getattr(props, "etag", None)
+        etag = raw_etag.strip('"').lower() if isinstance(raw_etag, str) else None
+        # Content-MD5: blob properties carry it as raw bytes when set; convert to hex ContentDigest.
+        content_settings = getattr(props, "content_settings", None)
+        md5_bytes = getattr(content_settings, "content_md5", None) if content_settings is not None else None
+        digest = ContentDigest("md5", md5_bytes.hex()) if isinstance(md5_bytes, (bytes, bytearray)) else None
         return FileInfo(
             path=RemotePath(path),
             name=name,
             size=int(size),
             modified_at=modified,
+            etag=etag,
+            digest=digest,
         )
 
     # endregion
