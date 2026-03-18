@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-16
 **Updated:** 2026-03-18
-**Status:** In progress — diagram rework pending (see §Diagram Rework)
+**Status:** Done — page shipped with placeholder flowchart. Diagram rework deferred.
 
 ---
 
