@@ -176,3 +176,15 @@ assert backend.is_folder("dir") is False  # folder vanishes
 
 **Invariant:** When `key` and `secret` are not provided, the backend falls back to the standard AWS credential chain (environment variables `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`, `~/.aws/credentials`, IAM role, etc.).
 **Rationale:** Follows the principle of least surprise for AWS users.
+
+---
+
+## FileInfo Population
+
+### S3-023: ETag Population
+
+**Invariant:** `_info_to_fileinfo` populates `FileInfo.etag` from the `ETag` field of the S3 response dict (always present for existing objects). The raw S3 ETag is double-quoted (e.g. `"\"abc123\""`); the backend strips the outer quotes and lowercases the value before storing it.
+**Postconditions:**
+- `FileInfo.etag` is a non-empty lowercase string when the info dict contains an `ETag` key.
+- `FileInfo.etag` is `None` only when the info dict has no ETag (not expected for well-formed S3 responses).
+- `FileInfo.digest` remains `None` — S3 checksum algorithms (`x-amz-checksum-*`) require `ChecksumMode: ENABLED` on `HeadObject`/`GetObject` requests, which s3fs does not issue by default. Digest population from S3 checksum headers is deferred (see ID-098).

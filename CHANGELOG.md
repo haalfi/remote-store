@@ -8,6 +8,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **S3 backend now populates `FileInfo.etag`** — `_info_to_fileinfo` strips
+  the double-quoted S3 ETag and stores it as a lowercase string. `FileInfo.digest`
+  remains `None` for S3 (requires `ChecksumMode: ENABLED` on HeadObject; see ID-098).
+  (ID-096, S3-023)
+- **Azure backend now populates `FileInfo.etag` and `FileInfo.digest`** —
+  `_props_to_fileinfo` strips and lowercases the Azure blob ETag (`etag`), and
+  converts `content_settings.content_md5` bytes to a `ContentDigest("md5", hex)`
+  when the blob was uploaded with Content-MD5 set. (ID-097, AZ-034)
+
 - **`ContentDigest` frozen dataclass** — immutable model with `algorithm: str`
   and `value: str` (both lowercase-normalized, validated). Convenience
   `content_digest()` function in `ext.integrity`. (ID-095, CDG-001–CDG-003)

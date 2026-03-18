@@ -627,6 +627,91 @@ class TestS3Delete:
 # endregion
 
 
+# region: ETag (S3-023)
+class TestS3ETag:
+    """S3-023: ETag population in FileInfo."""
+
+    @pytest.mark.spec("S3-023")
+    def test_get_file_info_has_etag(self, s3_backend: Backend) -> None:
+        s3_backend.write("etag.txt", b"hello")
+        fi = s3_backend.get_file_info("etag.txt")
+        assert fi.etag is not None
+        assert isinstance(fi.etag, str)
+        assert '"' not in fi.etag
+        assert fi.etag == fi.etag.lower()
+
+    @pytest.mark.spec("S3-023")
+    def test_list_files_has_etag(self, s3_backend: Backend) -> None:
+        s3_backend.write("etag_list.txt", b"hello")
+        files = list(s3_backend.list_files(""))
+        matches = [f for f in files if f.name == "etag_list.txt"]
+        assert len(matches) == 1
+        assert matches[0].etag is not None
+        assert '"' not in matches[0].etag
+        assert matches[0].etag == matches[0].etag.lower()
+
+    @pytest.mark.spec("S3-023")
+    def test_digest_is_none_without_checksum_header(self, s3_backend: Backend) -> None:
+        """Standard uploads do not carry x-amz-checksum-* without ChecksumMode: ENABLED."""
+        s3_backend.write("no_digest.txt", b"hello")
+        fi = s3_backend.get_file_info("no_digest.txt")
+        assert fi.digest is None
+
+    @pytest.mark.spec("S3-023")
+    def test_lowercase_etag_key_fallback(self) -> None:
+        """_info_to_fileinfo uses lowercase 'etag' key when 'ETag' is absent (s3fs list path)."""
+        from datetime import datetime, timezone
+
+        from remote_store.backends._s3 import S3Backend
+
+        # Build a minimal S3Backend without connecting, just to call the helper method.
+        backend = object.__new__(S3Backend)
+        info = {
+            "etag": '"abc123"',
+            "size": 10,
+            "LastModified": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "name": "bucket/file.txt",
+        }
+        fi = backend._info_to_fileinfo(info, "file.txt")
+        assert fi.etag == "abc123"
+
+    @pytest.mark.spec("S3-023")
+    def test_multipart_etag_suffix_preserved(self) -> None:
+        """Multipart ETags (form 'hash-N') survive strip/lowercase unchanged."""
+        from datetime import datetime, timezone
+
+        from remote_store.backends._s3 import S3Backend
+
+        backend = object.__new__(S3Backend)
+        info = {
+            "ETag": '"d41d8cd98f00b204e9800998ecf8427e-2"',
+            "size": 100,
+            "LastModified": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "name": "bucket/big.bin",
+        }
+        fi = backend._info_to_fileinfo(info, "big.bin")
+        assert fi.etag == "d41d8cd98f00b204e9800998ecf8427e-2"
+
+    @pytest.mark.spec("S3-023")
+    def test_etag_none_when_keys_absent(self) -> None:
+        """_info_to_fileinfo yields etag=None when neither 'ETag' nor 'etag' key is present."""
+        from datetime import datetime, timezone
+
+        from remote_store.backends._s3 import S3Backend
+
+        backend = object.__new__(S3Backend)
+        info = {
+            "size": 5,
+            "LastModified": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "name": "bucket/file.txt",
+        }
+        fi = backend._info_to_fileinfo(info, "file.txt")
+        assert fi.etag is None
+
+
+# endregion
+
+
 # region: Glob (GLOB-018)
 class TestS3Glob:
     """GLOB-018: S3Backend native glob via prefix-optimized listing."""

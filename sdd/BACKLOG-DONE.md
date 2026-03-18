@@ -6,6 +6,18 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Middleware Path 1 (Post-v0.17.0)
 
+- [x] **ID-097 — Azure backend: populate `FileInfo.etag` and `digest`**
+  `_props_to_fileinfo` now populates `etag` from `BlobProperties.etag`
+  (stripped/lowercased) and `digest` from `content_settings.content_md5`
+  when present (bytes → lowercase hex → `ContentDigest("md5", value)`).
+  Spec 012 §AZ-034.
+
+- [x] **ID-096 — S3 backend: populate `FileInfo.etag`** (partial; see ID-098 for digest)
+  `_info_to_fileinfo` now populates `etag` from the `ETag` key in the s3fs
+  info dict (stripped/lowercased). Digest via `x-amz-checksum-*` is deferred
+  — it requires `ChecksumMode: ENABLED` on HeadObject, which s3fs does not
+  issue by default. Spec 008 §S3-023.
+
 - [x] **ID-095 — `ContentDigest` model + `FileInfo.digest`/`etag` fields**
   `ContentDigest` frozen dataclass (`algorithm: str`, `value: str` — both
   lowercase-normalized, validated). `FileInfo.checksum` replaced with

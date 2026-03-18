@@ -189,8 +189,11 @@ AzureBackend(
 - `name`: filename component of the path
 - `size`: from `content_length` (or `size` for HNS path objects)
 - `modified_at`: from `last_modified` (UTC datetime)
+- `etag`: see AZ-034
+- `digest`: see AZ-034
 
-**Note:** `etag` and `content_type` are not included in `FileInfo` — the model does not have these fields. If needed in future, extend `FileInfo` and update this mapping.
+**Note:** `content_type` is not included in `FileInfo`.
+
 **Raises:** `NotFound` if the file does not exist.
 
 ### AZ-024: get_folder_info()
@@ -257,6 +260,26 @@ backend.to_key("data/file.txt")               # -> "data/file.txt" (no prefix, u
 ---
 
 ## Configuration
+
+### AZ-034: ETag and Content-MD5 Digest Population
+
+**Invariant:** `_props_to_fileinfo` populates `FileInfo.etag` and `FileInfo.digest` from blob properties.
+
+**ETag (`FileInfo.etag`):**
+- Source: `BlobProperties.etag` (always present for existing blobs).
+- Azure returns it double-quoted (e.g. `'"0x8D4BCC2E4835CD0"'`); the backend strips the outer quotes and lowercases before storing.
+- Populated for all operations that call `_props_to_fileinfo`: `get_file_info`, `list_files`, `iter_children`.
+
+**Digest (`FileInfo.digest`):**
+- Source: `BlobProperties.content_settings.content_md5` — a `bytes` object when set, `None` when absent.
+- Azure does not auto-compute Content-MD5; it is set explicitly by the client at upload time. Blobs uploaded without Content-MD5 yield `digest=None`.
+- When present: converted to lowercase hex and stored as `ContentDigest("md5", hex_value)`.
+
+**Postconditions:**
+- `FileInfo.etag` is a non-empty lowercase string for all existing blobs.
+- `FileInfo.digest` is a `ContentDigest("md5", …)` when Content-MD5 is set, `None` otherwise.
+
+---
 
 ### AZ-033: Transfer Concurrency
 

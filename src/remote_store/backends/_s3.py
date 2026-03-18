@@ -429,11 +429,15 @@ class S3Backend(Backend):
             modified = modified.replace(tzinfo=timezone.utc)
         if modified is None:
             modified = datetime.now(tz=timezone.utc)
+        # ETag: S3 returns it double-quoted (e.g. '"abc123"'); strip and lowercase.
+        raw_etag = info.get("ETag") or info.get("etag")
+        etag = raw_etag.strip('"').lower() if isinstance(raw_etag, str) else None
         return FileInfo(
             path=RemotePath(path),
             name=name,
             size=int(size),
             modified_at=modified,
+            etag=etag,
         )
 
     # endregion
