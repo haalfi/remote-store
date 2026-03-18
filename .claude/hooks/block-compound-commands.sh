@@ -7,6 +7,10 @@ COMMAND=$(jq -r '.tool_input.command' < /dev/stdin)
 
 # Collapse to a single line so multi-line quoted strings are handled,
 # then strip single-quoted and double-quoted strings before checking.
+# Limitation: backslash-escaped quotes inside strings (e.g. "hello\"world")
+# are not handled — the sed patterns treat \" as a quote boundary, which can
+# cause false positives. This is safe (Claude restructures the command) but
+# may confuse debugging if a legitimate command is unexpectedly blocked.
 STRIPPED=$(echo "$COMMAND" | tr '\n' ' ' | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g')
 
 # Check for compound operators in unquoted portions
