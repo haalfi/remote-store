@@ -10,8 +10,10 @@ on top of the core Store API.
 | [`ext.batch`](api/extensions/batch.md) | *(none)* | Bulk delete, copy, and exists operations | [Guide](batch-operations.md) | [Example](examples/batch-operations.md) |
 | [`ext.cache`](api/extensions/cache.md) | *(none)* | Store-level caching with TTL and auto-invalidation | [Guide](cache.md) | [Example](examples/caching.md) |
 | [`ext.glob`](api/extensions/glob.md) | *(none)* | Portable glob pattern matching for file listing | [Guide](glob-pattern-matching.md) | [Example](examples/glob-pattern-matching.md) |
+| [`ext.integrity`](api/extensions/integrity.md) | *(none)* | Checksum computation and verification helpers | — | — |
 | [`ext.observe`](api/extensions/observe.md) | *(none)* | Callback-based observability hooks for Store operations | [Guide](observe.md) | [Example](examples/observe-hooks.md) |
 | [`ext.partition`](api/extensions/partition.md) | *(none)* | Hive-style partition path helpers | — | — |
+| [`ext.streams`](api/extensions/streams.md) | *(none)* | Composable BinaryIO wrappers for progress and checksums | — | — |
 | [`ext.transfer`](api/extensions/transfer.md) | *(none)* | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](examples/transfer-operations.md) |
 | [`ext.arrow`](api/extensions/arrow.md) | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](examples/pyarrow-adapter.md) |
 | [`ext.otel`](api/extensions/otel.md) | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](examples/otel-tracing.md) |
@@ -23,14 +25,16 @@ on top of the core Store API.
 
 ### Always-available extensions (pure Python)
 
-`ext.batch`, `ext.cache`, `ext.glob`, `ext.observe`, `ext.partition`,
-and `ext.transfer` have no extra dependencies. They are re-exported from
-the top-level package:
+`ext.batch`, `ext.cache`, `ext.glob`, `ext.integrity`, `ext.observe`,
+`ext.partition`, `ext.streams`, and `ext.transfer` have no extra
+dependencies. They are re-exported from the top-level package:
 
 ```python
 from remote_store import batch_delete, glob_files, observe, upload, download
 from remote_store import cached_store           # ext.cache
+from remote_store import checksum, verify       # ext.integrity
 from remote_store import partition_path, parse_partition  # ext.partition
+from remote_store import ProgressReader, ChecksumReader   # ext.streams
 ```
 
 Or import from the extension module directly:
@@ -39,8 +43,10 @@ Or import from the extension module directly:
 from remote_store.ext.batch import batch_delete
 from remote_store.ext.cache import cached_store
 from remote_store.ext.glob import glob_files
+from remote_store.ext.integrity import checksum, verify
 from remote_store.ext.observe import observe
 from remote_store.ext.partition import partition_path, parse_partition
+from remote_store.ext.streams import ProgressReader, ChecksumReader
 from remote_store.ext.transfer import upload
 ```
 
