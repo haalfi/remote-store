@@ -28,18 +28,31 @@ hatch run docs-build
 
 The docs site lands in `site/`.
 
-### 3. Copy to expectations repo
+### 3a. Clean previous preview
 
 ```bash
-# Clean previous preview
 rm -rf ../remote-store-expectations/.preview
+```
 
-# Create structure
+### 3b. Create directory structure
+
+```bash
 mkdir -p ../remote-store-expectations/.preview/dist
-mkdir -p ../remote-store-expectations/.preview/docs
+```
 
-# Copy artifacts
+```bash
+mkdir -p ../remote-store-expectations/.preview/docs
+```
+
+### 3c. Copy wheel
+
+```bash
 cp dist/remote_store-*.whl ../remote-store-expectations/.preview/dist/
+```
+
+### 3d. Copy docs
+
+```bash
 cp -r site/* ../remote-store-expectations/.preview/docs/
 ```
 
