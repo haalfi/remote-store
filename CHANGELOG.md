@@ -42,32 +42,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   and `CachedStore`. Centralizes private-attribute coupling, provides default
   delegation for all Store methods, and enables `child()` propagation.
   Internal only — not part of the public API. (ID-094, ADR-0014)
-
-### Changed
-
-- **`ext.transfer.download()` now uses `ProgressReader` wrapper** — progress
-  tracking in `download()` is now consistent with `upload()` and `transfer()`,
-  using the `ProgressReader` stream wrapper instead of an inline callback.
-  (ID-006, XFER-009)
-- **`ext.transfer` now uses public `ProgressReader`** from `ext.streams`
-  instead of its private `_ProgressReader`. No public API change. (ID-091)
-- **`ObservedStore` and `CachedStore` now extend `ProxyStore`** — reduces
-  boilerplate, centralizes delegation, and removes duplicated init coupling.
-
-### Fixed
-
-- **`child()` now propagates proxy behavior** in `ObservedStore` and
-  `CachedStore`. Previously, `cached_store(s).child("sub")` returned a plain
-  `Store`, silently losing caching/observation. (BUG-003)
-
-- **`pydantic_to_registry_config()` now unwraps `SecretStr` fields** —
-  Pydantic `SecretStr` values in backend `options` dicts are automatically
-  converted to plain strings before reaching `from_dict()`, so sensitive-key
-  detection wraps them in `Secret` correctly. Previously, `SecretStr` objects
-  bypassed the `isinstance(v, str)` check and were not wrapped.
-
-### Added
-
 - **HTTP backend: HEAD fallback for CDN-blocked servers** — when `HEAD` returns
   401/403, `exists()`, `get_file_info()`, and `check_health()` retry with
   `GET` + `Range: bytes=0-0`. The result is cached for the backend's lifetime.
@@ -95,6 +69,28 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Pluggable serialization (pickle, JSON, Parquet). Install with
   `pip install "remote-store[dagster]"`. Spec `031-ext-dagster.md`
   (DAG-001 through DAG-011).
+
+### Changed
+
+- **`ext.transfer.download()` now uses `ProgressReader` wrapper** — progress
+  tracking in `download()` is now consistent with `upload()` and `transfer()`,
+  using the `ProgressReader` stream wrapper instead of an inline callback.
+  (ID-006, XFER-009)
+- **`ext.transfer` now uses public `ProgressReader`** from `ext.streams`
+  instead of its private `_ProgressReader`. No public API change. (ID-091)
+- **`ObservedStore` and `CachedStore` now extend `ProxyStore`** — reduces
+  boilerplate, centralizes delegation, and removes duplicated init coupling.
+
+### Fixed
+
+- **`child()` now propagates proxy behavior** in `ObservedStore` and
+  `CachedStore`. Previously, `cached_store(s).child("sub")` returned a plain
+  `Store`, silently losing caching/observation. (BUG-003)
+- **`pydantic_to_registry_config()` now unwraps `SecretStr` fields** —
+  Pydantic `SecretStr` values in backend `options` dicts are automatically
+  converted to plain strings before reaching `from_dict()`, so sensitive-key
+  detection wraps them in `Secret` correctly. Previously, `SecretStr` objects
+  bypassed the `isinstance(v, str)` check and were not wrapped.
 
 ### Documentation
 
