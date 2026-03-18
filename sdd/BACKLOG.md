@@ -135,8 +135,8 @@ Items graduate through the SDD pipeline:
 ### Core API
 
 
-- [~] **ID-006 — Progress tracking via stream wrappers (`ext.streams`)**
-  Core stream wrappers (`ProgressReader`, `ProgressWriter`) are done.
-  Remaining: integration with `ext.transfer.download()` to use
-  `ProgressReader` on the download path (currently uses inline callback).
+- [x] **ID-006 — Progress tracking via stream wrappers (`ext.streams`)**
+  Complete. Core stream wrappers (`ProgressReader`, `ProgressWriter`,
+  `ChecksumReader`, `ChecksumWriter`) implemented. `ext.transfer.download()`
+  now uses `ProgressReader` wrapper, consistent with `upload()` and `transfer()`.
   See [middleware architecture research](research/research-store-middleware-architecture.md) §3–§4.

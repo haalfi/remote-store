@@ -51,7 +51,7 @@ full file content. End-to-end memory behavior depends on the backend's
 
 ### XFER-009: download on_progress
 
-**Invariant:** When `on_progress` is not `None`, the callback fires once per chunk written to the local file, with the number of bytes in that chunk (not cumulative).
+**Invariant:** When `on_progress` is not `None`, the callback fires once per `read()` call on the remote stream, with the number of bytes read in that chunk (not cumulative). Progress is tracked via a `ProgressReader` wrapper around the remote stream.
 
 ### XFER-010: download Stream Cleanup
 

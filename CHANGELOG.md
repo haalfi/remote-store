@@ -6,6 +6,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Changed
+
+- **`ext.transfer.download()` now uses `ProgressReader` wrapper** — progress
+  tracking in `download()` is now consistent with `upload()` and `transfer()`,
+  using the `ProgressReader` stream wrapper instead of an inline callback.
+  (ID-006, XFER-009)
+
 ### Added
 
 - **S3 backend now populates `FileInfo.digest` from `x-amz-checksum-*`** —

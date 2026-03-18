@@ -89,8 +89,7 @@ def download(
         local_path: Destination path on the local filesystem.
         overwrite: If ``False`` (default) and *local_path* exists,
             raises ``FileExistsError``.
-        on_progress: Called per chunk written with the byte count
-            (not cumulative).
+        on_progress: Called per read with the byte count (not cumulative).
 
     Returns:
         None
@@ -103,7 +102,9 @@ def download(
     if not overwrite and os.path.exists(dest):
         raise FileExistsError(f"Local file already exists: {dest}")
 
-    stream = store.read(remote_path)
+    stream: BinaryIO = store.read(remote_path)
+    if on_progress is not None:
+        stream = cast("BinaryIO", ProgressReader(stream, on_progress))
     try:
         with open(dest, "wb") as fh:
             while True:
@@ -111,8 +112,6 @@ def download(
                 if not chunk:
                     break
                 fh.write(chunk)
-                if on_progress is not None:
-                    on_progress(len(chunk))
     finally:
         stream.close()
 

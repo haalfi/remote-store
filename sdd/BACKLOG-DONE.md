@@ -6,6 +6,11 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Middleware Path 1 (Post-v0.17.0)
 
+- [x] **ID-006 — Progress tracking via stream wrappers (`ext.streams`)**
+  `ext.transfer.download()` now uses `ProgressReader` wrapper for progress
+  tracking, consistent with `upload()` and `transfer()`. Replaces inline
+  callback. Spec 017 §XFER-009, Spec 033.
+
 - [x] **ID-098 — S3 backend: populate `FileInfo.digest` from `x-amz-checksum-*`**
   `get_file_info` now calls `HeadObject` with `ChecksumMode: ENABLED`
   unconditionally, returning both metadata and any checksum headers in a single
