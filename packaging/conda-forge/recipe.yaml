@@ -6,7 +6,7 @@
 # then open a PR against https://github.com/conda-forge/staged-recipes
 
 context:
-  version: "0.17.0"
+  version: "0.18.0"
   python_min: "3.10"
 
 package:
