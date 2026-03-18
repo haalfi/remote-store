@@ -152,13 +152,13 @@ architecture-beta
   group core(server)[Core]
   group infra(server)[Infrastructure]
 
-  service ext(logos:puzzle)[Extensions]
-  service store(logos:box)[Store API] in core
-  service methods(logos:list)[Read · Write · List · Stream] in core
-  service backends(logos:database)[Backends] in infra
-  service b_list(logos:list)[Local · S3 · SFTP · Azure · …yours] in infra
-  service libs(logos:package)[Proven Libraries] in infra
-  service l_list(logos:list)[stdlib · s3fs · paramiko · azure SDK] in infra
+  service ext(cloud)[Extensions]
+  service store(server)[Store API] in core
+  service methods(disk)[Read · Write · List · Stream] in core
+  service backends(database)[Backends] in infra
+  service b_list(disk)[Local · S3 · SFTP · Azure · …yours] in infra
+  service libs(server)[Proven Libraries] in infra
+  service l_list(disk)[stdlib · s3fs · paramiko · azure SDK] in infra
 
   ext:R --> L:store
   store:R --> L:backends
@@ -168,9 +168,11 @@ architecture-beta
   libs:B --> T:l_list
 ```
 
-> Note: `architecture-beta` icon support depends on the Mermaid version bundled
-> with MkDocs Material. Verify icon availability at render time; fall back to
-> plain labels if icons are unavailable.
+> Note: Uses built-in architecture-beta icons (`cloud`, `server`, `database`,
+> `disk`) — no icon pack registration required. If branded icons are desired
+> at implementation time, register the appropriate Iconify pack (e.g. `mdi`)
+> and use valid icon names (e.g. `mdi:puzzle-outline`). Do not use `logos:*`
+> for non-brand icons — that pack contains brand logos only.
 
 ---
 
@@ -331,6 +333,15 @@ from remote_store.backends.s3 import S3Backend
 
 store = Store(S3Backend(bucket="my-bucket"))
 ```
+
+Narrow scope with `child()` — all paths inside are relative to the new root:
+
+```python
+sub = store.child("reports/2024")
+sub.write_text("summary.txt", "...")
+```
+
+See [Store child scoping](examples/store-child.md) for more.
 
 ---
 
