@@ -166,6 +166,18 @@ class TestContentDigest:
         assert result.algorithm == "md5"
         assert result.value == expected
 
+    @pytest.mark.spec("INT-005")
+    def test_not_found(self, store: Store) -> None:
+        from remote_store._errors import NotFound
+
+        with pytest.raises(NotFound):
+            content_digest(store, "nonexistent.txt")
+
+    @pytest.mark.spec("INT-005")
+    def test_unsupported_algorithm(self, store: Store) -> None:
+        with pytest.raises(ValueError, match="unsupported hash type"):
+            content_digest(store, "hello.txt", algorithm="not_a_real_algo")
+
 
 class TestModuleExports:
     @pytest.mark.spec("INT-004")

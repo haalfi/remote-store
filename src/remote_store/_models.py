@@ -50,15 +50,15 @@ class ContentDigest:
     value: str
 
     def __post_init__(self) -> None:
+        # Normalize first, then validate — catches whitespace-only input.
+        object.__setattr__(self, "algorithm", self.algorithm.strip().lower())
         if not self.algorithm:
             msg = "algorithm must not be empty"
             raise ValueError(msg)
-        if not self.value:
+        normalized = self.value.strip().lower()
+        if not normalized:
             msg = "value must not be empty"
             raise ValueError(msg)
-        # Normalize to lowercase.
-        object.__setattr__(self, "algorithm", self.algorithm.strip().lower())
-        normalized = self.value.strip().lower()
         if not _HEX_RE.match(normalized):
             msg = f"value must be hexadecimal, got {self.value!r}"
             raise ValueError(msg)

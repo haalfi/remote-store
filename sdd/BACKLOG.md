@@ -131,16 +131,6 @@ Items graduate through the SDD pipeline:
 
 ### Core API
 
-- [ ] **ID-095 — `ContentDigest` model + `FileInfo.digest`/`etag` fields**
-  Introduce `ContentDigest` frozen dataclass (`algorithm: str`,
-  `value: str` — both lowercase-normalized). Replace
-  `FileInfo.checksum` with `FileInfo.digest: ContentDigest | None` and
-  `FileInfo.etag: str | None`. `FileInfo.checksum` is removed (no
-  deprecation shim — pre-1.0). Update spec 001 (MOD-003). Update
-  `ext.integrity` to accept/return `ContentDigest`. Needs new spec.
-  Split from [ID-008](BACKLOG-DONE.md#middleware-path-1-post-v0170).
-  See [middleware architecture research](research/research-store-middleware-architecture.md) §5.
-
 - [ ] **ID-096 — S3 backend: populate `FileInfo.etag` and `digest`**
   In `_s3.py` `_build_file_info()`: populate `etag` from S3 `ETag`
   header (always available). Populate `digest` from
