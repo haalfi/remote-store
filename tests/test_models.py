@@ -246,9 +246,19 @@ class TestContentDigest:
             ContentDigest("", "abcd1234")
 
     @pytest.mark.spec("CDG-003")
+    def test_whitespace_only_algorithm_raises(self) -> None:
+        with pytest.raises(ValueError, match="algorithm must not be empty"):
+            ContentDigest("   ", "abcd1234")
+
+    @pytest.mark.spec("CDG-003")
     def test_empty_value_raises(self) -> None:
         with pytest.raises(ValueError, match="value must not be empty"):
             ContentDigest("sha256", "")
+
+    @pytest.mark.spec("CDG-003")
+    def test_whitespace_only_value_raises(self) -> None:
+        with pytest.raises(ValueError, match="value must not be empty"):
+            ContentDigest("sha256", "   ")
 
     @pytest.mark.spec("CDG-003")
     def test_non_hex_value_raises(self) -> None:
