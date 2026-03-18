@@ -4439,6 +4439,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#az-034-etag-and-content-md5-digest-population" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AZ-034: ETag and Content-MD5 Digest Population
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#az-033-transfer-concurrency" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6823,6 +6834,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#az-034-etag-and-content-md5-digest-population" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AZ-034: ETag and Content-MD5 Digest Population
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#az-033-transfer-concurrency" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7031,9 +7053,11 @@
 - <code>path</code>: the store-relative key
 - <code>name</code>: filename component of the path
 - <code>size</code>: from <code>content_length</code> (or <code>size</code> for HNS path objects)
-- <code>modified_at</code>: from <code>last_modified</code> (UTC datetime)</p>
-<p><strong>Note:</strong> <code>etag</code> and <code>content_type</code> are not included in <code>FileInfo</code> — the model does not have these fields. If needed in future, extend <code>FileInfo</code> and update this mapping.
-<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
+- <code>modified_at</code>: from <code>last_modified</code> (UTC datetime)
+- <code>etag</code>: see AZ-034
+- <code>digest</code>: see AZ-034</p>
+<p><strong>Note:</strong> <code>content_type</code> is not included in <code>FileInfo</code>.</p>
+<p><strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
 <h3 id="az-024-get_folder_info">AZ-024: get_folder_info()<a class="headerlink" href="#az-024-get_folder_info" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>get_folder_info(path)</code> returns a <code>FolderInfo</code>.
 <strong>Invariant (HNS):</strong> Uses <code>get_path_properties()</code> on the directory object.
@@ -7099,6 +7123,20 @@
 <strong>Rationale:</strong> Escape hatch for users who need Azure-specific features (per ADR-0003).</p>
 <hr />
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<h3 id="az-034-etag-and-content-md5-digest-population">AZ-034: ETag and Content-MD5 Digest Population<a class="headerlink" href="#az-034-etag-and-content-md5-digest-population" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>_props_to_fileinfo</code> populates <code>FileInfo.etag</code> and <code>FileInfo.digest</code> from blob properties.</p>
+<p><strong>ETag (<code>FileInfo.etag</code>):</strong>
+- Source: <code>BlobProperties.etag</code> (always present for existing blobs).
+- Azure returns it double-quoted (e.g. <code>'"0x8D4BCC2E4835CD0"'</code>); the backend strips the outer quotes and lowercases before storing.
+- Populated for all operations that call <code>_props_to_fileinfo</code>: <code>get_file_info</code>, <code>list_files</code>, <code>iter_children</code>.</p>
+<p><strong>Digest (<code>FileInfo.digest</code>):</strong>
+- Source: <code>BlobProperties.content_settings.content_md5</code> — a <code>bytes</code> object when set, <code>None</code> when absent.
+- Azure does not auto-compute Content-MD5; it is set explicitly by the client at upload time. Blobs uploaded without Content-MD5 yield <code>digest=None</code>.
+- When present: converted to lowercase hex and stored as <code>ContentDigest("md5", hex_value)</code>.</p>
+<p><strong>Postconditions:</strong>
+- <code>FileInfo.etag</code> is a non-empty lowercase string for all existing blobs.
+- <code>FileInfo.digest</code> is a <code>ContentDigest("md5", …)</code> when Content-MD5 is set, <code>None</code> otherwise.</p>
+<hr />
 <h3 id="az-033-transfer-concurrency">AZ-033: Transfer Concurrency<a class="headerlink" href="#az-033-transfer-concurrency" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>AzureBackend</code> accepts a <code>max_concurrency: int = 1</code> constructor parameter that controls the number of parallel connections used for blob uploads and downloads. The value is threaded through to <code>BlobClient.upload_blob()</code>, <code>BlobClient.download_blob()</code>, and <code>DataLakeFileClient.upload_data()</code> (HNS atomic writes).
 <strong>Preconditions:</strong> <code>max_concurrency</code> must be &gt;= 1; <code>ValueError</code> is raised at construction time otherwise.

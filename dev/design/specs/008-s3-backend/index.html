@@ -4209,6 +4209,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#fileinfo-population" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FileInfo Population
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FileInfo Population">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#s3-023-etag-population" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3-023: ETag Population
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -6550,6 +6578,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#fileinfo-population" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FileInfo Population
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FileInfo Population">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#s3-023-etag-population" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3-023: ETag Population
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -6681,6 +6737,14 @@
 <h3 id="s3-022-default-credential-chain">S3-022: Default Credential Chain<a class="headerlink" href="#s3-022-default-credential-chain" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> When <code>key</code> and <code>secret</code> are not provided, the backend falls back to the standard AWS credential chain (environment variables <code>AWS_ACCESS_KEY_ID</code> / <code>AWS_SECRET_ACCESS_KEY</code>, <code>~/.aws/credentials</code>, IAM role, etc.).
 <strong>Rationale:</strong> Follows the principle of least surprise for AWS users.</p>
+<hr />
+<h2 id="fileinfo-population">FileInfo Population<a class="headerlink" href="#fileinfo-population" title="Permanent link">&para;</a></h2>
+<h3 id="s3-023-etag-population">S3-023: ETag Population<a class="headerlink" href="#s3-023-etag-population" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>_info_to_fileinfo</code> populates <code>FileInfo.etag</code> from the <code>ETag</code> field of the S3 response dict (always present for existing objects). The raw S3 ETag is double-quoted (e.g. <code>"\"abc123\""</code>); the backend strips the outer quotes and lowercases the value before storing it.
+<strong>Postconditions:</strong>
+- <code>FileInfo.etag</code> is a non-empty lowercase string when the info dict contains an <code>ETag</code> key.
+- <code>FileInfo.etag</code> is <code>None</code> only when the info dict has no ETag (not expected for well-formed S3 responses).
+- <code>FileInfo.digest</code> remains <code>None</code> — S3 checksum algorithms (<code>x-amz-checksum-*</code>) require <code>ChecksumMode: ENABLED</code> on <code>HeadObject</code>/<code>GetObject</code> requests, which s3fs does not issue by default. Digest population from S3 checksum headers is deferred (see ID-098).</p>
 
 
 

@@ -1661,6 +1661,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#file-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5949,6 +5960,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#file-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6078,6 +6100,29 @@
 <td><code>client_options</code></td>
 <td><code>dict</code></td>
 <td>Additional options passed to s3fs</td>
+</tr>
+</tbody>
+</table>
+<h2 id="file-metadata">File Metadata<a class="headerlink" href="#file-metadata" title="Permanent link">&para;</a></h2>
+<p><code>get_file_info()</code> and <code>list_files()</code> return <code>FileInfo</code> objects with the following fields populated by the S3 backend:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Source</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>etag</code></td>
+<td><code>ETag</code> response header</td>
+<td>Double-quotes stripped; lowercased. Example: <code>"abc123"</code> → <code>abc123</code>.</td>
+</tr>
+<tr>
+<td><code>digest</code></td>
+<td>—</td>
+<td>Always <code>None</code>; S3 checksums require <code>ChecksumMode: ENABLED</code> (not requested by default).</td>
 </tr>
 </tbody>
 </table>

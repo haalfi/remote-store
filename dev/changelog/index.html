@@ -7754,9 +7754,21 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>ContentDigest</code> frozen dataclass</strong> — immutable model with <code>algorithm: str</code>
+<li><strong>S3 backend now populates <code>FileInfo.etag</code></strong> — <code>_info_to_fileinfo</code> strips
+  the double-quoted S3 ETag and stores it as a lowercase string. <code>FileInfo.digest</code>
+  remains <code>None</code> for S3 (requires <code>ChecksumMode: ENABLED</code> on HeadObject; see ID-098).
+  (ID-096, S3-023)</li>
+<li>
+<p><strong>Azure backend now populates <code>FileInfo.etag</code> and <code>FileInfo.digest</code></strong> —
+  <code>_props_to_fileinfo</code> strips and lowercases the Azure blob ETag (<code>etag</code>), and
+  converts <code>content_settings.content_md5</code> bytes to a <code>ContentDigest("md5", hex)</code>
+  when the blob was uploaded with Content-MD5 set. (ID-097, AZ-034)</p>
+</li>
+<li>
+<p><strong><code>ContentDigest</code> frozen dataclass</strong> — immutable model with <code>algorithm: str</code>
   and <code>value: str</code> (both lowercase-normalized, validated). Convenience
-  <code>content_digest()</code> function in <code>ext.integrity</code>. (ID-095, CDG-001–CDG-003)</li>
+  <code>content_digest()</code> function in <code>ext.integrity</code>. (ID-095, CDG-001–CDG-003)</p>
+</li>
 <li><strong><code>FileInfo.digest</code> and <code>FileInfo.etag</code> fields</strong> — <code>digest: ContentDigest | None</code>
   for verified checksums, <code>etag: str | None</code> for opaque server tags.
   <code>FileInfo.checksum</code> is removed (pre-1.0, no deprecation shim).

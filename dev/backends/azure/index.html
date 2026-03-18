@@ -1784,6 +1784,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#file-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#capabilities" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6060,6 +6071,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#file-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#capabilities" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6324,6 +6346,29 @@
 </table>
 <p>If the HNS detection call fails (e.g. insufficient permissions), the backend falls back to non-HNS behavior.</p>
 <p>Note that non-HNS <code>move()</code> (copy + delete) is not atomic and <code>overwrite=False</code> has a TOCTOU race on all account types. See the <a href="../../concurrency/">Concurrency and Atomicity Guarantees</a> guide for details.</p>
+<h2 id="file-metadata">File Metadata<a class="headerlink" href="#file-metadata" title="Permanent link">&para;</a></h2>
+<p><code>get_file_info()</code> and <code>list_files()</code> return <code>FileInfo</code> objects with the following fields populated by the Azure backend:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Source</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>etag</code></td>
+<td><code>BlobProperties.etag</code></td>
+<td>Double-quotes stripped; lowercased.</td>
+</tr>
+<tr>
+<td><code>digest</code></td>
+<td><code>BlobProperties.content_settings.content_md5</code></td>
+<td>Populated as <code>ContentDigest("md5", &lt;hex&gt;)</code> when the blob has a stored Content-MD5; <code>None</code> otherwise.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
