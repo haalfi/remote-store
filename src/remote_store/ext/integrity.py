@@ -1,7 +1,7 @@
 """Checksum verification helpers over Store's public API.
 
 Pure functions for computing and verifying file integrity.  These compose
-``store.read()`` with :class:`~remote_store.ext.streams.ChecksumReader`
+``store.read()`` with [ChecksumReader][remote_store.ext.streams.ChecksumReader]
 internally — users don't need to manage stream lifecycle.
 
 Usage:
@@ -62,8 +62,8 @@ def checksum(store: Store, path: str, algorithm: str = "sha256") -> tuple[str, s
 def content_digest(store: Store, path: str, algorithm: str = "sha256") -> ContentDigest:
     """Compute the content digest of a file in the store.
 
-    Like :func:`checksum`, but returns a :class:`ContentDigest` instead of
-    a raw tuple.
+    Like [checksum][remote_store.ext.integrity.checksum], but returns a
+    [ContentDigest][remote_store._models.ContentDigest] instead of a raw tuple.
 
     Args:
         store: The Store to read from.
@@ -71,7 +71,7 @@ def content_digest(store: Store, path: str, algorithm: str = "sha256") -> Conten
         algorithm: Hash algorithm name (default ``"sha256"``).
 
     Returns:
-        A :class:`ContentDigest` with normalized algorithm and hex value.
+        A [ContentDigest][remote_store._models.ContentDigest] with normalized algorithm and hex value.
 
     Raises:
         NotFound: If the file does not exist.
