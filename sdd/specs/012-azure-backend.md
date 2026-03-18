@@ -268,7 +268,7 @@ backend.to_key("data/file.txt")               # -> "data/file.txt" (no prefix, u
 **ETag (`FileInfo.etag`):**
 - Source: `BlobProperties.etag` (always present for existing blobs).
 - Azure returns it double-quoted (e.g. `'"0x8D4BCC2E4835CD0"'`); the backend strips the outer quotes and lowercases before storing.
-- Populated for all operations that call `_props_to_fileinfo`: `get_file_info`, `list_files`, `iter_children`, `list_folders`.
+- Populated for all operations that call `_props_to_fileinfo`: `get_file_info`, `list_files`, `iter_children`.
 
 **Digest (`FileInfo.digest`):**
 - Source: `BlobProperties.content_settings.content_md5` — a `bytes` object when set, `None` when absent.
