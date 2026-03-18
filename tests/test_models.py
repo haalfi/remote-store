@@ -35,6 +35,7 @@ class TestFileInfoFields:
         assert fi.modified_at == NOW
 
     @pytest.mark.spec("MOD-003")
+    @pytest.mark.spec("CDG-004")
     def test_defaults(self) -> None:
         fi = FileInfo(path=RemotePath("a.txt"), name="a.txt", size=0, modified_at=NOW)
         assert fi.digest is None
@@ -43,6 +44,7 @@ class TestFileInfoFields:
         assert fi.extra == {}
 
     @pytest.mark.spec("MOD-003")
+    @pytest.mark.spec("CDG-004")
     def test_optional_set(self) -> None:
         fi = FileInfo(
             path=RemotePath("a.txt"),
