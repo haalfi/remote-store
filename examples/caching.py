@@ -7,7 +7,7 @@ cache statistics, and max_content_size.
 from __future__ import annotations
 
 from remote_store import Store, cached_store
-from remote_store.backends._memory import MemoryBackend
+from remote_store.backends import MemoryBackend
 
 
 def demo(store: Store) -> None:

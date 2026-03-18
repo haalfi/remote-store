@@ -9,8 +9,7 @@ from __future__ import annotations
 import os
 import tempfile
 
-from remote_store import BackendConfig, Registry, RegistryConfig, StoreProfile
-from remote_store._capabilities import Capability
+from remote_store import BackendConfig, Capability, Registry, RegistryConfig, StoreProfile
 
 
 def demo(store):

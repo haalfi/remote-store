@@ -12,7 +12,7 @@ from remote_store import (
     PermissionDenied,
     Store,
 )
-from remote_store.backends._memory import MemoryBackend
+from remote_store.backends import MemoryBackend
 
 
 def demo(store: Store) -> None:

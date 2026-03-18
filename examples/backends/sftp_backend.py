@@ -24,7 +24,9 @@ import os
 import sys
 
 from remote_store import BackendConfig, Registry, RegistryConfig, StoreProfile
-from remote_store.backends._sftp import HostKeyPolicy
+from remote_store.backends import SFTPUtils
+
+HostKeyPolicy = SFTPUtils.HostKeyPolicy
 
 HOST = os.environ.get("RS_SFTP_HOST", "")
 USER = os.environ.get("RS_SFTP_USER", "")
@@ -120,8 +122,9 @@ if __name__ == "__main__":
     # --- Escape hatch: unwrap() via direct construction ---
     # Construct the backend directly to access paramiko.SFTPClient and to
     # set host_key_policy for dev/testing environments.
-    from remote_store.backends import SFTPBackend
-    from remote_store.backends._sftp import HostKeyPolicy
+    from remote_store.backends import SFTPBackend, SFTPUtils
+
+    HostKeyPolicy = SFTPUtils.HostKeyPolicy
 
     backend = SFTPBackend(
         host=HOST,
@@ -142,7 +145,7 @@ if __name__ == "__main__":
 
     # --- Host key policies (commented out) ---
     #
-    # from remote_store.backends._sftp import HostKeyPolicy
+    # HostKeyPolicy = SFTPUtils.HostKeyPolicy
     #
     # # STRICT (default) — reject unknown hosts; key must be in known_hosts
     # backend = SFTPBackend(host="...", username="...", password="...",
@@ -158,7 +161,7 @@ if __name__ == "__main__":
 
     # --- Key-based authentication (commented out) ---
     #
-    # from remote_store.backends._sftp import load_private_key
+    # load_private_key = SFTPUtils.load_private_key
     #
     # # From a file
     # pkey = load_private_key("/path/to/id_rsa", from_file=True)
