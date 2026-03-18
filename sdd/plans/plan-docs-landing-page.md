@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-16
 **Updated:** 2026-03-18
-**Status:** Ready to implement
+**Status:** In progress — diagram rework pending (see §Diagram Rework)
 
 ---
 
@@ -352,7 +352,9 @@ Backends delegate to the packages you'd pick yourself.
 natively, remote-store uses that. Where not, a portable fallback steps in.
 
 ```python
-store.supports(Capability.GLOB)          # True for S3, Local, Azure
+from remote_store import Capability
+
+store.supports(Capability.GLOB)          # True for Local, S3, S3-PyArrow, Azure
 store.supports(Capability.ATOMIC_WRITE)  # True for all except HTTP
 ```
 
@@ -369,6 +371,8 @@ Implement the `Backend` protocol for a new storage target. Or write an
 extension. The hooks are public.
 
 ```python
+from remote_store import Backend, Store
+
 class MyBackend(Backend):
     """Implement the Backend protocol for your storage."""
     ...
@@ -434,7 +438,9 @@ the shape, here's where to go next.
 ## Implementation Steps
 
 1. Replace `docs-src/index.md` with the revised draft above.
-2. Verify mermaid renders correctly with `hatch run docs`.
-3. Verify all internal links resolve with `hatch run docs-build` (strict mode).
-4. Ensure the README remains unchanged — GitHub and docs diverge from here.
-5. Review: does the page feel like an orientation, not a pitch?
+2. Replace placeholder flowchart with `architecture-beta` diagram (see
+   §Diagram Rework for decision, constraints, and sketch).
+3. Verify mermaid renders correctly with `hatch run docs`.
+4. Verify all internal links resolve with `hatch run docs-build` (strict mode).
+5. Ensure the README remains unchanged — GitHub and docs diverge from here.
+6. Review: does the page feel like an orientation, not a pitch?
