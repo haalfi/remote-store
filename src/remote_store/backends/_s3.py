@@ -431,7 +431,7 @@ class S3Backend(Backend):
             modified = datetime.now(tz=timezone.utc)
         # ETag: S3 returns it double-quoted (e.g. '"abc123"'); strip and lowercase.
         raw_etag = info.get("ETag", info.get("etag"))
-        etag = raw_etag.strip('"').lower() if raw_etag else None
+        etag = raw_etag.strip('"').lower() if isinstance(raw_etag, str) else None
         return FileInfo(
             path=RemotePath(path),
             name=name,

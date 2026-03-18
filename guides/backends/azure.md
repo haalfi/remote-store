@@ -108,6 +108,15 @@ If the HNS detection call fails (e.g. insufficient permissions), the backend fal
 
 Note that non-HNS `move()` (copy + delete) is not atomic and `overwrite=False` has a TOCTOU race on all account types. See the [Concurrency and Atomicity Guarantees](../concurrency.md) guide for details.
 
+## File Metadata
+
+`get_file_info()` and `list_files()` return `FileInfo` objects with the following fields populated by the Azure backend:
+
+| Field | Source | Notes |
+|-------|--------|-------|
+| `etag` | `BlobProperties.etag` | Double-quotes stripped; lowercased. |
+| `digest` | `BlobProperties.content_settings.content_md5` | Populated as `ContentDigest("md5", <hex>)` when the blob has a stored Content-MD5; `None` otherwise. |
+
 ## Capabilities
 
 | Capability | Supported | Notes |

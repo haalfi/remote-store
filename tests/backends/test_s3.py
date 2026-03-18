@@ -656,6 +656,24 @@ class TestS3ETag:
         fi = s3_backend.get_file_info("no_digest.txt")
         assert fi.digest is None
 
+    @pytest.mark.spec("S3-023")
+    def test_lowercase_etag_key_fallback(self) -> None:
+        """_info_to_fileinfo uses lowercase 'etag' key when 'ETag' is absent (s3fs list path)."""
+        from datetime import datetime, timezone
+
+        from remote_store.backends._s3 import S3Backend
+
+        # Build a minimal S3Backend without connecting, just to call the helper method.
+        backend = object.__new__(S3Backend)
+        info = {
+            "etag": '"abc123"',
+            "size": 10,
+            "LastModified": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "name": "bucket/file.txt",
+        }
+        fi = backend._info_to_fileinfo(info, "file.txt")
+        assert fi.etag == "abc123"
+
 
 # endregion
 
