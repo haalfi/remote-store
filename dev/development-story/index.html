@@ -6148,6 +6148,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-28-middleware-integrity-and-eat-your-own-dogfood-v0180" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 28: Middleware, Integrity, and "Eat Your Own Dogfood" (v0.18.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6778,6 +6789,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-28-middleware-integrity-and-eat-your-own-dogfood-v0180" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 28: Middleware, Integrity, and "Eat Your Own Dogfood" (v0.18.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7054,15 +7076,15 @@
 <tbody>
 <tr>
 <td>Source code</td>
-<td>~9,000 lines (7 backends)</td>
+<td>~10,000 lines (7 backends)</td>
 </tr>
 <tr>
 <td>Tests</td>
-<td>~1,750 tests, ~15,200 lines</td>
+<td>~1,850 tests, ~17,800 lines</td>
 </tr>
 <tr>
 <td>Specs &amp; docs</td>
-<td>33 specs, 13 ADRs, 4 RFCs</td>
+<td>35 specs, 14 ADRs, 4 RFCs</td>
 </tr>
 <tr>
 <td>Examples</td>
@@ -7070,7 +7092,7 @@
 </tr>
 <tr>
 <td>Extensions</td>
-<td>11 (<code>ext.arrow</code>, <code>ext.batch</code>, <code>ext.cache</code>, <code>ext.dagster</code>, <code>ext.glob</code>, <code>ext.observe</code>, <code>ext.otel</code>, <code>ext.partition</code>, <code>ext.pydantic</code>, <code>ext.transfer</code>, <code>ext.yaml</code>)</td>
+<td>13 (<code>ext.arrow</code>, <code>ext.batch</code>, <code>ext.cache</code>, <code>ext.dagster</code>, <code>ext.glob</code>, <code>ext.integrity</code>, <code>ext.observe</code>, <code>ext.otel</code>, <code>ext.partition</code>, <code>ext.pydantic</code>, <code>ext.streams</code>, <code>ext.transfer</code>, <code>ext.yaml</code>)</td>
 </tr>
 <tr>
 <td>Documentation site</td>
@@ -7082,11 +7104,11 @@
 </tr>
 <tr>
 <td>Co-work sessions</td>
-<td>Spread across ~4 calendar weeks (since Feb 14)</td>
+<td>Spread across ~5 calendar weeks (since Feb 14)</td>
 </tr>
 <tr>
 <td>Commits</td>
-<td>~380</td>
+<td>~410</td>
 </tr>
 </tbody>
 </table>
@@ -7478,6 +7500,10 @@
 <p>The v0.17.0 release completed the API consistency work that Phase 26 identified. The headline change was listing normalization (ID-072): <code>list_folders()</code> shifted from returning bare strings to <code>FolderEntry</code> objects, and <code>iter_children()</code> from <code>FileInfo | str</code> to <code>FileInfo | FolderEntry</code>. A new <code>PathEntry</code> protocol unified all listing return types. <code>FolderInfo</code> gained a <code>.name</code> property (ID-079) so it also satisfies <code>PathEntry</code>. These changes made the listing API uniform — every method that returns path-bearing objects now returns typed objects with <code>.name</code> and <code>.path</code>.</p>
 <p>Azure got <code>max_concurrency</code> support (ID-076), threading a single constructor parameter through all five SDK call sites. Benchmarks showed ~50% write and ~25% read improvement on 100MB payloads. <code>Store.write_text()</code> (ID-074) rounded out the convenience API started by <code>read_text()</code> in v0.16.0.</p>
 <p>On the docs side, the full Sphinx-to-Google docstring migration (ID-080, 367 markers across 25 files) unlocked proper rendering in mkdocstrings. The README got a medium pass (ID-081) streamlining onboarding, and the docs site gained Fira Code, sticky tabs, and property type annotations (ID-064). S3 listing methods dropped their redundant <code>exists()</code> guards (ID-062) — a one-line change per method that halved round-trips.</p>
+<h3 id="phase-28-middleware-integrity-and-eat-your-own-dogfood-v0180">Phase 28: Middleware, Integrity, and "Eat Your Own Dogfood" (v0.18.0)<a class="headerlink" href="#phase-28-middleware-integrity-and-eat-your-own-dogfood-v0180" title="Permanent link">&para;</a></h3>
+<p>v0.18.0 was the middleware release. ADR-0014 introduced <code>ProxyStore</code> as an internal delegation base for <code>ObservedStore</code> and <code>CachedStore</code>, centralizing the boilerplate that both proxies duplicated. Two new extension modules landed alongside it: <code>ext.streams</code> (composable <code>BinaryIO</code> wrappers — <code>ProgressReader</code>, <code>ProgressWriter</code>, <code>ChecksumReader</code>, <code>ChecksumWriter</code>) and <code>ext.integrity</code> (store-level checksum verification via <code>checksum()</code>, <code>verify()</code>, <code>verify_hex()</code>). The <code>ContentDigest</code> frozen dataclass replaced the informal <code>FileInfo.checksum</code> field with typed <code>digest</code> and <code>etag</code> fields, and S3/Azure backends learned to populate them from server-side checksums.</p>
+<p>The biggest lesson came from the BK-008 Medallion + Dagster showcase — a self-contained example composing four extensions over live MeteoSwiss weather data. AI-generated showcase code had three bugs that only surfaced when running against the real API: wrong data URLs, wrong column names and timestamp formats, and a cache bypass where <code>transfer()</code> uses streaming <code>read()</code> which <code>CachedStore</code> doesn't cache. All three passed type checking and looked plausible in review. <strong>Running the code against live data caught what static analysis and code review could not.</strong> This reinforced the project principle "run it, don't just type-check it" — and extended it to examples and showcases, not just library code.</p>
+<p>The HTTP backend gained HEAD fallback (ID-085): when a CDN blocks HEAD requests with 401/403, the backend retries with <code>GET + Range: bytes=0-0</code> and caches the result. Discovered during live testing against opentransportdata.swiss. The docs site got a purpose-built landing page (ID-090) replacing the README include, and the API reference gained dedicated sections for backends (ID-088) and extensions (ID-089).</p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
