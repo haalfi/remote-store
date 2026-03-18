@@ -6,6 +6,13 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Middleware Path 1 (Post-v0.17.0)
 
+- [x] **ID-090 — Docs landing page (replace README include)**
+  Replaced the `README.md` include with a purpose-built landing page:
+  architecture diagram, six key messages (Store-as-folder, zero deps, proven
+  libs, backend-native API, extensions alongside, bring your own), quick start,
+  and navigation links. Diagram rework (flowchart → architecture-beta) deferred.
+  [Plan](plans/plan-docs-landing-page.md).
+
 - [x] **ID-006 — Progress tracking via stream wrappers (`ext.streams`)**
   `ext.transfer.download()` now uses `ProgressReader` wrapper for progress
   tracking, consistent with `upload()` and `transfer()`. Replaces inline

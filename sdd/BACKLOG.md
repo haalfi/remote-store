@@ -89,16 +89,6 @@ Items graduate through the SDD pipeline:
 
 ### Documentation & Developer Experience
 
-- [~] **ID-090 — Docs landing page (replace README include)**
-  The docs homepage (`docs-src/index.md`) currently includes `README.md` 1:1.
-  Replace it with a purpose-built landing page: concise orientation with a
-  mermaid architecture diagram, the six key messages (Store-as-folder, zero
-  deps, proven libs, backend-native API, extensions alongside, bring your own),
-  and navigation links. Not a pitch, not a tutorial — an orientation for someone
-  who already clicked through.
-  - Done: [revised plan with complete draft](plans/plan-docs-landing-page.md)
-    — open questions resolved, all link paths verified, full page content ready.
-  - Next: apply draft to `docs-src/index.md`, verify mermaid + strict build.
 
 - [ ] **ID-057 — Tested code snippets in docs (single-source snippets)**
   All code snippets in the docs site should come from real, tested Python
