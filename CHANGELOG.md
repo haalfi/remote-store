@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-03-18
+
 ### Added
 
 - **S3 backend now populates `FileInfo.digest` from `x-amz-checksum-*`** —
@@ -103,6 +105,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **Extensions API reference section** (ID-089) — moved all 11 extension API
   pages into a nested "Extensions" section with an index page, matching the
   Backends section structure.
+- **Docs landing page** (ID-090) — replaced the 1:1 README include with a
+  purpose-built orientation page: architecture diagram, six key messages,
+  quick start, and navigation links.
 
 ### Removed
 

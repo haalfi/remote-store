@@ -6,15 +6,15 @@ This document chronicles how `remote-store` was built as a collaboration between
 
 | Metric | Value |
 |--------|-------|
-| Source code | ~9,000 lines (7 backends) |
-| Tests | ~1,750 tests, ~15,200 lines |
-| Specs & docs | 33 specs, 13 ADRs, 4 RFCs |
+| Source code | ~10,000 lines (7 backends) |
+| Tests | ~1,850 tests, ~17,800 lines |
+| Specs & docs | 35 specs, 14 ADRs, 4 RFCs |
 | Examples | 22 core + 4 cloud + 5 notebooks |
-| Extensions | 11 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.dagster`, `ext.glob`, `ext.observe`, `ext.otel`, `ext.partition`, `ext.pydantic`, `ext.transfer`, `ext.yaml`) |
+| Extensions | 13 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.dagster`, `ext.glob`, `ext.integrity`, `ext.observe`, `ext.otel`, `ext.partition`, `ext.pydantic`, `ext.streams`, `ext.transfer`, `ext.yaml`) |
 | Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
 | Coverage | >= 95% CI floor (actual in README badge) |
-| Co-work sessions | Spread across ~4 calendar weeks (since Feb 14) |
-| Commits | ~380 |
+| Co-work sessions | Spread across ~5 calendar weeks (since Feb 14) |
+| Commits | ~410 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
@@ -472,6 +472,14 @@ The v0.17.0 release completed the API consistency work that Phase 26 identified.
 Azure got `max_concurrency` support (ID-076), threading a single constructor parameter through all five SDK call sites. Benchmarks showed ~50% write and ~25% read improvement on 100MB payloads. `Store.write_text()` (ID-074) rounded out the convenience API started by `read_text()` in v0.16.0.
 
 On the docs side, the full Sphinx-to-Google docstring migration (ID-080, 367 markers across 25 files) unlocked proper rendering in mkdocstrings. The README got a medium pass (ID-081) streamlining onboarding, and the docs site gained Fira Code, sticky tabs, and property type annotations (ID-064). S3 listing methods dropped their redundant `exists()` guards (ID-062) — a one-line change per method that halved round-trips.
+
+### Phase 28: Middleware, Integrity, and "Eat Your Own Dogfood" (v0.18.0)
+
+v0.18.0 was the middleware release. ADR-0014 introduced `ProxyStore` as an internal delegation base for `ObservedStore` and `CachedStore`, centralizing the boilerplate that both proxies duplicated. Two new extension modules landed alongside it: `ext.streams` (composable `BinaryIO` wrappers — `ProgressReader`, `ProgressWriter`, `ChecksumReader`, `ChecksumWriter`) and `ext.integrity` (store-level checksum verification via `checksum()`, `verify()`, `verify_hex()`). The `ContentDigest` frozen dataclass replaced the informal `FileInfo.checksum` field with typed `digest` and `etag` fields, and S3/Azure backends learned to populate them from server-side checksums.
+
+The biggest lesson came from the BK-008 Medallion + Dagster showcase — a self-contained example composing four extensions over live MeteoSwiss weather data. AI-generated showcase code had three bugs that only surfaced when running against the real API: wrong data URLs, wrong column names and timestamp formats, and a cache bypass where `transfer()` uses streaming `read()` which `CachedStore` doesn't cache. All three passed type checking and looked plausible in review. **Running the code against live data caught what static analysis and code review could not.** This reinforced the project principle "run it, don't just type-check it" — and extended it to examples and showcases, not just library code.
+
+The HTTP backend gained HEAD fallback (ID-085): when a CDN blocks HEAD requests with 401/403, the backend retries with `GET + Range: bytes=0-0` and caches the result. Discovered during live testing against opentransportdata.swiss. The docs site got a purpose-built landing page (ID-090) replacing the README include, and the API reference gained dedicated sections for backends (ID-088) and extensions (ID-089).
 
 ## What Worked Well
 
