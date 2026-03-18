@@ -134,17 +134,6 @@ Items graduate through the SDD pipeline:
 
 ### Core API
 
-- [ ] **ID-098 — S3 backend: populate `FileInfo.digest` from `x-amz-checksum-*`**
-  When objects are uploaded with a checksum algorithm (SHA256, SHA1, CRC32,
-  CRC32C), S3 can return the checksum value via `HeadObject` or `GetObject`
-  with `ChecksumMode: ENABLED`. Currently s3fs does not request this flag, so
-  `FileInfo.digest` is always `None` for S3. Implementation options:
-  - Call `self._fs.s3.head_object(... ChecksumMode="ENABLED")` in
-    `get_file_info` as a second request when the object has a
-    `ChecksumAlgorithm` in the standard info dict.
-  - Or expose `ChecksumMode` as a backend option for users who always want it.
-  Requires spec amendment to S3-023.
-  Split from [ID-096](BACKLOG-DONE.md#middleware-path-1-post-v0170).
 
 - [~] **ID-006 — Progress tracking via stream wrappers (`ext.streams`)**
   Core stream wrappers (`ProgressReader`, `ProgressWriter`) are done.

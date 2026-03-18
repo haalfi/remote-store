@@ -651,11 +651,20 @@ class TestS3ETag:
         assert matches[0].etag == matches[0].etag.lower()
 
     @pytest.mark.spec("S3-023")
-    def test_digest_is_none_without_checksum_header(self, s3_backend: Backend) -> None:
-        """Standard uploads do not carry x-amz-checksum-* without ChecksumMode: ENABLED."""
-        s3_backend.write("no_digest.txt", b"hello")
-        fi = s3_backend.get_file_info("no_digest.txt")
-        assert fi.digest is None
+    def test_digest_type_for_standard_upload(self, s3_backend: Backend) -> None:
+        """get_file_info returns a CRC32 ContentDigest for standard uploads.
+
+        S3 (and moto) automatically computes and stores CRC32 checksums for all
+        objects created since late 2022.  get_file_info uses HeadObject with
+        ChecksumMode=ENABLED unconditionally, so the CRC32 is always returned.
+        """
+        from remote_store._models import ContentDigest
+
+        s3_backend.write("no_explicit_checksum.txt", b"hello")
+        fi = s3_backend.get_file_info("no_explicit_checksum.txt")
+        assert fi.digest is not None
+        assert isinstance(fi.digest, ContentDigest)
+        assert fi.digest.algorithm == "crc32"
 
     @pytest.mark.spec("S3-023")
     def test_lowercase_etag_key_fallback(self) -> None:
@@ -707,6 +716,118 @@ class TestS3ETag:
         }
         fi = backend._info_to_fileinfo(info, "file.txt")
         assert fi.etag is None
+
+
+# endregion
+
+
+# region: Digest via ChecksumMode (S3-024)
+class TestS3Digest:
+    """S3-024: FileInfo.digest population via HeadObject with ChecksumMode=ENABLED."""
+
+    @pytest.mark.spec("S3-024")
+    def test_get_file_info_digest_sha256(self, s3_backend: Backend, moto_server: str) -> None:
+        """get_file_info returns a ContentDigest when the object was uploaded with SHA256."""
+        import hashlib
+
+        from remote_store._models import ContentDigest
+
+        content = b"hello checksum"
+        expected_hex = hashlib.sha256(content).hexdigest()
+        import base64
+
+        b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
+
+        # Upload via boto3 with ChecksumAlgorithm=SHA256
+        import boto3
+
+        from remote_store.backends._s3 import S3Backend
+
+        backend = s3_backend  # type: ignore[assignment]
+        assert isinstance(backend, S3Backend)
+        raw_client = boto3.client(
+            "s3",
+            endpoint_url=moto_server,
+            aws_access_key_id="testing",
+            aws_secret_access_key="testing",
+            region_name=REGION,
+        )
+        # Retrieve bucket name from the backend
+        bucket = backend._bucket
+        raw_client.put_object(
+            Bucket=bucket,
+            Key="sha256_file.txt",
+            Body=content,
+            ChecksumAlgorithm="SHA256",
+            ChecksumSHA256=b64,
+        )
+
+        fi = backend.get_file_info("sha256_file.txt")
+        assert fi.digest is not None
+        assert isinstance(fi.digest, ContentDigest)
+        assert fi.digest.algorithm == "sha256"
+        assert fi.digest.value == expected_hex
+
+    @pytest.mark.spec("S3-024")
+    def test_digest_from_head_response_no_algorithm(self) -> None:
+        """_digest_from_head_response returns None when no known checksum keys are present."""
+        from remote_store.backends._s3 import S3Backend
+
+        backend = object.__new__(S3Backend)
+        raw = {"ContentLength": 5, "ETag": '"abc"'}
+        assert backend._digest_from_head_response(raw) is None
+
+    @pytest.mark.spec("S3-024")
+    def test_list_files_digest_always_none(self, s3_backend: Backend, moto_server: str) -> None:
+        """Listing paths never populate digest — extra HeadObject only issued by get_file_info."""
+        import base64
+        import hashlib
+
+        import boto3
+
+        from remote_store.backends._s3 import S3Backend
+
+        content = b"listed"
+        b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
+        backend = s3_backend
+        assert isinstance(backend, S3Backend)
+        raw_client = boto3.client(
+            "s3",
+            endpoint_url=moto_server,
+            aws_access_key_id="testing",
+            aws_secret_access_key="testing",
+            region_name=REGION,
+        )
+        raw_client.put_object(
+            Bucket=backend._bucket,
+            Key="listed_sha256.txt",
+            Body=content,
+            ChecksumAlgorithm="SHA256",
+            ChecksumSHA256=b64,
+        )
+
+        files = list(backend.list_files(""))
+        matches = [f for f in files if f.name == "listed_sha256.txt"]
+        assert len(matches) == 1
+        assert matches[0].digest is None
+
+    @pytest.mark.spec("S3-024")
+    def test_digest_from_head_response_sha256(self) -> None:
+        """_digest_from_head_response returns ContentDigest for SHA256 checksum."""
+        import base64
+        import hashlib
+
+        from remote_store._models import ContentDigest
+        from remote_store.backends._s3 import S3Backend
+
+        content = b"test"
+        b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
+        backend = object.__new__(S3Backend)
+        raw = {"ContentLength": 4, "ChecksumSHA256": b64}
+        result = backend._digest_from_head_response(raw)
+        assert isinstance(result, ContentDigest)
+        assert result.algorithm == "sha256"
+        assert result.value == hashlib.sha256(content).hexdigest()
 
 
 # endregion
