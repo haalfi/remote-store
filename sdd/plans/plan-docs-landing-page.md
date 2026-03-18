@@ -100,6 +100,78 @@ flowchart LR
   subgraphs for detail layers. Subgraph links (not inner-node links) preserve
   direction.
 
+> **[~] OPEN — diagram needs rework.** See §Diagram Rework below.
+> The current flowchart is a placeholder; the final diagram should read as
+> architecture, not flow control.
+
+---
+
+## Diagram Rework
+
+The current `flowchart LR` reads as a process flow — boxes and arrows that imply
+data moving left-to-right. The goal is an **architectural overview**: layers,
+groups, and relationships that communicate structure, not execution order.
+
+### Options considered
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **Mermaid `architecture-beta`** | Native to docs; no extra toolchain; purpose-built for architecture; looks like component/service diagrams | Beta status; syntax is simpler/less expressive than C4 |
+| **Mermaid C4** | Formal C4 model notation; very readable at context/container level | Verbose; best for system-context diagrams, not internal layer maps |
+| **D2** | Best-looking output of any text-defined diagram tool; very expressive layout engine | Extra toolchain (separate binary or CI step); not native to MkDocs/Mermaid |
+
+### Decision
+
+**Primary choice: Mermaid `architecture-beta`**
+
+Reasons:
+- Stays native to the docs build — no extra toolchain beyond Mermaid support already in MkDocs Material.
+- Syntax is designed for component/service/layer diagrams, not flowcharts.
+- Easy to maintain alongside the plan.
+- Looks significantly more architectural than `flowchart`.
+
+**Aspirational option: D2**
+
+If the Mermaid `architecture-beta` output is still not expressive enough, D2
+produces the best-looking text-defined architecture diagrams available. The
+trade-off is a separate build step. Worth revisiting if the docs build gains a
+pre-processing stage.
+
+### What the reworked diagram must preserve
+
+- Horizontal conceptual spine: Extensions → Store → Backends → Libraries
+- Detail layers beneath each group (method kinds, backend names, library names)
+- Three relationship types: Extensions *enhance* Store (optional/dashed),
+  Store *delegates to* Backends, Backends *use* Libraries
+- `...yours` hint for extensibility without a dedicated node
+
+### Mermaid `architecture-beta` sketch
+
+```
+architecture-beta
+  group core(server)[Core]
+  group infra(server)[Infrastructure]
+
+  service ext(logos:puzzle)[Extensions]
+  service store(logos:box)[Store API] in core
+  service methods(logos:list)[Read · Write · List · Stream] in core
+  service backends(logos:database)[Backends] in infra
+  service b_list(logos:list)[Local · S3 · SFTP · Azure · …yours] in infra
+  service libs(logos:package)[Proven Libraries] in infra
+  service l_list(logos:list)[stdlib · s3fs · paramiko · azure SDK] in infra
+
+  ext:R --> L:store
+  store:R --> L:backends
+  store:B --> T:methods
+  backends:R --> L:libs
+  backends:B --> T:b_list
+  libs:B --> T:l_list
+```
+
+> Note: `architecture-beta` icon support depends on the Mermaid version bundled
+> with MkDocs Material. Verify icon availability at render time; fall back to
+> plain labels if icons are unavailable.
+
 ---
 
 ## Page Structure
@@ -169,6 +241,12 @@ draft below:
 
 6. **Missing frontmatter.** Added `hide: navigation` to match current page.
 
+7. **[~] Diagram reads as flowchart, not architecture.** The `flowchart LR`
+   communicates process flow, not structural layers. Needs rework before the
+   page goes live. Decision and sketch in §Diagram Rework: use
+   `architecture-beta` (native, purpose-built); D2 as aspirational best-look
+   option if a separate toolchain becomes acceptable.
+
 ---
 
 ## Revised Draft
@@ -194,6 +272,9 @@ yourself.
 ---
 
 ## Architecture
+
+<!-- [~] PLACEHOLDER — replace with architecture-beta diagram before shipping.
+     See §Diagram Rework in the plan for the decision and sketch. -->
 
 ```mermaid
 flowchart LR
