@@ -1056,6 +1056,23 @@ class TestAzureETagAndDigest:
         assert fi.digest is None
 
     @pytest.mark.spec("AZ-034")
+    def test_digest_none_when_content_settings_absent(self) -> None:
+        """Blob properties where content_settings is None yield digest=None."""
+        from datetime import datetime, timezone
+
+        mock_props = MagicMock()
+        mock_props.etag = '"abc123"'
+        mock_props.content_settings = None
+        mock_props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        mock_props.size = 0
+        mock_props.content_length = 0
+
+        backend = AzureBackend(container="c", account_name="fake")
+        fi = backend._props_to_fileinfo(mock_props, "test.txt")
+
+        assert fi.digest is None
+
+    @pytest.mark.spec("AZ-034")
     def test_etag_stripped_and_lowercased(self) -> None:
         """Raw Azure ETag (double-quoted) is stripped and lowercased in FileInfo.etag."""
         from datetime import datetime, timezone

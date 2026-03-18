@@ -674,6 +674,23 @@ class TestS3ETag:
         fi = backend._info_to_fileinfo(info, "file.txt")
         assert fi.etag == "abc123"
 
+    @pytest.mark.spec("S3-023")
+    def test_multipart_etag_suffix_preserved(self) -> None:
+        """Multipart ETags (form 'hash-N') survive strip/lowercase unchanged."""
+        from datetime import datetime, timezone
+
+        from remote_store.backends._s3 import S3Backend
+
+        backend = object.__new__(S3Backend)
+        info = {
+            "ETag": '"d41d8cd98f00b204e9800998ecf8427e-2"',
+            "size": 100,
+            "LastModified": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "name": "bucket/big.bin",
+        }
+        fi = backend._info_to_fileinfo(info, "big.bin")
+        assert fi.etag == "d41d8cd98f00b204e9800998ecf8427e-2"
+
 
 # endregion
 

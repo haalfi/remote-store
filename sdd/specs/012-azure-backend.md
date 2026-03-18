@@ -192,6 +192,8 @@ AzureBackend(
 - `etag`: see AZ-034
 - `digest`: see AZ-034
 
+**Note:** `content_type` is not included in `FileInfo`.
+
 **Raises:** `NotFound` if the file does not exist.
 
 ### AZ-024: get_folder_info()
