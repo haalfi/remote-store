@@ -128,7 +128,7 @@ class ChecksumReader:
     Args:
         inner: Readable binary stream to wrap.
         algorithm: Hash algorithm name (default ``"sha256"``).
-            Must be supported by [hashlib][hashlib].
+            Must be supported by ``hashlib``.
     """
 
     def __init__(self, inner: BinaryIO, algorithm: str = "sha256") -> None:
@@ -192,7 +192,7 @@ class ChecksumWriter:
     Args:
         inner: Writable binary stream to wrap.
         algorithm: Hash algorithm name (default ``"sha256"``).
-            Must be supported by [hashlib][hashlib].
+            Must be supported by ``hashlib``.
     """
 
     def __init__(self, inner: BinaryIO, algorithm: str = "sha256") -> None:
