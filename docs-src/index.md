@@ -57,7 +57,7 @@ A `Store` scopes all operations to a root path. Everything is relative.
 
 ```python
 from remote_store import Store
-from remote_store.backends.local import LocalBackend
+from remote_store.backends import LocalBackend
 
 store = Store(LocalBackend(root="/tmp/data"))
 store.write_text("hello.txt", "Hello, world!")
@@ -67,7 +67,7 @@ print(store.read_text("hello.txt"))  # 'Hello, world!'
 Switch backend without changing application code:
 
 ```python
-from remote_store.backends.s3 import S3Backend
+from remote_store.backends import S3Backend
 
 store = Store(S3Backend(bucket="my-bucket"))
 ```
@@ -139,7 +139,7 @@ pip install remote-store[s3]
 
 ```python
 from remote_store import Store
-from remote_store.backends.s3 import S3Backend
+from remote_store.backends import S3Backend
 
 store = Store(S3Backend(bucket="my-bucket"))
 store.write_text("file.txt", "hello")
@@ -169,3 +169,4 @@ See [Getting Started](getting-started.md) for a complete walkthrough.
 - API reference → [Store API](api/store.md)
 - Capabilities → [Capabilities matrix](capabilities-matrix.md)
 - Architecture and design → [Architecture](architecture.md)
+- Further readings → [Further Reading](further-reading.md)

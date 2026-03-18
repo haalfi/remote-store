@@ -7,17 +7,17 @@ on top of the core Store API.
 
 | Module | Extra | Description | Guide | Example |
 |--------|-------|-------------|-------|---------|
-| `ext.batch` | *(none)* | Bulk delete, copy, and exists operations | [Guide](batch-operations.md) | [Example](examples/batch-operations.md) |
-| `ext.cache` | *(none)* | Store-level caching with TTL and auto-invalidation | [Guide](cache.md) | [Example](examples/caching.md) |
-| `ext.glob` | *(none)* | Portable glob pattern matching for file listing | [Guide](glob-pattern-matching.md) | [Example](examples/glob-pattern-matching.md) |
-| `ext.observe` | *(none)* | Callback-based observability hooks for Store operations | [Guide](observe.md) | [Example](examples/observe-hooks.md) |
-| `ext.partition` | *(none)* | Hive-style partition path helpers | — | — |
-| `ext.transfer` | *(none)* | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](examples/transfer-operations.md) |
-| `ext.arrow` | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](examples/pyarrow-adapter.md) |
-| `ext.otel` | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](examples/otel-tracing.md) |
-| `ext.pydantic` | `pydantic` | Pydantic BaseModel/BaseSettings adapter | — | [Example](examples/config-loaders.md) |
-| `ext.yaml` | `yaml` | YAML config file loader | — | [Example](examples/config-loaders.md) |
-| `ext.dagster` | `dagster` | Dagster IO Manager adapter | [Guide](dagster.md) | [Example](examples/dagster-io-manager.md) |
+| [`ext.batch`](api/extensions/batch.md) | *(none)* | Bulk delete, copy, and exists operations | [Guide](batch-operations.md) | [Example](examples/batch-operations.md) |
+| [`ext.cache`](api/extensions/cache.md) | *(none)* | Store-level caching with TTL and auto-invalidation | [Guide](cache.md) | [Example](examples/caching.md) |
+| [`ext.glob`](api/extensions/glob.md) | *(none)* | Portable glob pattern matching for file listing | [Guide](glob-pattern-matching.md) | [Example](examples/glob-pattern-matching.md) |
+| [`ext.observe`](api/extensions/observe.md) | *(none)* | Callback-based observability hooks for Store operations | [Guide](observe.md) | [Example](examples/observe-hooks.md) |
+| [`ext.partition`](api/extensions/partition.md) | *(none)* | Hive-style partition path helpers | — | — |
+| [`ext.transfer`](api/extensions/transfer.md) | *(none)* | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](examples/transfer-operations.md) |
+| [`ext.arrow`](api/extensions/arrow.md) | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](examples/pyarrow-adapter.md) |
+| [`ext.otel`](api/extensions/otel.md) | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](examples/otel-tracing.md) |
+| [`ext.pydantic`](api/extensions/pydantic.md) | `pydantic` | Pydantic BaseModel/BaseSettings adapter | — | [Example](examples/config-loaders.md) |
+| [`ext.yaml`](api/extensions/yaml.md) | `yaml` | YAML config file loader | — | [Example](examples/config-loaders.md) |
+| [`ext.dagster`](api/extensions/dagster.md) | `dagster` | Dagster IO Manager adapter | [Guide](dagster.md) | [Example](examples/dagster-io-manager.md) |
 
 ## Using Extensions
 
