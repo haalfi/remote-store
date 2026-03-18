@@ -6003,7 +6003,7 @@ stream lifecycle management needed.</p>
 
         <p>Checksum verification helpers over Store's public API.</p>
 <p>Pure functions for computing and verifying file integrity.  These compose
-<code>store.read()</code> with :class:<code>~remote_store.ext.streams.ChecksumReader</code>
+<code>store.read()</code> with <a class="autorefs autorefs-internal" title="            ChecksumReader" href="../streams/#remote_store.ext.streams.ChecksumReader">ChecksumReader</a>
 internally — users don't need to manage stream lifecycle.</p>
 <p>Usage:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.integrity</span><span class="w"> </span><span class="kn">import</span> <span class="n">checksum</span><span class="p">,</span> <span class="n">verify</span>
@@ -6137,8 +6137,13 @@ returns a <code>(algorithm, hex_digest)</code> tuple.</p>
     <div class="doc doc-contents ">
 
         <p>Compute the content digest of a file in the store.</p>
-<p>Like :func:<code>checksum</code>, but returns a :class:<code>ContentDigest</code> instead of
-a raw tuple.</p>
+<p>Like <a class="autorefs autorefs-internal" title="            checksum" href="#remote_store.ext.integrity.checksum">checksum</a>, but returns a
+<a class="autorefs autorefs-internal" title="            ContentDigest
+
+
+  
+      dataclass
+  " href="../../models/#remote_store.ContentDigest">ContentDigest</a> instead of a raw tuple.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6175,15 +6180,20 @@ a raw tuple.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-<b><code>A</code></b> (              <code><a class="autorefs autorefs-internal" title="            ContentDigest
+              <code><a class="autorefs autorefs-internal" title="            ContentDigest
 
 
   
       dataclass
    (remote_store._models.ContentDigest)" href="../../models/#remote_store.ContentDigest">ContentDigest</a></code>
-)          –
+          –
           <div class="doc-md-description">
-            <p>class:<code>ContentDigest</code> with normalized algorithm and hex value.</p>
+            <p>A <a class="autorefs autorefs-internal" title="            ContentDigest
+
+
+  
+      dataclass
+  " href="../../models/#remote_store.ContentDigest">ContentDigest</a> with normalized algorithm and hex value.</p>
           </div>
         </li>
     </ul>
