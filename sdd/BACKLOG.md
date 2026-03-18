@@ -131,13 +131,34 @@ Items graduate through the SDD pipeline:
 
 ### Core API
 
-- [~] **ID-008 — Checksum verification on read/write**
-  Verification functions (`ext.integrity`) and stream wrappers
-  (`ext.streams`) are done. Remaining: introduce `ContentDigest` model,
-  replace `FileInfo.checksum` with `FileInfo.digest` + `FileInfo.etag`,
-  populate per backend (S3 `x-amz-checksum-*` → digest, Azure
-  `Content-MD5` → digest, all ETags → etag).
+- [ ] **ID-095 — `ContentDigest` model + `FileInfo.digest`/`etag` fields**
+  Introduce `ContentDigest` frozen dataclass (`algorithm: str`,
+  `value: str` — both lowercase-normalized). Replace
+  `FileInfo.checksum` with `FileInfo.digest: ContentDigest | None` and
+  `FileInfo.etag: str | None`. Update spec 001 (MOD-003). Deprecation
+  shim for `FileInfo.checksum` property (read-only, emits
+  `DeprecationWarning`, returns `digest.value` if set). Update
+  `ext.integrity` to accept/return `ContentDigest`. Needs new spec.
+  Split from [ID-008](BACKLOG-DONE.md#middleware-path-1-post-v0170).
   See [middleware architecture research](research/research-store-middleware-architecture.md) §5.
+
+- [ ] **ID-096 — S3 backend: populate `FileInfo.etag` and `digest`**
+  In `_s3.py` `_build_file_info()`: populate `etag` from S3 `ETag`
+  header (always available). Populate `digest` from
+  `x-amz-checksum-*` response headers when present (requires
+  `ChecksumMode: ENABLED` on request). Needs spec amendment or new
+  spec section.
+  Depends on: ID-095.
+  Split from [ID-008](BACKLOG-DONE.md#middleware-path-1-post-v0170).
+
+- [ ] **ID-097 — Azure backend: populate `FileInfo.etag` and `digest`**
+  In `_azure.py` `_build_file_info()`: populate `etag` from Azure
+  `ETag` header (virtually always present). Populate `digest` from
+  `Content-MD5` header when present — decode base64 → lowercase hex →
+  `ContentDigest("md5", value)`. Needs spec amendment or new spec
+  section.
+  Depends on: ID-095.
+  Split from [ID-008](BACKLOG-DONE.md#middleware-path-1-post-v0170).
 
 - [~] **ID-006 — Progress tracking via stream wrappers (`ext.streams`)**
   Core stream wrappers (`ProgressReader`, `ProgressWriter`) are done.

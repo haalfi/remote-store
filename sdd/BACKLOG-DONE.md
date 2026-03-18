@@ -18,6 +18,13 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   provides default delegation for all 27 Store methods, enables `child()`
   propagation via `_wrap_child()`. ADR-0014.
 
+- [x] **ID-008 — Checksum verification on read/write (done parts)**
+  Verification functions (`ext.integrity`, ID-093) and stream wrappers
+  (`ext.streams`, ID-092) are complete. Remaining work split into:
+  [ID-095](BACKLOG.md) (`ContentDigest` model),
+  [ID-096](BACKLOG.md) (S3 population),
+  [ID-097](BACKLOG.md) (Azure population).
+
 - [x] **ID-093 — `ext.integrity` module — checksum verification helpers**
   `checksum()`, `verify()`, `verify_hex()`. Pure functions over
   Store's public API. Spec 034.
