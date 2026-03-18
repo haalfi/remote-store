@@ -8,6 +8,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`ContentDigest` frozen dataclass** — immutable model with `algorithm: str`
+  and `value: str` (both lowercase-normalized, validated). Convenience
+  `content_digest()` function in `ext.integrity`. (ID-095, CDG-001–CDG-003)
+- **`FileInfo.digest` and `FileInfo.etag` fields** — `digest: ContentDigest | None`
+  for verified checksums, `etag: str | None` for opaque server tags.
+  `FileInfo.checksum` is removed (pre-1.0, no deprecation shim).
+  (ID-095, CDG-004)
 - **`ext.streams` module** — composable `BinaryIO` wrappers for progress
   tracking and checksum computation: `ProgressReader`, `ProgressWriter`,
   `ChecksumReader`, `ChecksumWriter`, `read_with_progress()`. Stream-level

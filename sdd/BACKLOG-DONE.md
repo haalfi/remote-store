@@ -6,6 +6,12 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Middleware Path 1 (Post-v0.17.0)
 
+- [x] **ID-095 — `ContentDigest` model + `FileInfo.digest`/`etag` fields**
+  `ContentDigest` frozen dataclass (`algorithm: str`, `value: str` — both
+  lowercase-normalized, validated). `FileInfo.checksum` replaced with
+  `FileInfo.digest: ContentDigest | None` and `FileInfo.etag: str | None`.
+  `ext.integrity.content_digest()` function added. Spec 035.
+
 - [x] **BUG-003 — `child()` now propagates proxy behavior in ObservedStore/CachedStore**
   `ObservedStore.child()` and `CachedStore.child()` now return wrapped
   stores that preserve observation/caching behavior. Previously, child
@@ -17,6 +23,12 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   `_proxy.py`. Centralizes `_backend`/`_root`/`_owns_backend` coupling,
   provides default delegation for all 27 Store methods, enables `child()`
   propagation via `_wrap_child()`. ADR-0014.
+
+- [x] **ID-008 — Checksum verification on read/write (done parts)**
+  Verification functions (`ext.integrity`, ID-093), stream wrappers
+  (`ext.streams`, ID-092), and `ContentDigest` model (ID-095) are complete.
+  Remaining work: [ID-096](BACKLOG.md) (S3 population),
+  [ID-097](BACKLOG.md) (Azure population).
 
 - [x] **ID-093 — `ext.integrity` module — checksum verification helpers**
   `checksum()`, `verify()`, `verify_hex()`. Pure functions over

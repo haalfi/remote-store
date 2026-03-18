@@ -22,14 +22,14 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderEntry, FolderInfo, PathEntry
+from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, PathEntry
 from remote_store._path import RemotePath
 from remote_store._registry import Registry, register_backend
 from remote_store._store import Store
 from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_exists
 from remote_store.ext.cache import CacheBackend, CachedStore, CacheStats, MemoryCache, cached_store
 from remote_store.ext.glob import glob_files
-from remote_store.ext.integrity import checksum, verify, verify_hex
+from remote_store.ext.integrity import checksum, content_digest, verify, verify_hex
 from remote_store.ext.observe import (
     BufferedObserver,
     ObservedStore,
@@ -53,6 +53,7 @@ __all__ = [
     "register_backend",
     # Path & Models
     "RemotePath",
+    "ContentDigest",
     "FileInfo",
     "FolderEntry",
     "FolderInfo",
@@ -101,6 +102,7 @@ __all__ = [
     "set_correlation_id",
     # Integrity helpers
     "checksum",
+    "content_digest",
     "verify",
     "verify_hex",
     # Stream wrappers

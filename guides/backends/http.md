@@ -93,7 +93,7 @@ HTTP has no folder concept. `is_folder()` always returns `False`. `get_folder_in
 |---|---|---|
 | `size` | `Content-Range` total, then `Content-Length` | `0` |
 | `modified_at` | `Last-Modified` | `datetime.min` (UTC) |
-| `checksum` | `ETag` | `None` |
+| `etag` | `ETag` | `None` |
 | `content_type` | `Content-Type` | `None` |
 | `extra` | All headers | `{"headers": {...}}` |
 

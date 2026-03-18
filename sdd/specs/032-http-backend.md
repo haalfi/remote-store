@@ -178,7 +178,7 @@ on 401/403). Maps response headers to `FileInfo`:
 | `name` | From path | Always available |
 | `size` | `Content-Range` total, then `Content-Length` | `0` |
 | `modified_at` | `Last-Modified` | `datetime.min.replace(tzinfo=timezone.utc)` |
-| `checksum` | `ETag` | `None` |
+| `etag` | `ETag` | `None` |
 | `content_type` | `Content-Type` | `None` |
 | `extra` | All response headers | `{"headers": dict(response.headers)}` |
 

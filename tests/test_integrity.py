@@ -9,9 +9,10 @@ import hashlib
 
 import pytest
 
+from remote_store._models import ContentDigest
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
-from remote_store.ext.integrity import checksum, verify, verify_hex
+from remote_store.ext.integrity import checksum, content_digest, verify, verify_hex
 
 
 @pytest.fixture
@@ -144,17 +145,52 @@ class TestVerifyHex:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# INT-005: content_digest
+# ---------------------------------------------------------------------------
+
+
+class TestContentDigest:
+    @pytest.mark.spec("INT-005")
+    def test_returns_content_digest(self, store: Store) -> None:
+        result = content_digest(store, "hello.txt")
+        assert isinstance(result, ContentDigest)
+        expected = hashlib.sha256(b"hello world").hexdigest()
+        assert result.algorithm == "sha256"
+        assert result.value == expected
+
+    @pytest.mark.spec("INT-005")
+    def test_md5(self, store: Store) -> None:
+        result = content_digest(store, "hello.txt", algorithm="md5")
+        expected = hashlib.md5(b"hello world").hexdigest()  # noqa: S324
+        assert result.algorithm == "md5"
+        assert result.value == expected
+
+    @pytest.mark.spec("INT-005")
+    def test_not_found(self, store: Store) -> None:
+        from remote_store._errors import NotFound
+
+        with pytest.raises(NotFound):
+            content_digest(store, "nonexistent.txt")
+
+    @pytest.mark.spec("INT-005")
+    def test_unsupported_algorithm(self, store: Store) -> None:
+        with pytest.raises(ValueError, match="unsupported hash type"):
+            content_digest(store, "hello.txt", algorithm="not_a_real_algo")
+
+
 class TestModuleExports:
     @pytest.mark.spec("INT-004")
     def test_all_exports(self) -> None:
         from remote_store.ext import integrity
 
-        assert set(integrity.__all__) == {"checksum", "verify", "verify_hex"}
+        assert set(integrity.__all__) == {"checksum", "content_digest", "verify", "verify_hex"}
 
     @pytest.mark.spec("INT-004")
     def test_top_level_import(self) -> None:
         import remote_store
 
         assert hasattr(remote_store, "checksum")
+        assert hasattr(remote_store, "content_digest")
         assert hasattr(remote_store, "verify")
         assert hasattr(remote_store, "verify_hex")

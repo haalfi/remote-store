@@ -48,4 +48,16 @@ the file at *path*, computes its checksum using *algorithm*, and returns
 ## INT-004: Module Exports
 
 **Invariant:** `ext.integrity.__all__` contains:
-`checksum`, `verify`, `verify_hex`.
+`checksum`, `content_digest`, `verify`, `verify_hex`.
+
+## INT-005: content_digest
+
+**Invariant:** `content_digest(store, path, algorithm="sha256")` reads the
+file at *path* and returns a `ContentDigest` instance.
+
+**Postconditions:**
+- Equivalent to calling `checksum()` and wrapping the result in `ContentDigest`.
+- The returned `ContentDigest` has normalized lowercase `algorithm` and `value`.
+- Raises `NotFound` if the file does not exist.
+- Raises `ValueError` if the algorithm is not supported by `hashlib`.
+**See also:** [035-content-digest.md](035-content-digest.md) (CDG-001).
