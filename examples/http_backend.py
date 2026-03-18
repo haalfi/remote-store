@@ -42,7 +42,7 @@ def demo(store: Store) -> dict:
     print(f"Size: {info.size} bytes")
     print(f"Content-Type: {info.content_type}")
     print(f"Modified: {info.modified_at}")
-    print(f"ETag: {info.checksum}")
+    print(f"ETag: {info.etag}")
 
     # --- Unsupported operations raise CapabilityNotSupported ---
     print("\n=== Write Attempt (read-only) ===\n")

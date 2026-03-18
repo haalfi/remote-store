@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import dataclasses
+import re
 import typing
 from typing import TYPE_CHECKING
 
@@ -14,6 +15,8 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     from remote_store._path import RemotePath
+
+_HEX_RE = re.compile(r"^[0-9a-f]+$")
 
 
 @typing.runtime_checkable
@@ -31,6 +34,37 @@ class PathEntry(typing.Protocol):
         ...
 
 
+@dataclasses.dataclass(frozen=True)
+class ContentDigest:
+    """Verified content digest with known algorithm.
+
+    Both ``algorithm`` and ``value`` are normalized to lowercase on
+    construction.
+
+    Attributes:
+        algorithm: Hash algorithm name, always lowercase (e.g., ``"sha256"``).
+        value: Lowercase hex-encoded digest, no prefix, no separators.
+    """
+
+    algorithm: str
+    value: str
+
+    def __post_init__(self) -> None:
+        if not self.algorithm:
+            msg = "algorithm must not be empty"
+            raise ValueError(msg)
+        if not self.value:
+            msg = "value must not be empty"
+            raise ValueError(msg)
+        # Normalize to lowercase.
+        object.__setattr__(self, "algorithm", self.algorithm.strip().lower())
+        normalized = self.value.strip().lower()
+        if not _HEX_RE.match(normalized):
+            msg = f"value must be hexadecimal, got {self.value!r}"
+            raise ValueError(msg)
+        object.__setattr__(self, "value", normalized)
+
+
 @dataclasses.dataclass(frozen=True, eq=False)
 class FileInfo:
     """Immutable snapshot of file metadata.
@@ -42,7 +76,8 @@ class FileInfo:
         name: File name (final path component).
         size: File size in bytes.
         modified_at: Last modification time.
-        checksum: Optional checksum string (backend-specific format).
+        digest: Verified content digest with known algorithm.
+        etag: Opaque backend-provided tag for change detection.
         content_type: Optional MIME type.
         extra: Backend-specific metadata.
     """
@@ -51,7 +86,8 @@ class FileInfo:
     name: str
     size: int
     modified_at: datetime
-    checksum: str | None = None
+    digest: ContentDigest | None = None
+    etag: str | None = None
     content_type: str | None = None
     extra: dict[str, object] = dataclasses.field(default_factory=dict)
 

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from remote_store._models import FileInfo, FolderEntry, FolderInfo, PathEntry
+from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, PathEntry
 from remote_store._path import RemotePath
 
 NOW = datetime(2024, 1, 1, tzinfo=timezone.utc)
@@ -37,7 +37,8 @@ class TestFileInfoFields:
     @pytest.mark.spec("MOD-003")
     def test_defaults(self) -> None:
         fi = FileInfo(path=RemotePath("a.txt"), name="a.txt", size=0, modified_at=NOW)
-        assert fi.checksum is None
+        assert fi.digest is None
+        assert fi.etag is None
         assert fi.content_type is None
         assert fi.extra == {}
 
@@ -48,13 +49,15 @@ class TestFileInfoFields:
             name="a.txt",
             size=10,
             modified_at=NOW,
-            checksum="abc123",
+            digest=ContentDigest("sha256", "abcdef0123456789"),
+            etag='"abc123"',
             content_type="text/plain",
-            extra={"etag": "xyz"},
+            extra={"key": "val"},
         )
-        assert fi.checksum == "abc123"
+        assert fi.digest == ContentDigest("sha256", "abcdef0123456789")
+        assert fi.etag == '"abc123"'
         assert fi.content_type == "text/plain"
-        assert fi.extra == {"etag": "xyz"}
+        assert fi.extra == {"key": "val"}
 
 
 class TestFolderInfoFields:
@@ -199,3 +202,60 @@ class TestPathEntryProtocol:
         paths = [str(e.path) for e in entries]
         assert names == ["a.txt", "sub", "data"]
         assert paths == ["a.txt", "sub", "data"]
+
+
+class TestContentDigest:
+    """CDG-001 through CDG-003: ContentDigest dataclass."""
+
+    @pytest.mark.spec("CDG-001")
+    def test_frozen(self) -> None:
+        d = ContentDigest("sha256", "abcd1234")
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            d.algorithm = "md5"  # type: ignore[misc]
+
+    @pytest.mark.spec("CDG-001")
+    def test_lowercase_normalization(self) -> None:
+        d = ContentDigest("SHA256", "ABCD1234")
+        assert d.algorithm == "sha256"
+        assert d.value == "abcd1234"
+
+    @pytest.mark.spec("CDG-001")
+    def test_whitespace_stripped(self) -> None:
+        d = ContentDigest(" sha256 ", " abcd1234 ")
+        assert d.algorithm == "sha256"
+        assert d.value == "abcd1234"
+
+    @pytest.mark.spec("CDG-002")
+    def test_equality(self) -> None:
+        a = ContentDigest("sha256", "abcd1234")
+        b = ContentDigest("SHA256", "ABCD1234")
+        assert a == b
+
+    @pytest.mark.spec("CDG-002")
+    def test_hashable(self) -> None:
+        a = ContentDigest("sha256", "abcd1234")
+        b = ContentDigest("SHA256", "ABCD1234")
+        assert hash(a) == hash(b)
+        assert {a, b} == {a}
+
+    @pytest.mark.spec("CDG-003")
+    def test_empty_algorithm_raises(self) -> None:
+        with pytest.raises(ValueError, match="algorithm must not be empty"):
+            ContentDigest("", "abcd1234")
+
+    @pytest.mark.spec("CDG-003")
+    def test_empty_value_raises(self) -> None:
+        with pytest.raises(ValueError, match="value must not be empty"):
+            ContentDigest("sha256", "")
+
+    @pytest.mark.spec("CDG-003")
+    def test_non_hex_value_raises(self) -> None:
+        with pytest.raises(ValueError, match="value must be hexadecimal"):
+            ContentDigest("sha256", "not-hex!")
+
+    @pytest.mark.spec("CDG-005")
+    def test_top_level_export(self) -> None:
+        import remote_store
+
+        assert hasattr(remote_store, "ContentDigest")
+        assert remote_store.ContentDigest is ContentDigest

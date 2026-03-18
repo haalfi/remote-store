@@ -105,7 +105,8 @@
 
 ### MOD-003: FileInfo Optional Fields
 
-**Invariant:** `FileInfo` has optional fields: `checksum` (`str | None`, default `None`), `content_type` (`str | None`, default `None`), `extra` (`dict[str, object]`, default empty dict).
+**Invariant:** `FileInfo` has optional fields: `digest` (`ContentDigest | None`, default `None`), `etag` (`str | None`, default `None`), `content_type` (`str | None`, default `None`), `extra` (`dict[str, object]`, default empty dict).
+**See also:** [035-content-digest.md](035-content-digest.md) (CDG-001 through CDG-005).
 
 ### MOD-004: FolderInfo Required Fields
 
