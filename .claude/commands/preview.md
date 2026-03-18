@@ -28,6 +28,14 @@ hatch run docs-build
 
 The docs site lands in `site/`.
 
+### 3. Verify expectations repo exists
+
+```bash
+test -d ../remote-store-expectations
+```
+
+If this fails, abort with: `"../remote-store-expectations/ not found. Clone it first."`
+
 ### 3a. Clean previous preview
 
 ```bash

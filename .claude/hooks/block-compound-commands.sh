@@ -5,9 +5,9 @@
 
 COMMAND=$(jq -r '.tool_input.command' < /dev/stdin)
 
-# Strip single-quoted and double-quoted strings before checking,
-# so that operators inside quotes (e.g. python -c "import os; ...") are ignored.
-STRIPPED=$(echo "$COMMAND" | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g')
+# Collapse to a single line so multi-line quoted strings are handled,
+# then strip single-quoted and double-quoted strings before checking.
+STRIPPED=$(echo "$COMMAND" | tr '\n' ' ' | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g')
 
 # Check for compound operators in unquoted portions
 if echo "$STRIPPED" | grep -qE '(&&|\|\||;)'; then
