@@ -652,17 +652,19 @@ class TestS3ETag:
 
     @pytest.mark.spec("S3-023")
     def test_digest_type_for_standard_upload(self, s3_backend: Backend) -> None:
-        """get_file_info returns digest=None or a ContentDigest for standard uploads.
+        """get_file_info returns a CRC32 ContentDigest for standard uploads.
 
-        S3 automatically computes and stores CRC32 checksums for objects created
-        since late 2022; moto reflects this behaviour.  The digest field may therefore
-        be non-None even when no explicit checksum was requested at upload time.
+        S3 (and moto) automatically computes and stores CRC32 checksums for all
+        objects created since late 2022.  get_file_info uses HeadObject with
+        ChecksumMode=ENABLED unconditionally, so the CRC32 is always returned.
         """
         from remote_store._models import ContentDigest
 
         s3_backend.write("no_explicit_checksum.txt", b"hello")
         fi = s3_backend.get_file_info("no_explicit_checksum.txt")
-        assert fi.digest is None or isinstance(fi.digest, ContentDigest)
+        assert fi.digest is not None
+        assert isinstance(fi.digest, ContentDigest)
+        assert fi.digest.algorithm == "crc32"
 
     @pytest.mark.spec("S3-023")
     def test_lowercase_etag_key_fallback(self) -> None:

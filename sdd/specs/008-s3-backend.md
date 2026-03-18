@@ -195,12 +195,11 @@ assert backend.is_folder("dir") is False  # folder vanishes
 **Invariant:** `get_file_info` populates `FileInfo.digest` from the `x-amz-checksum-*`
 response header when the object was uploaded with a checksum algorithm.
 **Mechanism:**
-1. The standard `_fs.info()` response includes a `ChecksumAlgorithm` field (list from
-   `ListObjectsV2`-style responses, or string from `HeadObject`) when a checksum is set.
-2. When `ChecksumAlgorithm` is present, `get_file_info` calls
-   `_fs.s3.head_object(Bucket=..., Key=..., ChecksumMode="ENABLED")` as a second request.
-3. The base64-encoded checksum value is decoded to hex and wrapped in a
-   `ContentDigest(algorithm, hex_value)`.
+1. `get_file_info` calls `_fs.call_s3("head_object", Bucket=..., Key=...,
+   ChecksumMode="ENABLED")` unconditionally — this single request returns both
+   standard metadata and any `x-amz-checksum-*` headers.
+2. The base64-encoded checksum value from the response is decoded to hex and
+   wrapped in a `ContentDigest(algorithm, hex_value)`.
 **Supported algorithms:** `sha256`, `sha1`, `crc32`, `crc32c` (case-insensitive on input,
 lowercase-normalized in `ContentDigest`).
 **Postconditions:**

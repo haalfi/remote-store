@@ -422,7 +422,7 @@ class S3Backend(Backend):
             return BackendUnavailable(str(exc), path=path, backend=self.name)
         return RemoteStoreError(str(exc), path=path, backend=self.name)
 
-    def _info_to_fileinfo(self, info: dict[str, Any], path: str, *, digest: ContentDigest | None = None) -> FileInfo:
+    def _info_to_fileinfo(self, info: dict[str, Any], path: str) -> FileInfo:
         """Convert an s3fs info dict to a FileInfo."""
         name = path.rsplit("/", 1)[-1] if "/" in path else path
         size = info.get("size", info.get("Size", 0)) or 0
@@ -442,7 +442,6 @@ class S3Backend(Backend):
             size=int(size),
             modified_at=modified,
             etag=etag,
-            digest=digest,
         )
 
     # S3-024: algorithm name → HeadObject response key for checksums

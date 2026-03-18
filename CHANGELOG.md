@@ -9,8 +9,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ### Added
 
 - **S3 backend now populates `FileInfo.digest` from `x-amz-checksum-*`** —
-  `get_file_info` issues a second `HeadObject` with `ChecksumMode: ENABLED` when
-  the object carries a checksum algorithm (SHA256, SHA1, CRC32, CRC32C). The
+  `get_file_info` calls `HeadObject` with `ChecksumMode: ENABLED` unconditionally,
+  returning both metadata and any checksum headers in a single request. The
   base64-encoded checksum is converted to a hex `ContentDigest`. Listing paths
   (`list_files`, `iter_children`) still return `digest=None` to avoid per-file
   overhead. (ID-098, S3-024)

@@ -7,12 +7,11 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 ## Middleware Path 1 (Post-v0.17.0)
 
 - [x] **ID-098 — S3 backend: populate `FileInfo.digest` from `x-amz-checksum-*`**
-  `get_file_info` now issues a second `HeadObject` with `ChecksumMode: ENABLED`
-  when the object's info dict carries a `ChecksumAlgorithm` field (set by S3
-  when the object was uploaded with SHA256, SHA1, CRC32, or CRC32C). The
-  base64-encoded checksum is decoded to hex and wrapped in a `ContentDigest`.
-  Listing paths (`list_files`, `iter_children`) still return `digest=None` to
-  avoid per-file overhead. Spec 008 §S3-024.
+  `get_file_info` now calls `HeadObject` with `ChecksumMode: ENABLED`
+  unconditionally, returning both metadata and any checksum headers in a single
+  request. The base64-encoded checksum is decoded to hex and wrapped in a
+  `ContentDigest`. Listing paths (`list_files`, `iter_children`) still return
+  `digest=None` to avoid per-file overhead. Spec 008 §S3-024.
 
 - [x] **ID-097 — Azure backend: populate `FileInfo.etag` and `digest`**
   `_props_to_fileinfo` now populates `etag` from `BlobProperties.etag`
