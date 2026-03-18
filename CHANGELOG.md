@@ -43,6 +43,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Changed
 
+- **`ext.transfer.download()` now uses `ProgressReader` wrapper** — progress
+  tracking in `download()` is now consistent with `upload()` and `transfer()`,
+  using the `ProgressReader` stream wrapper instead of an inline callback.
+  (ID-006, XFER-009)
 - **`ext.transfer` now uses public `ProgressReader`** from `ext.streams`
   instead of its private `_ProgressReader`. No public API change. (ID-091)
 - **`ObservedStore` and `CachedStore` now extend `ProxyStore`** — reduces
