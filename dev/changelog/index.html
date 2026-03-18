@@ -5533,6 +5533,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/035-content-digest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    035: ContentDigest — Structured File Digest Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -7726,6 +7754,13 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong><code>ContentDigest</code> frozen dataclass</strong> — immutable model with <code>algorithm: str</code>
+  and <code>value: str</code> (both lowercase-normalized, validated). Convenience
+  <code>content_digest()</code> function in <code>ext.integrity</code>. (ID-095, CDG-001–CDG-003)</li>
+<li><strong><code>FileInfo.digest</code> and <code>FileInfo.etag</code> fields</strong> — <code>digest: ContentDigest | None</code>
+  for verified checksums, <code>etag: str | None</code> for opaque server tags.
+  <code>FileInfo.checksum</code> is removed (pre-1.0, no deprecation shim).
+  (ID-095, CDG-004)</li>
 <li><strong><code>ext.streams</code> module</strong> — composable <code>BinaryIO</code> wrappers for progress
   tracking and checksum computation: <code>ProgressReader</code>, <code>ProgressWriter</code>,
   <code>ChecksumReader</code>, <code>ChecksumWriter</code>, <code>read_with_progress()</code>. Stream-level

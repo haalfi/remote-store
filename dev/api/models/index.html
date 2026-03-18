@@ -2491,6 +2491,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#remote_store.ContentDigest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;ContentDigest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#remote_store.FileInfo" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4678,6 +4689,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/specs/035-content-digest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    035: ContentDigest — Structured File Digest Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5939,6 +5978,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#remote_store.ContentDigest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;ContentDigest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#remote_store.FileInfo" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6111,6 +6161,80 @@
 
 
 
+<h2 id="remote_store.ContentDigest" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">ContentDigest</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#remote_store.ContentDigest" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ContentDigest</span><span class="p">(</span><span class="n">algorithm</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Verified content digest with known algorithm.</p>
+<p>Both <code>algorithm</code> and <code>value</code> are normalized to lowercase on
+construction.</p>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.ContentDigest.algorithm">algorithm</span></code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Hash algorithm name, always lowercase (e.g., <code>"sha256"</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.ContentDigest.value">value</span></code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Lowercase hex-encoded digest, no prefix, no separators.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h2 id="remote_store.FileInfo" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">FileInfo</span>
 
@@ -6120,7 +6244,12 @@
   </span>
 
 <a href="#remote_store.FileInfo" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">FileInfo</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            RemotePath (remote_store._path.RemotePath)" href="../path/#remote_store.RemotePath">RemotePath</a></span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">,</span> <span class="n">modified_at</span><span class="p">:</span> <span class="n"><span title="datetime.datetime">datetime</span></span><span class="p">,</span> <span class="n">checksum</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">content_type</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">extra</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="object">object</span></span><span class="p">]</span> <span class="o">=</span> <span class="n"><span title="dict">dict</span></span><span class="p">())</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">FileInfo</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            RemotePath (remote_store._path.RemotePath)" href="../path/#remote_store.RemotePath">RemotePath</a></span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">,</span> <span class="n">modified_at</span><span class="p">:</span> <span class="n"><span title="datetime.datetime">datetime</span></span><span class="p">,</span> <span class="n">digest</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            ContentDigest
+
+
+  
+      dataclass
+   (remote_store._models.ContentDigest)" href="#remote_store.ContentDigest">ContentDigest</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">etag</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">content_type</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">extra</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="object">object</span></span><span class="p">]</span> <span class="o">=</span> <span class="n"><span title="dict">dict</span></span><span class="p">())</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6166,11 +6295,24 @@
           </div>
         </li>
         <li class="doc-section-item field-body">
-          <b><code><span title="remote_store.FileInfo.checksum">checksum</span></code></b>
+          <b><code><span title="remote_store.FileInfo.digest">digest</span></code></b>
+              (<code><a class="autorefs autorefs-internal" title="            ContentDigest
+
+
+  
+      dataclass
+   (remote_store._models.ContentDigest)" href="#remote_store.ContentDigest">ContentDigest</a> | None</code>)
+          –
+          <div class="doc-md-description">
+            <p>Verified content digest with known algorithm.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.FileInfo.etag">etag</span></code></b>
               (<code><span title="str">str</span> | None</code>)
           –
           <div class="doc-md-description">
-            <p>Optional checksum string (backend-specific format).</p>
+            <p>Opaque backend-provided tag for change detection.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

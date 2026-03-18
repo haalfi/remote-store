@@ -16,7 +16,7 @@
         <link rel="prev" href="../033-ext-streams/">
       
       
-        <link rel="next" href="../../adrs/">
+        <link rel="next" href="../035-content-digest/">
       
       
         
@@ -4637,10 +4637,49 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#int-005-content_digest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        INT-005: content_digest
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../035-content-digest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    035: ContentDigest — Structured File Digest Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -5922,6 +5961,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#int-005-content_digest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        INT-005: content_digest
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5976,7 +6026,16 @@ the file at <em>path</em>, computes its checksum using <em>algorithm</em>, and r
 - Raises <code>ValueError</code> if the algorithm is not supported by <code>hashlib</code>.</p>
 <h2 id="int-004-module-exports">INT-004: Module Exports<a class="headerlink" href="#int-004-module-exports" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>ext.integrity.__all__</code> contains:
-<code>checksum</code>, <code>verify</code>, <code>verify_hex</code>.</p>
+<code>checksum</code>, <code>content_digest</code>, <code>verify</code>, <code>verify_hex</code>.</p>
+<h2 id="int-005-content_digest">INT-005: content_digest<a class="headerlink" href="#int-005-content_digest" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>content_digest(store, path, algorithm="sha256")</code> reads the
+file at <em>path</em> and returns a <code>ContentDigest</code> instance.</p>
+<p><strong>Postconditions:</strong>
+- Equivalent to calling <code>checksum()</code> and wrapping the result in <code>ContentDigest</code>.
+- The returned <code>ContentDigest</code> has normalized lowercase <code>algorithm</code> and <code>value</code>.
+- Raises <code>NotFound</code> if the file does not exist.
+- Raises <code>ValueError</code> if the algorithm is not supported by <code>hashlib</code>.
+<strong>See also:</strong> <a href="../035-content-digest/">035-content-digest.md</a> (CDG-001).</p>
 
 
 

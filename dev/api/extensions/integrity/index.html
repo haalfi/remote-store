@@ -3047,6 +3047,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.ext.integrity.content_digest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;content_digest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.ext.integrity.verify" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4641,6 +4652,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../design/specs/035-content-digest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    035: ContentDigest — Structured File Digest Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5886,6 +5925,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.ext.integrity.content_digest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;content_digest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.ext.integrity.verify" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6040,6 +6090,100 @@ returns a <code>(algorithm, hex_digest)</code> tuple.</p>
           –
           <div class="doc-md-description">
             <p>Tuple of <code>(algorithm, hex_digest)</code> with lowercase values.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../errors/#remote_store.NotFound">NotFound</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the file does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="ValueError">ValueError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>If the algorithm is not supported by <code>hashlib</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.ext.integrity.content_digest" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">content_digest</span>
+
+
+<a href="#remote_store.ext.integrity.content_digest" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">content_digest</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">algorithm</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;sha256&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            ContentDigest
+
+
+  
+      dataclass
+   (remote_store._models.ContentDigest)" href="../../models/#remote_store.ContentDigest">ContentDigest</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Compute the content digest of a file in the store.</p>
+<p>Like :func:<code>checksum</code>, but returns a :class:<code>ContentDigest</code> instead of
+a raw tuple.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>store</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The Store to read from.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative file path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>algorithm</code></b>
+              (<code><span title="str">str</span></code>, default:
+                  <code>&#39;sha256&#39;</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Hash algorithm name (default <code>"sha256"</code>).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+<b><code>A</code></b> (              <code><a class="autorefs autorefs-internal" title="            ContentDigest
+
+
+  
+      dataclass
+   (remote_store._models.ContentDigest)" href="../../models/#remote_store.ContentDigest">ContentDigest</a></code>
+)          –
+          <div class="doc-md-description">
+            <p>class:<code>ContentDigest</code> with normalized algorithm and hex value.</p>
           </div>
         </li>
     </ul>

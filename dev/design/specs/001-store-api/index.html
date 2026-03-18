@@ -4911,6 +4911,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../035-content-digest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    035: ContentDigest — Structured File Digest Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6530,7 +6558,8 @@
 <h3 id="mod-002-fileinfo-required-fields">MOD-002: FileInfo Required Fields<a class="headerlink" href="#mod-002-fileinfo-required-fields" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>FileInfo</code> has required fields: <code>path</code> (<code>RemotePath</code>), <code>name</code> (<code>str</code>), <code>size</code> (<code>int</code>), <code>modified_at</code> (<code>datetime</code>).</p>
 <h3 id="mod-003-fileinfo-optional-fields">MOD-003: FileInfo Optional Fields<a class="headerlink" href="#mod-003-fileinfo-optional-fields" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>FileInfo</code> has optional fields: <code>checksum</code> (<code>str | None</code>, default <code>None</code>), <code>content_type</code> (<code>str | None</code>, default <code>None</code>), <code>extra</code> (<code>dict[str, object]</code>, default empty dict).</p>
+<p><strong>Invariant:</strong> <code>FileInfo</code> has optional fields: <code>digest</code> (<code>ContentDigest | None</code>, default <code>None</code>), <code>etag</code> (<code>str | None</code>, default <code>None</code>), <code>content_type</code> (<code>str | None</code>, default <code>None</code>), <code>extra</code> (<code>dict[str, object]</code>, default empty dict).
+<strong>See also:</strong> <a href="../035-content-digest/">035-content-digest.md</a> (CDG-001 through CDG-005).</p>
 <h3 id="mod-004-folderinfo-required-fields">MOD-004: FolderInfo Required Fields<a class="headerlink" href="#mod-004-folderinfo-required-fields" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>FolderInfo</code> is a frozen dataclass with required fields: <code>path</code> (<code>RemotePath</code>), <code>file_count</code> (<code>int</code>), <code>total_size</code> (<code>int</code>).</p>
 <h3 id="mod-005-folderinfo-optional-fields">MOD-005: FolderInfo Optional Fields<a class="headerlink" href="#mod-005-folderinfo-optional-fields" title="Permanent link">&para;</a></h3>
