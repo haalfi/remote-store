@@ -7792,6 +7792,10 @@
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong><code>ext.transfer.download()</code> now uses <code>ProgressReader</code> wrapper</strong> — progress
+  tracking in <code>download()</code> is now consistent with <code>upload()</code> and <code>transfer()</code>,
+  using the <code>ProgressReader</code> stream wrapper instead of an inline callback.
+  (ID-006, XFER-009)</li>
 <li><strong><code>ext.transfer</code> now uses public <code>ProgressReader</code></strong> from <code>ext.streams</code>
   instead of its private <code>_ProgressReader</code>. No public API change. (ID-091)</li>
 <li><strong><code>ObservedStore</code> and <code>CachedStore</code> now extend <code>ProxyStore</code></strong> — reduces
