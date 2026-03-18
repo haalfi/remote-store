@@ -23,7 +23,7 @@ full file content. End-to-end memory behavior depends on the backend's
 
 ### XFER-002: upload Streaming
 
-**Invariant:** `upload` opens the local file in binary read mode, wraps it in a `_ProgressReader` (if `on_progress` is provided), and passes the file handle directly to `store.write()`. The extension never buffers the full file content in memory.
+**Invariant:** `upload` opens the local file in binary read mode, wraps it in a `ProgressReader` (if `on_progress` is provided), and passes the file handle directly to `store.write()`. The extension never buffers the full file content in memory.
 
 ### XFER-003: upload overwrite
 
@@ -63,7 +63,7 @@ full file content. End-to-end memory behavior depends on the backend's
 
 ### XFER-012: transfer Streaming
 
-**Invariant:** `transfer` calls `src_store.read()` to get a stream, wraps it in a `_ProgressReader` (if `on_progress` is provided), and passes the wrapped stream to `dst_store.write()`. The extension never buffers the full file content in memory.
+**Invariant:** `transfer` calls `src_store.read()` to get a stream, wraps it in a `ProgressReader` (if `on_progress` is provided), and passes the wrapped stream to `dst_store.write()`. The extension never buffers the full file content in memory.
 
 ### XFER-013: transfer overwrite
 
@@ -71,7 +71,7 @@ full file content. End-to-end memory behavior depends on the backend's
 
 ### XFER-014: transfer on_progress
 
-**Invariant:** When `on_progress` is not `None`, the callback fires once per `read()` call on the source stream, with the number of bytes read (not cumulative). Progress is tracked via a `_ProgressReader` wrapper around the source stream.
+**Invariant:** When `on_progress` is not `None`, the callback fires once per `read()` call on the source stream, with the number of bytes read (not cumulative). Progress is tracked via a `ProgressReader` wrapper around the source stream.
 
 ### XFER-015: transfer Stream Cleanup
 

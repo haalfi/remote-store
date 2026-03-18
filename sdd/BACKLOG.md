@@ -133,10 +133,3 @@ Items graduate through the SDD pipeline:
   [Research](research/research-fastapi-docs.md) P5.
 
 ### Core API
-
-
-- [x] **ID-006 — Progress tracking via stream wrappers (`ext.streams`)**
-  Complete. Core stream wrappers (`ProgressReader`, `ProgressWriter`,
-  `ChecksumReader`, `ChecksumWriter`) implemented. `ext.transfer.download()`
-  now uses `ProgressReader` wrapper, consistent with `upload()` and `transfer()`.
-  See [middleware architecture research](research/research-store-middleware-architecture.md) §3–§4.
