@@ -135,9 +135,8 @@ Items graduate through the SDD pipeline:
   Introduce `ContentDigest` frozen dataclass (`algorithm: str`,
   `value: str` — both lowercase-normalized). Replace
   `FileInfo.checksum` with `FileInfo.digest: ContentDigest | None` and
-  `FileInfo.etag: str | None`. Update spec 001 (MOD-003). Deprecation
-  shim for `FileInfo.checksum` property (read-only, emits
-  `DeprecationWarning`, returns `digest.value` if set). Update
+  `FileInfo.etag: str | None`. `FileInfo.checksum` is removed (no
+  deprecation shim — pre-1.0). Update spec 001 (MOD-003). Update
   `ext.integrity` to accept/return `ContentDigest`. Needs new spec.
   Split from [ID-008](BACKLOG-DONE.md#middleware-path-1-post-v0170).
   See [middleware architecture research](research/research-store-middleware-architecture.md) §5.
