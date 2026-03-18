@@ -648,6 +648,7 @@ class TestS3ETag:
         assert len(matches) == 1
         assert matches[0].etag is not None
         assert '"' not in matches[0].etag
+        assert matches[0].etag == matches[0].etag.lower()
 
     @pytest.mark.spec("S3-023")
     def test_digest_is_none_without_checksum_header(self, s3_backend: Backend) -> None:
