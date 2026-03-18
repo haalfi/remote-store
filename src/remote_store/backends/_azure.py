@@ -788,8 +788,9 @@ class AzureBackend(Backend):
         # Content-MD5: blob properties carry it as raw bytes when set; convert to hex ContentDigest.
         content_settings = getattr(props, "content_settings", None)
         md5_bytes = getattr(content_settings, "content_md5", None) if content_settings is not None else None
-        has_md5 = isinstance(md5_bytes, (bytes, bytearray)) and md5_bytes
-        digest = ContentDigest("md5", md5_bytes.hex()) if has_md5 else None
+        digest: ContentDigest | None = None
+        if isinstance(md5_bytes, (bytes, bytearray)) and md5_bytes:
+            digest = ContentDigest("md5", md5_bytes.hex())
         return FileInfo(
             path=RemotePath(path),
             name=name,
