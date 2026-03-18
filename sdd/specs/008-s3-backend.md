@@ -187,4 +187,29 @@ assert backend.is_folder("dir") is False  # folder vanishes
 **Postconditions:**
 - `FileInfo.etag` is a non-empty lowercase string when the info dict contains an `ETag` key.
 - `FileInfo.etag` is `None` only when the info dict has no ETag (not expected for well-formed S3 responses).
-- `FileInfo.digest` remains `None` — S3 checksum algorithms (`x-amz-checksum-*`) require `ChecksumMode: ENABLED` on `HeadObject`/`GetObject` requests, which s3fs does not issue by default. Digest population from S3 checksum headers is deferred (see ID-098).
+- `FileInfo.digest` from listing paths (`list_files`, `iter_children`) is always `None` — the extra `HeadObject` call required for checksum data is issued only by `get_file_info`.
+- `FileInfo.digest` from `get_file_info` may be a `ContentDigest` even for objects uploaded without an explicit checksum, because Amazon S3 has automatically computed and stored CRC32 checksums for new objects since late 2022 (see S3-024).
+
+### S3-024: Digest Population via `ChecksumMode: ENABLED`
+
+**Invariant:** `get_file_info` populates `FileInfo.digest` from the `x-amz-checksum-*`
+response header when the object was uploaded with a checksum algorithm.
+**Mechanism:**
+1. The standard `_fs.info()` response includes a `ChecksumAlgorithm` field (list from
+   `ListObjectsV2`-style responses, or string from `HeadObject`) when a checksum is set.
+2. When `ChecksumAlgorithm` is present, `get_file_info` calls
+   `_fs.s3.head_object(Bucket=..., Key=..., ChecksumMode="ENABLED")` as a second request.
+3. The base64-encoded checksum value is decoded to hex and wrapped in a
+   `ContentDigest(algorithm, hex_value)`.
+**Supported algorithms:** `sha256`, `sha1`, `crc32`, `crc32c` (case-insensitive on input,
+lowercase-normalized in `ContentDigest`).
+**Postconditions:**
+- `FileInfo.digest` is a `ContentDigest` with the correct algorithm and hex value when
+  the `HeadObject` response with `ChecksumMode: ENABLED` contains any known checksum key.
+- `FileInfo.digest` may be a `ContentDigest` even for objects uploaded without an
+  explicit checksum algorithm, because Amazon S3 (and moto) automatically computes and
+  stores CRC32 checksums for new objects.
+- `FileInfo.digest` is `None` only when the response contains no known checksum key, or
+  base64 decoding the value fails.
+- `FileInfo.digest` from listing paths (`list_files`, `iter_children`) is always `None`
+  — the extra request is only issued by `get_file_info`.

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import io
 import logging
 import shutil
@@ -22,7 +23,7 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderEntry, FolderInfo
+from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
 
@@ -263,10 +264,13 @@ class S3Backend(Backend):
 
     def get_file_info(self, path: str) -> FileInfo:
         with self._errors(path):
-            info = self._fs.info(self._s3_path(path))
-            if info.get("type") != "file":
-                raise NotFound(f"File not found: {path}", path=path, backend=self.name)
-            return self._info_to_fileinfo(info, path)
+            raw = self._fs.call_s3(
+                "head_object",
+                Bucket=self._bucket,
+                Key=path,
+                ChecksumMode="ENABLED",
+            )
+            return self._head_to_fileinfo(raw, path)
 
     def get_folder_info(self, path: str) -> FolderInfo:
         # S3 folders are virtual (prefix-based), like Azure non-HNS.  An empty
@@ -418,7 +422,7 @@ class S3Backend(Backend):
             return BackendUnavailable(str(exc), path=path, backend=self.name)
         return RemoteStoreError(str(exc), path=path, backend=self.name)
 
-    def _info_to_fileinfo(self, info: dict[str, Any], path: str) -> FileInfo:
+    def _info_to_fileinfo(self, info: dict[str, Any], path: str, *, digest: ContentDigest | None = None) -> FileInfo:
         """Convert an s3fs info dict to a FileInfo."""
         name = path.rsplit("/", 1)[-1] if "/" in path else path
         size = info.get("size", info.get("Size", 0)) or 0
@@ -438,6 +442,62 @@ class S3Backend(Backend):
             size=int(size),
             modified_at=modified,
             etag=etag,
+            digest=digest,
         )
+
+    # S3-024: algorithm name → HeadObject response key for checksums
+    _CHECKSUM_ALGO_TO_RESPONSE_KEY: dict[str, str] = {
+        "sha256": "ChecksumSHA256",
+        "sha1": "ChecksumSHA1",
+        "crc32": "ChecksumCRC32",
+        "crc32c": "ChecksumCRC32C",
+    }
+
+    def _head_to_fileinfo(self, raw: dict[str, Any], path: str) -> FileInfo:
+        """Convert a raw boto3 HeadObject response to a FileInfo.
+
+        Expects a response obtained with ``ChecksumMode="ENABLED"`` so that
+        checksum fields (``ChecksumSHA256``, etc.) are included when present.
+        """
+        name = path.rsplit("/", 1)[-1] if "/" in path else path
+        size = raw.get("ContentLength", 0) or 0
+        modified = raw.get("LastModified")
+        if isinstance(modified, str):
+            modified = datetime.fromisoformat(modified)
+        if modified is not None and modified.tzinfo is None:
+            modified = modified.replace(tzinfo=timezone.utc)
+        if modified is None:
+            modified = datetime.now(tz=timezone.utc)
+        raw_etag = raw.get("ETag")
+        etag = raw_etag.strip('"').lower() if isinstance(raw_etag, str) else None
+        digest = self._digest_from_head_response(raw)
+        return FileInfo(
+            path=RemotePath(path),
+            name=name,
+            size=int(size),
+            modified_at=modified,
+            etag=etag,
+            digest=digest,
+        )
+
+    def _digest_from_head_response(self, raw: dict[str, Any]) -> ContentDigest | None:
+        """Extract a ContentDigest from a HeadObject response with ChecksumMode=ENABLED.
+
+        Iterates the known checksum response keys and returns the first one found.
+        Returns None when no checksum key is present in the response.
+
+        Note: Amazon S3 automatically computes and stores CRC32 checksums for objects
+        created since late 2022, so ``ContentDigest`` may be returned even for objects
+        uploaded without an explicit checksum algorithm.
+        """
+        for algo_lower, response_key in self._CHECKSUM_ALGO_TO_RESPONSE_KEY.items():
+            b64_value = raw.get(response_key)
+            if not b64_value:
+                continue
+            try:
+                return ContentDigest(algo_lower, base64.b64decode(b64_value).hex())
+            except Exception:
+                continue
+        return None
 
     # endregion

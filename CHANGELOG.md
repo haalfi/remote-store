@@ -8,9 +8,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **S3 backend now populates `FileInfo.digest` from `x-amz-checksum-*`** —
+  `get_file_info` issues a second `HeadObject` with `ChecksumMode: ENABLED` when
+  the object carries a checksum algorithm (SHA256, SHA1, CRC32, CRC32C). The
+  base64-encoded checksum is converted to a hex `ContentDigest`. Listing paths
+  (`list_files`, `iter_children`) still return `digest=None` to avoid per-file
+  overhead. (ID-098, S3-024)
 - **S3 backend now populates `FileInfo.etag`** — `_info_to_fileinfo` strips
-  the double-quoted S3 ETag and stores it as a lowercase string. `FileInfo.digest`
-  remains `None` for S3 (requires `ChecksumMode: ENABLED` on HeadObject; see ID-098).
+  the double-quoted S3 ETag and stores it as a lowercase string.
   (ID-096, S3-023)
 - **Azure backend now populates `FileInfo.etag` and `FileInfo.digest`** —
   `_props_to_fileinfo` strips and lowercases the Azure blob ETag (`etag`), and
