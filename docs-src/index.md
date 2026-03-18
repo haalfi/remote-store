@@ -24,7 +24,7 @@ flowchart LR
         direction TB
         API["Your Code"]
         Store["Store API"]
-        Methods["Read/Write - List - Stream\nCopy/Move - Config - Capabilities"]
+        Methods["Read/Write - List - Copy/Move - Config - Capabilities"]
         API --> Store
         Store -.-> Methods
     end
@@ -32,9 +32,9 @@ flowchart LR
     subgraph INFRA[" "]
         direction TB
         Backends["Backends"]
-        B_list["Local - S3 - SFTP\nAzure - Memory - ...yours"]
+        B_list["Local - S3 - SFTP - Azure - Http - Memory - ...yours"]
         Libs["Proven Libraries"]
-        L_list["stdlib - s3fs\nparamiko - azure SDK"]
+        L_list["stdlib - s3fs - pyarrow - paramiko - azure SDK"]
         Backends -.-> B_list
         Backends --> Libs
         Libs -.-> L_list
