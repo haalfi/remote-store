@@ -1,6 +1,7 @@
 # IDEs & tools
 .venv/
 .vscode/
+uv.lock
 # Claude Code — ignore user-specific files, keep shared assets
 .claude/*
 !.claude/commands/
