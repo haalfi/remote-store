@@ -9,9 +9,9 @@ import hashlib
 
 import pytest
 
+from remote_store._models import ContentDigest
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
-from remote_store._models import ContentDigest
 from remote_store.ext.integrity import checksum, content_digest, verify, verify_hex
 
 
