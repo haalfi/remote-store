@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import functools
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-def _deprecated_alias(old_name: str, new_fn: Callable[..., object]) -> Callable[..., object]:
+def _deprecated_alias(old_name: str, new_fn: Callable[..., Any]) -> Callable[..., Any]:
     """Create a deprecated wrapper that delegates to *new_fn*.
 
     The returned function emits a ``DeprecationWarning`` on every call,
