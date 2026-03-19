@@ -6,6 +6,14 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Naming & Consistency
 
+- [x] **BK-012 — Code deduplication Phases 2--4**
+  `_StreamWrapper` base class in `ext/streams.py` (eliminates 56 lines of
+  repeated context-manager/close/getattr boilerplate).  Generic `_run_batch()`
+  executor in `ext/batch.py` (consolidates sequential/concurrent scaffolding).
+  `_deprecated_alias()` helper in `ext/_helpers.py` (replaces 3 hand-written
+  deprecation wrappers).  `_require_extra()` dropped — ruff E402 cascade made
+  it impractical.  [Proposal](proposals/CODE-DEDUPLICATION.md).  PR #243.
+
 - [x] **BK-011 — S3 backend deduplication (Phase 1)**
   Extract shared listing, error handling, and FileInfo construction from
   `_s3.py` and `_s3_pyarrow.py` into `_S3Base` base class

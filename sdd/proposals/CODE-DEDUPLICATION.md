@@ -358,41 +358,12 @@ Three of the five sites import specific names (`from pydantic import
 SecretStr`, `from dagster import IOManager`), not just the module
 itself.
 
-### Proposed extraction: `_require_extra()` as void guard
+### Outcome: `_require_extra()` dropped
 
-A void function that validates availability, then callers do their
-normal imports:
-
-```python
-def _require_extra(package: str, extra: str) -> None:
-    """Raise a helpful error if *package* is not installed.
-
-    The import result is discarded --- callers do their own
-    ``from X import Y`` afterwards.  This is safe because Python
-    caches modules in ``sys.modules``, so the second import is a
-    dict lookup with no runtime cost.
-    """
-    try:
-        importlib.import_module(package)
-    except ModuleNotFoundError as exc:  # pragma: no cover
-        msg = f"{package} is required. Install with: pip install 'remote-store[{extra}]'"
-        raise ModuleNotFoundError(msg) from exc
-```
-
-Usage:
-
-```python
-_require_extra("pydantic", "pydantic")
-from pydantic import BaseModel, SecretStr  # normal import after guard
-```
-
-This avoids the awkward `mod = _require_extra(...); SecretStr =
-mod.SecretStr` pattern.
-
-**Location:** `ext/_helpers.py` (not `ext/__init__.py` --- that would
-pollute the public namespace).
-
-**Estimated savings:** ~20 net lines, plus consistent error messages.
+The void-guard approach triggers ruff E402 (module-level import not at
+top of file) for all subsequent imports after the function call.
+Suppressing E402 across multiple lines is noisier than the original
+try/except.  **Import guards remain as-is.**
 
 ---
 
@@ -443,9 +414,9 @@ The two methods are 30 lines each, adjacent, and readable.  A generic
 | Phase | Scope | Net savings | Risk | Backlog ID |
 |---|---|---|---|---|
 | **1** | S3 base class + error factories + FileInfo helpers | ~240 lines | Medium --- MRO change, abstract property contract | BK-011 (done, PR #242) |
-| **2** | `_StreamWrapper` base | ~35 lines | Low | new |
-| **3** | `_run_batch()` generic executor | ~65 lines | Low --- tests already comprehensive | new |
-| **4** | `ext/_helpers.py`: `_require_extra()` + `_deprecated_alias()` | ~45 lines | Low | new |
+| **2** | `_StreamWrapper` base | ~35 lines | Low | BK-012 (done, PR #243) |
+| **3** | `_run_batch()` generic executor | ~65 lines | Low --- tests already comprehensive | BK-012 (done, PR #243) |
+| **4** | `ext/_helpers.py`: `_deprecated_alias()` | ~25 lines | Low | BK-012 (done, PR #243) |
 
 **Total estimated net reduction: ~385 lines** (~6.4% of the 6,031
 lines in the analysed files).  Gross reduction ~455 lines, offset by
