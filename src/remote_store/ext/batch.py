@@ -23,16 +23,18 @@ from __future__ import annotations
 import dataclasses
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 from remote_store._errors import CapabilityNotSupported, RemoteStoreError
 
 log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
 
     from remote_store._store import Store
+
+T = TypeVar("T")
 
 __all__ = ["BatchResult", "batch_copy", "batch_delete", "batch_exists"]
 
@@ -58,6 +60,104 @@ class BatchResult:
     def total(self) -> int:
         """Total number of paths processed (succeeded + failed)."""
         return len(self.succeeded) + len(self.failed)
+
+
+# ---------------------------------------------------------------------------
+# Generic batch executor
+# ---------------------------------------------------------------------------
+
+
+def _run_batch(
+    items: Iterable[T],
+    fn: Callable[[T], None],
+    key: Callable[[T], str],
+    *,
+    stop_on_error: bool,
+    concurrent: bool,
+    max_workers: int | None,
+    label: str,
+) -> BatchResult:
+    """Execute *fn* on each item, collecting successes and failures.
+
+    Args:
+        items: Work items to process.
+        fn: Operation to call on each item.  Must raise
+            ``RemoteStoreError`` on failure.
+        key: Extract the path string from an item (for result tracking).
+        stop_on_error: Stop on first error (sequential only).
+        concurrent: Use a thread pool for parallel execution.
+        max_workers: Max threads (forwarded to ``ThreadPoolExecutor``).
+        label: Operation name for log messages.
+    """
+    if concurrent:
+        result = _run_batch_concurrent(items, fn, key, max_workers=max_workers)
+    else:
+        result = _run_batch_sequential(items, fn, key, stop_on_error=stop_on_error)
+    log.info(
+        "%s complete: %d succeeded, %d failed",
+        label,
+        len(result.succeeded),
+        len(result.failed),
+        extra={"op": label, "concurrent": concurrent},
+    )
+    return result
+
+
+def _run_batch_sequential(
+    items: Iterable[T],
+    fn: Callable[[T], None],
+    key: Callable[[T], str],
+    *,
+    stop_on_error: bool,
+) -> BatchResult:
+    succeeded: list[str] = []
+    failed: dict[str, RemoteStoreError] = {}
+    for item in items:
+        try:
+            fn(item)
+        except CapabilityNotSupported:
+            raise
+        except RemoteStoreError as exc:
+            failed[key(item)] = exc
+            if stop_on_error:
+                break
+        else:
+            succeeded.append(key(item))
+    return BatchResult(succeeded=tuple(succeeded), failed=failed)
+
+
+def _run_batch_concurrent(
+    items: Iterable[T],
+    fn: Callable[[T], None],
+    key: Callable[[T], str],
+    *,
+    max_workers: int | None,
+) -> BatchResult:
+    items_list = list(items)
+    succeeded: list[str] = []
+    failed: dict[str, RemoteStoreError] = {}
+    executor = ThreadPoolExecutor(max_workers=max_workers)
+    try:
+        future_to_key = {executor.submit(fn, item): key(item) for item in items_list}
+        for future in as_completed(future_to_key):
+            k = future_to_key[future]
+            try:
+                future.result()
+            except CapabilityNotSupported:
+                executor.shutdown(wait=False, cancel_futures=True)
+                raise
+            except RemoteStoreError as exc:
+                failed[k] = exc
+            else:
+                succeeded.append(k)
+    finally:
+        executor.shutdown(wait=True)
+    return BatchResult(succeeded=tuple(succeeded), failed=failed)
+
+
+# ---------------------------------------------------------------------------
+# Public batch functions
+# ---------------------------------------------------------------------------
 
 
 def batch_delete(
@@ -89,66 +189,18 @@ def batch_delete(
         msg = "stop_on_error is not supported with concurrent=True"
         raise ValueError(msg)
 
-    if concurrent:
-        return _batch_delete_concurrent(store, paths, missing_ok, max_workers)
+    def _delete(path: str) -> None:
+        store.delete(path, missing_ok=missing_ok)
 
-    succeeded: list[str] = []
-    failed: dict[str, RemoteStoreError] = {}
-    for path in paths:
-        try:
-            store.delete(path, missing_ok=missing_ok)
-        except CapabilityNotSupported:
-            raise
-        except RemoteStoreError as exc:
-            failed[path] = exc
-            if stop_on_error:
-                break
-        else:
-            succeeded.append(path)
-    result = BatchResult(succeeded=tuple(succeeded), failed=failed)
-    log.info(
-        "batch_delete complete: %d succeeded, %d failed",
-        len(result.succeeded),
-        len(result.failed),
-        extra={"op": "batch_delete"},
+    return _run_batch(
+        paths,
+        _delete,
+        key=lambda p: p,
+        stop_on_error=stop_on_error,
+        concurrent=concurrent,
+        max_workers=max_workers,
+        label="batch_delete",
     )
-    return result
-
-
-def _batch_delete_concurrent(
-    store: Store,
-    paths: Iterable[str],
-    missing_ok: bool,
-    max_workers: int | None,
-) -> BatchResult:
-    """Concurrent implementation of batch_delete."""
-    paths_list = list(paths)
-    succeeded: list[str] = []
-    failed: dict[str, RemoteStoreError] = {}
-    executor = ThreadPoolExecutor(max_workers=max_workers)
-    try:
-        future_to_path = {executor.submit(store.delete, p, missing_ok=missing_ok): p for p in paths_list}
-        for future in as_completed(future_to_path):
-            path = future_to_path[future]
-            try:
-                future.result()
-            except CapabilityNotSupported:
-                executor.shutdown(wait=False, cancel_futures=True)
-                raise
-            except RemoteStoreError as exc:
-                failed[path] = exc
-            else:
-                succeeded.append(path)
-    finally:
-        executor.shutdown(wait=True)
-    result = BatchResult(succeeded=tuple(succeeded), failed=failed)
-    log.info(
-        "batch_delete complete: %d succeeded, %d failed",
-        len(result.succeeded),
-        len(result.failed),
-        extra={"op": "batch_delete", "concurrent": True},
-    )
-    return result
 
 
 def batch_copy(
@@ -180,66 +232,18 @@ def batch_copy(
         msg = "stop_on_error is not supported with concurrent=True"
         raise ValueError(msg)
 
-    if concurrent:
-        return _batch_copy_concurrent(store, pairs, overwrite, max_workers)
+    def _copy(pair: tuple[str, str]) -> None:
+        store.copy(pair[0], pair[1], overwrite=overwrite)
 
-    succeeded: list[str] = []
-    failed: dict[str, RemoteStoreError] = {}
-    for src, dst in pairs:
-        try:
-            store.copy(src, dst, overwrite=overwrite)
-        except CapabilityNotSupported:
-            raise
-        except RemoteStoreError as exc:
-            failed[src] = exc
-            if stop_on_error:
-                break
-        else:
-            succeeded.append(src)
-    result = BatchResult(succeeded=tuple(succeeded), failed=failed)
-    log.info(
-        "batch_copy complete: %d succeeded, %d failed",
-        len(result.succeeded),
-        len(result.failed),
-        extra={"op": "batch_copy"},
+    return _run_batch(
+        pairs,
+        _copy,
+        key=lambda pair: pair[0],
+        stop_on_error=stop_on_error,
+        concurrent=concurrent,
+        max_workers=max_workers,
+        label="batch_copy",
     )
-    return result
-
-
-def _batch_copy_concurrent(
-    store: Store,
-    pairs: Iterable[tuple[str, str]],
-    overwrite: bool,
-    max_workers: int | None,
-) -> BatchResult:
-    """Concurrent implementation of batch_copy."""
-    pairs_list = list(pairs)
-    succeeded: list[str] = []
-    failed: dict[str, RemoteStoreError] = {}
-    executor = ThreadPoolExecutor(max_workers=max_workers)
-    try:
-        future_to_src = {executor.submit(store.copy, src, dst, overwrite=overwrite): src for src, dst in pairs_list}
-        for future in as_completed(future_to_src):
-            src = future_to_src[future]
-            try:
-                future.result()
-            except CapabilityNotSupported:
-                executor.shutdown(wait=False, cancel_futures=True)
-                raise
-            except RemoteStoreError as exc:
-                failed[src] = exc
-            else:
-                succeeded.append(src)
-    finally:
-        executor.shutdown(wait=True)
-    result = BatchResult(succeeded=tuple(succeeded), failed=failed)
-    log.info(
-        "batch_copy complete: %d succeeded, %d failed",
-        len(result.succeeded),
-        len(result.failed),
-        extra={"op": "batch_copy", "concurrent": True},
-    )
-    return result
 
 
 def batch_exists(
