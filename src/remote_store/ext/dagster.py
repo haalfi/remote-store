@@ -253,9 +253,9 @@ def remote_store_io_manager(
 ) -> IOManager:  # type: ignore[type-arg]
     """Deprecated: use ``dagster_io_manager()`` instead.
 
-    .. deprecated:: 0.19.0
-        Renamed to :func:`dagster_io_manager` for consistency with
-        ``pyarrow_fs`` (``<external_lib>_<concept>`` pattern).
+    Deprecated:
+        Renamed to ``dagster_io_manager()`` for consistency with
+        ``pyarrow_fs()`` (``<external_lib>_<concept>`` pattern).
         Will be removed in a future release.
     """
     warnings.warn(

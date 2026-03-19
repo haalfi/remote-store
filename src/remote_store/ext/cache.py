@@ -526,8 +526,8 @@ def cached_store(
 ) -> CachedStore:
     """Deprecated: use ``cache()`` instead.
 
-    .. deprecated:: 0.19.0
-        Renamed to :func:`cache` for consistency with ``observe()``.
+    Deprecated:
+        Renamed to ``cache()`` for consistency with ``observe()``.
         Will be removed in a future release.
     """
     warnings.warn(

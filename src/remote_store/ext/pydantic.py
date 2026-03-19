@@ -80,9 +80,9 @@ def from_pydantic(model: BaseModel) -> RegistryConfig:
 def pydantic_to_registry_config(model: BaseModel) -> RegistryConfig:
     """Deprecated: use ``from_pydantic()`` instead.
 
-    .. deprecated:: 0.19.0
-        Renamed to :func:`from_pydantic` for consistency with ``from_yaml``,
-        ``from_dict``, ``from_toml``. Will be removed in a future release.
+    Deprecated:
+        Renamed to ``from_pydantic()`` for consistency with ``from_yaml()``,
+        ``from_dict()``, ``from_toml()``. Will be removed in a future release.
     """
     warnings.warn(
         "pydantic_to_registry_config() is deprecated, use from_pydantic() instead",
