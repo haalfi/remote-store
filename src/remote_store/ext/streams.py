@@ -26,7 +26,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Callable
     from types import TracebackType
-    from typing import BinaryIO, Self
+    from typing import BinaryIO
+
+    from typing_extensions import Self
 
     from remote_store._store import Store
 
