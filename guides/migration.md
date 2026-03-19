@@ -31,7 +31,7 @@ Optional-dependency extensions are no longer re-exported from
 - New: `from remote_store.ext.otel import otel_hooks, otel_observe`
 
 - Old: `from remote_store import pydantic_to_registry_config`
-- New: `from remote_store.ext.pydantic import from_pydantic`
+- New: `from remote_store.ext.pydantic import pydantic_to_registry_config`
 
 - Old: `from remote_store import from_yaml`
 - New: `from remote_store.ext.yaml import from_yaml`
