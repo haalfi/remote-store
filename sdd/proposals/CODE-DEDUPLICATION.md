@@ -442,7 +442,7 @@ The two methods are 30 lines each, adjacent, and readable.  A generic
 
 | Phase | Scope | Net savings | Risk | Backlog ID |
 |---|---|---|---|---|
-| **1** | S3 base class + error factories + FileInfo helpers | ~240 lines | Medium --- MRO change, abstract property contract | new |
+| **1** | S3 base class + error factories + FileInfo helpers | ~240 lines | Medium --- MRO change, abstract property contract | BK-011 (done, PR #242) |
 | **2** | `_StreamWrapper` base | ~35 lines | Low | new |
 | **3** | `_run_batch()` generic executor | ~65 lines | Low --- tests already comprehensive | new |
 | **4** | `ext/_helpers.py`: `_require_extra()` + `_deprecated_alias()` | ~45 lines | Low | new |
