@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Callable
     from types import TracebackType
-    from typing import BinaryIO
+    from typing import BinaryIO, Self
 
     from remote_store._store import Store
 
@@ -39,7 +39,34 @@ __all__ = [
 ]
 
 
-class ProgressReader:
+class _StreamWrapper:
+    """Base for composable ``BinaryIO`` wrappers.
+
+    Provides close, context-manager protocol, and attribute delegation.
+    Subclasses override data-path methods (``read``, ``write``, etc.).
+    """
+
+    _inner: BinaryIO
+
+    def close(self) -> None:
+        self._inner.close()
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    def __getattr__(self, name: str) -> Any:  # noqa: ANN401
+        return getattr(self._inner, name)
+
+
+class ProgressReader(_StreamWrapper):
     """Readable ``BinaryIO`` wrapper that fires a callback per ``read()``.
 
     The callback receives the number of bytes read (not cumulative).
@@ -60,25 +87,8 @@ class ProgressReader:
             self._callback(len(data))
         return data
 
-    def close(self) -> None:
-        self._inner.close()
 
-    def __enter__(self) -> ProgressReader:
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        self.close()
-
-    def __getattr__(self, name: str) -> Any:  # noqa: ANN401
-        return getattr(self._inner, name)
-
-
-class ProgressWriter:
+class ProgressWriter(_StreamWrapper):
     """Writable ``BinaryIO`` wrapper that fires a callback per ``write()``.
 
     The callback receives the number of bytes written (not cumulative).
@@ -104,25 +114,8 @@ class ProgressWriter:
             self._callback(len(data))
         return result
 
-    def close(self) -> None:
-        self._inner.close()
 
-    def __enter__(self) -> ProgressWriter:
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        self.close()
-
-    def __getattr__(self, name: str) -> Any:  # noqa: ANN401
-        return getattr(self._inner, name)
-
-
-class ChecksumReader:
+class ChecksumReader(_StreamWrapper):
     """Readable ``BinaryIO`` wrapper that computes a rolling hash.
 
     Args:
@@ -163,25 +156,8 @@ class ChecksumReader:
         """Return the lowercase hex digest of all bytes read so far."""
         return self._hash.hexdigest()
 
-    def close(self) -> None:
-        self._inner.close()
 
-    def __enter__(self) -> ChecksumReader:
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        self.close()
-
-    def __getattr__(self, name: str) -> Any:  # noqa: ANN401
-        return getattr(self._inner, name)
-
-
-class ChecksumWriter:
+class ChecksumWriter(_StreamWrapper):
     """Writable ``BinaryIO`` wrapper that computes a rolling hash.
 
     Note:
@@ -214,23 +190,6 @@ class ChecksumWriter:
     def hexdigest(self) -> str:
         """Return the lowercase hex digest of all bytes written so far."""
         return self._hash.hexdigest()
-
-    def close(self) -> None:
-        self._inner.close()
-
-    def __enter__(self) -> ChecksumWriter:
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        self.close()
-
-    def __getattr__(self, name: str) -> Any:  # noqa: ANN401
-        return getattr(self._inner, name)
 
 
 def read_with_progress(
