@@ -275,10 +275,10 @@ GitHub source link, per the mapping table above.
 
 Split into up to 3 PRs for reviewability:
 
-- **PR 1a:** Core examples (8 pages: quickstart through store-child)
-- **PR 1b:** Backend examples (6 pages: s3 through http)
-- **PR 1c:** Extension + showcase examples (13 pages: batch through
-  health-check, plus medallion-dagster source link fix)
+- **PR 1a:** Core examples (10 pages: quickstart through store-child)
+- **PR 1b:** Backend examples (6 pages: memory-backend through azure-backend)
+- **PR 1c:** Extension + showcase examples (11 pages: batch-operations
+  through health-check, including medallion-dagster source link fix)
 
 Low risk — purely additive.
 
