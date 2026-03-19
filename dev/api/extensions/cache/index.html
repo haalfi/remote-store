@@ -3190,6 +3190,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.ext.cache.cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.ext.cache.cached_store" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6357,6 +6368,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.ext.cache.cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.ext.cache.cached_store" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6411,9 +6433,9 @@
 <p>Wraps a Store in a proxy that caches read-only operations (existence checks,
 metadata, listings, content) and automatically invalidates on mutations.</p>
 <p>Usage:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_store</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">cached</span> <span class="o">=</span> <span class="n">cached_store</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">cached</span> <span class="o">=</span> <span class="n">cache</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">data</span> <span class="o">=</span> <span class="n">cached</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;key.csv&quot;</span><span class="p">)</span>   <span class="c1"># backend call</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">data</span> <span class="o">=</span> <span class="n">cached</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;key.csv&quot;</span><span class="p">)</span>   <span class="c1"># cache hit</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">cached</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;key.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;new&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># invalidates</span>
@@ -6509,7 +6531,7 @@ metadata, listings, content) and automatically invalidates on mutations.</p>
 
         <p>Protocol for pluggable cache backends (CACHE-001).</p>
 <p>Implement this protocol to provide a custom cache backend to
-<code>cached_store(store, cache_backend=my_backend)</code>. The default implementation
+<code>cache(store, cache_backend=my_backend)</code>. The default implementation
 is <code>MemoryCache</code>.</p>
 
 
@@ -6878,7 +6900,7 @@ paths can grow without limit during the TTL window.</p>
 methods use the cache; mutating methods invalidate affected entries.
 Only methods with additional behavior (<code>invalidate</code>, <code>clear_cache</code>,
 <code>ping</code>, <code>close</code>, <code>child</code>) are documented individually below.</p>
-<p>Do not construct directly -- use <code>cached_store()</code>.</p>
+<p>Do not construct directly -- use <code>cache()</code>.</p>
 
 
 
@@ -6982,12 +7004,12 @@ Only methods with additional behavior (<code>invalidate</code>, <code>clear_cach
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.ext.cache.cached_store" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">cached_store</span>
+<h3 id="remote_store.ext.cache.cache" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">cache</span>
 
 
-<a href="#remote_store.ext.cache.cached_store" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">cached_store</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">300.0</span><span class="p">,</span> <span class="n">max_content_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_entries</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cache_backend</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            CacheBackend (remote_store.ext.cache.CacheBackend)" href="#remote_store.ext.cache.CacheBackend">CacheBackend</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            CachedStore (remote_store.ext.cache.CachedStore)" href="#remote_store.ext.cache.CachedStore">CachedStore</a></span>
+<a href="#remote_store.ext.cache.cache" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">cache</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">300.0</span><span class="p">,</span> <span class="n">max_content_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_entries</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cache_backend</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            CacheBackend (remote_store.ext.cache.CacheBackend)" href="#remote_store.ext.cache.CacheBackend">CacheBackend</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            CachedStore (remote_store.ext.cache.CachedStore)" href="#remote_store.ext.cache.CachedStore">CachedStore</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -7064,6 +7086,32 @@ Ignored when <em>cache_backend</em> is provided.</p>
         </li>
     </ul>
 
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.ext.cache.cached_store" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">cached_store</span>
+
+
+<a href="#remote_store.ext.cache.cached_store" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">cached_store</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">300.0</span><span class="p">,</span> <span class="n">max_content_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_entries</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cache_backend</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            CacheBackend (remote_store.ext.cache.CacheBackend)" href="#remote_store.ext.cache.CacheBackend">CacheBackend</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            CachedStore (remote_store.ext.cache.CachedStore)" href="#remote_store.ext.cache.CachedStore">CachedStore</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Deprecated: use <code>cache()</code> instead.</p>
+
+
+<details class="deprecated" open>
+  <summary>Deprecated</summary>
+  <p>Renamed to <code>cache()</code> for consistency with <code>observe()</code>.
+Will be removed in a future release.</p>
+</details>
 
     </div>
 

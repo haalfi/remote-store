@@ -3136,6 +3136,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.ext.dagster.dagster_io_manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;dagster_io_manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.ext.dagster.remote_store_io_manager" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6193,6 +6204,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.ext.dagster.dagster_io_manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;dagster_io_manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.ext.dagster.remote_store_io_manager" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6249,9 +6271,9 @@
 without duplicating config into dagster-aws / dagster-azure.</p>
 <p>Install with <code>pip install "remote-store[dagster]"</code>.</p>
 <p>Usage:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">remote_store_io_manager</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">dagster_io_manager</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">io_mgr</span> <span class="o">=</span> <span class="n">remote_store_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;pickle&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">io_mgr</span> <span class="o">=</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;pickle&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 
@@ -6292,7 +6314,7 @@ without duplicating config into dagster-aws / dagster-azure.</p>
 
         <p>Protocol for pluggable serializers (DAG-001).</p>
 <p>Implement this to provide a custom serializer to
-<code>remote_store_io_manager(store, serializer=my_serializer)</code>.</p>
+<code>dagster_io_manager(store, serializer=my_serializer)</code>.</p>
 
 
 
@@ -6626,12 +6648,12 @@ without duplicating config into dagster-aws / dagster-azure.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.ext.dagster.remote_store_io_manager" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">remote_store_io_manager</span>
+<h3 id="remote_store.ext.dagster.dagster_io_manager" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">dagster_io_manager</span>
 
 
-<a href="#remote_store.ext.dagster.remote_store_io_manager" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remote_store_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">serializer</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Serializer (remote_store.ext.dagster.Serializer)" href="#remote_store.ext.dagster.Serializer">Serializer</a></span> <span class="o">=</span> <span class="s1">&#39;pickle&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dagster.IOManager">IOManager</span></span>
+<a href="#remote_store.ext.dagster.dagster_io_manager" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">serializer</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Serializer (remote_store.ext.dagster.Serializer)" href="#remote_store.ext.dagster.Serializer">Serializer</a></span> <span class="o">=</span> <span class="s1">&#39;pickle&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dagster.IOManager">IOManager</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6687,6 +6709,33 @@ custom object satisfying the <code>Serializer</code> protocol.</p>
         </li>
     </ul>
 
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.ext.dagster.remote_store_io_manager" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">remote_store_io_manager</span>
+
+
+<a href="#remote_store.ext.dagster.remote_store_io_manager" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remote_store_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">serializer</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Serializer (remote_store.ext.dagster.Serializer)" href="#remote_store.ext.dagster.Serializer">Serializer</a></span> <span class="o">=</span> <span class="s1">&#39;pickle&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dagster.IOManager">IOManager</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Deprecated: use <code>dagster_io_manager()</code> instead.</p>
+
+
+<details class="deprecated" open>
+  <summary>Deprecated</summary>
+  <p>Renamed to <code>dagster_io_manager()</code> for consistency with
+<code>pyarrow_fs()</code> (<code>&lt;external_lib&gt;_&lt;concept&gt;</code> pattern).
+Will be removed in a future release.</p>
+</details>
 
     </div>
 

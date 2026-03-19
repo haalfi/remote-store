@@ -3148,6 +3148,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#remote_store.ext.pydantic.from_pydantic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;from_pydantic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.ext.pydantic.pydantic_to_registry_config" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5881,6 +5892,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#remote_store.ext.pydantic.from_pydantic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;from_pydantic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.ext.pydantic.pydantic_to_registry_config" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5935,14 +5957,14 @@
 <p>Install with <code>pip install "remote-store[pydantic]"</code>.</p>
 <p>Usage:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">SettingsConfigDict</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">pydantic_to_registry_config</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_pydantic</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">MySettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span><span class="n">env_prefix</span><span class="o">=</span><span class="s2">&quot;RS_&quot;</span><span class="p">,</span> <span class="n">env_nested_delimiter</span><span class="o">=</span><span class="s2">&quot;__&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">backends</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">stores</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">config</span> <span class="o">=</span> <span class="n">pydantic_to_registry_config</span><span class="p">(</span><span class="n">MySettings</span><span class="p">())</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">config</span> <span class="o">=</span> <span class="n">from_pydantic</span><span class="p">(</span><span class="n">MySettings</span><span class="p">())</span>
 </code></pre></div>
 
 
@@ -5968,12 +5990,12 @@
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.ext.pydantic.pydantic_to_registry_config" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">pydantic_to_registry_config</span>
+<h3 id="remote_store.ext.pydantic.from_pydantic" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">from_pydantic</span>
 
 
-<a href="#remote_store.ext.pydantic.pydantic_to_registry_config" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">pydantic_to_registry_config</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n"><span title="pydantic.BaseModel">BaseModel</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            RegistryConfig
+<a href="#remote_store.ext.pydantic.from_pydantic" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">from_pydantic</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n"><span title="pydantic.BaseModel">BaseModel</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            RegistryConfig
 
 
   
@@ -6035,6 +6057,37 @@ use either <code>str</code> or <code>SecretStr</code> for credential values in t
         </li>
     </ul>
 
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.ext.pydantic.pydantic_to_registry_config" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">pydantic_to_registry_config</span>
+
+
+<a href="#remote_store.ext.pydantic.pydantic_to_registry_config" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">pydantic_to_registry_config</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n"><span title="pydantic.BaseModel">BaseModel</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            RegistryConfig
+
+
+  
+      dataclass
+   (remote_store._config.RegistryConfig)" href="../../config/#remote_store.RegistryConfig">RegistryConfig</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Deprecated: use <code>from_pydantic()</code> instead.</p>
+
+
+<details class="deprecated" open>
+  <summary>Deprecated</summary>
+  <p>Renamed to <code>from_pydantic()</code> for consistency with <code>from_yaml()</code>,
+<code>from_dict()</code>, <code>from_toml()</code>. Will be removed in a future release.</p>
+</details>
 
     </div>
 

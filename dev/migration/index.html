@@ -2168,10 +2168,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#v0170-to-next" class="md-nav__link">
+  <a href="#v0180-to-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v0.17.0 to next
+        v0.18.0 to next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0170-to-v0180" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.17.0 to v0.18.0
       
     </span>
   </a>
@@ -5914,10 +5925,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#v0170-to-next" class="md-nav__link">
+  <a href="#v0180-to-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v0.17.0 to next
+        v0.18.0 to next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0170-to-v0180" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.17.0 to v0.18.0
       
     </span>
   </a>
@@ -6015,7 +6037,16 @@
 <p><code>remote-store</code> has been published on PyPI since v0.11.0 (first Beta release).
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.</p>
-<h2 id="v0170-to-next">v0.17.0 to next<a class="headerlink" href="#v0170-to-next" title="Permanent link">&para;</a></h2>
+<h2 id="v0180-to-next">v0.18.0 to next<a class="headerlink" href="#v0180-to-next" title="Permanent link">&para;</a></h2>
+<p><strong>Factory function renames (BK-010):</strong></p>
+<p>Three ext factory functions have been renamed for naming consistency.
+Old names still work but emit <code>DeprecationWarning</code>:</p>
+<ul>
+<li><code>pydantic_to_registry_config()</code> → <code>from_pydantic()</code></li>
+<li><code>remote_store_io_manager()</code> → <code>dagster_io_manager()</code></li>
+<li><code>cached_store()</code> → <code>cache()</code></li>
+</ul>
+<h2 id="v0170-to-v0180">v0.17.0 to v0.18.0<a class="headerlink" href="#v0170-to-v0180" title="Permanent link">&para;</a></h2>
 <p><strong>Extension imports moved (ADR-0013):</strong></p>
 <p>Optional-dependency extensions are no longer re-exported from
 <code>remote_store.__init__</code>. Import them directly from their extension module:</p>

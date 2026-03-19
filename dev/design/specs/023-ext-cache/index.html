@@ -4337,10 +4337,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cache-003-cached_store-signature" class="md-nav__link">
+  <a href="#cache-003-cache-signature" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CACHE-003: cached_store() Signature
+        CACHE-003: cache() Signature
       
     </span>
   </a>
@@ -6181,10 +6181,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cache-003-cached_store-signature" class="md-nav__link">
+  <a href="#cache-003-cache-signature" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CACHE-003: cached_store() Signature
+        CACHE-003: cache() Signature
       
     </span>
   </a>
@@ -6458,9 +6458,9 @@ the expiry timestamp from <code>time.monotonic()</code>.</p>
 - <code>max_entries</code> must be positive; <code>ValueError</code> is raised on <code>&lt;= 0</code>.</p>
 <hr />
 <h2 id="factory-function">Factory Function<a class="headerlink" href="#factory-function" title="Permanent link">&para;</a></h2>
-<h3 id="cache-003-cached_store-signature">CACHE-003: cached_store() Signature<a class="headerlink" href="#cache-003-cached_store-signature" title="Permanent link">&para;</a></h3>
+<h3 id="cache-003-cache-signature">CACHE-003: cache() Signature<a class="headerlink" href="#cache-003-cache-signature" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">cached_store</span><span class="p">(</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">cache</span><span class="p">(</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">,</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">ttl</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">300.0</span><span class="p">,</span>

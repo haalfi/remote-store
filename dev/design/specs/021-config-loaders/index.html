@@ -4370,10 +4370,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cfg-015-pydantic_to_registry_config" class="md-nav__link">
+  <a href="#cfg-015-from_pydantic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CFG-015: pydantic_to_registry_config()
+        CFG-015: from_pydantic()
       
     </span>
   </a>
@@ -6225,10 +6225,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cfg-015-pydantic_to_registry_config" class="md-nav__link">
+  <a href="#cfg-015-from_pydantic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CFG-015: pydantic_to_registry_config()
+        CFG-015: from_pydantic()
       
     </span>
   </a>
@@ -6396,10 +6396,10 @@ or <code>"store"</code> that would otherwise silently produce an empty config.</
 <p><strong>Behavior:</strong> Uses <code>warnings.warn()</code> with <code>stacklevel</code> adjusted so the
 warning source points to user code. Direct <code>from_dict()</code> calls use
 <code>stacklevel=2</code>; indirect calls via <code>from_toml()</code>, <code>from_yaml()</code>, and
-<code>pydantic_to_registry_config()</code> use <code>stacklevel=3</code>. Does not raise.</p>
+<code>from_pydantic()</code> use <code>stacklevel=3</code>. Does not raise.</p>
 <h3 id="cfg-013-loader-equivalence">CFG-013: Loader Equivalence<a class="headerlink" href="#cfg-013-loader-equivalence" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>from_toml()</code>, <code>from_yaml()</code>, <code>from_dict()</code>, and
-<code>pydantic_to_registry_config()</code> produce identical <code>RegistryConfig</code> objects for
+<code>from_pydantic()</code> produce identical <code>RegistryConfig</code> objects for
 semantically equivalent input. All Secret wrapping, type coercion, and
 validation happens in <code>from_dict()</code> — the loaders/adapters are pure
 format-to-dict translators.</p>
@@ -6410,8 +6410,8 @@ format-to-dict translators.</p>
 - <code>pydantic</code>: <code>["pydantic-settings&gt;=2.0.0"]</code></p>
 <hr />
 <h2 id="pydantic-adapter">Pydantic Adapter<a class="headerlink" href="#pydantic-adapter" title="Permanent link">&para;</a></h2>
-<h3 id="cfg-015-pydantic_to_registry_config">CFG-015: <code>pydantic_to_registry_config()</code><a class="headerlink" href="#cfg-015-pydantic_to_registry_config" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>pydantic_to_registry_config(model)</code> converts any Pydantic
+<h3 id="cfg-015-from_pydantic">CFG-015: <code>from_pydantic()</code><a class="headerlink" href="#cfg-015-from_pydantic" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>from_pydantic(model)</code> converts any Pydantic
 <code>BaseModel</code> instance to a <code>RegistryConfig</code>.</p>
 <p><strong>Location:</strong> <code>remote_store/ext/pydantic.py</code></p>
 <p><strong>Parameters:</strong>
@@ -6435,11 +6435,11 @@ models.</p>
 <h3 id="cfg-016-adr-0002-compatibility">CFG-016: ADR-0002 Compatibility<a class="headerlink" href="#cfg-016-adr-0002-compatibility" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The Pydantic adapter operates entirely on the user side.
 Pydantic's source merging (env vars, <code>.env</code> files, config files) happens
-<em>before</em> <code>pydantic_to_registry_config()</code> is called. The resulting
+<em>before</em> <code>from_pydantic()</code> is called. The resulting
 <code>RegistryConfig</code> is immutable and subject to ADR-0002 (no further merging).</p>
 <p><strong>Flow:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>User&#39;s Pydantic model (merges env + .env + files)
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    → pydantic_to_registry_config() → from_dict()
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    → from_pydantic() → from_dict()
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        → RegistryConfig (immutable, ADR-0002 applies)
 </code></pre></div></p>
 <h3 id="cfg-017-extension-contract">CFG-017: Extension Contract<a class="headerlink" href="#cfg-017-extension-contract" title="Permanent link">&para;</a></h3>
@@ -6526,7 +6526,7 @@ Pydantic's source merging (env vars, <code>.env</code> files, config files) happ
 <h2 id="example-pydantic">Example Pydantic<a class="headerlink" href="#example-pydantic" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">SettingsConfigDict</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">pydantic_to_registry_config</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_pydantic</span>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">BackendEntry</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>
@@ -6547,7 +6547,7 @@ Pydantic's source merging (env vars, <code>.env</code> files, config files) happ
 <a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>    <span class="n">stores</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StoreEntry</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 <a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>
 <a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="n">settings</span> <span class="o">=</span> <span class="n">RemoteStoreSettings</span><span class="p">()</span>
-<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="n">config</span> <span class="o">=</span> <span class="n">pydantic_to_registry_config</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="n">config</span> <span class="o">=</span> <span class="n">from_pydantic</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
 </code></pre></div>
 
 

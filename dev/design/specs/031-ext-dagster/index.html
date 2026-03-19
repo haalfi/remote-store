@@ -4683,10 +4683,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#dag-011-remote_store_io_manager-signature" class="md-nav__link">
+  <a href="#dag-011-dagster_io_manager-signature" class="md-nav__link">
     <span class="md-ellipsis">
       
-        DAG-011: remote_store_io_manager Signature
+        DAG-011: dagster_io_manager Signature
       
     </span>
   </a>
@@ -6225,10 +6225,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#dag-011-remote_store_io_manager-signature" class="md-nav__link">
+  <a href="#dag-011-dagster_io_manager-signature" class="md-nav__link">
     <span class="md-ellipsis">
       
-        DAG-011: remote_store_io_manager Signature
+        DAG-011: dagster_io_manager Signature
       
     </span>
   </a>
@@ -6268,7 +6268,7 @@ Dagster pipelines without duplicating config into <code>dagster-aws</code> /
 <strong>Dependencies:</strong> <code>dagster&gt;=1.9</code> (optional extra)
 <strong>Related:</strong> <a href="../001-store-api/">001-store-api.md</a> (Store API),
 research (<code>sdd/research/research-dagster-extension.md</code>), ID-075.</p>
-<p><strong>Scope:</strong> v1 only — <code>remote_store_io_manager(store)</code> factory function.
+<p><strong>Scope:</strong> v1 only — <code>dagster_io_manager(store)</code> factory function.
 v2 (<code>DagsterStoreResource</code>, <code>RemoteStoreIOManager</code>) is deferred.</p>
 <hr />
 <h2 id="serializer-protocol">Serializer Protocol<a class="headerlink" href="#serializer-protocol" title="Permanent link">&para;</a></h2>
@@ -6370,7 +6370,7 @@ allows distinguishing "never materialized" from "materialized as None").</p>
 <p><strong>Raises:</strong> <code>NotFound</code> (from Store) when the file does not exist.</p>
 <h3 id="dag-009-custom-serializer">DAG-009: Custom Serializer<a class="headerlink" href="#dag-009-custom-serializer" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> any object satisfying the <code>Serializer</code> protocol can be passed
-to <code>remote_store_io_manager(store, serializer=my_serializer)</code>. The IO manager
+to <code>dagster_io_manager(store, serializer=my_serializer)</code>. The IO manager
 uses <code>my_serializer.extension</code>, <code>.serialize()</code>, and <code>.deserialize()</code>.</p>
 <h3 id="dag-010-missing-pyarrow-error">DAG-010: Missing PyArrow Error<a class="headerlink" href="#dag-010-missing-pyarrow-error" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> passing <code>serializer="parquet"</code> when <code>pyarrow</code> is not installed
@@ -6378,9 +6378,9 @@ raises <code>ModuleNotFoundError</code> with a message containing
 <code>"pip install 'remote-store[dagster,arrow]'"</code>.</p>
 <hr />
 <h2 id="factory-function">Factory Function<a class="headerlink" href="#factory-function" title="Permanent link">&para;</a></h2>
-<h3 id="dag-011-remote_store_io_manager-signature">DAG-011: remote_store_io_manager Signature<a class="headerlink" href="#dag-011-remote_store_io_manager-signature" title="Permanent link">&para;</a></h3>
+<h3 id="dag-011-dagster_io_manager-signature">DAG-011: dagster_io_manager Signature<a class="headerlink" href="#dag-011-dagster_io_manager-signature" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">remote_store_io_manager</span><span class="p">(</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">dagster_io_manager</span><span class="p">(</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">,</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">serializer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Serializer</span> <span class="o">=</span> <span class="s2">&quot;pickle&quot;</span><span class="p">,</span>
