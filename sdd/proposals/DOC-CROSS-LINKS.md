@@ -98,12 +98,16 @@ No action required.
 
 ### Rule 2 — API reference → Guide
 
-**Status: 30 of 32 pages non-compliant.**
+**Status: 23 pages have no guide link (Rule 2 violation); 7 pages have
+guide links in ad-hoc format and are missing example/source links
+(format + Rule 3 gap).**
 
 32 API reference pages total. The 7 backend API pages have inline guide
-links (e.g., "see the [S3 Backend Guide](../../backends/s3.md)") but use
-an ad-hoc format, not the standard `## See also` section. All other pages
-have no guide links at all.
+links (e.g., "see the [S3 Backend Guide](../../backends/s3.md)") — so they
+partially satisfy Rule 2 — but use an ad-hoc format, not the standard
+`## See also` section, and lack example/source links (Rule 3). All other
+25 non-exempt pages have no guide links at all (23 are non-compliant with
+Rule 2; 2 are exempt).
 
 | Category | Pages | Current state | Compliant? |
 |---|---|---|---|
@@ -115,9 +119,10 @@ have no guide links at all.
 | API index (`api/index.md`) | 1 | Hub page with links to all sub-pages | Yes (exempt — navigation, not content) |
 | Backend `backend.md` | 1 | Abstract base — no corresponding guide | Yes (exempt) |
 
-Non-compliant: 8 + 13 + 1 + 1 + 7 = **30 pages** (32 − 2 exempt).
-The 7 backend pages have a guide link but in ad-hoc format — they still
-need conversion to `## See also` and addition of example/source links.
+Rule 2 non-compliant: 8 + 13 + 1 + 1 = **23 pages** (no guide link at all).
+Format + Rule 3 gap: **7 backend pages** (have guide links in ad-hoc format,
+need conversion to `## See also` and addition of example/source links).
+Total needing work: **30 pages** (32 − 2 exempt).
 
 **Fix plan:**
 
