@@ -98,7 +98,7 @@ No action required.
 
 ### Rule 2 — API reference → Guide
 
-**Status: 25 of 32 pages non-compliant.**
+**Status: 30 of 32 pages non-compliant.**
 
 32 API reference pages total. The 7 backend API pages have inline guide
 links (e.g., "see the [S3 Backend Guide](../../backends/s3.md)") but use
@@ -111,13 +111,13 @@ have no guide links at all.
 | Extension API (`batch`, `cache`, `glob`, `observe`, `transfer`, `arrow`, `dagster`, `otel`, `streams`, `partition`, `pydantic`, `yaml`, `integrity`) | 13 | Bare `:::` directives only | No |
 | Extension index | 1 | No cross-links | No |
 | Backend index | 1 | No cross-links | No |
-| Backend API pages | 7 | Inline link to guide (ad-hoc format) | Partial — link exists but not `## See also` |
-| API index (`api/index.md`) | 1 | Hub page with links to all sub-pages | Yes (exempt — this is navigation, not content) |
+| Backend API pages | 7 | Inline link to guide (ad-hoc format, no `## See also`, no example/source links) | No |
+| API index (`api/index.md`) | 1 | Hub page with links to all sub-pages | Yes (exempt — navigation, not content) |
 | Backend `backend.md` | 1 | Abstract base — no corresponding guide | Yes (exempt) |
 
-Non-compliant: 8 + 13 + 1 + 1 + 2 (backend pages needing example links) = **25 pages**.
-The 7 backend pages partially comply (guide link present, but format is
-ad-hoc and example/source links are missing).
+Non-compliant: 8 + 13 + 1 + 1 + 7 = **30 pages** (32 − 2 exempt).
+The 7 backend pages have a guide link but in ad-hoc format — they still
+need conversion to `## See also` and addition of example/source links.
 
 **Fix plan:**
 
@@ -236,7 +236,7 @@ Mapping for example pages:
 
 ### Rule 4 — Linked names in tables
 
-**Status: Non-compliant in 7 files, 8+ tables.**
+**Status: Non-compliant in 6 files, 8+ tables.**
 
 | File | Table | Location | Plain-text names |
 |---|---|---|---|
@@ -246,16 +246,20 @@ Mapping for example pages:
 | `health-check.md` | Per-backend ping strategy | First column (key) | Local, S3, S3-PyArrow, SFTP, Azure, Memory |
 | `performance.md` | Sample results | Header row | Local, S3 (MinIO), S3-PyArrow, SFTP, Azure (Azurite) |
 | `api/store.md` | Backend Behavior Matrix | Header row | Local, S3, S3-PyArrow, SFTP, Azure, Memory |
-| `architecture.md` | Extension module list | Prose (not table) | ext.batch, ext.glob, ext.observe, etc. |
 
 Backend names should link to their guide page (e.g.,
-`[Local](backends/local.md)`). Extension module names should link to their
-API reference page (e.g., `[ext.batch](api/extensions/batch.md)`).
+`[Local](backends/local.md)`).
 
 Note: `concurrency.md` has backend names in body cells (first column), not
 headers. These are in scope because they serve as row keys — the identifying
 label for each row. Incidental mentions of backend names in other columns or
 prose are **not** in scope.
+
+**Adjacent finding (not Rule 4):** `architecture.md` lists extension module
+names (`ext.batch`, `ext.glob`, `ext.observe`, etc.) as code spans in prose
+without linking to their API reference pages. This is a Rule 2 gap (API
+entities mentioned without links), not a table issue. It can be addressed
+alongside Phase 2 or as a separate follow-up.
 
 ---
 
@@ -272,9 +276,9 @@ GitHub source link, per the mapping table above.
 Split into up to 3 PRs for reviewability:
 
 - **PR 1a:** Core examples (8 pages: quickstart through store-child)
-- **PR 1b:** Backend examples (6 pages: s3 through http) + medallion
-  showcase source link fix
-- **PR 1c:** Extension examples (13 pages: batch through health-check)
+- **PR 1b:** Backend examples (6 pages: s3 through http)
+- **PR 1c:** Extension + showcase examples (13 pages: batch through
+  health-check, plus medallion-dagster source link fix)
 
 Low risk — purely additive.
 
@@ -292,11 +296,10 @@ Split into up to 2 PRs:
 
 Low risk — purely additive.
 
-### Phase 3 — Table header/cell links (7 files)
+### Phase 3 — Table header/cell links (6 files)
 
-Replace plain-text backend and extension names in table headers and
-key-column cells with links. Use relative links to guide pages for backend
-names, API reference pages for extension names.
+Replace plain-text backend names in table headers and key-column cells
+with links to guide pages.
 
 Single PR. Medium risk — widens markdown table lines. Review readability
 of raw markdown before merging.
@@ -315,9 +318,9 @@ it an official project convention.
 |---|---|---|---|
 | Phase 1 | 27 | 1a, 1b, 1c | Add `## See also` to example pages |
 | Phase 2 | 30 | 2a, 2b | Add `## See also` to API ref pages |
-| Phase 3 | 7 | 1 | Link plain-text names in tables |
+| Phase 3 | 6 | 1 | Link plain-text names in tables |
 | Phase 4 | 1 | 1 | Codify Rule 4 in DOCUMENTATION.md |
-| **Total** | **65** | **up to 7** | |
+| **Total** | **64** | **up to 7** | |
 
 All changes are additive (no code changes, no removals).
 
