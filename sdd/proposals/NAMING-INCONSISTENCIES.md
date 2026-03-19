@@ -59,6 +59,9 @@ factories:
 - `remote_store_io_manager` — includes our own library name (`remote_store`)
   which is redundant since you're already importing from
   `remote_store.ext.dagster`. Every other factory omits the library name.
+- `cached_store` — uses `<adjective>_store` while the sibling factory `observe`
+  uses a bare verb. These two are the only pure-Python Store-wrapping factories
+  and should match each other.
 - `pyarrow_fs` — prefixes the external library name (`pyarrow`), which no other
   pure-Python ext factory does. The cache ext doesn't call its factory
   `lru_cached_store`; the observe ext doesn't call its factory
@@ -71,6 +74,7 @@ factories:
 
 | Current | Proposed | Rationale |
 |---|---|---|
+| `cached_store(store)` | `cache(store)` | Bare verb, mirrors `observe(store)` → `ObservedStore` |
 | `remote_store_io_manager(store)` | `dagster_io_manager(store)` | Drop redundant `remote_store_` prefix; the external library name (`dagster`) is appropriate here since the return type is a Dagster `IOManager` — like `pyarrow_fs` returning a PyArrow `FileSystem` |
 | `pyarrow_fs(store)` | (keep) | On reflection, the prefix is appropriate: the return type is `pyarrow.fs.PyFileSystem`, not a Store wrapper. Users need to know which ecosystem's object they're getting. |
 | `otel_observe(store)` | (keep) | Prefix disambiguates from the existing `observe()` |
@@ -105,26 +109,34 @@ ever becomes public, prefer `StoreIOManager` to match `StoreFileSystemHandler`.
    `remote_store_` prefix; matches the `pyarrow_fs` pattern of
    `<external_lib>_<concept>`.
 
+### Should fix (pattern mismatch):
+
+3. **`cached_store` → `cache`** — the two pure-Python Store-wrapping factories
+   should follow the same pattern. `observe(store)` → `ObservedStore` uses a
+   bare verb. `cached_store(store)` → `CachedStore` uses `<adjective>_store`,
+   breaking the pattern. The consistent form is `cache(store)` → `CachedStore`
+   (bare verb, mirrors `observe`).
+
 ### Consider (minor asymmetries):
 
-3. Pure-Python ext factories use bare verbs/adjectives (`observe`,
-   `cached_store`) while optional-dep ext factories prefix the library name
+4. Pure-Python ext factories use bare verbs/adjectives (`observe`,
+   `cache`) while optional-dep ext factories prefix the library name
    (`pyarrow_fs`, `otel_observe`). This is actually a useful convention — it
    signals "this returns a foreign type" vs "this returns a Store subtype". If
    adopted as a rule, document it.
 
 ### No action needed:
 
-4. `from_yaml` — matches `from_*` pattern, standalone function is justified by
+5. `from_yaml` — matches `from_*` pattern, standalone function is justified by
    ADR-0013.
-5. `otel_observe`, `otel_hooks` — prefix disambiguates from core `observe()`.
-6. `pyarrow_fs` — prefix matches the external-type-factory convention.
+6. `otel_observe`, `otel_hooks` — prefix disambiguates from core `observe()`.
+7. `pyarrow_fs` — prefix matches the external-type-factory convention.
 
 ---
 
 ## 5. Migration Notes
 
-Both renames (#1 and #2) would need:
+All three renames (#1, #2, #3) would need:
 
 - Deprecation alias in the old name (emit `DeprecationWarning`, remove in next
   minor/major)
