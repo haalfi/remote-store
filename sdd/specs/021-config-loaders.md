@@ -101,12 +101,12 @@ or `"store"` that would otherwise silently produce an empty config.
 **Behavior:** Uses `warnings.warn()` with `stacklevel` adjusted so the
 warning source points to user code. Direct `from_dict()` calls use
 `stacklevel=2`; indirect calls via `from_toml()`, `from_yaml()`, and
-`pydantic_to_registry_config()` use `stacklevel=3`. Does not raise.
+`from_pydantic()` use `stacklevel=3`. Does not raise.
 
 ### CFG-013: Loader Equivalence
 
 **Invariant:** `from_toml()`, `from_yaml()`, `from_dict()`, and
-`pydantic_to_registry_config()` produce identical `RegistryConfig` objects for
+`from_pydantic()` produce identical `RegistryConfig` objects for
 semantically equivalent input. All Secret wrapping, type coercion, and
 validation happens in `from_dict()` — the loaders/adapters are pure
 format-to-dict translators.
@@ -122,9 +122,9 @@ format-to-dict translators.
 
 ## Pydantic Adapter
 
-### CFG-015: `pydantic_to_registry_config()`
+### CFG-015: `from_pydantic()`
 
-**Invariant:** `pydantic_to_registry_config(model)` converts any Pydantic
+**Invariant:** `from_pydantic(model)` converts any Pydantic
 `BaseModel` instance to a `RegistryConfig`.
 
 **Location:** `remote_store/ext/pydantic.py`
@@ -156,13 +156,13 @@ models.
 
 **Invariant:** The Pydantic adapter operates entirely on the user side.
 Pydantic's source merging (env vars, `.env` files, config files) happens
-*before* `pydantic_to_registry_config()` is called. The resulting
+*before* `from_pydantic()` is called. The resulting
 `RegistryConfig` is immutable and subject to ADR-0002 (no further merging).
 
 **Flow:**
 ```text
 User's Pydantic model (merges env + .env + files)
-    → pydantic_to_registry_config() → from_dict()
+    → from_pydantic() → from_dict()
         → RegistryConfig (immutable, ADR-0002 applies)
 ```
 
@@ -245,7 +245,7 @@ config = from_yaml("remote-store.yaml")
 ```python
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from remote_store.ext.pydantic import pydantic_to_registry_config
+from remote_store.ext.pydantic import from_pydantic
 
 class BackendEntry(BaseModel):
     type: str
@@ -266,5 +266,5 @@ class RemoteStoreSettings(BaseSettings):
     stores: dict[str, StoreEntry] = {}
 
 settings = RemoteStoreSettings()
-config = pydantic_to_registry_config(settings)
+config = from_pydantic(settings)
 ```

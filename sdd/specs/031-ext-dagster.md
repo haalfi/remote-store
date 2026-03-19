@@ -13,7 +13,7 @@ Dagster pipelines without duplicating config into `dagster-aws` /
 **Related:** [001-store-api.md](001-store-api.md) (Store API),
 research (`sdd/research/research-dagster-extension.md`), ID-075.
 
-**Scope:** v1 only — `remote_store_io_manager(store)` factory function.
+**Scope:** v1 only — `dagster_io_manager(store)` factory function.
 v2 (`DagsterStoreResource`, `RemoteStoreIOManager`) is deferred.
 
 ---
@@ -124,7 +124,7 @@ allows distinguishing "never materialized" from "materialized as None").
 ### DAG-009: Custom Serializer
 
 **Invariant:** any object satisfying the `Serializer` protocol can be passed
-to `remote_store_io_manager(store, serializer=my_serializer)`. The IO manager
+to `dagster_io_manager(store, serializer=my_serializer)`. The IO manager
 uses `my_serializer.extension`, `.serialize()`, and `.deserialize()`.
 
 ### DAG-010: Missing PyArrow Error
@@ -137,12 +137,12 @@ raises `ModuleNotFoundError` with a message containing
 
 ## Factory Function
 
-### DAG-011: remote_store_io_manager Signature
+### DAG-011: dagster_io_manager Signature
 
 **Invariant:**
 
 ```python
-def remote_store_io_manager(
+def dagster_io_manager(
     store: Store,
     *,
     serializer: str | Serializer = "pickle",

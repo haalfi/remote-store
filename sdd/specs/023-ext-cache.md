@@ -57,12 +57,12 @@ the expiry timestamp from `time.monotonic()`.
 
 ## Factory Function
 
-### CACHE-003: cached_store() Signature
+### CACHE-003: cache() Signature
 
 **Invariant:**
 
 ```python
-def cached_store(
+def cache(
     store: Store,
     *,
     ttl: float = 300.0,

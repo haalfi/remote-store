@@ -29,7 +29,7 @@ import pyarrow.parquet as pq  # noqa: E402
 from remote_store import Store  # noqa: E402, TC001
 from remote_store.ext.arrow import pyarrow_fs  # noqa: E402
 from remote_store.ext.batch import batch_delete, batch_exists  # noqa: E402
-from remote_store.ext.cache import cached_store  # noqa: E402
+from remote_store.ext.cache import cache  # noqa: E402
 from remote_store.ext.observe import observe  # noqa: E402
 from remote_store.ext.partition import parse_partition, partition_path  # noqa: E402
 from tests.e2e.conftest import azurite_skip, minio_skip, s3_pyarrow_skip  # noqa: E402
@@ -361,7 +361,7 @@ def _test_cache_layer(gold: Store) -> None:
     """Verify ext.cache caching and invalidation against real backend."""
     gold.write("cache-test.txt", b"original")
 
-    cstore = cached_store(gold, ttl=60)
+    cstore = cache(gold, ttl=60)
 
     # First read populates cache
     content1 = cstore.read_bytes("cache-test.txt")

@@ -6,14 +6,14 @@ round-trips for read-heavy and metadata-heavy workloads.
 ## Quick Start
 
 ```python
-from remote_store import Store, cached_store
+from remote_store import Store, cache
 from remote_store.backends import MemoryBackend
 
 store = Store(MemoryBackend())
 store.write("config.json", b'{"key": "value"}')
 
 # Wrap with a 5-minute cache
-cached = cached_store(store, ttl=300)
+cached = cache(store, ttl=300)
 
 # First call hits the backend
 data = cached.read_bytes("config.json")
@@ -67,7 +67,7 @@ large files, set `max_content_size` to prevent memory pressure:
 
 ```python
 # Only cache files up to 1 MB
-cached = cached_store(store, ttl=300, max_content_size=1_048_576)
+cached = cache(store, ttl=300, max_content_size=1_048_576)
 ```
 
 Files larger than the limit are still returned correctly — they just
@@ -106,13 +106,13 @@ mutations, either:
 what gets observed:
 
 ```python
-from remote_store import observe, cached_store
+from remote_store import observe, cache
 
 # Observe only cache misses (actual backend calls)
-cached = cached_store(observe(store, on_read=my_hook), ttl=300)
+cached = cache(observe(store, on_read=my_hook), ttl=300)
 
 # Observe all reads including cache hits
-observed = observe(cached_store(store, ttl=300), on_read=my_hook)
+observed = observe(cache(store, ttl=300), on_read=my_hook)
 ```
 
 ## Thread Safety

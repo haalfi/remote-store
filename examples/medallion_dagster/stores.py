@@ -15,7 +15,7 @@ configure_otel()
 
 from remote_store import Store  # noqa: E402
 from remote_store.backends import LocalBackend, ReadOnlyHttpBackend  # noqa: E402
-from remote_store.ext.cache import cached_store  # noqa: E402
+from remote_store.ext.cache import cache  # noqa: E402
 from remote_store.ext.otel import otel_observe  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -28,7 +28,7 @@ _http = Store(
         timeout=60.0,
     )
 )
-_cached = cached_store(_http, ttl=3600)
+_cached = cache(_http, ttl=3600)
 meteo_store = otel_observe(_cached)
 
 # ---------------------------------------------------------------------------

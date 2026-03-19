@@ -8,7 +8,7 @@ import pytest
 from pydantic import BaseModel
 
 from remote_store._config import RegistryConfig, Secret
-from remote_store.ext.pydantic import pydantic_to_registry_config
+from remote_store.ext.pydantic import from_pydantic
 
 
 class BackendEntry(BaseModel):
@@ -28,7 +28,7 @@ class SimpleConfig(BaseModel):
 
 
 class TestPydanticToRegistryConfig:
-    """CFG-015: pydantic_to_registry_config() converts BaseModel to RegistryConfig."""
+    """CFG-015: from_pydantic() converts BaseModel to RegistryConfig."""
 
     @pytest.mark.spec("CFG-015")
     def test_basic_conversion(self) -> None:
@@ -36,7 +36,7 @@ class TestPydanticToRegistryConfig:
             backends={"local": BackendEntry(type="local", options={"root": "/data"})},
             stores={"main": StoreEntry(backend="local", root_path="data")},
         )
-        rc = pydantic_to_registry_config(model)
+        rc = from_pydantic(model)
         assert isinstance(rc, RegistryConfig)
         assert rc.backends["local"].type == "local"
         assert rc.backends["local"].options["root"] == "/data"
@@ -46,7 +46,7 @@ class TestPydanticToRegistryConfig:
     @pytest.mark.spec("CFG-015")
     def test_empty_config(self) -> None:
         model = SimpleConfig()
-        rc = pydantic_to_registry_config(model)
+        rc = from_pydantic(model)
         assert rc.backends == {}
         assert rc.stores == {}
 
@@ -62,7 +62,7 @@ class TestPydanticToRegistryConfig:
             },
             stores={},
         )
-        rc = pydantic_to_registry_config(model)
+        rc = from_pydantic(model)
         opts = rc.backends["s3"].options
         assert isinstance(opts["key"], Secret)
         assert isinstance(opts["secret"], Secret)
@@ -96,7 +96,7 @@ class TestPydanticToRegistryConfig:
             },
             stores={},
         )
-        rc = pydantic_to_registry_config(model)
+        rc = from_pydantic(model)
         opts = rc.backends["s3"].options
         assert isinstance(opts["key"], Secret)
         assert isinstance(opts["secret"], Secret)
@@ -116,7 +116,7 @@ class TestPydanticToRegistryConfig:
                 "archive": StoreEntry(backend="s3", root_path="archive"),
             },
         )
-        rc = pydantic_to_registry_config(model)
+        rc = from_pydantic(model)
         assert len(rc.backends) == 2
         assert len(rc.stores) == 2
         assert rc.backends["local"].type == "local"
@@ -124,21 +124,21 @@ class TestPydanticToRegistryConfig:
 
     @pytest.mark.spec("CFG-013")
     def test_equivalence_with_from_dict(self) -> None:
-        """pydantic_to_registry_config() produces identical config to from_dict()."""
+        """from_pydantic() produces identical config to from_dict()."""
         model = SimpleConfig(
             backends={"local": BackendEntry(type="local", options={"root": "/tmp"})},
             stores={"data": StoreEntry(backend="local", root_path="d")},
         )
-        from_pydantic = pydantic_to_registry_config(model)
-        from_dict = RegistryConfig.from_dict(
+        rc_pydantic = from_pydantic(model)
+        rc_dict = RegistryConfig.from_dict(
             {
                 "backends": {"local": {"type": "local", "options": {"root": "/tmp"}}},
                 "stores": {"data": {"backend": "local", "root_path": "d"}},
             }
         )
-        assert from_pydantic.backends["local"].type == from_dict.backends["local"].type
-        assert from_pydantic.backends["local"].options == from_dict.backends["local"].options
-        assert from_pydantic.stores["data"].root_path == from_dict.stores["data"].root_path
+        assert rc_pydantic.backends["local"].type == rc_dict.backends["local"].type
+        assert rc_pydantic.backends["local"].options == rc_dict.backends["local"].options
+        assert rc_pydantic.stores["data"].root_path == rc_dict.stores["data"].root_path
 
     @pytest.mark.spec("CFG-015")
     def test_unknown_keys_warn(self) -> None:
@@ -151,7 +151,7 @@ class TestPydanticToRegistryConfig:
 
         model = ExtraConfig()
         with pytest.warns(UserWarning, match="Unknown top-level config keys"):
-            pydantic_to_registry_config(model)
+            from_pydantic(model)
 
     @pytest.mark.spec("CFG-015")
     def test_store_options_preserved(self) -> None:
@@ -165,7 +165,7 @@ class TestPydanticToRegistryConfig:
                 )
             },
         )
-        rc = pydantic_to_registry_config(model)
+        rc = from_pydantic(model)
         assert rc.stores["main"].options == {"custom": "value"}
 
 
@@ -174,7 +174,7 @@ class TestPydanticWithBaseSettings:
 
     @pytest.mark.spec("CFG-016")
     def test_base_settings_conversion(self) -> None:
-        """BaseSettings model works through pydantic_to_registry_config()."""
+        """BaseSettings model works through from_pydantic()."""
         from pydantic_settings import BaseSettings, SettingsConfigDict
 
         class MySettings(BaseSettings):
@@ -188,7 +188,7 @@ class TestPydanticWithBaseSettings:
             }
 
         settings = MySettings()
-        rc = pydantic_to_registry_config(settings)
+        rc = from_pydantic(settings)
         assert rc.backends["mem"].type == "memory"
         assert rc.stores["data"].root_path == "test"
 
@@ -201,11 +201,20 @@ class TestPydanticExtensionContract:
         from remote_store.ext import pydantic
 
         assert hasattr(pydantic, "__all__")
-        assert "pydantic_to_registry_config" in pydantic.__all__
+        assert "from_pydantic" in pydantic.__all__
+        assert "pydantic_to_registry_config" in pydantic.__all__  # deprecated alias
 
     @pytest.mark.spec("CFG-017")
     def test_no_top_level_reexport(self) -> None:
         """Optional-dep extensions are NOT re-exported (ADR-0013)."""
         import remote_store
 
-        assert not hasattr(remote_store, "pydantic_to_registry_config")
+        assert not hasattr(remote_store, "from_pydantic")
+
+    def test_deprecated_alias_warns(self) -> None:
+        """pydantic_to_registry_config() emits DeprecationWarning."""
+        from remote_store.ext.pydantic import pydantic_to_registry_config
+
+        model = SimpleConfig(backends={"mem": BackendEntry(type="memory")}, stores={})
+        with pytest.warns(DeprecationWarning, match="use from_pydantic"):
+            pydantic_to_registry_config(model)

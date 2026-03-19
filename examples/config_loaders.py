@@ -1,4 +1,4 @@
-"""Config loaders — from_toml(), from_yaml(), and pydantic_to_registry_config().
+"""Config loaders — from_toml(), from_yaml(), and from_pydantic().
 
 Demonstrates loading RegistryConfig from TOML files, YAML files, and Pydantic
 models. All loaders delegate to from_dict() for Secret wrapping and validation.
@@ -81,11 +81,11 @@ if __name__ == "__main__":
             logs.write("app.log", b"[INFO] started\n")
             print(f"  wrote: {logs.read_bytes('app.log').decode().strip()}")
 
-        # --- pydantic_to_registry_config() ---
+        # --- from_pydantic() ---
         try:
             from pydantic import BaseModel
 
-            from remote_store.ext.pydantic import pydantic_to_registry_config
+            from remote_store.ext.pydantic import from_pydantic
 
             class BackendEntry(BaseModel):
                 type: str
@@ -103,8 +103,8 @@ if __name__ == "__main__":
                 backends={"local": BackendEntry(type="local", options={"root": str(root / "pydantic-data")})},
                 stores={"notes": StoreEntry(backend="local", root_path="notes")},
             )
-            config = pydantic_to_registry_config(model)
-            print(f"\npydantic_to_registry_config(): {len(config.stores)} store(s)")
+            config = from_pydantic(model)
+            print(f"\nfrom_pydantic(): {len(config.stores)} store(s)")
 
             with Registry(config) as reg:
                 notes = reg.get_store("notes")

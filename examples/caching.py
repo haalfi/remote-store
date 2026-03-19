@@ -6,7 +6,7 @@ cache statistics, and max_content_size.
 
 from __future__ import annotations
 
-from remote_store import Store, cached_store
+from remote_store import Store, cache
 from remote_store.backends import MemoryBackend
 
 
@@ -18,7 +18,7 @@ def demo(store: Store) -> None:
     store.write("data/raw.bin", b"\x00" * 5000)
 
     # Wrap with caching (60s TTL, max 1 KB content caching)
-    cached = cached_store(store, ttl=60, max_content_size=1024)
+    cached = cache(store, ttl=60, max_content_size=1024)
 
     # -- Cached reads --
     print("--- Cached reads ---")

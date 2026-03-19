@@ -15,7 +15,7 @@ from assets.silver import silver_measurements
 from dagster import Definitions
 from stores import gold, silver
 
-from remote_store.ext.dagster import ParquetSerializer, remote_store_io_manager
+from remote_store.ext.dagster import ParquetSerializer, dagster_io_manager
 
 
 class PolarsParquetSerializer(ParquetSerializer):
@@ -43,7 +43,7 @@ defs = Definitions(
         gold_alerts,
     ],
     resources={
-        "silver_io_manager": remote_store_io_manager(silver, serializer=PolarsParquetSerializer()),
-        "gold_io_manager": remote_store_io_manager(gold, serializer=PolarsParquetSerializer()),
+        "silver_io_manager": dagster_io_manager(silver, serializer=PolarsParquetSerializer()),
+        "gold_io_manager": dagster_io_manager(gold, serializer=PolarsParquetSerializer()),
     },
 )
