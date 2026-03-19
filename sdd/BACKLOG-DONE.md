@@ -4,6 +4,24 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Naming & Consistency
+
+- [x] **BK-011 — S3 backend deduplication (Phase 1)**
+  Extract shared listing, error handling, and FileInfo construction from
+  `_s3.py` and `_s3_pyarrow.py` into `_S3Base` base class
+  (`backends/_s3_base.py`).  Add FileInfo helpers (`backends/_fileinfo.py`)
+  and error factories (`_not_found`, `_permission_denied`,
+  `_classify_by_message` in `_errors.py`).  Net -94 lines, single
+  maintenance point for 155 previously duplicated lines.
+  [Proposal](proposals/CODE-DEDUPLICATION.md).  PR #242.
+
+- [x] **BK-010 — Naming consistency: rename ext factory functions**
+  Renamed three public factory functions for naming consistency:
+  `pydantic_to_registry_config` → `from_pydantic`, `remote_store_io_manager` →
+  `dagster_io_manager`, `cached_store` → `cache`. Old names kept as deprecated
+  aliases emitting `DeprecationWarning`. All specs, guides, examples, migration
+  guide updated. [Proposal](proposals/NAMING-INCONSISTENCIES.md). PR #241.
+
 ## Middleware Path 1 (Post-v0.17.0)
 
 - [x] **ID-090 — Docs landing page (replace README include)**
@@ -55,11 +73,10 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   provides default delegation for all 27 Store methods, enables `child()`
   propagation via `_wrap_child()`. ADR-0014.
 
-- [x] **ID-008 — Checksum verification on read/write (done parts)**
+- [x] **ID-008 — Checksum verification on read/write**
   Verification functions (`ext.integrity`, ID-093), stream wrappers
-  (`ext.streams`, ID-092), and `ContentDigest` model (ID-095) are complete.
-  Remaining work: [ID-096](BACKLOG.md) (S3 population),
-  [ID-097](BACKLOG.md) (Azure population).
+  (`ext.streams`, ID-092), `ContentDigest` model (ID-095),
+  S3 etag population (ID-096), and Azure etag/digest population (ID-097).
 
 - [x] **ID-093 — `ext.integrity` module — checksum verification helpers**
   `checksum()`, `verify()`, `verify_hex()`. Pure functions over

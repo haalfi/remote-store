@@ -130,3 +130,38 @@ class BackendUnavailable(RemoteStoreError):
     storage service is unreachable (e.g., network error, invalid
     endpoint, missing container).
     """
+
+
+# ---------------------------------------------------------------------------
+# Error factory helpers
+# ---------------------------------------------------------------------------
+# Short-hand constructors that eliminate the repeated
+# ``ErrorType(f"...: {path}", path=path, backend=backend)`` boilerplate
+# across backends.
+
+
+def _not_found(path: str, backend: str) -> NotFound:
+    """Create a ``NotFound`` with canonical message formatting."""
+    return NotFound(f"Not found: {path}", path=path, backend=backend)
+
+
+def _permission_denied(path: str, backend: str) -> PermissionDenied:
+    """Create a ``PermissionDenied`` with canonical message formatting."""
+    return PermissionDenied(f"Permission denied: {path}", path=path, backend=backend)
+
+
+def _classify_by_message(exc: Exception, path: str, backend: str) -> RemoteStoreError:
+    """Heuristic fallback classifier based on exception message text.
+
+    Backends with structured SDK errors (e.g. botocore
+    ``ClientError.response['Error']['Code']``) should classify those
+    first and call this only for unrecognised exceptions.
+    """
+    msg = str(exc).lower()
+    if "404" in msg or "nosuchkey" in msg or "nosuchbucket" in msg or "not found" in msg:
+        return _not_found(path, backend)
+    if "403" in msg or "accessdenied" in msg or "access denied" in msg:
+        return _permission_denied(path, backend)
+    if any(kw in msg for kw in ("endpoint", "connect", "timeout", "dns", "name or service")):
+        return BackendUnavailable(str(exc), path=path, backend=backend)
+    return RemoteStoreError(str(exc), path=path, backend=backend)
