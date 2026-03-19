@@ -6,7 +6,18 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
-## v0.17.0 to next
+## v0.18.0 to next
+
+**Factory function renames (BK-010):**
+
+Three ext factory functions have been renamed for naming consistency.
+Old names still work but emit `DeprecationWarning`:
+
+- `pydantic_to_registry_config()` → `from_pydantic()`
+- `remote_store_io_manager()` → `dagster_io_manager()`
+- `cached_store()` → `cache()`
+
+## v0.17.0 to v0.18.0
 
 **Extension imports moved (ADR-0013):**
 

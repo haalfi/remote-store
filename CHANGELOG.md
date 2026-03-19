@@ -6,6 +6,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Changed
+
+- **Renamed ext factory functions for naming consistency** (BK-010):
+  - `pydantic_to_registry_config()` → `from_pydantic()` — matches the `from_*`
+    pattern used by `from_yaml`, `from_dict`, `from_toml`.
+  - `remote_store_io_manager()` → `dagster_io_manager()` — drops redundant
+    `remote_store_` prefix, matches `pyarrow_fs` pattern.
+  - `cached_store()` → `cache()` — bare verb, matches `observe()`.
+  - Old names remain as deprecated aliases emitting `DeprecationWarning`.
+
 ## [0.18.0] - 2026-03-18
 
 ### Added

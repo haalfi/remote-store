@@ -1,7 +1,7 @@
 """Dagster IO Manager -- use any Store as a Dagster IOManager.
 
 Demonstrates:
-- remote_store_io_manager(): wrapping a Store for Dagster
+- dagster_io_manager(): wrapping a Store for Dagster
 - Pickle roundtrip: write and read back a Python object
 - Partitioned assets: path includes partition key
 - JSON serializer: alternative serializer choice
@@ -13,7 +13,7 @@ from dagster import AssetKey, build_input_context, build_output_context
 
 from remote_store import Store
 from remote_store.backends import MemoryBackend
-from remote_store.ext.dagster import remote_store_io_manager
+from remote_store.ext.dagster import dagster_io_manager
 
 
 def demo() -> dict:
@@ -23,7 +23,7 @@ def demo() -> dict:
 
     # --- Pickle roundtrip ---
     print("=== Pickle roundtrip ===")
-    mgr = remote_store_io_manager(store, serializer="pickle")
+    mgr = dagster_io_manager(store, serializer="pickle")
     obj = {"users": [{"name": "Alice"}, {"name": "Bob"}]}
 
     out_ctx = build_output_context(asset_key=AssetKey(["raw", "users"]))
@@ -55,7 +55,7 @@ def demo() -> dict:
 
     # --- JSON serializer ---
     print("=== JSON serializer ===")
-    json_mgr = remote_store_io_manager(store, serializer="json")
+    json_mgr = dagster_io_manager(store, serializer="json")
     config = {"version": 3, "debug": False}
 
     json_out = build_output_context(asset_key=AssetKey(["config"]))

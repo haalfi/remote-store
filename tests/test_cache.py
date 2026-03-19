@@ -8,7 +8,7 @@ import pytest
 
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
-from remote_store.ext.cache import CachedStore, MemoryCache, cached_store
+from remote_store.ext.cache import CachedStore, MemoryCache, cache
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -29,7 +29,7 @@ def store() -> Store:
 @pytest.fixture()
 def cached(store: Store) -> CachedStore:
     """A CachedStore wrapping the test store."""
-    return cached_store(store, ttl=60.0)
+    return cache(store, ttl=60.0)
 
 
 # ===========================================================================
@@ -155,41 +155,41 @@ class TestMemoryCache:
 
 
 # ===========================================================================
-# CACHE-003: cached_store() factory
+# CACHE-003: cache() factory
 # ===========================================================================
 
 
 class TestFactory:
     @pytest.mark.spec("CACHE-003")
-    def test_returns_cached_store(self, store: Store) -> None:
-        result = cached_store(store, ttl=60.0)
+    def test_returns_cache(self, store: Store) -> None:
+        result = cache(store, ttl=60.0)
         assert isinstance(result, CachedStore)
         assert isinstance(result, Store)
 
     @pytest.mark.spec("CACHE-003")
     def test_default_ttl(self, store: Store) -> None:
-        result = cached_store(store)
+        result = cache(store)
         assert result._ttl == 300.0
 
     @pytest.mark.spec("CACHE-003")
     def test_custom_cache_backend(self, store: Store) -> None:
         backend = MemoryCache()
-        result = cached_store(store, cache_backend=backend)
+        result = cache(store, cache_backend=backend)
         assert result._cache is backend
 
     @pytest.mark.spec("CACHE-003")
     def test_invalid_ttl_raises(self, store: Store) -> None:
         with pytest.raises(ValueError, match="ttl must be positive"):
-            cached_store(store, ttl=0)
+            cache(store, ttl=0)
         with pytest.raises(ValueError, match="ttl must be positive"):
-            cached_store(store, ttl=-1)
+            cache(store, ttl=-1)
 
     @pytest.mark.spec("CACHE-003")
     def test_invalid_max_content_size_raises(self, store: Store) -> None:
         with pytest.raises(ValueError, match="max_content_size must be positive"):
-            cached_store(store, max_content_size=0)
+            cache(store, max_content_size=0)
         with pytest.raises(ValueError, match="max_content_size must be positive"):
-            cached_store(store, max_content_size=-5)
+            cache(store, max_content_size=-5)
 
     @pytest.mark.spec("CACHE-004")
     def test_inner_property(self, store: Store, cached: CachedStore) -> None:
@@ -318,7 +318,7 @@ class TestCachedReads:
             inner = Store(backend)
             inner.write("a.txt", b"alpha")
             inner.write("b.txt", b"bravo")
-            cs = cached_store(inner, ttl=60.0)
+            cs = cache(inner, ttl=60.0)
             files1 = list(cs.glob("*.txt"))
             files2 = list(cs.glob("*.txt"))
             assert files1 == files2
@@ -364,7 +364,7 @@ class TestNonCached:
         assert cached.supports(Capability.READ) is True
 
     @pytest.mark.spec("CACHE-007")
-    def test_child_returns_cached_store(self, cached: CachedStore) -> None:
+    def test_child_returns_cache(self, cached: CachedStore) -> None:
         child = cached.child("sub")
         assert isinstance(child, CachedStore)
         assert isinstance(child, Store)
@@ -390,7 +390,7 @@ class TestNonCached:
         store.write("sub/b.txt", b"b", overwrite=True)
         store.write("sub/c.txt", b"c", overwrite=True)
 
-        parent = cached_store(store, max_entries=2)
+        parent = cache(store, max_entries=2)
         child = parent.child("sub")
         assert isinstance(child, CachedStore)
         assert child._max_entries == 2  # noqa: SLF001
@@ -578,7 +578,7 @@ class TestThreadSafety:
         import concurrent.futures
         import random
 
-        cs = cached_store(store, ttl=60.0)
+        cs = cache(store, ttl=60.0)
 
         errors: list[Exception] = []
 
@@ -641,14 +641,14 @@ class TestErrorSemantics:
 class TestMaxContentSize:
     @pytest.mark.spec("CACHE-006")
     def test_large_content_not_cached(self, store: Store) -> None:
-        cached = cached_store(store, ttl=60.0, max_content_size=3)
+        cached = cache(store, ttl=60.0, max_content_size=3)
         assert cached.read_bytes("a.txt") == b"alpha"  # 5 bytes > 3
         assert cached.read_bytes("a.txt") == b"alpha"
         assert cached.stats.hits == 0  # never cached
 
     @pytest.mark.spec("CACHE-006")
     def test_small_content_cached(self, store: Store) -> None:
-        cached = cached_store(store, ttl=60.0, max_content_size=100)
+        cached = cache(store, ttl=60.0, max_content_size=100)
         assert cached.read_bytes("a.txt") == b"alpha"
         assert cached.read_bytes("a.txt") == b"alpha"
         assert cached.stats.hits == 1
@@ -662,7 +662,7 @@ class TestMaxContentSize:
 class TestTTLExpiration:
     @pytest.mark.spec("CACHE-006")
     def test_expired_entry_causes_refetch(self, store: Store) -> None:
-        cached = cached_store(store, ttl=0.05)
+        cached = cache(store, ttl=0.05)
         assert cached.exists("a.txt") is True
         time.sleep(0.06)
         assert cached.exists("a.txt") is True
@@ -698,7 +698,7 @@ class TestManualInvalidation:
 class TestLifecycle:
     @pytest.mark.spec("CACHE-015")
     def test_close_delegates(self, store: Store) -> None:
-        cached = cached_store(store, ttl=60.0)
+        cached = cache(store, ttl=60.0)
         cached.close()  # should not raise
 
     @pytest.mark.spec("CACHE-004")
@@ -716,10 +716,24 @@ class TestLifecycle:
 class TestStaleData:
     @pytest.mark.spec("CACHE-014")
     def test_external_write_returns_stale(self, store: Store) -> None:
-        cached = cached_store(store, ttl=60.0)
+        cached = cache(store, ttl=60.0)
         assert cached.read_bytes("a.txt") == b"alpha"
         # Write directly to inner store (simulating external mutation).
         store.write("a.txt", b"external-update", overwrite=True)
         # Cache still returns old value.
         assert cached.read_bytes("a.txt") == b"alpha"
         assert cached.stats.hits == 1
+
+
+# ===========================================================================
+# Deprecated alias
+# ===========================================================================
+
+
+class TestDeprecatedAlias:
+    def test_cached_store_warns(self, store: Store) -> None:
+        """cached_store() emits DeprecationWarning."""
+        from remote_store.ext.cache import cached_store
+
+        with pytest.warns(DeprecationWarning, match="use cache"):
+            cached_store(store, ttl=60.0)

@@ -31,7 +31,7 @@ dependencies. They are re-exported from the top-level package:
 
 ```python
 from remote_store import batch_delete, glob_files, observe, upload, download
-from remote_store import cached_store           # ext.cache
+from remote_store import cache                   # ext.cache
 from remote_store import checksum, verify       # ext.integrity
 from remote_store import partition_path, parse_partition  # ext.partition
 from remote_store import ProgressReader, ChecksumReader   # ext.streams
@@ -41,7 +41,7 @@ Or import from the extension module directly:
 
 ```python
 from remote_store.ext.batch import batch_delete
-from remote_store.ext.cache import cached_store
+from remote_store.ext.cache import cache
 from remote_store.ext.glob import glob_files
 from remote_store.ext.integrity import checksum, verify
 from remote_store.ext.observe import observe
@@ -69,9 +69,9 @@ Then import from the extension module directly:
 ```python
 from remote_store.ext.arrow import pyarrow_fs
 from remote_store.ext.otel import otel_hooks
-from remote_store.ext.pydantic import pydantic_to_registry_config
+from remote_store.ext.pydantic import from_pydantic
 from remote_store.ext.yaml import from_yaml
-from remote_store.ext.dagster import remote_store_io_manager
+from remote_store.ext.dagster import dagster_io_manager
 ```
 
 If the required dependency is not installed, importing the extension

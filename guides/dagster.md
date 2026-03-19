@@ -6,7 +6,7 @@ How to use remote-store as the IO manager backend for Dagster pipelines.
 
 Teams already using remote-store should not duplicate their Store
 configuration (credentials, retry policy, caching, observability) into
-`dagster-aws` / `dagster-azure`. The `remote_store_io_manager` adapter wraps
+`dagster-aws` / `dagster-azure`. The `dagster_io_manager` adapter wraps
 any existing `Store` as a Dagster `IOManager` with zero config duplication.
 
 This also fills a gap for **SFTP backends** — Dagster has no native SFTP IO
@@ -27,13 +27,13 @@ pip install "remote-store[dagster,arrow]"
 from dagster import Definitions, asset, IOManager, io_manager
 from remote_store import Store
 from remote_store.backends import LocalBackend
-from remote_store.ext.dagster import remote_store_io_manager
+from remote_store.ext.dagster import dagster_io_manager
 
 
 @io_manager
 def my_io_manager() -> IOManager:
     store = Store(LocalBackend(root="/data/dagster"))
-    return remote_store_io_manager(store, serializer="pickle")
+    return dagster_io_manager(store, serializer="pickle")
 
 
 @asset
@@ -61,7 +61,7 @@ for storage and back.
 ### Pickle (default)
 
 ```python
-mgr = remote_store_io_manager(store, serializer="pickle")
+mgr = dagster_io_manager(store, serializer="pickle")
 ```
 
 Universal — works with any picklable Python object. The default choice when
@@ -70,7 +70,7 @@ you don't need human-readable storage.
 ### JSON
 
 ```python
-mgr = remote_store_io_manager(store, serializer="json")
+mgr = dagster_io_manager(store, serializer="json")
 ```
 
 Human-readable, but limited to JSON-serializable types (dicts, lists,
@@ -79,7 +79,7 @@ strings, numbers, booleans, None).
 ### Parquet
 
 ```python
-mgr = remote_store_io_manager(store, serializer="parquet")
+mgr = dagster_io_manager(store, serializer="parquet")
 ```
 
 Efficient columnar storage for DataFrames. Requires PyArrow. Accepts pandas
@@ -91,7 +91,7 @@ Deserializes to pandas DataFrame.
 Any object matching the `Serializer` protocol can be used:
 
 ```python
-from remote_store.ext.dagster import Serializer, remote_store_io_manager
+from remote_store.ext.dagster import Serializer, dagster_io_manager
 
 
 class MsgpackSerializer:
@@ -106,7 +106,7 @@ class MsgpackSerializer:
         return msgpack.unpackb(data)
 
 
-mgr = remote_store_io_manager(store, serializer=MsgpackSerializer())
+mgr = dagster_io_manager(store, serializer=MsgpackSerializer())
 ```
 
 ## Path generation
@@ -134,7 +134,7 @@ from remote_store import Registry
 def production_io_manager() -> IOManager:
     registry = Registry(config)
     store = registry.get_store("production")
-    return remote_store_io_manager(store, serializer="pickle")
+    return dagster_io_manager(store, serializer="pickle")
 ```
 
 ## Lifecycle

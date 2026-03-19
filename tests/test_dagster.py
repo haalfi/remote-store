@@ -13,7 +13,7 @@ from remote_store.backends._memory import MemoryBackend
 from remote_store.ext.dagster import (
     ParquetSerializer,
     Serializer,
-    remote_store_io_manager,
+    dagster_io_manager,
 )
 
 # ---------------------------------------------------------------------------
@@ -37,7 +37,7 @@ class TestPickleSerializer:
 
     @pytest.mark.spec("DAG-002")
     def test_roundtrip(self, store: Store) -> None:
-        mgr = remote_store_io_manager(store, serializer="pickle")
+        mgr = dagster_io_manager(store, serializer="pickle")
         obj = {"key": "value", "numbers": [1, 2, 3]}
 
         out_ctx = build_output_context(asset_key=AssetKey(["test", "pickle"]))
@@ -55,7 +55,7 @@ class TestJsonSerializer:
 
     @pytest.mark.spec("DAG-003")
     def test_roundtrip(self, store: Store) -> None:
-        mgr = remote_store_io_manager(store, serializer="json")
+        mgr = dagster_io_manager(store, serializer="json")
         obj = {"key": "value", "numbers": [1, 2, 3]}
 
         out_ctx = build_output_context(asset_key=AssetKey(["test", "json"]))
@@ -75,7 +75,7 @@ class TestParquetSerializer:
     def test_roundtrip_pandas(self, store: Store) -> None:
         """Roundtrip with a pandas DataFrame."""
         pandas = pytest.importorskip("pandas")
-        mgr = remote_store_io_manager(store, serializer="parquet")
+        mgr = dagster_io_manager(store, serializer="parquet")
 
         df = pandas.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
 
@@ -170,7 +170,7 @@ class TestPathGeneration:
     @pytest.mark.spec("DAG-005")
     def test_partitioned_asset_path(self, store: Store) -> None:
         """Partitioned asset includes partition key in path."""
-        mgr = remote_store_io_manager(store, serializer="pickle")
+        mgr = dagster_io_manager(store, serializer="pickle")
         obj = {"data": True}
 
         out_ctx = build_output_context(
@@ -193,7 +193,7 @@ class TestPathGeneration:
     @pytest.mark.spec("DAG-005")
     def test_single_segment_asset_key(self, store: Store) -> None:
         """Single-segment asset key maps to flat path."""
-        mgr = remote_store_io_manager(store, serializer="json")
+        mgr = dagster_io_manager(store, serializer="json")
         obj = {"summary": True}
 
         out_ctx = build_output_context(asset_key=AssetKey(["report"]))
@@ -204,7 +204,7 @@ class TestPathGeneration:
     @pytest.mark.spec("DAG-006")
     def test_multi_segment_asset_key(self, store: Store) -> None:
         """Multi-segment asset key maps to nested path."""
-        mgr = remote_store_io_manager(store, serializer="json")
+        mgr = dagster_io_manager(store, serializer="json")
         obj = {"hello": "world"}
 
         out_ctx = build_output_context(
@@ -228,7 +228,7 @@ class TestErrorHandling:
         """Loading a non-existent asset raises NotFound."""
         from remote_store._errors import NotFound
 
-        mgr = remote_store_io_manager(store, serializer="pickle")
+        mgr = dagster_io_manager(store, serializer="pickle")
 
         out_ctx = build_output_context(asset_key=AssetKey(["missing", "asset"]))
         in_ctx = build_input_context(
@@ -258,7 +258,7 @@ class TestMetadata:
 
     @pytest.mark.spec("DAG-007")
     def test_output_metadata(self, store: Store) -> None:
-        mgr = remote_store_io_manager(store, serializer="pickle")
+        mgr = dagster_io_manager(store, serializer="pickle")
         obj = {"key": "value"}
 
         out_ctx = build_output_context(asset_key=AssetKey(["meta", "test"]))
@@ -273,7 +273,7 @@ class TestMetadata:
     @pytest.mark.spec("DAG-007")
     def test_none_is_written(self, store: Store) -> None:
         """None is serialized and written (Dagster convention)."""
-        mgr = remote_store_io_manager(store, serializer="pickle")
+        mgr = dagster_io_manager(store, serializer="pickle")
 
         out_ctx = build_output_context(asset_key=AssetKey(["none", "asset"]))
         mgr.handle_output(out_ctx, None)
@@ -312,7 +312,7 @@ class TestCustomSerializer:
         custom = _ReverseSerializer()
         assert isinstance(custom, Serializer)
 
-        mgr = remote_store_io_manager(store, serializer=custom)
+        mgr = dagster_io_manager(store, serializer=custom)
         obj = "hello world"
 
         out_ctx = build_output_context(asset_key=AssetKey(["custom", "test"]))
@@ -330,4 +330,13 @@ class TestCustomSerializer:
     def test_unknown_serializer_raises(self, store: Store) -> None:
         """Unknown serializer string raises ValueError."""
         with pytest.raises(ValueError, match="Unknown serializer 'nope'"):
-            remote_store_io_manager(store, serializer="nope")
+            dagster_io_manager(store, serializer="nope")
+
+
+class TestDeprecatedAlias:
+    def test_remote_store_io_manager_warns(self, store: Store) -> None:
+        """remote_store_io_manager() emits DeprecationWarning."""
+        from remote_store.ext.dagster import remote_store_io_manager
+
+        with pytest.warns(DeprecationWarning, match="use dagster_io_manager"):
+            remote_store_io_manager(store)

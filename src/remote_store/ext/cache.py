@@ -6,9 +6,9 @@ metadata, listings, content) and automatically invalidates on mutations.
 Usage:
 
 ```python
-from remote_store.ext.cache import cached_store
+from remote_store.ext.cache import cache
 
-cached = cached_store(store, ttl=300)
+cached = cache(store, ttl=300)
 data = cached.read_bytes("key.csv")   # backend call
 data = cached.read_bytes("key.csv")   # cache hit
 cached.write("key.csv", b"new", overwrite=True)  # invalidates
@@ -23,6 +23,7 @@ import dataclasses
 import logging
 import threading
 import time
+import warnings
 from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, runtime_checkable
 
 from remote_store._proxy import ProxyStore
@@ -41,7 +42,8 @@ __all__ = [
     "CacheStats",
     "CachedStore",
     "MemoryCache",
-    "cached_store",
+    "cache",
+    "cached_store",  # deprecated alias
 ]
 
 # ---------------------------------------------------------------------------
@@ -83,7 +85,7 @@ class CacheBackend(Protocol):
     """Protocol for pluggable cache backends (CACHE-001).
 
     Implement this protocol to provide a custom cache backend to
-    ``cached_store(store, cache_backend=my_backend)``. The default implementation
+    ``cache(store, cache_backend=my_backend)``. The default implementation
     is ``MemoryCache``.
     """
 
@@ -217,7 +219,7 @@ class CachedStore(ProxyStore):
     Only methods with additional behavior (``invalidate``, ``clear_cache``,
     ``ping``, ``close``, ``child``) are documented individually below.
 
-    Do not construct directly -- use ``cached_store()``.
+    Do not construct directly -- use ``cache()``.
     """
 
     _cache: CacheBackend
@@ -470,11 +472,11 @@ class CachedStore(ProxyStore):
 
 
 # ---------------------------------------------------------------------------
-# cached_store() factory
+# cache() factory
 # ---------------------------------------------------------------------------
 
 
-def cached_store(
+def cache(
     store: Store,
     *,
     ttl: float = 300.0,
@@ -506,6 +508,34 @@ def cached_store(
         msg = f"max_content_size must be positive, got {max_content_size}"
         raise ValueError(msg)
     return CachedStore(
+        store,
+        ttl=ttl,
+        max_content_size=max_content_size,
+        max_entries=max_entries,
+        cache_backend=cache_backend,
+    )
+
+
+def cached_store(
+    store: Store,
+    *,
+    ttl: float = 300.0,
+    max_content_size: int | None = None,
+    max_entries: int | None = None,
+    cache_backend: CacheBackend | None = None,
+) -> CachedStore:
+    """Deprecated: use ``cache()`` instead.
+
+    Deprecated:
+        Renamed to ``cache()`` for consistency with ``observe()``.
+        Will be removed in a future release.
+    """
+    warnings.warn(
+        "cached_store() is deprecated, use cache() instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return cache(
         store,
         ttl=ttl,
         max_content_size=max_content_size,

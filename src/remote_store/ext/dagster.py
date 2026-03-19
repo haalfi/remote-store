@@ -9,9 +9,9 @@ Install with ``pip install "remote-store[dagster]"``.
 Usage:
 
 ```python
-from remote_store.ext.dagster import remote_store_io_manager
+from remote_store.ext.dagster import dagster_io_manager
 
-io_mgr = remote_store_io_manager(store, serializer="pickle")
+io_mgr = dagster_io_manager(store, serializer="pickle")
 ```
 """
 
@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import logging
 import pickle
+import warnings
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 try:
@@ -41,7 +42,8 @@ __all__ = [
     "ParquetSerializer",
     "PickleSerializer",
     "Serializer",
-    "remote_store_io_manager",
+    "dagster_io_manager",
+    "remote_store_io_manager",  # deprecated alias
 ]
 
 # ---------------------------------------------------------------------------
@@ -54,7 +56,7 @@ class Serializer(Protocol):
     """Protocol for pluggable serializers (DAG-001).
 
     Implement this to provide a custom serializer to
-    ``remote_store_io_manager(store, serializer=my_serializer)``.
+    ``dagster_io_manager(store, serializer=my_serializer)``.
     """
 
     extension: str
@@ -221,7 +223,7 @@ class _RemoteStoreIOManagerImpl(IOManager):  # type: ignore[misc]
 # ---------------------------------------------------------------------------
 
 
-def remote_store_io_manager(
+def dagster_io_manager(
     store: Store,
     *,
     serializer: str | Serializer = "pickle",
@@ -242,3 +244,23 @@ def remote_store_io_manager(
     """
     resolved = _resolve_serializer(serializer)
     return _RemoteStoreIOManagerImpl(store, resolved)
+
+
+def remote_store_io_manager(
+    store: Store,
+    *,
+    serializer: str | Serializer = "pickle",
+) -> IOManager:  # type: ignore[type-arg]
+    """Deprecated: use ``dagster_io_manager()`` instead.
+
+    Deprecated:
+        Renamed to ``dagster_io_manager()`` for consistency with
+        ``pyarrow_fs()`` (``<external_lib>_<concept>`` pattern).
+        Will be removed in a future release.
+    """
+    warnings.warn(
+        "remote_store_io_manager() is deprecated, use dagster_io_manager() instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return dagster_io_manager(store, serializer=serializer)

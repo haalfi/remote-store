@@ -37,6 +37,14 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
+- [~] **BK-010 — Naming consistency: rename ext factory functions**
+  Three public factory functions use inconsistent naming styles.
+  [Proposal](proposals/NAMING-INCONSISTENCIES.md).
+  - `pydantic_to_registry_config` → `from_pydantic` (match `from_*` pattern)
+  - `remote_store_io_manager` → `dagster_io_manager` (drop redundant prefix)
+  - `cached_store` → `cache` (bare verb, match `observe`)
+  - Old names kept as deprecated aliases for one minor release cycle.
+
 ---
 
 ## Known Bugs

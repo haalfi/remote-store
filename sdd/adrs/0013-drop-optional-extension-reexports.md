@@ -51,9 +51,9 @@ Users import optional extensions from their canonical module path:
 ```python
 from remote_store.ext.arrow import pyarrow_fs
 from remote_store.ext.otel import otel_hooks, otel_observe
-from remote_store.ext.pydantic import pydantic_to_registry_config
+from remote_store.ext.pydantic import from_pydantic
 from remote_store.ext.yaml import from_yaml
-from remote_store.ext.dagster import remote_store_io_manager
+from remote_store.ext.dagster import dagster_io_manager
 ```
 
 This makes all optional-dependency extensions consistent — including
