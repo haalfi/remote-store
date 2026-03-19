@@ -20,8 +20,9 @@ from __future__ import annotations
 import json
 import logging
 import pickle
-import warnings
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+
+from remote_store.ext._helpers import _deprecated_alias
 
 try:
     from dagster import IOManager  # type: ignore[import-untyped]
@@ -246,21 +247,4 @@ def dagster_io_manager(
     return _RemoteStoreIOManagerImpl(store, resolved)
 
 
-def remote_store_io_manager(
-    store: Store,
-    *,
-    serializer: str | Serializer = "pickle",
-) -> IOManager:  # type: ignore[type-arg]
-    """Deprecated: use ``dagster_io_manager()`` instead.
-
-    Deprecated:
-        Renamed to ``dagster_io_manager()`` for consistency with
-        ``pyarrow_fs()`` (``<external_lib>_<concept>`` pattern).
-        Will be removed in a future release.
-    """
-    warnings.warn(
-        "remote_store_io_manager() is deprecated, use dagster_io_manager() instead",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return dagster_io_manager(store, serializer=serializer)
+remote_store_io_manager = _deprecated_alias("remote_store_io_manager", dagster_io_manager)

@@ -19,8 +19,9 @@ config = from_pydantic(MySettings())
 
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Any
+
+from remote_store.ext._helpers import _deprecated_alias
 
 try:
     import pydantic  # noqa: F401
@@ -77,16 +78,4 @@ def from_pydantic(model: BaseModel) -> RegistryConfig:
     return RegistryConfig.from_dict(data)
 
 
-def pydantic_to_registry_config(model: BaseModel) -> RegistryConfig:
-    """Deprecated: use ``from_pydantic()`` instead.
-
-    Deprecated:
-        Renamed to ``from_pydantic()`` for consistency with ``from_yaml()``,
-        ``from_dict()``, ``from_toml()``. Will be removed in a future release.
-    """
-    warnings.warn(
-        "pydantic_to_registry_config() is deprecated, use from_pydantic() instead",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return from_pydantic(model)
+pydantic_to_registry_config = _deprecated_alias("pydantic_to_registry_config", from_pydantic)

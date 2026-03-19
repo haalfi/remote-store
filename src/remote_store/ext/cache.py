@@ -23,10 +23,10 @@ import dataclasses
 import logging
 import threading
 import time
-import warnings
 from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, runtime_checkable
 
 from remote_store._proxy import ProxyStore
+from remote_store.ext._helpers import _deprecated_alias
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -516,29 +516,4 @@ def cache(
     )
 
 
-def cached_store(
-    store: Store,
-    *,
-    ttl: float = 300.0,
-    max_content_size: int | None = None,
-    max_entries: int | None = None,
-    cache_backend: CacheBackend | None = None,
-) -> CachedStore:
-    """Deprecated: use ``cache()`` instead.
-
-    Deprecated:
-        Renamed to ``cache()`` for consistency with ``observe()``.
-        Will be removed in a future release.
-    """
-    warnings.warn(
-        "cached_store() is deprecated, use cache() instead",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return cache(
-        store,
-        ttl=ttl,
-        max_content_size=max_content_size,
-        max_entries=max_entries,
-        cache_backend=cache_backend,
-    )
+cached_store = _deprecated_alias("cached_store", cache)
