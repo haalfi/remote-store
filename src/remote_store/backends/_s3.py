@@ -8,24 +8,21 @@ import logging
 import shutil
 import tempfile
 from contextlib import contextmanager
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
-from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy, Secret, _reveal
 from remote_store._errors import (
     AlreadyExists,
-    BackendUnavailable,
     CapabilityNotSupported,
     DirectoryNotEmpty,
     NotFound,
-    PermissionDenied,
-    RemoteStoreError,
 )
-from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo
+from remote_store._models import ContentDigest, FileInfo
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
+from remote_store.backends._fileinfo import _clean_etag, _name_from_path, _normalize_modified
+from remote_store.backends._s3_base import _S3Base
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -39,7 +36,7 @@ _ALL_CAPABILITIES = CapabilitySet(set(Capability))
 log = logging.getLogger(__name__)
 
 
-class S3Backend(Backend):
+class S3Backend(_S3Base):
     """S3-compatible object storage backend using s3fs.
 
     Args:
@@ -83,19 +80,18 @@ class S3Backend(Backend):
     def capabilities(self) -> CapabilitySet:
         return _ALL_CAPABILITIES
 
+    @property
+    def _s3fs(self) -> Any:
+        """Alias for the s3fs filesystem (satisfies ``_S3Base`` contract)."""
+        return self._fs
+
     # endregion
 
     # region: public methods
 
     def check_health(self) -> None:
-        with self._errors():
+        with self._s3fs_errors():
             self._fs.s3.head_bucket(Bucket=self._bucket)
-
-    def to_key(self, native_path: str) -> str:
-        prefix = f"{self._bucket}/"
-        if native_path.startswith(prefix):
-            return native_path[len(prefix) :]
-        return native_path
 
     def native_path(self, path: str) -> str:
         if path:
@@ -103,11 +99,11 @@ class S3Backend(Backend):
         return self._bucket
 
     def exists(self, path: str) -> bool:
-        with self._errors(path):
+        with self._s3fs_errors(path):
             return bool(self._fs.exists(self._s3_path(path)))
 
     def is_file(self, path: str) -> bool:
-        with self._errors(path):
+        with self._s3fs_errors(path):
             try:
                 info = self._fs.info(self._s3_path(path))
                 return bool(info.get("type") == "file")
@@ -115,7 +111,7 @@ class S3Backend(Backend):
                 return False
 
     def is_folder(self, path: str) -> bool:
-        with self._errors(path):
+        with self._s3fs_errors(path):
             try:
                 info = self._fs.info(self._s3_path(path))
                 return bool(info.get("type") == "directory")
@@ -123,17 +119,17 @@ class S3Backend(Backend):
                 return False
 
     def read(self, path: str) -> BinaryIO:
-        with self._errors(path):
+        with self._s3fs_errors(path):
             f: BinaryIO = self._fs.open(self._s3_path(path), "rb")
             raw = _ErrorMappingStream(f, self._classify_error, path)
             return io.BufferedReader(cast("io.RawIOBase", raw))
 
     def read_bytes(self, path: str) -> bytes:
-        with self._errors(path):
+        with self._s3fs_errors(path):
             return bytes(self._fs.cat_file(self._s3_path(path)))
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        with self._errors(path):
+        with self._s3fs_errors(path):
             if not overwrite and self._fs.exists(self._s3_path(path)):
                 raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
             if isinstance(content, bytes):
@@ -149,7 +145,7 @@ class S3Backend(Backend):
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
         # S3 PUT is inherently atomic -- buffer then upload (SAW-010)
-        with self._errors(path):
+        with self._s3fs_errors(path):
             if not overwrite and self._fs.exists(self._s3_path(path)):
                 raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
         buf: tempfile.SpooledTemporaryFile[bytes] = tempfile.SpooledTemporaryFile(  # noqa: SIM115
@@ -163,7 +159,7 @@ class S3Backend(Backend):
             buf.close()
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
-        with self._errors(path):
+        with self._s3fs_errors(path):
             if not self._fs.exists(self._s3_path(path)):
                 if not missing_ok:
                     raise NotFound(f"File not found: {path}", path=path, backend=self.name)
@@ -171,7 +167,7 @@ class S3Backend(Backend):
             self._fs.rm(self._s3_path(path))
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
-        with self._errors(path):
+        with self._s3fs_errors(path):
             s3_path = self._s3_path(path)
             if not self._fs.exists(s3_path):
                 if not missing_ok:
@@ -189,81 +185,8 @@ class S3Backend(Backend):
                         backend=self.name,
                     )
 
-    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
-        try:
-            s3_path = self._s3_path(path)
-            if recursive:
-                results: dict[str, Any] = self._fs.find(s3_path, detail=True)
-                for s3_key, info in results.items():
-                    if info.get("type") == "file":
-                        rel = self.to_key(s3_key)
-                        yield self._info_to_fileinfo(info, rel)
-            else:
-                entries: list[dict[str, Any]] = self._fs.ls(s3_path, detail=True)
-                for info in entries:
-                    if info.get("type") == "file":
-                        rel = self.to_key(info["name"])
-                        yield self._info_to_fileinfo(info, rel)
-        except RemoteStoreError:  # pragma: no cover -- defensive
-            raise
-        except FileNotFoundError:  # pragma: no cover -- s3fs returns empty for missing prefixes
-            return
-        except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
-            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-        except Exception as exc:  # pragma: no cover -- defensive
-            raise self._classify_error(exc, path) from None
-
-    def list_folders(self, path: str) -> Iterator[FolderEntry]:
-        try:
-            s3_path = self._s3_path(path)
-            entries: list[dict[str, Any]] = self._fs.ls(s3_path, detail=True)
-            for info in entries:
-                if info.get("type") == "directory":
-                    rel = self.to_key(info["name"].rstrip("/"))
-                    folder_name = rel.rsplit("/", 1)[-1]
-                    yield FolderEntry(path=RemotePath(rel), name=folder_name)
-        except RemoteStoreError:  # pragma: no cover -- defensive
-            raise
-        except FileNotFoundError:  # pragma: no cover -- s3fs returns empty for missing prefixes
-            return
-        except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
-            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-        except Exception as exc:  # pragma: no cover -- defensive
-            raise self._classify_error(exc, path) from None
-
-    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
-        try:
-            s3_path = self._s3_path(path)
-            entries: list[dict[str, Any]] = self._fs.ls(s3_path, detail=True)
-            for info in entries:
-                if info.get("type") == "file":
-                    rel = self.to_key(info["name"])
-                    yield self._info_to_fileinfo(info, rel)
-                elif info.get("type") == "directory":
-                    rel = self.to_key(info["name"].rstrip("/"))
-                    folder_name = rel.rsplit("/", 1)[-1]
-                    yield FolderEntry(path=RemotePath(rel), name=folder_name)
-        except RemoteStoreError:  # pragma: no cover -- defensive
-            raise
-        except FileNotFoundError:  # pragma: no cover -- s3fs returns empty for missing prefixes
-            return
-        except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
-            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-        except Exception as exc:  # pragma: no cover -- defensive
-            raise self._classify_error(exc, path) from None
-
-    def glob(self, pattern: str) -> Iterator[FileInfo]:
-        from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
-
-        prefix = extract_prefix(pattern)
-        recursive = needs_recursive(pattern)
-        compiled = pattern_to_regex(pattern)
-        for info in self.list_files(prefix, recursive=recursive):
-            if compiled.match(str(info.path)):
-                yield info
-
     def get_file_info(self, path: str) -> FileInfo:
-        with self._errors(path):
+        with self._s3fs_errors(path):
             raw = self._fs.call_s3(
                 "head_object",
                 Bucket=self._bucket,
@@ -272,41 +195,8 @@ class S3Backend(Backend):
             )
             return self._head_to_fileinfo(raw, path)
 
-    def get_folder_info(self, path: str) -> FolderInfo:
-        # S3 folders are virtual (prefix-based), like Azure non-HNS.  An empty
-        # folder is simply a prefix with no objects, so exists() already
-        # returns False for truly non-existent prefixes.  Unlike Azure non-HNS
-        # we don't raise NotFound for file_count==0 after the exists() check,
-        # because s3fs.exists() verifies the prefix is valid.
-        with self._errors(path):
-            s3_path = self._s3_path(path)
-            if not self._fs.exists(s3_path):
-                raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
-            results: dict[str, Any] = self._fs.find(s3_path, detail=True)
-            file_count = 0
-            total_size = 0
-            latest_modified: datetime | None = None
-            for _key, info in results.items():
-                if info.get("type") == "file":
-                    file_count += 1
-                    total_size += info.get("size", 0) or 0
-                    modified = info.get("LastModified", info.get("last_modified"))
-                    if isinstance(modified, str):
-                        modified = datetime.fromisoformat(modified)
-                    if modified is not None:
-                        if modified.tzinfo is None:
-                            modified = modified.replace(tzinfo=timezone.utc)
-                        if latest_modified is None or modified > latest_modified:
-                            latest_modified = modified
-            return FolderInfo(
-                path=RemotePath.from_backend_path(path),
-                file_count=file_count,
-                total_size=total_size,
-                modified_at=latest_modified,
-            )
-
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        with self._errors(src):
+        with self._s3fs_errors(src):
             if not self._fs.exists(self._s3_path(src)):
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
             if not overwrite and self._fs.exists(self._s3_path(dst)):
@@ -315,7 +205,7 @@ class S3Backend(Backend):
             self._fs.rm(self._s3_path(src))
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        with self._errors(src):
+        with self._s3fs_errors(src):
             if not self._fs.exists(self._s3_path(src)):
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
             if not overwrite and self._fs.exists(self._s3_path(dst)):
@@ -392,58 +282,6 @@ class S3Backend(Backend):
             self._fs_instance = s3fs.S3FileSystem(**opts)
         return self._fs_instance
 
-    def _s3_path(self, path: str) -> str:
-        if path:
-            return f"{self._bucket}/{path}"
-        return self._bucket
-
-    @contextmanager
-    def _errors(self, path: str = "") -> Iterator[None]:
-        """Map s3fs/botocore exceptions to remote_store errors."""
-        try:
-            yield
-        except RemoteStoreError:
-            raise
-        except FileNotFoundError:
-            raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-        except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
-            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-        except Exception as exc:
-            raise self._classify_error(exc, path) from None
-
-    def _classify_error(self, exc: Exception, path: str) -> RemoteStoreError:
-        """Classify an unknown exception into a remote_store error type."""
-        msg = str(exc).lower()
-        if "404" in msg or "nosuchkey" in msg or "nosuchbucket" in msg or "not found" in msg:
-            return NotFound(f"Not found: {path}", path=path, backend=self.name)
-        if "403" in msg or "accessdenied" in msg or "access denied" in msg:
-            return PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name)
-        if any(kw in msg for kw in ("endpoint", "connect", "timeout", "dns", "name or service")):
-            return BackendUnavailable(str(exc), path=path, backend=self.name)
-        return RemoteStoreError(str(exc), path=path, backend=self.name)
-
-    def _info_to_fileinfo(self, info: dict[str, Any], path: str) -> FileInfo:
-        """Convert an s3fs info dict to a FileInfo."""
-        name = path.rsplit("/", 1)[-1] if "/" in path else path
-        size = info.get("size", info.get("Size", 0)) or 0
-        modified = info.get("LastModified", info.get("last_modified"))
-        if isinstance(modified, str):
-            modified = datetime.fromisoformat(modified)
-        if modified is not None and modified.tzinfo is None:
-            modified = modified.replace(tzinfo=timezone.utc)
-        if modified is None:
-            modified = datetime.now(tz=timezone.utc)
-        # ETag: S3 returns it double-quoted (e.g. '"abc123"'); strip and lowercase.
-        raw_etag = info.get("ETag") or info.get("etag")
-        etag = raw_etag.strip('"').lower() if isinstance(raw_etag, str) else None
-        return FileInfo(
-            path=RemotePath(path),
-            name=name,
-            size=int(size),
-            modified_at=modified,
-            etag=etag,
-        )
-
     # S3-024: algorithm name → HeadObject response key for checksums
     _CHECKSUM_ALGO_TO_RESPONSE_KEY: dict[str, str] = {
         "sha256": "ChecksumSHA256",
@@ -458,17 +296,10 @@ class S3Backend(Backend):
         Expects a response obtained with ``ChecksumMode="ENABLED"`` so that
         checksum fields (``ChecksumSHA256``, etc.) are included when present.
         """
-        name = path.rsplit("/", 1)[-1] if "/" in path else path
+        name = _name_from_path(path)
         size = raw.get("ContentLength", 0) or 0
-        modified = raw.get("LastModified")
-        if isinstance(modified, str):
-            modified = datetime.fromisoformat(modified)
-        if modified is not None and modified.tzinfo is None:
-            modified = modified.replace(tzinfo=timezone.utc)
-        if modified is None:
-            modified = datetime.now(tz=timezone.utc)
-        raw_etag = raw.get("ETag")
-        etag = raw_etag.strip('"').lower() if isinstance(raw_etag, str) else None
+        modified = _normalize_modified(raw.get("LastModified"))
+        etag = _clean_etag(raw.get("ETag"))
         digest = self._digest_from_head_response(raw)
         return FileInfo(
             path=RemotePath(path),
