@@ -3,3 +3,8 @@
 ::: remote_store.Registry
 
 ::: remote_store.register_backend
+
+## See also
+
+- [Choosing a Backend](../choosing-a-backend.md) — backend selection and registry usage
+- [Configuration example](../examples/configuration.md) — registry-based store creation

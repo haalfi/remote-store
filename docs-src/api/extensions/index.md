@@ -19,3 +19,8 @@ to enable each one. For usage guides, see [Extensions](../../extensions.md).
 | [ext.streams](streams.md) | Composable BinaryIO wrappers for progress and checksums |
 | [ext.transfer](transfer.md) | Upload, download, and cross-store transfer |
 | [ext.yaml](yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |
+
+## See also
+
+- [Extensions guide](../../extensions.md) — overview of all extensions with installation instructions
+- [Choosing a Backend](../../choosing-a-backend.md) — backend selection guide

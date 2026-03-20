@@ -7,3 +7,7 @@ stream lifecycle management needed.
 See the [integrity spec](https://github.com/haalfi/remote-store/blob/master/sdd/specs/034-ext-integrity.md) for invariants.
 
 ::: remote_store.ext.integrity
+
+## See also
+
+- [ext.streams](streams.md) — composable BinaryIO wrappers used internally by integrity helpers
