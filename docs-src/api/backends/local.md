@@ -10,4 +10,4 @@ Built-in, no extra dependencies required.
 ## See also
 
 - [Local Backend Guide](../../backends/local.md) — usage patterns, configuration, and examples
-- [Memory Backend example](../../examples/memory-backend.md) — local-like usage with in-memory backend
+- [File Operations example](../../examples/file-operations.md) — full Store API demo using LocalBackend
