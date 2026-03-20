@@ -13,3 +13,9 @@ For usage guides, see [Backends](../../backends/index.md).
 | [S3PyArrowBackend](s3-pyarrow.md) | S3 via PyArrow C++ for higher throughput |
 | [SFTPBackend](sftp.md) | SSH/SFTP server storage via paramiko |
 | [AzureBackend](azure.md) | Azure Blob Storage and ADLS Gen2 |
+
+## See also
+
+- [Backend guides](../../backends/index.md) — configuration and usage guides for all backends
+- [Choosing a Backend](../../choosing-a-backend.md) — trade-offs and selection criteria
+- [Capabilities Matrix](../../capabilities-matrix.md) — per-backend capability comparison

@@ -21,3 +21,8 @@
     options:
       heading_level: 4
       show_root_heading: false
+
+## See also
+
+- [SFTP Backend Guide](../backends/sftp.md) — connection setup, host key verification, and Key Vault integration
+- [SFTP Backend example](../examples/sftp-backend.md) — end-to-end SFTP usage
