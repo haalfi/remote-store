@@ -37,13 +37,13 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-013 — Documentation cross-link compliance**
+- [~] **BK-013 — Documentation cross-link compliance**
   Enforce DOCUMENTATION.md § 4 cross-linking rules across all docs pages.
   ~64 files, all additive (no code changes).
   [Proposal](proposals/DOC-CROSS-LINKS.md).
-  - [ ] Phase 1a: Core example pages — add `## See also` (10 pages)
-  - [ ] Phase 1b: Backend example pages — add `## See also` (6 pages)
-  - [ ] Phase 1c: Extension + showcase example pages — add `## See also` (11 pages)
+  - [x] Phase 1a: Core example pages — add `## See also` (10 pages)
+  - [x] Phase 1b: Backend example pages — add `## See also` (6 pages)
+  - [x] Phase 1c: Extension + showcase example pages — add `## See also` (11 pages)
   - [ ] Phase 2a: Core + extension API ref pages — add `## See also` (23 pages)
   - [ ] Phase 2b: Backend API ref pages — convert to `## See also` (7 pages)
   - [ ] Phase 3: Link plain-text names in table headers/key columns (6 files)
