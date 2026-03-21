@@ -49,12 +49,12 @@ Each backend uses the cheapest possible read-only operation:
 
 | Backend | Operation | What it validates |
 |---------|-----------|-------------------|
-| Local | `root.exists()` + `os.access(R_OK)` | Directory exists and is readable |
-| S3 | `head_bucket` | Bucket exists, credentials valid |
-| S3-PyArrow | `get_file_info(bucket)` | Bucket accessible via PyArrow |
-| SFTP | `stat(base_path)` | SSH connection, path exists |
-| Azure | `get_container_properties()` | Container exists, credentials valid |
-| Memory | No-op | Always healthy |
+| [Local](backends/local.md) | `root.exists()` + `os.access(R_OK)` | Directory exists and is readable |
+| [S3](backends/s3.md) | `head_bucket` | Bucket exists, credentials valid |
+| [S3-PyArrow](backends/s3-pyarrow.md) | `get_file_info(bucket)` | Bucket accessible via PyArrow |
+| [SFTP](backends/sftp.md) | `stat(base_path)` | SSH connection, path exists |
+| [Azure](backends/azure.md) | `get_container_properties()` | Container exists, credentials valid |
+| [Memory](backends/memory.md) | No-op | Always healthy |
 
 ## Observability
 

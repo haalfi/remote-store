@@ -88,7 +88,7 @@ measured on Windows 11 (Intel Core Ultra 7 265K, Python 3.13) with
 Docker Desktop (MinIO, Azurite, OpenSSH) running locally. All values are
 **mean** latency from `pytest-benchmark`.
 
-| Operation | Local | S3 (MinIO) | S3-PyArrow | SFTP | Azure (Azurite) |
+| Operation | [Local](backends/local.md) | [S3](backends/s3.md) (MinIO) | [S3-PyArrow](backends/s3-pyarrow.md) | [SFTP](backends/sftp.md) | [Azure](backends/azure.md) (Azurite) |
 |-----------|-------|------------|------------|------|-----------------|
 | Write 1KB | 0.26ms | 5.3ms | 36.2ms | 3.8ms | 5.0ms |
 | Write 64KB | 0.26ms | 6.2ms | 66.5ms* | 4.9ms | 22.6ms* |

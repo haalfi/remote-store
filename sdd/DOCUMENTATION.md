@@ -71,6 +71,7 @@ Required cross-links:
 | Error class --> methods that raise it | API reference | In error docstring "Raised by" section |
 | Backend guide --> capabilities | Capabilities matrix | Link to matrix row |
 | Example page --> guide for deeper reading | Guide page | Footer link |
+| Table header/key-column --> documented entity | Guide or API reference page | `[Local](backends/local.md)` |
 
 Minimum per page:
 

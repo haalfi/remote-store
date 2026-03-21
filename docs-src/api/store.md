@@ -221,7 +221,7 @@
 How key operations behave across backends. Verify against actual code before
 relying on these in production.
 
-| Behavior | Local | S3 | S3-PyArrow | SFTP | Azure | Memory |
+| Behavior | [Local](../backends/local.md) | [S3](../backends/s3.md) | [S3-PyArrow](../backends/s3-pyarrow.md) | [SFTP](../backends/sftp.md) | [Azure](../backends/azure.md) | [Memory](../backends/memory.md) |
 |----------|-------|----|------------|------|-------|--------|
 | `move()` atomicity | Atomic (same FS) | Copy+delete | Copy+delete | Server-dependent | Copy+delete | Atomic |
 | `copy()` preserves metadata | Yes (`copy2`) | Yes | Yes | — | Yes | — |
