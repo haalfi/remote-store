@@ -7,9 +7,12 @@ Run this file directly or via ``hatch run examples`` to verify all
 snippets execute correctly.
 """
 
+# ruff: noqa: F811
+
 from __future__ import annotations
 
-import tempfile
+import os
+import shutil
 
 from remote_store import Store
 from remote_store.backends import MemoryBackend
@@ -17,33 +20,36 @@ from remote_store.backends import MemoryBackend
 
 def demo() -> None:
     """Execute all homepage snippets."""
-    with tempfile.TemporaryDirectory() as tmp:
-        _core_idea(tmp)
-        _capabilities()
-        _custom_backend()
+    _core_idea()
+    _capabilities()
+    _custom_backend()
 
 
-def _core_idea(tmp: str) -> None:
-    # --8<-- [start:core-idea]
-    from remote_store import Store  # noqa: F811
-    from remote_store.backends import LocalBackend  # noqa: F811
+def _core_idea() -> None:
+    os.makedirs("/tmp/data", exist_ok=True)
+    try:
+        # --8<-- [start:core-idea]
+        from remote_store import Store
+        from remote_store.backends import LocalBackend
 
-    store = Store(LocalBackend(root=tmp))
-    store.write_text("hello.txt", "Hello, world!")
-    print(store.read_text("hello.txt"))  # 'Hello, world!'
-    # --8<-- [end:core-idea]
+        store = Store(LocalBackend(root="/tmp/data"))
+        store.write_text("hello.txt", "Hello, world!")
+        print(store.read_text("hello.txt"))  # 'Hello, world!'
+        # --8<-- [end:core-idea]
 
-    # --8<-- [start:child-scoping]
-    sub = store.child("reports/2024")
-    sub.write_text("summary.txt", "...")
-    # --8<-- [end:child-scoping]
+        # --8<-- [start:child-scoping]
+        sub = store.child("reports/2024")
+        sub.write_text("summary.txt", "...")
+        # --8<-- [end:child-scoping]
+    finally:
+        shutil.rmtree("/tmp/data", ignore_errors=True)
 
 
 def _capabilities() -> None:
     store = Store(MemoryBackend())
 
     # --8<-- [start:capabilities]
-    from remote_store import Capability  # noqa: F811
+    from remote_store import Capability
 
     store.supports(Capability.GLOB)  # True for Local, S3, S3-PyArrow, Azure
     store.supports(Capability.ATOMIC_WRITE)  # True for all except HTTP
@@ -53,9 +59,9 @@ def _capabilities() -> None:
 def _custom_backend() -> None:
     # Verify the import and class structure work — we don't instantiate.
     # --8<-- [start:custom-backend]
-    from remote_store import Backend  # noqa: F811
+    from remote_store import Backend
 
-    class MyBackend(Backend):  # noqa: F811
+    class MyBackend(Backend):
         """Implement the Backend protocol for your storage."""
 
         ...

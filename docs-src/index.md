@@ -59,6 +59,17 @@ A `Store` scopes all operations to a root path. Everything is relative.
 --8<-- "examples/snippets/homepage.py:core-idea"
 ```
 
+Switch backend without changing application code:
+
+```python
+from remote_store import Store
+from remote_store.backends import S3Backend
+
+store = Store(S3Backend(bucket="my-bucket"))
+store.write_text("file.txt", "hello")
+print(store.read_text("file.txt"))  # same API, different backend
+```
+
 Narrow scope with `child()` — all paths inside are relative to the new root:
 
 ```python

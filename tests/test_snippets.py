@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pytest
 
+pytestmark = pytest.mark.os_sensitive
+
 
 class TestHomepageSnippets:
     """Snippets used on the docs landing page (index.md)."""

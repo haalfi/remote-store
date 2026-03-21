@@ -80,22 +80,7 @@ class TestApiDocsCoverage:
         obj = getattr(remote_store, symbol)
         module = getattr(obj, "__module__", "")
         # Check if the module itself has a ::: directive
-        if module and f"::: {module}" in {f"::: {d}" for d in self.directives}:
-            return True
-        # Map symbol to its extension module
-        _ext_modules = {
-            "remote_store.ext.batch": "remote_store.ext.batch",
-            "remote_store.ext.cache": "remote_store.ext.cache",
-            "remote_store.ext.glob": "remote_store.ext.glob",
-            "remote_store.ext.integrity": "remote_store.ext.integrity",
-            "remote_store.ext.observe": "remote_store.ext.observe",
-            "remote_store.ext.partition": "remote_store.ext.partition",
-            "remote_store.ext.streams": "remote_store.ext.streams",
-            "remote_store.ext.transfer": "remote_store.ext.transfer",
-        }
-        if module in _ext_modules:
-            return _ext_modules[module] in self.directives
-        return False
+        return bool(module) and module in self.directives
 
     @pytest.mark.spec("ID-058")
     def test_core_symbols_in_index(self) -> None:
