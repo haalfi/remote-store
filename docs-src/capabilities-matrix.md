@@ -7,7 +7,7 @@ at runtime before calling an operation.
 
 ## Backend x Capability
 
-| Capability | Local | Memory | HTTP | S3 | S3-PyArrow | SFTP | Azure |
+| Capability | [Local](backends/local.md) | [Memory](backends/memory.md) | [HTTP](backends/http.md) | [S3](backends/s3.md) | [S3-PyArrow](backends/s3-pyarrow.md) | [SFTP](backends/sftp.md) | [Azure](backends/azure.md) |
 |------------|:-----:|:------:|:----:|:--:|:----------:|:----:|:-----:|
 | READ           | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | WRITE          | Yes | Yes | —   | Yes | Yes | Yes | Yes |

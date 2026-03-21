@@ -35,13 +35,13 @@ This guide helps you pick the right `remote-store` backend for your use case.
 
 | Backend | Dependencies | Glob | Throughput | Best for |
 |---------|-------------|:----:|-----------|----------|
-| Local | None | Native | Disk-bound | Dev, single machine |
-| Memory | None | Fallback | In-process | Tests, caches |
-| S3 | `s3fs` | Native | Network | General S3 workloads |
-| S3-PyArrow | `pyarrow` | Native | High (C++) | Data lake, Parquet |
-| SFTP | `paramiko` | Fallback | Network | Legacy, on-prem |
-| Azure | `azure-storage-blob` | Native | Network | Azure workloads |
-| HTTP | None | — | Network | Read-only public data |
+| [Local](backends/local.md) | None | Native | Disk-bound | Dev, single machine |
+| [Memory](backends/memory.md) | None | Fallback | In-process | Tests, caches |
+| [S3](backends/s3.md) | `s3fs` | Native | Network | General S3 workloads |
+| [S3-PyArrow](backends/s3-pyarrow.md) | `pyarrow` | Native | High (C++) | Data lake, Parquet |
+| [SFTP](backends/sftp.md) | `paramiko` | Fallback | Network | Legacy, on-prem |
+| [Azure](backends/azure.md) | `azure-storage-blob` | Native | Network | Azure workloads |
+| [HTTP](backends/http.md) | None | — | Network | Read-only public data |
 
 ## Switching backends at runtime
 

@@ -27,14 +27,14 @@ Several backends implement `move(src, dst)` as a **copy followed by a delete**. 
 
 | Backend | `move()` implementation | Atomic? |
 |---------|------------------------|---------|
-| Local | `shutil.move()` (`os.rename()` on same filesystem, copy+delete across) | Yes* |
-| S3 | Copy object + delete object | — |
-| S3-PyArrow | Copy object + delete object | — |
-| Azure (HNS) | `rename_file()` | Yes |
-| Azure (non-HNS) | Copy blob + delete blob | — |
-| SFTP (`posix_rename`) | `posix_rename` | Yes |
-| SFTP (`rename`) | `rename()` | Yes (but not guaranteed atomic on all servers) |
-| SFTP (final fallback) | Read + write + delete | — |
+| [Local](backends/local.md) | `shutil.move()` (`os.rename()` on same filesystem, copy+delete across) | Yes* |
+| [S3](backends/s3.md) | Copy object + delete object | — |
+| [S3-PyArrow](backends/s3-pyarrow.md) | Copy object + delete object | — |
+| [Azure](backends/azure.md) (HNS) | `rename_file()` | Yes |
+| [Azure](backends/azure.md) (non-HNS) | Copy blob + delete blob | — |
+| [SFTP](backends/sftp.md) (`posix_rename`) | `posix_rename` | Yes |
+| [SFTP](backends/sftp.md) (`rename`) | `rename()` | Yes (but not guaranteed atomic on all servers) |
+| [SFTP](backends/sftp.md) (final fallback) | Read + write + delete | — |
 
 SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename()`, and finally copy+delete. Most OpenSSH servers support `posix_rename`. Servers that lack it usually still support `rename()`, which is atomic on most POSIX filesystems.
 
@@ -48,12 +48,12 @@ SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename(
 
 | Backend | `move()` atomic? | `write_atomic()` truly atomic? | `overwrite=False` race-free? |
 |---------|-----------------|-------------------------------|------------------------------|
-| Local | Yes* | Yes (temp file + `os.replace()`) | No (TOCTOU) |
-| S3 | No (copy + delete) | Yes (PUT is inherently atomic) | No (TOCTOU) |
-| S3-PyArrow | No (copy + delete) | Yes (PUT is inherently atomic) | No (TOCTOU) |
-| Azure (HNS) | Yes (`rename_file`) | Yes (temp file + rename) | No (TOCTOU) |
-| Azure (non-HNS) | No (copy + delete) | Yes (direct PUT is atomic) | No (TOCTOU) |
-| SFTP | Yes** | Yes** (temp file + rename) | No (TOCTOU) |
+| [Local](backends/local.md) | Yes* | Yes (temp file + `os.replace()`) | No (TOCTOU) |
+| [S3](backends/s3.md) | No (copy + delete) | Yes (PUT is inherently atomic) | No (TOCTOU) |
+| [S3-PyArrow](backends/s3-pyarrow.md) | No (copy + delete) | Yes (PUT is inherently atomic) | No (TOCTOU) |
+| [Azure](backends/azure.md) (HNS) | Yes (`rename_file`) | Yes (temp file + rename) | No (TOCTOU) |
+| [Azure](backends/azure.md) (non-HNS) | No (copy + delete) | Yes (direct PUT is atomic) | No (TOCTOU) |
+| [SFTP](backends/sftp.md) | Yes** | Yes** (temp file + rename) | No (TOCTOU) |
 
 \* Local `move()` uses `shutil.move()`, which delegates to `os.rename()` on the same filesystem (atomic) but falls back to copy+delete across filesystems. Only `write_atomic()` uses `os.replace()`.
 
