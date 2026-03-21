@@ -7,7 +7,7 @@ Run this file directly or via ``hatch run examples`` to verify all
 snippets execute correctly.
 """
 
-# ruff: noqa: F811
+# ruff: noqa: F401, F811
 
 from __future__ import annotations
 
@@ -59,13 +59,12 @@ def _capabilities() -> None:
 def _custom_backend() -> None:
     # Verify the import and class structure work — we don't instantiate.
     # --8<-- [start:custom-backend]
-    from remote_store import Backend
+    from remote_store import Backend, Store
 
     class MyBackend(Backend):
         """Implement the Backend protocol for your storage."""
 
         ...
-
     # --8<-- [end:custom-backend]
 
 
