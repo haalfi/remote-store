@@ -8,6 +8,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Documentation
 
+- **Single-source code snippets for docs** (ID-057): docs code blocks are now
+  pulled from tested Python files in `examples/snippets/` via pymdownx.snippets
+  named regions. CI runs snippet scripts to guarantee they stay valid.
+
+- **Auto-generated example doc wrappers** (ID-058): `scripts/gen_pages.py` now
+  scans `examples/*.py`, extracts the module docstring, and generates wrapper
+  pages + index + nav entries automatically. Eliminates the class of "forgot to
+  add a wrapper" bugs. Added `tests/test_api_coverage.py` to verify every
+  `__all__` symbol has API documentation.
+
 - **Cross-link compliance pass across docs tables** (BK-013): backend names in
   capability matrices, choosing-a-backend, concurrency, health-check,
   performance, and API reference tables now link to their respective guide

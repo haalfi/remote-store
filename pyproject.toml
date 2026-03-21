@@ -185,6 +185,8 @@ examples = [
   "python examples/capabilities_and_errors.py",
   "python examples/path_model.py",
   "python examples/pyarrow_adapter.py",
+  "python examples/snippets/homepage.py",
+  "python examples/snippets/core_operations.py",
 ]
 notebooks = "python tests/scripts/run_notebooks.py"
 # End-to-end tests against Docker backends (docker compose -f benchmarks/infra/docker-compose.yml up -d)
