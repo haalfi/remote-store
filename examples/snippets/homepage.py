@@ -65,6 +65,7 @@ def _custom_backend() -> None:
         """Implement the Backend protocol for your storage."""
 
         ...
+
     # --8<-- [end:custom-backend]
 
 
