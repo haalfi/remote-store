@@ -53,14 +53,13 @@ def _capabilities() -> None:
 def _custom_backend() -> None:
     # Verify the import and class structure work — we don't instantiate.
     # --8<-- [start:custom-backend]
-    from remote_store import Backend, Store  # noqa: F811, F401
+    from remote_store import Backend  # noqa: F811
 
     class MyBackend(Backend):  # noqa: F811
         """Implement the Backend protocol for your storage."""
 
         ...
 
-    # store = Store(MyBackend(...))  # works with all extensions
     # --8<-- [end:custom-backend]
 
 

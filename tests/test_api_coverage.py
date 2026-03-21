@@ -9,6 +9,7 @@ And every symbol in ``remote_store.backends.__all__`` has a `:::` directive.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -37,9 +38,6 @@ def _collect_index_symbols(index_path: Path) -> set[str]:
         # Table rows like: | [Store](store.md) | ... |
         # or: | [RegistryConfig](config.md#remote_store.RegistryConfig) | ... |
         if line.startswith("|") and "[" in line:
-            # Extract the link text (symbol name)
-            import re
-
             match = re.search(r"\[([A-Za-z_]\w*(?:\.\w+)*)\]", line)
             if match:
                 symbols.add(match.group(1))

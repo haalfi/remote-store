@@ -104,6 +104,8 @@ extension. The hooks are public.
 
 ```python
 --8<-- "examples/snippets/homepage.py:custom-backend"
+
+store = Store(MyBackend(...))  # works with all extensions
 ```
 
 ---

@@ -353,13 +353,13 @@ def _make_title(stem: str, docstring_first: str) -> str:
     'Title — description', otherwise title-cases the stem.
     """
     # Try to extract title from docstring
-    for sep in (" — ", " -- ", " — "):
+    for sep in (" — ", " -- "):
         if sep in docstring_first:
             return docstring_first.split(sep, 1)[0].strip()
     # If the first line starts with "Example:" strip that
     if docstring_first.lower().startswith("example:"):
         rest = docstring_first[8:].strip()
-        for sep in (" — ", " -- ", " — "):
+        for sep in (" — ", " -- "):
             if sep in rest:
                 return rest.split(sep, 1)[0].strip()
     # Fall back to title-casing the stem
@@ -390,9 +390,6 @@ def _scan_example(rel_path: str, py_path: Path) -> tuple[str, str, str, str]:
     """Return (rel_key, slug, title, description) for one example script."""
     stem = py_path.stem
     slug = _stem_to_slug(stem)
-    if "/" in rel_path:
-        # e.g. backends/s3_backend → s3-backend
-        pass  # slug is just the stem portion; prefix handled at call site
     docstring = _extract_docstring(py_path)
     first_line = _docstring_first_line(docstring)
     title = _make_title(stem, first_line)
@@ -488,8 +485,7 @@ def _gen_example_index(
         "|---------|-------------|",
     ])
     for key in backends:
-        fname = key.split("/")[-1]
-        entry = _example_by_key.get(key + ".py") if "/" in key else _example_by_key.get(key + ".py")
+        entry = _example_by_key.get(key + ".py")
         if entry:
             _, slug, title, desc = entry
             lines.append(f"| [{title}]({slug}.md) | {desc} |")
