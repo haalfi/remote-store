@@ -548,12 +548,15 @@ _medallion_readme = (ROOT / "examples" / "medallion_dagster" / "README.md").read
 _readme_lines = _medallion_readme.split("\n")
 _readme_body_lines: list[str] = []
 _skipped_first_heading = False
+_in_code_fence = False
 for _line in _readme_lines:
+    if _line.startswith("```"):
+        _in_code_fence = not _in_code_fence
     if not _skipped_first_heading and _line.startswith("# "):
         _skipped_first_heading = True
         continue
-    # Offset headings by 1 level
-    if _line.startswith("#"):
+    # Offset headings by 1 level (only outside code fences)
+    if not _in_code_fence and _line.startswith("#"):
         _line = "#" + _line
     _readme_body_lines.append(_line)
 _readme_body = "\n".join(_readme_body_lines)
