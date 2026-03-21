@@ -6074,32 +6074,32 @@ processing requests.</p>
 </thead>
 <tbody>
 <tr>
-<td>Local</td>
+<td><a href="../backends/local/">Local</a></td>
 <td><code>root.exists()</code> + <code>os.access(R_OK)</code></td>
 <td>Directory exists and is readable</td>
 </tr>
 <tr>
-<td>S3</td>
+<td><a href="../backends/s3/">S3</a></td>
 <td><code>head_bucket</code></td>
 <td>Bucket exists, credentials valid</td>
 </tr>
 <tr>
-<td>S3-PyArrow</td>
+<td><a href="../backends/s3-pyarrow/">S3-PyArrow</a></td>
 <td><code>get_file_info(bucket)</code></td>
 <td>Bucket accessible via PyArrow</td>
 </tr>
 <tr>
-<td>SFTP</td>
+<td><a href="../backends/sftp/">SFTP</a></td>
 <td><code>stat(base_path)</code></td>
 <td>SSH connection, path exists</td>
 </tr>
 <tr>
-<td>Azure</td>
+<td><a href="../backends/azure/">Azure</a></td>
 <td><code>get_container_properties()</code></td>
 <td>Container exists, credentials valid</td>
 </tr>
 <tr>
-<td>Memory</td>
+<td><a href="../backends/memory/">Memory</a></td>
 <td>No-op</td>
 <td>Always healthy</td>
 </tr>

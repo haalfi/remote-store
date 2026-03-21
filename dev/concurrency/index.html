@@ -6040,42 +6040,42 @@
 </thead>
 <tbody>
 <tr>
-<td>Local</td>
+<td><a href="../backends/local/">Local</a></td>
 <td><code>shutil.move()</code> (<code>os.rename()</code> on same filesystem, copy+delete across)</td>
 <td>Yes*</td>
 </tr>
 <tr>
-<td>S3</td>
+<td><a href="../backends/s3/">S3</a></td>
 <td>Copy object + delete object</td>
 <td>—</td>
 </tr>
 <tr>
-<td>S3-PyArrow</td>
+<td><a href="../backends/s3-pyarrow/">S3-PyArrow</a></td>
 <td>Copy object + delete object</td>
 <td>—</td>
 </tr>
 <tr>
-<td>Azure (HNS)</td>
+<td><a href="../backends/azure/">Azure</a> (HNS)</td>
 <td><code>rename_file()</code></td>
 <td>Yes</td>
 </tr>
 <tr>
-<td>Azure (non-HNS)</td>
+<td><a href="../backends/azure/">Azure</a> (non-HNS)</td>
 <td>Copy blob + delete blob</td>
 <td>—</td>
 </tr>
 <tr>
-<td>SFTP (<code>posix_rename</code>)</td>
+<td><a href="../backends/sftp/">SFTP</a> (<code>posix_rename</code>)</td>
 <td><code>posix_rename</code></td>
 <td>Yes</td>
 </tr>
 <tr>
-<td>SFTP (<code>rename</code>)</td>
+<td><a href="../backends/sftp/">SFTP</a> (<code>rename</code>)</td>
 <td><code>rename()</code></td>
 <td>Yes (but not guaranteed atomic on all servers)</td>
 </tr>
 <tr>
-<td>SFTP (final fallback)</td>
+<td><a href="../backends/sftp/">SFTP</a> (final fallback)</td>
 <td>Read + write + delete</td>
 <td>—</td>
 </tr>
@@ -6100,37 +6100,37 @@
 </thead>
 <tbody>
 <tr>
-<td>Local</td>
+<td><a href="../backends/local/">Local</a></td>
 <td>Yes*</td>
 <td>Yes (temp file + <code>os.replace()</code>)</td>
 <td>No (TOCTOU)</td>
 </tr>
 <tr>
-<td>S3</td>
+<td><a href="../backends/s3/">S3</a></td>
 <td>No (copy + delete)</td>
 <td>Yes (PUT is inherently atomic)</td>
 <td>No (TOCTOU)</td>
 </tr>
 <tr>
-<td>S3-PyArrow</td>
+<td><a href="../backends/s3-pyarrow/">S3-PyArrow</a></td>
 <td>No (copy + delete)</td>
 <td>Yes (PUT is inherently atomic)</td>
 <td>No (TOCTOU)</td>
 </tr>
 <tr>
-<td>Azure (HNS)</td>
+<td><a href="../backends/azure/">Azure</a> (HNS)</td>
 <td>Yes (<code>rename_file</code>)</td>
 <td>Yes (temp file + rename)</td>
 <td>No (TOCTOU)</td>
 </tr>
 <tr>
-<td>Azure (non-HNS)</td>
+<td><a href="../backends/azure/">Azure</a> (non-HNS)</td>
 <td>No (copy + delete)</td>
 <td>Yes (direct PUT is atomic)</td>
 <td>No (TOCTOU)</td>
 </tr>
 <tr>
-<td>SFTP</td>
+<td><a href="../backends/sftp/">SFTP</a></td>
 <td>Yes**</td>
 <td>Yes** (temp file + rename)</td>
 <td>No (TOCTOU)</td>
