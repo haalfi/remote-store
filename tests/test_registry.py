@@ -21,8 +21,14 @@ def _make_config(root: str) -> RegistryConfig:
     )
 
 
-class TestRegistryConstruction:
-    """REG-001: Construction and validation."""
+@pytest.fixture
+def registry():
+    with tempfile.TemporaryDirectory() as tmp:
+        yield Registry(_make_config(tmp)), tmp
+
+
+class TestRegistryCore:
+    """REG-001 through REG-007: Construction, get_store, lifecycle, context manager."""
 
     @pytest.mark.spec("REG-001")
     def test_validates_on_construction(self) -> None:
@@ -34,100 +40,89 @@ class TestRegistryConstruction:
             Registry(bad_config)
 
     @pytest.mark.spec("REG-001")
-    def test_construction_ok(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            reg = Registry(_make_config(tmp))
-            assert reg is not None
-
-
-class TestRegistryGetStore:
-    """REG-002 through REG-003: get_store behavior."""
+    def test_construction_ok(self, registry) -> None:
+        reg, _ = registry
+        assert reg is not None
 
     @pytest.mark.spec("REG-002")
-    def test_returns_store(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            reg = Registry(_make_config(tmp))
-            store = reg.get_store("main")
-            assert isinstance(store, Store)
+    def test_returns_store(self, registry) -> None:
+        reg, _ = registry
+        assert isinstance(reg.get_store("main"), Store)
 
     @pytest.mark.spec("REG-003")
-    def test_unknown_raises(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            reg = Registry(_make_config(tmp))
-            with pytest.raises(KeyError, match="unknown_store"):
-                reg.get_store("unknown_store")
-
-
-class TestRegistryBackendLifecycle:
-    """REG-004 through REG-006: lazy instantiation, sharing, close."""
+    def test_unknown_raises(self, registry) -> None:
+        reg, _ = registry
+        with pytest.raises(KeyError, match="unknown_store"):
+            reg.get_store("unknown_store")
 
     @pytest.mark.spec("REG-004")
-    def test_lazy_instantiation(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            reg = Registry(_make_config(tmp))
-            assert len(reg._backends) == 0
-            reg.get_store("main")
-            assert len(reg._backends) == 1
+    def test_lazy_instantiation(self, registry) -> None:
+        reg, _ = registry
+        assert len(reg._backends) == 0
+        reg.get_store("main")
+        assert len(reg._backends) == 1
 
     @pytest.mark.spec("REG-005")
-    def test_backend_shared_across_stores(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            reg = Registry(_make_config(tmp))
-            reg.get_store("main")
-            reg.get_store("other")
-            assert len(reg._backends) == 1
+    def test_backend_shared_across_stores(self, registry) -> None:
+        reg, _ = registry
+        reg.get_store("main")
+        reg.get_store("other")
+        assert len(reg._backends) == 1
 
     @pytest.mark.spec("REG-006")
-    def test_close_clears_backends(self) -> None:
+    def test_close_clears_backends(self, registry) -> None:
+        reg, _ = registry
+        reg.get_store("main")
+        assert len(reg._backends) == 1
+        reg.close()
+        assert len(reg._backends) == 0
+
+    @pytest.mark.spec("REG-007")
+    def test_context_manager(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            reg = Registry(_make_config(tmp))
-            reg.get_store("main")
-            assert len(reg._backends) == 1
-            reg.close()
+            with Registry(_make_config(tmp)) as reg:
+                assert isinstance(reg.get_store("main"), Store)
             assert len(reg._backends) == 0
 
 
 class TestRegistryStoreOwnership:
-    """ID-041: Stores from get_store() must not own the shared backend."""
+    """REG-005 / ID-041: Stores from get_store() must not own the shared backend."""
 
     @pytest.mark.spec("REG-005")
-    def test_get_store_does_not_own_backend(self) -> None:
-        """get_store() returns stores with _owns_backend=False."""
-        with tempfile.TemporaryDirectory() as tmp:
-            reg = Registry(_make_config(tmp))
-            store = reg.get_store("main")
-            assert store._owns_backend is False
+    def test_get_store_does_not_own_backend(self, registry) -> None:
+        reg, _ = registry
+        assert reg.get_store("main")._owns_backend is False
 
     @pytest.mark.spec("REG-005")
-    def test_store_close_does_not_close_shared_backend(self) -> None:
-        """Closing a store from get_store() must not close the shared backend."""
-        with tempfile.TemporaryDirectory() as tmp:
-            reg = Registry(_make_config(tmp))
-            s1 = reg.get_store("main")
-            s2 = reg.get_store("other")
-
-            s1.write("test.txt", b"hello")
-            s1.close()
-
-            # Sibling store still works — backend is alive
-            assert s2.exists("test.txt") is False  # different root_path
-            s2.write("test.txt", b"world")
-            assert s2.read_bytes("test.txt") == b"world"
-
-            reg.close()
+    def test_store_close_does_not_close_shared_backend(self, registry) -> None:
+        reg, _ = registry
+        s1 = reg.get_store("main")
+        s2 = reg.get_store("other")
+        s1.write("test.txt", b"hello")
+        s1.close()
+        assert s2.exists("test.txt") is False  # different root_path
+        s2.write("test.txt", b"world")
+        assert s2.read_bytes("test.txt") == b"world"
+        reg.close()
 
 
 class TestRegistryCloseOnError:
     """AF-009: close() must close all backends even when one raises."""
 
-    def test_close_continues_after_error(self) -> None:
-        """If a backend.close() raises, remaining backends are still closed."""
-        with tempfile.TemporaryDirectory() as tmp:
-            reg = Registry(_make_config(tmp))
-            reg.get_store("main")
-
-            # Patch the single backend's close() to raise
-            backend = next(iter(reg._backends.values()))
+    @pytest.mark.parametrize(
+        "use_lambda",
+        [
+            pytest.param(False, id="explicit_failing_close"),
+            pytest.param(True, id="lambda_failing_close"),
+        ],
+    )
+    def test_close_clears_on_error(self, registry, use_lambda: bool) -> None:
+        reg, _ = registry
+        reg.get_store("main")
+        backend = next(iter(reg._backends.values()))
+        if use_lambda:
+            backend.close = lambda: (_ for _ in ()).throw(RuntimeError("boom"))  # type: ignore[assignment]
+        else:
             original_close = backend.close
             close_calls: list[str] = []
 
@@ -137,32 +132,13 @@ class TestRegistryCloseOnError:
                 raise RuntimeError("simulated close failure")
 
             backend.close = failing_close  # type: ignore[assignment]
-
-            with pytest.raises(RuntimeError, match="simulated close failure"):
-                reg.close()
-
+        with pytest.raises(RuntimeError):
+            reg.close()
+        if not use_lambda:
             assert len(close_calls) == 1
-            assert len(reg._backends) == 0  # clear() ran despite error
-
-    def test_close_clears_on_error(self) -> None:
-        """_backends.clear() always runs, even when close() raises."""
-        with tempfile.TemporaryDirectory() as tmp:
-            reg = Registry(_make_config(tmp))
-            reg.get_store("main")
-
-            backend = next(iter(reg._backends.values()))
-
-            def _raise_on_close() -> None:
-                raise RuntimeError("boom")
-
-            backend.close = _raise_on_close  # type: ignore[assignment]
-
-            with pytest.raises(RuntimeError):
-                reg.close()
-            assert len(reg._backends) == 0
+        assert len(reg._backends) == 0
 
     def test_close_multi_backend_continues_after_first_error(self) -> None:
-        """With multiple backends, all are closed even if the first raises."""
         with tempfile.TemporaryDirectory() as tmp1, tempfile.TemporaryDirectory() as tmp2:
             config = RegistryConfig(
                 backends={
@@ -180,42 +156,25 @@ class TestRegistryCloseOnError:
             assert len(reg._backends) == 2
 
             close_order: list[str] = []
-            b1 = reg._backends["local1"]
-            b2 = reg._backends["local2"]
-
-            orig_close1 = b1.close
-            orig_close2 = b2.close
+            b1, b2 = reg._backends["local1"], reg._backends["local2"]
+            orig1, orig2 = b1.close, b2.close
 
             def failing_close1() -> None:
                 close_order.append("local1")
-                orig_close1()
+                orig1()
                 raise RuntimeError("backend1 failed")
 
             def tracking_close2() -> None:
                 close_order.append("local2")
-                orig_close2()
+                orig2()
 
             b1.close = failing_close1  # type: ignore[assignment]
             b2.close = tracking_close2  # type: ignore[assignment]
 
             with pytest.raises(RuntimeError, match="backend1 failed"):
                 reg.close()
-
-            # Both backends were closed, even though the first raised
             assert "local1" in close_order
             assert "local2" in close_order
-            assert len(reg._backends) == 0
-
-
-class TestRegistryContextManager:
-    """REG-007: Context manager support."""
-
-    @pytest.mark.spec("REG-007")
-    def test_context_manager(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            with Registry(_make_config(tmp)) as reg:
-                store = reg.get_store("main")
-                assert isinstance(store, Store)
             assert len(reg._backends) == 0
 
 
@@ -229,41 +188,33 @@ class TestRegistryBackendFactory:
         assert "local" in _BACKEND_FACTORIES
 
     @pytest.mark.spec("REG-008")
-    def test_all_installed_backends_registered(self) -> None:
-        """All backends whose dependencies are installed should be auto-registered."""
+    @pytest.mark.parametrize(
+        "import_path,backend_key",
+        [
+            pytest.param("s3fs", "s3", id="s3"),
+            pytest.param("paramiko", "sftp", id="sftp"),
+            pytest.param("azure.storage.filedatalake", "azure", id="azure"),
+        ],
+    )
+    def test_optional_backend_registered_if_importable(self, import_path: str, backend_key: str) -> None:
         from remote_store._registry import _BACKEND_FACTORIES, _register_builtin_backends
 
         _register_builtin_backends()
-
-        # local is always available (stdlib)
-        assert "local" in _BACKEND_FACTORIES
-
-        # Optional backends: registered if importable
         try:
-            import s3fs  # noqa: F401
-
-            assert "s3" in _BACKEND_FACTORIES
+            __import__(import_path)
+            assert backend_key in _BACKEND_FACTORIES
         except ImportError:
             pass
 
-        try:
-            import paramiko  # noqa: F401
+    @pytest.mark.spec("REG-008")
+    def test_s3_pyarrow_registered_if_importable(self) -> None:
+        from remote_store._registry import _BACKEND_FACTORIES, _register_builtin_backends
 
-            assert "sftp" in _BACKEND_FACTORIES
-        except ImportError:
-            pass
-
+        _register_builtin_backends()
         try:
             import pyarrow  # noqa: F401
             import s3fs  # noqa: F401
 
             assert "s3-pyarrow" in _BACKEND_FACTORIES
-        except ImportError:
-            pass
-
-        try:
-            import azure.storage.filedatalake  # noqa: F401
-
-            assert "azure" in _BACKEND_FACTORIES
         except ImportError:
             pass

@@ -96,18 +96,39 @@ class TestS3PyArrowConstruction:
         assert backend.name == "s3-pyarrow"
 
     @pytest.mark.spec("S3PA-005")
-    def test_empty_bucket_raises(self) -> None:
+    @pytest.mark.parametrize(
+        "bucket",
+        [
+            pytest.param("", id="empty"),
+            pytest.param("   ", id="whitespace"),
+        ],
+    )
+    def test_invalid_bucket_raises(self, bucket: str) -> None:
         from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
         with pytest.raises(ValueError, match="bucket"):
-            S3PyArrowBackend(bucket="")
+            S3PyArrowBackend(bucket=bucket)
 
-    @pytest.mark.spec("S3PA-005")
-    def test_whitespace_bucket_raises(self) -> None:
+    @pytest.mark.spec("S3PA-022")
+    def test_client_options_accepted(self) -> None:
+        """client_options are accepted without error at construction."""
         from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
-        with pytest.raises(ValueError, match="bucket"):
-            S3PyArrowBackend(bucket="   ")
+        backend = S3PyArrowBackend(
+            bucket="any-bucket",
+            key="k",
+            secret="s",
+            client_options={"connect_timeout": 5, "read_timeout": 10},
+        )
+        assert backend.name == "s3-pyarrow"
+
+    @pytest.mark.spec("S3PA-001")
+    def test_credentials_optional(self) -> None:
+        """Backend can be constructed without explicit credentials."""
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        backend = S3PyArrowBackend(bucket="any-bucket")
+        assert backend.name == "s3-pyarrow"
 
 
 # endregion
@@ -118,15 +139,17 @@ class TestS3PyArrowFolderSemantics:
     """S3PA-008 through S3PA-011: virtual folder behavior."""
 
     @pytest.mark.spec("S3PA-009")
-    def test_is_folder_with_objects(self, s3pa_backend: Backend) -> None:
-        """Folder exists when objects share its prefix."""
-        s3pa_backend.write("data/file.txt", b"x")
-        assert s3pa_backend.is_folder("data") is True
-
-    @pytest.mark.spec("S3PA-009")
-    def test_is_folder_empty_prefix(self, s3pa_backend: Backend) -> None:
-        """No objects under prefix means no folder."""
-        assert s3pa_backend.is_folder("nonexistent") is False
+    @pytest.mark.parametrize(
+        ("setup_path", "folder", "expected"),
+        [
+            pytest.param("data/file.txt", "data", True, id="with_objects"),
+            pytest.param(None, "nonexistent", False, id="empty_prefix"),
+        ],
+    )
+    def test_is_folder_simple(self, s3pa_backend: Backend, setup_path: str | None, folder: str, expected: bool) -> None:
+        if setup_path:
+            s3pa_backend.write(setup_path, b"x")
+        assert s3pa_backend.is_folder(folder) is expected
 
     @pytest.mark.spec("S3PA-009")
     def test_is_folder_nested(self, s3pa_backend: Backend) -> None:
@@ -148,7 +171,6 @@ class TestS3PyArrowFolderSemantics:
         """Deleting last file under a prefix makes folder disappear."""
         s3pa_backend.write("ephemeral/only.txt", b"x")
         assert s3pa_backend.is_folder("ephemeral") is True
-
         s3pa_backend.delete("ephemeral/only.txt")
         assert s3pa_backend.is_folder("ephemeral") is False
 
@@ -246,7 +268,7 @@ class TestS3PyArrowReadPath:
     @pytest.mark.spec("S3PA-012")
     def test_readline_newline_at_chunk_boundary(self, s3pa_backend: Backend) -> None:
         """Newline at exactly _READLINE_CHUNK (8192) exercises the seek guard."""
-        line = b"x" * 8191 + b"\n"  # newline is last byte of first chunk
+        line = b"x" * 8191 + b"\n"
         s3pa_backend.write("boundary.txt", line + b"next\n")
         stream = s3pa_backend.read("boundary.txt")
         assert stream.readline() == line
@@ -267,8 +289,10 @@ class TestS3PyArrowReadPath:
 
 
 # region: Operations (S3PA-012 through S3PA-017)
-class TestS3PyArrowAtomicWrite:
-    """S3PA-013: atomic write via S3 PUT."""
+class TestS3PyArrowOperations:
+    """S3PA-013 through S3PA-016: write_atomic, delete_folder, move, copy."""
+
+    # -- write_atomic (S3PA-013) --
 
     @pytest.mark.spec("S3PA-013")
     def test_write_atomic_creates_file(self, s3pa_backend: Backend) -> None:
@@ -287,9 +311,7 @@ class TestS3PyArrowAtomicWrite:
         with pytest.raises(AlreadyExists):
             s3pa_backend.write_atomic("at2.txt", b"second", overwrite=False)
 
-
-class TestS3PyArrowDeleteFolder:
-    """S3PA-016: delete_folder semantics."""
+    # -- delete_folder (S3PA-016) --
 
     @pytest.mark.spec("S3PA-016")
     def test_delete_folder_recursive(self, s3pa_backend: Backend) -> None:
@@ -320,9 +342,7 @@ class TestS3PyArrowDeleteFolder:
         with pytest.raises(DirectoryNotEmpty):
             s3pa_backend.delete_folder("nonempty", recursive=False)
 
-
-class TestS3PyArrowMoveCopy:
-    """S3PA-014, S3PA-015: move and copy operations."""
+    # -- move/copy (S3PA-014, S3PA-015) --
 
     @pytest.mark.spec("S3PA-015")
     def test_move(self, s3pa_backend: Backend) -> None:
@@ -330,18 +350,6 @@ class TestS3PyArrowMoveCopy:
         s3pa_backend.move("src.txt", "dst.txt")
         assert s3pa_backend.exists("src.txt") is False
         assert s3pa_backend.read_bytes("dst.txt") == b"data"
-
-    @pytest.mark.spec("S3PA-015")
-    def test_move_not_found(self, s3pa_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3pa_backend.move("missing.txt", "dst.txt")
-
-    @pytest.mark.spec("S3PA-015")
-    def test_move_already_exists(self, s3pa_backend: Backend) -> None:
-        s3pa_backend.write("m1.txt", b"a")
-        s3pa_backend.write("m2.txt", b"b")
-        with pytest.raises(AlreadyExists):
-            s3pa_backend.move("m1.txt", "m2.txt", overwrite=False)
 
     @pytest.mark.spec("S3PA-015")
     def test_move_overwrite(self, s3pa_backend: Backend) -> None:
@@ -359,24 +367,38 @@ class TestS3PyArrowMoveCopy:
         assert s3pa_backend.read_bytes("clone.txt") == b"data"
 
     @pytest.mark.spec("S3PA-014")
-    def test_copy_not_found(self, s3pa_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3pa_backend.copy("missing.txt", "dst.txt")
-
-    @pytest.mark.spec("S3PA-014")
-    def test_copy_already_exists(self, s3pa_backend: Backend) -> None:
-        s3pa_backend.write("c1.txt", b"a")
-        s3pa_backend.write("c2.txt", b"b")
-        with pytest.raises(AlreadyExists):
-            s3pa_backend.copy("c1.txt", "c2.txt", overwrite=False)
-
-    @pytest.mark.spec("S3PA-014")
     def test_copy_overwrite(self, s3pa_backend: Backend) -> None:
         s3pa_backend.write("co1.txt", b"a")
         s3pa_backend.write("co2.txt", b"b")
         s3pa_backend.copy("co1.txt", "co2.txt", overwrite=True)
         assert s3pa_backend.read_bytes("co2.txt") == b"a"
         assert s3pa_backend.read_bytes("co1.txt") == b"a"
+
+    @pytest.mark.parametrize(
+        ("op", "spec"),
+        [
+            pytest.param("move", "S3PA-015", id="move_not_found"),
+            pytest.param("copy", "S3PA-014", id="copy_not_found"),
+        ],
+    )
+    def test_not_found(self, s3pa_backend: Backend, op: str, spec: str) -> None:
+        pytest.mark.spec(spec)
+        with pytest.raises(NotFound):
+            getattr(s3pa_backend, op)("missing.txt", "dst.txt")
+
+    @pytest.mark.parametrize(
+        ("op", "spec"),
+        [
+            pytest.param("move", "S3PA-015", id="move_already_exists"),
+            pytest.param("copy", "S3PA-014", id="copy_already_exists"),
+        ],
+    )
+    def test_already_exists(self, s3pa_backend: Backend, op: str, spec: str) -> None:
+        pytest.mark.spec(spec)
+        s3pa_backend.write("ae1.txt", b"a")
+        s3pa_backend.write("ae2.txt", b"b")
+        with pytest.raises(AlreadyExists):
+            getattr(s3pa_backend, op)("ae1.txt", "ae2.txt", overwrite=False)
 
 
 # endregion
@@ -387,20 +409,23 @@ class TestS3PyArrowErrorMapping:
     """S3PA-018, S3PA-019: error mapping."""
 
     @pytest.mark.spec("S3PA-018")
-    def test_read_missing_maps_to_not_found(self, s3pa_backend: Backend) -> None:
+    @pytest.mark.parametrize(
+        ("method", "args"),
+        [
+            pytest.param("read_bytes", ("does-not-exist.txt",), id="read_missing"),
+            pytest.param("get_file_info", ("nope.txt",), id="get_file_info_missing"),
+            pytest.param("delete", ("nope.txt",), id="delete_missing"),
+        ],
+    )
+    def test_missing_key_maps_to_not_found(self, s3pa_backend: Backend, method: str, args: tuple[str, ...]) -> None:
+        with pytest.raises(NotFound):
+            getattr(s3pa_backend, method)(*args)
+
+    @pytest.mark.spec("S3PA-018")
+    def test_not_found_has_backend_attr(self, s3pa_backend: Backend) -> None:
         with pytest.raises(NotFound) as exc_info:
             s3pa_backend.read_bytes("does-not-exist.txt")
         assert exc_info.value.backend == "s3-pyarrow"
-
-    @pytest.mark.spec("S3PA-018")
-    def test_get_file_info_missing(self, s3pa_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3pa_backend.get_file_info("nope.txt")
-
-    @pytest.mark.spec("S3PA-018")
-    def test_delete_missing(self, s3pa_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3pa_backend.delete("nope.txt")
 
     @pytest.mark.spec("S3PA-019")
     def test_no_native_exception_leaks(self, s3pa_backend: Backend) -> None:
@@ -454,35 +479,6 @@ class TestS3PyArrowLifecycle:
 # endregion
 
 
-# region: Configuration (S3PA-022)
-class TestS3PyArrowConfiguration:
-    """S3PA-022: client options and credential chain."""
-
-    @pytest.mark.spec("S3PA-022")
-    def test_client_options_accepted(self) -> None:
-        """client_options are accepted without error at construction."""
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        backend = S3PyArrowBackend(
-            bucket="any-bucket",
-            key="k",
-            secret="s",
-            client_options={"connect_timeout": 5, "read_timeout": 10},
-        )
-        assert backend.name == "s3-pyarrow"
-
-    @pytest.mark.spec("S3PA-001")
-    def test_credentials_optional(self) -> None:
-        """Backend can be constructed without explicit credentials."""
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        backend = S3PyArrowBackend(bucket="any-bucket")
-        assert backend.name == "s3-pyarrow"
-
-
-# endregion
-
-
 # region: Read/Write roundtrip
 class TestS3PyArrowReadWrite:
     """Basic read/write roundtrip to verify full stack."""
@@ -511,8 +507,6 @@ class TestS3PyArrowReadWrite:
         assert s3pa_backend.read_bytes("a/b/c/deep.txt") == b"deep"
 
     def test_write_from_binaryio(self, s3pa_backend: Backend) -> None:
-        import io
-
         s3pa_backend.write("bio.txt", io.BytesIO(b"streamed"))
         assert s3pa_backend.read_bytes("bio.txt") == b"streamed"
 
@@ -582,12 +576,17 @@ class TestS3PyArrowMetadata:
         with pytest.raises(NotFound):
             s3pa_backend.get_folder_info("nodir")
 
-    def test_exists_file(self, s3pa_backend: Backend) -> None:
-        s3pa_backend.write("e.txt", b"x")
-        assert s3pa_backend.exists("e.txt") is True
-
-    def test_exists_missing(self, s3pa_backend: Backend) -> None:
-        assert s3pa_backend.exists("nope.txt") is False
+    @pytest.mark.parametrize(
+        ("setup_path", "query", "expected"),
+        [
+            pytest.param("e.txt", "e.txt", True, id="exists_file"),
+            pytest.param(None, "nope.txt", False, id="exists_missing"),
+        ],
+    )
+    def test_exists(self, s3pa_backend: Backend, setup_path: str | None, query: str, expected: bool) -> None:
+        if setup_path:
+            s3pa_backend.write(setup_path, b"x")
+        assert s3pa_backend.exists(query) is expected
 
     def test_is_file(self, s3pa_backend: Backend) -> None:
         s3pa_backend.write("f.txt", b"x")
@@ -633,40 +632,26 @@ class TestS3PyArrowGlob:
         backend.write("file2.txt", b"f2")
 
     @pytest.mark.spec("GLOB-019")
-    def test_glob_star_csv(self, s3pa_backend: Backend) -> None:
+    @pytest.mark.parametrize(
+        ("pattern", "expected"),
+        [
+            pytest.param("*.csv", ["report.csv"], id="star_csv"),
+            pytest.param("**/*.log", ["logs/app.log", "logs/archive/old.log"], id="recursive"),
+            pytest.param("data/*.csv", ["data/sales.csv"], id="subdirectory"),
+            pytest.param("*.xyz", [], id="no_matches"),
+            pytest.param("file?.txt", ["file1.txt", "file2.txt"], id="question_mark"),
+        ],
+    )
+    def test_glob_pattern(self, s3pa_backend: Backend, pattern: str, expected: list[str]) -> None:
         self._populate(s3pa_backend)
-        results = sorted(str(f.path) for f in s3pa_backend.glob("*.csv"))
-        assert results == ["report.csv"]
-
-    @pytest.mark.spec("GLOB-019")
-    def test_glob_recursive(self, s3pa_backend: Backend) -> None:
-        self._populate(s3pa_backend)
-        results = sorted(str(f.path) for f in s3pa_backend.glob("**/*.log"))
-        assert results == ["logs/app.log", "logs/archive/old.log"]
-
-    @pytest.mark.spec("GLOB-019")
-    def test_glob_subdirectory(self, s3pa_backend: Backend) -> None:
-        self._populate(s3pa_backend)
-        results = sorted(str(f.path) for f in s3pa_backend.glob("data/*.csv"))
-        assert results == ["data/sales.csv"]
-
-    @pytest.mark.spec("GLOB-019")
-    def test_glob_no_matches(self, s3pa_backend: Backend) -> None:
-        self._populate(s3pa_backend)
-        results = list(s3pa_backend.glob("*.xyz"))
-        assert results == []
+        results = sorted(str(f.path) for f in s3pa_backend.glob(pattern))
+        assert results == expected
 
     @pytest.mark.spec("GLOB-019")
     def test_glob_files_only(self, s3pa_backend: Backend) -> None:
         self._populate(s3pa_backend)
         for info in s3pa_backend.glob("**/*"):
             assert isinstance(info, FileInfo)
-
-    @pytest.mark.spec("GLOB-019")
-    def test_glob_question_mark(self, s3pa_backend: Backend) -> None:
-        self._populate(s3pa_backend)
-        results = sorted(str(f.path) for f in s3pa_backend.glob("file?.txt"))
-        assert results == ["file1.txt", "file2.txt"]
 
 
 # endregion

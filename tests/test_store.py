@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
 from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, CapabilityNotSupported, InvalidPath, NotFound
@@ -22,22 +21,16 @@ from remote_store.backends._memory import MemoryBackend
 
 @pytest.fixture
 def store() -> Iterator[Store]:
-    backend = MemoryBackend()
-    yield Store(backend=backend, root_path="data")
+    yield Store(backend=MemoryBackend(), root_path="data")
 
 
-class TestStoreConstruction:
-    """STORE-001: Construction."""
+class TestStoreBasics:
+    """STORE-001 through STORE-005: Construction, validation, scoping, delegation, capabilities."""
 
     @pytest.mark.spec("STORE-001")
     def test_construction(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="myroot")
+        store = Store(backend=MemoryBackend(), root_path="myroot")
         assert store is not None
-
-
-class TestStorePathValidation:
-    """STORE-002: Path validation."""
 
     @pytest.mark.spec("STORE-002")
     def test_invalid_path_rejected(self, store: Store) -> None:
@@ -50,19 +43,16 @@ class TestStorePathValidation:
         assert store.is_folder("")
         assert list(store.list_files("")) == list(store.list_files("", recursive=False))
 
-
-class TestStoreRootPathScoping:
-    """STORE-003: Root path scoping."""
-
     @pytest.mark.spec("STORE-003")
     def test_root_path_prepended(self, store: Store) -> None:
         store.write("hello.txt", b"hi")
         assert store.exists("hello.txt")
         assert store.read_bytes("hello.txt") == b"hi"
 
-
-class TestStoreDelegation:
-    """STORE-004: Delegation to backend."""
+    @pytest.mark.spec("STORE-005")
+    def test_supports(self, store: Store) -> None:
+        assert store.supports(Capability.READ) is True
+        assert store.supports(Capability.WRITE) is True
 
     @pytest.mark.spec("STORE-004")
     def test_write_and_read(self, store: Store) -> None:
@@ -72,17 +62,7 @@ class TestStoreDelegation:
     @pytest.mark.spec("STORE-004")
     def test_read_stream(self, store: Store) -> None:
         store.write("stream.txt", b"stream data")
-        stream = store.read("stream.txt")
-        assert stream.read() == b"stream data"
-
-
-class TestStoreCapabilities:
-    """STORE-005: Capability check."""
-
-    @pytest.mark.spec("STORE-005")
-    def test_supports(self, store: Store) -> None:
-        assert store.supports(Capability.READ) is True
-        assert store.supports(Capability.WRITE) is True
+        assert store.read("stream.txt").read() == b"stream data"
 
 
 class TestStoreFullAPI:
@@ -159,8 +139,7 @@ class TestStoreFullAPI:
     def test_list_files_recursive(self, store: Store) -> None:
         store.write("lfr/a.txt", b"a")
         store.write("lfr/sub/b.txt", b"b")
-        files = list(store.list_files("lfr", recursive=True))
-        assert len(files) == 2
+        assert len(list(store.list_files("lfr", recursive=True))) == 2
 
     @pytest.mark.spec("STORE-008")
     def test_list_folders(self, store: Store) -> None:
@@ -171,52 +150,6 @@ class TestStoreFullAPI:
         assert {f.name for f in folders} == {"sub1", "sub2"}
         assert {str(f.path) for f in folders} == {"lfd/sub1", "lfd/sub2"}
 
-    @pytest.mark.spec("ITER-001")
-    def test_iter_children(self, store: Store) -> None:
-        store.write("ic/a.txt", b"a")
-        store.write("ic/b.txt", b"b")
-        store.write("ic/sub/c.txt", b"c")
-        children = list(store.iter_children("ic"))
-        files = [c for c in children if isinstance(c, FileInfo)]
-        folders = [c for c in children if isinstance(c, FolderEntry)]
-        assert {f.name for f in files} == {"a.txt", "b.txt"}
-        assert {f.name for f in folders} == {"sub"}
-        assert {str(f.path) for f in folders} == {"ic/sub"}
-
-    @pytest.mark.spec("ITER-001")
-    def test_iter_children_child_store_rebases_path(self, store: Store) -> None:
-        store.write("icc/sub/a.txt", b"a")
-        child = store.child("icc")
-        children = list(child.iter_children(""))
-        folders = [c for c in children if isinstance(c, FolderEntry)]
-        assert len(folders) == 1
-        assert folders[0].name == "sub"
-        assert str(folders[0].path) == "sub"  # root stripped
-
-    @pytest.mark.spec("ITER-001")
-    def test_iter_children_empty_dir(self, store: Store) -> None:
-        assert list(store.iter_children("nonexistent")) == []
-
-    @pytest.mark.spec("ITER-001")
-    def test_iter_children_root(self, store: Store) -> None:
-        store.write("root.txt", b"r")
-        store.write("sub/nested.txt", b"n")
-        children = list(store.iter_children(""))
-        files = [c for c in children if isinstance(c, FileInfo)]
-        folders = [c for c in children if isinstance(c, FolderEntry)]
-        assert {f.name for f in files} == {"root.txt"}
-        assert "sub" in {f.name for f in folders}
-
-    @pytest.mark.spec("ITER-001")
-    def test_iter_children_file_paths_are_store_relative(self, store: Store) -> None:
-        store.write("ic2/f.txt", b"x")
-        children = list(store.iter_children("ic2"))
-        files = [c for c in children if isinstance(c, FileInfo)]
-        assert len(files) == 1
-        assert str(files[0].path) == "ic2/f.txt"
-        # Round-trip: path should work as input
-        assert store.read_bytes(str(files[0].path)) == b"x"
-
     @pytest.mark.spec("STORE-008")
     def test_list_folders_child_store_rebases_path(self, store: Store) -> None:
         store.write("cr/sub/a.txt", b"a")
@@ -224,7 +157,7 @@ class TestStoreFullAPI:
         folders = list(child.list_folders(""))
         assert len(folders) == 1
         assert folders[0].name == "sub"
-        assert str(folders[0].path) == "sub"  # root stripped
+        assert str(folders[0].path) == "sub"
 
     @pytest.mark.spec("STORE-008")
     def test_get_file_info(self, store: Store) -> None:
@@ -247,46 +180,88 @@ class TestStoreFullAPI:
         assert store.exists("mv_src.txt") is False
         assert store.read_bytes("mv_dst.txt") == b"data"
 
-    @pytest.mark.spec("STORE-008a")
-    def test_move_same_path_is_noop(self, store: Store) -> None:
-        store.write("same.txt", b"original")
-        store.move("same.txt", "same.txt")
-        assert store.read_bytes("same.txt") == b"original"
-
-    @pytest.mark.spec("STORE-008a")
-    def test_move_same_path_nonexistent_raises(self, store: Store) -> None:
-        with pytest.raises(NotFound):
-            store.move("ghost.txt", "ghost.txt")
-
-    @pytest.mark.spec("STORE-008a")
-    def test_move_same_path_folder_raises(self, store: Store) -> None:
-        store.write("dir/file.txt", b"x")
-        with pytest.raises(NotFound):
-            store.move("dir", "dir")
-
-    @pytest.mark.spec("STORE-008a")
-    def test_copy_same_path_is_noop(self, store: Store) -> None:
-        store.write("same.txt", b"original")
-        store.copy("same.txt", "same.txt")
-        assert store.read_bytes("same.txt") == b"original"
-
-    @pytest.mark.spec("STORE-008a")
-    def test_copy_same_path_nonexistent_raises(self, store: Store) -> None:
-        with pytest.raises(NotFound):
-            store.copy("ghost.txt", "ghost.txt")
-
-    @pytest.mark.spec("STORE-008a")
-    def test_copy_same_path_folder_raises(self, store: Store) -> None:
-        store.write("dir/file.txt", b"x")
-        with pytest.raises(NotFound):
-            store.copy("dir", "dir")
-
     @pytest.mark.spec("STORE-008")
     def test_copy(self, store: Store) -> None:
         store.write("cp_src.txt", b"data")
         store.copy("cp_src.txt", "cp_dst.txt")
         assert store.read_bytes("cp_src.txt") == b"data"
         assert store.read_bytes("cp_dst.txt") == b"data"
+
+
+_MOVE_COPY_OPS = [pytest.param("move", id="move"), pytest.param("copy", id="copy")]
+
+
+class TestStoreSamePathOps:
+    """STORE-008a: move/copy same-path edge cases."""
+
+    @pytest.mark.spec("STORE-008a")
+    @pytest.mark.parametrize("op", _MOVE_COPY_OPS)
+    def test_same_path_is_noop(self, store: Store, op: str) -> None:
+        store.write("same.txt", b"original")
+        getattr(store, op)("same.txt", "same.txt")
+        assert store.read_bytes("same.txt") == b"original"
+
+    @pytest.mark.spec("STORE-008a")
+    @pytest.mark.parametrize("op", _MOVE_COPY_OPS)
+    def test_same_path_nonexistent_raises(self, store: Store, op: str) -> None:
+        with pytest.raises(NotFound):
+            getattr(store, op)("ghost.txt", "ghost.txt")
+
+    @pytest.mark.spec("STORE-008a")
+    @pytest.mark.parametrize("op", _MOVE_COPY_OPS)
+    def test_same_path_folder_raises(self, store: Store, op: str) -> None:
+        store.write("dir/file.txt", b"x")
+        with pytest.raises(NotFound):
+            getattr(store, op)("dir", "dir")
+
+
+class TestStoreIterChildren:
+    """ITER-001: iter_children() API."""
+
+    @pytest.mark.spec("ITER-001")
+    def test_iter_children(self, store: Store) -> None:
+        store.write("ic/a.txt", b"a")
+        store.write("ic/b.txt", b"b")
+        store.write("ic/sub/c.txt", b"c")
+        children = list(store.iter_children("ic"))
+        files = [c for c in children if isinstance(c, FileInfo)]
+        folders = [c for c in children if isinstance(c, FolderEntry)]
+        assert {f.name for f in files} == {"a.txt", "b.txt"}
+        assert {f.name for f in folders} == {"sub"}
+        assert {str(f.path) for f in folders} == {"ic/sub"}
+
+    @pytest.mark.spec("ITER-001")
+    def test_iter_children_child_store_rebases_path(self, store: Store) -> None:
+        store.write("icc/sub/a.txt", b"a")
+        child = store.child("icc")
+        children = list(child.iter_children(""))
+        folders = [c for c in children if isinstance(c, FolderEntry)]
+        assert len(folders) == 1
+        assert folders[0].name == "sub"
+        assert str(folders[0].path) == "sub"
+
+    @pytest.mark.spec("ITER-001")
+    def test_iter_children_empty_dir(self, store: Store) -> None:
+        assert list(store.iter_children("nonexistent")) == []
+
+    @pytest.mark.spec("ITER-001")
+    def test_iter_children_root(self, store: Store) -> None:
+        store.write("root.txt", b"r")
+        store.write("sub/nested.txt", b"n")
+        children = list(store.iter_children(""))
+        files = [c for c in children if isinstance(c, FileInfo)]
+        folders = [c for c in children if isinstance(c, FolderEntry)]
+        assert {f.name for f in files} == {"root.txt"}
+        assert "sub" in {f.name for f in folders}
+
+    @pytest.mark.spec("ITER-001")
+    def test_iter_children_file_paths_are_store_relative(self, store: Store) -> None:
+        store.write("ic2/f.txt", b"x")
+        children = list(store.iter_children("ic2"))
+        files = [c for c in children if isinstance(c, FileInfo)]
+        assert len(files) == 1
+        assert str(files[0].path) == "ic2/f.txt"
+        assert store.read_bytes(str(files[0].path)) == b"x"
 
 
 class TestStoreRoundTrip:
@@ -305,16 +280,13 @@ class TestStoreRoundTrip:
         store.write("rt/a.txt", b"aaa")
         store.write("rt/b.txt", b"bbb")
         for f in store.list_files("rt"):
-            data = store.read_bytes(str(f.path))
-            assert len(data) == 3
+            assert len(store.read_bytes(str(f.path))) == 3
 
     @pytest.mark.spec("NPR-014")
     def test_list_files_no_root_prefix(self, store: Store) -> None:
         """FileInfo.path must NOT include the store's root_path."""
         store.write("file.txt", b"x")
-        files = list(store.list_files(""))
-        paths = {str(f.path) for f in files}
-        # Must be "file.txt", not "data/file.txt"
+        paths = {str(f.path) for f in store.list_files("")}
         assert "file.txt" in paths
         assert not any(p.startswith("data/") for p in paths)
 
@@ -329,14 +301,22 @@ class TestStoreRoundTrip:
         store.write("info.txt", b"hello")
         fi = store.get_file_info("info.txt")
         assert str(fi.path) == "info.txt"
-        # Round-trip: path should work as input
         assert store.read_bytes(str(fi.path)) == b"hello"
 
     @pytest.mark.spec("NPR-014")
     def test_get_folder_info_returns_store_relative(self, store: Store) -> None:
         store.write("fold/a.txt", b"a")
-        fi = store.get_folder_info("fold")
-        assert str(fi.path) == "fold"
+        assert str(store.get_folder_info("fold").path) == "fold"
+
+
+def _assert_root_folder_info(fi: FolderInfo, *, count: int, size: int) -> None:
+    """Shared assertions for root FolderInfo: type, counts, path identity."""
+    assert isinstance(fi, FolderInfo)
+    assert fi.file_count == count
+    assert fi.total_size == size
+    assert str(fi.path) == "."
+    assert fi.path == RemotePath.ROOT
+    assert fi.path is RemotePath.ROOT
 
 
 class TestGetFolderInfoRoot:
@@ -344,27 +324,14 @@ class TestGetFolderInfoRoot:
 
     def test_store_get_folder_info_empty_root(self) -> None:
         """Store with root_path='' should return root FolderInfo."""
-        backend = MemoryBackend()
-        s = Store(backend=backend, root_path="")
+        s = Store(backend=MemoryBackend(), root_path="")
         s.write("a.txt", b"aaa")
-        fi = s.get_folder_info("")
-        assert isinstance(fi, FolderInfo)
-        assert fi.file_count == 1
-        assert fi.total_size == 3
-        assert str(fi.path) == "."
-        assert fi.path == RemotePath.ROOT
-        assert fi.path is RemotePath.ROOT
+        _assert_root_folder_info(s.get_folder_info(""), count=1, size=3)
 
     def test_store_get_folder_info_with_root(self, store: Store) -> None:
         """Store with root_path='data' — get_folder_info('') returns root."""
         store.write("r.txt", b"rr")
-        fi = store.get_folder_info("")
-        assert isinstance(fi, FolderInfo)
-        assert fi.file_count == 1
-        assert fi.total_size == 2
-        assert str(fi.path) == "."
-        assert fi.path == RemotePath.ROOT
-        assert fi.path is RemotePath.ROOT
+        _assert_root_folder_info(store.get_folder_info(""), count=1, size=2)
 
     def test_backend_get_folder_info_empty_string(self) -> None:
         """Backend.get_folder_info('') should not raise InvalidPath."""
@@ -380,25 +347,20 @@ class TestGetFolderInfoRoot:
         """str(get_folder_info('').path) round-trips as input to get_folder_info."""
         store.write("rt.txt", b"abc")
         fi = store.get_folder_info("")
-        key = str(fi.path)  # "."
-        fi2 = store.get_folder_info(key)
+        fi2 = store.get_folder_info(str(fi.path))
         assert fi2.file_count == fi.file_count
         assert fi2.path is RemotePath.ROOT
 
     def test_root_path_round_trip_list_files(self, store: Store) -> None:
         """str(get_folder_info('').path) round-trips as input to list_files."""
         store.write("rt.txt", b"abc")
-        fi = store.get_folder_info("")
-        key = str(fi.path)  # "."
-        names = [str(f.path) for f in store.list_files(key)]
-        assert "rt.txt" in names
+        key = str(store.get_folder_info("").path)
+        assert "rt.txt" in [str(f.path) for f in store.list_files(key)]
 
-    def test_local_backend_get_folder_info_empty_string(self, tmp_path: object) -> None:
+    def test_local_backend_get_folder_info_empty_string(self, tmp_path: Path) -> None:
         """LocalBackend.get_folder_info('') should not raise InvalidPath."""
-        root = Path(str(tmp_path))
-        (root / "f.txt").write_bytes(b"hello")
-        backend = LocalBackend(root=str(root))
-        fi = backend.get_folder_info("")
+        (tmp_path / "f.txt").write_bytes(b"hello")
+        fi = LocalBackend(root=str(tmp_path)).get_folder_info("")
         assert isinstance(fi, FolderInfo)
         assert fi.file_count == 1
         assert fi.total_size == 5
@@ -409,82 +371,66 @@ class TestGetFolderInfoRoot:
 class TestStoreToKey:
     """NPR-010 through NPR-013: Store.to_key."""
 
+    @pytest.fixture
+    def local_store(self, tmp_path: Path) -> tuple[Store, str]:
+        real_tmp = str(tmp_path.resolve())
+        return Store(backend=LocalBackend(root=str(tmp_path)), root_path="data"), real_tmp
+
     @pytest.mark.spec("NPR-010")
-    def test_to_key_strips_root(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            real_tmp = str(Path(tmp).resolve())
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            native = f"{real_tmp}/data/reports/q1.csv"
-            assert store.to_key(native) == "reports/q1.csv"
+    def test_to_key_strips_root(self, local_store: tuple[Store, str]) -> None:
+        s, real_tmp = local_store
+        assert s.to_key(f"{real_tmp}/data/reports/q1.csv") == "reports/q1.csv"
 
     @pytest.mark.spec("NPR-012")
-    def test_to_key_no_root_path(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            real_tmp = str(Path(tmp).resolve())
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="")
-            native = f"{real_tmp}/reports/q1.csv"
-            assert store.to_key(native) == "reports/q1.csv"
+    def test_to_key_no_root_path(self, tmp_path: Path) -> None:
+        real_tmp = str(tmp_path.resolve())
+        s = Store(backend=LocalBackend(root=str(tmp_path)), root_path="")
+        assert s.to_key(f"{real_tmp}/reports/q1.csv") == "reports/q1.csv"
 
     @pytest.mark.spec("NPR-013")
-    def test_to_key_unrelated_path_raises(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            real_tmp = str(Path(tmp).resolve())
-            backend = LocalBackend(root=tmp)
-            store = Store(backend=backend, root_path="data")
-            with pytest.raises(InvalidPath):
-                store.to_key(f"{real_tmp}/other/file.txt")
+    def test_to_key_unrelated_path_raises(self, local_store: tuple[Store, str]) -> None:
+        s, real_tmp = local_store
+        with pytest.raises(InvalidPath):
+            s.to_key(f"{real_tmp}/other/file.txt")
 
 
 class TestStoreUnwrap:
     """STORE-013: Store.unwrap() delegation."""
 
     @pytest.mark.spec("STORE-013")
-    def test_unwrap_delegates_to_backend(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
+    @pytest.mark.parametrize(
+        "use_child",
+        [
+            pytest.param(False, id="direct"),
+            pytest.param(True, id="child"),
+        ],
+    )
+    def test_unwrap_delegates_to_backend(self, use_child: bool) -> None:
+        store = Store(backend=MemoryBackend(), root_path="data")
+        target = store.child("sub") if use_child else store
         with pytest.raises(CapabilityNotSupported):
-            store.unwrap(dict)
-
-    @pytest.mark.spec("STORE-013")
-    def test_unwrap_child_delegates(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        child = store.child("sub")
-        with pytest.raises(CapabilityNotSupported):
-            child.unwrap(dict)
+            target.unwrap(dict)
 
 
 class TestStoreNativePath:
     """STORE-015: Store.native_path() composition."""
 
     @pytest.mark.spec("STORE-015")
-    def test_native_path_identity_backend(self) -> None:
-        """Default backend.native_path is identity; Store prepends root."""
+    @pytest.mark.parametrize(
+        "root_path, child, key, expected",
+        [
+            pytest.param("data", None, "file.txt", "data/file.txt", id="with-root"),
+            pytest.param("", None, "file.txt", "file.txt", id="no-root"),
+            pytest.param("data", "sub", "file.txt", "data/sub/file.txt", id="child-store"),
+            pytest.param("data", None, "", "data", id="root-key"),
+        ],
+    )
+    def test_native_path(self, root_path: str, child: str | None, key: str, expected: str) -> None:
         backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        # MemoryBackend inherits identity native_path, so result = root/key
-        assert store.native_path("file.txt") == "data/file.txt"
-
-    @pytest.mark.spec("STORE-015")
-    def test_native_path_no_root(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend)
-        assert store.native_path("file.txt") == "file.txt"
-
-    @pytest.mark.spec("STORE-015")
-    def test_native_path_child_store(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        child = store.child("sub")
-        assert child.native_path("file.txt") == "data/sub/file.txt"
-
-    @pytest.mark.spec("STORE-015")
-    def test_native_path_root_key(self) -> None:
-        backend = MemoryBackend()
-        store = Store(backend=backend, root_path="data")
-        assert store.native_path("") == "data"
+        store = Store(backend=backend, root_path=root_path) if root_path else Store(backend=backend)
+        if child:
+            store = store.child(child)
+        assert store.native_path(key) == expected
 
 
 class TestStoreReadText:
@@ -502,21 +448,25 @@ class TestStoreReadText:
         assert store.read_text("latin.txt", encoding="latin-1") == text
 
     @pytest.mark.spec("RTXT-001")
-    def test_read_text_errors_strict(self, store: Store) -> None:
-        store.write("bad.bin", b"\xff\xfe")
-        with pytest.raises(UnicodeDecodeError):
-            store.read_text("bad.bin")
-
-    @pytest.mark.spec("RTXT-001")
-    def test_read_text_errors_replace(self, store: Store) -> None:
-        store.write("bad.bin", b"\xff\xfe")
-        result = store.read_text("bad.bin", errors="replace")
-        assert "\ufffd" in result
-
-    @pytest.mark.spec("RTXT-001")
-    def test_read_text_errors_ignore(self, store: Store) -> None:
-        store.write("bad.bin", b"hello\xffworld")
-        assert store.read_text("bad.bin", errors="ignore") == "helloworld"
+    @pytest.mark.parametrize(
+        "errors, check",
+        [
+            pytest.param("strict", "raises", id="strict-raises"),
+            pytest.param("replace", "contains-replacement", id="replace"),
+            pytest.param("ignore", "stripped", id="ignore"),
+        ],
+    )
+    def test_read_text_error_handling(self, store: Store, errors: str, check: str) -> None:
+        if check == "raises":
+            store.write("bad.bin", b"\xff\xfe")
+            with pytest.raises(UnicodeDecodeError):
+                store.read_text("bad.bin")
+        elif check == "contains-replacement":
+            store.write("bad.bin", b"\xff\xfe")
+            assert "\ufffd" in store.read_text("bad.bin", errors="replace")
+        else:
+            store.write("bad.bin", b"hello\xffworld")
+            assert store.read_text("bad.bin", errors="ignore") == "helloworld"
 
     @pytest.mark.spec("RTXT-001")
     def test_read_text_not_found(self, store: Store) -> None:
@@ -524,14 +474,16 @@ class TestStoreReadText:
             store.read_text("missing.txt")
 
     @pytest.mark.spec("RTXT-001")
-    def test_read_text_empty_path(self, store: Store) -> None:
+    @pytest.mark.parametrize(
+        "path",
+        [
+            pytest.param("", id="empty-path"),
+            pytest.param(".", id="dot-path"),
+        ],
+    )
+    def test_read_text_invalid_path(self, store: Store, path: str) -> None:
         with pytest.raises(InvalidPath):
-            store.read_text("")
-
-    @pytest.mark.spec("RTXT-001")
-    def test_read_text_dot_path(self, store: Store) -> None:
-        with pytest.raises(InvalidPath):
-            store.read_text(".")
+            store.read_text(path)
 
 
 class TestStoreWriteText:
@@ -566,14 +518,16 @@ class TestStoreWriteText:
             store.write_text("bad.txt", b"not a string")  # type: ignore[arg-type]
 
     @pytest.mark.spec("WTXT-001")
-    def test_write_text_empty_path(self, store: Store) -> None:
+    @pytest.mark.parametrize(
+        "path",
+        [
+            pytest.param("", id="empty-path"),
+            pytest.param(".", id="dot-path"),
+        ],
+    )
+    def test_write_text_invalid_path(self, store: Store, path: str) -> None:
         with pytest.raises(InvalidPath):
-            store.write_text("", "text")
-
-    @pytest.mark.spec("WTXT-001")
-    def test_write_text_dot_path(self, store: Store) -> None:
-        with pytest.raises(InvalidPath):
-            store.write_text(".", "text")
+            store.write_text(path, "text")
 
     @pytest.mark.spec("WTXT-001")
     def test_write_text_roundtrip(self, store: Store) -> None:

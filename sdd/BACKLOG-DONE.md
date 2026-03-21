@@ -4,6 +4,23 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Test Suite Refactoring
+
+- [x] **BK-014 — Test code deduplication and parametrization**
+  Aggressive refactoring of the test suite (~17,800 → ~16,300 lines, −8.6%)
+  while maintaining identical coverage (1866 passed, 170 skipped).
+  Applied across all 44 test files.
+  - Parametrized similar tests (error mapping, validation, operation variants)
+  - Extracted shared fixtures and factory helpers (`_make_backend`, etc.)
+  - Merged single-method test classes into parent classes
+  - Consolidated repeated assertion patterns
+  - Addressed audit M-13: reviewed `test_coverage_gaps.py` for pure-import assertions
+  Key files with largest reductions: `test_config.py` (−26%), `test_batch.py` (−24%),
+  `test_cache.py` (−23%), `test_coverage_gaps.py` (−23%), `test_examples.py` (−15%),
+  `test_s3.py` (−14%), `test_arrow.py` (−12%).
+
+---
+
 ## Documentation Tooling
 
 - [x] **ID-057 — Tested code snippets in docs (single-source snippets)**

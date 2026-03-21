@@ -15,7 +15,6 @@ class TestRemotePathImmutability:
 
     @pytest.mark.spec("PATH-001")
     def test_immutable_setattr(self) -> None:
-        """RemotePath rejects attribute assignment."""
         p = RemotePath("a/b")
         with pytest.raises(AttributeError, match="immutable"):
             p.x = 1  # type: ignore[attr-defined]
@@ -29,39 +28,43 @@ class TestRemotePathNormalization:
         assert str(RemotePath("a\\b\\c")) == "a/b/c"
 
     @pytest.mark.spec("PATH-003")
-    def test_double_dot_rejected(self) -> None:
+    @pytest.mark.parametrize(
+        "raw",
+        [
+            pytest.param("foo/../bar", id="mid"),
+            pytest.param("../bar", id="start"),
+            pytest.param("..", id="bare"),
+        ],
+    )
+    def test_double_dot_rejected(self, raw: str) -> None:
         with pytest.raises(InvalidPath):
-            RemotePath("foo/../bar")
-
-    @pytest.mark.spec("PATH-003")
-    def test_double_dot_at_start(self) -> None:
-        with pytest.raises(InvalidPath):
-            RemotePath("../bar")
-
-    @pytest.mark.spec("PATH-003")
-    def test_double_dot_only(self) -> None:
-        with pytest.raises(InvalidPath):
-            RemotePath("..")
+            RemotePath(raw)
 
     @pytest.mark.spec("PATH-004")
-    def test_strip_leading_trailing_slashes(self) -> None:
-        assert str(RemotePath("/a/b/")) == "a/b"
-
-    @pytest.mark.spec("PATH-004")
-    def test_strip_leading_slash(self) -> None:
-        assert str(RemotePath("/file.txt")) == "file.txt"
+    @pytest.mark.parametrize(
+        "raw, expected",
+        [
+            pytest.param("/a/b/", "a/b", id="both"),
+            pytest.param("/file.txt", "file.txt", id="leading"),
+        ],
+    )
+    def test_strip_slashes(self, raw: str, expected: str) -> None:
+        assert str(RemotePath(raw)) == expected
 
     @pytest.mark.spec("PATH-005")
     def test_collapse_consecutive_slashes(self) -> None:
         assert str(RemotePath("a///b")) == "a/b"
 
     @pytest.mark.spec("PATH-006")
-    def test_dot_segment_removal(self) -> None:
-        assert str(RemotePath("a/./b")) == "a/b"
-
-    @pytest.mark.spec("PATH-006")
-    def test_multiple_dot_segments(self) -> None:
-        assert str(RemotePath("./a/./b/.")) == "a/b"
+    @pytest.mark.parametrize(
+        "raw, expected",
+        [
+            pytest.param("a/./b", "a/b", id="single-dot"),
+            pytest.param("./a/./b/.", "a/b", id="multiple-dots"),
+        ],
+    )
+    def test_dot_segment_removal(self, raw: str, expected: str) -> None:
+        assert str(RemotePath(raw)) == expected
 
 
 class TestRemotePathValidation:
@@ -73,86 +76,90 @@ class TestRemotePathValidation:
             RemotePath("a/b\0c")
 
     @pytest.mark.spec("PATH-008")
-    def test_empty_string_rejected(self) -> None:
+    @pytest.mark.parametrize(
+        "raw",
+        [
+            pytest.param("", id="empty"),
+            pytest.param("/", id="slash-only"),
+            pytest.param(".", id="dot-only"),
+        ],
+    )
+    def test_empty_like_rejected(self, raw: str) -> None:
         with pytest.raises(InvalidPath):
-            RemotePath("")
-
-    @pytest.mark.spec("PATH-008")
-    def test_slash_only_rejected(self) -> None:
-        with pytest.raises(InvalidPath):
-            RemotePath("/")
-
-    @pytest.mark.spec("PATH-008")
-    def test_dot_only_rejected(self) -> None:
-        with pytest.raises(InvalidPath):
-            RemotePath(".")
+            RemotePath(raw)
 
 
 class TestRemotePathProperties:
     """PATH-009 through PATH-011, PATH-014: name, parent, parts, suffix."""
 
     @pytest.mark.spec("PATH-009")
-    def test_name_returns_final_component(self) -> None:
-        assert RemotePath("a/b/c.txt").name == "c.txt"
-
-    @pytest.mark.spec("PATH-009")
-    def test_name_single_component(self) -> None:
-        assert RemotePath("file.txt").name == "file.txt"
+    @pytest.mark.parametrize(
+        "raw, expected",
+        [
+            pytest.param("a/b/c.txt", "c.txt", id="nested"),
+            pytest.param("file.txt", "file.txt", id="single"),
+        ],
+    )
+    def test_name(self, raw: str, expected: str) -> None:
+        assert RemotePath(raw).name == expected
 
     @pytest.mark.spec("PATH-010")
-    def test_parent_returns_parent_path(self) -> None:
-        assert RemotePath("a/b/c").parent == RemotePath("a/b")
-
-    @pytest.mark.spec("PATH-010")
-    def test_parent_none_for_single_component(self) -> None:
-        assert RemotePath("file.txt").parent is None
+    @pytest.mark.parametrize(
+        "raw, expected",
+        [
+            pytest.param("a/b/c", RemotePath("a/b"), id="nested-parent"),
+            pytest.param("file.txt", None, id="single-no-parent"),
+        ],
+    )
+    def test_parent(self, raw: str, expected: RemotePath | None) -> None:
+        assert RemotePath(raw).parent == expected
 
     @pytest.mark.spec("PATH-011")
-    def test_parts_tuple(self) -> None:
-        assert RemotePath("a/b/c").parts == ("a", "b", "c")
-
-    @pytest.mark.spec("PATH-011")
-    def test_parts_single(self) -> None:
-        assert RemotePath("file.txt").parts == ("file.txt",)
-
-    @pytest.mark.spec("PATH-014")
-    def test_suffix_with_extension(self) -> None:
-        assert RemotePath("file.tar.gz").suffix == ".gz"
-
-    @pytest.mark.spec("PATH-014")
-    def test_suffix_no_extension(self) -> None:
-        assert RemotePath("noext").suffix == ""
+    @pytest.mark.parametrize(
+        "raw, expected",
+        [
+            pytest.param("a/b/c", ("a", "b", "c"), id="multi"),
+            pytest.param("file.txt", ("file.txt",), id="single"),
+        ],
+    )
+    def test_parts(self, raw: str, expected: tuple[str, ...]) -> None:
+        assert RemotePath(raw).parts == expected
 
     @pytest.mark.spec("PATH-014")
-    def test_suffix_single_extension(self) -> None:
-        assert RemotePath("data.csv").suffix == ".csv"
-
-    @pytest.mark.spec("PATH-014")
-    def test_suffix_dotfile(self) -> None:
-        assert RemotePath(".gitignore").suffix == ""
+    @pytest.mark.parametrize(
+        "raw, expected",
+        [
+            pytest.param("file.tar.gz", ".gz", id="multi-ext"),
+            pytest.param("noext", "", id="no-ext"),
+            pytest.param("data.csv", ".csv", id="single-ext"),
+            pytest.param(".gitignore", "", id="dotfile"),
+        ],
+    )
+    def test_suffix(self, raw: str, expected: str) -> None:
+        assert RemotePath(raw).suffix == expected
 
 
 class TestRemotePathJoin:
     """PATH-012: ``/`` operator."""
 
     @pytest.mark.spec("PATH-012")
-    def test_join_operator(self) -> None:
-        assert RemotePath("a") / "b" == RemotePath("a/b")
-
-    @pytest.mark.spec("PATH-012")
-    def test_join_nested(self) -> None:
-        assert RemotePath("a") / "b/c" == RemotePath("a/b/c")
+    @pytest.mark.parametrize(
+        "right, expected",
+        [
+            pytest.param("b", "a/b", id="simple"),
+            pytest.param("b/c", "a/b/c", id="nested"),
+        ],
+    )
+    def test_join(self, right: str, expected: str) -> None:
+        assert RemotePath("a") / right == RemotePath(expected)
 
 
 class TestRemotePathEqualityHashing:
     """PATH-013: equality and hashing based on normalized path."""
 
     @pytest.mark.spec("PATH-013")
-    def test_equality_normalized(self) -> None:
+    def test_equality_and_hash_normalized(self) -> None:
         assert RemotePath("a/b") == RemotePath("a//b")
-
-    @pytest.mark.spec("PATH-013")
-    def test_hash_normalized(self) -> None:
         assert hash(RemotePath("a/b")) == hash(RemotePath("a//b"))
 
     @pytest.mark.spec("PATH-013")
@@ -168,77 +175,64 @@ class TestRemotePathRoot:
     """PATH-015: RemotePath.ROOT — class-level sentinel for root folder."""
 
     @pytest.mark.spec("PATH-015")
-    def test_str_is_dot(self) -> None:
+    def test_str_and_repr(self) -> None:
         assert str(RemotePath.ROOT) == "."
-
-    @pytest.mark.spec("PATH-015")
-    def test_repr(self) -> None:
         assert repr(RemotePath.ROOT) == "RemotePath('.')"
 
     @pytest.mark.spec("PATH-015")
-    def test_name_is_dot(self) -> None:
+    def test_properties(self) -> None:
         assert RemotePath.ROOT.name == "."
-
-    @pytest.mark.spec("PATH-015")
-    def test_parent_is_none(self) -> None:
         assert RemotePath.ROOT.parent is None
-
-    @pytest.mark.spec("PATH-015")
-    def test_parts(self) -> None:
         assert RemotePath.ROOT.parts == (".",)
-
-    @pytest.mark.spec("PATH-015")
-    def test_suffix_is_empty(self) -> None:
         assert RemotePath.ROOT.suffix == ""
 
     @pytest.mark.spec("PATH-015")
-    def test_join_produces_normal_path(self) -> None:
-        assert RemotePath("a") == RemotePath.ROOT / "a"
+    @pytest.mark.parametrize(
+        "right, expected",
+        [
+            pytest.param("a", RemotePath("a"), id="simple"),
+            pytest.param("a/b", RemotePath("a/b"), id="nested"),
+        ],
+    )
+    def test_join_produces_normal_path(self, right: str, expected: RemotePath) -> None:
+        assert RemotePath.ROOT / right == expected
 
     @pytest.mark.spec("PATH-015")
-    def test_join_nested(self) -> None:
-        assert RemotePath("a/b") == RemotePath.ROOT / "a/b"
-
-    @pytest.mark.spec("PATH-015")
-    def test_equality(self) -> None:
+    def test_equality_hash_and_identity(self) -> None:
         assert RemotePath.ROOT == RemotePath.ROOT
-
-    @pytest.mark.spec("PATH-015")
-    def test_hash(self) -> None:
         assert hash(RemotePath.ROOT) == hash(RemotePath.ROOT)
-
-    @pytest.mark.spec("PATH-015")
-    def test_singleton_identity(self) -> None:
         assert RemotePath.ROOT is RemotePath.ROOT
 
     @pytest.mark.spec("PATH-015")
-    def test_immutable_setattr(self) -> None:
+    def test_immutable(self) -> None:
         with pytest.raises(AttributeError, match="immutable"):
             RemotePath.ROOT.x = 1  # type: ignore[attr-defined]
-
-    @pytest.mark.spec("PATH-015")
-    def test_immutable_delattr(self) -> None:
         with pytest.raises(AttributeError, match="immutable"):
             del RemotePath.ROOT._path  # type: ignore[misc]
 
     @pytest.mark.spec("PATH-015")
-    def test_from_backend_path_empty(self) -> None:
-        """from_backend_path('') returns ROOT."""
-        assert RemotePath.from_backend_path("") is RemotePath.ROOT
-
-    @pytest.mark.spec("PATH-015")
-    def test_from_backend_path_nonempty(self) -> None:
-        """from_backend_path('a/b') returns RemotePath('a/b')."""
-        assert RemotePath.from_backend_path("a/b") == RemotePath("a/b")
-
-    @pytest.mark.spec("PATH-008")
-    def test_empty_string_still_rejected(self) -> None:
-        """PATH-008 must still reject empty string — ROOT is a separate sentinel."""
-        with pytest.raises(InvalidPath):
-            RemotePath("")
+    @pytest.mark.parametrize(
+        "raw, expected",
+        [
+            pytest.param("", RemotePath.ROOT, id="empty-returns-root"),
+            pytest.param("a/b", RemotePath("a/b"), id="nonempty-returns-path"),
+        ],
+    )
+    def test_from_backend_path(self, raw: str, expected: RemotePath) -> None:
+        result = RemotePath.from_backend_path(raw)
+        assert result == expected
+        if raw == "":
+            assert result is RemotePath.ROOT
 
     @pytest.mark.spec("PATH-008")
-    def test_dot_still_rejected(self) -> None:
-        """PATH-008 must still reject '.' via constructor."""
+    @pytest.mark.parametrize(
+        "raw",
+        [
+            pytest.param("", id="empty"),
+            pytest.param(".", id="dot"),
+        ],
+    )
+    def test_constructor_still_rejects(self, raw: str) -> None:
+        """PATH-008 must still reject empty/dot — ROOT is a separate sentinel."""
         with pytest.raises(InvalidPath):
-            RemotePath(".")
+            RemotePath(raw)

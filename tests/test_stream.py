@@ -15,61 +15,9 @@ def _test_mapper(exc: Exception, path: str) -> RemoteStoreError:
     return NotFound(f"mapped: {exc}", path=path, backend="test")
 
 
-class TestErrorMappingStreamPassthrough:
-    """Stream operations pass through to the inner stream when no error occurs."""
-
-    def test_read_passthrough(self) -> None:
-        inner = io.BytesIO(b"hello world")
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
-        assert stream.read() == b"hello world"
-
-    def test_read_with_size(self) -> None:
-        inner = io.BytesIO(b"hello world")
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
-        assert stream.read(5) == b"hello"
-
-    def test_readline_passthrough(self) -> None:
-        inner = io.BytesIO(b"line1\nline2\n")
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
-        assert stream.readline() == b"line1\n"
-
-    def test_seek_tell_passthrough(self) -> None:
-        inner = io.BytesIO(b"hello world")
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
-        stream.read(5)
-        assert stream.tell() == 5
-        stream.seek(0)
-        assert stream.tell() == 0
-
-    def test_seekable(self) -> None:
-        inner = io.BytesIO(b"hello")
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
-        assert stream.seekable() is True
-
-    def test_readable(self) -> None:
-        inner = io.BytesIO(b"hello")
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
-        assert stream.readable() is True
-
-    def test_iteration(self) -> None:
-        inner = io.BytesIO(b"a\nb\nc\n")
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
-        lines = list(stream)
-        assert lines == [b"a\n", b"b\n", b"c\n"]
-
-    def test_close_passthrough(self) -> None:
-        inner = io.BytesIO(b"hello")
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
-        stream.close()
-        assert stream.closed
-
-    def test_readinto_passthrough(self) -> None:
-        inner = io.BytesIO(b"hello")
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
-        buf = bytearray(5)
-        n = stream.readinto(buf)
-        assert n == 5
-        assert buf == b"hello"
+# ---------------------------------------------------------------------------
+# Helper streams
+# ---------------------------------------------------------------------------
 
 
 class _ParamikoLikeStream(io.RawIOBase):
@@ -93,44 +41,21 @@ class _ParamikoLikeStream(io.RawIOBase):
         return self._buf.tell()
 
 
-class TestSeekTellNoneFallback:
-    """seek()/tell() None-fallback for paramiko-style streams."""
-
-    def test_seek_returns_position_when_inner_returns_none(self) -> None:
-        inner = _ParamikoLikeStream(b"hello world")
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
-        stream.read(5)
-        pos = stream.seek(0)
-        assert pos == 0
-        assert stream.tell() == 0
-
-    def test_seek_returns_position_for_nonzero_offset(self) -> None:
-        inner = _ParamikoLikeStream(b"hello world")
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
-        pos = stream.seek(3)
-        assert pos == 3
-
-    def test_tell_returns_int_when_inner_returns_none(self) -> None:
-        """tell() guards against None even though paramiko returns int."""
-        inner = io.BytesIO(b"hello")
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
-        stream.read(3)
-        # Patch tell to return None to exercise the guard
-        inner.tell = lambda: None  # type: ignore[assignment]
-        assert stream.tell() == 0
-
-
 class _FailingStream(io.RawIOBase):
     """A stream that raises an OSError on every operation."""
+
+    def __init__(self, exc_type: type = OSError) -> None:
+        super().__init__()
+        self._exc_type = exc_type
 
     def readable(self) -> bool:
         return True
 
     def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
-        raise OSError("disk failure")
+        raise self._exc_type("disk failure" if self._exc_type is OSError else "bad argument")
 
     def read(self, size: int = -1) -> bytes:  # type: ignore[override]
-        raise OSError("disk failure")
+        raise self._exc_type("disk failure" if self._exc_type is OSError else "bad argument")
 
     def readline(self, size: int = -1) -> bytes:  # type: ignore[override]
         raise OSError("disk failure")
@@ -140,76 +65,6 @@ class _FailingStream(io.RawIOBase):
 
     def tell(self) -> int:
         raise OSError("disk failure")
-
-
-class TestErrorMappingStreamRemapping:
-    """OSError from the inner stream is remapped through the mapper."""
-
-    def test_read_remaps(self) -> None:
-        stream = _ErrorMappingStream(_FailingStream(), _test_mapper, "f.txt")
-        with pytest.raises(NotFound, match="mapped"):
-            stream.read()
-
-    def test_readinto_remaps(self) -> None:
-        stream = _ErrorMappingStream(_FailingStream(), _test_mapper, "f.txt")
-        buf = bytearray(10)
-        with pytest.raises(NotFound, match="mapped"):
-            stream.readinto(buf)
-
-    def test_readline_remaps(self) -> None:
-        stream = _ErrorMappingStream(_FailingStream(), _test_mapper, "f.txt")
-        with pytest.raises(NotFound, match="mapped"):
-            stream.readline()
-
-    def test_seek_remaps(self) -> None:
-        stream = _ErrorMappingStream(_FailingStream(), _test_mapper, "f.txt")
-        with pytest.raises(NotFound, match="mapped"):
-            stream.seek(0)
-
-    def test_tell_remaps(self) -> None:
-        stream = _ErrorMappingStream(_FailingStream(), _test_mapper, "f.txt")
-        with pytest.raises(NotFound, match="mapped"):
-            stream.tell()
-
-    def test_iteration_remaps(self) -> None:
-        stream = _ErrorMappingStream(_FailingStream(), _test_mapper, "f.txt")
-        with pytest.raises(NotFound, match="mapped"):
-            next(iter(stream))
-
-    def test_exception_chain_preserved(self) -> None:
-        """Mapped exception preserves original via __cause__ (from exc)."""
-        stream = _ErrorMappingStream(_FailingStream(), _test_mapper, "f.txt")
-        with pytest.raises(NotFound) as exc_info:
-            stream.read()
-        assert isinstance(exc_info.value.__cause__, OSError)
-
-
-class _TypeErrorStream(io.RawIOBase):
-    """A stream that raises TypeError (programming error) on read."""
-
-    def readable(self) -> bool:
-        return True
-
-    def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
-        raise TypeError("bad argument")
-
-    def read(self, size: int = -1) -> bytes:  # type: ignore[override]
-        raise TypeError("bad argument")
-
-
-class TestErrorMappingStreamProgrammingErrors:
-    """Programming errors (TypeError, ValueError, etc.) must NOT be caught."""
-
-    def test_type_error_propagates(self) -> None:
-        stream = _ErrorMappingStream(_TypeErrorStream(), _test_mapper, "f.txt")
-        with pytest.raises(TypeError, match="bad argument"):
-            stream.read()
-
-    def test_type_error_readinto_propagates(self) -> None:
-        stream = _ErrorMappingStream(_TypeErrorStream(), _test_mapper, "f.txt")
-        buf = bytearray(10)
-        with pytest.raises(TypeError, match="bad argument"):
-            stream.readinto(buf)
 
 
 class _FailingCloseStream(io.RawIOBase):
@@ -227,8 +82,140 @@ class _FailingCloseStream(io.RawIOBase):
             raise OSError("close failed")
 
 
-class TestErrorMappingStreamCloseSwallowing:
-    """Errors during close() are swallowed."""
+# ---------------------------------------------------------------------------
+# Passthrough tests
+# ---------------------------------------------------------------------------
+
+
+class TestErrorMappingStreamPassthrough:
+    """Stream operations pass through to the inner stream when no error occurs."""
+
+    @pytest.mark.parametrize(
+        ("data", "action", "expected"),
+        [
+            pytest.param(b"hello world", lambda s: s.read(), b"hello world", id="read-all"),
+            pytest.param(b"hello world", lambda s: s.read(5), b"hello", id="read-sized"),
+            pytest.param(b"line1\nline2\n", lambda s: s.readline(), b"line1\n", id="readline"),
+        ],
+    )
+    def test_read_operations(self, data: bytes, action, expected: bytes) -> None:
+        stream = _ErrorMappingStream(io.BytesIO(data), _test_mapper, "f.txt")
+        assert action(stream) == expected
+
+    def test_seek_tell_passthrough(self) -> None:
+        inner = io.BytesIO(b"hello world")
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
+        stream.read(5)
+        assert stream.tell() == 5
+        stream.seek(0)
+        assert stream.tell() == 0
+
+    @pytest.mark.parametrize(
+        ("attr", "expected"),
+        [
+            pytest.param("seekable", True, id="seekable"),
+            pytest.param("readable", True, id="readable"),
+        ],
+    )
+    def test_stream_capabilities(self, attr: str, expected: bool) -> None:
+        stream = _ErrorMappingStream(io.BytesIO(b"hello"), _test_mapper, "f.txt")
+        assert getattr(stream, attr)() is expected
+
+    def test_iteration(self) -> None:
+        stream = _ErrorMappingStream(io.BytesIO(b"a\nb\nc\n"), _test_mapper, "f.txt")
+        assert list(stream) == [b"a\n", b"b\n", b"c\n"]
+
+    def test_close_passthrough(self) -> None:
+        stream = _ErrorMappingStream(io.BytesIO(b"hello"), _test_mapper, "f.txt")
+        stream.close()
+        assert stream.closed
+
+    def test_readinto_passthrough(self) -> None:
+        stream = _ErrorMappingStream(io.BytesIO(b"hello"), _test_mapper, "f.txt")
+        buf = bytearray(5)
+        n = stream.readinto(buf)
+        assert n == 5
+        assert buf == b"hello"
+
+
+# ---------------------------------------------------------------------------
+# Seek/tell None-fallback (paramiko-style)
+# ---------------------------------------------------------------------------
+
+
+class TestSeekTellNoneFallback:
+    """seek()/tell() None-fallback for paramiko-style streams."""
+
+    @pytest.mark.parametrize(
+        ("offset", "setup_action", "expected_pos"),
+        [
+            pytest.param(0, lambda s: s.read(5), 0, id="seek-to-zero-after-read"),
+            pytest.param(3, lambda _: None, 3, id="seek-to-nonzero"),
+        ],
+    )
+    def test_seek_returns_position_when_inner_returns_none(
+        self,
+        offset,
+        setup_action,
+        expected_pos,
+    ) -> None:
+        inner = _ParamikoLikeStream(b"hello world")
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
+        setup_action(stream)
+        pos = stream.seek(offset)
+        assert pos == expected_pos
+
+    def test_tell_returns_int_when_inner_returns_none(self) -> None:
+        """tell() guards against None even though paramiko returns int."""
+        inner = io.BytesIO(b"hello")
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
+        stream.read(3)
+        inner.tell = lambda: None  # type: ignore[assignment]
+        assert stream.tell() == 0
+
+
+# ---------------------------------------------------------------------------
+# Error remapping and edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestErrorMappingStreamErrors:
+    """OSError remapping, programming error propagation, close swallowing."""
+
+    @pytest.mark.parametrize(
+        ("action",),
+        [
+            pytest.param(lambda s: s.read(), id="read"),
+            pytest.param(lambda s: s.readinto(bytearray(10)), id="readinto"),
+            pytest.param(lambda s: s.readline(), id="readline"),
+            pytest.param(lambda s: s.seek(0), id="seek"),
+            pytest.param(lambda s: s.tell(), id="tell"),
+            pytest.param(lambda s: next(iter(s)), id="iteration"),
+        ],
+    )
+    def test_operation_remaps_oserror(self, action) -> None:
+        stream = _ErrorMappingStream(_FailingStream(), _test_mapper, "f.txt")
+        with pytest.raises(NotFound, match="mapped"):
+            action(stream)
+
+    def test_exception_chain_preserved(self) -> None:
+        """Mapped exception preserves original via __cause__ (from exc)."""
+        stream = _ErrorMappingStream(_FailingStream(), _test_mapper, "f.txt")
+        with pytest.raises(NotFound) as exc_info:
+            stream.read()
+        assert isinstance(exc_info.value.__cause__, OSError)
+
+    @pytest.mark.parametrize(
+        ("action",),
+        [
+            pytest.param(lambda s: s.read(), id="read"),
+            pytest.param(lambda s: s.readinto(bytearray(10)), id="readinto"),
+        ],
+    )
+    def test_type_error_propagates(self, action) -> None:
+        stream = _ErrorMappingStream(_FailingStream(TypeError), _test_mapper, "f.txt")
+        with pytest.raises(TypeError, match="bad argument"):
+            action(stream)
 
     def test_close_swallows_errors(self) -> None:
         stream = _ErrorMappingStream(_FailingCloseStream(), _test_mapper, "f.txt")

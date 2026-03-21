@@ -6,8 +6,10 @@ All tests are skipped if dependencies are not installed.
 
 from __future__ import annotations
 
+import io
 import uuid
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import pytest
 
@@ -85,7 +87,6 @@ class TestS3Construction:
     @pytest.mark.spec("S3-004")
     def test_lazy_connection(self) -> None:
         """Construction must not make network calls."""
-        # No mock_aws context -- any real network call would fail
         from remote_store.backends._s3 import S3Backend
 
         backend = S3Backend(
@@ -94,22 +95,42 @@ class TestS3Construction:
             key="k",
             secret="s",
         )
-        # Should succeed -- no connection attempted yet
         assert backend.name == "s3"
 
     @pytest.mark.spec("S3-005")
-    def test_empty_bucket_raises(self) -> None:
+    @pytest.mark.parametrize(
+        "bucket",
+        [
+            pytest.param("", id="empty"),
+            pytest.param("   ", id="whitespace"),
+        ],
+    )
+    def test_invalid_bucket_raises(self, bucket: str) -> None:
         from remote_store.backends._s3 import S3Backend
 
         with pytest.raises(ValueError, match="bucket"):
-            S3Backend(bucket="")
+            S3Backend(bucket=bucket)
 
-    @pytest.mark.spec("S3-005")
-    def test_whitespace_bucket_raises(self) -> None:
+    @pytest.mark.spec("S3-021")
+    def test_client_options_accepted(self) -> None:
+        """client_options are accepted without error at construction."""
         from remote_store.backends._s3 import S3Backend
 
-        with pytest.raises(ValueError, match="bucket"):
-            S3Backend(bucket="   ")
+        backend = S3Backend(
+            bucket="any-bucket",
+            key="k",
+            secret="s",
+            client_options={"connect_timeout": 5, "read_timeout": 10},
+        )
+        assert backend.name == "s3"
+
+    @pytest.mark.spec("S3-022")
+    def test_credentials_optional(self) -> None:
+        """Backend can be constructed without explicit credentials."""
+        from remote_store.backends._s3 import S3Backend
+
+        backend = S3Backend(bucket="any-bucket")
+        assert backend.name == "s3"
 
 
 # endregion
@@ -120,15 +141,17 @@ class TestS3FolderSemantics:
     """S3-006 through S3-009: virtual folder behavior."""
 
     @pytest.mark.spec("S3-007")
-    def test_is_folder_with_objects(self, s3_backend: Backend) -> None:
-        """Folder exists when objects share its prefix."""
-        s3_backend.write("data/file.txt", b"x")
-        assert s3_backend.is_folder("data") is True
-
-    @pytest.mark.spec("S3-007")
-    def test_is_folder_empty_prefix(self, s3_backend: Backend) -> None:
-        """No objects under prefix means no folder."""
-        assert s3_backend.is_folder("nonexistent") is False
+    @pytest.mark.parametrize(
+        ("setup_path", "folder", "expected"),
+        [
+            pytest.param("data/file.txt", "data", True, id="with_objects"),
+            pytest.param(None, "nonexistent", False, id="empty_prefix"),
+        ],
+    )
+    def test_is_folder_simple(self, s3_backend: Backend, setup_path: str | None, folder: str, expected: bool) -> None:
+        if setup_path:
+            s3_backend.write(setup_path, b"x")
+        assert s3_backend.is_folder(folder) is expected
 
     @pytest.mark.spec("S3-007")
     def test_is_folder_nested(self, s3_backend: Backend) -> None:
@@ -150,7 +173,6 @@ class TestS3FolderSemantics:
         """Deleting last file under a prefix makes folder disappear."""
         s3_backend.write("ephemeral/only.txt", b"x")
         assert s3_backend.is_folder("ephemeral") is True
-
         s3_backend.delete("ephemeral/only.txt")
         assert s3_backend.is_folder("ephemeral") is False
 
@@ -166,8 +188,10 @@ class TestS3FolderSemantics:
 
 
 # region: Operations (S3-010 through S3-014)
-class TestS3AtomicWrite:
-    """S3-010: atomic write via S3 PUT."""
+class TestS3Operations:
+    """S3-010 through S3-014: write_atomic, delete_folder, move, copy."""
+
+    # -- write_atomic (S3-010) --
 
     @pytest.mark.spec("S3-010")
     def test_write_atomic_creates_file(self, s3_backend: Backend) -> None:
@@ -186,9 +210,7 @@ class TestS3AtomicWrite:
         with pytest.raises(AlreadyExists):
             s3_backend.write_atomic("at2.txt", b"second", overwrite=False)
 
-
-class TestS3DeleteFolder:
-    """S3-011, S3-012: delete_folder semantics."""
+    # -- delete_folder (S3-011, S3-012) --
 
     @pytest.mark.spec("S3-011")
     def test_delete_folder_recursive(self, s3_backend: Backend) -> None:
@@ -210,20 +232,16 @@ class TestS3DeleteFolder:
 
     @pytest.mark.spec("S3-012")
     def test_delete_folder_non_recursive_not_found(self, s3_backend: Backend) -> None:
-        """Non-recursive delete on non-existent folder raises NotFound."""
         with pytest.raises(NotFound):
             s3_backend.delete_folder("empty", recursive=False)
 
     @pytest.mark.spec("S3-012")
     def test_delete_folder_non_recursive_non_empty(self, s3_backend: Backend) -> None:
-        """Non-recursive delete on non-empty folder must fail."""
         s3_backend.write("nonempty/file.txt", b"x")
         with pytest.raises(DirectoryNotEmpty):
             s3_backend.delete_folder("nonempty", recursive=False)
 
-
-class TestS3MoveCopy:
-    """S3-013, S3-014: move and copy operations."""
+    # -- move/copy error variants (S3-013, S3-014) --
 
     @pytest.mark.spec("S3-013")
     def test_move(self, s3_backend: Backend) -> None:
@@ -231,18 +249,6 @@ class TestS3MoveCopy:
         s3_backend.move("src.txt", "dst.txt")
         assert s3_backend.exists("src.txt") is False
         assert s3_backend.read_bytes("dst.txt") == b"data"
-
-    @pytest.mark.spec("S3-013")
-    def test_move_not_found(self, s3_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3_backend.move("missing.txt", "dst.txt")
-
-    @pytest.mark.spec("S3-013")
-    def test_move_already_exists(self, s3_backend: Backend) -> None:
-        s3_backend.write("m1.txt", b"a")
-        s3_backend.write("m2.txt", b"b")
-        with pytest.raises(AlreadyExists):
-            s3_backend.move("m1.txt", "m2.txt", overwrite=False)
 
     @pytest.mark.spec("S3-013")
     def test_move_overwrite(self, s3_backend: Backend) -> None:
@@ -260,24 +266,38 @@ class TestS3MoveCopy:
         assert s3_backend.read_bytes("clone.txt") == b"data"
 
     @pytest.mark.spec("S3-014")
-    def test_copy_not_found(self, s3_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3_backend.copy("missing.txt", "dst.txt")
-
-    @pytest.mark.spec("S3-014")
-    def test_copy_already_exists(self, s3_backend: Backend) -> None:
-        s3_backend.write("c1.txt", b"a")
-        s3_backend.write("c2.txt", b"b")
-        with pytest.raises(AlreadyExists):
-            s3_backend.copy("c1.txt", "c2.txt", overwrite=False)
-
-    @pytest.mark.spec("S3-014")
     def test_copy_overwrite(self, s3_backend: Backend) -> None:
         s3_backend.write("co1.txt", b"a")
         s3_backend.write("co2.txt", b"b")
         s3_backend.copy("co1.txt", "co2.txt", overwrite=True)
         assert s3_backend.read_bytes("co2.txt") == b"a"
         assert s3_backend.read_bytes("co1.txt") == b"a"
+
+    @pytest.mark.parametrize(
+        ("op", "spec"),
+        [
+            pytest.param("move", "S3-013", id="move_not_found"),
+            pytest.param("copy", "S3-014", id="copy_not_found"),
+        ],
+    )
+    def test_not_found(self, s3_backend: Backend, op: str, spec: str) -> None:
+        pytest.mark.spec(spec)
+        with pytest.raises(NotFound):
+            getattr(s3_backend, op)("missing.txt", "dst.txt")
+
+    @pytest.mark.parametrize(
+        ("op", "spec"),
+        [
+            pytest.param("move", "S3-013", id="move_already_exists"),
+            pytest.param("copy", "S3-014", id="copy_already_exists"),
+        ],
+    )
+    def test_already_exists(self, s3_backend: Backend, op: str, spec: str) -> None:
+        pytest.mark.spec(spec)
+        s3_backend.write("ae1.txt", b"a")
+        s3_backend.write("ae2.txt", b"b")
+        with pytest.raises(AlreadyExists):
+            getattr(s3_backend, op)("ae1.txt", "ae2.txt", overwrite=False)
 
 
 # endregion
@@ -288,131 +308,59 @@ class TestS3ErrorMapping:
     """S3-015 through S3-018: error mapping."""
 
     @pytest.mark.spec("S3-015")
-    def test_read_missing_maps_to_not_found(self, s3_backend: Backend) -> None:
+    @pytest.mark.parametrize(
+        ("method", "args"),
+        [
+            pytest.param("read_bytes", ("does-not-exist.txt",), id="read_missing"),
+            pytest.param("get_file_info", ("nope.txt",), id="get_file_info_missing"),
+            pytest.param("delete", ("nope.txt",), id="delete_missing"),
+        ],
+    )
+    def test_missing_key_maps_to_not_found(self, s3_backend: Backend, method: str, args: tuple[str, ...]) -> None:
+        with pytest.raises(NotFound):
+            getattr(s3_backend, method)(*args)
+
+    @pytest.mark.spec("S3-015")
+    def test_not_found_has_backend_attr(self, s3_backend: Backend) -> None:
         with pytest.raises(NotFound) as exc_info:
             s3_backend.read_bytes("does-not-exist.txt")
         assert exc_info.value.backend == "s3"
 
-    @pytest.mark.spec("S3-015")
-    def test_get_file_info_missing(self, s3_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3_backend.get_file_info("nope.txt")
-
-    @pytest.mark.spec("S3-015")
-    def test_delete_missing(self, s3_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3_backend.delete("nope.txt")
-
     @pytest.mark.spec("S3-016")
-    def test_http_403_maps_to_permission_denied(self, s3_backend: Backend) -> None:
-        """HTTP 403 / 'accessdenied' response maps to PermissionDenied."""
-        from unittest.mock import patch
-
+    @pytest.mark.parametrize(
+        "message",
+        [
+            pytest.param("An error occurred (403) AccessDenied", id="http_403"),
+            pytest.param("access denied for this resource", id="access_denied_msg"),
+        ],
+    )
+    def test_permission_denied_mapping(self, s3_backend: Backend, message: str) -> None:
         from remote_store.backends._s3 import S3Backend
 
         assert isinstance(s3_backend, S3Backend)
         with (
-            patch.object(
-                s3_backend._fs,
-                "cat_file",
-                side_effect=Exception("An error occurred (403) AccessDenied"),
-            ),
+            patch.object(s3_backend._fs, "cat_file", side_effect=Exception(message)),
             pytest.raises(PermissionDenied) as exc_info,
         ):
             s3_backend.read_bytes("secret.txt")
         assert exc_info.value.backend == "s3"
 
-    @pytest.mark.spec("S3-016")
-    def test_access_denied_message_maps_to_permission_denied(self, s3_backend: Backend) -> None:
-        """Exception with 'access denied' in message maps to PermissionDenied."""
-        from unittest.mock import patch
-
-        from remote_store.backends._s3 import S3Backend
-
-        assert isinstance(s3_backend, S3Backend)
-        with (
-            patch.object(
-                s3_backend._fs,
-                "cat_file",
-                side_effect=Exception("access denied for this resource"),
-            ),
-            pytest.raises(PermissionDenied) as exc_info,
-        ):
-            s3_backend.read_bytes("secret.txt")
-        assert exc_info.value.backend == "s3"
-        assert exc_info.value.path == "secret.txt"
-
     @pytest.mark.spec("S3-017")
-    def test_endpoint_error_maps_to_backend_unavailable(self, s3_backend: Backend) -> None:
-        """Connection error with 'endpoint' keyword maps to BackendUnavailable."""
-        from unittest.mock import patch
-
+    @pytest.mark.parametrize(
+        "message",
+        [
+            pytest.param("Could not connect to the endpoint URL", id="endpoint"),
+            pytest.param("connect timeout reached", id="timeout"),
+            pytest.param("dns resolution failed", id="dns"),
+            pytest.param("name or service not known", id="name_or_service"),
+        ],
+    )
+    def test_backend_unavailable_mapping(self, s3_backend: Backend, message: str) -> None:
         from remote_store.backends._s3 import S3Backend
 
         assert isinstance(s3_backend, S3Backend)
         with (
-            patch.object(
-                s3_backend._fs,
-                "cat_file",
-                side_effect=Exception("Could not connect to the endpoint URL"),
-            ),
-            pytest.raises(BackendUnavailable) as exc_info,
-        ):
-            s3_backend.read_bytes("file.txt")
-        assert exc_info.value.backend == "s3"
-
-    @pytest.mark.spec("S3-017")
-    def test_connect_timeout_maps_to_backend_unavailable(self, s3_backend: Backend) -> None:
-        """Connection error with 'timeout' keyword maps to BackendUnavailable."""
-        from unittest.mock import patch
-
-        from remote_store.backends._s3 import S3Backend
-
-        assert isinstance(s3_backend, S3Backend)
-        with (
-            patch.object(
-                s3_backend._fs,
-                "cat_file",
-                side_effect=Exception("connect timeout reached"),
-            ),
-            pytest.raises(BackendUnavailable) as exc_info,
-        ):
-            s3_backend.read_bytes("file.txt")
-        assert exc_info.value.backend == "s3"
-
-    @pytest.mark.spec("S3-017")
-    def test_dns_error_maps_to_backend_unavailable(self, s3_backend: Backend) -> None:
-        """Connection error with 'dns' keyword maps to BackendUnavailable."""
-        from unittest.mock import patch
-
-        from remote_store.backends._s3 import S3Backend
-
-        assert isinstance(s3_backend, S3Backend)
-        with (
-            patch.object(
-                s3_backend._fs,
-                "cat_file",
-                side_effect=Exception("dns resolution failed"),
-            ),
-            pytest.raises(BackendUnavailable) as exc_info,
-        ):
-            s3_backend.read_bytes("file.txt")
-        assert exc_info.value.backend == "s3"
-
-    @pytest.mark.spec("S3-017")
-    def test_name_or_service_error_maps_to_backend_unavailable(self, s3_backend: Backend) -> None:
-        """Connection error with 'name or service' maps to BackendUnavailable."""
-        from unittest.mock import patch
-
-        from remote_store.backends._s3 import S3Backend
-
-        assert isinstance(s3_backend, S3Backend)
-        with (
-            patch.object(
-                s3_backend._fs,
-                "cat_file",
-                side_effect=Exception("name or service not known"),
-            ),
+            patch.object(s3_backend._fs, "cat_file", side_effect=Exception(message)),
             pytest.raises(BackendUnavailable) as exc_info,
         ):
             s3_backend.read_bytes("file.txt")
@@ -463,35 +411,6 @@ class TestS3Lifecycle:
 # endregion
 
 
-# region: Configuration (S3-021, S3-022)
-class TestS3Configuration:
-    """S3-021, S3-022: client options and credential chain."""
-
-    @pytest.mark.spec("S3-021")
-    def test_client_options_accepted(self) -> None:
-        """client_options are accepted without error at construction."""
-        from remote_store.backends._s3 import S3Backend
-
-        backend = S3Backend(
-            bucket="any-bucket",
-            key="k",
-            secret="s",
-            client_options={"connect_timeout": 5, "read_timeout": 10},
-        )
-        assert backend.name == "s3"
-
-    @pytest.mark.spec("S3-022")
-    def test_credentials_optional(self) -> None:
-        """Backend can be constructed without explicit credentials."""
-        from remote_store.backends._s3 import S3Backend
-
-        backend = S3Backend(bucket="any-bucket")
-        assert backend.name == "s3"
-
-
-# endregion
-
-
 # region: Read/Write roundtrip
 class TestS3ReadWrite:
     """Basic read/write roundtrip to verify full stack."""
@@ -520,8 +439,6 @@ class TestS3ReadWrite:
         assert s3_backend.read_bytes("a/b/c/deep.txt") == b"deep"
 
     def test_write_from_binaryio(self, s3_backend: Backend) -> None:
-        import io
-
         s3_backend.write("bio.txt", io.BytesIO(b"streamed"))
         assert s3_backend.read_bytes("bio.txt") == b"streamed"
 
@@ -591,12 +508,17 @@ class TestS3Metadata:
         with pytest.raises(NotFound):
             s3_backend.get_folder_info("nodir")
 
-    def test_exists_file(self, s3_backend: Backend) -> None:
-        s3_backend.write("e.txt", b"x")
-        assert s3_backend.exists("e.txt") is True
-
-    def test_exists_missing(self, s3_backend: Backend) -> None:
-        assert s3_backend.exists("nope.txt") is False
+    @pytest.mark.parametrize(
+        ("setup_path", "query", "expected"),
+        [
+            pytest.param("e.txt", "e.txt", True, id="exists_file"),
+            pytest.param(None, "nope.txt", False, id="exists_missing"),
+        ],
+    )
+    def test_exists(self, s3_backend: Backend, setup_path: str | None, query: str, expected: bool) -> None:
+        if setup_path:
+            s3_backend.write(setup_path, b"x")
+        assert s3_backend.exists(query) is expected
 
     def test_is_file(self, s3_backend: Backend) -> None:
         s3_backend.write("f.txt", b"x")
@@ -627,9 +549,9 @@ class TestS3Delete:
 # endregion
 
 
-# region: ETag (S3-023)
-class TestS3ETag:
-    """S3-023: ETag population in FileInfo."""
+# region: ETag and Digest (S3-023, S3-024)
+class TestS3ETagAndDigest:
+    """S3-023, S3-024: ETag and ContentDigest in FileInfo."""
 
     @pytest.mark.spec("S3-023")
     def test_get_file_info_has_etag(self, s3_backend: Backend) -> None:
@@ -652,12 +574,7 @@ class TestS3ETag:
 
     @pytest.mark.spec("S3-023")
     def test_digest_type_for_standard_upload(self, s3_backend: Backend) -> None:
-        """get_file_info returns a CRC32 ContentDigest for standard uploads.
-
-        S3 (and moto) automatically computes and stores CRC32 checksums for all
-        objects created since late 2022.  get_file_info uses HeadObject with
-        ChecksumMode=ENABLED unconditionally, so the CRC32 is always returned.
-        """
+        """S3 automatically computes CRC32 for standard uploads."""
         from remote_store._models import ContentDigest
 
         s3_backend.write("no_explicit_checksum.txt", b"hello")
@@ -667,83 +584,54 @@ class TestS3ETag:
         assert fi.digest.algorithm == "crc32"
 
     @pytest.mark.spec("S3-023")
-    def test_lowercase_etag_key_fallback(self) -> None:
-        """_info_to_fileinfo uses lowercase 'etag' key when 'ETag' is absent (s3fs list path)."""
-        from datetime import datetime, timezone
-
-        from remote_store.backends._s3 import S3Backend
-
-        # Build a minimal S3Backend without connecting, just to call the helper method.
-        backend = object.__new__(S3Backend)
-        info = {
-            "etag": '"abc123"',
-            "size": 10,
-            "LastModified": datetime(2024, 1, 1, tzinfo=timezone.utc),
-            "name": "bucket/file.txt",
-        }
-        fi = backend._info_to_fileinfo(info, "file.txt")
-        assert fi.etag == "abc123"
-
-    @pytest.mark.spec("S3-023")
-    def test_multipart_etag_suffix_preserved(self) -> None:
-        """Multipart ETags (form 'hash-N') survive strip/lowercase unchanged."""
-        from datetime import datetime, timezone
-
-        from remote_store.backends._s3 import S3Backend
-
-        backend = object.__new__(S3Backend)
-        info = {
-            "ETag": '"d41d8cd98f00b204e9800998ecf8427e-2"',
-            "size": 100,
-            "LastModified": datetime(2024, 1, 1, tzinfo=timezone.utc),
-            "name": "bucket/big.bin",
-        }
-        fi = backend._info_to_fileinfo(info, "big.bin")
-        assert fi.etag == "d41d8cd98f00b204e9800998ecf8427e-2"
-
-    @pytest.mark.spec("S3-023")
-    def test_etag_none_when_keys_absent(self) -> None:
-        """_info_to_fileinfo yields etag=None when neither 'ETag' nor 'etag' key is present."""
+    @pytest.mark.parametrize(
+        ("info_dict", "expected_etag"),
+        [
+            pytest.param(
+                {"etag": '"abc123"', "size": 10},
+                "abc123",
+                id="lowercase_key_fallback",
+            ),
+            pytest.param(
+                {"ETag": '"d41d8cd98f00b204e9800998ecf8427e-2"', "size": 100},
+                "d41d8cd98f00b204e9800998ecf8427e-2",
+                id="multipart_suffix_preserved",
+            ),
+            pytest.param(
+                {"size": 5},
+                None,
+                id="etag_none_when_absent",
+            ),
+        ],
+    )
+    def test_info_to_fileinfo_etag(self, info_dict: dict, expected_etag: str | None) -> None:
+        """_info_to_fileinfo handles various ETag key forms correctly."""
         from datetime import datetime, timezone
 
         from remote_store.backends._s3 import S3Backend
 
         backend = object.__new__(S3Backend)
-        info = {
-            "size": 5,
-            "LastModified": datetime(2024, 1, 1, tzinfo=timezone.utc),
-            "name": "bucket/file.txt",
-        }
-        fi = backend._info_to_fileinfo(info, "file.txt")
-        assert fi.etag is None
-
-
-# endregion
-
-
-# region: Digest via ChecksumMode (S3-024)
-class TestS3Digest:
-    """S3-024: FileInfo.digest population via HeadObject with ChecksumMode=ENABLED."""
+        info_dict.setdefault("LastModified", datetime(2024, 1, 1, tzinfo=timezone.utc))
+        info_dict.setdefault("name", "bucket/file.txt")
+        fi = backend._info_to_fileinfo(info_dict, "file.txt")
+        assert fi.etag == expected_etag
 
     @pytest.mark.spec("S3-024")
     def test_get_file_info_digest_sha256(self, s3_backend: Backend, moto_server: str) -> None:
-        """get_file_info returns a ContentDigest when the object was uploaded with SHA256."""
+        """get_file_info returns ContentDigest when object uploaded with SHA256."""
+        import base64
         import hashlib
 
+        import boto3
+
         from remote_store._models import ContentDigest
+        from remote_store.backends._s3 import S3Backend
 
         content = b"hello checksum"
         expected_hex = hashlib.sha256(content).hexdigest()
-        import base64
-
         b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
 
-        # Upload via boto3 with ChecksumAlgorithm=SHA256
-        import boto3
-
-        from remote_store.backends._s3 import S3Backend
-
-        backend = s3_backend  # type: ignore[assignment]
+        backend = s3_backend
         assert isinstance(backend, S3Backend)
         raw_client = boto3.client(
             "s3",
@@ -752,10 +640,8 @@ class TestS3Digest:
             aws_secret_access_key="testing",
             region_name=REGION,
         )
-        # Retrieve bucket name from the backend
-        bucket = backend._bucket
         raw_client.put_object(
-            Bucket=bucket,
+            Bucket=backend._bucket,
             Key="sha256_file.txt",
             Body=content,
             ChecksumAlgorithm="SHA256",
@@ -770,7 +656,7 @@ class TestS3Digest:
 
     @pytest.mark.spec("S3-024")
     def test_digest_from_head_response_no_algorithm(self) -> None:
-        """_digest_from_head_response returns None when no known checksum keys are present."""
+        """Returns None when no known checksum keys are present."""
         from remote_store.backends._s3 import S3Backend
 
         backend = object.__new__(S3Backend)
@@ -779,7 +665,7 @@ class TestS3Digest:
 
     @pytest.mark.spec("S3-024")
     def test_list_files_digest_always_none(self, s3_backend: Backend, moto_server: str) -> None:
-        """Listing paths never populate digest — extra HeadObject only issued by get_file_info."""
+        """Listing paths never populate digest."""
         import base64
         import hashlib
 
@@ -813,7 +699,7 @@ class TestS3Digest:
 
     @pytest.mark.spec("S3-024")
     def test_digest_from_head_response_sha256(self) -> None:
-        """_digest_from_head_response returns ContentDigest for SHA256 checksum."""
+        """_digest_from_head_response returns ContentDigest for SHA256."""
         import base64
         import hashlib
 
@@ -848,40 +734,26 @@ class TestS3Glob:
         backend.write("file2.txt", b"f2")
 
     @pytest.mark.spec("GLOB-018")
-    def test_glob_star_csv(self, s3_backend: Backend) -> None:
+    @pytest.mark.parametrize(
+        ("pattern", "expected"),
+        [
+            pytest.param("*.csv", ["report.csv"], id="star_csv"),
+            pytest.param("**/*.log", ["logs/app.log", "logs/archive/old.log"], id="recursive"),
+            pytest.param("data/*.csv", ["data/sales.csv"], id="subdirectory"),
+            pytest.param("*.xyz", [], id="no_matches"),
+            pytest.param("file?.txt", ["file1.txt", "file2.txt"], id="question_mark"),
+        ],
+    )
+    def test_glob_pattern(self, s3_backend: Backend, pattern: str, expected: list[str]) -> None:
         self._populate(s3_backend)
-        results = sorted(str(f.path) for f in s3_backend.glob("*.csv"))
-        assert results == ["report.csv"]
-
-    @pytest.mark.spec("GLOB-018")
-    def test_glob_recursive(self, s3_backend: Backend) -> None:
-        self._populate(s3_backend)
-        results = sorted(str(f.path) for f in s3_backend.glob("**/*.log"))
-        assert results == ["logs/app.log", "logs/archive/old.log"]
-
-    @pytest.mark.spec("GLOB-018")
-    def test_glob_subdirectory(self, s3_backend: Backend) -> None:
-        self._populate(s3_backend)
-        results = sorted(str(f.path) for f in s3_backend.glob("data/*.csv"))
-        assert results == ["data/sales.csv"]
-
-    @pytest.mark.spec("GLOB-018")
-    def test_glob_no_matches(self, s3_backend: Backend) -> None:
-        self._populate(s3_backend)
-        results = list(s3_backend.glob("*.xyz"))
-        assert results == []
+        results = sorted(str(f.path) for f in s3_backend.glob(pattern))
+        assert results == expected
 
     @pytest.mark.spec("GLOB-018")
     def test_glob_files_only(self, s3_backend: Backend) -> None:
         self._populate(s3_backend)
         for info in s3_backend.glob("**/*"):
             assert isinstance(info, FileInfo)
-
-    @pytest.mark.spec("GLOB-018")
-    def test_glob_question_mark(self, s3_backend: Backend) -> None:
-        self._populate(s3_backend)
-        results = sorted(str(f.path) for f in s3_backend.glob("file?.txt"))
-        assert results == ["file1.txt", "file2.txt"]
 
 
 # endregion

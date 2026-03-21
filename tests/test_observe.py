@@ -100,202 +100,62 @@ class TestStoreEvent:
 # ---------------------------------------------------------------------------
 
 
-class TestObserveFactory:
-    @pytest.mark.spec("OBS-002")
-    def test_observe_returns_observed_store(self) -> None:
-        store = _make_store()
-        observed = observe(store)
-        assert isinstance(observed, ObservedStore)
-        assert isinstance(observed, Store)
-
-    @pytest.mark.spec("OBS-002")
-    def test_observe_inner_property(self) -> None:
-        store = _make_store()
-        assert observe(store).inner is store
+@pytest.mark.spec("OBS-002")
+def test_observe_returns_observed_store() -> None:
+    store = _make_store()
+    observed = observe(store)
+    assert isinstance(observed, ObservedStore)
+    assert isinstance(observed, Store)
 
 
-# ---------------------------------------------------------------------------
-# OBS-003: ObservedStore proxy
-# ---------------------------------------------------------------------------
-
-
-class TestObservedStoreProxy:
-    @pytest.mark.spec("OBS-003")
-    def test_write_fires_on_write(self) -> None:
-        store = _make_store()
-        events: list[StoreEvent] = []
-        observed = observe(store, on_write=events.append)
-        observed.write("a.txt", b"hello")
-        assert len(events) == 1
-        assert events[0].operation == "write"
-        assert events[0].path == "a.txt"
-        assert events[0].error is None
-        assert events[0].duration_ms >= 0.0
-
-    @pytest.mark.spec("OBS-003")
-    @pytest.mark.parametrize(
-        "hook,setup_files,call,expected_op",
-        [
-            ("on_read", ["a.txt"], lambda o: o.read("a.txt"), "read"),
-            ("on_read", ["a.txt"], lambda o: o.read_bytes("a.txt"), "read_bytes"),
-            ("on_read", ["a.txt"], lambda o: o.read_text("a.txt"), "read_text"),
-            ("on_write", [], lambda o: o.write_text("wt.txt", "hi"), "write_text"),
-            ("on_delete", ["a.txt"], lambda o: o.delete("a.txt"), "delete"),
-            ("on_copy", ["a.txt"], lambda o: o.copy("a.txt", "b.txt"), "copy"),
-            ("on_move", ["a.txt"], lambda o: o.move("a.txt", "b.txt"), "move"),
-            ("on_list", [], lambda o: o.exists("a.txt"), "exists"),
-            ("on_list", ["a.txt"], lambda o: list(o.list_files("")), "list_files"),
-            ("on_list", ["a.txt"], lambda o: list(o.iter_children("")), "iter_children"),
-        ],
-        ids=[
-            "read",
-            "read_bytes",
-            "read_text",
-            "write_text",
-            "delete",
-            "copy",
-            "move",
-            "exists",
-            "list_files",
-            "iter_children",
-        ],
-    )
-    def test_hook_fires_for_operation(
-        self,
-        hook: str,
-        setup_files: list[str],
-        call: Any,
-        expected_op: str,
-    ) -> None:
-        store = _make_store()
-        for f in setup_files:
-            store.write(f, b"data")
-        events: list[StoreEvent] = []
-        observed = observe(store, **{hook: events.append})
-        call(observed)
-        assert len(events) == 1
-        assert events[0].operation == expected_op
-
-    @pytest.mark.spec("OBS-003")
-    def test_copy_metadata_includes_dst(self) -> None:
-        store = _populated_store("a.txt")
-        events: list[StoreEvent] = []
-        observed = observe(store, on_copy=events.append)
-        observed.copy("a.txt", "b.txt")
-        assert events[0].metadata["dst"] == "b.txt"
-
-    @pytest.mark.spec("OBS-003")
-    def test_move_metadata_includes_dst(self) -> None:
-        store = _populated_store("a.txt")
-        events: list[StoreEvent] = []
-        observed = observe(store, on_move=events.append)
-        observed.move("a.txt", "b.txt")
-        assert events[0].metadata["dst"] == "b.txt"
-
-    @pytest.mark.spec("OBS-003")
-    def test_on_any_catches_all(self) -> None:
-        store = _populated_store("a.txt")
-        events, kwargs = _collect_events()
-        observed = observe(store, **kwargs)
-        observed.exists("a.txt")
-        observed.read_bytes("a.txt")
-        assert len(events) == 2
-        assert events[0].operation == "exists"
-        assert events[1].operation == "read_bytes"
-
-    @pytest.mark.spec("OBS-003")
-    def test_on_any_receives_error_events(self) -> None:
-        store = _make_store()
-        events: list[StoreEvent] = []
-        observed = observe(store, on_any=events.append)
-        with pytest.raises(NotFound):
-            observed.read("nonexistent.txt")
-        assert len(events) == 1
-        assert events[0].error is not None
-        assert events[0].operation == "read"
-
-    @pytest.mark.spec("WTXT-004")
-    def test_write_text_event_metadata(self) -> None:
-        store = _make_store()
-        events: list[StoreEvent] = []
-        observed = observe(store, on_write=events.append)
-        observed.write_text("wt.txt", "hello", encoding="latin-1", overwrite=True)
-        assert len(events) == 1
-        assert events[0].operation == "write_text"
-        assert events[0].path == "wt.txt"
-        assert events[0].metadata["encoding"] == "latin-1"
-        assert events[0].metadata["overwrite"] is True
-
-    @pytest.mark.spec("OBS-003")
-    def test_proxy_does_not_modify_results(self) -> None:
-        store = _populated_store("a.txt")
-        observed = observe(store, on_any=lambda e: None)
-        assert observed.read_bytes("a.txt") == b"data"
-        assert observed.exists("a.txt") is True
-        assert observed.is_file("a.txt") is True
-
-    @pytest.mark.spec("OBS-003")
-    @pytest.mark.parametrize(
-        "hook_name",
-        ["on_write", "on_any", "on_error"],
-        ids=["per_op", "on_any", "on_error"],
-    )
-    def test_hook_exception_suppressed(self, hook_name: str) -> None:
-        """Hook exceptions must not break the operation (OBS-009)."""
-        store = _make_store()
-
-        def bad_hook(event: StoreEvent) -> None:
-            raise RuntimeError("hook boom")
-
-        observed = observe(store, **{hook_name: bad_hook})
-        if hook_name == "on_error":
-            with pytest.raises(NotFound):
-                observed.read("nonexistent.txt")
-        else:
-            observed.write("a.txt", b"hello")
-            assert store.exists("a.txt")
-
-    @pytest.mark.spec("OBS-003")
-    def test_backend_name_in_event(self) -> None:
-        store = _make_store()
-        events: list[StoreEvent] = []
-        observed = observe(store, on_any=events.append)
-        observed.exists("x")
-        assert events[0].backend == "memory"
+@pytest.mark.spec("OBS-002")
+def test_observe_inner_property() -> None:
+    store = _make_store()
+    assert observe(store).inner is store
 
 
 # ---------------------------------------------------------------------------
-# OBS-003a: Hook-to-operation mapping (parametrized)
+# OBS-003: ObservedStore proxy -- hook-to-operation mapping (unified)
 # ---------------------------------------------------------------------------
 
-_HOOK_MAPPING_CASES = [
-    pytest.param(
-        "on_write", lambda s: None, lambda o: o.write_atomic("a.txt", b"atomic"), "write_atomic", id="write_atomic"
-    ),
+_ALL_HOOK_CASES = [
+    # (hook, setup_files_or_fn, call, expected_op)
+    pytest.param("on_write", [], lambda o: o.write("a.txt", b"hello"), "write", id="write"),
+    pytest.param("on_read", ["a.txt"], lambda o: o.read("a.txt"), "read", id="read"),
+    pytest.param("on_read", ["a.txt"], lambda o: o.read_bytes("a.txt"), "read_bytes", id="read_bytes"),
+    pytest.param("on_read", ["a.txt"], lambda o: o.read_text("a.txt"), "read_text", id="read_text"),
+    pytest.param("on_write", [], lambda o: o.write_text("wt.txt", "hi"), "write_text", id="write_text"),
+    pytest.param("on_delete", ["a.txt"], lambda o: o.delete("a.txt"), "delete", id="delete"),
+    pytest.param("on_copy", ["a.txt"], lambda o: o.copy("a.txt", "b.txt"), "copy", id="copy"),
+    pytest.param("on_move", ["a.txt"], lambda o: o.move("a.txt", "b.txt"), "move", id="move"),
+    pytest.param("on_list", [], lambda o: o.exists("a.txt"), "exists", id="exists"),
+    pytest.param("on_list", ["a.txt"], lambda o: list(o.list_files("")), "list_files", id="list_files"),
+    pytest.param("on_list", ["a.txt"], lambda o: list(o.iter_children("")), "iter_children", id="iter_children"),
+    pytest.param("on_write", [], lambda o: o.write_atomic("a.txt", b"atomic"), "write_atomic", id="write_atomic"),
     pytest.param(
         "on_delete",
-        lambda s: s.write("sub/a.txt", b"data"),
+        ["sub/a.txt"],
         lambda o: o.delete_folder("sub", recursive=True),
         "delete_folder",
         id="delete_folder",
     ),
-    pytest.param(
-        "on_list",
-        lambda s: s.write("a.txt", b"d"),
-        lambda o: o.get_file_info("a.txt"),
-        "get_file_info",
-        id="get_file_info",
-    ),
-    pytest.param("on_list", lambda s: None, lambda o: o.is_file("x"), "is_file", id="is_file"),
-    pytest.param("on_list", lambda s: None, lambda o: o.is_folder("x"), "is_folder", id="is_folder"),
+    pytest.param("on_list", ["a.txt"], lambda o: o.get_file_info("a.txt"), "get_file_info", id="get_file_info"),
+    pytest.param("on_list", [], lambda o: o.is_file("x"), "is_file", id="is_file"),
+    pytest.param("on_list", [], lambda o: o.is_folder("x"), "is_folder", id="is_folder"),
 ]
 
 
-@pytest.mark.spec("OBS-003a")
-@pytest.mark.parametrize("hook,setup,call,expected_op", _HOOK_MAPPING_CASES)
-def test_hook_mapping(hook: str, setup: Any, call: Any, expected_op: str) -> None:
+@pytest.mark.spec("OBS-003")
+@pytest.mark.parametrize("hook,setup_files,call,expected_op", _ALL_HOOK_CASES)
+def test_hook_fires_for_operation(
+    hook: str,
+    setup_files: list[str],
+    call: Any,
+    expected_op: str,
+) -> None:
     store = _make_store()
-    setup(store)
+    for f in setup_files:
+        store.write(f, b"data")
     events: list[StoreEvent] = []
     observed = observe(store, **{hook: events.append})
     call(observed)
@@ -304,19 +164,124 @@ def test_hook_mapping(hook: str, setup: Any, call: Any, expected_op: str) -> Non
 
 
 # ---------------------------------------------------------------------------
+# OBS-003: Metadata dst for copy/move
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("OBS-003")
+@pytest.mark.parametrize(
+    "hook,op",
+    [
+        pytest.param("on_copy", "copy", id="copy"),
+        pytest.param("on_move", "move", id="move"),
+    ],
+)
+def test_metadata_includes_dst(hook: str, op: str) -> None:
+    store = _populated_store("a.txt")
+    events: list[StoreEvent] = []
+    observed = observe(store, **{hook: events.append})
+    getattr(observed, op)("a.txt", "b.txt")
+    assert events[0].metadata["dst"] == "b.txt"
+
+
+# ---------------------------------------------------------------------------
+# OBS-003: on_any, error events, proxy transparency, backend name
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("OBS-003")
+def test_on_any_catches_all() -> None:
+    store = _populated_store("a.txt")
+    events, kwargs = _collect_events()
+    observed = observe(store, **kwargs)
+    observed.exists("a.txt")
+    observed.read_bytes("a.txt")
+    assert len(events) == 2
+    assert events[0].operation == "exists"
+    assert events[1].operation == "read_bytes"
+
+
+@pytest.mark.spec("OBS-003")
+def test_on_any_receives_error_events() -> None:
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_any=events.append)
+    with pytest.raises(NotFound):
+        observed.read("nonexistent.txt")
+    assert len(events) == 1
+    assert events[0].error is not None
+    assert events[0].operation == "read"
+
+
+@pytest.mark.spec("WTXT-004")
+def test_write_text_event_metadata() -> None:
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_write=events.append)
+    observed.write_text("wt.txt", "hello", encoding="latin-1", overwrite=True)
+    assert len(events) == 1
+    assert events[0].operation == "write_text"
+    assert events[0].path == "wt.txt"
+    assert events[0].metadata["encoding"] == "latin-1"
+    assert events[0].metadata["overwrite"] is True
+
+
+@pytest.mark.spec("OBS-003")
+def test_proxy_does_not_modify_results() -> None:
+    store = _populated_store("a.txt")
+    observed = observe(store, on_any=lambda e: None)
+    assert observed.read_bytes("a.txt") == b"data"
+    assert observed.exists("a.txt") is True
+    assert observed.is_file("a.txt") is True
+
+
+@pytest.mark.spec("OBS-003")
+@pytest.mark.parametrize(
+    "hook_name",
+    [
+        pytest.param("on_write", id="per_op"),
+        pytest.param("on_any", id="on_any"),
+        pytest.param("on_error", id="on_error"),
+    ],
+)
+def test_hook_exception_suppressed(hook_name: str) -> None:
+    """Hook exceptions must not break the operation (OBS-009)."""
+    store = _make_store()
+
+    def bad_hook(event: StoreEvent) -> None:
+        raise RuntimeError("hook boom")
+
+    observed = observe(store, **{hook_name: bad_hook})
+    if hook_name == "on_error":
+        with pytest.raises(NotFound):
+            observed.read("nonexistent.txt")
+    else:
+        observed.write("a.txt", b"hello")
+        assert store.exists("a.txt")
+
+
+@pytest.mark.spec("OBS-003")
+def test_backend_name_in_event() -> None:
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_any=events.append)
+    observed.exists("x")
+    assert events[0].backend == "memory"
+
+
+# ---------------------------------------------------------------------------
 # OBS-004: After-only hooks
 # ---------------------------------------------------------------------------
 
 
-class TestAfterOnlyHooks:
-    @pytest.mark.spec("OBS-004")
-    def test_hook_fires_after_operation(self) -> None:
-        store = _make_store()
-        events: list[StoreEvent] = []
-        observed = observe(store, on_write=events.append)
-        observed.write("a.txt", b"data")
-        assert events[0].duration_ms >= 0.0
-        assert events[0].error is None
+@pytest.mark.spec("OBS-004")
+def test_hook_fires_after_operation() -> None:
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_write=events.append)
+    observed.write("a.txt", b"data")
+    assert events[0].duration_ms >= 0.0
+    assert events[0].error is None
 
 
 # ---------------------------------------------------------------------------
@@ -430,12 +395,7 @@ class TestBufferedObserver:
 
 @pytest.mark.spec("OBS-007")
 def test_observed_store_overrides_all_public_methods() -> None:
-    """ObservedStore must override every public Store method itself.
-
-    Unlike CachedStore (where ProxyStore pass-through is fine), ObservedStore
-    must intercept every method to fire hooks. A ProxyStore default would
-    silently bypass observation.
-    """
+    """ObservedStore must override every public Store method itself."""
     store_public = {name for name, val in vars(Store).items() if not name.startswith("_") and callable(val)}
     overridden = set(vars(ObservedStore)) & store_public
     missing = store_public - overridden
@@ -447,37 +407,39 @@ def test_observed_store_overrides_all_public_methods() -> None:
 # ---------------------------------------------------------------------------
 
 
-class TestIntrinsicLogging:
-    @pytest.mark.spec("OBS-008")
-    def test_null_handler_registered(self) -> None:
-        root_logger = logging.getLogger("remote_store")
-        assert logging.NullHandler in [type(h) for h in root_logger.handlers]
+@pytest.mark.spec("OBS-008")
+def test_null_handler_registered() -> None:
+    root_logger = logging.getLogger("remote_store")
+    assert logging.NullHandler in [type(h) for h in root_logger.handlers]
 
-    @pytest.mark.spec("OBS-008")
-    def test_store_module_has_logger(self) -> None:
-        from remote_store import _store
 
-        assert hasattr(_store, "log")
-        assert isinstance(_store.log, logging.Logger)
-        assert _store.log.name == "remote_store._store"
+@pytest.mark.spec("OBS-008")
+def test_store_module_has_logger() -> None:
+    from remote_store import _store
 
-    @pytest.mark.spec("OBS-008")
-    def test_store_write_emits_log_records(self, caplog: pytest.LogCaptureFixture) -> None:
-        store = _make_store()
-        with caplog.at_level(logging.DEBUG, logger="remote_store._store"):
-            store.write("a.txt", b"data")
-        messages = [r.message for r in caplog.records]
-        assert any("write" in m and "a.txt" in m for m in messages)
+    assert hasattr(_store, "log")
+    assert isinstance(_store.log, logging.Logger)
+    assert _store.log.name == "remote_store._store"
 
-    @pytest.mark.spec("OBS-008")
-    def test_log_extra_fields(self, caplog: pytest.LogCaptureFixture) -> None:
-        store = _make_store()
-        with caplog.at_level(logging.DEBUG, logger="remote_store._store"):
-            store.exists("x.txt")
-        record = caplog.records[0]
-        assert record.op == "exists"  # type: ignore[attr-defined]
-        assert record.path == "x.txt"  # type: ignore[attr-defined]
-        assert record.backend == "memory"  # type: ignore[attr-defined]
+
+@pytest.mark.spec("OBS-008")
+def test_store_write_emits_log_records(caplog: pytest.LogCaptureFixture) -> None:
+    store = _make_store()
+    with caplog.at_level(logging.DEBUG, logger="remote_store._store"):
+        store.write("a.txt", b"data")
+    messages = [r.message for r in caplog.records]
+    assert any("write" in m and "a.txt" in m for m in messages)
+
+
+@pytest.mark.spec("OBS-008")
+def test_log_extra_fields(caplog: pytest.LogCaptureFixture) -> None:
+    store = _make_store()
+    with caplog.at_level(logging.DEBUG, logger="remote_store._store"):
+        store.exists("x.txt")
+    record = caplog.records[0]
+    assert record.op == "exists"  # type: ignore[attr-defined]
+    assert record.path == "x.txt"  # type: ignore[attr-defined]
+    assert record.backend == "memory"  # type: ignore[attr-defined]
 
 
 # ---------------------------------------------------------------------------
@@ -485,38 +447,39 @@ class TestIntrinsicLogging:
 # ---------------------------------------------------------------------------
 
 
-class TestErrorPropagation:
-    @pytest.mark.spec("OBS-009")
-    def test_operation_error_propagates(self) -> None:
-        store = _make_store()
-        events: list[StoreEvent] = []
-        observed = observe(store, on_error=events.append, on_any=lambda e: None)
-        with pytest.raises(NotFound):
-            observed.read("nonexistent.txt")
-        assert len(events) == 1
-        assert events[0].error is not None
-        assert events[0].operation == "read"
+@pytest.mark.spec("OBS-009")
+def test_operation_error_propagates() -> None:
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_error=events.append, on_any=lambda e: None)
+    with pytest.raises(NotFound):
+        observed.read("nonexistent.txt")
+    assert len(events) == 1
+    assert events[0].error is not None
+    assert events[0].operation == "read"
 
-    @pytest.mark.spec("OBS-009")
-    def test_on_error_fires_with_event(self) -> None:
-        store = _make_store()
-        errors: list[StoreEvent] = []
-        observed = observe(store, on_error=errors.append)
-        with pytest.raises(NotFound):
-            observed.delete("missing.txt")
-        assert len(errors) == 1
-        assert isinstance(errors[0].error, NotFound)
 
-    @pytest.mark.spec("OBS-009")
-    def test_per_operation_hook_fires_on_error(self) -> None:
-        store = _make_store()
-        read_events: list[StoreEvent] = []
-        error_events: list[StoreEvent] = []
-        observed = observe(store, on_read=read_events.append, on_error=error_events.append)
-        with pytest.raises(NotFound):
-            observed.read("nonexistent.txt")
-        assert len(read_events) == 1 and read_events[0].error is not None
-        assert len(error_events) == 1 and error_events[0].error is not None
+@pytest.mark.spec("OBS-009")
+def test_on_error_fires_with_event() -> None:
+    store = _make_store()
+    errors: list[StoreEvent] = []
+    observed = observe(store, on_error=errors.append)
+    with pytest.raises(NotFound):
+        observed.delete("missing.txt")
+    assert len(errors) == 1
+    assert isinstance(errors[0].error, NotFound)
+
+
+@pytest.mark.spec("OBS-009")
+def test_per_operation_hook_fires_on_error() -> None:
+    store = _make_store()
+    read_events: list[StoreEvent] = []
+    error_events: list[StoreEvent] = []
+    observed = observe(store, on_read=read_events.append, on_error=error_events.append)
+    with pytest.raises(NotFound):
+        observed.read("nonexistent.txt")
+    assert len(read_events) == 1 and read_events[0].error is not None
+    assert len(error_events) == 1 and error_events[0].error is not None
 
 
 # ---------------------------------------------------------------------------
@@ -524,24 +487,24 @@ class TestErrorPropagation:
 # ---------------------------------------------------------------------------
 
 
-class TestLifecycle:
-    @pytest.mark.spec("OBS-010")
-    def test_close_delegates_to_inner(self) -> None:
-        store = _make_store()
-        events: list[StoreEvent] = []
-        observed = observe(store, on_any=events.append)
-        observed.close()
-        assert events[0].operation == "close"
+@pytest.mark.spec("OBS-010")
+def test_close_delegates_to_inner() -> None:
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_any=events.append)
+    observed.close()
+    assert events[0].operation == "close"
 
-    @pytest.mark.spec("OBS-010")
-    def test_context_manager(self) -> None:
-        store = _make_store()
-        events: list[StoreEvent] = []
-        observed = observe(store, on_any=events.append)
-        with observed:
-            observed.write("a.txt", b"data")
-        ops = [e.operation for e in events]
-        assert "write" in ops and "close" in ops
+
+@pytest.mark.spec("OBS-010")
+def test_context_manager() -> None:
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_any=events.append)
+    with observed:
+        observed.write("a.txt", b"data")
+    ops = [e.operation for e in events]
+    assert "write" in ops and "close" in ops
 
 
 # ---------------------------------------------------------------------------
@@ -549,24 +512,24 @@ class TestLifecycle:
 # ---------------------------------------------------------------------------
 
 
-class TestCorrelationId:
-    def test_correlation_id_propagates(self) -> None:
-        store = _make_store()
-        events: list[StoreEvent] = []
-        observed = observe(store, on_any=events.append)
-        set_correlation_id("test-corr-123")
-        try:
-            observed.write("a.txt", b"data")
-        finally:
-            set_correlation_id(None)
-        assert events[0].correlation_id == "test-corr-123"
+def test_correlation_id_propagates() -> None:
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_any=events.append)
+    set_correlation_id("test-corr-123")
+    try:
+        observed.write("a.txt", b"data")
+    finally:
+        set_correlation_id(None)
+    assert events[0].correlation_id == "test-corr-123"
 
-    def test_no_correlation_id_by_default(self) -> None:
-        store = _make_store()
-        events: list[StoreEvent] = []
-        observed = observe(store, on_any=events.append)
-        observed.exists("a.txt")
-        assert events[0].correlation_id is None
+
+def test_no_correlation_id_by_default() -> None:
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_any=events.append)
+    observed.exists("a.txt")
+    assert events[0].correlation_id is None
 
 
 # ---------------------------------------------------------------------------
@@ -574,43 +537,19 @@ class TestCorrelationId:
 # ---------------------------------------------------------------------------
 
 _PROXY_CASES = [
-    pytest.param(
-        lambda s: None,
-        lambda o: o.to_key("a.txt"),
-        "to_key",
-        id="to_key",
-    ),
-    pytest.param(
-        lambda s: None,
-        lambda o: o.supports(Capability.READ),
-        "supports",
-        id="supports",
-    ),
-    pytest.param(
-        lambda s: None,
-        lambda o: o.child("sub"),
-        "child",
-        id="child",
-    ),
-    pytest.param(
-        lambda s: s.write("sub/a.txt", b"data"),
-        lambda o: list(o.list_folders("")),
-        "list_folders",
-        id="list_folders",
-    ),
-    pytest.param(
-        lambda s: s.write("sub/a.txt", b"data"),
-        lambda o: o.get_folder_info("sub"),
-        "get_folder_info",
-        id="get_folder_info",
-    ),
+    pytest.param([], lambda o: o.to_key("a.txt"), "to_key", id="to_key"),
+    pytest.param([], lambda o: o.supports(Capability.READ), "supports", id="supports"),
+    pytest.param([], lambda o: o.child("sub"), "child", id="child"),
+    pytest.param(["sub/a.txt"], lambda o: list(o.list_folders("")), "list_folders", id="list_folders"),
+    pytest.param(["sub/a.txt"], lambda o: o.get_folder_info("sub"), "get_folder_info", id="get_folder_info"),
 ]
 
 
-@pytest.mark.parametrize("setup,call,expected_op", _PROXY_CASES)
-def test_proxy_coverage(setup: Any, call: Any, expected_op: str) -> None:
+@pytest.mark.parametrize("setup_files,call,expected_op", _PROXY_CASES)
+def test_proxy_coverage(setup_files: list[str], call: Any, expected_op: str) -> None:
     store = _make_store()
-    setup(store)
+    for f in setup_files:
+        store.write(f, b"data")
     events, kwargs = _collect_events()
     observed = observe(store, **kwargs)
     call(observed)
@@ -647,20 +586,18 @@ def test_proxy_repr() -> None:
 # ---------------------------------------------------------------------------
 
 
-class TestChildPropagation:
-    """BUG-003: child() must return an ObservedStore, not a plain Store."""
+def test_child_returns_observed_store() -> None:
+    store = _make_store()
+    observed = observe(store, on_any=lambda e: None)
+    child = observed.child("sub")
+    assert isinstance(child, ObservedStore)
 
-    def test_child_returns_observed_store(self) -> None:
-        store = _make_store()
-        observed = observe(store, on_any=lambda e: None)
-        child = observed.child("sub")
-        assert isinstance(child, ObservedStore)
 
-    def test_child_fires_hooks(self) -> None:
-        store = _make_store()
-        store.write("sub/file.txt", b"data")
-        events: list[StoreEvent] = []
-        observed = observe(store, on_read=events.append)
-        child = observed.child("sub")
-        child.read_bytes("file.txt")
-        assert any(e.operation == "read_bytes" for e in events)
+def test_child_fires_hooks() -> None:
+    store = _make_store()
+    store.write("sub/file.txt", b"data")
+    events: list[StoreEvent] = []
+    observed = observe(store, on_read=events.append)
+    child = observed.child("sub")
+    child.read_bytes("file.txt")
+    assert any(e.operation == "read_bytes" for e in events)

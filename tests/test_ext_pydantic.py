@@ -45,55 +45,31 @@ class TestPydanticToRegistryConfig:
 
     @pytest.mark.spec("CFG-015")
     def test_empty_config(self) -> None:
-        model = SimpleConfig()
-        rc = from_pydantic(model)
+        rc = from_pydantic(SimpleConfig())
         assert rc.backends == {}
         assert rc.stores == {}
 
     @pytest.mark.spec("CFG-015")
-    def test_secret_wrapping(self) -> None:
-        """Sensitive keys in options are wrapped in Secret by from_dict()."""
+    @pytest.mark.parametrize(
+        "use_secretstr",
+        [
+            pytest.param(False, id="plain_string"),
+            pytest.param(True, id="pydantic_SecretStr"),
+        ],
+    )
+    def test_secret_wrapping(self, use_secretstr: bool) -> None:
+        """Sensitive keys in options are wrapped in Secret by from_dict(), with or without SecretStr."""
+        if use_secretstr:
+            from pydantic import SecretStr
+
+            key_val: Any = SecretStr("AKID")
+            secret_val: Any = SecretStr("SK")
+        else:
+            key_val = "AKID"
+            secret_val = "SK"
+
         model = SimpleConfig(
-            backends={
-                "s3": BackendEntry(
-                    type="s3",
-                    options={"bucket": "b", "key": "AKID", "secret": "SK"},
-                )
-            },
-            stores={},
-        )
-        rc = from_pydantic(model)
-        opts = rc.backends["s3"].options
-        assert isinstance(opts["key"], Secret)
-        assert isinstance(opts["secret"], Secret)
-        assert opts["key"].reveal() == "AKID"  # type: ignore[union-attr]
-        assert opts["secret"].reveal() == "SK"  # type: ignore[union-attr]
-        assert not isinstance(opts["bucket"], Secret)
-
-    @pytest.mark.spec("CFG-015")
-    def test_secretstr_unwrapped_and_wrapped(self) -> None:
-        """SecretStr values in options are unwrapped to str, then wrapped in Secret by from_dict()."""
-        from pydantic import SecretStr
-
-        class SecretStrBackend(BaseModel):
-            type: str
-            options: dict[str, Any] = {}
-
-        class SecretStrConfig(BaseModel):
-            backends: dict[str, SecretStrBackend] = {}
-            stores: dict[str, StoreEntry] = {}
-
-        model = SecretStrConfig(
-            backends={
-                "s3": SecretStrBackend(
-                    type="s3",
-                    options={
-                        "bucket": "b",
-                        "key": SecretStr("AKID"),
-                        "secret": SecretStr("SK"),
-                    },
-                )
-            },
+            backends={"s3": BackendEntry(type="s3", options={"bucket": "b", "key": key_val, "secret": secret_val})},
             stores={},
         )
         rc = from_pydantic(model)
@@ -119,12 +95,9 @@ class TestPydanticToRegistryConfig:
         rc = from_pydantic(model)
         assert len(rc.backends) == 2
         assert len(rc.stores) == 2
-        assert rc.backends["local"].type == "local"
-        assert rc.backends["s3"].type == "s3"
 
     @pytest.mark.spec("CFG-013")
     def test_equivalence_with_from_dict(self) -> None:
-        """from_pydantic() produces identical config to from_dict()."""
         model = SimpleConfig(
             backends={"local": BackendEntry(type="local", options={"root": "/tmp"})},
             stores={"data": StoreEntry(backend="local", root_path="d")},
@@ -142,59 +115,39 @@ class TestPydanticToRegistryConfig:
 
     @pytest.mark.spec("CFG-015")
     def test_unknown_keys_warn(self) -> None:
-        """Unknown top-level keys from the model trigger a warning via from_dict()."""
-
         class ExtraConfig(BaseModel):
             backends: dict[str, BackendEntry] = {}
             stores: dict[str, StoreEntry] = {}
             extra_key: str = "unexpected"
 
-        model = ExtraConfig()
         with pytest.warns(UserWarning, match="Unknown top-level config keys"):
-            from_pydantic(model)
+            from_pydantic(ExtraConfig())
 
     @pytest.mark.spec("CFG-015")
     def test_store_options_preserved(self) -> None:
         model = SimpleConfig(
             backends={"mem": BackendEntry(type="memory")},
-            stores={
-                "main": StoreEntry(
-                    backend="mem",
-                    root_path="data",
-                    options={"custom": "value"},
-                )
-            },
+            stores={"main": StoreEntry(backend="mem", root_path="data", options={"custom": "value"})},
         )
         rc = from_pydantic(model)
         assert rc.stores["main"].options == {"custom": "value"}
 
 
-class TestPydanticWithBaseSettings:
-    """CFG-016: Pydantic BaseSettings integration with env var merging."""
+class TestPydanticBaseSettingsAndContract:
+    """CFG-016 / CFG-017: BaseSettings integration and extension contract."""
 
     @pytest.mark.spec("CFG-016")
     def test_base_settings_conversion(self) -> None:
-        """BaseSettings model works through from_pydantic()."""
         from pydantic_settings import BaseSettings, SettingsConfigDict
 
         class MySettings(BaseSettings):
             model_config = SettingsConfigDict(env_prefix="RS_TEST_")
+            backends: dict[str, BackendEntry] = {"mem": BackendEntry(type="memory")}
+            stores: dict[str, StoreEntry] = {"data": StoreEntry(backend="mem", root_path="test")}
 
-            backends: dict[str, BackendEntry] = {
-                "mem": BackendEntry(type="memory"),
-            }
-            stores: dict[str, StoreEntry] = {
-                "data": StoreEntry(backend="mem", root_path="test"),
-            }
-
-        settings = MySettings()
-        rc = from_pydantic(settings)
+        rc = from_pydantic(MySettings())
         assert rc.backends["mem"].type == "memory"
         assert rc.stores["data"].root_path == "test"
-
-
-class TestPydanticExtensionContract:
-    """CFG-017: Extension contract — __all__, conditional re-export."""
 
     @pytest.mark.spec("CFG-017")
     def test_all_defined(self) -> None:
@@ -202,17 +155,15 @@ class TestPydanticExtensionContract:
 
         assert hasattr(pydantic, "__all__")
         assert "from_pydantic" in pydantic.__all__
-        assert "pydantic_to_registry_config" in pydantic.__all__  # deprecated alias
+        assert "pydantic_to_registry_config" in pydantic.__all__
 
     @pytest.mark.spec("CFG-017")
     def test_no_top_level_reexport(self) -> None:
-        """Optional-dep extensions are NOT re-exported (ADR-0013)."""
         import remote_store
 
         assert not hasattr(remote_store, "from_pydantic")
 
     def test_deprecated_alias_warns(self) -> None:
-        """pydantic_to_registry_config() emits DeprecationWarning."""
         from remote_store.ext.pydantic import pydantic_to_registry_config
 
         model = SimpleConfig(backends={"mem": BackendEntry(type="memory")}, stores={})

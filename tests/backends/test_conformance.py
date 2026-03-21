@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from typing import Any
 
 import pytest
 
@@ -17,6 +18,22 @@ def _require(backend: Backend, *caps: Capability) -> None:
     for cap in caps:
         if not backend.capabilities.supports(cap):
             pytest.skip(f"Backend does not support {cap.name}")
+
+
+def _do_op(backend: Backend, op: str, src: str, dst: str, **kw: Any) -> None:
+    getattr(backend, op)(src, dst, **kw)
+
+
+def _seed(backend: Backend, files: dict[str, bytes]) -> None:
+    """Write multiple files into the backend."""
+    for path, data in files.items():
+        backend.write(path, data)
+
+
+_MOVE_COPY_PARAMS = [
+    pytest.param("move", Capability.MOVE, id="move"),
+    pytest.param("copy", Capability.COPY, id="copy"),
+]
 
 
 class TestBackendIdentity:
@@ -43,7 +60,6 @@ class TestBackendIdentity:
     def test_repr_masks_secrets(self, backend: Backend) -> None:
         """AF-008: sensitive values must not appear in repr output."""
         r = repr(backend)
-        # Known test credentials that must never leak
         for secret in ("testing", "testpass", "Eby8vdM02xNOcqFlqUwJPLlmEtl"):
             assert secret not in r, f"Secret {secret!r} leaked in repr: {r}"
 
@@ -57,8 +73,7 @@ class TestBackendExists:
 
     @pytest.mark.spec("BE-004")
     def test_true_after_write(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("hello.txt", b"hello")
         assert backend.exists("hello.txt") is True
 
@@ -68,27 +83,25 @@ class TestBackendFileFolder:
 
     @pytest.mark.spec("BE-005")
     def test_is_file(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("a.txt", b"data")
         assert backend.is_file("a.txt") is True
         assert backend.is_folder("a.txt") is False
 
     @pytest.mark.spec("BE-005")
     def test_is_folder(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("dir/a.txt", b"data")
         assert backend.is_folder("dir") is True
         assert backend.is_file("dir") is False
 
     @pytest.mark.spec("BE-005")
-    def test_is_file_false_for_missing(self, backend: Backend) -> None:
-        assert backend.is_file("nope.txt") is False
-
-    @pytest.mark.spec("BE-005")
-    def test_is_folder_false_for_missing(self, backend: Backend) -> None:
-        assert backend.is_folder("nope") is False
+    @pytest.mark.parametrize(
+        "method",
+        [pytest.param("is_file", id="is_file"), pytest.param("is_folder", id="is_folder")],
+    )
+    def test_false_for_missing(self, backend: Backend, method: str) -> None:
+        assert getattr(backend, method)("nope") is False
 
 
 class TestBackendRead:
@@ -96,28 +109,24 @@ class TestBackendRead:
 
     @pytest.mark.spec("BE-006")
     def test_read_returns_binary_stream(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("data.bin", b"\x00\x01\x02")
-        stream = backend.read("data.bin")
-        assert stream.read() == b"\x00\x01\x02"
-
-    @pytest.mark.spec("BE-006")
-    def test_read_not_found(self, backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            backend.read("missing.txt")
+        assert backend.read("data.bin").read() == b"\x00\x01\x02"
 
     @pytest.mark.spec("BE-007")
     def test_read_bytes(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("file.txt", b"content")
         assert backend.read_bytes("file.txt") == b"content"
 
-    @pytest.mark.spec("BE-007")
-    def test_read_bytes_not_found(self, backend: Backend) -> None:
+    @pytest.mark.spec("BE-006")
+    @pytest.mark.parametrize(
+        "method",
+        [pytest.param("read", id="read_stream"), pytest.param("read_bytes", id="read_bytes")],
+    )
+    def test_not_found(self, backend: Backend, method: str) -> None:
         with pytest.raises(NotFound):
-            backend.read_bytes("missing.txt")
+            getattr(backend, method)("missing.txt")
 
 
 class TestBackendWrite:
@@ -125,38 +134,33 @@ class TestBackendWrite:
 
     @pytest.mark.spec("BE-008")
     def test_write_creates_file(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("new.txt", b"hello")
         assert backend.read_bytes("new.txt") == b"hello"
 
     @pytest.mark.spec("BE-008")
     def test_write_raises_already_exists(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("exists.txt", b"first")
         with pytest.raises(AlreadyExists):
             backend.write("exists.txt", b"second", overwrite=False)
 
     @pytest.mark.spec("BE-008")
     def test_write_overwrite(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("over.txt", b"first")
         backend.write("over.txt", b"second", overwrite=True)
         assert backend.read_bytes("over.txt") == b"second"
 
     @pytest.mark.spec("BE-008")
     def test_write_from_binaryio(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("stream.txt", io.BytesIO(b"streamed"))
         assert backend.read_bytes("stream.txt") == b"streamed"
 
     @pytest.mark.spec("BE-009")
     def test_write_creates_intermediate_dirs(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("a/b/c/deep.txt", b"deep")
         assert backend.read_bytes("a/b/c/deep.txt") == b"deep"
 
@@ -166,23 +170,20 @@ class TestBackendWriteAtomic:
 
     @pytest.mark.spec("BE-010")
     def test_write_atomic_creates_file(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.ATOMIC_WRITE):
-            pytest.skip("Backend does not support ATOMIC_WRITE")
+        _require(backend, Capability.ATOMIC_WRITE)
         backend.write_atomic("atomic.txt", b"atomic content")
         assert backend.read_bytes("atomic.txt") == b"atomic content"
 
     @pytest.mark.spec("BE-010")
     def test_write_atomic_overwrite(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.ATOMIC_WRITE):
-            pytest.skip("Backend does not support ATOMIC_WRITE")
+        _require(backend, Capability.ATOMIC_WRITE)
         backend.write_atomic("atomic2.txt", b"first")
         backend.write_atomic("atomic2.txt", b"second", overwrite=True)
         assert backend.read_bytes("atomic2.txt") == b"second"
 
     @pytest.mark.spec("BE-010")
     def test_write_atomic_already_exists(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.ATOMIC_WRITE):
-            pytest.skip("Backend does not support ATOMIC_WRITE")
+        _require(backend, Capability.ATOMIC_WRITE)
         backend.write_atomic("atomic3.txt", b"first")
         with pytest.raises(AlreadyExists):
             backend.write_atomic("atomic3.txt", b"second", overwrite=False)
@@ -193,16 +194,14 @@ class TestBackendOpenAtomic:
 
     @pytest.mark.spec("SAW-003")
     def test_open_atomic_creates_file(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.ATOMIC_WRITE):
-            pytest.skip("Backend does not support ATOMIC_WRITE")
+        _require(backend, Capability.ATOMIC_WRITE)
         with backend.open_atomic("oat.txt") as f:
             f.write(b"streaming atomic")
         assert backend.read_bytes("oat.txt") == b"streaming atomic"
 
     @pytest.mark.spec("SAW-006")
     def test_open_atomic_overwrite(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.ATOMIC_WRITE):
-            pytest.skip("Backend does not support ATOMIC_WRITE")
+        _require(backend, Capability.ATOMIC_WRITE)
         backend.write("oat2.txt", b"first")
         with backend.open_atomic("oat2.txt", overwrite=True) as f:
             f.write(b"second")
@@ -210,16 +209,14 @@ class TestBackendOpenAtomic:
 
     @pytest.mark.spec("SAW-006")
     def test_open_atomic_already_exists(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.ATOMIC_WRITE):
-            pytest.skip("Backend does not support ATOMIC_WRITE")
+        _require(backend, Capability.ATOMIC_WRITE)
         backend.write("oat3.txt", b"first")
         with pytest.raises(AlreadyExists), backend.open_atomic("oat3.txt", overwrite=False):
             pass
 
     @pytest.mark.spec("SAW-004")
     def test_open_atomic_exception_cleanup(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.ATOMIC_WRITE):
-            pytest.skip("Backend does not support ATOMIC_WRITE")
+        _require(backend, Capability.ATOMIC_WRITE)
         with pytest.raises(RuntimeError), backend.open_atomic("oat_fail.txt") as f:
             f.write(b"partial")
             raise RuntimeError("boom")
@@ -236,19 +233,6 @@ class TestBackendDelete:
         backend.delete("del.txt")
         assert backend.exists("del.txt") is False
 
-    @pytest.mark.spec("BE-012")
-    def test_delete_not_found(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.DELETE):
-            pytest.skip("Backend does not support DELETE")
-        with pytest.raises(NotFound):
-            backend.delete("missing.txt")
-
-    @pytest.mark.spec("BE-012")
-    def test_delete_missing_ok(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.DELETE):
-            pytest.skip("Backend does not support DELETE")
-        backend.delete("missing.txt", missing_ok=True)
-
     @pytest.mark.spec("BE-013")
     def test_delete_folder_empty(self, backend: Backend) -> None:
         _require(backend, Capability.DELETE, Capability.WRITE)
@@ -262,55 +246,84 @@ class TestBackendDelete:
     @pytest.mark.spec("BE-013")
     def test_delete_folder_recursive(self, backend: Backend) -> None:
         _require(backend, Capability.DELETE, Capability.WRITE)
-        backend.write("dir2/a.txt", b"a")
-        backend.write("dir2/sub/b.txt", b"b")
+        _seed(backend, {"dir2/a.txt": b"a", "dir2/sub/b.txt": b"b"})
         backend.delete_folder("dir2", recursive=True)
         assert backend.exists("dir2") is False
 
+    @pytest.mark.spec("BE-012")
     @pytest.mark.spec("BE-013")
-    def test_delete_folder_not_found(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.DELETE):
-            pytest.skip("Backend does not support DELETE")
-        with pytest.raises(NotFound):
-            backend.delete_folder("nodir")
-
-    @pytest.mark.spec("BE-013")
-    def test_delete_folder_missing_ok(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.DELETE):
-            pytest.skip("Backend does not support DELETE")
-        backend.delete_folder("nodir", missing_ok=True)
+    @pytest.mark.parametrize(
+        "method, target",
+        [
+            pytest.param("delete", "missing.txt", id="file"),
+            pytest.param("delete_folder", "nodir", id="folder"),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "missing_ok, expect_error",
+        [
+            pytest.param(False, True, id="not_found_raises"),
+            pytest.param(True, False, id="missing_ok_passes"),
+        ],
+    )
+    def test_delete_missing(
+        self,
+        backend: Backend,
+        method: str,
+        target: str,
+        missing_ok: bool,
+        expect_error: bool,
+    ) -> None:
+        _require(backend, Capability.DELETE)
+        if expect_error:
+            with pytest.raises(NotFound):
+                getattr(backend, method)(target, missing_ok=missing_ok)
+        else:
+            getattr(backend, method)(target, missing_ok=missing_ok)
 
 
 class TestBackendListing:
     """BE-014 through BE-015: listing operations."""
 
     @pytest.mark.spec("BE-014")
-    def test_list_files_non_recursive(self, backend: Backend) -> None:
+    @pytest.mark.parametrize(
+        "prefix, seeds, recursive, expected_names",
+        [
+            pytest.param(
+                "lf",
+                {"lf/a.txt": b"a", "lf/b.txt": b"b", "lf/sub/c.txt": b"c"},
+                False,
+                {"a.txt", "b.txt"},
+                id="non_recursive",
+            ),
+            pytest.param(
+                "lfr",
+                {"lfr/a.txt": b"a", "lfr/sub/b.txt": b"b"},
+                True,
+                {"a.txt", "b.txt"},
+                id="recursive",
+            ),
+        ],
+    )
+    def test_list_files(
+        self,
+        backend: Backend,
+        prefix: str,
+        seeds: dict[str, bytes],
+        recursive: bool,
+        expected_names: set[str],
+    ) -> None:
         _require(backend, Capability.LIST, Capability.WRITE)
-        backend.write("lf/a.txt", b"a")
-        backend.write("lf/b.txt", b"b")
-        backend.write("lf/sub/c.txt", b"c")
-        files = list(backend.list_files("lf"))
-        names = {f.name for f in files}
-        assert names == {"a.txt", "b.txt"}
+        _seed(backend, seeds)
+        files = list(backend.list_files(prefix, recursive=recursive))
+        assert {f.name for f in files} == expected_names
         for f in files:
             assert isinstance(f, FileInfo)
-
-    @pytest.mark.spec("BE-014")
-    def test_list_files_recursive(self, backend: Backend) -> None:
-        _require(backend, Capability.LIST, Capability.WRITE)
-        backend.write("lfr/a.txt", b"a")
-        backend.write("lfr/sub/b.txt", b"b")
-        files = list(backend.list_files("lfr", recursive=True))
-        names = {f.name for f in files}
-        assert names == {"a.txt", "b.txt"}
 
     @pytest.mark.spec("BE-015")
     def test_list_folders(self, backend: Backend) -> None:
         _require(backend, Capability.LIST, Capability.WRITE)
-        backend.write("lfd/sub1/a.txt", b"a")
-        backend.write("lfd/sub2/b.txt", b"b")
-        backend.write("lfd/file.txt", b"f")
+        _seed(backend, {"lfd/sub1/a.txt": b"a", "lfd/sub2/b.txt": b"b", "lfd/file.txt": b"f"})
         folders = list(backend.list_folders("lfd"))
         assert all(isinstance(f, FolderEntry) for f in folders)
         assert {f.name for f in folders} == {"sub1", "sub2"}
@@ -323,9 +336,7 @@ class TestBackendIterChildren:
     @pytest.mark.spec("ITER-004")
     def test_iter_children(self, backend: Backend) -> None:
         _require(backend, Capability.LIST, Capability.WRITE)
-        backend.write("ic/a.txt", b"a")
-        backend.write("ic/b.txt", b"b")
-        backend.write("ic/sub/c.txt", b"c")
+        _seed(backend, {"ic/a.txt": b"a", "ic/b.txt": b"b", "ic/sub/c.txt": b"c"})
         children = list(backend.iter_children("ic"))
         files = [c for c in children if isinstance(c, FileInfo)]
         folders = [c for c in children if isinstance(c, FolderEntry)]
@@ -335,30 +346,32 @@ class TestBackendIterChildren:
 
     @pytest.mark.spec("ITER-004")
     def test_iter_children_empty_or_nonexistent(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.LIST):
-            pytest.skip("Backend does not support LIST")
+        _require(backend, Capability.LIST)
         assert list(backend.iter_children("nonexistent")) == []
 
     @pytest.mark.spec("ITER-004")
-    def test_iter_children_only_files(self, backend: Backend) -> None:
+    @pytest.mark.parametrize(
+        "prefix, file_path, expect_files, expect_folders",
+        [
+            pytest.param("icf", "icf/x.txt", {"x.txt"}, set(), id="only_files"),
+            pytest.param("ico", "ico/sub/y.txt", set(), {"sub"}, id="only_folders"),
+        ],
+    )
+    def test_iter_children_single_type(
+        self,
+        backend: Backend,
+        prefix: str,
+        file_path: str,
+        expect_files: set[str],
+        expect_folders: set[str],
+    ) -> None:
         _require(backend, Capability.LIST, Capability.WRITE)
-        backend.write("icf/x.txt", b"x")
-        children = list(backend.iter_children("icf"))
+        backend.write(file_path, b"x")
+        children = list(backend.iter_children(prefix))
         files = [c for c in children if isinstance(c, FileInfo)]
         folders = [c for c in children if isinstance(c, FolderEntry)]
-        assert len(files) == 1
-        assert files[0].name == "x.txt"
-        assert folders == []
-
-    @pytest.mark.spec("ITER-004")
-    def test_iter_children_only_folders(self, backend: Backend) -> None:
-        _require(backend, Capability.LIST, Capability.WRITE)
-        backend.write("ico/sub/y.txt", b"y")
-        children = list(backend.iter_children("ico"))
-        files = [c for c in children if isinstance(c, FileInfo)]
-        folders = [c for c in children if isinstance(c, FolderEntry)]
-        assert files == []
-        assert {f.name for f in folders} == {"sub"}
+        assert {f.name for f in files} == expect_files
+        assert {f.name for f in folders} == expect_folders
 
 
 class TestBackendMetadata:
@@ -366,38 +379,37 @@ class TestBackendMetadata:
 
     @pytest.mark.spec("BE-016")
     def test_get_file_info(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("info.txt", b"hello world")
         fi = backend.get_file_info("info.txt")
         assert isinstance(fi, FileInfo)
         assert fi.name == "info.txt"
         assert fi.size == 11
 
-    @pytest.mark.spec("BE-016")
-    def test_get_file_info_not_found(self, backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            backend.get_file_info("missing.txt")
-
     @pytest.mark.spec("BE-017")
     def test_get_folder_info(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
-        backend.write("fi/a.txt", b"aaa")
-        backend.write("fi/b.txt", b"bb")
+        _require(backend, Capability.WRITE)
+        _seed(backend, {"fi/a.txt": b"aaa", "fi/b.txt": b"bb"})
         fi = backend.get_folder_info("fi")
         assert isinstance(fi, FolderInfo)
         assert fi.file_count == 2
         assert fi.total_size == 5
 
-    @pytest.mark.spec("BE-017")
-    def test_get_folder_info_not_found(self, backend: Backend) -> None:
+    @pytest.mark.parametrize(
+        "method, spec_id",
+        [
+            pytest.param("get_file_info", "BE-016", id="file_info"),
+            pytest.param("get_folder_info", "BE-017", id="folder_info"),
+        ],
+    )
+    def test_info_not_found(self, backend: Backend, method: str, spec_id: str) -> None:
+        pytest.mark.spec(spec_id)
         with pytest.raises(NotFound):
-            backend.get_folder_info("nodir")
+            getattr(backend, method)("missing_target")
 
 
-class TestBackendMove:
-    """BE-018: move operations."""
+class TestBackendMoveCopy:
+    """BE-018, BE-019: move and copy operations."""
 
     @pytest.mark.spec("BE-018")
     def test_move(self, backend: Backend) -> None:
@@ -407,33 +419,6 @@ class TestBackendMove:
         assert backend.exists("mv_src.txt") is False
         assert backend.read_bytes("mv_dst.txt") == b"data"
 
-    @pytest.mark.spec("BE-018")
-    def test_move_not_found(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.MOVE):
-            pytest.skip("Backend does not support MOVE")
-        with pytest.raises(NotFound):
-            backend.move("missing.txt", "dst.txt")
-
-    @pytest.mark.spec("BE-018")
-    def test_move_already_exists(self, backend: Backend) -> None:
-        _require(backend, Capability.MOVE, Capability.WRITE)
-        backend.write("mv1.txt", b"a")
-        backend.write("mv2.txt", b"b")
-        with pytest.raises(AlreadyExists):
-            backend.move("mv1.txt", "mv2.txt", overwrite=False)
-
-    @pytest.mark.spec("BE-018")
-    def test_move_overwrite(self, backend: Backend) -> None:
-        _require(backend, Capability.MOVE, Capability.WRITE)
-        backend.write("mvo1.txt", b"a")
-        backend.write("mvo2.txt", b"b")
-        backend.move("mvo1.txt", "mvo2.txt", overwrite=True)
-        assert backend.read_bytes("mvo2.txt") == b"a"
-
-
-class TestBackendCopy:
-    """BE-019: copy operations."""
-
     @pytest.mark.spec("BE-019")
     def test_copy(self, backend: Backend) -> None:
         _require(backend, Capability.COPY, Capability.WRITE)
@@ -442,29 +427,42 @@ class TestBackendCopy:
         assert backend.read_bytes("cp_src.txt") == b"data"
         assert backend.read_bytes("cp_dst.txt") == b"data"
 
-    @pytest.mark.spec("BE-019")
-    def test_copy_not_found(self, backend: Backend) -> None:
-        if not backend.capabilities.supports(Capability.COPY):
-            pytest.skip("Backend does not support COPY")
+    @pytest.mark.parametrize("op, cap", _MOVE_COPY_PARAMS)
+    def test_not_found(self, backend: Backend, op: str, cap: Capability) -> None:
+        """BE-018/BE-019: move/copy raise NotFound for missing source."""
+        _require(backend, cap)
         with pytest.raises(NotFound):
-            backend.copy("missing.txt", "dst.txt")
+            _do_op(backend, op, "missing.txt", "dst.txt")
 
-    @pytest.mark.spec("BE-019")
-    def test_copy_already_exists(self, backend: Backend) -> None:
-        _require(backend, Capability.COPY, Capability.WRITE)
-        backend.write("cp1.txt", b"a")
-        backend.write("cp2.txt", b"b")
+    @pytest.mark.parametrize("op, cap", _MOVE_COPY_PARAMS)
+    def test_already_exists(self, backend: Backend, op: str, cap: Capability) -> None:
+        """BE-018/BE-019: move/copy raise AlreadyExists when overwrite=False."""
+        _require(backend, cap, Capability.WRITE)
+        _seed(backend, {f"{op}1.txt": b"a", f"{op}2.txt": b"b"})
         with pytest.raises(AlreadyExists):
-            backend.copy("cp1.txt", "cp2.txt", overwrite=False)
+            _do_op(backend, op, f"{op}1.txt", f"{op}2.txt", overwrite=False)
 
-    @pytest.mark.spec("BE-019")
-    def test_copy_overwrite(self, backend: Backend) -> None:
-        _require(backend, Capability.COPY, Capability.WRITE)
-        backend.write("cpo1.txt", b"a")
-        backend.write("cpo2.txt", b"b")
-        backend.copy("cpo1.txt", "cpo2.txt", overwrite=True)
-        assert backend.read_bytes("cpo2.txt") == b"a"
-        assert backend.read_bytes("cpo1.txt") == b"a"
+    @pytest.mark.parametrize(
+        "op, cap, src_exists_after",
+        [
+            pytest.param("move", Capability.MOVE, False, id="move"),
+            pytest.param("copy", Capability.COPY, True, id="copy"),
+        ],
+    )
+    def test_overwrite(
+        self,
+        backend: Backend,
+        op: str,
+        cap: Capability,
+        src_exists_after: bool,
+    ) -> None:
+        """BE-018/BE-019: move/copy with overwrite=True replaces destination."""
+        _require(backend, cap, Capability.WRITE)
+        _seed(backend, {f"{op}o1.txt": b"a", f"{op}o2.txt": b"b"})
+        _do_op(backend, op, f"{op}o1.txt", f"{op}o2.txt", overwrite=True)
+        assert backend.read_bytes(f"{op}o2.txt") == b"a"
+        if src_exists_after:
+            assert backend.read_bytes(f"{op}o1.txt") == b"a"
 
 
 class TestBackendLifecycle:
@@ -490,8 +488,7 @@ class TestBackendToKey:
     @pytest.mark.spec("NPR-005")
     def test_to_key_passthrough_for_relative(self, backend: Backend) -> None:
         """Relative paths with no matching prefix pass through unchanged."""
-        result = backend.to_key("some/path")
-        assert isinstance(result, str)
+        assert isinstance(backend.to_key("some/path"), str)
 
     @pytest.mark.spec("NPR-003")
     def test_to_key_round_trip_with_listing(self, backend: Backend) -> None:
@@ -500,9 +497,7 @@ class TestBackendToKey:
         backend.write("tk/a.txt", b"a")
         files = list(backend.list_files("tk"))
         assert len(files) == 1
-        # The path in FileInfo should be a valid backend-relative key
-        key = str(files[0].path)
-        assert backend.read_bytes(key) == b"a"
+        assert backend.read_bytes(str(files[0].path)) == b"a"
 
 
 class TestStreamingConformance:
@@ -511,8 +506,7 @@ class TestStreamingConformance:
     @pytest.mark.spec("SIO-001")
     def test_read_returns_true_stream_not_bytesio(self, backend: Backend) -> None:
         """read() must return a true streaming handle, not a BytesIO wrapper."""
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("stream_test.bin", b"hello streaming")
         stream = backend.read("stream_test.bin")
         assert not isinstance(stream, io.BytesIO), "read() must not wrap content in BytesIO -- this defeats streaming"
@@ -522,8 +516,7 @@ class TestStreamingConformance:
     @pytest.mark.spec("SIO-001")
     def test_read_supports_chunked_reads(self, backend: Backend) -> None:
         """Streams must support reading in fixed-size chunks."""
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         content = b"A" * 1000
         backend.write("chunks.bin", content)
         stream = backend.read("chunks.bin")
@@ -540,21 +533,17 @@ class TestStreamingConformance:
     @pytest.mark.spec("SIO-001")
     def test_read_stream_position_starts_at_zero(self, backend: Backend) -> None:
         """Stream must be positioned at the start on return."""
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("pos.bin", b"0123456789")
         stream = backend.read("pos.bin")
-        first = stream.read(3)
-        assert first == b"012"
-        rest = stream.read()
-        assert rest == b"3456789"
+        assert stream.read(3) == b"012"
+        assert stream.read() == b"3456789"
         stream.close()
 
     @pytest.mark.spec("SIO-001")
     def test_read_stream_supports_context_manager(self, backend: Backend) -> None:
         """read() stream supports context manager protocol for reliable cleanup."""
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         backend.write("ctx.bin", b"context manager test")
         with backend.read("ctx.bin") as stream:
             content = stream.read()
@@ -564,8 +553,7 @@ class TestStreamingConformance:
     @pytest.mark.spec("SIO-003")
     def test_write_from_binaryio_streams_content(self, backend: Backend) -> None:
         """write() with BinaryIO must not require the caller to materialize bytes."""
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         content = b"X" * 8192
         backend.write("binio_write.bin", io.BytesIO(content))
         assert backend.read_bytes("binio_write.bin") == content
@@ -573,8 +561,7 @@ class TestStreamingConformance:
     @pytest.mark.spec("SIO-003")
     def test_write_binaryio_reads_from_current_position(self, backend: Backend) -> None:
         """write() must read BinaryIO from its current position, not from start."""
-        if not backend.capabilities.supports(Capability.WRITE):
-            pytest.skip("Backend does not support WRITE")
+        _require(backend, Capability.WRITE)
         buf = io.BytesIO(b"HEADER_PAYLOAD")
         buf.seek(7)  # Skip past "HEADER_"
         backend.write("partial_pos.bin", buf)
@@ -585,21 +572,33 @@ class TestBackendGlob:
     """GLOB-018/019/020: glob conformance across backends."""
 
     @pytest.mark.spec("GLOB-018")
-    def test_glob_basic(self, backend: Backend) -> None:
+    @pytest.mark.parametrize(
+        "seeds, pattern, expected",
+        [
+            pytest.param(
+                {"g/a.txt": b"a", "g/b.csv": b"b"},
+                "g/*.txt",
+                ["g/a.txt"],
+                id="basic",
+            ),
+            pytest.param(
+                {"gr/a.txt": b"a", "gr/sub/b.txt": b"b", "gr/sub/c.csv": b"c"},
+                "gr/**/*.txt",
+                ["gr/a.txt", "gr/sub/b.txt"],
+                id="recursive",
+            ),
+        ],
+    )
+    def test_glob(
+        self,
+        backend: Backend,
+        seeds: dict[str, bytes],
+        pattern: str,
+        expected: list[str],
+    ) -> None:
         _require(backend, Capability.GLOB, Capability.WRITE)
-        backend.write("g/a.txt", b"a")
-        backend.write("g/b.csv", b"b")
-        results = sorted(str(f.path) for f in backend.glob("g/*.txt"))
-        assert results == ["g/a.txt"]
-
-    @pytest.mark.spec("GLOB-018")
-    def test_glob_recursive_conformance(self, backend: Backend) -> None:
-        _require(backend, Capability.GLOB, Capability.WRITE)
-        backend.write("gr/a.txt", b"a")
-        backend.write("gr/sub/b.txt", b"b")
-        backend.write("gr/sub/c.csv", b"c")
-        results = sorted(str(f.path) for f in backend.glob("gr/**/*.txt"))
-        assert results == ["gr/a.txt", "gr/sub/b.txt"]
+        _seed(backend, seeds)
+        assert sorted(str(f.path) for f in backend.glob(pattern)) == expected
 
 
 class TestBackendUnwrap:
@@ -617,11 +616,9 @@ class TestBackendNativePath:
     @pytest.mark.spec("BE-025")
     def test_native_path_round_trip(self, backend: Backend) -> None:
         """native_path is the inverse of to_key (NPR-020)."""
-        key = "some/key"
-        assert backend.to_key(backend.native_path(key)) == key
+        assert backend.to_key(backend.native_path("some/key")) == "some/key"
 
     @pytest.mark.spec("BE-025")
     def test_native_path_empty_returns_root(self, backend: Backend) -> None:
         """native_path('') returns the backend's root (NPR-021)."""
-        result = backend.native_path("")
-        assert isinstance(result, str)
+        assert isinstance(backend.native_path(""), str)
