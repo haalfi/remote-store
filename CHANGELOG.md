@@ -6,6 +6,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Documentation
+
+- **Cross-link compliance pass across docs tables** (BK-013): backend names in
+  capability matrices, choosing-a-backend, concurrency, health-check,
+  performance, and API reference tables now link to their respective guide
+  pages. Added Rule 4 ("Table header/key-column → documented entity") to
+  `DOCUMENTATION.md` § 4.
+
 ### Changed
 
 - **Renamed ext factory functions for naming consistency** (BK-010):
