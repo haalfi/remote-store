@@ -40,10 +40,12 @@ def _registry_config(tmp: str) -> None:
     # --8<-- [start:registry-config]
     from remote_store import Registry, RegistryConfig  # noqa: F811
 
-    config = RegistryConfig.from_dict({
-        "backends": {"main": {"type": "local", "options": {"root": tmp}}},
-        "stores": {"data": {"backend": "main", "root_path": ""}},
-    })
+    config = RegistryConfig.from_dict(
+        {
+            "backends": {"main": {"type": "local", "options": {"root": tmp}}},
+            "stores": {"data": {"backend": "main", "root_path": ""}},
+        }
+    )
 
     with Registry(config) as registry:
         store = registry.get_store("data")
@@ -60,13 +62,13 @@ def _store_api() -> None:
     store.write_text("reports/q1.csv", "data")
 
     # --8<-- [start:store-api]
-    store.read_text("path/to/file.txt")                          # -> str
+    store.read_text("path/to/file.txt")  # -> str
     store.write_text("path/to/file.txt", "content", overwrite=True)  # write string
-    store.read_bytes("path/to/file.csv")                         # -> bytes
-    store.write("path/to/data.bin", b"\x00", overwrite=True)     # streaming write
+    store.read_bytes("path/to/file.csv")  # -> bytes
+    store.write("path/to/data.bin", b"\x00", overwrite=True)  # streaming write
 
-    store.list_files("reports/", pattern="*.csv")   # iterate FileInfo
-    store.exists("path/to/file.txt")                # -> bool
+    store.list_files("reports/", pattern="*.csv")  # iterate FileInfo
+    store.exists("path/to/file.txt")  # -> bool
 
     store.copy("path/to/file.txt", "path/to/copy.txt")
     store.delete("path/to/copy.txt")

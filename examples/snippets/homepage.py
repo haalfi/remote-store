@@ -45,7 +45,7 @@ def _capabilities() -> None:
     # --8<-- [start:capabilities]
     from remote_store import Capability  # noqa: F811
 
-    store.supports(Capability.GLOB)          # True for Local, S3, S3-PyArrow, Azure
+    store.supports(Capability.GLOB)  # True for Local, S3, S3-PyArrow, Azure
     store.supports(Capability.ATOMIC_WRITE)  # True for all except HTTP
     # --8<-- [end:capabilities]
 
@@ -57,6 +57,7 @@ def _custom_backend() -> None:
 
     class MyBackend(Backend):  # noqa: F811
         """Implement the Backend protocol for your storage."""
+
         ...
 
     # store = Store(MyBackend(...))  # works with all extensions

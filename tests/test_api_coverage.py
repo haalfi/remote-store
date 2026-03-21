@@ -73,9 +73,7 @@ class TestApiDocsCoverage:
             if fq not in self.directives and not self._covered_by_module(symbol):
                 missing.append(symbol)
 
-        assert not missing, (
-            f"Symbols in __all__ missing ::: directive in docs-src/api/: {missing}"
-        )
+        assert not missing, f"Symbols in __all__ missing ::: directive in docs-src/api/: {missing}"
 
     def _covered_by_module(self, symbol: str) -> bool:
         """Check if a symbol is covered by a module-level ::: directive."""
@@ -129,9 +127,7 @@ class TestApiDocsCoverage:
             if symbol not in index_symbols:
                 missing.append(symbol)
 
-        assert not missing, (
-            f"Core symbols in __all__ missing from docs-src/api/index.md: {missing}"
-        )
+        assert not missing, f"Core symbols in __all__ missing from docs-src/api/index.md: {missing}"
 
     @pytest.mark.spec("ID-058")
     def test_backends_all_have_directive(self) -> None:
@@ -144,6 +140,4 @@ class TestApiDocsCoverage:
             if fq not in self.directives:
                 missing.append(symbol)
 
-        assert not missing, (
-            f"Symbols in backends.__all__ missing ::: directive: {missing}"
-        )
+        assert not missing, f"Symbols in backends.__all__ missing ::: directive: {missing}"
