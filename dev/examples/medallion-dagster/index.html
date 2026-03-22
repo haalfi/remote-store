@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://docs.remotestore.dev/dev/examples/medallion-dagster/">
       
       
-        <link rel="prev" href="../dagster-io-manager/">
+        <link rel="prev" href="../health-check/">
       
       
-        <link rel="next" href="../retry-policy/">
+        <link rel="next" href="../../backends/">
       
       
         
@@ -641,7 +641,7 @@
   <span class="md-ellipsis">
     
   
-    File Operations
+    File operations
   
 
     
@@ -697,7 +697,7 @@
   <span class="md-ellipsis">
     
   
-    Atomic Writes
+    Atomic writes
   
 
     
@@ -753,7 +753,7 @@
   <span class="md-ellipsis">
     
   
-    Config Loaders
+    Config loaders
   
 
     
@@ -781,7 +781,7 @@
   <span class="md-ellipsis">
     
   
-    Error Handling
+    Error handling
   
 
     
@@ -809,7 +809,7 @@
   <span class="md-ellipsis">
     
   
-    Capabilities & Errors
+    Capabilities and errors
   
 
     
@@ -837,7 +837,7 @@
   <span class="md-ellipsis">
     
   
-    Path Model
+    Path model
   
 
     
@@ -865,7 +865,7 @@
   <span class="md-ellipsis">
     
   
-    Memory Backend
+    Memory backend
   
 
     
@@ -921,7 +921,7 @@
   <span class="md-ellipsis">
     
   
-    S3 Backend
+    S3 backend
   
 
     
@@ -949,7 +949,7 @@
   <span class="md-ellipsis">
     
   
-    S3-PyArrow Backend
+    S3-PyArrow backend
   
 
     
@@ -977,7 +977,7 @@
   <span class="md-ellipsis">
     
   
-    SFTP Backend
+    SFTP backend
   
 
     
@@ -1005,7 +1005,7 @@
   <span class="md-ellipsis">
     
   
-    Azure Backend
+    Azure backend
   
 
     
@@ -1033,7 +1033,7 @@
   <span class="md-ellipsis">
     
   
-    HTTP Backend
+    HTTP backend
   
 
     
@@ -1061,7 +1061,7 @@
   <span class="md-ellipsis">
     
   
-    Batch Operations
+    Batch operations
   
 
     
@@ -1089,7 +1089,7 @@
   <span class="md-ellipsis">
     
   
-    Transfer Operations
+    Transfer operations
   
 
     
@@ -1117,7 +1117,7 @@
   <span class="md-ellipsis">
     
   
-    Glob Pattern Matching
+    Glob pattern matching
   
 
     
@@ -1173,7 +1173,7 @@
   <span class="md-ellipsis">
     
   
-    Observe Hooks
+    Observe hooks
   
 
     
@@ -1201,7 +1201,7 @@
   <span class="md-ellipsis">
     
   
-    OpenTelemetry Tracing
+    OpenTelemetry tracing and metrics
   
 
     
@@ -1229,7 +1229,7 @@
   <span class="md-ellipsis">
     
   
-    PyArrow Adapter
+    PyArrow FileSystem adapter
   
 
     
@@ -1258,6 +1258,62 @@
     
   
     Dagster IO Manager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retry-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retry Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Health check example
   
 
     
@@ -1338,18 +1394,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#medallion-dagster-showcase_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Medallion + Dagster Showcase
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Medallion + Dagster Showcase">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#what-this-demonstrates" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1359,8 +1403,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1370,8 +1414,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#setup" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1381,8 +1425,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#running" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1392,8 +1436,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1442,8 +1486,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#what-to-observe" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1492,8 +1536,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#swapping-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1503,8 +1547,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#data-source" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1512,11 +1556,6 @@
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1535,62 +1574,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../retry-policy/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Retry Policy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../health-check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Health Check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -6033,18 +6016,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#medallion-dagster-showcase_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Medallion + Dagster Showcase
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Medallion + Dagster Showcase">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#what-this-demonstrates" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6054,8 +6025,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6065,8 +6036,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#setup" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6076,8 +6047,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#running" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6087,8 +6058,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6137,8 +6108,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#what-to-observe" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6187,8 +6158,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#swapping-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6198,8 +6169,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#data-source" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6207,11 +6178,6 @@
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -6242,13 +6208,9 @@
                   
 
 
-  
-  
-
 
 <h1 id="medallion-dagster-showcase">Medallion + Dagster Showcase<a class="headerlink" href="#medallion-dagster-showcase" title="Permanent link">&para;</a></h1>
 <p>End-to-end Bronze/Silver/Gold pipeline with Dagster orchestration, demonstrating 4 remote-store extensions composing over live MeteoSwiss weather data.</p>
-<h2 id="medallion-dagster-showcase_1">Medallion + Dagster Showcase<a class="headerlink" href="#medallion-dagster-showcase_1" title="Permanent link">&para;</a></h2>
 <p>A self-contained Dagster project demonstrating remote-store's value proposition
 through a real-world <strong>medallion architecture</strong> (Bronze → Silver → Gold) over
 live <a href="https://www.meteoswiss.admin.ch/">MeteoSwiss</a> weather station data.</p>

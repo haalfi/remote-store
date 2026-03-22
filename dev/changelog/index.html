@@ -634,7 +634,7 @@
   <span class="md-ellipsis">
     
   
-    File Operations
+    File operations
   
 
     
@@ -690,7 +690,7 @@
   <span class="md-ellipsis">
     
   
-    Atomic Writes
+    Atomic writes
   
 
     
@@ -746,7 +746,7 @@
   <span class="md-ellipsis">
     
   
-    Config Loaders
+    Config loaders
   
 
     
@@ -774,7 +774,7 @@
   <span class="md-ellipsis">
     
   
-    Error Handling
+    Error handling
   
 
     
@@ -802,7 +802,7 @@
   <span class="md-ellipsis">
     
   
-    Capabilities & Errors
+    Capabilities and errors
   
 
     
@@ -830,7 +830,7 @@
   <span class="md-ellipsis">
     
   
-    Path Model
+    Path model
   
 
     
@@ -858,7 +858,7 @@
   <span class="md-ellipsis">
     
   
-    Memory Backend
+    Memory backend
   
 
     
@@ -914,7 +914,7 @@
   <span class="md-ellipsis">
     
   
-    S3 Backend
+    S3 backend
   
 
     
@@ -942,7 +942,7 @@
   <span class="md-ellipsis">
     
   
-    S3-PyArrow Backend
+    S3-PyArrow backend
   
 
     
@@ -970,7 +970,7 @@
   <span class="md-ellipsis">
     
   
-    SFTP Backend
+    SFTP backend
   
 
     
@@ -998,7 +998,7 @@
   <span class="md-ellipsis">
     
   
-    Azure Backend
+    Azure backend
   
 
     
@@ -1026,7 +1026,7 @@
   <span class="md-ellipsis">
     
   
-    HTTP Backend
+    HTTP backend
   
 
     
@@ -1054,7 +1054,7 @@
   <span class="md-ellipsis">
     
   
-    Batch Operations
+    Batch operations
   
 
     
@@ -1082,7 +1082,7 @@
   <span class="md-ellipsis">
     
   
-    Transfer Operations
+    Transfer operations
   
 
     
@@ -1110,7 +1110,7 @@
   <span class="md-ellipsis">
     
   
-    Glob Pattern Matching
+    Glob pattern matching
   
 
     
@@ -1166,7 +1166,7 @@
   <span class="md-ellipsis">
     
   
-    Observe Hooks
+    Observe hooks
   
 
     
@@ -1194,7 +1194,7 @@
   <span class="md-ellipsis">
     
   
-    OpenTelemetry Tracing
+    OpenTelemetry tracing and metrics
   
 
     
@@ -1222,7 +1222,7 @@
   <span class="md-ellipsis">
     
   
-    PyArrow Adapter
+    PyArrow FileSystem adapter
   
 
     
@@ -1251,34 +1251,6 @@
     
   
     Dagster IO Manager
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/medallion-dagster/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Medallion + Dagster Showcase
   
 
     
@@ -1334,7 +1306,35 @@
   <span class="md-ellipsis">
     
   
-    Health Check
+    Health check example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/medallion-dagster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Medallion + Dagster Showcase
   
 
     
@@ -7810,11 +7810,25 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Cross-link compliance pass across docs tables</strong> (BK-013): backend names in
+<li>
+<p><strong>Single-source code snippets for docs</strong> (ID-057): docs code blocks are now
+  pulled from tested Python files in <code>examples/snippets/</code> via pymdownx.snippets
+  named regions. CI runs snippet scripts to guarantee they stay valid.</p>
+</li>
+<li>
+<p><strong>Auto-generated example doc wrappers</strong> (ID-058): <code>scripts/gen_pages.py</code> now
+  scans <code>examples/*.py</code>, extracts the module docstring, and generates wrapper
+  pages + index + nav entries automatically. Eliminates the class of "forgot to
+  add a wrapper" bugs. Added <code>tests/test_api_coverage.py</code> to verify every
+  <code>__all__</code> symbol has API documentation.</p>
+</li>
+<li>
+<p><strong>Cross-link compliance pass across docs tables</strong> (BK-013): backend names in
   capability matrices, choosing-a-backend, concurrency, health-check,
   performance, and API reference tables now link to their respective guide
   pages. Added Rule 4 ("Table header/key-column → documented entity") to
-  <code>DOCUMENTATION.md</code> § 4.</li>
+  <code>DOCUMENTATION.md</code> § 4.</p>
+</li>
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>

@@ -819,7 +819,7 @@
   <span class="md-ellipsis">
     
   
-    File Operations
+    File operations
   
 
     
@@ -875,7 +875,7 @@
   <span class="md-ellipsis">
     
   
-    Atomic Writes
+    Atomic writes
   
 
     
@@ -931,7 +931,7 @@
   <span class="md-ellipsis">
     
   
-    Config Loaders
+    Config loaders
   
 
     
@@ -959,7 +959,7 @@
   <span class="md-ellipsis">
     
   
-    Error Handling
+    Error handling
   
 
     
@@ -987,7 +987,7 @@
   <span class="md-ellipsis">
     
   
-    Capabilities & Errors
+    Capabilities and errors
   
 
     
@@ -1015,7 +1015,7 @@
   <span class="md-ellipsis">
     
   
-    Path Model
+    Path model
   
 
     
@@ -1043,7 +1043,7 @@
   <span class="md-ellipsis">
     
   
-    Memory Backend
+    Memory backend
   
 
     
@@ -1099,7 +1099,7 @@
   <span class="md-ellipsis">
     
   
-    S3 Backend
+    S3 backend
   
 
     
@@ -1127,7 +1127,7 @@
   <span class="md-ellipsis">
     
   
-    S3-PyArrow Backend
+    S3-PyArrow backend
   
 
     
@@ -1155,7 +1155,7 @@
   <span class="md-ellipsis">
     
   
-    SFTP Backend
+    SFTP backend
   
 
     
@@ -1183,7 +1183,7 @@
   <span class="md-ellipsis">
     
   
-    Azure Backend
+    Azure backend
   
 
     
@@ -1211,7 +1211,7 @@
   <span class="md-ellipsis">
     
   
-    HTTP Backend
+    HTTP backend
   
 
     
@@ -1239,7 +1239,7 @@
   <span class="md-ellipsis">
     
   
-    Batch Operations
+    Batch operations
   
 
     
@@ -1267,7 +1267,7 @@
   <span class="md-ellipsis">
     
   
-    Transfer Operations
+    Transfer operations
   
 
     
@@ -1295,7 +1295,7 @@
   <span class="md-ellipsis">
     
   
-    Glob Pattern Matching
+    Glob pattern matching
   
 
     
@@ -1351,7 +1351,7 @@
   <span class="md-ellipsis">
     
   
-    Observe Hooks
+    Observe hooks
   
 
     
@@ -1379,7 +1379,7 @@
   <span class="md-ellipsis">
     
   
-    OpenTelemetry Tracing
+    OpenTelemetry tracing and metrics
   
 
     
@@ -1407,7 +1407,7 @@
   <span class="md-ellipsis">
     
   
-    PyArrow Adapter
+    PyArrow FileSystem adapter
   
 
     
@@ -1436,34 +1436,6 @@
     
   
     Dagster IO Manager
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="examples/medallion-dagster/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Medallion + Dagster Showcase
   
 
     
@@ -1519,7 +1491,35 @@
   <span class="md-ellipsis">
     
   
-    Health Check
+    Health check example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/medallion-dagster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Medallion + Dagster Showcase
   
 
     
@@ -6173,21 +6173,26 @@ yourself.</p>
 <hr />
 <h2 id="the-core-idea">The core idea<a class="headerlink" href="#the-core-idea" title="Permanent link">&para;</a></h2>
 <p>A <code>Store</code> scopes all operations to a root path. Everything is relative.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalBackend</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalBackend</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;/tmp/data&quot;</span><span class="p">))</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">store</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;Hello, world!&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">))</span>  <span class="c1"># &#39;Hello, world!&#39;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;/tmp/data&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="n">store</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;Hello, world!&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">))</span>  <span class="c1"># &#39;Hello, world!&#39;</span>
 </code></pre></div>
 <p>Switch backend without changing application code:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3Backend</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">))</span>
+<!-- Inline block: S3Backend can't be instantiated without credentials,
+     so this is not sourced from a snippet file. See ID-057 notes. -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3Backend</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">))</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">store</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;hello&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">))</span>  <span class="c1"># same API, different backend</span>
 </code></pre></div>
 <p>Narrow scope with <code>child()</code> — all paths inside are relative to the new root:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">sub</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;reports/2024&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">sub</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;summary.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;...&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>        <span class="n">sub</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;reports/2024&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>        <span class="n">sub</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;summary.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;...&quot;</span><span class="p">)</span>
 </code></pre></div>
 <p>See <a href="examples/store-child/">Store child scoping</a> for more.</p>
 <hr />
@@ -6201,10 +6206,10 @@ Backends delegate to the packages you'd pick yourself.</p>
 <h3 id="backend-native-when-possible">Backend-native when possible<a class="headerlink" href="#backend-native-when-possible" title="Permanent link">&para;</a></h3>
 <p><code>glob()</code> and atomic writes work everywhere. Where the backend supports them
 natively, remote-store uses that. Where not, a portable fallback steps in.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span><span class="p">)</span>          <span class="c1"># True for Local, S3, S3-PyArrow, Azure</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">ATOMIC_WRITE</span><span class="p">)</span>  <span class="c1"># True for all except HTTP</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span><span class="p">)</span>  <span class="c1"># True for Local, S3, S3-PyArrow, Azure</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">ATOMIC_WRITE</span><span class="p">)</span>  <span class="c1"># True for all except HTTP</span>
 </code></pre></div>
 <h3 id="extensions-sit-beside-not-around">Extensions sit beside, not around<a class="headerlink" href="#extensions-sit-beside-not-around" title="Permanent link">&para;</a></h3>
 <p>Caching, observability, batch operations, PyArrow — import what you need
@@ -6213,13 +6218,15 @@ from <code>remote_store.ext</code>. Your Store code doesn't change.</p>
 <h2 id="bring-your-own">Bring your own<a class="headerlink" href="#bring-your-own" title="Permanent link">&para;</a></h2>
 <p>Implement the <code>Backend</code> protocol for a new storage target. Or write an
 extension. The hooks are public.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Backend</span><span class="p">,</span> <span class="n">Store</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Backend</span><span class="p">,</span> <span class="n">Store</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyBackend</span><span class="p">(</span><span class="n">Backend</span><span class="p">):</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Implement the Backend protocol for your storage.&quot;&quot;&quot;</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="o">...</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">MyBackend</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>  <span class="c1"># works with all extensions</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="k">class</span><span class="w"> </span><span class="nc">MyBackend</span><span class="p">(</span><span class="n">Backend</span><span class="p">):</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Implement the Backend protocol for your storage.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        <span class="o">...</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">MyBackend</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>  <span class="c1"># works with all extensions</span>
 </code></pre></div>
 <hr />
 <h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>

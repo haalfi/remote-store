@@ -641,7 +641,7 @@
   <span class="md-ellipsis">
     
   
-    File Operations
+    File operations
   
 
     
@@ -697,7 +697,7 @@
   <span class="md-ellipsis">
     
   
-    Atomic Writes
+    Atomic writes
   
 
     
@@ -753,7 +753,7 @@
   <span class="md-ellipsis">
     
   
-    Config Loaders
+    Config loaders
   
 
     
@@ -781,7 +781,7 @@
   <span class="md-ellipsis">
     
   
-    Error Handling
+    Error handling
   
 
     
@@ -809,7 +809,7 @@
   <span class="md-ellipsis">
     
   
-    Capabilities & Errors
+    Capabilities and errors
   
 
     
@@ -837,7 +837,7 @@
   <span class="md-ellipsis">
     
   
-    Path Model
+    Path model
   
 
     
@@ -865,7 +865,7 @@
   <span class="md-ellipsis">
     
   
-    Memory Backend
+    Memory backend
   
 
     
@@ -921,7 +921,7 @@
   <span class="md-ellipsis">
     
   
-    S3 Backend
+    S3 backend
   
 
     
@@ -949,7 +949,7 @@
   <span class="md-ellipsis">
     
   
-    S3-PyArrow Backend
+    S3-PyArrow backend
   
 
     
@@ -977,7 +977,7 @@
   <span class="md-ellipsis">
     
   
-    SFTP Backend
+    SFTP backend
   
 
     
@@ -1005,7 +1005,7 @@
   <span class="md-ellipsis">
     
   
-    Azure Backend
+    Azure backend
   
 
     
@@ -1033,7 +1033,7 @@
   <span class="md-ellipsis">
     
   
-    HTTP Backend
+    HTTP backend
   
 
     
@@ -1061,7 +1061,7 @@
   <span class="md-ellipsis">
     
   
-    Batch Operations
+    Batch operations
   
 
     
@@ -1089,7 +1089,7 @@
   <span class="md-ellipsis">
     
   
-    Transfer Operations
+    Transfer operations
   
 
     
@@ -1117,7 +1117,7 @@
   <span class="md-ellipsis">
     
   
-    Glob Pattern Matching
+    Glob pattern matching
   
 
     
@@ -1173,7 +1173,7 @@
   <span class="md-ellipsis">
     
   
-    Observe Hooks
+    Observe hooks
   
 
     
@@ -1201,7 +1201,7 @@
   <span class="md-ellipsis">
     
   
-    OpenTelemetry Tracing
+    OpenTelemetry tracing and metrics
   
 
     
@@ -1229,7 +1229,7 @@
   <span class="md-ellipsis">
     
   
-    PyArrow Adapter
+    PyArrow FileSystem adapter
   
 
     
@@ -1258,34 +1258,6 @@
     
   
     Dagster IO Manager
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="medallion-dagster/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Medallion + Dagster Showcase
   
 
     
@@ -1341,7 +1313,35 @@
   <span class="md-ellipsis">
     
   
-    Health Check
+    Health check example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="medallion-dagster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Medallion + Dagster Showcase
   
 
     
@@ -5814,6 +5814,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#extension-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extension Examples
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#showcases" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5840,9 +5851,6 @@
                   
 
 
-  
-  
-
 
 <h1 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h1>
 <p>Runnable example scripts demonstrating every feature of <code>remote-store</code>. Each example is self-contained and uses a temporary directory so you can run them directly.</p>
@@ -5858,35 +5866,47 @@
 <tbody>
 <tr>
 <td><a href="quickstart/">Quickstart</a></td>
-<td>Minimal config, write, and read</td>
+<td>Minimal config, write, and read.</td>
 </tr>
 <tr>
-<td><a href="file-operations/">File Operations</a></td>
-<td>Full Store API: read, write, delete, move, copy, list, metadata</td>
+<td><a href="file-operations/">File operations</a></td>
+<td>Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key.</td>
 </tr>
 <tr>
 <td><a href="streaming-io/">Streaming I/O</a></td>
-<td>Streaming writes and reads with <code>BytesIO</code></td>
+<td>Streaming writes and reads with <code>BytesIO</code>.</td>
 </tr>
 <tr>
-<td><a href="atomic-writes/">Atomic Writes</a></td>
-<td>Atomic writes and overwrite semantics</td>
+<td><a href="atomic-writes/">Atomic writes</a></td>
+<td>Atomic writes and overwrite semantics.</td>
 </tr>
 <tr>
 <td><a href="configuration/">Configuration</a></td>
-<td>Config-as-code, <code>from_dict()</code>, multiple stores, S3/SFTP backend configs</td>
+<td>Config-as-code, <code>from_dict()</code>, multiple stores, S3/SFTP backend configs.</td>
 </tr>
 <tr>
-<td><a href="error-handling/">Error Handling</a></td>
-<td>Catching <code>NotFound</code>, <code>AlreadyExists</code>, and more</td>
+<td><a href="config-loaders/">Config loaders</a></td>
+<td>Load registry configuration from TOML, YAML, and Pydantic models.</td>
 </tr>
 <tr>
-<td><a href="memory-backend/">Memory Backend</a></td>
-<td>In-process memory backend for testing and caching</td>
+<td><a href="error-handling/">Error handling</a></td>
+<td>Catching <code>NotFound</code>, <code>AlreadyExists</code>, and more.</td>
+</tr>
+<tr>
+<td><a href="capabilities-and-errors/">Capabilities and errors</a></td>
+<td>Capability querying, gating, and the structured error hierarchy.</td>
+</tr>
+<tr>
+<td><a href="path-model/">Path model</a></td>
+<td><code>RemotePath</code> normalization, properties, validation, and the <code>/</code> operator.</td>
+</tr>
+<tr>
+<td><a href="memory-backend/">Memory backend</a></td>
+<td>In-process memory backend for testing and caching — no filesystem access needed.</td>
 </tr>
 <tr>
 <td><a href="store-child/">Store.child()</a></td>
-<td>Runtime sub-scoping, chaining, close semantics</td>
+<td>Runtime sub-scoping: create child stores that share a backend but isolate paths.</td>
 </tr>
 </tbody>
 </table>
@@ -5901,24 +5921,75 @@
 </thead>
 <tbody>
 <tr>
-<td><a href="s3-backend/">S3 Backend</a></td>
-<td>S3 / MinIO: config, two stores, virtual folders</td>
+<td><a href="s3-backend/">S3 backend</a></td>
+<td>Connect to Amazon S3 or any S3-compatible service (MinIO, DigitalOcean Spaces, etc.).</td>
 </tr>
 <tr>
-<td><a href="s3-pyarrow-backend/">S3-PyArrow Backend</a></td>
-<td>High-throughput S3 via PyArrow C++ + escape hatch</td>
+<td><a href="s3-pyarrow-backend/">S3-PyArrow backend</a></td>
+<td>High-throughput S3 via PyArrow's C++ filesystem. Drop-in swap from the S3 backend.</td>
 </tr>
 <tr>
-<td><a href="sftp-backend/">SFTP Backend</a></td>
-<td>SSH/SFTP: config, host key policies, <code>unwrap()</code></td>
+<td><a href="sftp-backend/">SFTP backend</a></td>
+<td>Connect to any SSH/SFTP server with paramiko.</td>
 </tr>
 <tr>
-<td><a href="azure-backend/">Azure Backend</a></td>
-<td>Azure Blob / ADLS Gen2: config, auth methods, <code>unwrap()</code></td>
+<td><a href="azure-backend/">Azure backend</a></td>
+<td>Connect to Azure Blob Storage or Azure Data Lake Storage Gen2.</td>
 </tr>
 <tr>
-<td><a href="http-backend/">HTTP Backend</a></td>
-<td>Read-only HTTP/HTTPS: capabilities, transport selection</td>
+<td><a href="http-backend/">HTTP backend</a></td>
+<td>Read-only access to files over HTTP/HTTPS — no credentials needed for public endpoints.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="extension-examples">Extension Examples<a class="headerlink" href="#extension-examples" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="batch-operations/">Batch operations</a></td>
+<td>Bulk delete, copy, and existence checks with error aggregation.</td>
+</tr>
+<tr>
+<td><a href="transfer-operations/">Transfer operations</a></td>
+<td>Upload, download, and cross-store transfer with progress tracking.</td>
+</tr>
+<tr>
+<td><a href="glob-pattern-matching/">Glob pattern matching</a></td>
+<td>Three-tier file filtering with <code>list_files(pattern=)</code>, <code>Store.glob()</code>, and <code>glob_files()</code>.</td>
+</tr>
+<tr>
+<td><a href="caching/">Caching</a></td>
+<td>Store-level caching with <code>ext.cache</code> — cached reads, automatic invalidation on writes, and cache statistics.</td>
+</tr>
+<tr>
+<td><a href="observe-hooks/">Observe hooks</a></td>
+<td>Callback-based instrumentation for Store operations — logging, metrics, auditing, and error tracking.</td>
+</tr>
+<tr>
+<td><a href="otel-tracing/">OpenTelemetry tracing and metrics</a></td>
+<td>Instrument any Store with OpenTelemetry spans and metrics.</td>
+</tr>
+<tr>
+<td><a href="pyarrow-adapter/">PyArrow FileSystem adapter</a></td>
+<td>Use any Store as a <code>pyarrow.fs.FileSystem</code> for Parquet, CSV, and dataset I/O.</td>
+</tr>
+<tr>
+<td><a href="dagster-io-manager/">Dagster IO Manager</a></td>
+<td>Use any Store as a Dagster IOManager with pluggable serialization.</td>
+</tr>
+<tr>
+<td><a href="retry-policy/">Retry Policy</a></td>
+<td>Configure retry attempts, backoff, and jitter per-backend.</td>
+</tr>
+<tr>
+<td><a href="health-check/">Health check example</a></td>
+<td>Startup gate pattern using <code>Store.ping()</code> to verify backend connectivity.</td>
 </tr>
 </tbody>
 </table>
