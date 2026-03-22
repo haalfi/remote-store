@@ -242,11 +242,9 @@ class TestCachedReads:
             pytest.param("list_folders", ("",), {}, id="list_folders"),
             pytest.param("iter_children", ("",), {}, id="iter_children"),
         ],
-        ids=lambda x: "",  # suppress double-id; pytest.param id takes precedence
     )
-    @pytest.mark.parametrize("_dummy", [None])  # force unique node ids
     def test_iterable_operation_cached(
-        self, cached: CachedStore, method: str, args: tuple[Any, ...], kwargs: dict[str, Any], _dummy: None
+        self, cached: CachedStore, method: str, args: tuple[Any, ...], kwargs: dict[str, Any]
     ) -> None:
         fn = getattr(cached, method)
         r1 = list(fn(*args, **kwargs))

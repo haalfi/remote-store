@@ -9,7 +9,7 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 - [x] **BK-014 — Test code deduplication and parametrization**
   Aggressive refactoring of the test suite (~17,800 → ~16,300 lines, −8.6%)
   while maintaining identical coverage (1866 passed, 170 skipped).
-  Applied across all 44 test files.
+  Applied across 30 of 40 test files.
   - Parametrized similar tests (error mapping, validation, operation variants)
   - Extracted shared fixtures and factory helpers (`_make_backend`, etc.)
   - Merged single-method test classes into parent classes
