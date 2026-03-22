@@ -17,6 +17,7 @@ See: sdd/adrs/0007-docs-src-literate-nav.md
 from __future__ import annotations
 
 import ast
+import warnings
 from pathlib import Path
 
 import mkdocs_gen_files
@@ -362,8 +363,12 @@ def _make_title(stem: str, docstring_first: str) -> str:
         for sep in (" — ", " -- "):
             if sep in rest:
                 return rest.split(sep, 1)[0].strip()
-    # Fall back to title-casing the stem
-    return stem.replace("_", " ").title()
+    # Fall back to title-casing the stem, with acronym fixups
+    _ACRONYMS = {"Sftp": "SFTP", "Http": "HTTP", "S3": "S3", "Otel": "OTel", "Io": "IO"}
+    title = stem.replace("_", " ").title()
+    for wrong, right in _ACRONYMS.items():
+        title = title.replace(wrong, right)
+    return title
 
 
 # Categorisation for the index page
@@ -472,6 +477,8 @@ def _gen_example_index(
         if entry:
             _, slug, title, desc = entry
             lines.append(f"| [{title}]({slug}.md) | {desc} |")
+        else:
+            warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=2)
 
     lines.extend([
         "",
@@ -489,6 +496,8 @@ def _gen_example_index(
         if entry:
             _, slug, title, desc = entry
             lines.append(f"| [{title}]({slug}.md) | {desc} |")
+        else:
+            warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=2)
 
     lines.extend([
         "",
@@ -502,6 +511,8 @@ def _gen_example_index(
         if entry:
             _, slug, title, desc = entry
             lines.append(f"| [{title}]({slug}.md) | {desc} |")
+        else:
+            warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=2)
 
     lines.extend([
         "",
@@ -599,6 +610,8 @@ for key in _CORE_EXAMPLES:
     if entry:
         _, slug, title, _ = entry
         _example_nav_entries.append((title, f"examples/{slug}.md"))
+    else:
+        warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=1)
 
 # Backend examples
 for key in _BACKEND_EXAMPLES:
@@ -607,6 +620,8 @@ for key in _BACKEND_EXAMPLES:
         _, slug, title, _ = entry
         doc_slug = _stem_to_slug(key.split("/")[-1]) if "/" in key else slug
         _example_nav_entries.append((title, f"examples/{doc_slug}.md"))
+    else:
+        warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=1)
 
 # Extension examples
 for key in _EXTENSION_EXAMPLES:
@@ -614,6 +629,8 @@ for key in _EXTENSION_EXAMPLES:
     if entry:
         _, slug, title, _ = entry
         _example_nav_entries.append((title, f"examples/{slug}.md"))
+    else:
+        warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=1)
 
 # Showcases
 _example_nav_entries.append(("Medallion + Dagster Showcase", "examples/medallion-dagster.md"))
