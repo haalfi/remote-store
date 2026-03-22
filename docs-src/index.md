@@ -56,27 +56,26 @@ flowchart LR
 A `Store` scopes all operations to a root path. Everything is relative.
 
 ```python
-from remote_store import Store
-from remote_store.backends import LocalBackend
-
-store = Store(LocalBackend(root="/tmp/data"))
-store.write_text("hello.txt", "Hello, world!")
-print(store.read_text("hello.txt"))  # 'Hello, world!'
+--8<-- "examples/snippets/homepage.py:core-idea"
 ```
 
 Switch backend without changing application code:
 
+<!-- Inline block: S3Backend can't be instantiated without credentials,
+     so this is not sourced from a snippet file. See ID-057 notes. -->
 ```python
+from remote_store import Store
 from remote_store.backends import S3Backend
 
 store = Store(S3Backend(bucket="my-bucket"))
+store.write_text("file.txt", "hello")
+print(store.read_text("file.txt"))  # same API, different backend
 ```
 
 Narrow scope with `child()` — all paths inside are relative to the new root:
 
 ```python
-sub = store.child("reports/2024")
-sub.write_text("summary.txt", "...")
+--8<-- "examples/snippets/homepage.py:child-scoping"
 ```
 
 See [Store child scoping](examples/store-child.md) for more.
@@ -101,10 +100,7 @@ Backends delegate to the packages you'd pick yourself.
 natively, remote-store uses that. Where not, a portable fallback steps in.
 
 ```python
-from remote_store import Capability
-
-store.supports(Capability.GLOB)          # True for Local, S3, S3-PyArrow, Azure
-store.supports(Capability.ATOMIC_WRITE)  # True for all except HTTP
+--8<-- "examples/snippets/homepage.py:capabilities"
 ```
 
 ### Extensions sit beside, not around
@@ -120,11 +116,7 @@ Implement the `Backend` protocol for a new storage target. Or write an
 extension. The hooks are public.
 
 ```python
-from remote_store import Backend, Store
-
-class MyBackend(Backend):
-    """Implement the Backend protocol for your storage."""
-    ...
+--8<-- "examples/snippets/homepage.py:custom-backend"
 
 store = Store(MyBackend(...))  # works with all extensions
 ```

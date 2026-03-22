@@ -91,27 +91,11 @@ Items graduate through the SDD pipeline:
 
 ### Documentation & Developer Experience
 
-- [ ] **ID-057 — Tested code snippets in docs (single-source snippets)**
-  All code snippets in the docs site should come from real, tested Python
-  source files — not hand-written markdown fences. One or more "snippet
-  scripts" (e.g. `examples/snippets/`) contain named regions
-  (`# snippet: quickstart-read` / `# end-snippet`). A mkdocs hook or
-  `pymdownx.snippets` pulls regions into docs at build time. CI runs the
-  snippet scripts as part of `hatch run all` to guarantee they stay valid.
-  Inspired by Rust rustdoc, Go Example functions, Java `@snippet` tags.
-  [Research](research/research-example-testing.md).
+- [x] **ID-057 — Tested code snippets in docs (single-source snippets)**
+  → Moved to [BACKLOG-DONE.md](BACKLOG-DONE.md).
 
-- [ ] **ID-058 — Auto-generate example docs wrappers via mkdocs-gen-files**
-  Extend `docs-src/scripts/gen_pages.py` to scan `examples/*.py`, extract
-  the module docstring, and generate `docs-src/examples/<name>.md` wrappers
-  automatically. Eliminates the class of "forgot to add a wrapper" bugs
-  (see AF-022).
-  The existing API reference pages are already auto-generated this way.
-  Each generated wrapper should also include links to relevant API reference
-  pages at the bottom (e.g. caching example links to `ext.cache` reference).
-  Also: add a CI/build-time check that every symbol in `__all__` has a
-  matching `:::` directive in `docs-src/api/*.md` and a row in
-  `docs-src/api/index.md`.
+- [x] **ID-058 — Auto-generate example docs wrappers via mkdocs-gen-files**
+  → Moved to [BACKLOG-DONE.md](BACKLOG-DONE.md).
 
 - [ ] **ID-066 — PR preview deployments**
   Deploy PR previews to Cloudflare Pages, Netlify, or GitHub Pages artifacts.

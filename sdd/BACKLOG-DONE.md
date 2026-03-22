@@ -4,6 +4,32 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Documentation Tooling
+
+- [x] **ID-057 — Tested code snippets in docs (single-source snippets)**
+  Created `examples/snippets/` with named regions using pymdownx.snippets'
+  `# --8<-- [start:name]` / `# --8<-- [end:name]` syntax. Two snippet files
+  (`homepage.py`, `core_operations.py`) replace hand-written fences in
+  `docs-src/index.md`. Snippet scripts run as part of `hatch run examples`;
+  `tests/test_snippets.py` verifies they execute. CI guarantees docs code
+  blocks stay in sync with the actual API. Note: the S3Backend
+  "backend-switching" example on the homepage remains inline because
+  `S3Backend` cannot be instantiated without real credentials; this block
+  is not CI-tested by design.
+  [Research](research/research-example-testing.md).
+
+- [x] **ID-058 — Auto-generate example docs wrappers via mkdocs-gen-files**
+  Extended `scripts/gen_pages.py` to scan `examples/*.py` and
+  `examples/backends/*.py`, extract module docstrings, and generate
+  `docs-src/examples/<slug>.md` wrappers + `index.md` + nav entries
+  automatically. Deleted 28 hand-maintained wrapper files and the static
+  `_nav.yml`. Medallion showcase handled as special case (README inlined).
+  Added `tests/test_api_coverage.py` CI check verifying every `__all__`
+  symbol has a `:::` directive in `docs-src/api/` and every core symbol
+  appears in `docs-src/api/index.md`.
+
+---
+
 ## Documentation Cross-Linking
 
 - [x] **BK-013 — Documentation cross-link compliance**
