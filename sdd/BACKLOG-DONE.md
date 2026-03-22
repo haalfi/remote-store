@@ -12,7 +12,10 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   (`homepage.py`, `core_operations.py`) replace hand-written fences in
   `docs-src/index.md`. Snippet scripts run as part of `hatch run examples`;
   `tests/test_snippets.py` verifies they execute. CI guarantees docs code
-  blocks stay in sync with the actual API.
+  blocks stay in sync with the actual API. Note: the S3Backend
+  "backend-switching" example on the homepage remains inline because
+  `S3Backend` cannot be instantiated without real credentials; this block
+  is not CI-tested by design.
   [Research](research/research-example-testing.md).
 
 - [x] **ID-058 — Auto-generate example docs wrappers via mkdocs-gen-files**
