@@ -31,7 +31,6 @@ from remote_store.backends._azure import AzureBackend, _AzureBinaryIO  # noqa: E
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-    from typing import Any
 
     from remote_store._backend import Backend
 
@@ -69,12 +68,6 @@ def _needs_azurite(func_or_class):  # type: ignore[no-untyped-def]
         reason="Azurite not reachable at 127.0.0.1:10000",
     )(decorated)
     return decorated
-
-
-def _make_backend(**kw: Any) -> AzureBackend:
-    defaults: dict[str, Any] = {"container": "test", "account_name": "x", "account_key": "fakekey"}
-    defaults.update(kw)
-    return AzureBackend(**defaults)
 
 
 @pytest.fixture()

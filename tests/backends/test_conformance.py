@@ -120,6 +120,7 @@ class TestBackendRead:
         assert backend.read_bytes("file.txt") == b"content"
 
     @pytest.mark.spec("BE-006")
+    @pytest.mark.spec("BE-007")
     @pytest.mark.parametrize(
         "method",
         [pytest.param("read", id="read_stream"), pytest.param("read_bytes", id="read_bytes")],
@@ -402,8 +403,8 @@ class TestBackendMetadata:
             pytest.param("get_folder_info", "BE-017", id="folder_info"),
         ],
     )
-    def test_info_not_found(self, backend: Backend, method: str, spec_id: str) -> None:
-        pytest.mark.spec(spec_id)
+    def test_info_not_found(self, backend: Backend, method: str, spec_id: str, request: pytest.FixtureRequest) -> None:
+        request.node.add_marker(pytest.mark.spec(spec_id))
         with pytest.raises(NotFound):
             getattr(backend, method)("missing_target")
 

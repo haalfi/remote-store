@@ -280,8 +280,8 @@ class TestS3Operations:
             pytest.param("copy", "S3-014", id="copy_not_found"),
         ],
     )
-    def test_not_found(self, s3_backend: Backend, op: str, spec: str) -> None:
-        pytest.mark.spec(spec)
+    def test_not_found(self, s3_backend: Backend, op: str, spec: str, request: pytest.FixtureRequest) -> None:
+        request.node.add_marker(pytest.mark.spec(spec))
         with pytest.raises(NotFound):
             getattr(s3_backend, op)("missing.txt", "dst.txt")
 
@@ -292,8 +292,8 @@ class TestS3Operations:
             pytest.param("copy", "S3-014", id="copy_already_exists"),
         ],
     )
-    def test_already_exists(self, s3_backend: Backend, op: str, spec: str) -> None:
-        pytest.mark.spec(spec)
+    def test_already_exists(self, s3_backend: Backend, op: str, spec: str, request: pytest.FixtureRequest) -> None:
+        request.node.add_marker(pytest.mark.spec(spec))
         s3_backend.write("ae1.txt", b"a")
         s3_backend.write("ae2.txt", b"b")
         with pytest.raises(AlreadyExists):
