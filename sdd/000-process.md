@@ -61,12 +61,19 @@ Completed items live in [`sdd/BACKLOG-DONE.md`](BACKLOG-DONE.md).
 `BACKLOG.md` is the single source of truth for ID prefixes, status conventions,
 completion workflow, and section structure. See its "How this file works" header.
 
-### ADRs, RFCs, research, and audits
+### Document types
 
-- **ADRs** (`sdd/adrs/NNNN-<short-title>.md`): capture *why* a design decision was made. Immutable once accepted: if reversed, a new ADR supersedes the old one.
-- **RFCs** (`sdd/rfcs/rfc-NNNN-<short-title>.md`): proposals for new features. If accepted, the RFC graduates to a spec in `sdd/specs/`. Kept for historical reference.
-- **Research** (`sdd/research/research-<topic>.md`): exploratory analysis done before a feature is specified. Not edited after the related feature ships.
-- **Audits** (`sdd/audits/audit-NNN-<topic>.md`): systematic reviews (adversarial, compliance, documentation). Findings tracked as backlog items.
+Five document categories live under `sdd/`. Each has a clear purpose and lifecycle:
+
+| Category | Path pattern | Purpose | Lifecycle |
+|----------|-------------|---------|-----------|
+| **Specs** | `sdd/specs/NNN-<topic>.md` | Declarative contracts — what must be true | Lives forever, versioned. IDs are stable and immutable. |
+| **ADRs** | `sdd/adrs/NNNN-<short-title>.md` | Decision records — why we chose this approach | Immutable; superseded by a new ADR, never edited. |
+| **RFCs** | `sdd/rfcs/rfc-NNNN-<short-title>.md` | Proposals for any significant change (features, refactors, process improvements) | If accepted, graduates to a spec and/or ADR. Kept as historical reference. |
+| **Research** | `sdd/research/research-<topic>.md` | Exploration, feasibility analysis, implementation plans | Archived after the related feature ships; not edited. May include an `## Implementation Plan` section for tactical build steps. |
+| **Audits** | `sdd/audits/audit-NNN-<topic>.md` | Systematic quality reviews (security, compliance, docs) | Findings tracked as backlog items. The audit itself is a report, not a proposal. |
+
+**Decision rule:** If you're asking "should we do X?" → research. If you're proposing "let's do X this way" → RFC. If the decision is made → ADR. If it defines a testable contract → spec. If it reviews existing quality → audit.
 
 ### Versioning
 

@@ -1,7 +1,7 @@
 # Documentation Cross-Link Rules & Compliance Audit
 
 **Date:** 2026-03-19
-**Status:** Proposal — for discussion
+**Status:** Accepted (implemented via BK-013)
 **Supersedes:** Initial draft on branch `claude/add-doc-links-HqSzw`
 
 ---

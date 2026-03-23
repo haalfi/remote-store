@@ -74,7 +74,8 @@ Before committing, check whether your change has cross-file dependencies:
 | Find out what work is pending            | `sdd/BACKLOG.md` (active), `sdd/BACKLOG-DONE.md` (archive) |
 | Understand how a feature should behave   | `sdd/specs/` (NNN-topic.md; IDs use STORE-, S3-, ERR- etc.) |
 | Learn why a design decision was made     | `sdd/adrs/`                                          |
-| Propose a significant new feature        | Write an RFC in `sdd/rfcs/` (see `rfc-template.md`)  |
+| Propose a significant change             | Write an RFC in `sdd/rfcs/` (see `rfc-template.md`)  |
+| Explore feasibility of an idea           | Write a research doc in `sdd/research/`              |
 | Record a new design decision             | Add an ADR in `sdd/adrs/`                            |
 | Log a bug or improvement idea            | Append to `sdd/BACKLOG.md` (Ideas section)           |
 | Document a user-facing change            | `CHANGELOG.md` — under `[Unreleased]` or version     |
@@ -94,7 +95,7 @@ src/remote_store/          # Library source (backends, Store, errors, registry)
 tests/                     # pytest suite — spec-traced via @pytest.mark.spec("ID")
 examples/                  # Core runnable examples (run locally, no credentials)
 examples/backends/         # Cloud backend examples (need services + credentials)
-sdd/                       # Specs, ADRs, RFCs, backlog, design docs
+sdd/                       # Specs, ADRs, RFCs, research, audits, backlog, design docs
 guides/backends/           # User-facing backend configuration guides
 docs-src/                  # MkDocs Material documentation source
 ```

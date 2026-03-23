@@ -679,3 +679,42 @@ Next steps:
 2. Add conformance suite capability gates (prerequisite, benefits all future
    partial-capability backends)
 3. Implement Phase 1 (urllib-only, `{READ, METADATA}`)
+
+---
+
+## 20. Implementation Plan
+
+*Formerly `sdd/plans/plan-readonly-http-backend.md` (consolidated).*
+
+**Branch:** `claude/plan-readonly-http-backend-YhBCx`
+
+### Phases
+
+| Phase | Scope | Notes |
+|-------|-------|-------|
+| 0 | Conformance suite capability gates | Prerequisite — make suite safe for partial-capability backends |
+| 1 | Spec `032-http-backend.md` | Formalize design as testable specification |
+| 2 | `ReadOnlyHttpBackend` + `UrllibTransport` + registration | Zero new runtime deps |
+| 3 | Backend-specific tests + conformance fixture | 17 HTTP-specific scenarios via `pytest-httpserver` |
+| 4 | Optional transports (requests, httpx) + extras | Higher-quality HTTP for users with these installed |
+| 5 | Docs: guide, example, README, nav, CHANGELOG, BACKLOG | User-facing documentation |
+
+### Commit strategy
+
+Each commit passes `hatch run all` independently. One commit per phase.
+
+### Dependencies & test infrastructure
+
+| Dependency | Type | Purpose |
+|---|---|---|
+| `pytest-httpserver` | test-only | Mock HTTP server for backend tests + conformance fixture |
+| `requests>=2.25.0` | optional extra | `RequestsTransport` |
+| `httpx>=0.24.0` | optional extra | `HttpxTransport` |
+
+### Risks & mitigations
+
+| Risk | Mitigation |
+|---|---|
+| Conformance gate changes affect other backends | Additive only (skip where unsupported); run full suite |
+| urllib streaming edge cases | Research verified `_ErrorMappingStream` wraps HTTPResponse correctly |
+| `size=0` when Content-Length missing | Document as known limitation in spec and guide |

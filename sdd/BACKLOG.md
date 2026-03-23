@@ -91,12 +91,6 @@ Items graduate through the SDD pipeline:
 
 ### Documentation & Developer Experience
 
-- [x] **ID-057 — Tested code snippets in docs (single-source snippets)**
-  → Moved to [BACKLOG-DONE.md](BACKLOG-DONE.md).
-
-- [x] **ID-058 — Auto-generate example docs wrappers via mkdocs-gen-files**
-  → Moved to [BACKLOG-DONE.md](BACKLOG-DONE.md).
-
 - [ ] **ID-066 — PR preview deployments**
   Deploy PR previews to Cloudflare Pages, Netlify, or GitHub Pages artifacts.
   Inspired by FastAPI's Cloudflare Pages pattern. Infrastructure decision needed.

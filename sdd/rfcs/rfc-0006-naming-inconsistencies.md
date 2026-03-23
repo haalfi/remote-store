@@ -1,7 +1,7 @@
 # Naming Inconsistency Analysis
 
 **Date:** 2026-03-19
-**Status:** Proposal — for discussion
+**Status:** Accepted (implemented via BK-010)
 
 ---
 
