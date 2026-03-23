@@ -178,33 +178,20 @@ class TestHttpMetadata:
 class TestHttpErrorMapping:
     """HTTP-006: Error mapping from HTTP status codes."""
 
-    def test_401_raises_permission_denied(self, httpserver: HTTPServer) -> None:
-        """401 -> PermissionDenied."""
-        httpserver.expect_request("/auth/secret.txt", method="GET").respond_with_data(b"", status=401)
-        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/auth/"), http_client="urllib")
-        with pytest.raises(PermissionDenied):
-            b.read_bytes("secret.txt")
-
-    def test_403_raises_permission_denied(self, httpserver: HTTPServer) -> None:
-        """403 -> PermissionDenied."""
-        httpserver.expect_request("/auth/forbidden.txt", method="GET").respond_with_data(b"", status=403)
-        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/auth/"), http_client="urllib")
-        with pytest.raises(PermissionDenied):
-            b.read_bytes("forbidden.txt")
-
-    def test_500_raises_backend_unavailable(self, httpserver: HTTPServer) -> None:
-        """500 -> BackendUnavailable."""
-        httpserver.expect_request("/err/broken.txt", method="GET").respond_with_data(b"", status=500)
+    @pytest.mark.parametrize(
+        "status, path, error_type",
+        [
+            pytest.param(401, "secret.txt", PermissionDenied, id="401-permission-denied"),
+            pytest.param(403, "forbidden.txt", PermissionDenied, id="403-permission-denied"),
+            pytest.param(404, "missing.txt", NotFound, id="404-not-found"),
+            pytest.param(500, "broken.txt", BackendUnavailable, id="500-backend-unavailable"),
+        ],
+    )
+    def test_http_status_error_mapping(self, httpserver: HTTPServer, status: int, path: str, error_type: type) -> None:
+        httpserver.expect_request(f"/err/{path}", method="GET").respond_with_data(b"", status=status)
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/err/"), http_client="urllib")
-        with pytest.raises(BackendUnavailable):
-            b.read_bytes("broken.txt")
-
-    def test_404_raises_not_found(self, httpserver: HTTPServer) -> None:
-        """404 -> NotFound."""
-        httpserver.expect_request("/err/missing.txt", method="GET").respond_with_data(b"", status=404)
-        b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/err/"), http_client="urllib")
-        with pytest.raises(NotFound):
-            b.read_bytes("missing.txt")
+        with pytest.raises(error_type):
+            b.read_bytes(path)
 
 
 class TestHttpPaths:
@@ -339,45 +326,33 @@ class TestHttpHealthCheck:
 class TestHttpUnsupportedOperations:
     """HTTP-014: Write/delete/move/copy raise CapabilityNotSupported."""
 
-    def test_write_raises(self, backend: ReadOnlyHttpBackend) -> None:
+    @pytest.mark.parametrize(
+        "method, args",
+        [
+            pytest.param("write", ("x.txt", b"data"), id="write"),
+            pytest.param("write_atomic", ("x.txt", b"data"), id="write_atomic"),
+            pytest.param("open_atomic", ("x.txt",), id="open_atomic"),
+            pytest.param("delete", ("x.txt",), id="delete"),
+            pytest.param("delete_folder", ("dir",), id="delete_folder"),
+            pytest.param("move", ("a.txt", "b.txt"), id="move"),
+            pytest.param("copy", ("a.txt", "b.txt"), id="copy"),
+        ],
+    )
+    def test_unsupported_op_raises(self, backend: ReadOnlyHttpBackend, method: str, args: tuple) -> None:
         with pytest.raises(CapabilityNotSupported):
-            backend.write("x.txt", b"data")
+            getattr(backend, method)(*args)
 
-    def test_write_atomic_raises(self, backend: ReadOnlyHttpBackend) -> None:
+    @pytest.mark.parametrize(
+        "method",
+        [
+            pytest.param("list_files", id="list_files"),
+            pytest.param("list_folders", id="list_folders"),
+            pytest.param("iter_children", id="iter_children"),
+        ],
+    )
+    def test_unsupported_iterator_raises(self, backend: ReadOnlyHttpBackend, method: str) -> None:
         with pytest.raises(CapabilityNotSupported):
-            backend.write_atomic("x.txt", b"data")
-
-    def test_open_atomic_raises(self, backend: ReadOnlyHttpBackend) -> None:
-        with pytest.raises(CapabilityNotSupported):
-            backend.open_atomic("x.txt")
-
-    def test_delete_raises(self, backend: ReadOnlyHttpBackend) -> None:
-        with pytest.raises(CapabilityNotSupported):
-            backend.delete("x.txt")
-
-    def test_delete_folder_raises(self, backend: ReadOnlyHttpBackend) -> None:
-        with pytest.raises(CapabilityNotSupported):
-            backend.delete_folder("dir")
-
-    def test_list_files_raises(self, backend: ReadOnlyHttpBackend) -> None:
-        with pytest.raises(CapabilityNotSupported):
-            list(backend.list_files(""))
-
-    def test_list_folders_raises(self, backend: ReadOnlyHttpBackend) -> None:
-        with pytest.raises(CapabilityNotSupported):
-            list(backend.list_folders(""))
-
-    def test_iter_children_raises(self, backend: ReadOnlyHttpBackend) -> None:
-        with pytest.raises(CapabilityNotSupported):
-            list(backend.iter_children(""))
-
-    def test_move_raises(self, backend: ReadOnlyHttpBackend) -> None:
-        with pytest.raises(CapabilityNotSupported):
-            backend.move("a.txt", "b.txt")
-
-    def test_copy_raises(self, backend: ReadOnlyHttpBackend) -> None:
-        with pytest.raises(CapabilityNotSupported):
-            backend.copy("a.txt", "b.txt")
+            list(getattr(backend, method)(""))
 
 
 class TestHttpLifecycle:
@@ -428,20 +403,17 @@ class TestHttpConstructor:
         b = ReadOnlyHttpBackend(base_url="http://example.com/data/", http_client="urllib")
         assert b.native_path("") == "http://example.com/data/"
 
-    def test_empty_base_url_raises(self) -> None:
-        """Empty base_url raises ValueError."""
-        with pytest.raises(ValueError, match="must not be empty"):
-            ReadOnlyHttpBackend(base_url="", http_client="urllib")
-
-    def test_invalid_scheme_raises(self) -> None:
-        """Non-http(s) schemes are rejected."""
-        with pytest.raises(ValueError, match="http or https scheme"):
-            ReadOnlyHttpBackend(base_url="ftp://example.com/data/", http_client="urllib")
-
-    def test_file_scheme_raises(self) -> None:
-        """file:// scheme is rejected (security)."""
-        with pytest.raises(ValueError, match="http or https scheme"):
-            ReadOnlyHttpBackend(base_url="file:///etc/passwd", http_client="urllib")
+    @pytest.mark.parametrize(
+        "url, match",
+        [
+            pytest.param("", "must not be empty", id="empty"),
+            pytest.param("ftp://example.com/data/", "http or https scheme", id="ftp-scheme"),
+            pytest.param("file:///etc/passwd", "http or https scheme", id="file-scheme"),
+        ],
+    )
+    def test_invalid_base_url_raises(self, url: str, match: str) -> None:
+        with pytest.raises(ValueError, match=match):
+            ReadOnlyHttpBackend(base_url=url, http_client="urllib")
 
     def test_https_scheme_accepted(self) -> None:
         """https:// scheme is accepted."""
@@ -854,81 +826,52 @@ class TestHeadFallback:
 class TestParseContentRangeTotal:
     """Unit tests for _parse_content_range_total."""
 
-    def test_standard_range(self) -> None:
+    @pytest.mark.parametrize(
+        "header, expected",
+        [
+            pytest.param("bytes 0-0/12345", 12345, id="standard-range"),
+            pytest.param("bytes 0-0/*", None, id="unknown-total"),
+            pytest.param(None, None, id="none"),
+            pytest.param("", None, id="empty"),
+            pytest.param("bytes */5000", 5000, id="star-total"),
+        ],
+    )
+    def test_parse(self, header: str | None, expected: int | None) -> None:
         from remote_store.backends._http import _parse_content_range_total
 
-        assert _parse_content_range_total("bytes 0-0/12345") == 12345
-
-    def test_unknown_total(self) -> None:
-        from remote_store.backends._http import _parse_content_range_total
-
-        assert _parse_content_range_total("bytes 0-0/*") is None
-
-    def test_none(self) -> None:
-        from remote_store.backends._http import _parse_content_range_total
-
-        assert _parse_content_range_total(None) is None
-
-    def test_empty(self) -> None:
-        from remote_store.backends._http import _parse_content_range_total
-
-        assert _parse_content_range_total("") is None
-
-    def test_star_total(self) -> None:
-        from remote_store.backends._http import _parse_content_range_total
-
-        assert _parse_content_range_total("bytes */5000") == 5000
+        assert _parse_content_range_total(header) == expected
 
 
 class TestParseRetryAfter:
     """Unit tests for _parse_retry_after."""
 
-    def test_integer_seconds(self) -> None:
+    @pytest.mark.parametrize(
+        "header, expected",
+        [
+            pytest.param("120", 120.0, id="integer-seconds"),
+            pytest.param(None, None, id="none"),
+            pytest.param("", None, id="empty"),
+            pytest.param("Sun, 15 Mar 2020 12:00:00 GMT", 0.0, id="http-date-past"),
+            pytest.param("not-a-date-or-number", None, id="unparseable"),
+        ],
+    )
+    def test_parse(self, header: str | None, expected: float | None) -> None:
         from remote_store.backends._http import _parse_retry_after
 
-        assert _parse_retry_after("120") == 120.0
-
-    def test_none_value(self) -> None:
-        from remote_store.backends._http import _parse_retry_after
-
-        assert _parse_retry_after(None) is None
-
-    def test_empty_string(self) -> None:
-        from remote_store.backends._http import _parse_retry_after
-
-        assert _parse_retry_after("") is None
-
-    def test_http_date(self) -> None:
-        from remote_store.backends._http import _parse_retry_after
-
-        # A date in the past should return 0.0
-        result = _parse_retry_after("Sun, 15 Mar 2020 12:00:00 GMT")
-        assert result == 0.0
-
-    def test_unparseable(self) -> None:
-        from remote_store.backends._http import _parse_retry_after
-
-        assert _parse_retry_after("not-a-date-or-number") is None
+        assert _parse_retry_after(header) == expected
 
 
 class TestHttpTransportAutoDetection:
     """Transport resolution and factory coverage."""
 
-    def test_resolve_requests_transport(self) -> None:
-        """Explicit requests transport can be created (if installed)."""
+    @pytest.mark.parametrize("client", ["requests", "httpx"])
+    def test_resolve_optional_transport(self, client: str) -> None:
+        """Explicit transport can be created (if installed)."""
         try:
-            b = ReadOnlyHttpBackend(base_url="http://example.com/", http_client="requests")
+            b = ReadOnlyHttpBackend(base_url="http://example.com/", http_client=client)
             b.close()
         except ImportError:
-            pytest.skip("requests not installed")
-
-    def test_resolve_httpx_transport(self) -> None:
-        """Explicit httpx transport can be created (if installed)."""
-        try:
-            b = ReadOnlyHttpBackend(base_url="http://example.com/", http_client="httpx")
-            b.close()
-        except ImportError:
-            pytest.skip("httpx not installed")
+            pytest.skip(f"{client} not installed")
 
     def test_auto_detect_falls_back_to_urllib(self) -> None:
         """Auto-detection eventually falls back to urllib."""

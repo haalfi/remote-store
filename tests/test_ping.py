@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
@@ -17,37 +18,74 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
-# Backend.check_health() default — no-op (PING-002, PING-008)
+# Helpers
 # ---------------------------------------------------------------------------
 
 
-class TestBackendCheckHealthDefault:
-    """Default check_health() is a no-op — always succeeds."""
+def _s3_backend(bucket: str, side_effect: Any = None) -> Any:
+    from remote_store.backends._s3 import S3Backend
 
+    s3_mock = MagicMock()
+    if side_effect is None:
+        s3_mock.s3.head_bucket.return_value = {}
+    else:
+        s3_mock.s3.head_bucket.side_effect = side_effect
+    backend = S3Backend(bucket=bucket)
+    backend._fs_instance = s3_mock
+    return backend, s3_mock
+
+
+def _sftp_backend(stat_side_effect: Any = None) -> Any:
+    from remote_store.backends._sftp import SFTPBackend
+
+    sftp_mock = MagicMock()
+    if stat_side_effect is not None:
+        sftp_mock.stat.side_effect = stat_side_effect
+    else:
+        sftp_mock.stat.return_value = MagicMock()
+    backend = SFTPBackend(host="example.com", username="user", password="pass")
+    backend._sftp_client = sftp_mock
+    backend._ssh_client = MagicMock()
+    backend._ssh_client.get_transport.return_value.is_active.return_value = True
+    return backend, sftp_mock
+
+
+def _azure_backend(side_effect: Any = None) -> Any:
+    from remote_store.backends._azure import AzureBackend
+
+    cc_mock = MagicMock()
+    if side_effect is not None:
+        cc_mock.get_container_properties.side_effect = side_effect
+    else:
+        cc_mock.get_container_properties.return_value = {}
+    backend = AzureBackend(
+        container="test",
+        connection_string="DefaultEndpointsProtocol=https;AccountName=test;AccountKey=dGVzdA==;EndpointSuffix=core.windows.net",
+    )
+    backend._cc_instance = cc_mock
+    backend._hns_enabled = False
+    return backend, cc_mock
+
+
+# ---------------------------------------------------------------------------
+# Store.ping() delegation & defaults (PING-001/002/008)
+# ---------------------------------------------------------------------------
+
+
+class TestStorePingAndDefaults:
     @pytest.mark.spec("PING-002")
     def test_default_check_health_is_noop(self) -> None:
-        """Memory backend inherits the default no-op check_health()."""
-        backend = MemoryBackend()
-        backend.check_health()  # should not raise
+        MemoryBackend().check_health()  # should not raise
 
     @pytest.mark.spec("PING-008")
     def test_memory_backend_always_healthy(self) -> None:
-        store = Store(MemoryBackend())
-        store.ping()  # should not raise
+        Store(MemoryBackend()).ping()  # should not raise
 
-
-# ---------------------------------------------------------------------------
-# Store.ping() delegation (PING-001)
-# ---------------------------------------------------------------------------
-
-
-class TestStorePing:
     @pytest.mark.spec("PING-001")
     def test_ping_delegates_to_check_health(self) -> None:
         backend = MemoryBackend()
         backend.check_health = MagicMock()  # type: ignore[method-assign]
-        store = Store(backend)
-        store.ping()
+        Store(backend).ping()
         backend.check_health.assert_called_once()
 
     @pytest.mark.spec("PING-001")
@@ -56,9 +94,12 @@ class TestStorePing:
         backend.check_health = MagicMock(  # type: ignore[method-assign]
             side_effect=BackendUnavailable("down", backend="memory"),
         )
-        store = Store(backend)
         with pytest.raises(BackendUnavailable, match="down"):
-            store.ping()
+            Store(backend).ping()
+
+    @pytest.mark.spec("PING-001")
+    def test_child_store_ping(self) -> None:
+        Store(MemoryBackend()).child("subdir").ping()  # should not raise
 
 
 # ---------------------------------------------------------------------------
@@ -69,13 +110,11 @@ class TestStorePing:
 class TestLocalCheckHealth:
     @pytest.mark.spec("PING-003")
     def test_healthy_local(self, tmp_path: Path) -> None:
-        backend = LocalBackend(root=str(tmp_path))
-        backend.check_health()  # should not raise
+        LocalBackend(root=str(tmp_path)).check_health()
 
     @pytest.mark.spec("PING-003")
     def test_local_missing_root(self, tmp_path: Path) -> None:
         missing = tmp_path / "nonexistent"
-        # LocalBackend.__init__ creates the directory, so we delete it after
         backend = LocalBackend(root=str(missing))
         missing.rmdir()
         with pytest.raises(NotFound, match="Root directory not found"):
@@ -89,171 +128,97 @@ class TestLocalCheckHealth:
 
 
 # ---------------------------------------------------------------------------
-# S3Backend.check_health() (PING-004) — mocked
+# S3Backend.check_health() (PING-004)
 # ---------------------------------------------------------------------------
 
 
 class TestS3CheckHealth:
     @pytest.mark.spec("PING-004")
     def test_s3_healthy(self) -> None:
-        s3_mock = MagicMock()
-        s3_mock.s3.head_bucket.return_value = {}
-
-        with patch("remote_store.backends._s3.S3Backend._fs", new_callable=lambda: property(lambda self: s3_mock)):
-            from remote_store.backends._s3 import S3Backend
-
-            backend = S3Backend(bucket="test-bucket")
-            backend._fs_instance = s3_mock
-            backend.check_health()
-            s3_mock.s3.head_bucket.assert_called_once_with(Bucket="test-bucket")
+        backend, s3_mock = _s3_backend("test-bucket")
+        backend.check_health()
+        s3_mock.s3.head_bucket.assert_called_once_with(Bucket="test-bucket")
 
     @pytest.mark.spec("PING-004")
-    def test_s3_bucket_not_found(self) -> None:
-        from remote_store.backends._s3 import S3Backend
-
-        s3_mock = MagicMock()
-        s3_mock.s3.head_bucket.side_effect = FileNotFoundError("nosuchbucket")
-
-        backend = S3Backend(bucket="bad-bucket")
-        backend._fs_instance = s3_mock
-        with pytest.raises(NotFound):
-            backend.check_health()
-
-    @pytest.mark.spec("PING-004")
-    def test_s3_permission_denied(self) -> None:
-        from remote_store.backends._s3 import S3Backend
-
-        s3_mock = MagicMock()
-        s3_mock.s3.head_bucket.side_effect = Exception("403 AccessDenied")
-
-        backend = S3Backend(bucket="restricted")
-        backend._fs_instance = s3_mock
-        with pytest.raises(PermissionDenied):
-            backend.check_health()
-
-    @pytest.mark.spec("PING-004")
-    def test_s3_unavailable(self) -> None:
-        from remote_store.backends._s3 import S3Backend
-
-        s3_mock = MagicMock()
-        s3_mock.s3.head_bucket.side_effect = Exception("Could not connect to the endpoint URL")
-
-        backend = S3Backend(bucket="unreachable")
-        backend._fs_instance = s3_mock
-        with pytest.raises(BackendUnavailable):
+    @pytest.mark.parametrize(
+        ("side_effect", "expected"),
+        [
+            pytest.param(FileNotFoundError("nosuchbucket"), NotFound, id="not-found"),
+            pytest.param(Exception("403 AccessDenied"), PermissionDenied, id="permission-denied"),
+            pytest.param(Exception("Could not connect to the endpoint URL"), BackendUnavailable, id="unavailable"),
+        ],
+    )
+    def test_s3_errors(self, side_effect: Exception, expected: type[Exception]) -> None:
+        backend, _ = _s3_backend("bad-bucket", side_effect=side_effect)
+        with pytest.raises(expected):
             backend.check_health()
 
 
 # ---------------------------------------------------------------------------
-# S3PyArrowBackend.check_health() (PING-005) — mocked
+# S3PyArrowBackend.check_health() (PING-005)
 # ---------------------------------------------------------------------------
 
 
-class TestS3PyArrowCheckHealth:
-    @pytest.mark.spec("PING-005")
-    def test_s3_pyarrow_healthy(self) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+@pytest.mark.spec("PING-005")
+@pytest.mark.parametrize(
+    ("side_effect", "expected"),
+    [
+        pytest.param(None, None, id="healthy"),
+        pytest.param(FileNotFoundError("not found"), NotFound, id="not-found"),
+    ],
+)
+def test_s3_pyarrow_health(side_effect: Exception | None, expected: type[Exception] | None) -> None:
+    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
-        pa_mock = MagicMock()
+    pa_mock = MagicMock()
+    if side_effect:
+        pa_mock.get_file_info.side_effect = side_effect
+    else:
         pa_mock.get_file_info.return_value = MagicMock()
-
-        backend = S3PyArrowBackend(bucket="test-bucket")
-        backend._pa_fs_instance = pa_mock
+    backend = S3PyArrowBackend(bucket="test-bucket")
+    backend._pa_fs_instance = pa_mock
+    if expected:
+        with pytest.raises(expected):
+            backend.check_health()
+    else:
         backend.check_health()
         pa_mock.get_file_info.assert_called_once_with("test-bucket")
 
-    @pytest.mark.spec("PING-005")
-    def test_s3_pyarrow_not_found(self) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        pa_mock = MagicMock()
-        pa_mock.get_file_info.side_effect = FileNotFoundError("not found")
-
-        backend = S3PyArrowBackend(bucket="bad-bucket")
-        backend._pa_fs_instance = pa_mock
-        with pytest.raises(NotFound):
-            backend.check_health()
-
 
 # ---------------------------------------------------------------------------
-# SFTPBackend.check_health() (PING-006) — mocked
+# SFTP & Azure check_health (PING-006 / PING-007)
 # ---------------------------------------------------------------------------
 
 
-class TestSFTPCheckHealth:
-    @pytest.mark.spec("PING-006")
-    def test_sftp_healthy(self) -> None:
-        from remote_store.backends._sftp import SFTPBackend
+@pytest.mark.spec("PING-006")
+def test_sftp_healthy() -> None:
+    backend, sftp_mock = _sftp_backend()
+    backend.check_health()
+    assert any(call.args == (backend._base_path,) for call in sftp_mock.stat.call_args_list)
 
-        sftp_mock = MagicMock()
-        sftp_mock.stat.return_value = MagicMock()
 
-        backend = SFTPBackend(host="example.com", username="user", password="pass")
-        backend._sftp_client = sftp_mock
-        backend._ssh_client = MagicMock()
-        backend._ssh_client.get_transport.return_value.is_active.return_value = True
+@pytest.mark.spec("PING-006")
+def test_sftp_not_found() -> None:
+    err = OSError(errno.ENOENT, "No such file")
+    backend, _ = _sftp_backend(stat_side_effect=[MagicMock(), err])
+    with pytest.raises(NotFound):
         backend.check_health()
-        # _is_connected() calls stat('.'), then check_health() calls stat(base_path)
-        assert any(call.args == (backend._base_path,) for call in sftp_mock.stat.call_args_list)
-
-    @pytest.mark.spec("PING-006")
-    def test_sftp_not_found(self) -> None:
-        import errno
-
-        from remote_store.backends._sftp import SFTPBackend
-
-        sftp_mock = MagicMock()
-        # First call from _is_connected() succeeds, second from check_health() fails
-        err = OSError(errno.ENOENT, "No such file")
-        sftp_mock.stat.side_effect = [MagicMock(), err]
-
-        backend = SFTPBackend(host="example.com", username="user", password="pass")
-        backend._sftp_client = sftp_mock
-        backend._ssh_client = MagicMock()
-        backend._ssh_client.get_transport.return_value.is_active.return_value = True
-        with pytest.raises(NotFound):
-            backend.check_health()
 
 
-# ---------------------------------------------------------------------------
-# AzureBackend.check_health() (PING-007) — mocked
-# ---------------------------------------------------------------------------
+@pytest.mark.spec("PING-007")
+def test_azure_healthy() -> None:
+    backend, cc_mock = _azure_backend()
+    backend.check_health()
+    cc_mock.get_container_properties.assert_called_once()
 
 
-class TestAzureCheckHealth:
-    @pytest.mark.spec("PING-007")
-    def test_azure_healthy_non_hns(self) -> None:
-        from remote_store.backends._azure import AzureBackend
+@pytest.mark.spec("PING-007")
+def test_azure_not_found() -> None:
+    from azure.core.exceptions import ResourceNotFoundError
 
-        cc_mock = MagicMock()
-        cc_mock.get_container_properties.return_value = {}
-
-        backend = AzureBackend(
-            container="test",
-            connection_string="DefaultEndpointsProtocol=https;AccountName=test;AccountKey=dGVzdA==;EndpointSuffix=core.windows.net",
-        )
-        backend._cc_instance = cc_mock
-        backend._hns_enabled = False
+    backend, _ = _azure_backend(side_effect=ResourceNotFoundError("not found"))
+    with pytest.raises(NotFound):
         backend.check_health()
-        cc_mock.get_container_properties.assert_called_once()
-
-    @pytest.mark.spec("PING-007")
-    def test_azure_container_not_found(self) -> None:
-        from azure.core.exceptions import ResourceNotFoundError
-
-        from remote_store.backends._azure import AzureBackend
-
-        cc_mock = MagicMock()
-        cc_mock.get_container_properties.side_effect = ResourceNotFoundError("not found")
-
-        backend = AzureBackend(
-            container="bad",
-            connection_string="DefaultEndpointsProtocol=https;AccountName=test;AccountKey=dGVzdA==;EndpointSuffix=core.windows.net",
-        )
-        backend._cc_instance = cc_mock
-        backend._hns_enabled = False
-        with pytest.raises(NotFound):
-            backend.check_health()
 
 
 # ---------------------------------------------------------------------------
@@ -263,25 +228,21 @@ class TestAzureCheckHealth:
 
 class TestPingObserve:
     @pytest.mark.spec("PING-010")
-    def test_observe_on_ping_hook(self) -> None:
+    @pytest.mark.parametrize(
+        ("hook_kwarg", "check"),
+        [
+            pytest.param("on_ping", lambda events: events[0].operation == "ping", id="on_ping"),
+            pytest.param("on_any", lambda events: any(e.operation == "ping" for e in events), id="on_any"),
+        ],
+    )
+    def test_observe_hook_fires_for_ping(self, hook_kwarg: str, check: Any) -> None:
         from remote_store.ext.observe import observe
 
         events: list[Any] = []
-        store = Store(MemoryBackend())
-        observed = observe(store, on_ping=lambda e: events.append(e))
+        observed = observe(Store(MemoryBackend()), **{hook_kwarg: lambda e: events.append(e)})
         observed.ping()
-        assert len(events) == 1
-        assert events[0].operation == "ping"
-
-    @pytest.mark.spec("PING-010")
-    def test_observe_on_any_fires_for_ping(self) -> None:
-        from remote_store.ext.observe import observe
-
-        events: list[Any] = []
-        store = Store(MemoryBackend())
-        observed = observe(store, on_any=lambda e: events.append(e))
-        observed.ping()
-        assert any(e.operation == "ping" for e in events)
+        assert len(events) >= 1
+        assert check(events)
 
     @pytest.mark.spec("PING-010")
     def test_observe_on_error_fires_for_failed_ping(self) -> None:
@@ -292,23 +253,8 @@ class TestPingObserve:
         backend.check_health = MagicMock(  # type: ignore[method-assign]
             side_effect=BackendUnavailable("down", backend="memory"),
         )
-        store = Store(backend)
-        observed = observe(store, on_error=lambda e: errors.append(e))
+        observed = observe(Store(backend), on_error=lambda e: errors.append(e))
         with pytest.raises(BackendUnavailable):
             observed.ping()
         assert len(errors) == 1
         assert errors[0].error is not None
-
-
-# ---------------------------------------------------------------------------
-# Store.ping() via child store (PING-001)
-# ---------------------------------------------------------------------------
-
-
-class TestPingChildStore:
-    @pytest.mark.spec("PING-001")
-    def test_child_store_ping(self) -> None:
-        """Child stores delegate ping to the shared backend."""
-        store = Store(MemoryBackend())
-        child = store.child("subdir")
-        child.ping()  # should not raise

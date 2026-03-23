@@ -9,7 +9,7 @@ import pytest
 from remote_store.ext.partition import ParsedPartition, parse_partition, partition_path
 
 # ===========================================================================
-# PART-001 / PART-002 / PART-003: partition_path() basics
+# PART-001 through PART-006: partition_path() basics and validation
 # ===========================================================================
 
 
@@ -32,35 +32,33 @@ class TestPartitionPath:
         assert partition_path("data.parquet") == "data.parquet"
 
     @pytest.mark.spec("PART-005")
-    def test_empty_filename_raises(self) -> None:
-        with pytest.raises(ValueError, match="non-empty"):
-            partition_path("")
-
-    @pytest.mark.spec("PART-005")
-    def test_filename_with_slash_raises(self) -> None:
-        with pytest.raises(ValueError, match="/"):
-            partition_path("dir/file.parquet")
-
-    @pytest.mark.spec("PART-006")
-    def test_empty_value_raises(self) -> None:
-        with pytest.raises(ValueError, match="non-empty"):
-            partition_path("f.parquet", year="")
+    @pytest.mark.parametrize(
+        "filename,match",
+        [
+            pytest.param("", "non-empty", id="empty"),
+            pytest.param("dir/file.parquet", "/", id="slash"),
+        ],
+    )
+    def test_invalid_filename_raises(self, filename: str, match: str) -> None:
+        with pytest.raises(ValueError, match=match):
+            partition_path(filename)
 
     @pytest.mark.spec("PART-006")
-    def test_value_with_equals_raises(self) -> None:
-        with pytest.raises(ValueError, match="must not contain '='"):
-            partition_path("f.parquet", key="a=b")
-
-    @pytest.mark.spec("PART-006")
-    def test_empty_key_in_kwargs_impossible(self) -> None:
-        # Python syntax prevents empty-string kwargs, but we guard anyway.
-        # Use **dict to bypass syntax restriction.
-        with pytest.raises(ValueError, match="key must be non-empty"):
-            partition_path("f.parquet", **{"": "val"})  # type: ignore[arg-type]
+    @pytest.mark.parametrize(
+        "kwargs,match",
+        [
+            pytest.param({"year": ""}, "non-empty", id="empty_value"),
+            pytest.param({"key": "a=b"}, "must not contain '='", id="equals_in_value"),
+            pytest.param({"": "val"}, "key must be non-empty", id="empty_key"),
+        ],
+    )
+    def test_invalid_partition_raises(self, kwargs: dict, match: str) -> None:
+        with pytest.raises(ValueError, match=match):
+            partition_path("f.parquet", **kwargs)
 
 
 # ===========================================================================
-# PART-007 / PART-008 / PART-009: parse_partition()
+# PART-007 through PART-010: parse_partition()
 # ===========================================================================
 
 
@@ -72,43 +70,37 @@ class TestParsePartition:
         assert parsed.filename == "data.parquet"
 
     @pytest.mark.spec("PART-008")
-    def test_segment_with_multiple_equals_is_filename(self) -> None:
-        # "a=b=c" has two '=' -- not a partition segment
-        parsed = parse_partition("a=b=c")
-        assert parsed.partitions == {}
-        assert parsed.filename == "a=b=c"
-
-    @pytest.mark.spec("PART-008")
-    def test_segment_with_empty_key_is_filename(self) -> None:
-        # "=value" has empty key portion
-        parsed = parse_partition("=value/data.csv")
-        assert parsed.partitions == {}
-        assert parsed.filename == "=value/data.csv"
-
-    @pytest.mark.spec("PART-008")
-    def test_segment_with_empty_value_is_valid(self) -> None:
-        # "key=" has one '=' and non-empty key -- valid partition, empty value
-        parsed = parse_partition("key=/data.csv")
-        assert parsed.partitions == {"key": ""}
-        assert parsed.filename == "data.csv"
+    @pytest.mark.parametrize(
+        "path,expected_parts,expected_file",
+        [
+            pytest.param("a=b=c", {}, "a=b=c", id="multiple_equals_is_filename"),
+            pytest.param("=value/data.csv", {}, "=value/data.csv", id="empty_key_is_filename"),
+            pytest.param("key=/data.csv", {"key": ""}, "data.csv", id="empty_value_is_valid"),
+        ],
+    )
+    def test_edge_case_segments(self, path: str, expected_parts: dict, expected_file: str) -> None:
+        parsed = parse_partition(path)
+        assert parsed.partitions == expected_parts
+        assert parsed.filename == expected_file
 
     @pytest.mark.spec("PART-009")
-    def test_kv_after_non_partition_is_filename(self) -> None:
-        parsed = parse_partition("year=2026/subdir/region=us/data.csv")
-        assert parsed.partitions == {"year": "2026"}
-        assert parsed.filename == "subdir/region=us/data.csv"
-
-    @pytest.mark.spec("PART-009")
-    def test_no_partitions(self) -> None:
-        parsed = parse_partition("just-a-file.txt")
-        assert parsed.partitions == {}
-        assert parsed.filename == "just-a-file.txt"
-
-    @pytest.mark.spec("PART-009")
-    def test_all_partitions_no_filename(self) -> None:
-        parsed = parse_partition("year=2026/month=03")
-        assert parsed.partitions == {"year": "2026", "month": "03"}
-        assert parsed.filename == ""
+    @pytest.mark.parametrize(
+        "path,expected_parts,expected_file",
+        [
+            pytest.param(
+                "year=2026/subdir/region=us/data.csv",
+                {"year": "2026"},
+                "subdir/region=us/data.csv",
+                id="kv_after_non_partition",
+            ),
+            pytest.param("just-a-file.txt", {}, "just-a-file.txt", id="no_partitions"),
+            pytest.param("year=2026/month=03", {"year": "2026", "month": "03"}, "", id="all_partitions_no_filename"),
+        ],
+    )
+    def test_parse_variants(self, path: str, expected_parts: dict, expected_file: str) -> None:
+        parsed = parse_partition(path)
+        assert parsed.partitions == expected_parts
+        assert parsed.filename == expected_file
 
     @pytest.mark.spec("PART-010")
     def test_empty_path_raises(self) -> None:
@@ -123,25 +115,24 @@ class TestParsePartition:
 
 class TestRoundTrip:
     @pytest.mark.spec("PART-011")
-    def test_round_trip_single(self) -> None:
-        path = partition_path("data.parquet", year="2026")
+    @pytest.mark.parametrize(
+        "filename,kwargs,expected_parts",
+        [
+            pytest.param("data.parquet", {"year": "2026"}, {"year": "2026"}, id="single"),
+            pytest.param(
+                "f.csv",
+                {"region": "eu", "year": "2026", "month": "03"},
+                {"region": "eu", "year": "2026", "month": "03"},
+                id="multiple",
+            ),
+            pytest.param("f.parquet", {"year": 2026, "month": 3}, {"year": "2026", "month": "3"}, id="int_values"),
+        ],
+    )
+    def test_round_trip(self, filename: str, kwargs: dict, expected_parts: dict) -> None:
+        path = partition_path(filename, **kwargs)
         parsed = parse_partition(path)
-        assert parsed.partitions == {"year": "2026"}
-        assert parsed.filename == "data.parquet"
-
-    @pytest.mark.spec("PART-011")
-    def test_round_trip_multiple(self) -> None:
-        path = partition_path("f.csv", region="eu", year="2026", month="03")
-        parsed = parse_partition(path)
-        assert parsed.partitions == {"region": "eu", "year": "2026", "month": "03"}
-        assert parsed.filename == "f.csv"
-
-    @pytest.mark.spec("PART-011")
-    def test_round_trip_int_values(self) -> None:
-        path = partition_path("f.parquet", year=2026, month=3)
-        parsed = parse_partition(path)
-        assert parsed.partitions == {"year": "2026", "month": "3"}
-        assert parsed.filename == "f.parquet"
+        assert parsed.partitions == expected_parts
+        assert parsed.filename == filename
 
 
 # ===========================================================================
@@ -160,7 +151,6 @@ class TestParsedPartition:
     def test_dict_is_independent_copy(self) -> None:
         p = parse_partition("year=2026/f.txt")
         p.partitions["extra"] = "added"
-        # Re-parse to confirm original is unaffected
         p2 = parse_partition("year=2026/f.txt")
         assert "extra" not in p2.partitions
 
@@ -185,9 +175,8 @@ class TestExports:
         assert set(partition.__all__) == {"ParsedPartition", "parse_partition", "partition_path"}
 
     @pytest.mark.spec("PART-013")
-    def test_top_level_reexport(self) -> None:
+    @pytest.mark.parametrize("name", ["partition_path", "parse_partition", "ParsedPartition"])
+    def test_top_level_reexport(self, name: str) -> None:
         import remote_store
 
-        assert hasattr(remote_store, "partition_path")
-        assert hasattr(remote_store, "parse_partition")
-        assert hasattr(remote_store, "ParsedPartition")
+        assert hasattr(remote_store, name)

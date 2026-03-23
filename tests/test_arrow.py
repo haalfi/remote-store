@@ -75,26 +75,34 @@ class TestConstruction:
         assert h._store is store
 
     @pytest.mark.spec("PA-001")
-    def test_default_thresholds(self, store: Store) -> None:
-        h = StoreFileSystemHandler(store)
-        assert h._materialization_threshold == 64 * 1024 * 1024
-        assert h._write_spill_threshold == 64 * 1024 * 1024
-
-    @pytest.mark.spec("PA-001")
-    def test_custom_thresholds(self, store: Store) -> None:
-        h = StoreFileSystemHandler(store, materialization_threshold=100, write_spill_threshold=200)
-        assert h._materialization_threshold == 100
-        assert h._write_spill_threshold == 200
+    @pytest.mark.parametrize(
+        "kwargs,mat_expected,spill_expected",
+        [
+            pytest.param({}, 64 * 1024 * 1024, 64 * 1024 * 1024, id="defaults"),
+            pytest.param(
+                {"materialization_threshold": 100, "write_spill_threshold": 200},
+                100,
+                200,
+                id="custom",
+            ),
+        ],
+    )
+    def test_thresholds(self, store: Store, kwargs: dict[str, int], mat_expected: int, spill_expected: int) -> None:
+        h = StoreFileSystemHandler(store, **kwargs)
+        assert h._materialization_threshold == mat_expected
+        assert h._write_spill_threshold == spill_expected
 
     @pytest.mark.spec("PA-002")
-    def test_pyarrow_fs_factory(self, store: Store) -> None:
-        fs = pyarrow_fs(store)
-        assert isinstance(fs, pafs.PyFileSystem)
-
-    @pytest.mark.spec("PA-002")
-    def test_pyarrow_fs_factory_passes_thresholds(self, store: Store) -> None:
-        fs = pyarrow_fs(store, materialization_threshold=42, write_spill_threshold=99)
-        assert isinstance(fs, pafs.PyFileSystem)
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            pytest.param({}, id="no_thresholds"),
+            pytest.param({"materialization_threshold": 42, "write_spill_threshold": 99}, id="with_thresholds"),
+        ],
+    )
+    def test_pyarrow_fs_factory(self, store: Store, kwargs: dict[str, int]) -> None:
+        result = pyarrow_fs(store, **kwargs)
+        assert isinstance(result, pafs.PyFileSystem)
 
     @pytest.mark.spec("PA-003")
     def test_type_name(self, handler: StoreFileSystemHandler) -> None:
@@ -118,6 +126,10 @@ class TestPathNormalization:
             pytest.param("/", "", id="root_slash"),
             pytest.param("foo\\bar\\baz", "foo/bar/baz", id="backslash"),
             pytest.param("/foo//bar\\baz/", "foo/bar/baz", id="combined"),
+            pytest.param("dir/./file.txt", "dir/file.txt", id="single_dot"),
+            pytest.param("dir/../file.txt", "file.txt", id="double_dot"),
+            pytest.param("../file.txt", "file.txt", id="double_dot_at_root"),
+            pytest.param("a/b/../c/./d/../e", "a/c/e", id="complex_dots"),
         ],
     )
     def test_normalize_path(self, raw: str, expected: str) -> None:
@@ -131,31 +143,31 @@ class TestPathNormalization:
 
 class TestGetFileInfo:
     @pytest.mark.spec("PA-007")
-    def test_file_type(self, fs: Any, store: Store) -> None:
-        store.write("test.txt", b"hello")
-        infos = fs.get_file_info(["test.txt"])
+    @pytest.mark.parametrize(
+        "setup_files,query,expected_type,expected_size",
+        [
+            pytest.param({"test.txt": b"hello"}, "test.txt", pafs.FileType.File, 5, id="file_type"),
+            pytest.param({"dir/file.txt": b"data"}, "dir", pafs.FileType.Directory, None, id="folder_type"),
+            pytest.param({}, "nonexistent", pafs.FileType.NotFound, None, id="not_found"),
+            pytest.param({}, "", pafs.FileType.Directory, None, id="root_is_directory"),
+        ],
+    )
+    def test_single_path(
+        self,
+        fs: Any,
+        store: Store,
+        setup_files: dict[str, bytes],
+        query: str,
+        expected_type: Any,
+        expected_size: int | None,
+    ) -> None:
+        for path, content in setup_files.items():
+            store.write(path, content)
+        infos = fs.get_file_info([query])
         assert len(infos) == 1
-        assert infos[0].type == pafs.FileType.File
-        assert infos[0].size == 5
-
-    @pytest.mark.spec("PA-007")
-    def test_folder_type(self, fs: Any, store: Store) -> None:
-        store.write("dir/file.txt", b"data")
-        infos = fs.get_file_info(["dir"])
-        assert len(infos) == 1
-        assert infos[0].type == pafs.FileType.Directory
-
-    @pytest.mark.spec("PA-007")
-    def test_not_found(self, fs: Any) -> None:
-        infos = fs.get_file_info(["nonexistent"])
-        assert len(infos) == 1
-        assert infos[0].type == pafs.FileType.NotFound
-
-    @pytest.mark.spec("PA-007")
-    def test_root_is_directory(self, fs: Any) -> None:
-        infos = fs.get_file_info([""])
-        assert len(infos) == 1
-        assert infos[0].type == pafs.FileType.Directory
+        assert infos[0].type == expected_type
+        if expected_size is not None:
+            assert infos[0].size == expected_size
 
     @pytest.mark.spec("PA-004")
     def test_leading_slash_stripped(self, fs: Any, store: Store) -> None:
@@ -172,6 +184,42 @@ class TestGetFileInfo:
         assert infos[0].type == pafs.FileType.File
         assert infos[1].type == pafs.FileType.NotFound
         assert infos[2].type == pafs.FileType.File
+
+    @pytest.mark.spec("PA-007")
+    def test_get_file_info_error_during_check(self, store: Store) -> None:
+        """If get_file_info raises NotFound (race condition), fall back to is_folder."""
+        store.write("volatile.txt", b"data")
+        handler = StoreFileSystemHandler(store)
+        original_get_file_info = store.get_file_info
+        store.get_file_info = lambda path: (_ for _ in ()).throw(  # type: ignore[assignment]
+            NotFound(f"Gone: {path}", path=path)
+        )
+        try:
+            infos = handler.get_file_info(["volatile.txt"])
+            assert len(infos) == 1
+            assert infos[0].type == pafs.FileType.NotFound
+        finally:
+            store.get_file_info = original_get_file_info  # type: ignore[assignment]
+
+    @pytest.mark.spec("PA-007")
+    def test_get_file_info_is_folder_raises(self, store: Store) -> None:
+        """If both get_file_info and is_folder raise, return NotFound."""
+        handler = StoreFileSystemHandler(store)
+        original_get_file_info = store.get_file_info
+        original_is_folder = store.is_folder
+        store.get_file_info = lambda path: (_ for _ in ()).throw(  # type: ignore[assignment]
+            NotFound(f"Gone: {path}", path=path)
+        )
+        store.is_folder = lambda path: (_ for _ in ()).throw(  # type: ignore[assignment]
+            NotFound(f"Gone: {path}", path=path)
+        )
+        try:
+            infos = handler.get_file_info(["ghost"])
+            assert len(infos) == 1
+            assert infos[0].type == pafs.FileType.NotFound
+        finally:
+            store.get_file_info = original_get_file_info  # type: ignore[assignment]
+            store.is_folder = original_is_folder  # type: ignore[assignment]
 
 
 # ---------------------------------------------------------------------------
@@ -193,7 +241,6 @@ class TestGetFileInfoSelector:
         assert "dir/b.txt" in paths
         assert "dir/sub" in paths
         assert types["dir/sub"] == pafs.FileType.Directory
-        # Non-recursive should not include deeply nested files
         assert "dir/sub/c.txt" not in paths
 
     @pytest.mark.spec("PA-008")
@@ -206,21 +253,24 @@ class TestGetFileInfoSelector:
         types = {i.path: i.type for i in infos}
         assert "dir/a.txt" in paths
         assert "dir/sub/b.txt" in paths
-        # Synthetic dir entry
         assert "dir/sub" in paths
         assert types["dir/sub"] == pafs.FileType.Directory
 
     @pytest.mark.spec("PA-008")
-    def test_allow_not_found_true(self, fs: Any) -> None:
-        selector = pafs.FileSelector("nonexistent", allow_not_found=True)
-        infos = fs.get_file_info(selector)
-        assert infos == []
-
-    @pytest.mark.spec("PA-008")
-    def test_allow_not_found_false(self, fs: Any) -> None:
-        selector = pafs.FileSelector("nonexistent", allow_not_found=False)
-        with pytest.raises(FileNotFoundError):
-            fs.get_file_info(selector)
+    @pytest.mark.parametrize(
+        "allow_not_found,expect_empty",
+        [
+            pytest.param(True, True, id="allow_not_found_true"),
+            pytest.param(False, False, id="allow_not_found_false"),
+        ],
+    )
+    def test_allow_not_found(self, fs: Any, allow_not_found: bool, expect_empty: bool) -> None:
+        selector = pafs.FileSelector("nonexistent", allow_not_found=allow_not_found)
+        if expect_empty:
+            assert fs.get_file_info(selector) == []
+        else:
+            with pytest.raises(FileNotFoundError):
+                fs.get_file_info(selector)
 
     @pytest.mark.spec("PA-008")
     def test_store_relative_paths(self, fs: Any, store: Store) -> None:
@@ -241,9 +291,49 @@ class TestGetFileInfoSelector:
         assert "top.txt" in paths
         assert "sub/deep.txt" in paths
 
+    @pytest.mark.spec("PA-008")
+    def test_no_ancestors_above_base_dir(self, store: Store) -> None:
+        store.write("a/b/c/d/file.txt", b"data")
+        fs = pyarrow_fs(store)
+        selector = pafs.FileSelector("a/b", recursive=True)
+        infos = fs.get_file_info(selector)
+        paths = {i.path for i in infos}
+        assert "a/b/c" in paths
+        assert "a/b/c/d" in paths
+        assert "a" not in paths
+
+    @pytest.mark.spec("PA-008")
+    def test_root_base_dir_no_regression(self, store: Store) -> None:
+        """Empty base_dir should still produce synthetic dirs."""
+        store.write("x/y/z.txt", b"data")
+        fs = pyarrow_fs(store)
+        selector = pafs.FileSelector("", recursive=True)
+        infos = fs.get_file_info(selector)
+        paths = {i.path for i in infos}
+        assert "x" in paths
+        assert "x/y" in paths
+
+    @pytest.mark.spec("PA-008")
+    def test_selector_backend_raises_not_found(self, store: Store) -> None:
+        """Backends that raise NotFound on list_files trigger the except branch."""
+        handler = StoreFileSystemHandler(store)
+        original_list_files = store.list_files
+        store.list_files = lambda path, *, recursive=False: (_ for _ in ()).throw(  # type: ignore[assignment]
+            NotFound(f"Not found: {path}", path=path)
+        )
+        try:
+            selector = pafs.FileSelector("gone", allow_not_found=True)
+            assert handler.get_file_info_selector(selector) == []
+
+            selector = pafs.FileSelector("gone", allow_not_found=False)
+            with pytest.raises(FileNotFoundError):
+                handler.get_file_info_selector(selector)
+        finally:
+            store.list_files = original_list_files  # type: ignore[assignment]
+
 
 # ---------------------------------------------------------------------------
-# PA-009: open_input_stream
+# PA-009/010: Read operations
 # ---------------------------------------------------------------------------
 
 
@@ -261,52 +351,65 @@ class TestOpenInputStream:
             fs.open_input_stream("nonexistent.txt")
 
 
-# ---------------------------------------------------------------------------
-# PA-010: open_input_file
-# ---------------------------------------------------------------------------
-
-
 class TestOpenInputFile:
     @pytest.mark.spec("PA-010")
-    def test_small_file_buffer_reader(self, store: Store) -> None:
-        """Small files (below threshold) use BufferReader (Tier 2)."""
-        store.write("small.txt", b"small data")
-        fs = pyarrow_fs(store, materialization_threshold=1024)
-        with fs.open_input_file("small.txt") as f:
-            assert f.read() == b"small data"
-
-    @pytest.mark.spec("PA-010")
-    def test_threshold_zero_always_streams(self, local_store: Store) -> None:
-        """threshold=0 disables Tier 2 — falls to Tier 3 for seekable streams."""
-        local_store.write("data.txt", b"stream me")
-        fs = pyarrow_fs(local_store, materialization_threshold=0)
-        with fs.open_input_file("data.txt") as f:
-            assert f.read() == b"stream me"
-
-    @pytest.mark.spec("PA-010")
-    def test_threshold_maxsize_always_materializes(self, store: Store) -> None:
-        """sys.maxsize threshold always materializes (Tier 2)."""
+    @pytest.mark.parametrize(
+        "use_local,content,threshold,description",
+        [
+            pytest.param(False, b"small data", 1024, "small_file_buffer_reader", id="small_file"),
+            pytest.param(True, b"stream me", 0, "threshold_zero_streams", id="threshold_zero"),
+            pytest.param(False, b"x" * 100, None, "maxsize_materializes", id="maxsize"),
+            pytest.param(True, b"x" * 100, 10, "large_seekable_streams", id="large_seekable"),
+        ],
+    )
+    def test_read_round_trip(
+        self,
+        store: Store,
+        local_store: Store,
+        use_local: bool,
+        content: bytes,
+        threshold: int | None,
+        description: str,
+    ) -> None:
         import sys
 
-        store.write("big.txt", b"x" * 100)
-        fs = pyarrow_fs(store, materialization_threshold=sys.maxsize)
-        with fs.open_input_file("big.txt") as f:
-            assert len(f.read()) == 100
-
-    @pytest.mark.spec("PA-010")
-    def test_large_seekable_file_streams(self, local_store: Store) -> None:
-        """Large files with seekable streams use Tier 3 (PythonFile)."""
-        content = b"x" * 100
-        local_store.write("large.txt", content)
-        # Set threshold below file size to force Tier 3
-        fs = pyarrow_fs(local_store, materialization_threshold=10)
-        with fs.open_input_file("large.txt") as f:
+        target = local_store if use_local else store
+        target.write("data.txt", content)
+        mat_threshold = sys.maxsize if threshold is None else threshold
+        result_fs = pyarrow_fs(target, materialization_threshold=mat_threshold)
+        with result_fs.open_input_file("data.txt") as f:
             assert f.read() == content
 
     @pytest.mark.spec("PA-010")
     def test_missing_file_raises(self, fs: Any) -> None:
         with pytest.raises(FileNotFoundError):
             fs.open_input_file("nonexistent.txt")
+
+    @pytest.mark.spec("PA-010")
+    def test_non_seekable_large_file_materializes(self, store: Store, caplog: pytest.LogCaptureFixture) -> None:
+        """Non-seekable stream above threshold falls back to Tier 2 with warning."""
+        import logging
+
+        content = b"x" * 100
+        store.write("big.txt", content)
+        original_read = store.read
+
+        def non_seekable_read(path: str) -> io.RawIOBase:
+            stream = original_read(path)
+            stream.seekable = lambda: False  # type: ignore[attr-defined]
+            return stream
+
+        store.read = non_seekable_read  # type: ignore[assignment]
+        try:
+            result_fs = pyarrow_fs(store, materialization_threshold=10)
+            with (
+                caplog.at_level(logging.WARNING, logger="remote_store.ext.arrow"),
+                result_fs.open_input_file("big.txt") as f,
+            ):
+                assert f.read() == content
+            assert "not seekable" in caplog.text
+        finally:
+            store.read = original_read  # type: ignore[assignment]
 
 
 # ---------------------------------------------------------------------------
@@ -325,8 +428,6 @@ class _FakePyArrowBackend(Backend):
         self._inner = local_backend
         self._pa_fs = pafs.LocalFileSystem()
 
-    # region: properties
-
     @property
     def name(self) -> str:
         return "fake-pyarrow"
@@ -335,18 +436,10 @@ class _FakePyArrowBackend(Backend):
     def capabilities(self) -> Any:
         return self._inner.capabilities
 
-    # endregion
-
-    # region: public methods
-
     def unwrap(self, type_hint: type) -> Any:
         if type_hint is pafs.FileSystem:
             return self._pa_fs
-        raise CapabilityNotSupported(
-            f"Cannot unwrap {type_hint}",
-            capability="unwrap",
-            backend="fake-pyarrow",
-        )
+        raise CapabilityNotSupported(f"Cannot unwrap {type_hint}", capability="unwrap", backend="fake-pyarrow")
 
     def native_path(self, path: str) -> str:
         root = str(self._inner._root)
@@ -400,8 +493,6 @@ class _FakePyArrowBackend(Backend):
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         self._inner.copy(src, dst, overwrite=overwrite)
 
-    # endregion
-
 
 class TestTier1NativeFastPath:
     """Tier 1: native PyArrow FS fast path via unwrap() + native_path()."""
@@ -415,54 +506,40 @@ class TestTier1NativeFastPath:
         ],
     )
     def test_tier1_disabled_for_non_native_backends(self, backend_cls: type) -> None:
-        """Backends without PyArrow FS unwrap disable Tier 1."""
         if backend_cls is LocalBackend:
             with tempfile.TemporaryDirectory() as tmp:
-                store = Store(backend=backend_cls(root=tmp))
-                handler = StoreFileSystemHandler(store)
-                assert handler._native_fs is None
-                assert handler._native_path_fn is None
+                s = Store(backend=backend_cls(root=tmp))
+                h = StoreFileSystemHandler(s)
         else:
-            store = Store(backend=backend_cls())
-            handler = StoreFileSystemHandler(store)
-            assert handler._native_fs is None
-            assert handler._native_path_fn is None
+            s = Store(backend=backend_cls())
+            h = StoreFileSystemHandler(s)
+        assert h._native_fs is None
+        assert h._native_path_fn is None
 
     @pytest.mark.spec("PA-010")
     def test_tier1_e2e_with_native_backend(self, local_store: Store) -> None:
         """E2E: backend exposing unwrap(FileSystem) auto-enables Tier 1."""
         local_store.write("tier1.txt", b"native read")
-
-        # Replace the store's backend with one that exposes a PyArrow FS
         fake = _FakePyArrowBackend(local_store._backend)
         patched_store = Store(backend=fake)
-
-        handler = StoreFileSystemHandler(patched_store)
-        # Tier 1 should be auto-detected
-        assert handler._native_fs is not None
-        assert handler._native_path_fn is not None
-
-        # Read through Tier 1 fast path
-        fs = pafs.PyFileSystem(handler)
-        with fs.open_input_file("tier1.txt") as f:
+        h = StoreFileSystemHandler(patched_store)
+        assert h._native_fs is not None
+        assert h._native_path_fn is not None
+        result_fs = pafs.PyFileSystem(h)
+        with result_fs.open_input_file("tier1.txt") as f:
             assert f.read() == b"native read"
 
     @pytest.mark.spec("PA-010")
     def test_tier1_dispatch_with_mock_native_fs(self, local_store: Store) -> None:
         """Simulate Tier 1 by injecting a native FS that handles reads."""
         local_store.write("tier1.txt", b"native read")
-
-        handler = StoreFileSystemHandler(local_store)
-
-        # Build a real PyArrow local FS for Tier 1
+        h = StoreFileSystemHandler(local_store)
         local_pa_fs = pafs.LocalFileSystem()
-        handler._native_fs = local_pa_fs
-        # native_path_fn must return the absolute filesystem path
+        h._native_fs = local_pa_fs
         root = local_store._backend._root  # type: ignore[attr-defined]
-        handler._native_path_fn = lambda key: str(root / key) if key else str(root)
-
-        fs = pafs.PyFileSystem(handler)
-        with fs.open_input_file("tier1.txt") as f:
+        h._native_path_fn = lambda key: str(root / key) if key else str(root)
+        result_fs = pafs.PyFileSystem(h)
+        with result_fs.open_input_file("tier1.txt") as f:
             assert f.read() == b"native read"
 
     @pytest.mark.spec("PA-010")
@@ -470,37 +547,28 @@ class TestTier1NativeFastPath:
         """Tier 1 path translation includes store root_path via dispatch."""
         local_store.write("sub/file.txt", b"child data")
         child = local_store.child("sub")
-
-        handler = StoreFileSystemHandler(child)
-        # Tier 1 disabled for local — verify native_path composition
-        assert handler._native_fs is None
-        # native_path returns full backend-native path (root dir + root_path + key)
+        h = StoreFileSystemHandler(child)
+        assert h._native_fs is None
         native = child.native_path("file.txt")
         assert native.endswith("sub/file.txt")
         assert child.to_key(native) == "file.txt"
-
-        # Now inject Tier 1 and verify dispatch uses native_path_fn correctly
         local_pa_fs = pafs.LocalFileSystem()
-        handler._native_fs = local_pa_fs
-        handler._native_path_fn = child.native_path
-
-        fs = pafs.PyFileSystem(handler)
-        with fs.open_input_file("file.txt") as f:
+        h._native_fs = local_pa_fs
+        h._native_path_fn = child.native_path
+        result_fs = pafs.PyFileSystem(h)
+        with result_fs.open_input_file("file.txt") as f:
             assert f.read() == b"child data"
 
     @pytest.mark.spec("PA-010")
     def test_tier1_missing_file_raises(self, local_store: Store) -> None:
-        """Tier 1 raises FileNotFoundError for missing files."""
-        handler = StoreFileSystemHandler(local_store)
-
+        h = StoreFileSystemHandler(local_store)
         local_pa_fs = pafs.LocalFileSystem()
-        handler._native_fs = local_pa_fs
+        h._native_fs = local_pa_fs
         root = local_store._backend._root  # type: ignore[attr-defined]
-        handler._native_path_fn = lambda key: str(root / key)
-
-        fs = pafs.PyFileSystem(handler)
+        h._native_path_fn = lambda key: str(root / key)
+        result_fs = pafs.PyFileSystem(h)
         with pytest.raises(FileNotFoundError):
-            fs.open_input_file("nonexistent.txt")
+            result_fs.open_input_file("nonexistent.txt")
 
 
 # ---------------------------------------------------------------------------
@@ -510,22 +578,19 @@ class TestTier1NativeFastPath:
 
 class TestOpenOutputStream:
     @pytest.mark.spec("PA-011")
-    def test_write_round_trip(self, fs: Any, store: Store) -> None:
-        with fs.open_output_stream("output.txt") as f:
-            f.write(b"written via pyarrow")
-        assert store.read_bytes("output.txt") == b"written via pyarrow"
-
-    @pytest.mark.spec("PA-011")
-    def test_metadata_ignored(self, fs: Any, store: Store) -> None:
-        with fs.open_output_stream("meta.txt") as f:
-            f.write(b"data")
-        assert store.read_bytes("meta.txt") == b"data"
-
-    @pytest.mark.spec("PA-011")
-    def test_empty_file(self, fs: Any, store: Store) -> None:
-        with fs.open_output_stream("empty.txt"):
-            pass
-        assert store.read_bytes("empty.txt") == b""
+    @pytest.mark.parametrize(
+        "filename,write_data,expected",
+        [
+            pytest.param("output.txt", b"written via pyarrow", b"written via pyarrow", id="write_round_trip"),
+            pytest.param("meta.txt", b"data", b"data", id="metadata_ignored"),
+            pytest.param("empty.txt", b"", b"", id="empty_file"),
+        ],
+    )
+    def test_write(self, fs: Any, store: Store, filename: str, write_data: bytes, expected: bytes) -> None:
+        with fs.open_output_stream(filename) as f:
+            if write_data:
+                f.write(write_data)
+        assert store.read_bytes(filename) == expected
 
     @pytest.mark.spec("PA-012")
     def test_append_raises(self, fs: Any) -> None:
@@ -573,27 +638,25 @@ class TestStoreSink:
             sink.write(b"nope")
 
     @pytest.mark.spec("PA-016")
-    def test_spill_to_disk(self, store: Store) -> None:
-        """Write exceeding spill_threshold should still work (spills to tempfile)."""
-        sink = _StoreSink(store, "spill.txt", spill_threshold=10)
-        data = b"x" * 100
-        sink.write(data)
+    @pytest.mark.parametrize(
+        "data,spill_threshold,filename",
+        [
+            pytest.param(b"x" * 100, 10, "spill.txt", id="spill_to_disk"),
+            pytest.param(b"", 1024, "empty.txt", id="empty_write"),
+        ],
+    )
+    def test_write_variants(self, store: Store, data: bytes, spill_threshold: int, filename: str) -> None:
+        sink = _StoreSink(store, filename, spill_threshold=spill_threshold)
+        if data:
+            sink.write(data)
         sink.close()
-        assert store.read_bytes("spill.txt") == data
-
-    @pytest.mark.spec("PA-016")
-    def test_empty_write(self, store: Store) -> None:
-        sink = _StoreSink(store, "empty.txt", spill_threshold=1024)
-        sink.close()
-        assert store.read_bytes("empty.txt") == b""
+        assert store.read_bytes(filename) == data
 
     @pytest.mark.spec("PA-016")
     def test_close_failure_maps_error_and_cleans_up(self, store: Store) -> None:
         """If store.write() raises during close(), the error is mapped and the sink is cleaned up."""
         sink = _StoreSink(store, "fail.txt", spill_threshold=1024)
         sink.write(b"data")
-
-        # Monkey-patch store.write to raise NotFound (simulating backend error)
         original_write = store.write
         store.write = lambda *a, **kw: (_ for _ in ()).throw(  # type: ignore[assignment]
             NotFound("backend error", path="fail.txt")
@@ -601,7 +664,6 @@ class TestStoreSink:
         try:
             with pytest.raises(FileNotFoundError):
                 sink.close()
-            # Sink should be properly closed even after error
             assert sink.closed
         finally:
             store.write = original_write  # type: ignore[assignment]
@@ -628,7 +690,6 @@ class TestMutationOps:
     def test_create_dir_noop(self, fs: Any, store: Store) -> None:
         fs.create_dir("newdir")
         fs.create_dir("newdir/sub", recursive=True)
-        # No error, but directory may not actually exist until a file is written
 
     @pytest.mark.spec("PA-015")
     def test_delete_dir(self, fs: Any, store: Store) -> None:
@@ -639,14 +700,18 @@ class TestMutationOps:
         assert not store.exists("folder/sub/b.txt")
 
     @pytest.mark.spec("PA-015")
-    def test_delete_dir_root_raises(self, fs: Any) -> None:
+    @pytest.mark.parametrize(
+        "method,args",
+        [
+            pytest.param("delete_dir", ("",), id="delete_dir_root"),
+            pytest.param("delete_root_dir_contents", (), id="delete_root_dir_contents"),
+            pytest.param("delete_dir_contents", ("",), id="delete_dir_contents_root"),
+            pytest.param("delete_dir_contents", ("/",), id="delete_dir_contents_root_slash"),
+        ],
+    )
+    def test_root_operations_raise(self, handler: StoreFileSystemHandler, method: str, args: tuple[str, ...]) -> None:
         with pytest.raises(NotImplementedError):
-            fs.delete_dir("")
-
-    @pytest.mark.spec("PA-015")
-    def test_delete_root_dir_contents_raises(self, handler: StoreFileSystemHandler) -> None:
-        with pytest.raises(NotImplementedError):
-            handler.delete_root_dir_contents()
+            getattr(handler, method)(*args)
 
     @pytest.mark.spec("PA-015")
     def test_delete_dir_contents(self, store: Store) -> None:
@@ -656,18 +721,6 @@ class TestMutationOps:
         handler.delete_dir_contents("cleanup")
         assert not store.exists("cleanup/a.txt")
         assert not store.exists("cleanup/sub/b.txt")
-
-    @pytest.mark.spec("PA-015")
-    def test_delete_dir_contents_root_raises(self, handler: StoreFileSystemHandler) -> None:
-        """delete_dir_contents('') must refuse to wipe the entire store."""
-        with pytest.raises(NotImplementedError):
-            handler.delete_dir_contents("")
-
-    @pytest.mark.spec("PA-015")
-    def test_delete_dir_contents_root_leading_slash_raises(self, handler: StoreFileSystemHandler) -> None:
-        """delete_dir_contents('/') normalizes to '' and refuses."""
-        with pytest.raises(NotImplementedError):
-            handler.delete_dir_contents("/")
 
     @pytest.mark.spec("PA-015")
     def test_delete_dir_contents_missing_dir_ok(self, handler: StoreFileSystemHandler) -> None:
@@ -723,7 +776,6 @@ class TestErrorMapping:
 
     @pytest.mark.spec("PA-020")
     def test_no_remote_store_error_leakage(self, fs: Any) -> None:
-        """Ensure RemoteStoreError never escapes to the caller."""
         with pytest.raises(FileNotFoundError):
             fs.open_input_stream("definitely/missing.txt")
 
@@ -736,21 +788,16 @@ class TestErrorMapping:
 
     @pytest.mark.spec("PA-021")
     def test_handler_after_store_close(self) -> None:
-        """Using a handler after the backend rejects calls produces OSError."""
         store = Store(backend=MemoryBackend())
         store.write("f.txt", b"data")
-        fs = pyarrow_fs(store)
-
-        # Simulate closed-state backend by making read raise RemoteStoreError
-        from remote_store._errors import BackendUnavailable
-
+        result_fs = pyarrow_fs(store)
         original_read = store.read
         store.read = lambda path: (_ for _ in ()).throw(  # type: ignore[assignment]
             BackendUnavailable("Store is closed", backend="memory")
         )
         try:
             with pytest.raises(OSError):
-                fs.open_input_stream("f.txt")
+                result_fs.open_input_stream("f.txt")
         finally:
             store.read = original_read  # type: ignore[assignment]
 
@@ -763,210 +810,63 @@ class TestErrorMapping:
 class TestIntegration:
     @pytest.mark.spec("PA-024")
     def test_parquet_round_trip(self, local_store: Store) -> None:
-        """Write and read a Parquet file through the PyArrow filesystem."""
-        fs = pyarrow_fs(local_store)
+        result_fs = pyarrow_fs(local_store)
         table = pa.table({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
-        pq.write_table(table, "test.parquet", filesystem=fs)
-        result = pq.read_table("test.parquet", filesystem=fs)
+        pq.write_table(table, "test.parquet", filesystem=result_fs)
+        result = pq.read_table("test.parquet", filesystem=result_fs)
         assert result.equals(table)
 
     @pytest.mark.spec("PA-025")
     def test_pandas_round_trip(self, local_store: Store) -> None:
-        """Pandas Parquet round-trip via filesystem= parameter."""
         pd = pytest.importorskip("pandas")
-        fs = pyarrow_fs(local_store)
+        result_fs = pyarrow_fs(local_store)
         df = pd.DataFrame({"x": [10, 20], "y": ["foo", "bar"]})
-        df.to_parquet("pandas_test.parquet", engine="pyarrow", filesystem=fs)
-        result = pd.read_parquet("pandas_test.parquet", engine="pyarrow", filesystem=fs)
+        df.to_parquet("pandas_test.parquet", engine="pyarrow", filesystem=result_fs)
+        result = pd.read_parquet("pandas_test.parquet", engine="pyarrow", filesystem=result_fs)
         pd.testing.assert_frame_equal(df, result)
 
     @pytest.mark.spec("PA-025")
     def test_dataset_discovery(self, local_store: Store) -> None:
-        """PyArrow dataset() discovers files via get_file_info_selector."""
         ds = pytest.importorskip("pyarrow.dataset")
-        fs = pyarrow_fs(local_store)
+        result_fs = pyarrow_fs(local_store)
         table = pa.table({"value": [1, 2, 3]})
-        pq.write_table(table, "ds/part1.parquet", filesystem=fs)
-        pq.write_table(table, "ds/part2.parquet", filesystem=fs)
-        dataset = ds.dataset("ds", filesystem=fs, format="parquet")
+        pq.write_table(table, "ds/part1.parquet", filesystem=result_fs)
+        pq.write_table(table, "ds/part2.parquet", filesystem=result_fs)
+        dataset = ds.dataset("ds", filesystem=result_fs, format="parquet")
         result = dataset.to_table()
         assert result.num_rows == 6
 
     @pytest.mark.spec("PA-024")
     def test_write_via_pyarrow_read_via_store(self, local_store: Store) -> None:
-        """Write through PyArrow, read back through Store API."""
-        fs = pyarrow_fs(local_store)
+        result_fs = pyarrow_fs(local_store)
         table = pa.table({"a": [42]})
-        pq.write_table(table, "cross.parquet", filesystem=fs)
+        pq.write_table(table, "cross.parquet", filesystem=result_fs)
         raw = local_store.read_bytes("cross.parquet")
         assert len(raw) > 0
-        # Verify it's valid Parquet
         result = pq.read_table(io.BytesIO(raw))
         assert result.column("a").to_pylist() == [42]
 
 
 # ---------------------------------------------------------------------------
-# Additional coverage tests
+# Handler equality & exports
 # ---------------------------------------------------------------------------
-
-
-class TestNonSeekableFallback:
-    """Cover Tier 2 fallback for non-seekable large streams (lines 266-275)."""
-
-    @pytest.mark.spec("PA-010")
-    def test_non_seekable_large_file_materializes(self, store: Store, caplog: pytest.LogCaptureFixture) -> None:
-        """Non-seekable stream above threshold falls back to Tier 2 with warning."""
-        import logging
-
-        content = b"x" * 100
-        store.write("big.txt", content)
-
-        # Monkey-patch store.read to return a non-seekable stream
-        original_read = store.read
-
-        def non_seekable_read(path: str) -> io.RawIOBase:
-            stream = original_read(path)
-            stream.seekable = lambda: False  # type: ignore[attr-defined]
-            return stream
-
-        store.read = non_seekable_read  # type: ignore[assignment]
-        try:
-            fs = pyarrow_fs(store, materialization_threshold=10)
-            with (
-                caplog.at_level(logging.WARNING, logger="remote_store.ext.arrow"),
-                fs.open_input_file("big.txt") as f,
-            ):
-                assert f.read() == content
-            assert "not seekable" in caplog.text
-        finally:
-            store.read = original_read  # type: ignore[assignment]
-
-
-class TestGetFileInfoEdgeCases:
-    """Cover FileNotFoundError catch in get_file_info (lines 182-183)."""
-
-    @pytest.mark.spec("PA-007")
-    def test_get_file_info_error_during_check(self, store: Store) -> None:
-        """If get_file_info raises NotFound (race condition), fall back to is_folder."""
-        store.write("volatile.txt", b"data")
-        handler = StoreFileSystemHandler(store)
-
-        # Monkey-patch get_file_info to raise NotFound (simulating race condition)
-        original_get_file_info = store.get_file_info
-
-        def flaky_get_file_info(path: str):  # type: ignore[no-untyped-def]
-            raise NotFound(f"Gone: {path}", path=path)
-
-        store.get_file_info = flaky_get_file_info  # type: ignore[assignment]
-        try:
-            infos = handler.get_file_info(["volatile.txt"])
-            assert len(infos) == 1
-            assert infos[0].type == pafs.FileType.NotFound
-        finally:
-            store.get_file_info = original_get_file_info  # type: ignore[assignment]
-
-    @pytest.mark.spec("PA-007")
-    def test_get_file_info_is_folder_raises(self, store: Store) -> None:
-        """If both get_file_info and is_folder raise, return NotFound."""
-        handler = StoreFileSystemHandler(store)
-
-        original_get_file_info = store.get_file_info
-        original_is_folder = store.is_folder
-
-        def raise_get_file_info(path: str):  # type: ignore[no-untyped-def]
-            raise NotFound(f"Gone: {path}", path=path)
-
-        def raise_is_folder(path: str) -> bool:
-            raise NotFound(f"Gone: {path}", path=path)
-
-        store.get_file_info = raise_get_file_info  # type: ignore[assignment]
-        store.is_folder = raise_is_folder  # type: ignore[assignment]
-        try:
-            infos = handler.get_file_info(["ghost"])
-            assert len(infos) == 1
-            assert infos[0].type == pafs.FileType.NotFound
-        finally:
-            store.get_file_info = original_get_file_info  # type: ignore[assignment]
-            store.is_folder = original_is_folder  # type: ignore[assignment]
-
-
-class TestSelectorBackendRaises:
-    """Cover get_file_info_selector FileNotFoundError catch (lines 226-229)."""
-
-    @pytest.mark.spec("PA-008")
-    def test_selector_backend_raises_not_found(self, store: Store) -> None:
-        """Backends that raise NotFound on list_files trigger the except branch."""
-        handler = StoreFileSystemHandler(store)
-
-        original_list_files = store.list_files
-
-        def raising_list_files(path: str, *, recursive: bool = False):  # type: ignore[no-untyped-def]
-            raise NotFound(f"Not found: {path}", path=path)
-
-        store.list_files = raising_list_files  # type: ignore[assignment]
-        try:
-            # allow_not_found=True should return empty
-            selector = pafs.FileSelector("gone", allow_not_found=True)
-            infos = handler.get_file_info_selector(selector)
-            assert infos == []
-
-            # allow_not_found=False should raise
-            selector = pafs.FileSelector("gone", allow_not_found=False)
-            with pytest.raises(FileNotFoundError):
-                handler.get_file_info_selector(selector)
-        finally:
-            store.list_files = original_list_files  # type: ignore[assignment]
-
-
-# ---------------------------------------------------------------------------
-# Deep review: DuckDB/Polars/fsspec compatibility
-# ---------------------------------------------------------------------------
-
-
-class TestSyntheticDirMultiLevelBase:
-    """Ensure recursive selector with multi-level base_dir doesn't emit ancestors."""
-
-    @pytest.mark.spec("PA-008")
-    def test_no_ancestors_above_base_dir(self, store: Store) -> None:
-        store.write("a/b/c/d/file.txt", b"data")
-        fs = pyarrow_fs(store)
-        selector = pafs.FileSelector("a/b", recursive=True)
-        infos = fs.get_file_info(selector)
-        paths = {i.path for i in infos}
-        # "a/b/c" and "a/b/c/d" are valid synthetic dirs (descendants of base)
-        assert "a/b/c" in paths
-        assert "a/b/c/d" in paths
-        # "a" is ABOVE base_dir — must NOT appear
-        assert "a" not in paths
-
-    @pytest.mark.spec("PA-008")
-    def test_root_base_dir_no_regression(self, store: Store) -> None:
-        """Empty base_dir should still produce synthetic dirs."""
-        store.write("x/y/z.txt", b"data")
-        fs = pyarrow_fs(store)
-        selector = pafs.FileSelector("", recursive=True)
-        infos = fs.get_file_info(selector)
-        paths = {i.path for i in infos}
-        assert "x" in paths
-        assert "x/y" in paths
 
 
 class TestHandlerEquality:
-    """StoreFileSystemHandler __eq__/__ne__ for filesystem identity."""
-
-    def test_same_store_equal(self, store: Store) -> None:
-        h1 = StoreFileSystemHandler(store)
-        h2 = StoreFileSystemHandler(store)
-        assert h1.__eq__(h2) is True
-        assert h1.__ne__(h2) is False
-
-    def test_different_store_not_equal(self) -> None:
+    @pytest.mark.parametrize(
+        "same_store,expect_eq",
+        [
+            pytest.param(True, True, id="same_store"),
+            pytest.param(False, False, id="different_store"),
+        ],
+    )
+    def test_equality(self, same_store: bool, expect_eq: bool) -> None:
         s1 = Store(backend=MemoryBackend())
-        s2 = Store(backend=MemoryBackend())
+        s2 = s1 if same_store else Store(backend=MemoryBackend())
         h1 = StoreFileSystemHandler(s1)
         h2 = StoreFileSystemHandler(s2)
-        assert h1.__eq__(h2) is False
-        assert h1.__ne__(h2) is True
+        assert h1.__eq__(h2) is expect_eq
+        assert h1.__ne__(h2) is (not expect_eq)
 
     @pytest.mark.parametrize("dunder", ["__eq__", "__ne__"], ids=["eq", "ne"])
     def test_other_type_returns_not_implemented(self, store: Store, dunder: str) -> None:
@@ -976,26 +876,7 @@ class TestHandlerEquality:
         assert method(42) is NotImplemented
 
 
-class TestNormalizeDotDotDot:
-    """normalize_path resolves . and .. components."""
-
-    @pytest.mark.spec("PA-006")
-    @pytest.mark.parametrize(
-        "raw,expected",
-        [
-            pytest.param("dir/./file.txt", "dir/file.txt", id="single_dot"),
-            pytest.param("dir/../file.txt", "file.txt", id="double_dot"),
-            pytest.param("../file.txt", "file.txt", id="double_dot_at_root"),
-            pytest.param("a/b/../c/./d/../e", "a/c/e", id="complex"),
-        ],
-    )
-    def test_dot_resolution(self, raw: str, expected: str) -> None:
-        assert StoreFileSystemHandler.normalize_path(raw) == expected
-
-
 class TestAllExports:
-    """PA-022: __all__ re-exports verification."""
-
     @pytest.mark.spec("PA-022")
     def test_arrow_module_exports(self) -> None:
         from remote_store.ext import arrow
@@ -1005,7 +886,6 @@ class TestAllExports:
 
     @pytest.mark.spec("PA-022")
     def test_no_top_level_reexports(self) -> None:
-        """Optional-dep extensions are NOT re-exported (ADR-0013)."""
         import remote_store
 
         assert not hasattr(remote_store, "StoreFileSystemHandler")

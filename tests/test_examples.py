@@ -53,42 +53,41 @@ def two_stores():
 
 
 # ---------------------------------------------------------------------------
-# Quickstart
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _verify_hello_store(tmp_path, subdir):
+    """Verify quickstart demo wrote hello.txt correctly."""
+    from remote_store import Store
+    from remote_store.backends import LocalBackend
+
+    store = Store(LocalBackend(root=str(tmp_path / subdir)))
+    assert store.exists("hello.txt")
+    assert store.read_bytes("hello.txt") == b"Hello, world!"
+    assert store.get_file_info("hello.txt").size == 13
+    store.close()
+
+
+# ---------------------------------------------------------------------------
+# Quickstart (parametrized)
 # ---------------------------------------------------------------------------
 
 
 class TestQuickstart:
     @pytest.mark.spec("STORE-008")
-    def test_demo_direct(self, tmp_path):
-        from examples.quickstart import demo_direct
+    @pytest.mark.parametrize(
+        "demo_func, subdir",
+        [
+            pytest.param("demo_direct", "direct", id="direct"),
+            pytest.param("demo_registry", "registry", id="registry"),
+        ],
+    )
+    def test_demo(self, tmp_path, demo_func, subdir):
+        import examples.quickstart as qs
 
-        demo_direct(str(tmp_path / "direct"))
-
-        from remote_store import Store
-        from remote_store.backends import LocalBackend
-
-        store = Store(LocalBackend(root=str(tmp_path / "direct")))
-        assert store.exists("hello.txt")
-        assert store.read_bytes("hello.txt") == b"Hello, world!"
-        info = store.get_file_info("hello.txt")
-        assert info.size == 13
-        store.close()
-
-    @pytest.mark.spec("STORE-008")
-    def test_demo_registry(self, tmp_path):
-        from examples.quickstart import demo_registry
-
-        demo_registry(str(tmp_path / "registry"))
-
-        from remote_store import Store
-        from remote_store.backends import LocalBackend
-
-        store = Store(LocalBackend(root=str(tmp_path / "registry")))
-        assert store.exists("hello.txt")
-        assert store.read_bytes("hello.txt") == b"Hello, world!"
-        info = store.get_file_info("hello.txt")
-        assert info.size == 13
-        store.close()
+        getattr(qs, demo_func)(str(tmp_path / subdir))
+        _verify_hello_store(tmp_path, subdir)
 
 
 # ---------------------------------------------------------------------------
@@ -103,19 +102,13 @@ class TestFileOperations:
 
         demo(memory_store)
 
-        # After the demo: readme_backup.txt deleted, tmp/ folder deleted,
-        # changelog.txt moved to archive/.
         assert memory_store.exists("docs/readme.txt")
-        assert not memory_store.exists("docs/changelog.txt")  # moved
+        assert not memory_store.exists("docs/changelog.txt")
         assert memory_store.exists("archive/changelog.txt")
         assert memory_store.exists("data/report.csv")
-        assert not memory_store.exists("docs/readme_backup.txt")  # deleted
-        assert not memory_store.exists("tmp/scratch.txt")  # folder deleted
-
-        # Content integrity
+        assert not memory_store.exists("docs/readme_backup.txt")
+        assert not memory_store.exists("tmp/scratch.txt")
         assert memory_store.read_bytes("data/report.csv") == b"col1,col2\n1,2\n3,4"
-
-        # Metadata
         assert memory_store.is_file("docs/readme.txt")
         assert memory_store.is_folder("docs")
         assert not memory_store.is_file("docs")
@@ -136,15 +129,12 @@ class TestStreamingIO:
 
         demo(memory_store)
 
-        # Verify file contents
         assert memory_store.read_bytes("streamed.txt") == b"line1\nline2\nline3\nline4\nline5\n"
         assert memory_store.read_bytes("large.bin") == b"X" * 10_000
         assert memory_store.read_bytes("direct.txt") == b"Written as raw bytes"
 
-        # Verify streaming read round-trip
         with memory_store.read("streamed.txt") as reader:
-            content = reader.read()
-        assert content == b"line1\nline2\nline3\nline4\nline5\n"
+            assert reader.read() == b"line1\nline2\nline3\nline4\nline5\n"
 
 
 # ---------------------------------------------------------------------------
@@ -160,11 +150,8 @@ class TestAtomicWrites:
 
         results = demo(memory_store)
 
-        # AlreadyExists raised on both atomic and regular write
         assert isinstance(results["atomic_already_exists"], AlreadyExists)
         assert isinstance(results["write_already_exists"], AlreadyExists)
-
-        # Final content reflects the overwrite
         assert memory_store.read_bytes("config.json") == b'{"version": 2}'
         assert memory_store.read_bytes("data.txt") == b"updated"
 
@@ -184,21 +171,14 @@ class TestConfiguration:
 
         results = demo()
 
-        # Secret masking
         assert results["secret_repr"] == "Secret('***')"
         assert results["secret_str"] == "***"
         assert results["secret_reveal"] == "my-secret-key"
-
-        # Auto-wrapping of sensitive keys
         assert results["auto_key_repr"] == "Secret('***')"
         assert results["auto_secret_repr"] == "Secret('***')"
-        assert results["bucket_value"] == "my-bucket"  # not wrapped
-
-        # from_dict() produces usable config
+        assert results["bucket_value"] == "my-bucket"
         assert results["from_dict_data"] == b"a,b\n1,2\n"
         assert results["from_dict_logs"] == b"[INFO] started\n"
-
-        # Validation catches unknown backend references
         assert isinstance(results["validation_error"], ValueError)
 
 
@@ -216,25 +196,17 @@ class TestErrorHandling:
 
         results = demo(memory_store)
 
-        # NotFound with structured attributes
         nf = results["not_found"]
         assert isinstance(nf, NotFound)
         assert nf.path == "nonexistent.txt"
         assert nf.backend is not None
 
-        # AlreadyExists with path attribute
         ae = results["already_exists"]
         assert isinstance(ae, AlreadyExists)
         assert ae.path == "existing.txt"
 
-        # InvalidPath on traversal attempt
-        ip = results["invalid_path"]
-        assert isinstance(ip, InvalidPath)
-
-        # Base class catches all remote-store errors
+        assert isinstance(results["invalid_path"], InvalidPath)
         assert len(results["base_class_errors"]) == 2
-
-        # missing_ok succeeded
         assert results["missing_ok_succeeded"] is True
 
 
@@ -250,13 +222,10 @@ class TestMemoryBackend:
 
         demo(memory_store)
 
-        # Final state after copy + move
         assert memory_store.exists("hello.txt")
         assert memory_store.read_bytes("hello.txt") == b"Hello from memory!"
-
-        # q1 copied to archive, q2 moved to archive
-        assert memory_store.exists("reports/q1.csv")  # original still exists (copy)
-        assert not memory_store.exists("reports/q2.csv")  # moved away
+        assert memory_store.exists("reports/q1.csv")
+        assert not memory_store.exists("reports/q2.csv")
         assert memory_store.exists("archive/q1.csv")
         assert memory_store.exists("archive/q2.csv")
 
@@ -277,21 +246,13 @@ class TestStoreChild:
 
         demo(memory_store)
 
-        # Path isolation: children wrote under their subpaths
         assert memory_store.exists("reports/q1.csv")
         assert memory_store.exists("reports/q2.csv")
         assert memory_store.exists("archive/2024/summary.txt")
-
-        # Content integrity
         assert memory_store.read_bytes("reports/q1.csv") == b"revenue,100\n"
         assert memory_store.read_bytes("archive/2024/summary.txt") == b"Year-end summary"
+        assert memory_store.child("archive").child("2024") == memory_store.child("archive/2024")
 
-        # Chained child equivalence
-        deep = memory_store.child("archive").child("2024")
-        direct = memory_store.child("archive/2024")
-        assert deep == direct
-
-        # Parent survives child close
         child = memory_store.child("reports")
         child.close()
         assert memory_store.read_bytes("reports/q1.csv") == b"revenue,100\n"
@@ -312,27 +273,16 @@ class TestBatchOperations:
 
         results = demo(memory_store)
 
-        # batch_exists
         assert results["exists"]["a.txt"] is True
         assert results["exists"]["b.txt"] is True
         assert results["exists"]["missing.txt"] is False
-
-        # batch_copy success
         assert results["copy_ok"].all_succeeded is True
         assert results["copy_ok"].total == 2
-
-        # batch_copy partial failure
         assert not results["copy_partial"].all_succeeded
         assert "c.txt" in results["copy_partial"].failed
         assert isinstance(results["copy_partial"].failed["c.txt"], AlreadyExists)
-
-        # batch_delete success
         assert results["delete_ok"].all_succeeded is True
-
-        # batch_delete with missing_ok
         assert results["delete_missing_ok"].all_succeeded is True
-
-        # batch_delete with stop_on_error: first succeeds, second fails, third skipped
         assert "gone.txt" in results["delete_stop_on_error"].failed
 
 
@@ -349,23 +299,20 @@ class TestGlobPatternMatching:
 
         results = demo(memory_store)
 
-        # Tier 1: list_files(pattern=...)
         assert results["tier1_csvs"] == ["report.csv"]
         assert results["tier1_reports"] == ["report.csv", "report.txt"]
         assert results["tier1_md"] == ["docs/guide.md", "docs/readme.md"]
-        assert "logs/app.log" in results["tier1_logs_recursive"]
-        assert "logs/error.log" in results["tier1_logs_recursive"]
-        assert "logs/archive/old.log" in results["tier1_logs_recursive"]
+        assert set(results["tier1_logs_recursive"]) == {
+            "logs/app.log",
+            "logs/error.log",
+            "logs/archive/old.log",
+        }
         assert len(results["tier1_logs_recursive"]) == 3
-
-        # Tier 3: glob_files()
         assert len(results["tier3_deep_logs"]) == 3
         assert results["tier3_doc_mds"] == ["docs/guide.md", "docs/readme.md"]
-        assert len(results["tier3_everything"]) == 8  # all 8 files
-
-        # Child-scoped glob
-        assert len(results["child_tier1"]) == 2  # app.log, error.log (not archive/)
-        assert len(results["child_tier3"]) == 3  # all .log files including archive/
+        assert len(results["tier3_everything"]) == 8
+        assert len(results["child_tier1"]) == 2
+        assert len(results["child_tier3"]) == 3
 
 
 # ---------------------------------------------------------------------------
@@ -383,22 +330,13 @@ class TestTransferOperations:
         primary, archive = two_stores
         results = demo(primary, archive, str(tmp_path))
 
-        # Upload round-trip
-        assert results["uploaded_content"] == b"Hello from local filesystem!"
-        assert results["upload_bytes"] == 100_000
-
-        # Download round-trip
-        assert results["downloaded_content"] == b"Hello from local filesystem!"
-        assert results["download_bytes"] == 100_000
-
-        # Download overwrite guard
+        expected_content = b"Hello from local filesystem!"
+        for key in ("uploaded_content", "downloaded_content", "transferred_content"):
+            assert results[key] == expected_content
+        for key in ("upload_bytes", "download_bytes", "transfer_bytes"):
+            assert results[key] == 100_000
         assert isinstance(results["download_overwrite_guard"], FileExistsError)
 
-        # Transfer round-trip
-        assert results["transferred_content"] == b"Hello from local filesystem!"
-        assert results["transfer_bytes"] == 100_000
-
-        # Final state: both stores have their files
         assert primary.exists("hello.txt")
         assert primary.exists("large.bin")
         assert archive.exists("hello_archived.txt")
@@ -421,33 +359,46 @@ class TestObserveHooks:
 
         results = demo(memory_store)
 
-        # Per-operation hooks fired
-        assert len(results["write_events"]) == 2  # two writes
+        assert len(results["write_events"]) == 2
         assert results["write_events"][0].operation == "write_text"
-        assert len(results["read_events"]) == 1  # one read_bytes
+        assert len(results["read_events"]) == 1
         assert results["read_events"][0].operation == "read_bytes"
 
-        # Catch-all hook fired for exists, copy, delete
         assert len(results["any_events"]) == 3
-        ops = [e.operation for e in results["any_events"]]
-        assert "exists" in ops
-        assert "copy" in ops
-        assert "delete" in ops
+        ops = {e.operation for e in results["any_events"]}
+        assert ops == {"exists", "copy", "delete"}
 
-        # Around hook fired
         assert "is_file" in results["around_ops"]
+        assert len(results["buffered_events"]) == 3
 
-        # Buffered observer collected events
-        assert len(results["buffered_events"]) == 3  # 2 writes + 1 exists
-
-        # All events have timing info
         for event in results["write_events"] + results["read_events"] + results["any_events"]:
             assert event.duration_ms >= 0
             assert event.error is None
 
 
 # ---------------------------------------------------------------------------
-# OTel tracing (optional dependency)
+# Smoke tests (demos with no/minimal assertions)
+# ---------------------------------------------------------------------------
+
+
+class TestRetryPolicy:
+    @pytest.mark.spec("RET-001")
+    def test_demo(self):
+        from examples.retry_policy import demo
+
+        demo()
+
+
+class TestHealthCheck:
+    @pytest.mark.spec("PING-001")
+    def test_demo(self, memory_store: Store):
+        from examples.health_check import demo
+
+        demo(memory_store)
+
+
+# ---------------------------------------------------------------------------
+# Optional-dependency examples
 # ---------------------------------------------------------------------------
 
 
@@ -465,11 +416,9 @@ class TestOtelTracing:
         from examples.otel_tracing import demo
         from remote_store.ext.otel import otel_observe
 
-        # Set up OTel with in-memory exporters
         span_exporter = InMemorySpanExporter()
         tracer_provider = TracerProvider()
         tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
-
         metric_reader = InMemoryMetricReader()
         meter_provider = MeterProvider(metric_readers=[metric_reader])
 
@@ -478,32 +427,19 @@ class TestOtelTracing:
             tracer=tracer_provider.get_tracer("test"),
             meter=meter_provider.get_meter("test"),
         )
-
         demo(observed)
 
-        # Verify spans
         spans = span_exporter.get_finished_spans()
-        assert len(spans) == 5  # write, read_bytes, copy, exists, delete
+        assert len(spans) == 5
         span_names = {s.name for s in spans}
-        assert "store.write" in span_names
-        assert "store.read_bytes" in span_names
+        assert {"store.write", "store.read_bytes"} <= span_names
 
-        # Verify metrics exist
         data = metric_reader.get_metrics_data()
-        metric_names = set()
-        for rm in data.resource_metrics:
-            for sm in rm.scope_metrics:
-                for m in sm.metrics:
-                    metric_names.add(m.name)
+        metric_names = {m.name for rm in data.resource_metrics for sm in rm.scope_metrics for m in sm.metrics}
         assert "remote_store.operations" in metric_names
 
         tracer_provider.shutdown()
         meter_provider.shutdown()
-
-
-# ---------------------------------------------------------------------------
-# PyArrow adapter (optional dependency)
-# ---------------------------------------------------------------------------
 
 
 class TestPyArrowAdapter:
@@ -515,44 +451,12 @@ class TestPyArrowAdapter:
 
         results = demo(memory_store)
 
-        # Parquet round-trip
         assert results["people_rows"] == 3
         assert results["people_data"]["id"] == [1, 2, 3]
         assert results["people_data"]["name"] == ["Alice", "Bob", "Charlie"]
-
-        # File was actually written
         assert results["file_size"] > 0
-
-        # Dataset discovery
-        assert results["dataset_rows"] == 15  # 3 partitions * 5 rows
+        assert results["dataset_rows"] == 15
         assert results["dataset_files"] == 3
-
-
-# ---------------------------------------------------------------------------
-# Retry policy
-# ---------------------------------------------------------------------------
-
-
-class TestRetryPolicy:
-    @pytest.mark.spec("RET-001")
-    def test_demo(self):
-        from examples.retry_policy import demo
-
-        # Smoke test -- demo prints output and exercises validation
-        demo()
-
-
-class TestHealthCheck:
-    @pytest.mark.spec("PING-001")
-    def test_demo(self, memory_store: Store):
-        from examples.health_check import demo
-
-        demo(memory_store)
-
-
-# ---------------------------------------------------------------------------
-# Dagster IO Manager (optional dependency)
-# ---------------------------------------------------------------------------
 
 
 class TestHttpBackend:
@@ -561,6 +465,7 @@ class TestHttpBackend:
         pytest.importorskip("pytest_httpserver", reason="pytest-httpserver not installed")
 
         from pytest_httpserver import HTTPServer
+        from werkzeug.wrappers import Response as WerkzeugResponse
 
         from examples.http_backend import demo
         from remote_store.backends import ReadOnlyHttpBackend
@@ -571,8 +476,6 @@ class TestHttpBackend:
             content_type="text/plain",
             headers={"Content-Length": "18"},
         )
-        from werkzeug.wrappers import Response as WerkzeugResponse
-
         head_resp = WerkzeugResponse(b"", status=200, content_type="text/plain")
         head_resp.content_length = 18
         server.expect_request("/files/hello.txt", method="HEAD").respond_with_response(head_resp)

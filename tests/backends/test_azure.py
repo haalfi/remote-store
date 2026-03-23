@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import io
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -33,6 +33,13 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from remote_store._backend import Backend
+
+
+def _make_backend(**kw: Any) -> AzureBackend:
+    """Shorthand for creating an AzureBackend with sensible test defaults."""
+    defaults: dict[str, Any] = {"container": "test", "account_name": "x", "account_key": "fakekey"}
+    defaults.update(kw)
+    return AzureBackend(**defaults)
 
 
 # -- Shared Azurite helpers (imported from conftest where possible) -----------
@@ -157,28 +164,28 @@ class TestAzureConstruction:
 
     @pytest.mark.spec("AZ-001")
     def test_constructor_with_connection_string(self) -> None:
-        backend = AzureBackend(container="test", connection_string="DefaultEndpointsProtocol=http;AccountName=x")
+        backend = _make_backend(account_key=None, connection_string="DefaultEndpointsProtocol=http;AccountName=x")
         assert backend is not None
 
     @pytest.mark.spec("AZ-001")
     def test_constructor_with_account_name(self) -> None:
-        backend = AzureBackend(container="test", account_name="myaccount")
+        backend = _make_backend(account_key=None, account_name="myaccount")
         assert backend is not None
 
     @pytest.mark.spec("AZ-001")
     def test_constructor_with_account_url(self) -> None:
-        backend = AzureBackend(container="test", account_url="https://myaccount.dfs.core.windows.net")
+        backend = _make_backend(
+            account_key=None, account_name=None, account_url="https://myaccount.dfs.core.windows.net"
+        )
         assert backend is not None
 
     @pytest.mark.spec("AZ-002")
     def test_name_is_azure(self) -> None:
-        backend = AzureBackend(container="test", account_name="x")
-        assert backend.name == "azure"
+        assert _make_backend().name == "azure"
 
     @pytest.mark.spec("AZ-003")
     def test_declares_all_capabilities(self) -> None:
-        backend = AzureBackend(container="test", account_name="x")
-        caps = backend.capabilities
+        caps = _make_backend().capabilities
         assert isinstance(caps, CapabilitySet)
         for cap in Capability:
             assert caps.supports(cap), f"Missing capability: {cap.value}"
@@ -186,22 +193,20 @@ class TestAzureConstruction:
     @pytest.mark.spec("AZ-004")
     def test_lazy_connection(self) -> None:
         """Construction must not make network calls."""
-        backend = AzureBackend(
-            container="any-container",
-            account_name="nonexistent",
-            account_key="fakekey",
-        )
+        backend = _make_backend(container="any-container", account_name="nonexistent")
         assert backend.name == "azure"
 
     @pytest.mark.spec("AZ-005")
-    def test_empty_container_raises(self) -> None:
+    @pytest.mark.parametrize(
+        "container",
+        [
+            pytest.param("", id="empty"),
+            pytest.param("   ", id="whitespace"),
+        ],
+    )
+    def test_invalid_container_raises(self, container: str) -> None:
         with pytest.raises(ValueError, match="container"):
-            AzureBackend(container="", account_name="x")
-
-    @pytest.mark.spec("AZ-005")
-    def test_whitespace_container_raises(self) -> None:
-        with pytest.raises(ValueError, match="container"):
-            AzureBackend(container="   ", account_name="x")
+            AzureBackend(container=container, account_name="x")
 
     @pytest.mark.spec("AZ-005")
     def test_no_connection_info_raises(self) -> None:
@@ -210,23 +215,23 @@ class TestAzureConstruction:
 
     @pytest.mark.spec("AZ-033")
     def test_max_concurrency_default(self) -> None:
-        backend = AzureBackend(container="test", account_name="x")
-        assert backend._max_concurrency == 1
+        assert _make_backend()._max_concurrency == 1
 
     @pytest.mark.spec("AZ-033")
     def test_max_concurrency_custom(self) -> None:
-        backend = AzureBackend(container="test", account_name="x", max_concurrency=4)
-        assert backend._max_concurrency == 4
+        assert _make_backend(max_concurrency=4)._max_concurrency == 4
 
     @pytest.mark.spec("AZ-033")
-    def test_max_concurrency_zero_raises(self) -> None:
+    @pytest.mark.parametrize(
+        "val",
+        [
+            pytest.param(0, id="zero"),
+            pytest.param(-1, id="negative"),
+        ],
+    )
+    def test_max_concurrency_invalid_raises(self, val: int) -> None:
         with pytest.raises(ValueError, match="max_concurrency"):
-            AzureBackend(container="test", account_name="x", max_concurrency=0)
-
-    @pytest.mark.spec("AZ-033")
-    def test_max_concurrency_negative_raises(self) -> None:
-        with pytest.raises(ValueError, match="max_concurrency"):
-            AzureBackend(container="test", account_name="x", max_concurrency=-1)
+            _make_backend(max_concurrency=val)
 
 
 # =============================================================================
@@ -238,24 +243,18 @@ class TestAzurePathNormalization:
     """AZ-011: path normalization."""
 
     @pytest.mark.spec("AZ-011")
-    def test_strips_leading_slash(self) -> None:
-        backend = AzureBackend(container="test", account_name="x")
-        assert backend._azure_path("/a/b/c.txt") == "a/b/c.txt"
-
-    @pytest.mark.spec("AZ-011")
-    def test_collapses_double_separators(self) -> None:
-        backend = AzureBackend(container="test", account_name="x")
-        assert backend._azure_path("a//b///c.txt") == "a/b/c.txt"
-
-    @pytest.mark.spec("AZ-011")
-    def test_combined_normalization(self) -> None:
-        backend = AzureBackend(container="test", account_name="x")
-        assert backend._azure_path("//a//b/c.txt") == "a/b/c.txt"
-
-    @pytest.mark.spec("AZ-011")
-    def test_empty_string(self) -> None:
-        backend = AzureBackend(container="test", account_name="x")
-        assert backend._azure_path("") == ""
+    @pytest.mark.parametrize(
+        "inp, expected",
+        [
+            pytest.param("/a/b/c.txt", "a/b/c.txt", id="strips-leading-slash"),
+            pytest.param("a//b///c.txt", "a/b/c.txt", id="collapses-double-separators"),
+            pytest.param("//a//b/c.txt", "a/b/c.txt", id="combined"),
+            pytest.param("", "", id="empty-string"),
+        ],
+    )
+    def test_path_normalization(self, inp: str, expected: str) -> None:
+        backend = _make_backend()
+        assert backend._azure_path(inp) == expected
 
 
 # =============================================================================
@@ -267,32 +266,27 @@ class TestAzureHNSDetection:
     """AZ-006: HNS detection with mocked SDK."""
 
     @pytest.mark.spec("AZ-006")
-    def test_hns_enabled_detected(self) -> None:
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+    @pytest.mark.parametrize(
+        "ret, side_eff, expected",
+        [
+            pytest.param({"is_hns_enabled": True}, None, True, id="hns-enabled"),
+            pytest.param({"is_hns_enabled": False}, None, False, id="hns-disabled"),
+            pytest.param(None, Exception("network error"), False, id="detection-failure-fallback"),
+        ],
+    )
+    def test_hns_detection(self, ret: Any, side_eff: Any, expected: bool) -> None:
+        backend = _make_backend()
         mock_client = MagicMock()
-        mock_client.get_account_information.return_value = {"is_hns_enabled": True}
+        if side_eff is not None:
+            mock_client.get_account_information.side_effect = side_eff
+        else:
+            mock_client.get_account_information.return_value = ret
         backend._blob_service_instance = mock_client
-        assert backend._hns is True
-
-    @pytest.mark.spec("AZ-006")
-    def test_hns_disabled_detected(self) -> None:
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
-        mock_client = MagicMock()
-        mock_client.get_account_information.return_value = {"is_hns_enabled": False}
-        backend._blob_service_instance = mock_client
-        assert backend._hns is False
-
-    @pytest.mark.spec("AZ-006")
-    def test_hns_detection_failure_falls_back(self) -> None:
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
-        mock_client = MagicMock()
-        mock_client.get_account_information.side_effect = Exception("network error")
-        backend._blob_service_instance = mock_client
-        assert backend._hns is False
+        assert backend._hns is expected
 
     @pytest.mark.spec("AZ-006")
     def test_hns_result_cached(self) -> None:
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        backend = _make_backend()
         mock_client = MagicMock()
         mock_client.get_account_information.return_value = {"is_hns_enabled": True}
         backend._blob_service_instance = mock_client
@@ -306,103 +300,85 @@ class TestAzureHNSDetection:
 # =============================================================================
 
 
+def _azure_exc(name: str, *args: object) -> Exception:
+    """Create an azure.core.exceptions instance by class name."""
+    mod = __import__("azure.core.exceptions", fromlist=[name])
+    return getattr(mod, name)(*args)
+
+
 class TestAzureErrorMapping:
     """AZ-025 through AZ-028: structured error classification."""
 
+    @staticmethod
+    def _http_err(msg: str, status: int) -> Exception:
+        from azure.core.exceptions import HttpResponseError
+
+        exc = HttpResponseError(msg)
+        exc.status_code = status
+        return exc
+
     @pytest.mark.spec("AZ-025")
-    def test_resource_not_found_maps_to_not_found(self) -> None:
+    @pytest.mark.parametrize(
+        "exc_factory, expected_type",
+        [
+            pytest.param(lambda: _azure_exc("ResourceNotFoundError", "not found"), NotFound, id="resource-not-found"),
+            pytest.param(lambda: _azure_exc("ResourceExistsError", "exists"), AlreadyExists, id="resource-exists"),
+            pytest.param(
+                lambda: _azure_exc("ClientAuthenticationError", "auth failed"), PermissionDenied, id="client-auth-error"
+            ),
+            pytest.param(
+                lambda: _azure_exc("ServiceRequestError", "connection refused"),
+                BackendUnavailable,
+                id="service-request-error",
+            ),
+            pytest.param(
+                lambda: _azure_exc("ServiceResponseError", "bad response"),
+                BackendUnavailable,
+                id="service-response-error",
+            ),
+            pytest.param(lambda: RuntimeError("unexpected"), RemoteStoreError, id="unknown-exception"),
+        ],
+    )
+    def test_classify_direct(self, exc_factory: Any, expected_type: type) -> None:
+        backend = _make_backend()
+        mapped = backend._classify(exc_factory(), "file.txt")
+        assert isinstance(mapped, expected_type)
+
+    @pytest.mark.spec("AZ-025")
+    @pytest.mark.parametrize(
+        "status, expected_type",
+        [
+            pytest.param(403, PermissionDenied, id="http-403"),
+            pytest.param(404, NotFound, id="http-404"),
+            pytest.param(409, AlreadyExists, id="http-409"),
+            pytest.param(500, RemoteStoreError, id="http-500-generic"),
+        ],
+    )
+    def test_classify_http_status(self, status: int, expected_type: type) -> None:
+        backend = _make_backend()
+        mapped = backend._classify(self._http_err("msg", status), "file.txt")
+        assert isinstance(mapped, expected_type)
+
+    @pytest.mark.spec("AZ-025")
+    def test_resource_not_found_has_backend(self) -> None:
         from azure.core.exceptions import ResourceNotFoundError
 
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        backend = _make_backend()
         mapped = backend._classify(ResourceNotFoundError("not found"), "file.txt")
-        assert isinstance(mapped, NotFound)
         assert mapped.backend == "azure"
 
     @pytest.mark.spec("AZ-025")
-    def test_resource_exists_maps_to_already_exists(self) -> None:
-        from azure.core.exceptions import ResourceExistsError
-
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
-        mapped = backend._classify(ResourceExistsError("exists"), "file.txt")
-        assert isinstance(mapped, AlreadyExists)
-
-    @pytest.mark.spec("AZ-025")
-    def test_http_403_maps_to_permission_denied(self) -> None:
-        from azure.core.exceptions import HttpResponseError
-
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
-        exc = HttpResponseError("forbidden")
-        exc.status_code = 403
-        mapped = backend._classify(exc, "file.txt")
-        assert isinstance(mapped, PermissionDenied)
-
-    @pytest.mark.spec("AZ-025")
-    def test_http_404_maps_to_not_found(self) -> None:
-        from azure.core.exceptions import HttpResponseError
-
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
-        exc = HttpResponseError("not found")
-        exc.status_code = 404
-        mapped = backend._classify(exc, "file.txt")
-        assert isinstance(mapped, NotFound)
-
-    @pytest.mark.spec("AZ-025")
-    def test_http_409_maps_to_already_exists(self) -> None:
-        from azure.core.exceptions import HttpResponseError
-
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
-        exc = HttpResponseError("conflict")
-        exc.status_code = 409
-        mapped = backend._classify(exc, "file.txt")
-        assert isinstance(mapped, AlreadyExists)
-
-    @pytest.mark.spec("AZ-025")
-    def test_client_auth_error_maps_to_permission_denied(self) -> None:
-        from azure.core.exceptions import ClientAuthenticationError
-
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
-        mapped = backend._classify(ClientAuthenticationError("auth failed"), "file.txt")
-        assert isinstance(mapped, PermissionDenied)
-
-    @pytest.mark.spec("AZ-025")
-    def test_service_request_error_maps_to_unavailable(self) -> None:
-        from azure.core.exceptions import ServiceRequestError
-
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
-        mapped = backend._classify(ServiceRequestError("connection refused"), "")
-        assert isinstance(mapped, BackendUnavailable)
-
-    @pytest.mark.spec("AZ-025")
-    def test_service_response_error_maps_to_unavailable(self) -> None:
-        from azure.core.exceptions import ServiceResponseError
-
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
-        mapped = backend._classify(ServiceResponseError("bad response"), "")
-        assert isinstance(mapped, BackendUnavailable)
-
-    @pytest.mark.spec("AZ-025")
-    def test_generic_http_error_maps_to_remote_store_error(self) -> None:
-        from azure.core.exceptions import HttpResponseError
-
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
-        exc = HttpResponseError("server error")
-        exc.status_code = 500
-        mapped = backend._classify(exc, "file.txt")
-        assert isinstance(mapped, RemoteStoreError)
+    def test_generic_http_excludes_subtypes(self) -> None:
+        backend = _make_backend()
+        mapped = backend._classify(self._http_err("server error", 500), "file.txt")
         assert not isinstance(mapped, NotFound | AlreadyExists | PermissionDenied)
-
-    @pytest.mark.spec("AZ-025")
-    def test_unknown_exception_maps_to_remote_store_error(self) -> None:
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
-        mapped = backend._classify(RuntimeError("unexpected"), "file.txt")
-        assert isinstance(mapped, RemoteStoreError)
 
     @pytest.mark.spec("AZ-026")
     def test_no_native_exception_leaks(self) -> None:
         """The error context manager converts all exceptions."""
         from azure.core.exceptions import ResourceNotFoundError
 
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        backend = _make_backend()
         with pytest.raises(RemoteStoreError), backend._errors("test"):
             raise ResourceNotFoundError("not found")
 
@@ -410,7 +386,7 @@ class TestAzureErrorMapping:
     def test_error_has_backend_attribute(self) -> None:
         from azure.core.exceptions import ResourceNotFoundError
 
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        backend = _make_backend()
         with pytest.raises(RemoteStoreError) as exc_info, backend._errors("test"):
             raise ResourceNotFoundError("not found")
         assert exc_info.value.backend == "azure"
@@ -418,7 +394,7 @@ class TestAzureErrorMapping:
     @pytest.mark.spec("AZ-028")
     def test_remote_store_errors_pass_through(self) -> None:
         """RemoteStoreError raised inside _errors() passes through unchanged."""
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        backend = _make_backend()
         with pytest.raises(NotFound, match="custom"), backend._errors("test"):
             raise NotFound("custom", path="test", backend="azure")
 
@@ -431,30 +407,26 @@ class TestAzureErrorMapping:
 class TestAzureCredentialResolution:
     """AZ-032: credential resolution paths."""
 
-    @pytest.mark.spec("AZ-032")
-    def test_account_key_used_as_credential(self) -> None:
-        backend = AzureBackend(container="test", account_name="x", account_key="mykey")
-        cred = backend._resolve_credential()
-        assert cred == "mykey"
+    _sentinel = object()
 
     @pytest.mark.spec("AZ-032")
-    def test_sas_token_used_as_credential(self) -> None:
-        backend = AzureBackend(container="test", account_name="x", sas_token="mysas")
-        cred = backend._resolve_credential()
-        assert cred == "mysas"
+    @pytest.mark.parametrize(
+        "kw, expected",
+        [
+            pytest.param({"account_key": "mykey"}, "mykey", id="account-key"),
+            pytest.param({"account_key": None, "sas_token": "mysas"}, "mysas", id="sas-token"),
+            pytest.param({"account_key": "key", "sas_token": "sas"}, "key", id="key-precedence-over-sas"),
+        ],
+    )
+    def test_credential_resolution(self, kw: dict[str, Any], expected: str) -> None:
+        backend = _make_backend(**kw)
+        assert backend._resolve_credential() == expected
 
     @pytest.mark.spec("AZ-032")
     def test_explicit_credential_used(self) -> None:
         sentinel = object()
-        backend = AzureBackend(container="test", account_name="x", credential=sentinel)
-        cred = backend._resolve_credential()
-        assert cred is sentinel
-
-    @pytest.mark.spec("AZ-032")
-    def test_account_key_takes_precedence_over_sas(self) -> None:
-        backend = AzureBackend(container="test", account_name="x", account_key="key", sas_token="sas")
-        cred = backend._resolve_credential()
-        assert cred == "key"
+        backend = _make_backend(account_key=None, credential=sentinel)
+        assert backend._resolve_credential() is sentinel
 
 
 # =============================================================================
@@ -466,19 +438,17 @@ class TestAzureToKey:
     """AZ-027: to_key strips container prefix."""
 
     @pytest.mark.spec("AZ-027")
-    def test_strips_container_prefix(self) -> None:
-        backend = AzureBackend(container="my-container", account_name="x")
-        assert backend.to_key("my-container/data/file.txt") == "data/file.txt"
-
-    @pytest.mark.spec("AZ-027")
-    def test_no_prefix_unchanged(self) -> None:
-        backend = AzureBackend(container="my-container", account_name="x")
-        assert backend.to_key("data/file.txt") == "data/file.txt"
-
-    @pytest.mark.spec("AZ-027")
-    def test_empty_string(self) -> None:
-        backend = AzureBackend(container="my-container", account_name="x")
-        assert backend.to_key("") == ""
+    @pytest.mark.parametrize(
+        "inp, expected",
+        [
+            pytest.param("my-container/data/file.txt", "data/file.txt", id="strips-container-prefix"),
+            pytest.param("data/file.txt", "data/file.txt", id="no-prefix-unchanged"),
+            pytest.param("", "", id="empty-string"),
+        ],
+    )
+    def test_to_key(self, inp: str, expected: str) -> None:
+        backend = _make_backend(container="my-container")
+        assert backend.to_key(inp) == expected
 
 
 # =============================================================================
@@ -491,7 +461,7 @@ class TestAzureUnwrap:
 
     @pytest.mark.spec("AZ-030")
     def test_unwrap_wrong_type_raises(self) -> None:
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        backend = _make_backend()
         with pytest.raises(CapabilityNotSupported):
             backend.unwrap(str)
 
@@ -507,12 +477,12 @@ class TestAzureLifecycle:
     @pytest.mark.spec("AZ-029")
     def test_close_without_connection(self) -> None:
         """close() before any connection is safe."""
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        backend = _make_backend()
         backend.close()
 
     @pytest.mark.spec("AZ-029")
     def test_close_idempotent(self) -> None:
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        backend = _make_backend()
         backend.close()
         backend.close()
 
@@ -527,7 +497,7 @@ class TestAzureHNSPaths:
 
     def _make_hns_backend(self) -> AzureBackend:
         """Create a backend with HNS enabled and mocked SDK clients."""
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey")
+        backend = _make_backend()
         backend._hns_enabled = True
         # Mock blob service (still used for some operations)
         backend._blob_service_instance = MagicMock()
@@ -658,7 +628,7 @@ class TestAzureMaxConcurrency:
         """AZ-033: max_concurrency kwarg reaches upload_blob."""
         from azure.core.exceptions import ResourceNotFoundError
 
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey", max_concurrency=4)
+        backend = _make_backend(max_concurrency=4)
         backend._hns_enabled = False
         backend._blob_service_instance = MagicMock()
         backend._cc_instance = MagicMock()
@@ -670,7 +640,7 @@ class TestAzureMaxConcurrency:
 
     def test_max_concurrency_threaded_to_download(self) -> None:
         """AZ-033: max_concurrency kwarg reaches download_blob."""
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey", max_concurrency=4)
+        backend = _make_backend(max_concurrency=4)
         backend._hns_enabled = False
         backend._blob_service_instance = MagicMock()
         backend._cc_instance = MagicMock()
@@ -685,7 +655,7 @@ class TestAzureMaxConcurrency:
 
     def test_max_concurrency_threaded_to_read_bytes(self) -> None:
         """AZ-033: max_concurrency kwarg reaches download_blob in read_bytes."""
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey", max_concurrency=8)
+        backend = _make_backend(max_concurrency=8)
         backend._hns_enabled = False
         backend._blob_service_instance = MagicMock()
         backend._cc_instance = MagicMock()
@@ -701,7 +671,7 @@ class TestAzureMaxConcurrency:
         """AZ-033: max_concurrency kwarg reaches upload_data in open_atomic HNS path."""
         from azure.core.exceptions import ResourceNotFoundError
 
-        backend = AzureBackend(container="test", account_name="x", account_key="fakekey", max_concurrency=4)
+        backend = _make_backend(max_concurrency=4)
         backend._hns_enabled = True
         backend._blob_service_instance = MagicMock()
         backend._cc_instance = MagicMock()
@@ -862,15 +832,29 @@ class TestAzureIntegration:
         assert azure_backend.exists("src.txt") is False
         assert azure_backend.read_bytes("dst.txt") == b"data"
 
-    def test_move_not_found(self, azure_backend: Backend) -> None:
+    @pytest.mark.parametrize(
+        "op",
+        [
+            pytest.param("move", id="move-not-found"),
+            pytest.param("copy", id="copy-not-found"),
+        ],
+    )
+    def test_op_not_found(self, azure_backend: Backend, op: str) -> None:
         with pytest.raises(NotFound):
-            azure_backend.move("missing.txt", "dst.txt")
+            getattr(azure_backend, op)("missing.txt", "dst.txt")
 
-    def test_move_already_exists(self, azure_backend: Backend) -> None:
-        azure_backend.write("m1.txt", b"a")
-        azure_backend.write("m2.txt", b"b")
+    @pytest.mark.parametrize(
+        "op",
+        [
+            pytest.param("move", id="move-already-exists"),
+            pytest.param("copy", id="copy-already-exists"),
+        ],
+    )
+    def test_op_already_exists(self, azure_backend: Backend, op: str) -> None:
+        azure_backend.write("ae1.txt", b"a")
+        azure_backend.write("ae2.txt", b"b")
         with pytest.raises(AlreadyExists):
-            azure_backend.move("m1.txt", "m2.txt", overwrite=False)
+            getattr(azure_backend, op)("ae1.txt", "ae2.txt", overwrite=False)
 
     def test_move_overwrite(self, azure_backend: Backend) -> None:
         azure_backend.write("mo1.txt", b"a")
@@ -879,28 +863,17 @@ class TestAzureIntegration:
         assert azure_backend.read_bytes("mo2.txt") == b"a"
         assert azure_backend.exists("mo1.txt") is False
 
-    def test_copy(self, azure_backend: Backend) -> None:
+    def test_copy_preserves_source(self, azure_backend: Backend) -> None:
         azure_backend.write("orig.txt", b"data")
         azure_backend.copy("orig.txt", "clone.txt")
         assert azure_backend.read_bytes("orig.txt") == b"data"
         assert azure_backend.read_bytes("clone.txt") == b"data"
-
-    def test_copy_not_found(self, azure_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            azure_backend.copy("missing.txt", "dst.txt")
-
-    def test_copy_already_exists(self, azure_backend: Backend) -> None:
-        azure_backend.write("c1.txt", b"a")
-        azure_backend.write("c2.txt", b"b")
-        with pytest.raises(AlreadyExists):
-            azure_backend.copy("c1.txt", "c2.txt", overwrite=False)
 
     def test_copy_overwrite(self, azure_backend: Backend) -> None:
         azure_backend.write("co1.txt", b"a")
         azure_backend.write("co2.txt", b"b")
         azure_backend.copy("co1.txt", "co2.txt", overwrite=True)
         assert azure_backend.read_bytes("co2.txt") == b"a"
-        assert azure_backend.read_bytes("co1.txt") == b"a"
 
     def test_write_atomic(self, azure_backend: Backend) -> None:
         azure_backend.write_atomic("atomic.txt", b"atomic content")
@@ -1029,7 +1002,7 @@ class TestAzureETagAndDigest:
         mock_props.size = len(content)
         mock_props.content_length = len(content)
 
-        backend = AzureBackend(container="c", account_name="fake")
+        backend = _make_backend(container="c", account_name="fake", account_key=None)
         fi = backend._props_to_fileinfo(mock_props, "test.txt")
 
         assert isinstance(fi.digest, ContentDigest)
@@ -1050,7 +1023,7 @@ class TestAzureETagAndDigest:
         mock_props.size = 0
         mock_props.content_length = 0
 
-        backend = AzureBackend(container="c", account_name="fake")
+        backend = _make_backend(container="c", account_name="fake", account_key=None)
         fi = backend._props_to_fileinfo(mock_props, "test.txt")
 
         assert fi.digest is None
@@ -1067,7 +1040,7 @@ class TestAzureETagAndDigest:
         mock_props.size = 0
         mock_props.content_length = 0
 
-        backend = AzureBackend(container="c", account_name="fake")
+        backend = _make_backend(container="c", account_name="fake", account_key=None)
         fi = backend._props_to_fileinfo(mock_props, "test.txt")
 
         assert fi.digest is None
@@ -1086,7 +1059,7 @@ class TestAzureETagAndDigest:
         mock_props.size = 0
         mock_props.content_length = 0
 
-        backend = AzureBackend(container="c", account_name="fake")
+        backend = _make_backend(container="c", account_name="fake", account_key=None)
         fi = backend._props_to_fileinfo(mock_props, "test.txt")
 
         assert fi.etag == "0x8d4bcc2e4835cd0"

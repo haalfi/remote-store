@@ -6,6 +6,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Internal
+
+- **Test suite deduplication and parametrization** (BK-014): refactored 30 of 40
+  test files (~17,800 → ~16,300 lines, −8.6%) while preserving identical
+  coverage. Parametrized similar tests, extracted shared fixtures, merged
+  single-method classes, and consolidated repeated assertion patterns.
+
 ### Documentation
 
 - **Single-source code snippets for docs** (ID-057): docs code blocks are now

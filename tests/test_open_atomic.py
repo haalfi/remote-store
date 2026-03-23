@@ -36,20 +36,18 @@ class TestStoreOpenAtomicLocal:
             pass
 
     @pytest.mark.spec("SAW-003")
-    def test_success_path(self, local_store: Store) -> None:
-        """On successful exit, file is atomically visible at target path."""
+    @pytest.mark.parametrize(
+        "chunks,expected",
+        [
+            pytest.param([b"hello world"], b"hello world", id="single_write"),
+            pytest.param([b"chunk1-", b"chunk2-", b"chunk3"], b"chunk1-chunk2-chunk3", id="multi_chunk"),
+        ],
+    )
+    def test_success_path(self, local_store: Store, chunks: list[bytes], expected: bytes) -> None:
         with local_store.open_atomic("out.txt") as f:
-            f.write(b"hello world")
-        assert local_store.read_bytes("out.txt") == b"hello world"
-
-    @pytest.mark.spec("SAW-003")
-    def test_multi_chunk_write(self, local_store: Store) -> None:
-        """Multi-chunk write produces correct content."""
-        with local_store.open_atomic("chunks.txt") as f:
-            f.write(b"chunk1-")
-            f.write(b"chunk2-")
-            f.write(b"chunk3")
-        assert local_store.read_bytes("chunks.txt") == b"chunk1-chunk2-chunk3"
+            for chunk in chunks:
+                f.write(chunk)
+        assert local_store.read_bytes("out.txt") == expected
 
     @pytest.mark.spec("SAW-004")
     def test_exception_path_no_partial_file(self, local_store: Store) -> None:
@@ -73,41 +71,37 @@ class TestStoreOpenAtomicLocal:
 
     @pytest.mark.spec("SAW-006")
     def test_already_exists(self, local_store: Store) -> None:
-        """AlreadyExists raised if file exists and overwrite=False."""
         local_store.write("exists.txt", b"data")
         with pytest.raises(AlreadyExists), local_store.open_atomic("exists.txt"):
             pass
 
     @pytest.mark.spec("SAW-006")
     def test_overwrite_replaces(self, local_store: Store) -> None:
-        """overwrite=True succeeds and replaces content."""
         local_store.write("replace.txt", b"old")
         with local_store.open_atomic("replace.txt", overwrite=True) as f:
             f.write(b"new")
         assert local_store.read_bytes("replace.txt") == b"new"
 
     @pytest.mark.spec("SAW-007")
-    def test_invalid_path_empty(self, local_store: Store) -> None:
-        """InvalidPath raised if path is empty."""
-        with pytest.raises(InvalidPath), local_store.open_atomic(""):
-            pass
-
-    @pytest.mark.spec("SAW-007")
-    def test_invalid_path_root(self, local_store: Store) -> None:
-        """InvalidPath raised if path is root alias."""
-        with pytest.raises(InvalidPath), local_store.open_atomic("."):
+    @pytest.mark.parametrize(
+        "path",
+        [
+            pytest.param("", id="empty"),
+            pytest.param(".", id="root"),
+        ],
+    )
+    def test_invalid_path(self, local_store: Store, path: str) -> None:
+        with pytest.raises(InvalidPath), local_store.open_atomic(path):
             pass
 
     @pytest.mark.spec("SAW-008")
     def test_local_creates_parent_dirs(self, local_store: Store) -> None:
-        """LocalBackend creates parent directories."""
         with local_store.open_atomic("deep/nested/file.txt") as f:
             f.write(b"nested")
         assert local_store.read_bytes("deep/nested/file.txt") == b"nested"
 
     @pytest.mark.spec("SAW-013")
     def test_yielded_file_supports_write_and_tell(self, local_store: Store) -> None:
-        """Yielded file object supports write() and tell()."""
         with local_store.open_atomic("tell.txt") as f:
             assert f.tell() == 0
             f.write(b"hello")
@@ -131,17 +125,22 @@ class TestStoreOpenAtomicMemory:
         assert memory_store.exists("fail.txt") is False
 
     @pytest.mark.spec("SAW-006")
-    def test_already_exists(self, memory_store: Store) -> None:
-        memory_store.write("exists.txt", b"data")
-        with pytest.raises(AlreadyExists), memory_store.open_atomic("exists.txt"):
-            pass
-
-    @pytest.mark.spec("SAW-006")
-    def test_overwrite(self, memory_store: Store) -> None:
-        memory_store.write("ow.txt", b"old")
-        with memory_store.open_atomic("ow.txt", overwrite=True) as f:
-            f.write(b"new")
-        assert memory_store.read_bytes("ow.txt") == b"new"
+    @pytest.mark.parametrize(
+        "overwrite,expect_error",
+        [
+            pytest.param(False, True, id="already_exists"),
+            pytest.param(True, False, id="overwrite"),
+        ],
+    )
+    def test_exists_handling(self, memory_store: Store, overwrite: bool, expect_error: bool) -> None:
+        memory_store.write("target.txt", b"old")
+        if expect_error:
+            with pytest.raises(AlreadyExists), memory_store.open_atomic("target.txt"):
+                pass
+        else:
+            with memory_store.open_atomic("target.txt", overwrite=True) as f:
+                f.write(b"new")
+            assert memory_store.read_bytes("target.txt") == b"new"
 
     @pytest.mark.spec("SAW-007")
     def test_invalid_path_empty(self, memory_store: Store) -> None:
@@ -153,20 +152,14 @@ class TestObserveOpenAtomic:
     """SAW-014: ext.observe fires on_write hook after successful promotion."""
 
     @pytest.mark.spec("SAW-014")
-    def test_on_write_fires(self, memory_store: Store) -> None:
-        from remote_store.ext.observe import StoreEvent, observe
-
-        events: list[StoreEvent] = []
-        observed = observe(memory_store, on_write=events.append)
-        with observed.open_atomic("obs.txt") as f:
-            f.write(b"observed")
-        assert len(events) == 1
-        assert events[0].operation == "open_atomic"
-        assert events[0].path == "obs.txt"
-        assert events[0].error is None
-
-    @pytest.mark.spec("SAW-014")
-    def test_on_write_fires_with_error_on_failure(self, memory_store: Store) -> None:
+    @pytest.mark.parametrize(
+        "raise_error",
+        [
+            pytest.param(False, id="success"),
+            pytest.param(True, id="failure"),
+        ],
+    )
+    def test_on_write_fires(self, memory_store: Store, raise_error: bool) -> None:
         from remote_store.ext.observe import StoreEvent, observe
 
         events: list[StoreEvent] = []
@@ -176,10 +169,17 @@ class TestObserveOpenAtomic:
             on_write=events.append,
             on_error=error_events.append,
         )
-        with pytest.raises(RuntimeError), observed.open_atomic("fail.txt") as f:
-            f.write(b"fail")
-            raise RuntimeError("boom")
-        # on_write still fires (with error set), on_error also fires
-        assert len(events) == 1
-        assert events[0].error is not None
-        assert len(error_events) == 1
+        if raise_error:
+            with pytest.raises(RuntimeError), observed.open_atomic("fail.txt") as f:
+                f.write(b"fail")
+                raise RuntimeError("boom")
+            assert len(events) == 1
+            assert events[0].error is not None
+            assert len(error_events) == 1
+        else:
+            with observed.open_atomic("obs.txt") as f:
+                f.write(b"observed")
+            assert len(events) == 1
+            assert events[0].operation == "open_atomic"
+            assert events[0].path == "obs.txt"
+            assert events[0].error is None

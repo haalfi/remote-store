@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from typing import Any
 
 import pytest
 
@@ -10,14 +11,9 @@ from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
 from remote_store.ext.cache import CachedStore, MemoryCache, cache
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
 
 @pytest.fixture()
 def store() -> Store:
-    """A MemoryBackend-backed store with some test data."""
     backend = MemoryBackend()
     s = Store(backend)
     s.write("a.txt", b"alpha")
@@ -28,135 +24,119 @@ def store() -> Store:
 
 @pytest.fixture()
 def cached(store: Store) -> CachedStore:
-    """A CachedStore wrapping the test store."""
     return cache(store, ttl=60.0)
 
 
-# ===========================================================================
-# CACHE-001: CacheBackend protocol -- MemoryCache
-# ===========================================================================
+@pytest.fixture()
+def mcache() -> MemoryCache:
+    return MemoryCache()
 
 
 class TestMemoryCache:
-    """Unit tests for the MemoryCache implementation."""
+    @pytest.mark.spec("CACHE-002")
+    def test_get_set(self, mcache: MemoryCache) -> None:
+        mcache.set(("x",), 42, ttl=10.0)
+        assert mcache.get(("x",)) == 42
 
     @pytest.mark.spec("CACHE-002")
-    def test_get_set(self) -> None:
-        cache = MemoryCache()
-        cache.set(("x",), 42, ttl=10.0)
-        assert cache.get(("x",)) == 42
-
-    @pytest.mark.spec("CACHE-002")
-    def test_get_missing_raises_key_error(self) -> None:
-        cache = MemoryCache()
+    @pytest.mark.parametrize(
+        "setup, key",
+        [
+            pytest.param(None, ("missing",), id="missing"),
+            pytest.param(("x", 42, 0.01), ("x",), id="expired"),
+        ],
+    )
+    def test_get_raises_key_error(
+        self, mcache: MemoryCache, setup: tuple[str, Any, float] | None, key: tuple[str, ...]
+    ) -> None:
+        if setup is not None:
+            mcache.set((setup[0],), setup[1], ttl=setup[2])
+            time.sleep(0.02)
         with pytest.raises(KeyError):
-            cache.get(("missing",))
+            mcache.get(key)
 
     @pytest.mark.spec("CACHE-002")
-    def test_get_expired_raises_key_error(self) -> None:
-        cache = MemoryCache()
-        cache.set(("x",), 42, ttl=0.01)
-        time.sleep(0.02)
+    def test_delete(self, mcache: MemoryCache) -> None:
+        mcache.set(("x",), 42, ttl=10.0)
+        mcache.delete(("x",))
         with pytest.raises(KeyError):
-            cache.get(("x",))
+            mcache.get(("x",))
 
     @pytest.mark.spec("CACHE-002")
-    def test_delete(self) -> None:
-        cache = MemoryCache()
-        cache.set(("x",), 42, ttl=10.0)
-        cache.delete(("x",))
-        with pytest.raises(KeyError):
-            cache.get(("x",))
+    def test_delete_missing_is_noop(self, mcache: MemoryCache) -> None:
+        mcache.delete(("missing",))  # should not raise
 
     @pytest.mark.spec("CACHE-002")
-    def test_delete_missing_is_noop(self) -> None:
-        cache = MemoryCache()
-        cache.delete(("missing",))  # should not raise
-
-    @pytest.mark.spec("CACHE-002")
-    def test_clear(self) -> None:
-        cache = MemoryCache()
-        cache.set(("a",), 1, ttl=10.0)
-        cache.set(("b",), 2, ttl=10.0)
-        cache.clear()
-        assert cache.size() == 0
+    def test_clear(self, mcache: MemoryCache) -> None:
+        mcache.set(("a",), 1, ttl=10.0)
+        mcache.set(("b",), 2, ttl=10.0)
+        mcache.clear()
+        assert mcache.size() == 0
 
     @pytest.mark.spec("CACHE-001")
-    def test_clear_prefix(self) -> None:
-        cache = MemoryCache()
-        cache.set(("list_files", "x"), 1, ttl=10.0)
-        cache.set(("list_files", "y"), 2, ttl=10.0)
-        cache.set(("exists", "x"), True, ttl=10.0)
-        cache.clear_prefix("list_files")
-        assert cache.size() == 1
-        assert cache.get(("exists", "x")) is True
+    def test_clear_prefix(self, mcache: MemoryCache) -> None:
+        mcache.set(("list_files", "x"), 1, ttl=10.0)
+        mcache.set(("list_files", "y"), 2, ttl=10.0)
+        mcache.set(("exists", "x"), True, ttl=10.0)
+        mcache.clear_prefix("list_files")
+        assert mcache.size() == 1
+        assert mcache.get(("exists", "x")) is True
 
     @pytest.mark.spec("CACHE-001")
-    def test_clear_prefixes_batch(self) -> None:
-        cache = MemoryCache()
-        cache.set(("list_files", "x"), 1, ttl=10.0)
-        cache.set(("glob", "*.txt"), 2, ttl=10.0)
-        cache.set(("exists", "x"), True, ttl=10.0)
-        cache.clear_prefixes(frozenset({"list_files", "glob"}))
-        assert cache.size() == 1
-        assert cache.get(("exists", "x")) is True
+    def test_clear_prefixes_batch(self, mcache: MemoryCache) -> None:
+        mcache.set(("list_files", "x"), 1, ttl=10.0)
+        mcache.set(("glob", "*.txt"), 2, ttl=10.0)
+        mcache.set(("exists", "x"), True, ttl=10.0)
+        mcache.clear_prefixes(frozenset({"list_files", "glob"}))
+        assert mcache.size() == 1
+        assert mcache.get(("exists", "x")) is True
 
     @pytest.mark.spec("CACHE-002")
-    def test_size_excludes_expired(self) -> None:
-        cache = MemoryCache()
-        cache.set(("a",), 1, ttl=0.01)
-        cache.set(("b",), 2, ttl=10.0)
+    def test_size_excludes_expired(self, mcache: MemoryCache) -> None:
+        mcache.set(("a",), 1, ttl=0.01)
+        mcache.set(("b",), 2, ttl=10.0)
         time.sleep(0.02)
-        assert cache.size() == 1
+        assert mcache.size() == 1
 
     @pytest.mark.spec("CACHE-002")
     def test_max_entries_evicts_lru(self) -> None:
-        cache = MemoryCache(max_entries=2)
-        cache.set(("a",), 1, ttl=10.0)
-        cache.set(("b",), 2, ttl=10.0)
-        cache.set(("c",), 3, ttl=10.0)  # should evict ("a",)
-        assert cache.size() == 2
+        mc = MemoryCache(max_entries=2)
+        mc.set(("a",), 1, ttl=10.0)
+        mc.set(("b",), 2, ttl=10.0)
+        mc.set(("c",), 3, ttl=10.0)
+        assert mc.size() == 2
         with pytest.raises(KeyError):
-            cache.get(("a",))
-        assert cache.get(("b",)) == 2
-        assert cache.get(("c",)) == 3
+            mc.get(("a",))
+        assert mc.get(("b",)) == 2
+        assert mc.get(("c",)) == 3
 
     @pytest.mark.spec("CACHE-002")
-    def test_max_entries_lru_access_refreshes(self) -> None:
-        cache = MemoryCache(max_entries=2)
-        cache.set(("a",), 1, ttl=10.0)
-        cache.set(("b",), 2, ttl=10.0)
-        cache.get(("a",))  # refresh ("a",), making ("b",) the LRU
-        cache.set(("c",), 3, ttl=10.0)  # should evict ("b",)
-        assert cache.get(("a",)) == 1
-        assert cache.get(("c",)) == 3
+    @pytest.mark.parametrize(
+        "refresh_op, expected_a",
+        [
+            pytest.param("get", 1, id="access-refreshes"),
+            pytest.param("set", 10, id="set-refreshes"),
+        ],
+    )
+    def test_max_entries_lru_refresh(self, refresh_op: str, expected_a: int) -> None:
+        mc = MemoryCache(max_entries=2)
+        mc.set(("a",), 1, ttl=10.0)
+        mc.set(("b",), 2, ttl=10.0)
+        if refresh_op == "get":
+            mc.get(("a",))
+        else:
+            mc.set(("a",), 10, ttl=10.0)
+        mc.set(("c",), 3, ttl=10.0)  # should evict ("b",)
+        assert mc.get(("a",)) == expected_a
+        assert mc.get(("c",)) == 3
         with pytest.raises(KeyError):
-            cache.get(("b",))
+            mc.get(("b",))
 
     @pytest.mark.spec("CACHE-002")
-    def test_max_entries_lru_set_refreshes(self) -> None:
-        """set() on an existing key moves it to end (LRU refresh)."""
-        cache = MemoryCache(max_entries=2)
-        cache.set(("a",), 1, ttl=10.0)
-        cache.set(("b",), 2, ttl=10.0)
-        cache.set(("a",), 10, ttl=10.0)  # refresh ("a",), making ("b",) the LRU
-        cache.set(("c",), 3, ttl=10.0)  # should evict ("b",)
-        assert cache.get(("a",)) == 10
-        assert cache.get(("c",)) == 3
-        with pytest.raises(KeyError):
-            cache.get(("b",))
-
-    @pytest.mark.spec("CACHE-002")
-    def test_max_entries_invalid_raises(self) -> None:
+    @pytest.mark.parametrize("val", [0, -1], ids=["zero", "negative"])
+    def test_max_entries_invalid_raises(self, val: int) -> None:
         with pytest.raises(ValueError, match="max_entries must be positive"):
-            MemoryCache(max_entries=0)
-        with pytest.raises(ValueError, match="max_entries must be positive"):
-            MemoryCache(max_entries=-1)
-
-
-# ===========================================================================
-# CACHE-003: cache() factory
-# ===========================================================================
+            MemoryCache(max_entries=val)
 
 
 class TestFactory:
@@ -168,37 +148,48 @@ class TestFactory:
 
     @pytest.mark.spec("CACHE-003")
     def test_default_ttl(self, store: Store) -> None:
-        result = cache(store)
-        assert result._ttl == 300.0
+        assert cache(store)._ttl == 300.0
 
     @pytest.mark.spec("CACHE-003")
     def test_custom_cache_backend(self, store: Store) -> None:
         backend = MemoryCache()
-        result = cache(store, cache_backend=backend)
-        assert result._cache is backend
+        assert cache(store, cache_backend=backend)._cache is backend
 
     @pytest.mark.spec("CACHE-003")
-    def test_invalid_ttl_raises(self, store: Store) -> None:
-        with pytest.raises(ValueError, match="ttl must be positive"):
-            cache(store, ttl=0)
-        with pytest.raises(ValueError, match="ttl must be positive"):
-            cache(store, ttl=-1)
-
-    @pytest.mark.spec("CACHE-003")
-    def test_invalid_max_content_size_raises(self, store: Store) -> None:
-        with pytest.raises(ValueError, match="max_content_size must be positive"):
-            cache(store, max_content_size=0)
-        with pytest.raises(ValueError, match="max_content_size must be positive"):
-            cache(store, max_content_size=-5)
+    @pytest.mark.parametrize(
+        "kwarg, val, match",
+        [
+            pytest.param("ttl", 0, "ttl must be positive", id="ttl-zero"),
+            pytest.param("ttl", -1, "ttl must be positive", id="ttl-negative"),
+            pytest.param("max_content_size", 0, "max_content_size must be positive", id="mcs-zero"),
+            pytest.param("max_content_size", -5, "max_content_size must be positive", id="mcs-negative"),
+        ],
+    )
+    def test_invalid_param_raises(self, store: Store, kwarg: str, val: Any, match: str) -> None:
+        with pytest.raises(ValueError, match=match):
+            cache(store, **{kwarg: val})
 
     @pytest.mark.spec("CACHE-004")
     def test_inner_property(self, store: Store, cached: CachedStore) -> None:
         assert cached.inner is store
 
+    @pytest.mark.spec("CACHE-004")
+    def test_repr(self, cached: CachedStore) -> None:
+        r = repr(cached)
+        assert "CachedStore" in r
+        assert "ttl=60" in r
 
-# ===========================================================================
-# CACHE-005: CacheStats
-# ===========================================================================
+    @pytest.mark.spec("CACHE-015")
+    def test_close_delegates(self, store: Store) -> None:
+        cs = cache(store, ttl=60.0)
+        cs.close()  # should not raise
+
+    def test_cached_store_warns(self, store: Store) -> None:
+        """cached_store() emits DeprecationWarning."""
+        from remote_store.ext.cache import cached_store
+
+        with pytest.warns(DeprecationWarning, match="use cache"):
+            cached_store(store, ttl=60.0)
 
 
 class TestCacheStats:
@@ -220,70 +211,49 @@ class TestCacheStats:
 
     @pytest.mark.spec("CACHE-005")
     def test_stats_frozen(self, cached: CachedStore) -> None:
-        s = cached.stats
         with pytest.raises(AttributeError):
-            s.hits = 99  # type: ignore[misc]
-
-
-# ===========================================================================
-# CACHE-006: Cached read operations
-# ===========================================================================
+            cached.stats.hits = 99  # type: ignore[misc]
 
 
 class TestCachedReads:
     @pytest.mark.spec("CACHE-006")
-    def test_exists_cached(self, cached: CachedStore) -> None:
-        assert cached.exists("a.txt") is True
-        assert cached.exists("a.txt") is True
-        assert cached.stats.hits == 1
-        assert cached.stats.misses == 1
-
-    @pytest.mark.spec("CACHE-006")
-    def test_exists_false_cached(self, cached: CachedStore) -> None:
-        assert cached.exists("missing.txt") is False
-        assert cached.exists("missing.txt") is False
-        assert cached.stats.hits == 1
-
-    @pytest.mark.spec("CACHE-006")
-    def test_is_file_cached(self, cached: CachedStore) -> None:
-        assert cached.is_file("a.txt") is True
-        assert cached.is_file("a.txt") is True
-        assert cached.stats.hits == 1
-
-    @pytest.mark.spec("CACHE-006")
-    def test_is_folder_cached(self, cached: CachedStore) -> None:
-        assert cached.is_folder("sub") is True
-        assert cached.is_folder("sub") is True
+    @pytest.mark.parametrize(
+        "method, args, kwargs",
+        [
+            pytest.param("exists", ("a.txt",), {}, id="exists-true"),
+            pytest.param("exists", ("missing.txt",), {}, id="exists-false"),
+            pytest.param("is_file", ("a.txt",), {}, id="is_file"),
+            pytest.param("is_folder", ("sub",), {}, id="is_folder"),
+            pytest.param("read_bytes", ("a.txt",), {}, id="read_bytes"),
+            pytest.param("get_file_info", ("a.txt",), {}, id="get_file_info"),
+            pytest.param("get_folder_info", ("",), {}, id="get_folder_info"),
+        ],
+    )
+    def test_operation_cached(
+        self, cached: CachedStore, method: str, args: tuple[Any, ...], kwargs: dict[str, Any]
+    ) -> None:
+        fn = getattr(cached, method)
+        r1 = fn(*args, **kwargs)
+        r2 = fn(*args, **kwargs)
+        assert r1 == r2
         assert cached.stats.hits == 1
 
     @pytest.mark.spec("CACHE-006")
-    def test_read_bytes_cached(self, cached: CachedStore) -> None:
-        assert cached.read_bytes("a.txt") == b"alpha"
-        assert cached.read_bytes("a.txt") == b"alpha"
-        assert cached.stats.hits == 1
-
-    @pytest.mark.spec("RTXT-005")
-    def test_read_text_uses_cached_read_bytes(self, cached: CachedStore) -> None:
-        # Prime read_bytes cache
-        cached.read_bytes("a.txt")
-        assert cached.stats.misses == 1
-        # read_text should use cached read_bytes (no new miss)
-        assert cached.read_text("a.txt") == "alpha"
-        assert cached.stats.hits == 1
-        assert cached.stats.misses == 1
-
-    @pytest.mark.spec("CACHE-006")
-    def test_get_file_info_cached(self, cached: CachedStore) -> None:
-        info1 = cached.get_file_info("a.txt")
-        info2 = cached.get_file_info("a.txt")
-        assert info1 == info2
-        assert cached.stats.hits == 1
-
-    @pytest.mark.spec("CACHE-006")
-    def test_get_folder_info_cached(self, cached: CachedStore) -> None:
-        info1 = cached.get_folder_info("")
-        info2 = cached.get_folder_info("")
-        assert info1 == info2
+    @pytest.mark.parametrize(
+        "method, args, kwargs",
+        [
+            pytest.param("list_files", ("",), {"recursive": True}, id="list_files"),
+            pytest.param("list_folders", ("",), {}, id="list_folders"),
+            pytest.param("iter_children", ("",), {}, id="iter_children"),
+        ],
+    )
+    def test_iterable_operation_cached(
+        self, cached: CachedStore, method: str, args: tuple[Any, ...], kwargs: dict[str, Any]
+    ) -> None:
+        fn = getattr(cached, method)
+        r1 = list(fn(*args, **kwargs))
+        r2 = list(fn(*args, **kwargs))
+        assert r1 == r2
         assert cached.stats.hits == 1
 
     @pytest.mark.spec("ITER-007")
@@ -293,19 +263,13 @@ class TestCachedReads:
         assert children1 == children2
         assert cached.stats.hits == 1
 
-    @pytest.mark.spec("CACHE-006")
-    def test_list_files_cached(self, cached: CachedStore) -> None:
-        files1 = list(cached.list_files("", recursive=True))
-        files2 = list(cached.list_files("", recursive=True))
-        assert files1 == files2
+    @pytest.mark.spec("RTXT-005")
+    def test_read_text_uses_cached_read_bytes(self, cached: CachedStore) -> None:
+        cached.read_bytes("a.txt")
+        assert cached.stats.misses == 1
+        assert cached.read_text("a.txt") == "alpha"
         assert cached.stats.hits == 1
-
-    @pytest.mark.spec("CACHE-006")
-    def test_list_folders_cached(self, cached: CachedStore) -> None:
-        folders1 = list(cached.list_folders(""))
-        folders2 = list(cached.list_folders(""))
-        assert folders1 == folders2
-        assert cached.stats.hits == 1
+        assert cached.stats.misses == 1
 
     @pytest.mark.spec("CACHE-006")
     def test_glob_cached(self) -> None:
@@ -326,34 +290,74 @@ class TestCachedReads:
             assert cs.stats.hits == 1
 
     @pytest.mark.spec("CACHE-006")
-    def test_list_files_different_params_separate_keys(self, cached: CachedStore) -> None:
-        list(cached.list_files("", recursive=True))
-        list(cached.list_files("", recursive=False))
+    @pytest.mark.parametrize(
+        "call1_kwargs, call2_kwargs",
+        [
+            pytest.param({"recursive": True}, {"recursive": False}, id="different-recursive"),
+            pytest.param({"pattern": None}, {"pattern": "None"}, id="none-vs-string-none"),
+        ],
+    )
+    def test_list_files_different_params_separate_keys(
+        self, cached: CachedStore, call1_kwargs: dict[str, Any], call2_kwargs: dict[str, Any]
+    ) -> None:
+        list(cached.list_files("", **call1_kwargs))
+        list(cached.list_files("", **call2_kwargs))
         assert cached.stats.misses == 2
         assert cached.stats.hits == 0
 
     @pytest.mark.spec("CACHE-006")
-    def test_list_files_none_pattern_distinct_from_string_none(self, cached: CachedStore) -> None:
-        """pattern=None and pattern='None' must not share a cache key."""
-        list(cached.list_files("", pattern=None))
-        list(cached.list_files("", pattern="None"))
+    @pytest.mark.parametrize(
+        "max_size, expected_hits",
+        [
+            pytest.param(3, 0, id="large-content-not-cached"),
+            pytest.param(100, 1, id="small-content-cached"),
+        ],
+    )
+    def test_content_size_guard(self, store: Store, max_size: int, expected_hits: int) -> None:
+        cs = cache(store, ttl=60.0, max_content_size=max_size)
+        assert cs.read_bytes("a.txt") == b"alpha"
+        assert cs.read_bytes("a.txt") == b"alpha"
+        assert cs.stats.hits == expected_hits
+
+    @pytest.mark.spec("CACHE-006")
+    def test_expired_entry_causes_refetch(self, store: Store) -> None:
+        cs = cache(store, ttl=0.05)
+        assert cs.exists("a.txt") is True
+        time.sleep(0.06)
+        assert cs.exists("a.txt") is True
+        assert cs.stats.misses == 2
+
+    @pytest.mark.spec("CACHE-013")
+    def test_not_found_not_cached(self, cached: CachedStore) -> None:
+        from remote_store import NotFound
+
+        with pytest.raises(NotFound):
+            cached.get_file_info("missing.txt")
+        with pytest.raises(NotFound):
+            cached.get_file_info("missing.txt")
         assert cached.stats.misses == 2
         assert cached.stats.hits == 0
 
+    @pytest.mark.spec("CACHE-013")
+    def test_exists_false_is_cached(self, cached: CachedStore) -> None:
+        assert cached.exists("missing.txt") is False
+        assert cached.exists("missing.txt") is False
+        assert cached.stats.hits == 1
 
-# ===========================================================================
-# CACHE-007: Non-cached operations
-# ===========================================================================
+    @pytest.mark.spec("CACHE-014")
+    def test_external_write_returns_stale(self, store: Store) -> None:
+        cs = cache(store, ttl=60.0)
+        assert cs.read_bytes("a.txt") == b"alpha"
+        store.write("a.txt", b"external-update", overwrite=True)
+        assert cs.read_bytes("a.txt") == b"alpha"
+        assert cs.stats.hits == 1
 
 
 class TestNonCached:
     @pytest.mark.spec("CACHE-007")
     def test_read_not_cached(self, cached: CachedStore) -> None:
-        stream1 = cached.read("a.txt")
-        stream1.close()
-        stream2 = cached.read("a.txt")
-        stream2.close()
-        # read() doesn't touch cache at all
+        cached.read("a.txt").close()
+        cached.read("a.txt").close()
         assert cached.stats.hits == 0
         assert cached.stats.misses == 0
 
@@ -375,44 +379,51 @@ class TestNonCached:
         cached.inner.write("sub/file.txt", b"content", overwrite=True)
         child = cached.child("sub")
         assert isinstance(child, CachedStore)
-        # Read twice through child — second should be a cache hit
         child.read_bytes("file.txt")
         child.read_bytes("file.txt")
         assert child.stats.hits >= 1
 
     def test_child_propagates_max_entries(self) -> None:
-        """child() must preserve max_entries from parent."""
-        from remote_store.backends._memory import MemoryBackend
-
         backend = MemoryBackend()
-        store = Store(backend)
-        store.write("sub/a.txt", b"a", overwrite=True)
-        store.write("sub/b.txt", b"b", overwrite=True)
-        store.write("sub/c.txt", b"c", overwrite=True)
-
-        parent = cache(store, max_entries=2)
+        s = Store(backend)
+        s.write("sub/a.txt", b"a", overwrite=True)
+        parent = cache(s, max_entries=2)
         child = parent.child("sub")
         assert isinstance(child, CachedStore)
         assert child._max_entries == 2  # noqa: SLF001
 
     @pytest.mark.spec("CACHE-007")
     def test_native_path_delegates(self, cached: CachedStore) -> None:
-        result = cached.native_path("a.txt")
-        assert isinstance(result, str)
+        assert isinstance(cached.native_path("a.txt"), str)
 
 
-# ===========================================================================
-# CACHE-008: Write invalidation
-# ===========================================================================
-
-
-class TestWriteInvalidation:
+class TestInvalidation:
     @pytest.mark.spec("CACHE-008")
-    def test_write_invalidates_path(self, cached: CachedStore) -> None:
+    @pytest.mark.parametrize(
+        "write_method, write_args, write_kwargs",
+        [
+            pytest.param("write", (b"updated",), {"overwrite": True}, id="write"),
+            pytest.param("write_atomic", (b"atomic-update",), {"overwrite": True}, id="write_atomic"),
+        ],
+    )
+    def test_write_op_invalidates_read_bytes(
+        self,
+        cached: CachedStore,
+        write_method: str,
+        write_args: tuple[Any, ...],
+        write_kwargs: dict[str, Any],
+    ) -> None:
         assert cached.read_bytes("a.txt") == b"alpha"
-        cached.write("a.txt", b"updated", overwrite=True)
-        assert cached.read_bytes("a.txt") == b"updated"
-        assert cached.stats.misses == 2  # both calls are misses
+        getattr(cached, write_method)("a.txt", *write_args, **write_kwargs)
+        assert cached.read_bytes("a.txt") == write_args[0]
+        assert cached.stats.misses == 2
+
+    @pytest.mark.spec("WTXT-005")
+    def test_write_text_invalidates(self, cached: CachedStore) -> None:
+        assert cached.read_bytes("a.txt") == b"alpha"
+        cached.write_text("a.txt", "updated", overwrite=True)
+        assert cached.read_text("a.txt") == "updated"
+        assert cached.stats.misses == 2
 
     @pytest.mark.spec("CACHE-008")
     def test_write_invalidates_listings(self, cached: CachedStore) -> None:
@@ -435,20 +446,6 @@ class TestWriteInvalidation:
         assert cached.exists("new.txt") is True
         assert cached.stats.misses == 2
 
-    @pytest.mark.spec("WTXT-005")
-    def test_write_text_invalidates(self, cached: CachedStore) -> None:
-        assert cached.read_bytes("a.txt") == b"alpha"
-        cached.write_text("a.txt", "updated", overwrite=True)
-        assert cached.read_text("a.txt") == "updated"
-        assert cached.stats.misses == 2  # both calls are misses
-
-    @pytest.mark.spec("CACHE-008")
-    def test_write_atomic_invalidates(self, cached: CachedStore) -> None:
-        assert cached.read_bytes("a.txt") == b"alpha"
-        cached.write_atomic("a.txt", b"atomic-update", overwrite=True)
-        assert cached.read_bytes("a.txt") == b"atomic-update"
-        assert cached.stats.misses == 2
-
     @pytest.mark.spec("CACHE-008")
     def test_open_atomic_invalidates_on_success(self, cached: CachedStore) -> None:
         assert cached.read_bytes("a.txt") == b"alpha"
@@ -463,17 +460,9 @@ class TestWriteInvalidation:
         with pytest.raises(RuntimeError, match="abort"), cached.open_atomic("a.txt", overwrite=True) as f:
             f.write(b"will be discarded")
             raise RuntimeError("abort")
-        # Cache should still have the old value (no invalidation happened).
         assert cached.read_bytes("a.txt") == b"alpha"
         assert cached.stats.hits == 1
 
-
-# ===========================================================================
-# CACHE-009: Delete invalidation
-# ===========================================================================
-
-
-class TestDeleteInvalidation:
     @pytest.mark.spec("CACHE-009")
     def test_delete_invalidates_path(self, cached: CachedStore) -> None:
         assert cached.exists("a.txt") is True
@@ -486,100 +475,78 @@ class TestDeleteInvalidation:
         cached.exists("sub/c.txt")
         cached.exists("a.txt")
         cached.delete_folder("sub", recursive=True)
-        # All cache should be cleared
         assert cached.stats.size == 0
 
-
-# ===========================================================================
-# CACHE-010: Move/Copy invalidation
-# ===========================================================================
-
-
-class TestMoveCopyInvalidation:
     @pytest.mark.spec("CACHE-010")
     def test_move_invalidates_src_and_dst(self, cached: CachedStore) -> None:
         cached.exists("a.txt")
         cached.exists("moved.txt")
         cached.move("a.txt", "moved.txt")
-        # Both should be misses now
         assert cached.exists("a.txt") is False
         assert cached.exists("moved.txt") is True
-        # 2 initial misses + 2 after invalidation = 4
         assert cached.stats.misses == 4
 
     @pytest.mark.spec("CACHE-010")
     def test_copy_invalidates_dst_only(self, cached: CachedStore) -> None:
         data = cached.read_bytes("a.txt")
         cached.copy("a.txt", "copied.txt")
-        # Source should still be cached
         assert cached.read_bytes("a.txt") == data
         assert cached.stats.hits == 1
 
 
-# ===========================================================================
-# CACHE-011: Drift-protection test
-# ===========================================================================
-
-
 class TestDriftProtection:
     @pytest.mark.spec("CACHE-011")
-    def test_all_store_methods_overridden(self) -> None:
-        """CachedStore (or ProxyStore) must override every public method of Store."""
+    @pytest.mark.parametrize(
+        "attr_kind, filter_fn",
+        [
+            pytest.param(
+                "methods",
+                lambda cls, name: not name.startswith("_") and callable(getattr(cls, name)),
+                id="methods",
+            ),
+            pytest.param(
+                "properties",
+                lambda cls, name: not name.startswith("_") and isinstance(getattr(cls, name, None), property),
+                id="properties",
+            ),
+        ],
+    )
+    def test_all_store_attrs_overridden(self, attr_kind: str, filter_fn: Any) -> None:
+        """CachedStore (or ProxyStore) must override every public method/property of Store."""
         from remote_store._proxy import ProxyStore
 
-        store_public = {name for name in dir(Store) if not name.startswith("_") and callable(getattr(Store, name))}
-        # Methods overridden in CachedStore itself or in ProxyStore base
-        overridden = set()
+        store_attrs = {name for name in dir(Store) if filter_fn(Store, name)}
+        overridden: set[str] = set()
         for cls in (CachedStore, ProxyStore):
-            overridden |= {name for name in cls.__dict__ if not name.startswith("_") and callable(cls.__dict__[name])}
-        missing = store_public - overridden
+            if attr_kind == "methods":
+                overridden |= {
+                    name for name in cls.__dict__ if not name.startswith("_") and callable(cls.__dict__[name])
+                }
+            else:
+                overridden |= {
+                    name
+                    for name in cls.__dict__
+                    if not name.startswith("_") and isinstance(cls.__dict__.get(name), property)
+                }
+        missing = store_attrs - overridden
         assert not missing, f"CachedStore/ProxyStore missing overrides for: {missing}"
-
-    @pytest.mark.spec("CACHE-011")
-    def test_all_store_properties_overridden(self) -> None:
-        """CachedStore (or ProxyStore) must override every public property of Store."""
-        from remote_store._proxy import ProxyStore
-
-        store_props = {
-            name for name in dir(Store) if not name.startswith("_") and isinstance(getattr(Store, name, None), property)
-        }
-        overridden = set()
-        for cls in (CachedStore, ProxyStore):
-            overridden |= {
-                name
-                for name in cls.__dict__
-                if not name.startswith("_") and isinstance(cls.__dict__.get(name), property)
-            }
-        missing = store_props - overridden
-        assert not missing, f"CachedStore/ProxyStore missing property overrides for: {missing}"
-
-
-# ===========================================================================
-# CACHE-012: Thread safety
-# ===========================================================================
 
 
 class TestThreadSafety:
     @pytest.mark.spec("CACHE-012")
     def test_concurrent_reads(self, cached: CachedStore) -> None:
-        """Smoke test: concurrent reads should not crash."""
         import concurrent.futures
 
-        def read_exists(_: int) -> bool:
-            return cached.exists("a.txt")
-
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-            results = list(pool.map(read_exists, range(20)))
+            results = list(pool.map(lambda _: cached.exists("a.txt"), range(20)))
         assert all(r is True for r in results)
 
     @pytest.mark.spec("CACHE-012")
     def test_concurrent_mixed_operations(self, store: Store) -> None:
-        """Stress test: concurrent reads, writes, and invalidations."""
         import concurrent.futures
         import random
 
         cs = cache(store, ttl=60.0)
-
         errors: list[Exception] = []
 
         def worker(idx: int) -> None:
@@ -600,81 +567,10 @@ class TestThreadSafety:
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
             list(pool.map(worker, range(16)))
-
         assert not errors, f"Concurrent operations raised: {errors}"
-        # Stats should be consistent (non-negative, sum makes sense).
-        s = cs.stats
-        assert s.hits >= 0
-        assert s.misses >= 0
+        assert cs.stats.hits >= 0
+        assert cs.stats.misses >= 0
 
-
-# ===========================================================================
-# CACHE-013: Error semantics
-# ===========================================================================
-
-
-class TestErrorSemantics:
-    @pytest.mark.spec("CACHE-013")
-    def test_not_found_not_cached(self, cached: CachedStore) -> None:
-        from remote_store import NotFound
-
-        with pytest.raises(NotFound):
-            cached.get_file_info("missing.txt")
-        # The error should not be cached -- next call hits backend again.
-        with pytest.raises(NotFound):
-            cached.get_file_info("missing.txt")
-        assert cached.stats.misses == 2
-        assert cached.stats.hits == 0
-
-    @pytest.mark.spec("CACHE-013")
-    def test_exists_false_is_cached(self, cached: CachedStore) -> None:
-        assert cached.exists("missing.txt") is False
-        assert cached.exists("missing.txt") is False
-        assert cached.stats.hits == 1
-
-
-# ===========================================================================
-# CACHE-006: max_content_size guard
-# ===========================================================================
-
-
-class TestMaxContentSize:
-    @pytest.mark.spec("CACHE-006")
-    def test_large_content_not_cached(self, store: Store) -> None:
-        cached = cache(store, ttl=60.0, max_content_size=3)
-        assert cached.read_bytes("a.txt") == b"alpha"  # 5 bytes > 3
-        assert cached.read_bytes("a.txt") == b"alpha"
-        assert cached.stats.hits == 0  # never cached
-
-    @pytest.mark.spec("CACHE-006")
-    def test_small_content_cached(self, store: Store) -> None:
-        cached = cache(store, ttl=60.0, max_content_size=100)
-        assert cached.read_bytes("a.txt") == b"alpha"
-        assert cached.read_bytes("a.txt") == b"alpha"
-        assert cached.stats.hits == 1
-
-
-# ===========================================================================
-# CACHE-006: TTL expiration
-# ===========================================================================
-
-
-class TestTTLExpiration:
-    @pytest.mark.spec("CACHE-006")
-    def test_expired_entry_causes_refetch(self, store: Store) -> None:
-        cached = cache(store, ttl=0.05)
-        assert cached.exists("a.txt") is True
-        time.sleep(0.06)
-        assert cached.exists("a.txt") is True
-        assert cached.stats.misses == 2
-
-
-# ===========================================================================
-# CACHE-012: Manual invalidation
-# ===========================================================================
-
-
-class TestManualInvalidation:
     @pytest.mark.spec("CACHE-012")
     def test_invalidate_path(self, cached: CachedStore) -> None:
         cached.exists("a.txt")
@@ -688,52 +584,3 @@ class TestManualInvalidation:
         cached.exists("b.txt")
         cached.clear_cache()
         assert cached.stats.size == 0
-
-
-# ===========================================================================
-# CACHE-015: Lifecycle
-# ===========================================================================
-
-
-class TestLifecycle:
-    @pytest.mark.spec("CACHE-015")
-    def test_close_delegates(self, store: Store) -> None:
-        cached = cache(store, ttl=60.0)
-        cached.close()  # should not raise
-
-    @pytest.mark.spec("CACHE-004")
-    def test_repr(self, cached: CachedStore) -> None:
-        r = repr(cached)
-        assert "CachedStore" in r
-        assert "ttl=60" in r
-
-
-# ===========================================================================
-# CACHE-014: Stale data contract (documented behavior)
-# ===========================================================================
-
-
-class TestStaleData:
-    @pytest.mark.spec("CACHE-014")
-    def test_external_write_returns_stale(self, store: Store) -> None:
-        cached = cache(store, ttl=60.0)
-        assert cached.read_bytes("a.txt") == b"alpha"
-        # Write directly to inner store (simulating external mutation).
-        store.write("a.txt", b"external-update", overwrite=True)
-        # Cache still returns old value.
-        assert cached.read_bytes("a.txt") == b"alpha"
-        assert cached.stats.hits == 1
-
-
-# ===========================================================================
-# Deprecated alias
-# ===========================================================================
-
-
-class TestDeprecatedAlias:
-    def test_cached_store_warns(self, store: Store) -> None:
-        """cached_store() emits DeprecationWarning."""
-        from remote_store.ext.cache import cached_store
-
-        with pytest.warns(DeprecationWarning, match="use cache"):
-            cached_store(store, ttl=60.0)
