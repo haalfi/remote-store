@@ -138,31 +138,31 @@ Mapping for core API pages:
 
 | API page | Guide link | Example link |
 |---|---|---|
-| `api/store.md` | [Getting Started](getting-started.md), [Concurrency](concurrency.md) | [Quickstart](examples/quickstart.md) |
-| `api/path.md` | [Getting Started](getting-started.md) | [Path Model](examples/path-model.md) |
-| `api/config.md` | [Retry](retry.md), [Security](security-model.md) | [Configuration](examples/configuration.md), [Retry Policy](examples/retry-policy.md) |
-| `api/registry.md` | [Choosing a Backend](choosing-a-backend.md) | [Configuration](examples/configuration.md) |
-| `api/models.md` | [Getting Started](getting-started.md) | [File Operations](examples/file-operations.md) |
-| `api/capabilities.md` | [Capabilities Matrix](capabilities-matrix.md) | [Capabilities & Errors](examples/capabilities-and-errors.md) |
-| `api/errors.md` | [Troubleshooting](troubleshooting.md) | [Error Handling](examples/error-handling.md) |
-| `api/sftp-utils.md` | [SFTP Backend](backends/sftp.md) | [SFTP Backend example](examples/sftp-backend.md) |
+| `api/store.md` | Getting Started (`getting-started.md`), Concurrency (`concurrency.md`) | Quickstart (`examples/quickstart.md`) |
+| `api/path.md` | Getting Started (`getting-started.md`) | Path Model (`examples/path-model.md`) |
+| `api/config.md` | Retry (`retry.md`), Security (`security-model.md`) | Configuration (`examples/configuration.md`), Retry Policy (`examples/retry-policy.md`) |
+| `api/registry.md` | Choosing a Backend (`choosing-a-backend.md`) | Configuration (`examples/configuration.md`) |
+| `api/models.md` | Getting Started (`getting-started.md`) | File Operations (`examples/file-operations.md`) |
+| `api/capabilities.md` | Capabilities Matrix (`capabilities-matrix.md`) | Capabilities & Errors (`examples/capabilities-and-errors.md`) |
+| `api/errors.md` | Troubleshooting (`troubleshooting.md`) | Error Handling (`examples/error-handling.md`) |
+| `api/sftp-utils.md` | SFTP Backend (`backends/sftp.md`) | SFTP Backend example (`examples/sftp-backend.md`) |
 
 Mapping for extension API pages:
 
 | API page | Guide link | Example link |
 |---|---|---|
-| `api/extensions/batch.md` | [Batch Operations](batch-operations.md) | [Batch Operations](examples/batch-operations.md) |
-| `api/extensions/transfer.md` | [Transfer Operations](transfer-operations.md) | [Transfer Operations](examples/transfer-operations.md) |
-| `api/extensions/glob.md` | [Glob Pattern Matching](glob-pattern-matching.md) | [Glob Pattern Matching](examples/glob-pattern-matching.md) |
-| `api/extensions/cache.md` | [Cache](cache.md) | [Caching](examples/caching.md) |
-| `api/extensions/observe.md` | [Observe](observe.md) | [Observe Hooks](examples/observe-hooks.md) |
-| `api/extensions/otel.md` | [Observe](observe.md) | [OTel Tracing](examples/otel-tracing.md) |
-| `api/extensions/arrow.md` | [PyArrow Adapter](pyarrow-adapter.md) | [PyArrow Adapter](examples/pyarrow-adapter.md) |
-| `api/extensions/dagster.md` | [Dagster](dagster.md) | [Dagster IO Manager](examples/dagster-io-manager.md), [Medallion Dagster](examples/medallion-dagster.md) |
-| `api/extensions/streams.md` | — (no dedicated guide) | [Streaming IO](examples/streaming-io.md) |
-| `api/extensions/partition.md` | [Data Lake Patterns](data-lake-patterns.md) | — |
-| `api/extensions/pydantic.md` | [Extensions](extensions.md) | [Config Loaders](examples/config-loaders.md) |
-| `api/extensions/yaml.md` | [Extensions](extensions.md) | [Config Loaders](examples/config-loaders.md) |
+| `api/extensions/batch.md` | Batch Operations (`batch-operations.md`) | Batch Operations (`examples/batch-operations.md`) |
+| `api/extensions/transfer.md` | Transfer Operations (`transfer-operations.md`) | Transfer Operations (`examples/transfer-operations.md`) |
+| `api/extensions/glob.md` | Glob Pattern Matching (`glob-pattern-matching.md`) | Glob Pattern Matching (`examples/glob-pattern-matching.md`) |
+| `api/extensions/cache.md` | Cache (`cache.md`) | Caching (`examples/caching.md`) |
+| `api/extensions/observe.md` | Observe (`observe.md`) | Observe Hooks (`examples/observe-hooks.md`) |
+| `api/extensions/otel.md` | Observe (`observe.md`) | OTel Tracing (`examples/otel-tracing.md`) |
+| `api/extensions/arrow.md` | PyArrow Adapter (`pyarrow-adapter.md`) | PyArrow Adapter (`examples/pyarrow-adapter.md`) |
+| `api/extensions/dagster.md` | Dagster (`dagster.md`) | Dagster IO Manager (`examples/dagster-io-manager.md`), Medallion Dagster (`examples/medallion-dagster.md`) |
+| `api/extensions/streams.md` | — (no dedicated guide) | Streaming IO (`examples/streaming-io.md`) |
+| `api/extensions/partition.md` | Data Lake Patterns (`data-lake-patterns.md`) | — |
+| `api/extensions/pydantic.md` | Extensions (`extensions.md`) | Config Loaders (`examples/config-loaders.md`) |
+| `api/extensions/yaml.md` | Extensions (`extensions.md`) | Config Loaders (`examples/config-loaders.md`) |
 | `api/extensions/integrity.md` | — (no dedicated guide) | — |
 
 ### Rule 3 — Source link for examples & showcases
@@ -211,33 +211,33 @@ Mapping for example pages:
 
 | Example page | Guide link | Source path |
 |---|---|---|
-| `quickstart.md` | [Getting Started](getting-started.md) | `examples/quickstart.py` |
-| `file-operations.md` | [Getting Started](getting-started.md) | `examples/file_operations.py` |
+| `quickstart.md` | Getting Started (`getting-started.md`) | `examples/quickstart.py` |
+| `file-operations.md` | Getting Started (`getting-started.md`) | `examples/file_operations.py` |
 | `streaming-io.md` | — | `examples/streaming_io.py` |
-| `atomic-writes.md` | [Concurrency](concurrency.md) | `examples/atomic_writes.py` |
-| `configuration.md` | [Choosing a Backend](choosing-a-backend.md) | `examples/configuration.py` |
-| `config-loaders.md` | [Extensions](extensions.md) | `examples/config_loaders.py` |
-| `error-handling.md` | [Troubleshooting](troubleshooting.md) | `examples/error_handling.py` |
-| `capabilities-and-errors.md` | [Capabilities Matrix](capabilities-matrix.md) | `examples/capabilities_and_errors.py` |
+| `atomic-writes.md` | Concurrency (`concurrency.md`) | `examples/atomic_writes.py` |
+| `configuration.md` | Choosing a Backend (`choosing-a-backend.md`) | `examples/configuration.py` |
+| `config-loaders.md` | Extensions (`extensions.md`) | `examples/config_loaders.py` |
+| `error-handling.md` | Troubleshooting (`troubleshooting.md`) | `examples/error_handling.py` |
+| `capabilities-and-errors.md` | Capabilities Matrix (`capabilities-matrix.md`) | `examples/capabilities_and_errors.py` |
 | `path-model.md` | — | `examples/path_model.py` |
 | `store-child.md` | — | `examples/store_child.py` |
-| `memory-backend.md` | [Memory Backend](backends/memory.md) | `examples/memory_backend.py` |
-| `http-backend.md` | [HTTP Backend](backends/http.md) | `examples/http_backend.py` |
-| `s3-backend.md` | [S3 Backend](backends/s3.md) | `examples/backends/s3_backend.py` |
-| `s3-pyarrow-backend.md` | [S3-PyArrow Backend](backends/s3-pyarrow.md) | `examples/backends/s3_pyarrow_backend.py` |
-| `sftp-backend.md` | [SFTP Backend](backends/sftp.md) | `examples/backends/sftp_backend.py` |
-| `azure-backend.md` | [Azure Backend](backends/azure.md) | `examples/backends/azure_backend.py` |
-| `batch-operations.md` | [Batch Operations](batch-operations.md) | `examples/batch_operations.py` |
-| `transfer-operations.md` | [Transfer Operations](transfer-operations.md) | `examples/transfer_operations.py` |
-| `glob-pattern-matching.md` | [Glob Pattern Matching](glob-pattern-matching.md) | `examples/glob_pattern_matching.py` |
-| `caching.md` | [Cache](cache.md) | `examples/caching.py` |
-| `observe-hooks.md` | [Observe](observe.md) | `examples/observe_hooks.py` |
-| `otel-tracing.md` | [Observe](observe.md) | `examples/otel_tracing.py` |
-| `pyarrow-adapter.md` | [PyArrow Adapter](pyarrow-adapter.md) | `examples/pyarrow_adapter.py` |
-| `dagster-io-manager.md` | [Dagster](dagster.md) | `examples/dagster_io_manager.py` |
-| `medallion-dagster.md` | [Dagster](dagster.md), [Data Lake Patterns](data-lake-patterns.md) | `examples/medallion_dagster/` (folder) |
-| `retry-policy.md` | [Retry](retry.md) | `examples/retry_policy.py` |
-| `health-check.md` | [Health Check](health-check.md) | `examples/health_check.py` |
+| `memory-backend.md` | Memory Backend (`backends/memory.md`) | `examples/memory_backend.py` |
+| `http-backend.md` | HTTP Backend (`backends/http.md`) | `examples/http_backend.py` |
+| `s3-backend.md` | S3 Backend (`backends/s3.md`) | `examples/backends/s3_backend.py` |
+| `s3-pyarrow-backend.md` | S3-PyArrow Backend (`backends/s3-pyarrow.md`) | `examples/backends/s3_pyarrow_backend.py` |
+| `sftp-backend.md` | SFTP Backend (`backends/sftp.md`) | `examples/backends/sftp_backend.py` |
+| `azure-backend.md` | Azure Backend (`backends/azure.md`) | `examples/backends/azure_backend.py` |
+| `batch-operations.md` | Batch Operations (`batch-operations.md`) | `examples/batch_operations.py` |
+| `transfer-operations.md` | Transfer Operations (`transfer-operations.md`) | `examples/transfer_operations.py` |
+| `glob-pattern-matching.md` | Glob Pattern Matching (`glob-pattern-matching.md`) | `examples/glob_pattern_matching.py` |
+| `caching.md` | Cache (`cache.md`) | `examples/caching.py` |
+| `observe-hooks.md` | Observe (`observe.md`) | `examples/observe_hooks.py` |
+| `otel-tracing.md` | Observe (`observe.md`) | `examples/otel_tracing.py` |
+| `pyarrow-adapter.md` | PyArrow Adapter (`pyarrow-adapter.md`) | `examples/pyarrow_adapter.py` |
+| `dagster-io-manager.md` | Dagster (`dagster.md`) | `examples/dagster_io_manager.py` |
+| `medallion-dagster.md` | Dagster (`dagster.md`), Data Lake Patterns (`data-lake-patterns.md`) | `examples/medallion_dagster/` (folder) |
+| `retry-policy.md` | Retry (`retry.md`) | `examples/retry_policy.py` |
+| `health-check.md` | Health Check (`health-check.md`) | `examples/health_check.py` |
 
 ### Rule 4 — Linked names in tables
 
