@@ -4,6 +4,18 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## SDD Housekeeping
+
+- [x] **ID-099 — Consolidate SDD document categories from 7 to 5**
+  Merged `proposals/` → `rfcs/` (renamed to rfc-0005, rfc-0006, rfc-0007 with
+  accepted status), `plans/` → `research/` (docs landing page plan renamed;
+  HTTP backend plan merged into existing research doc § 20). Removed completed
+  fix-list (`audits/fix-docs-structural-issues.md`). Added Document Types table
+  to `000-process.md`. Updated all cross-references in BACKLOG-DONE.md,
+  CLAUDE-REFERENCE.md, DOCUMENTATION.md. PR #252.
+
+---
+
 ## Test Suite Refactoring
 
 - [x] **BK-014 — Test code deduplication and parametrization**
@@ -218,8 +230,7 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   [guide](../guides/backends/http.md), [example](../examples/http_backend.py),
   API docs. 4 review rounds (31 threads). Resource leak fix, thread-safety
   docs, CI coverage floor adjustment (90% non-primary, 95% primary).
-  [Research](research/research-readonly-http-backend.md),
-  [research](research/research-readonly-http-backend.md) § 20.
+  [Research](research/research-readonly-http-backend.md) (§ 20: implementation plan).
   Lesson learned: research and initial estimation significantly underestimated
   complexity — transport abstraction, streaming adapters, error mapping across
   3 HTTP libraries, CDN edge cases, and conformance suite changes made this
