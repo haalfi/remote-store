@@ -128,7 +128,8 @@ class TestModelEqualityHashing:
     def test_fileinfo_equality_and_hash(self) -> None:
         a = FileInfo(path=RemotePath("a.txt"), name="a.txt", size=10, modified_at=NOW)
         b = FileInfo(path=RemotePath("a.txt"), name="a.txt", size=99, modified_at=NOW)
-        assert a == b and hash(a) == hash(b)
+        assert a == b
+        assert hash(a) == hash(b)
 
     @pytest.mark.spec("MOD-007")
     def test_folderinfo_equality_by_path(self) -> None:
@@ -140,7 +141,9 @@ class TestModelEqualityHashing:
     def test_folderentry_equality_hash_and_set(self) -> None:
         a = FolderEntry(path=RemotePath("data"), name="data")
         b = FolderEntry(path=RemotePath("data"), name="data")
-        assert a == b and hash(a) == hash(b) and {a, b} == {a}
+        assert a == b
+        assert hash(a) == hash(b)
+        assert {a, b} == {a}
 
     @pytest.mark.spec("MOD-007")
     def test_folderentry_equality_ignores_name(self) -> None:
@@ -162,7 +165,8 @@ class TestFolderEntryFields:
     @pytest.mark.spec("MOD-006")
     def test_not_equal_to_other_types(self) -> None:
         fe = FolderEntry(path=RemotePath("x"), name="x")
-        assert fe != "x" and fe.__eq__("x") is NotImplemented
+        assert fe != "x"
+        assert fe.__eq__("x") is NotImplemented
 
 
 class TestPathEntryProtocol:
@@ -209,7 +213,9 @@ class TestContentDigest:
     @pytest.mark.spec("CDG-002")
     def test_equality_and_hash(self) -> None:
         a, b = ContentDigest("sha256", "abcd1234"), ContentDigest("SHA256", "ABCD1234")
-        assert a == b and hash(a) == hash(b) and {a, b} == {a}
+        assert a == b
+        assert hash(a) == hash(b)
+        assert {a, b} == {a}
 
     @pytest.mark.spec("CDG-003")
     @pytest.mark.parametrize(
@@ -230,4 +236,5 @@ class TestContentDigest:
     def test_top_level_export(self) -> None:
         import remote_store
 
-        assert hasattr(remote_store, "ContentDigest") and remote_store.ContentDigest is ContentDigest
+        assert hasattr(remote_store, "ContentDigest")
+        assert remote_store.ContentDigest is ContentDigest

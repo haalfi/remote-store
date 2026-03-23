@@ -478,8 +478,10 @@ def test_per_operation_hook_fires_on_error() -> None:
     observed = observe(store, on_read=read_events.append, on_error=error_events.append)
     with pytest.raises(NotFound):
         observed.read("nonexistent.txt")
-    assert len(read_events) == 1 and read_events[0].error is not None
-    assert len(error_events) == 1 and error_events[0].error is not None
+    assert len(read_events) == 1
+    assert read_events[0].error is not None
+    assert len(error_events) == 1
+    assert error_events[0].error is not None
 
 
 # ---------------------------------------------------------------------------
@@ -504,7 +506,8 @@ def test_context_manager() -> None:
     with observed:
         observed.write("a.txt", b"data")
     ops = [e.operation for e in events]
-    assert "write" in ops and "close" in ops
+    assert "write" in ops
+    assert "close" in ops
 
 
 # ---------------------------------------------------------------------------
@@ -563,7 +566,8 @@ def test_proxy_glob(tmp_path: Any) -> None:
     events, kwargs = _collect_events()
     observed = observe(store, **kwargs)
     results = list(observed.glob("*.txt"))
-    assert len(results) == 1 and results[0].name == "a.txt"
+    assert len(results) == 1
+    assert results[0].name == "a.txt"
     assert any(e.operation == "glob" for e in events)
 
 

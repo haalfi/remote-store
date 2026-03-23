@@ -196,14 +196,18 @@ class TestCacheStats:
     @pytest.mark.spec("CACHE-005")
     def test_initial_stats(self, cached: CachedStore) -> None:
         s = cached.stats
-        assert s.hits == 0 and s.misses == 0 and s.size == 0
+        assert s.hits == 0
+        assert s.misses == 0
+        assert s.size == 0
 
     @pytest.mark.spec("CACHE-005")
     def test_stats_after_hit_and_miss(self, cached: CachedStore) -> None:
         cached.exists("a.txt")  # miss
         cached.exists("a.txt")  # hit
         s = cached.stats
-        assert s.hits == 1 and s.misses == 1 and s.size >= 1
+        assert s.hits == 1
+        assert s.misses == 1
+        assert s.size >= 1
 
     @pytest.mark.spec("CACHE-005")
     def test_stats_frozen(self, cached: CachedStore) -> None:
@@ -264,7 +268,8 @@ class TestCachedReads:
         cached.read_bytes("a.txt")
         assert cached.stats.misses == 1
         assert cached.read_text("a.txt") == "alpha"
-        assert cached.stats.hits == 1 and cached.stats.misses == 1
+        assert cached.stats.hits == 1
+        assert cached.stats.misses == 1
 
     @pytest.mark.spec("CACHE-006")
     def test_glob_cached(self) -> None:
@@ -280,7 +285,8 @@ class TestCachedReads:
             cs = cache(inner, ttl=60.0)
             files1 = list(cs.glob("*.txt"))
             files2 = list(cs.glob("*.txt"))
-            assert files1 == files2 and len(files1) == 2
+            assert files1 == files2
+            assert len(files1) == 2
             assert cs.stats.hits == 1
 
     @pytest.mark.spec("CACHE-006")
@@ -296,7 +302,8 @@ class TestCachedReads:
     ) -> None:
         list(cached.list_files("", **call1_kwargs))
         list(cached.list_files("", **call2_kwargs))
-        assert cached.stats.misses == 2 and cached.stats.hits == 0
+        assert cached.stats.misses == 2
+        assert cached.stats.hits == 0
 
     @pytest.mark.spec("CACHE-006")
     @pytest.mark.parametrize(
@@ -328,7 +335,8 @@ class TestCachedReads:
             cached.get_file_info("missing.txt")
         with pytest.raises(NotFound):
             cached.get_file_info("missing.txt")
-        assert cached.stats.misses == 2 and cached.stats.hits == 0
+        assert cached.stats.misses == 2
+        assert cached.stats.hits == 0
 
     @pytest.mark.spec("CACHE-013")
     def test_exists_false_is_cached(self, cached: CachedStore) -> None:
@@ -350,7 +358,8 @@ class TestNonCached:
     def test_read_not_cached(self, cached: CachedStore) -> None:
         cached.read("a.txt").close()
         cached.read("a.txt").close()
-        assert cached.stats.hits == 0 and cached.stats.misses == 0
+        assert cached.stats.hits == 0
+        assert cached.stats.misses == 0
 
     @pytest.mark.spec("CACHE-007")
     def test_supports_delegates(self, cached: CachedStore) -> None:
@@ -361,7 +370,8 @@ class TestNonCached:
     @pytest.mark.spec("CACHE-007")
     def test_child_returns_cache(self, cached: CachedStore) -> None:
         child = cached.child("sub")
-        assert isinstance(child, CachedStore) and isinstance(child, Store)
+        assert isinstance(child, CachedStore)
+        assert isinstance(child, Store)
 
     @pytest.mark.spec("CACHE-007")
     def test_child_propagates_caching(self, cached: CachedStore) -> None:
@@ -558,7 +568,8 @@ class TestThreadSafety:
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
             list(pool.map(worker, range(16)))
         assert not errors, f"Concurrent operations raised: {errors}"
-        assert cs.stats.hits >= 0 and cs.stats.misses >= 0
+        assert cs.stats.hits >= 0
+        assert cs.stats.misses >= 0
 
     @pytest.mark.spec("CACHE-012")
     def test_invalidate_path(self, cached: CachedStore) -> None:

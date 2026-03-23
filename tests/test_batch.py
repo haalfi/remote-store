@@ -113,7 +113,8 @@ def test_signature_returns_type(
 @pytest.mark.parametrize("concurrent", _CONCURRENT)
 def test_delete_all(populated: Store, concurrent: bool) -> None:
     result = batch_delete(populated, list(_FILES_ABC), concurrent=concurrent)
-    assert set(result.succeeded) == set(_FILES_ABC) and result.all_succeeded
+    assert set(result.succeeded) == set(_FILES_ABC)
+    assert result.all_succeeded
     for p in _FILES_ABC:
         assert not populated.exists(p)
 
@@ -178,7 +179,8 @@ def test_error_continues(
 @pytest.mark.spec("BATCH-004")
 def test_multiple_failures(store: Store, func: Any, args: list[Any], concurrent: bool) -> None:
     result = func(store, args, concurrent=concurrent)
-    assert len(result.failed) == 2 and result.succeeded == ()
+    assert len(result.failed) == 2
+    assert result.succeeded == ()
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +192,9 @@ def test_multiple_failures(store: Store, func: Any, args: list[Any], concurrent:
 def test_delete_stop() -> None:
     s = _fresh(("a.txt", "c.txt"))
     result = batch_delete(s, ["a.txt", "b.txt", "c.txt"], stop_on_error=True)
-    assert result.succeeded == ("a.txt",) and "b.txt" in result.failed and result.total == 2
+    assert result.succeeded == ("a.txt",)
+    assert "b.txt" in result.failed
+    assert result.total == 2
     assert s.exists("c.txt")
 
 
@@ -198,7 +202,8 @@ def test_delete_stop() -> None:
 def test_copy_stop() -> None:
     s = _fresh(("b.txt",))
     result = batch_copy(s, [("missing.txt", "x.txt"), ("b.txt", "b2.txt")], stop_on_error=True)
-    assert "missing.txt" in result.failed and result.total == 1
+    assert "missing.txt" in result.failed
+    assert result.total == 1
     assert not s.exists("b2.txt")
 
 
@@ -224,7 +229,8 @@ def test_concurrent_stop_on_error_raises(store: Store, call: Any) -> None:
 def test_missing_ok_false() -> None:
     s = _fresh(("a.txt",))
     result = batch_delete(s, ["nope.txt"], missing_ok=False)
-    assert not result.all_succeeded and isinstance(result.failed["nope.txt"], NotFound)
+    assert not result.all_succeeded
+    assert isinstance(result.failed["nope.txt"], NotFound)
 
 
 @pytest.mark.spec("BATCH-020")
@@ -232,7 +238,8 @@ def test_missing_ok_false() -> None:
 def test_delete_missing_ok(concurrent: bool) -> None:
     s = _fresh(("a.txt",))
     result = batch_delete(s, ["a.txt", "gone.txt"], missing_ok=True, concurrent=concurrent)
-    assert result.all_succeeded and set(result.succeeded) == {"a.txt", "gone.txt"}
+    assert result.all_succeeded
+    assert set(result.succeeded) == {"a.txt", "gone.txt"}
 
 
 # ---------------------------------------------------------------------------

@@ -178,7 +178,8 @@ class TestTier2NativeGlob:
     @pytest.mark.spec("GLOB-006")
     def test_store_glob_returns_iterator(self, pop_local: Store) -> None:
         result = pop_local.glob("*.csv")
-        assert hasattr(result, "__iter__") and hasattr(result, "__next__")
+        assert hasattr(result, "__iter__")
+        assert hasattr(result, "__next__")
 
     @pytest.mark.spec("GLOB-007")
     def test_store_glob_returns_store_relative_paths(self, pop_local: Store) -> None:

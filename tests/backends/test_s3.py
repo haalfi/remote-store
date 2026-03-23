@@ -342,6 +342,7 @@ class TestS3ErrorMapping:
         ):
             s3_backend.read_bytes("secret.txt")
         assert exc_info.value.backend == "s3"
+        assert exc_info.value.path == "secret.txt"
 
     @pytest.mark.spec("S3-017")
     @pytest.mark.parametrize(

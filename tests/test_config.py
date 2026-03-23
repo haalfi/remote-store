@@ -74,7 +74,8 @@ def _valid_rc() -> RegistryConfig:
 @pytest.mark.spec("CFG-003")
 def test_registry_config_fields() -> None:
     rc = _valid_rc()
-    assert "local" in rc.backends and "main" in rc.stores
+    assert "local" in rc.backends
+    assert "main" in rc.stores
 
 
 @pytest.mark.spec("CFG-004")
@@ -102,14 +103,17 @@ def test_from_dict() -> None:
             "stores": {"main": {"backend": "local", "root_path": "data"}},
         }
     )
-    assert rc.backends["local"].type == "local" and rc.backends["local"].options == {"root": "/tmp"}
-    assert rc.stores["main"].backend == "local" and rc.stores["main"].root_path == "data"
+    assert rc.backends["local"].type == "local"
+    assert rc.backends["local"].options == {"root": "/tmp"}
+    assert rc.stores["main"].backend == "local"
+    assert rc.stores["main"].root_path == "data"
 
 
 @pytest.mark.spec("CFG-005")
 def test_from_dict_minimal() -> None:
     rc = RegistryConfig.from_dict({"backends": {}, "stores": {}})
-    assert rc.backends == {} and rc.stores == {}
+    assert rc.backends == {}
+    assert rc.stores == {}
 
 
 # ---------------------------------------------------------------------------
@@ -146,7 +150,8 @@ class TestSecret:
     @pytest.mark.spec("SEC-001")
     @pytest.mark.parametrize("func,expected", [(repr, "Secret('***')"), (str, "***")], ids=["repr", "str"])
     def test_masked_output(self, func: Any, expected: str) -> None:
-        assert func(Secret("super-secret")) == expected and "super-secret" not in func(Secret("super-secret"))
+        assert func(Secret("super-secret")) == expected
+        assert "super-secret" not in func(Secret("super-secret"))
 
     @pytest.mark.spec("SEC-001")
     @pytest.mark.parametrize("a,b,equal", [("abc", "abc", True), ("abc", "xyz", False)], ids=["same", "different"])
@@ -160,7 +165,8 @@ class TestSecret:
     @pytest.mark.spec("SEC-001")
     def test_hash(self) -> None:
         a, b = Secret("abc"), Secret("abc")
-        assert hash(a) == hash(b) and {a, b} == {a}
+        assert hash(a) == hash(b)
+        assert {a, b} == {a}
 
     @pytest.mark.spec("SEC-001")
     @pytest.mark.parametrize("val,expected", [("x", True), ("", False)], ids=["truthy", "falsy"])
@@ -278,7 +284,9 @@ class TestFromDictSecretWrapping:
             }
         )
         r = repr(rc.backends["s3"])
-        assert "AKID_TEST" not in r and "SK_TEST" not in r and "Secret('***')" in r
+        assert "AKID_TEST" not in r
+        assert "SK_TEST" not in r
+        assert "Secret('***')" in r
 
 
 # ---------------------------------------------------------------------------
@@ -372,7 +380,8 @@ class TestFromToml:
             'backend = "local"\nroot_path = "data"\n'
         )
         rc = RegistryConfig.from_toml(f)
-        assert rc.backends["local"].type == "local" and rc.backends["local"].options["root"] == "/data"
+        assert rc.backends["local"].type == "local"
+        assert rc.backends["local"].options["root"] == "/data"
         assert rc.stores["main"].backend == "local"
 
     @pytest.mark.spec("CFG-008")
@@ -385,7 +394,8 @@ class TestFromToml:
             'backend = "mem"\nroot_path = "tmp"\n'
         )
         rc = RegistryConfig.from_toml(f, table=("tool", "remote-store"))
-        assert rc.backends["mem"].type == "memory" and rc.stores["scratch"].root_path == "tmp"
+        assert rc.backends["mem"].type == "memory"
+        assert rc.stores["scratch"].root_path == "tmp"
 
     @pytest.mark.spec("CFG-008")
     def test_from_toml_table_key_not_found(self, tmp_path: Path) -> None:
@@ -404,7 +414,8 @@ class TestFromToml:
         f = tmp_path / "creds.toml"
         f.write_text('[backends.s3]\ntype = "s3"\n\n[backends.s3.options]\nbucket = "b"\nkey = "AKID"\nsecret = "SK"\n')
         opts = RegistryConfig.from_toml(f).backends["s3"].options
-        assert isinstance(opts["key"], Secret) and isinstance(opts["secret"], Secret)
+        assert isinstance(opts["key"], Secret)
+        assert isinstance(opts["secret"], Secret)
         assert not isinstance(opts["bucket"], Secret)
 
     @pytest.mark.spec("CFG-013")
@@ -563,7 +574,8 @@ class TestRetryPolicy:
     @pytest.mark.spec("RET-002")
     def test_validation_accepts_edge_values(self) -> None:
         rp = RetryPolicy(max_attempts=1, backoff_base=0, backoff_max=0, jitter=0, timeout=0.001)
-        assert rp.max_attempts == 1 and rp.backoff_base == 0
+        assert rp.max_attempts == 1
+        assert rp.backoff_base == 0
 
     @pytest.mark.spec("RET-003")
     def test_disabled_factory(self) -> None:
@@ -572,7 +584,10 @@ class TestRetryPolicy:
     @pytest.mark.spec("RET-021")
     def test_equality_and_hash(self) -> None:
         a, b, c = RetryPolicy(max_attempts=5), RetryPolicy(max_attempts=5), RetryPolicy(max_attempts=3)
-        assert a == b and a != c and hash(a) == hash(b) and {a, b} == {a}
+        assert a == b
+        assert a != c
+        assert hash(a) == hash(b)
+        assert {a, b} == {a}
 
 
 # ---------------------------------------------------------------------------
@@ -620,7 +635,8 @@ class TestFromDictRetryParsing:
             }
         )
         assert rc.backends["sftp"].retry is not None
-        assert rc.backends["sftp"].retry.max_attempts == 5 and rc.backends["sftp"].retry.backoff_base == 2.0
+        assert rc.backends["sftp"].retry.max_attempts == 5
+        assert rc.backends["sftp"].retry.backoff_base == 2.0
 
     @pytest.mark.spec("RET-006")
     def test_retry_missing_is_none(self) -> None:
@@ -780,7 +796,8 @@ def test_azure_build_retry_mapping(rp_kwargs: dict[str, Any], expected_backoff: 
         container="c", connection_string="DefaultEndpointsProtocol=http;AccountName=a;", retry=rp
     )._build_azure_retry()
     assert azure_retry.total_retries == rp_kwargs["max_attempts"] - 1
-    assert azure_retry.initial_backoff == expected_backoff and azure_retry.random_jitter_range == expected_jitter
+    assert azure_retry.initial_backoff == expected_backoff
+    assert azure_retry.random_jitter_range == expected_jitter
 
 
 @pytest.mark.spec("RET-012")
@@ -801,7 +818,9 @@ def test_s3_retry_botocore_config() -> None:
 
     backend = S3Backend(bucket="b", retry=RetryPolicy(max_attempts=7))
     config = backend._fs.client_kwargs.get("config")
-    assert config is not None and config.retries["max_attempts"] == 7 and config.retries["mode"] == "standard"
+    assert config is not None
+    assert config.retries["max_attempts"] == 7
+    assert config.retries["mode"] == "standard"
     backend.close()
 
 

@@ -57,7 +57,9 @@ class TestStoreBehavior:
     def test_repr(self, mem_backend: MemoryBackend) -> None:
         store = Store(backend=mem_backend, root_path="data")
         r = repr(store)
-        assert "Store(" in r and "memory" in r and "data" in r
+        assert "Store(" in r
+        assert "memory" in r
+        assert "data" in r
 
     def test_repr_no_root(self, mem_backend: MemoryBackend) -> None:
         store = Store(backend=mem_backend)
@@ -66,7 +68,8 @@ class TestStoreBehavior:
     def test_full_path_empty_no_root(self, mem_backend: MemoryBackend) -> None:
         store = Store(backend=mem_backend, root_path="")
         store.write("a.txt", b"data")
-        assert store.exists("") and store.is_folder("")
+        assert store.exists("")
+        assert store.is_folder("")
         assert list(store.list_files("")) != []
 
     def test_full_path_nonempty_no_root(self, mem_backend: MemoryBackend) -> None:
@@ -273,7 +276,9 @@ class TestValueObjects:
 
     def test_capability_set_repr(self) -> None:
         r = repr(CapabilitySet({Capability.READ, Capability.WRITE}))
-        assert "CapabilitySet" in r and "READ" in r and "WRITE" in r
+        assert "CapabilitySet" in r
+        assert "READ" in r
+        assert "WRITE" in r
 
 
 # endregion
@@ -292,7 +297,8 @@ class TestRegistryBehavior:
                 }
             )
             r = repr(Registry(config))
-            assert "Registry(" in r and "data" in r
+            assert "Registry(" in r
+            assert "data" in r
 
     def test_unknown_backend_type_raises(self) -> None:
         config = RegistryConfig.from_dict(
@@ -333,16 +339,20 @@ class TestBackendRepr:
         backend, tmp = local_backend
         real_tmp = str(Path(tmp).resolve())
         r = repr(backend)
-        assert "LocalBackend(root=" in r and repr(real_tmp) in r
+        assert "LocalBackend(root=" in r
+        assert repr(real_tmp) in r
 
     def test_memory_repr(self, mem_backend: MemoryBackend) -> None:
         r = repr(mem_backend)
-        assert "MemoryBackend(" in r and "files=0" in r and "folders=0" in r
+        assert "MemoryBackend(" in r
+        assert "files=0" in r
+        assert "folders=0" in r
 
     def test_memory_repr_after_writes(self, mem_backend: MemoryBackend) -> None:
         mem_backend.write("a/b.txt", b"data")
         r = repr(mem_backend)
-        assert "files=1" in r and "folders=1" in r
+        assert "files=1" in r
+        assert "folders=1" in r
 
 
 def _s3_with_secrets() -> Any:

@@ -158,7 +158,8 @@ class TestParsedPartition:
     def test_deepcopy(self) -> None:
         p = ParsedPartition(partitions={"a": "1"}, filename="f.txt")
         p2 = copy.deepcopy(p)
-        assert p == p2 and p is not p2
+        assert p == p2
+        assert p is not p2
 
 
 # ===========================================================================

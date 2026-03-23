@@ -96,7 +96,8 @@ class TestUpload:
         if use_callback:
             chunks: list[int] = []
             upload(dst, local, "prog.txt", on_progress=chunks.append)
-            assert sum(chunks) == 8 and all(c > 0 for c in chunks)
+            assert sum(chunks) == 8
+            assert all(c > 0 for c in chunks)
         else:
             upload(dst, local, "prog.txt", on_progress=None)
             assert dst.read_bytes("prog.txt") == b"abcdefgh"
@@ -156,7 +157,8 @@ class TestDownload:
         src.write("big.bin", content)
         chunks: list[int] = []
         download(src, "big.bin", tmp_path / "big.bin", on_progress=chunks.append)
-        assert sum(chunks) == len(content) and len(chunks) >= 2
+        assert sum(chunks) == len(content)
+        assert len(chunks) >= 2
 
     @pytest.mark.spec("XFER-010")
     @pytest.mark.parametrize("scenario", ["error", "success"], ids=["on_error", "on_success"])
@@ -222,7 +224,8 @@ class TestTransfer:
         src = _store("src.txt", data=content)
         chunks: list[int] = []
         transfer(src, "src.txt", _store(), "dst.txt", on_progress=chunks.append)
-        assert sum(chunks) == len(content) and all(c > 0 for c in chunks)
+        assert sum(chunks) == len(content)
+        assert all(c > 0 for c in chunks)
 
     @pytest.mark.spec("XFER-015")
     @pytest.mark.parametrize(
@@ -316,7 +319,8 @@ def test_progress_reader(content: bytes, check_readable: bool) -> None:
     if check_readable:
         assert reader.readable()
     else:
-        assert reader.read() == b"" and calls == []
+        assert reader.read() == b""
+        assert calls == []
     stream.close()
 
 

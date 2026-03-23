@@ -59,7 +59,8 @@ class TestFromYaml:
         )
         rc = from_yaml(yaml_file)
         opts = rc.backends["s3"].options
-        assert isinstance(opts["key"], Secret) and isinstance(opts["secret"], Secret)
+        assert isinstance(opts["key"], Secret)
+        assert isinstance(opts["secret"], Secret)
 
     @pytest.mark.spec("CFG-012")
     def test_from_yaml_unknown_key_warning_stacklevel(self, tmp_path: Path) -> None:
@@ -114,7 +115,8 @@ class TestFromYamlFallbacks:
         loader = _get_yaml_loader()
         with open(yaml_file, encoding="utf-8") as f:
             data = loader(f)
-        assert isinstance(data, dict) and data["backends"]["m"]["type"] == "memory"
+        assert isinstance(data, dict)
+        assert data["backends"]["m"]["type"] == "memory"
 
     @pytest.mark.spec("CFG-011")
     def test_no_yaml_lib_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:

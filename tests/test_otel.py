@@ -69,8 +69,10 @@ class TestOtelSetup:
     @pytest.mark.spec("OBS-011")
     def test_hooks_returns_callable_around_and_on_any(self, otel_env: dict[str, Any]) -> None:
         hooks = otel_hooks(tracer=otel_env["tracer"], meter=otel_env["meter"])
-        assert "around" in hooks and "on_any" in hooks
-        assert callable(hooks["around"]) and callable(hooks["on_any"])
+        assert "around" in hooks
+        assert "on_any" in hooks
+        assert callable(hooks["around"])
+        assert callable(hooks["on_any"])
 
     @pytest.mark.spec("OBS-011")
     def test_hooks_unpack_into_observe(self, otel_env: dict[str, Any]) -> None:
@@ -82,7 +84,8 @@ class TestOtelSetup:
     @pytest.mark.spec("OBS-011")
     def test_custom_tracer_and_meter_names(self) -> None:
         hooks = otel_hooks(tracer_name="my.tracer", meter_name="my.meter")
-        assert "around" in hooks and "on_any" in hooks
+        assert "around" in hooks
+        assert "on_any" in hooks
 
     @pytest.mark.spec("OBS-011")
     @pytest.mark.parametrize(
@@ -93,7 +96,8 @@ class TestOtelSetup:
     )
     def test_otel_observe_returns_observed_store(self, kwargs: dict[str, str]) -> None:
         observed = otel_observe(Store(backend=MemoryBackend()), **kwargs)
-        assert isinstance(observed, ObservedStore) and isinstance(observed, Store)
+        assert isinstance(observed, ObservedStore)
+        assert isinstance(observed, Store)
 
     @pytest.mark.spec("OBS-011")
     def test_otel_observe_with_env(self, otel_env: dict[str, Any]) -> None:
@@ -160,7 +164,8 @@ class TestMetricInstruments:
         m = _get_metrics(env["metric_reader"])
         assert "remote_store.operations" in m
         points = list(m["remote_store.operations"].data.data_points)
-        assert len(points) == 1 and points[0].value == 1
+        assert len(points) == 1
+        assert points[0].value == 1
         attrs = dict(points[0].attributes)
         assert (attrs["operation"], attrs["backend"], attrs["status"]) == ("write", "memory", "ok")
 
@@ -185,12 +190,15 @@ class TestMetricInstruments:
         m = _get_metrics(env["metric_reader"])
         assert "remote_store.operation.duration" in m
         points = list(m["remote_store.operation.duration"].data.data_points)
-        assert len(points) == 1 and points[0].count == 1 and points[0].sum >= 0.0
+        assert len(points) == 1
+        assert points[0].count == 1
+        assert points[0].sum >= 0.0
         attrs = dict(points[0].attributes)
         assert (attrs["operation"], attrs["backend"]) == ("read_bytes", "memory")
         for metric_data in m.values():
             for pt in metric_data.data.data_points:
-                assert "path" not in dict(pt.attributes) and "remote_store.path" not in dict(pt.attributes)
+                assert "path" not in dict(pt.attributes)
+                assert "remote_store.path" not in dict(pt.attributes)
 
     @pytest.mark.spec("OBS-013")
     def test_duration_histogram_error_includes_error_type(self, otel_env: dict[str, Any]) -> None:
@@ -232,7 +240,8 @@ def test_full_round_trip(otel_env: dict[str, Any]) -> None:
     assert len(spans) == 3
     assert [s.name for s in spans] == ["store.write", "store.read_bytes", "store.delete"]
     m = _get_metrics(env["metric_reader"])
-    assert "remote_store.operations" in m and "remote_store.operation.duration" in m
+    assert "remote_store.operations" in m
+    assert "remote_store.operation.duration" in m
 
 
 def test_error_does_not_break_observation(otel_env: dict[str, Any]) -> None:
@@ -241,4 +250,5 @@ def test_error_does_not_break_observation(otel_env: dict[str, Any]) -> None:
     with pytest.raises(NotFound):
         obs.read("no-such-file.txt")
     spans = env["span_exporter"].get_finished_spans()
-    assert len(spans) == 1 and spans[0].status.status_code == StatusCode.ERROR
+    assert len(spans) == 1
+    assert spans[0].status.status_code == StatusCode.ERROR

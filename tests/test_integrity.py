@@ -61,7 +61,8 @@ class TestChecksum:
     @pytest.mark.spec("INT-001")
     def test_returns_tuple(self, store: Store) -> None:
         result = checksum(store, "hello.txt")
-        assert isinstance(result, tuple) and len(result) == 2
+        assert isinstance(result, tuple)
+        assert len(result) == 2
 
     @pytest.mark.spec("INT-001")
     def test_not_found(self, store: Store) -> None:
