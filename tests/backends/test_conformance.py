@@ -396,17 +396,15 @@ class TestBackendMetadata:
         assert fi.file_count == 2
         assert fi.total_size == 5
 
-    @pytest.mark.parametrize(
-        "method, spec_id",
-        [
-            pytest.param("get_file_info", "BE-016", id="file_info"),
-            pytest.param("get_folder_info", "BE-017", id="folder_info"),
-        ],
-    )
-    def test_info_not_found(self, backend: Backend, method: str, spec_id: str, request: pytest.FixtureRequest) -> None:
-        request.node.add_marker(pytest.mark.spec(spec_id))
+    @pytest.mark.spec("BE-016")
+    def test_file_info_not_found(self, backend: Backend) -> None:
         with pytest.raises(NotFound):
-            getattr(backend, method)("missing_target")
+            backend.get_file_info("missing_target")
+
+    @pytest.mark.spec("BE-017")
+    def test_folder_info_not_found(self, backend: Backend) -> None:
+        with pytest.raises(NotFound):
+            backend.get_folder_info("missing_target")
 
 
 class TestBackendMoveCopy:

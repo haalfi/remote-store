@@ -911,7 +911,7 @@ class TestSFTPNonEnoentOSErrors:
 
         kwargs: dict[str, object] = {}
         if (
-            method in ("write", "write_atomic", "move")
+            method in ("write", "write_atomic", "move", "copy")
             and len(args) == 2
             and setup_file
             or method in ("write", "write_atomic")

@@ -300,6 +300,12 @@ class TestAzureHNSDetection:
 # =============================================================================
 
 
+def _azure_exc(name: str, *args: object) -> Exception:
+    """Create an azure.core.exceptions instance by class name."""
+    mod = __import__("azure.core.exceptions", fromlist=[name])
+    return getattr(mod, name)(*args)
+
+
 class TestAzureErrorMapping:
     """AZ-025 through AZ-028: structured error classification."""
 
@@ -315,38 +321,18 @@ class TestAzureErrorMapping:
     @pytest.mark.parametrize(
         "exc_factory, expected_type",
         [
+            pytest.param(lambda: _azure_exc("ResourceNotFoundError", "not found"), NotFound, id="resource-not-found"),
+            pytest.param(lambda: _azure_exc("ResourceExistsError", "exists"), AlreadyExists, id="resource-exists"),
             pytest.param(
-                lambda: __import__("azure.core.exceptions", fromlist=["ResourceNotFoundError"]).ResourceNotFoundError(
-                    "not found"
-                ),
-                NotFound,
-                id="resource-not-found",
+                lambda: _azure_exc("ClientAuthenticationError", "auth failed"), PermissionDenied, id="client-auth-error"
             ),
             pytest.param(
-                lambda: __import__("azure.core.exceptions", fromlist=["ResourceExistsError"]).ResourceExistsError(
-                    "exists"
-                ),
-                AlreadyExists,
-                id="resource-exists",
-            ),
-            pytest.param(
-                lambda: __import__(
-                    "azure.core.exceptions", fromlist=["ClientAuthenticationError"]
-                ).ClientAuthenticationError("auth failed"),
-                PermissionDenied,
-                id="client-auth-error",
-            ),
-            pytest.param(
-                lambda: __import__("azure.core.exceptions", fromlist=["ServiceRequestError"]).ServiceRequestError(
-                    "connection refused"
-                ),
+                lambda: _azure_exc("ServiceRequestError", "connection refused"),
                 BackendUnavailable,
                 id="service-request-error",
             ),
             pytest.param(
-                lambda: __import__("azure.core.exceptions", fromlist=["ServiceResponseError"]).ServiceResponseError(
-                    "bad response"
-                ),
+                lambda: _azure_exc("ServiceResponseError", "bad response"),
                 BackendUnavailable,
                 id="service-response-error",
             ),

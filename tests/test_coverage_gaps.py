@@ -25,12 +25,22 @@ from remote_store._models import FileInfo, FolderInfo
 from remote_store._path import RemotePath
 from remote_store._registry import Registry
 from remote_store._store import Store
+from remote_store._types import Extras, PathLike, WritableContent
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
 
 from .conftest import make_restricted_store
 
 NOW = datetime(2024, 1, 1, tzinfo=timezone.utc)
+
+
+# region: _types.py — verify type aliases are importable and usable
+@pytest.mark.parametrize("alias", [WritableContent, PathLike, Extras])
+def test_type_aliases_importable(alias: Any) -> None:
+    assert alias is not None
+
+
+# endregion
 
 
 @pytest.fixture

@@ -273,31 +273,29 @@ class TestS3Operations:
         assert s3_backend.read_bytes("co2.txt") == b"a"
         assert s3_backend.read_bytes("co1.txt") == b"a"
 
-    @pytest.mark.parametrize(
-        ("op", "spec"),
-        [
-            pytest.param("move", "S3-013", id="move_not_found"),
-            pytest.param("copy", "S3-014", id="copy_not_found"),
-        ],
-    )
-    def test_not_found(self, s3_backend: Backend, op: str, spec: str, request: pytest.FixtureRequest) -> None:
-        request.node.add_marker(pytest.mark.spec(spec))
+    @pytest.mark.spec("S3-013")
+    def test_move_not_found(self, s3_backend: Backend) -> None:
         with pytest.raises(NotFound):
-            getattr(s3_backend, op)("missing.txt", "dst.txt")
+            s3_backend.move("missing.txt", "dst.txt")
 
-    @pytest.mark.parametrize(
-        ("op", "spec"),
-        [
-            pytest.param("move", "S3-013", id="move_already_exists"),
-            pytest.param("copy", "S3-014", id="copy_already_exists"),
-        ],
-    )
-    def test_already_exists(self, s3_backend: Backend, op: str, spec: str, request: pytest.FixtureRequest) -> None:
-        request.node.add_marker(pytest.mark.spec(spec))
+    @pytest.mark.spec("S3-014")
+    def test_copy_not_found(self, s3_backend: Backend) -> None:
+        with pytest.raises(NotFound):
+            s3_backend.copy("missing.txt", "dst.txt")
+
+    @pytest.mark.spec("S3-013")
+    def test_move_already_exists(self, s3_backend: Backend) -> None:
         s3_backend.write("ae1.txt", b"a")
         s3_backend.write("ae2.txt", b"b")
         with pytest.raises(AlreadyExists):
-            getattr(s3_backend, op)("ae1.txt", "ae2.txt", overwrite=False)
+            s3_backend.move("ae1.txt", "ae2.txt", overwrite=False)
+
+    @pytest.mark.spec("S3-014")
+    def test_copy_already_exists(self, s3_backend: Backend) -> None:
+        s3_backend.write("ae1.txt", b"a")
+        s3_backend.write("ae2.txt", b"b")
+        with pytest.raises(AlreadyExists):
+            s3_backend.copy("ae1.txt", "ae2.txt", overwrite=False)
 
 
 # endregion

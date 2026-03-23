@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import copy
 import dataclasses
 import logging
+import pickle
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -188,12 +190,12 @@ class TestSecret:
         "action,check",
         [
             pytest.param(
-                lambda: __import__("pickle").loads(__import__("pickle").dumps(Secret("roundtrip"))),
+                lambda: pickle.loads(pickle.dumps(Secret("roundtrip"))),
                 lambda r: isinstance(r, Secret) and r.reveal() == "roundtrip",
                 id="pickle",
             ),
             pytest.param(
-                lambda: __import__("copy").deepcopy(Secret("deep")),
+                lambda: copy.deepcopy(Secret("deep")),
                 lambda r: isinstance(r, Secret) and r.reveal() == "deep",
                 id="deepcopy",
             ),
@@ -726,20 +728,30 @@ def test_s3_pyarrow_accepts_retry() -> None:
     assert S3PyArrowBackend(bucket="b", retry=rp)._retry is rp
 
 
+def _make_local_backend(**kwargs: Any) -> Any:
+    from remote_store.backends._local import LocalBackend
+
+    return LocalBackend(**kwargs)
+
+
+def _make_memory_backend(**kwargs: Any) -> Any:
+    from remote_store.backends._memory import MemoryBackend
+
+    return MemoryBackend(**kwargs)
+
+
+def _remote_store_module() -> Any:
+    import remote_store
+
+    return remote_store
+
+
 @pytest.mark.spec("RET-014")
 @pytest.mark.parametrize(
     "factory",
     [
-        pytest.param(
-            lambda rp: __import__("remote_store.backends._local", fromlist=["LocalBackend"]).LocalBackend(
-                root="/tmp", retry=rp
-            ),
-            id="local",
-        ),
-        pytest.param(
-            lambda rp: __import__("remote_store.backends._memory", fromlist=["MemoryBackend"]).MemoryBackend(retry=rp),
-            id="memory",
-        ),
+        pytest.param(lambda rp: _make_local_backend(root="/tmp", retry=rp), id="local"),
+        pytest.param(lambda rp: _make_memory_backend(retry=rp), id="memory"),
     ],
 )
 def test_backend_rejects_retry(factory: Any) -> None:
@@ -817,8 +829,8 @@ def test_s3_pyarrow_retry_strategy() -> None:
 @pytest.mark.parametrize(
     "check",
     [
-        pytest.param(lambda: __import__("remote_store").RetryPolicy is RetryPolicy, id="importable"),
-        pytest.param(lambda: "RetryPolicy" in __import__("remote_store").__all__, id="in___all__"),
+        pytest.param(lambda: _remote_store_module().RetryPolicy is RetryPolicy, id="importable"),
+        pytest.param(lambda: "RetryPolicy" in _remote_store_module().__all__, id="in___all__"),
     ],
 )
 def test_retry_policy_export(check: Any) -> None:
