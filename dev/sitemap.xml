@@ -349,6 +349,10 @@
          <lastmod>2026-03-23</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/research/research-docs-landing-page/</loc>
+         <lastmod>2026-03-23</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-example-testing/</loc>
          <lastmod>2026-03-23</lastmod>
     </url>
@@ -414,6 +418,18 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0004-streaming-atomic-writes/</loc>
+         <lastmod>2026-03-23</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0005-code-deduplication/</loc>
+         <lastmod>2026-03-23</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0006-naming-inconsistencies/</loc>
+         <lastmod>2026-03-23</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0007-doc-cross-links/</loc>
          <lastmod>2026-03-23</lastmod>
     </url>
     <url>

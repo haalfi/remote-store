@@ -3639,10 +3639,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#adrs-rfcs-research-and-audits" class="md-nav__link">
+  <a href="#document-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ADRs, RFCs, research, and audits
+        Document types
       
     </span>
   </a>
@@ -5345,6 +5345,90 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005: Code Deduplication Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Naming Inconsistency Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007: Documentation Cross-Link Rules & Compliance Audit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5453,6 +5537,34 @@
     
   
     Dagster Extension (ext.dagster, ID-075)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/research-docs-landing-page/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ID-090 — Docs Landing Page
   
 
     
@@ -6000,10 +6112,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#adrs-rfcs-research-and-audits" class="md-nav__link">
+  <a href="#document-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ADRs, RFCs, research, and audits
+        Document types
       
     </span>
   </a>
@@ -6087,13 +6199,51 @@
 Completed items live in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md"><code>sdd/BACKLOG-DONE.md</code></a>.</p>
 <p><code>BACKLOG.md</code> is the single source of truth for ID prefixes, status conventions,
 completion workflow, and section structure. See its "How this file works" header.</p>
-<h3 id="adrs-rfcs-research-and-audits">ADRs, RFCs, research, and audits<a class="headerlink" href="#adrs-rfcs-research-and-audits" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>ADRs</strong> (<code>sdd/adrs/NNNN-&lt;short-title&gt;.md</code>): capture <em>why</em> a design decision was made. Immutable once accepted: if reversed, a new ADR supersedes the old one.</li>
-<li><strong>RFCs</strong> (<code>sdd/rfcs/rfc-NNNN-&lt;short-title&gt;.md</code>): proposals for new features. If accepted, the RFC graduates to a spec in <code>sdd/specs/</code>. Kept for historical reference.</li>
-<li><strong>Research</strong> (<code>sdd/research/research-&lt;topic&gt;.md</code>): exploratory analysis done before a feature is specified. Not edited after the related feature ships.</li>
-<li><strong>Audits</strong> (<code>sdd/audits/audit-NNN-&lt;topic&gt;.md</code>): systematic reviews (adversarial, compliance, documentation). Findings tracked as backlog items.</li>
-</ul>
+<h3 id="document-types">Document types<a class="headerlink" href="#document-types" title="Permanent link">&para;</a></h3>
+<p>Five document categories live under <code>sdd/</code>. Each has a clear purpose and lifecycle:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Path pattern</th>
+<th>Purpose</th>
+<th>Lifecycle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Specs</strong></td>
+<td><code>sdd/specs/NNN-&lt;topic&gt;.md</code></td>
+<td>Declarative contracts — what must be true</td>
+<td>Lives forever, versioned. IDs are stable and immutable.</td>
+</tr>
+<tr>
+<td><strong>ADRs</strong></td>
+<td><code>sdd/adrs/NNNN-&lt;short-title&gt;.md</code></td>
+<td>Decision records — why we chose this approach</td>
+<td>Immutable; superseded by a new ADR, never edited.</td>
+</tr>
+<tr>
+<td><strong>RFCs</strong></td>
+<td><code>sdd/rfcs/rfc-NNNN-&lt;short-title&gt;.md</code></td>
+<td>Proposals for any significant change (features, refactors, process improvements)</td>
+<td>If accepted, graduates to a spec and/or ADR. Kept as historical reference.</td>
+</tr>
+<tr>
+<td><strong>Research</strong></td>
+<td><code>sdd/research/research-&lt;topic&gt;.md</code></td>
+<td>Exploration, feasibility analysis, implementation plans</td>
+<td>Archived after the related feature ships; not edited. May include an <code>## Implementation Plan</code> section for tactical build steps.</td>
+</tr>
+<tr>
+<td><strong>Audits</strong></td>
+<td><code>sdd/audits/audit-NNN-&lt;topic&gt;.md</code></td>
+<td>Systematic quality reviews (security, compliance, docs)</td>
+<td>Findings tracked as backlog items. The audit itself is a report, not a proposal.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decision rule:</strong> If you're asking "should we do X?" → research. If you're proposing "let's do X this way" → RFC. If the decision is made → ADR. If it defines a testable contract → spec. If it reviews existing quality → audit.</p>
 <h3 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permanent link">&para;</a></h3>
 <p>See <a href="../../contributing/#versioning">CONTRIBUTING.md § Versioning</a>.</p>
 

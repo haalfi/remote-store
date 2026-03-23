@@ -5204,6 +5204,90 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005: Code Deduplication Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Naming Inconsistency Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007: Documentation Cross-Link Rules & Compliance Audit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5314,6 +5398,34 @@
     
   
     Dagster Extension (ext.dagster, ID-075)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ID-090 — Docs Landing Page
   
 
     
@@ -6123,6 +6235,67 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#20-implementation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        20. Implementation Plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="20. Implementation Plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#commit-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commit strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependencies-test-infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencies &amp; test infrastructure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risks-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risks &amp; mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -6967,6 +7140,67 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#20-implementation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        20. Implementation Plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="20. Implementation Plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#commit-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commit strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependencies-test-infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencies &amp; test infrastructure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risks-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risks &amp; mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -8168,6 +8402,104 @@ existing ATOMIC_WRITE/GLOB gates). Pre-seed read-only test data via
 2. Add conformance suite capability gates (prerequisite, benefits all future
    partial-capability backends)
 3. Implement Phase 1 (urllib-only, <code>{READ, METADATA}</code>)</p>
+<hr />
+<h2 id="20-implementation-plan">20. Implementation Plan<a class="headerlink" href="#20-implementation-plan" title="Permanent link">&para;</a></h2>
+<p><em>Formerly <code>sdd/plans/plan-readonly-http-backend.md</code> (consolidated).</em></p>
+<p><strong>Branch:</strong> <code>claude/plan-readonly-http-backend-YhBCx</code></p>
+<h3 id="phases">Phases<a class="headerlink" href="#phases" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Scope</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Conformance suite capability gates</td>
+<td>Prerequisite — make suite safe for partial-capability backends</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Spec <code>032-http-backend.md</code></td>
+<td>Formalize design as testable specification</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>ReadOnlyHttpBackend</code> + <code>UrllibTransport</code> + registration</td>
+<td>Zero new runtime deps</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Backend-specific tests + conformance fixture</td>
+<td>17 HTTP-specific scenarios via <code>pytest-httpserver</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Optional transports (requests, httpx) + extras</td>
+<td>Higher-quality HTTP for users with these installed</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Docs: guide, example, README, nav, CHANGELOG, BACKLOG</td>
+<td>User-facing documentation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="commit-strategy">Commit strategy<a class="headerlink" href="#commit-strategy" title="Permanent link">&para;</a></h3>
+<p>Each commit passes <code>hatch run all</code> independently. One commit per phase.</p>
+<h3 id="dependencies-test-infrastructure">Dependencies &amp; test infrastructure<a class="headerlink" href="#dependencies-test-infrastructure" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Dependency</th>
+<th>Type</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pytest-httpserver</code></td>
+<td>test-only</td>
+<td>Mock HTTP server for backend tests + conformance fixture</td>
+</tr>
+<tr>
+<td><code>requests&gt;=2.25.0</code></td>
+<td>optional extra</td>
+<td><code>RequestsTransport</code></td>
+</tr>
+<tr>
+<td><code>httpx&gt;=0.24.0</code></td>
+<td>optional extra</td>
+<td><code>HttpxTransport</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="risks-mitigations">Risks &amp; mitigations<a class="headerlink" href="#risks-mitigations" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Conformance gate changes affect other backends</td>
+<td>Additive only (skip where unsupported); run full suite</td>
+</tr>
+<tr>
+<td>urllib streaming edge cases</td>
+<td>Research verified <code>_ErrorMappingStream</code> wraps HTTPResponse correctly</td>
+</tr>
+<tr>
+<td><code>size=0</code> when Content-Length missing</td>
+<td>Document as known limitation in spec and guide</td>
+</tr>
+</tbody>
+</table>
 
 
 
