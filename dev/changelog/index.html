@@ -3296,7 +3296,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased]">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0190-2026-03-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.19.0] - 2026-03-23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.19.0] - 2026-03-23">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -6942,7 +6953,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased]">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0190-2026-03-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.19.0] - 2026-03-23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.19.0] - 2026-03-23">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -7942,12 +7964,34 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h2 id="0190-2026-03-23">[0.19.0] - 2026-03-23<a class="headerlink" href="#0190-2026-03-23" title="Permanent link">&para;</a></h2>
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Test suite deduplication and parametrization</strong> (BK-014): refactored 30 of 40
+<li>
+<p><strong>S3 backend code deduplication</strong> (BK-011): extracted <code>_S3Base</code> base class,
+  <code>_fileinfo</code> helpers, and error factories from the two S3 backends. Net −94
+  lines, single maintenance point for 155 previously duplicated lines.</p>
+</li>
+<li>
+<p><strong>Extension code deduplication</strong> (BK-012): <code>_StreamWrapper</code> base class in
+  <code>ext/streams.py</code>, generic <code>_run_batch()</code> executor in <code>ext/batch.py</code>,
+  <code>_deprecated_alias()</code> helper in <code>ext/_helpers.py</code>.</p>
+</li>
+<li>
+<p><strong>Test suite deduplication and parametrization</strong> (BK-014): refactored 30 of 40
   test files (~17,800 → ~16,300 lines, −8.6%) while preserving identical
   coverage. Parametrized similar tests, extracted shared fixtures, merged
-  single-method classes, and consolidated repeated assertion patterns.</li>
+  single-method classes, and consolidated repeated assertion patterns.</p>
+</li>
+<li>
+<p><strong>SDD document category consolidation</strong> (ID-099): merged <code>proposals/</code> →
+  <code>rfcs/</code> and <code>plans/</code> → <code>research/</code>, reducing SDD categories from 7 to 5.
+  Added Document Types table to <code>000-process.md</code>.</p>
+</li>
+<li>
+<p><strong>Fixed compound-command PreToolUse hook</strong>: replaced <code>jq</code> (not installed) with
+  Python for JSON parsing. Also blocks <code>git -C</code> pattern.</p>
+</li>
 </ul>
 <h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
 <ul>
@@ -7964,11 +8008,15 @@
   <code>__all__</code> symbol has API documentation.</p>
 </li>
 <li>
-<p><strong>Cross-link compliance pass across docs tables</strong> (BK-013): backend names in
-  capability matrices, choosing-a-backend, concurrency, health-check,
-  performance, and API reference tables now link to their respective guide
-  pages. Added Rule 4 ("Table header/key-column → documented entity") to
-  <code>DOCUMENTATION.md</code> § 4.</p>
+<p><strong>Cross-link compliance pass</strong> (BK-013): <code>## See also</code> sections added to all
+  27 example pages and all API reference pages. Backend names in capability
+  matrices, choosing-a-backend, concurrency, health-check, performance, and API
+  reference tables now link to their respective guide pages. Added Rule 4
+  ("Table header/key-column → documented entity") to <code>DOCUMENTATION.md</code> § 4.</p>
+</li>
+<li>
+<p><strong>Docstring and API doc fixes</strong>: replaced private-module imports with public
+  API paths in docs, completed extensions table, fixed Sphinx-style remnants.</p>
 </li>
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
