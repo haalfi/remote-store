@@ -26,8 +26,7 @@ Pages that try to be two things at once must be split.
 | User-facing guides | `guides/` | Yes |
 | Runnable examples | `examples/` | Yes |
 | API docstrings | `src/` (Python source) | Yes |
-| Specs, ADRs, RFCs | `sdd/` | Yes |
-| Research documents | `sdd/research/` | Yes |
+| Specs, ADRs, RFCs, research, audits | `sdd/` | Yes |
 | Contributor workflow | `CONTRIBUTING.md` | Yes |
 | Release history | `CHANGELOG.md` | Yes |
 | Development narrative | `DEVELOPMENT_STORY.md` | Yes |

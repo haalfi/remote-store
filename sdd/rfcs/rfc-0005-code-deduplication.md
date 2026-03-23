@@ -1,7 +1,7 @@
 # Code Deduplication Analysis
 
 **Date:** 2026-03-19
-**Status:** Proposal --- for discussion
+**Status:** Accepted (Phases 1–4 implemented via BK-011, BK-012)
 
 ---
 

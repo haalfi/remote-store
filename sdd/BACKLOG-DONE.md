@@ -4,6 +4,18 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## SDD Housekeeping
+
+- [x] **ID-099 — Consolidate SDD document categories from 7 to 5**
+  Merged `proposals/` → `rfcs/` (renamed to rfc-0005, rfc-0006, rfc-0007 with
+  accepted status), `plans/` → `research/` (docs landing page plan renamed;
+  HTTP backend plan merged into existing research doc § 20). Removed completed
+  fix-list (`audits/fix-docs-structural-issues.md`). Added Document Types table
+  to `000-process.md`. Updated all cross-references in BACKLOG-DONE.md,
+  CLAUDE-REFERENCE.md, DOCUMENTATION.md. PR #252.
+
+---
+
 ## Test Suite Refactoring
 
 - [x] **BK-014 — Test code deduplication and parametrization**
@@ -52,7 +64,7 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 - [x] **BK-013 — Documentation cross-link compliance**
   Enforced DOCUMENTATION.md § 4 cross-linking rules across all ~64 docs pages.
   All additive, no code changes.
-  [Proposal](proposals/DOC-CROSS-LINKS.md).
+  [RFC](rfcs/rfc-0007-doc-cross-links.md).
   - Phase 1a: Core example pages — add `## See also` (10 pages)
   - Phase 1b: Backend example pages — add `## See also` (6 pages)
   - Phase 1c: Extension + showcase example pages — add `## See also` (11 pages)
@@ -71,7 +83,7 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   executor in `ext/batch.py` (consolidates sequential/concurrent scaffolding).
   `_deprecated_alias()` helper in `ext/_helpers.py` (replaces 3 hand-written
   deprecation wrappers).  `_require_extra()` dropped — ruff E402 cascade made
-  it impractical.  [Proposal](proposals/CODE-DEDUPLICATION.md).  PR #243.
+  it impractical.  [RFC](rfcs/rfc-0005-code-deduplication.md).  PR #243.
 
 - [x] **BK-011 — S3 backend deduplication (Phase 1)**
   Extract shared listing, error handling, and FileInfo construction from
@@ -80,14 +92,14 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   and error factories (`_not_found`, `_permission_denied`,
   `_classify_by_message` in `_errors.py`).  Net -94 lines, single
   maintenance point for 155 previously duplicated lines.
-  [Proposal](proposals/CODE-DEDUPLICATION.md).  PR #242.
+  [RFC](rfcs/rfc-0005-code-deduplication.md).  PR #242.
 
 - [x] **BK-010 — Naming consistency: rename ext factory functions**
   Renamed three public factory functions for naming consistency:
   `pydantic_to_registry_config` → `from_pydantic`, `remote_store_io_manager` →
   `dagster_io_manager`, `cached_store` → `cache`. Old names kept as deprecated
   aliases emitting `DeprecationWarning`. All specs, guides, examples, migration
-  guide updated. [Proposal](proposals/NAMING-INCONSISTENCIES.md). PR #241.
+  guide updated. [RFC](rfcs/rfc-0006-naming-inconsistencies.md). PR #241.
 
 ## Middleware Path 1 (Post-v0.17.0)
 
@@ -96,7 +108,7 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   architecture diagram, six key messages (Store-as-folder, zero deps, proven
   libs, backend-native API, extensions alongside, bring your own), quick start,
   and navigation links. Diagram rework (flowchart → architecture-beta) deferred.
-  [Plan](plans/plan-docs-landing-page.md).
+  [Research](research/research-docs-landing-page.md).
 
 - [x] **ID-006 — Progress tracking via stream wrappers (`ext.streams`)**
   `ext.transfer.download()` now uses `ProgressReader` wrapper for progress
@@ -218,8 +230,7 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   [guide](../guides/backends/http.md), [example](../examples/http_backend.py),
   API docs. 4 review rounds (31 threads). Resource leak fix, thread-safety
   docs, CI coverage floor adjustment (90% non-primary, 95% primary).
-  [Research](research/research-readonly-http-backend.md),
-  [plan](plans/plan-readonly-http-backend.md).
+  [Research](research/research-readonly-http-backend.md) (§ 20: implementation plan).
   Lesson learned: research and initial estimation significantly underestimated
   complexity — transport abstraction, streaming adapters, error mapping across
   3 HTTP libraries, CDN edge cases, and conformance suite changes made this

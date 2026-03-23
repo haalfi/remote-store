@@ -1,4 +1,4 @@
-# Plan: ID-090 — Docs Landing Page
+# Research: ID-090 — Docs Landing Page
 
 **Date:** 2026-03-16
 **Updated:** 2026-03-18
