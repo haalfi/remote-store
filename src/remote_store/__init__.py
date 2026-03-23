@@ -41,7 +41,7 @@ from remote_store.ext.partition import ParsedPartition, parse_partition, partiti
 from remote_store.ext.streams import ChecksumReader, ChecksumWriter, ProgressReader, ProgressWriter, read_with_progress
 from remote_store.ext.transfer import download, transfer, upload
 
-__version__ = "0.18.0"
+__version__ = "0.19.0"
 
 logging.getLogger("remote_store").addHandler(logging.NullHandler())
 

@@ -6,12 +6,29 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-03-23
+
 ### Internal
+
+- **S3 backend code deduplication** (BK-011): extracted `_S3Base` base class,
+  `_fileinfo` helpers, and error factories from the two S3 backends. Net −94
+  lines, single maintenance point for 155 previously duplicated lines.
+
+- **Extension code deduplication** (BK-012): `_StreamWrapper` base class in
+  `ext/streams.py`, generic `_run_batch()` executor in `ext/batch.py`,
+  `_deprecated_alias()` helper in `ext/_helpers.py`.
 
 - **Test suite deduplication and parametrization** (BK-014): refactored 30 of 40
   test files (~17,800 → ~16,300 lines, −8.6%) while preserving identical
   coverage. Parametrized similar tests, extracted shared fixtures, merged
   single-method classes, and consolidated repeated assertion patterns.
+
+- **SDD document category consolidation** (ID-099): merged `proposals/` →
+  `rfcs/` and `plans/` → `research/`, reducing SDD categories from 7 to 5.
+  Added Document Types table to `000-process.md`.
+
+- **Fixed compound-command PreToolUse hook**: replaced `jq` (not installed) with
+  Python for JSON parsing. Also blocks `git -C` pattern.
 
 ### Documentation
 
@@ -25,11 +42,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   add a wrapper" bugs. Added `tests/test_api_coverage.py` to verify every
   `__all__` symbol has API documentation.
 
-- **Cross-link compliance pass across docs tables** (BK-013): backend names in
-  capability matrices, choosing-a-backend, concurrency, health-check,
-  performance, and API reference tables now link to their respective guide
-  pages. Added Rule 4 ("Table header/key-column → documented entity") to
-  `DOCUMENTATION.md` § 4.
+- **Cross-link compliance pass** (BK-013): `## See also` sections added to all
+  27 example pages and all API reference pages. Backend names in capability
+  matrices, choosing-a-backend, concurrency, health-check, performance, and API
+  reference tables now link to their respective guide pages. Added Rule 4
+  ("Table header/key-column → documented entity") to `DOCUMENTATION.md` § 4.
+
+- **Docstring and API doc fixes**: replaced private-module imports with public
+  API paths in docs, completed extensions table, fixed Sphinx-style remnants.
 
 ### Changed
 
