@@ -66,18 +66,26 @@ def test_is_file_root(mb: MemoryBackend, path: str) -> None:
     assert mb.is_file(path) is False
 
 
+@pytest.mark.spec("MEM-012")
 @pytest.mark.parametrize(
-    "op,args,match",
-    [
-        pytest.param("write", ("", b"data"), "must not be empty", id="write_empty"),
-        pytest.param("write", (".", b"data"), "must not be empty", id="write_dot"),
-        pytest.param("delete", ("",), "must not be empty", id="delete_empty"),
-        pytest.param("delete_folder", ("",), "must not be empty", id="delete_folder_empty"),
-    ],
+    "args",
+    [pytest.param(("", b"data"), id="empty"), pytest.param((".", b"data"), id="dot")],
 )
-def test_empty_path_rejected(mb: MemoryBackend, op: str, args: tuple, match: str) -> None:
-    with pytest.raises(InvalidPath, match=match):
-        getattr(mb, op)(*args)
+def test_write_empty_path_rejected(mb: MemoryBackend, args: tuple) -> None:
+    with pytest.raises(InvalidPath, match="must not be empty"):
+        mb.write(*args)
+
+
+@pytest.mark.spec("BE-012")
+def test_delete_empty_path_rejected(mb: MemoryBackend) -> None:
+    with pytest.raises(InvalidPath, match="must not be empty"):
+        mb.delete("")
+
+
+@pytest.mark.spec("MEM-014")
+def test_delete_folder_empty_path_rejected(mb: MemoryBackend) -> None:
+    with pytest.raises(InvalidPath, match="must not be empty"):
+        mb.delete_folder("")
 
 
 @pytest.mark.spec("MEM-012")

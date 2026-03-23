@@ -95,6 +95,8 @@ class TestPydanticToRegistryConfig:
         rc = from_pydantic(model)
         assert len(rc.backends) == 2
         assert len(rc.stores) == 2
+        assert rc.backends["local"].type == "local"
+        assert rc.backends["s3"].type == "s3"
 
     @pytest.mark.spec("CFG-013")
     def test_equivalence_with_from_dict(self) -> None:

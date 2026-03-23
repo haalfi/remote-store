@@ -53,6 +53,12 @@ class TestChecksum:
         assert hex_digest == expected_hex
 
     @pytest.mark.spec("INT-001")
+    def test_sha256_is_default(self, store: Store) -> None:
+        algo, hex_digest = checksum(store, "hello.txt")
+        assert algo == "sha256"
+        assert hex_digest == HELLO_SHA256
+
+    @pytest.mark.spec("INT-001")
     def test_returns_tuple(self, store: Store) -> None:
         result = checksum(store, "hello.txt")
         assert isinstance(result, tuple) and len(result) == 2
