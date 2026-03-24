@@ -309,7 +309,7 @@ class TestAzureRangeReader:
 
     @pytest.mark.spec("SEEK-006")
     def test_error_mapping_wrapping(self) -> None:
-        """Range reader errors are mapped via _ErrorMappingStream."""
+        """Range reader errors are caught by _ErrorMappingStream."""
         from remote_store._stream import _ErrorMappingStream
         from remote_store.backends._azure import _AzureRangeReader
 
@@ -320,8 +320,11 @@ class TestAzureRangeReader:
             return exc
 
         wrapped = _ErrorMappingStream(reader, classify, "test.txt")
-        # The _ErrorMappingStream should catch the OSError from readinto
         assert wrapped.seekable()
+        # Actually exercise the error path: readinto raises OSError,
+        # _ErrorMappingStream catches it and passes to classify.
+        with pytest.raises(OSError):
+            wrapped.read(4)
 
 
 class _FakeBlobClient:

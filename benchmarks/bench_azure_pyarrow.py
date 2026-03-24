@@ -22,41 +22,27 @@ Usage::
 from __future__ import annotations
 
 import io
-import json
 import statistics
 import time
-import urllib.error
-import urllib.request
 import uuid
 from dataclasses import dataclass
 
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from benchmarks._toxiproxy import (
+    AZURITE_CONN_STR,
+    set_latency,
+)
+from benchmarks._toxiproxy import (
+    TOXIPROXY_AZURITE_CONN_STR as TOXIPROXY_CONN_STR,
+)
 from remote_store import Store
 from remote_store.backends._azure import AzureBackend
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-
-AZURITE_CONN_STR = (
-    "DefaultEndpointsProtocol=http;"
-    "AccountName=devstoreaccount1;"
-    "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq"
-    "/K1SZFPTOtr/KBHBeksoGMGw==;"
-    "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
-)
-
-TOXIPROXY_CONN_STR = (
-    "DefaultEndpointsProtocol=http;"
-    "AccountName=devstoreaccount1;"
-    "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq"
-    "/K1SZFPTOtr/KBHBeksoGMGw==;"
-    "BlobEndpoint=http://127.0.0.1:10001/devstoreaccount1;"
-)
-
-TOXIPROXY_API = "http://127.0.0.1:8474"
 
 NUM_COLUMNS = 50
 LATENCIES_MS = [0, 10, 30, 50]
@@ -71,34 +57,6 @@ SIZE_CONFIGS = [
     ("~10 MB", 50_000),
     ("~100 MB", 500_000),
 ]
-
-
-# ---------------------------------------------------------------------------
-# Toxiproxy helpers
-# ---------------------------------------------------------------------------
-
-
-def set_latency(ms: int) -> None:
-    toxic_url = f"{TOXIPROXY_API}/proxies/azurite/toxics"
-    req = urllib.request.Request(f"{toxic_url}/bench_latency", method="DELETE")
-    try:
-        urllib.request.urlopen(req, timeout=5)
-    except urllib.error.HTTPError as exc:
-        if exc.code != 404:
-            raise
-    if ms > 0:
-        payload = json.dumps(
-            {
-                "name": "bench_latency",
-                "type": "latency",
-                "stream": "upstream",
-                "toxicity": 1.0,
-                "attributes": {"latency": ms, "jitter": ms // 3},
-            }
-        ).encode()
-        req = urllib.request.Request(toxic_url, data=payload, method="POST")
-        req.add_header("Content-Type", "application/json")
-        urllib.request.urlopen(req, timeout=5)
 
 
 # ---------------------------------------------------------------------------
