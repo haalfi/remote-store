@@ -123,6 +123,7 @@ _ALL_HOOK_CASES = [
     pytest.param("on_write", [], lambda o: o.write("a.txt", b"hello"), "write", id="write"),
     pytest.param("on_read", ["a.txt"], lambda o: o.read("a.txt"), "read", id="read"),
     pytest.param("on_read", ["a.txt"], lambda o: o.read_bytes("a.txt"), "read_bytes", id="read_bytes"),
+    pytest.param("on_read", ["a.txt"], lambda o: o.read_seekable("a.txt"), "read_seekable", id="read_seekable"),
     pytest.param("on_read", ["a.txt"], lambda o: o.read_text("a.txt"), "read_text", id="read_text"),
     pytest.param("on_write", [], lambda o: o.write_text("wt.txt", "hi"), "write_text", id="write_text"),
     pytest.param("on_delete", ["a.txt"], lambda o: o.delete("a.txt"), "delete", id="delete"),

@@ -376,6 +376,21 @@ class TestAzureErrorMapping:
         mapped = backend._classify(self._http_err("server error", 500), "file.txt")
         assert not isinstance(mapped, NotFound | AlreadyExists | PermissionDenied)
 
+    @pytest.mark.spec("AZ-025")
+    @pytest.mark.spec("SEEK-006")
+    def test_classify_unwraps_oserror_cause(self) -> None:
+        """_classify unwraps OSError.__cause__ to match Azure exceptions from _AzureRangeReader."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = _make_backend()
+        # Simulate what _AzureRangeReader.readinto() does:
+        # raise OSError(str(exc)) from exc
+        azure_exc = ResourceNotFoundError("blob not found")
+        wrapper = OSError(str(azure_exc))
+        wrapper.__cause__ = azure_exc
+        mapped = backend._classify(wrapper, "file.txt")
+        assert isinstance(mapped, NotFound)
+
     @pytest.mark.spec("AZ-026")
     def test_no_native_exception_leaks(self) -> None:
         """The error context manager converts all exceptions."""

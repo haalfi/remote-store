@@ -1,7 +1,7 @@
-"""Tests for ext.seekable -- portable seekable reads.
+"""Tests for Store.read_seekable() -- seekable reads on any backend.
 
 Tier 1: Capability.SEEKABLE_READ declaration (SEEK-001)
-Tier 3: ext.seekable.seekable_read() (SEEK-002 through SEEK-009)
+Store API: Store.read_seekable() (SEEK-002 through SEEK-012)
 
 Covers spec 036-seekable-read.md.
 """
@@ -9,14 +9,12 @@ Covers spec 036-seekable-read.md.
 from __future__ import annotations
 
 import io
-import warnings
 
 import pytest
 
 from remote_store._capabilities import Capability
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
-from remote_store.ext.seekable import seekable_read
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -32,7 +30,7 @@ def store() -> Store:
     return s
 
 
-class _NonSeekableStream(io.RawIOBase):
+class _NonSeekableRaw(io.RawIOBase):
     """A forward-only stream wrapping bytes for testing."""
 
     def __init__(self, data: bytes) -> None:
@@ -41,7 +39,7 @@ class _NonSeekableStream(io.RawIOBase):
     def readable(self) -> bool:
         return True
 
-    def readinto(self, b: bytearray | memoryview) -> int:
+    def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
         data = self._buf.read(len(b))
         n = len(data)
         b[:n] = data
@@ -49,20 +47,6 @@ class _NonSeekableStream(io.RawIOBase):
 
     def seekable(self) -> bool:
         return False
-
-
-def _make_non_seekable_store(store: Store) -> Store:
-    """Wrap a store so read() returns non-seekable streams."""
-    original_read = store.read
-
-    def _read(path: str) -> io.BinaryIO:
-        stream = original_read(path)
-        data = stream.read()
-        stream.close()
-        return io.BufferedReader(_NonSeekableStream(data))  # type: ignore[arg-type]
-
-    store.read = _read  # type: ignore[assignment]
-    return store
 
 
 # ===========================================================================
@@ -88,7 +72,6 @@ class TestCapabilityDeclaration:
         import importlib
 
         mod = importlib.import_module(backend_mod)
-        # Access the module-level capability set constant
         cap_set = None
         for name in ("_ALL_CAPABILITIES", "_SFTP_CAPABILITIES"):
             cap_set = getattr(mod, name, None)
@@ -117,179 +100,304 @@ class TestCapabilityDeclaration:
 
 
 # ===========================================================================
-# SEEK-002: Passthrough for seekable streams
+# SEEK-002: Store.read_seekable() contract
+# ===========================================================================
+
+
+class TestReadSeekableContract:
+    """SEEK-002: read_seekable() always returns a seekable stream at byte 0."""
+
+    @pytest.mark.spec("SEEK-002")
+    def test_returns_seekable_stream(self, store: Store) -> None:
+        stream = store.read_seekable("test.txt")
+        assert stream.seekable()
+        assert stream.read() == b"hello seekable world"
+        stream.close()
+
+
+# ===========================================================================
+# SEEK-004: Passthrough for seekable backends
 # ===========================================================================
 
 
 class TestPassthrough:
-    """SEEK-002: seekable_read returns the same stream when already seekable."""
+    """SEEK-004: read_seekable() returns the read() stream on seekable backends."""
 
-    @pytest.mark.spec("SEEK-002")
+    @pytest.mark.spec("SEEK-003")
+    @pytest.mark.spec("SEEK-004")
     def test_passthrough_returns_same_object(self, store: Store) -> None:
-        # Capture the stream that store.read() returns, then verify
-        # seekable_read returns that exact object (identity, not equality).
+        # Monkey-patch the backend's read() to capture the returned stream,
+        # then verify read_seekable() returns the exact same object (identity).
         captured: list[io.BinaryIO] = []
-        original_read = store.read
+        backend = store._backend
+        original_read = backend.read
 
         def tracking_read(path: str) -> io.BinaryIO:
             s = original_read(path)
             captured.append(s)
             return s
 
-        store.read = tracking_read  # type: ignore[assignment]
-        result = seekable_read(store, "test.txt")
-        assert len(captured) == 1
-        assert result is captured[0], "seekable_read must return the original stream, not a wrapper"
-        assert result.read() == b"hello seekable world"
+        backend.read = tracking_read  # type: ignore[assignment]
+        try:
+            result = store.read_seekable("test.txt")
+            assert len(captured) == 1
+            assert result is captured[0], "read_seekable must return the same stream, not a wrapper"
+            assert result.read() == b"hello seekable world"
+            result.close()
+        finally:
+            backend.read = original_read  # type: ignore[assignment]
+
+
+# ===========================================================================
+# SEEK-005: Spool fallback for non-seekable backends
+# ===========================================================================
+
+
+class TestSpoolFallback:
+    """SEEK-005: non-seekable backends get spooled to SpooledTemporaryFile."""
+
+    @pytest.mark.spec("SEEK-003")
+    @pytest.mark.spec("SEEK-005")
+    def test_non_seekable_backend_spools(self) -> None:
+        """Backend.read_seekable() default spools non-seekable streams."""
+        from remote_store._backend import Backend
+
+        backend = MemoryBackend()
+        backend.write("test.txt", b"hello world")
+
+        # Monkey-patch read() to return non-seekable stream
+        original_read = backend.read
+
+        def non_seekable_read(path: str) -> io.BinaryIO:
+            stream = original_read(path)
+            data = stream.read()
+            stream.close()
+            return io.BufferedReader(_NonSeekableRaw(data))  # type: ignore[arg-type]
+
+        backend.read = non_seekable_read  # type: ignore[assignment]
+
+        # Default read_seekable() should spool and return seekable
+        result = Backend.read_seekable(backend, "test.txt")
+        assert result.seekable()
+        assert result.read() == b"hello world"
+        result.seek(0)
+        assert result.read() == b"hello world"
         result.close()
 
 
 # ===========================================================================
-# SEEK-003: Spool for non-seekable streams
-# ===========================================================================
-
-
-class TestSpool:
-    """SEEK-003: non-seekable streams are spooled to SpooledTemporaryFile."""
-
-    @pytest.mark.spec("SEEK-003")
-    def test_non_seekable_returns_seekable(self, store: Store) -> None:
-        ns_store = _make_non_seekable_store(store)
-        stream = seekable_read(ns_store, "test.txt")
-        assert stream.seekable()
-        assert stream.read() == b"hello seekable world"
-        stream.seek(0)
-        assert stream.read() == b"hello seekable world"
-        stream.close()
-
-
-# ===========================================================================
-# SEEK-004: Large file spool spills to disk
-# ===========================================================================
-
-
-class TestLargeFileSpool:
-    """SEEK-004: content > max_memory spills to disk."""
-
-    @pytest.mark.spec("SEEK-004")
-    def test_large_file_rolls_to_disk(self, store: Store) -> None:
-        ns_store = _make_non_seekable_store(store)
-        stream = seekable_read(ns_store, "large.bin", max_memory=50)
-        assert stream.seekable()
-        assert stream.read() == b"x" * 200
-        stream.close()
-
-
-# ===========================================================================
-# SEEK-005: max_memory=0 always spools to disk
-# ===========================================================================
-
-
-class TestMaxMemoryZero:
-    """SEEK-005: max_memory=0 forces spool even for tiny content."""
-
-    @pytest.mark.spec("SEEK-005")
-    def test_max_memory_zero(self, store: Store) -> None:
-        ns_store = _make_non_seekable_store(store)
-        stream = seekable_read(ns_store, "test.txt", max_memory=0)
-        assert stream.seekable()
-        assert stream.read() == b"hello seekable world"
-        stream.close()
-
-
-# ===========================================================================
-# SEEK-006: Error propagation
+# SEEK-010: Error propagation
 # ===========================================================================
 
 
 class TestErrorPropagation:
-    """SEEK-006: backend errors propagate as Store errors."""
+    """SEEK-010: backend errors propagate through read_seekable()."""
 
-    @pytest.mark.spec("SEEK-006")
+    @pytest.mark.spec("SEEK-010")
     def test_not_found_propagates(self, store: Store) -> None:
         from remote_store._errors import NotFound
 
         with pytest.raises(NotFound):
-            seekable_read(store, "nonexistent.txt")
+            store.read_seekable("nonexistent.txt")
 
 
 # ===========================================================================
-# SEEK-007: Original stream closed after spooling
+# SEEK-011: Original stream closed after spooling
 # ===========================================================================
 
 
 class TestStreamClosure:
-    """SEEK-007: original stream is closed after spooling."""
+    """SEEK-011: original stream is closed after spooling."""
 
-    @pytest.mark.spec("SEEK-007")
-    def test_original_closed_after_spool(self, store: Store) -> None:
-        ns_store = _make_non_seekable_store(store)
-        original_read = ns_store.read
+    @pytest.mark.spec("SEEK-011")
+    def test_original_closed_after_spool(self) -> None:
+        backend = MemoryBackend()
+        backend.write("test.txt", b"hello world")
+
+        original_read = backend.read
         streams: list[io.BinaryIO] = []
 
         def tracking_read(path: str) -> io.BinaryIO:
-            s = original_read(path)
+            stream = original_read(path)
+            data = stream.read()
+            stream.close()
+            raw = _NonSeekableRaw(data)
+            s = io.BufferedReader(raw)  # type: ignore[arg-type]
             streams.append(s)
             return s
 
-        ns_store.read = tracking_read  # type: ignore[assignment]
-        result = seekable_read(ns_store, "test.txt")
+        backend.read = tracking_read  # type: ignore[assignment]
+
+        from remote_store._backend import Backend
+
+        result = Backend.read_seekable(backend, "test.txt")
         assert len(streams) == 1
         assert streams[0].closed
         result.close()
 
 
 # ===========================================================================
-# SEEK-008: Runtime guard -- capability declared but stream not seekable
+# SEEK-006: Azure Range Reader Override
 # ===========================================================================
 
 
-class TestRuntimeGuard:
-    """SEEK-008: warning + fallback when capability declared but stream non-seekable."""
+class TestAzureRangeReader:
+    """SEEK-006: _AzureRangeReader seekable reader with mock blob client."""
+
+    @pytest.mark.spec("SEEK-006")
+    def test_lazy_download(self) -> None:
+        """No data downloaded until read() is called."""
+        from remote_store.backends._azure import _AzureRangeReader
+
+        reader = _AzureRangeReader(_FakeBlobClient(b"hello"), 5)
+        assert reader.tell() == 0
+        # No reads yet -- nothing downloaded
+
+    @pytest.mark.spec("SEEK-006")
+    def test_seek_tell_no_io(self) -> None:
+        """seek() and tell() update position without I/O."""
+        from remote_store.backends._azure import _AzureRangeReader
+
+        client = _FakeBlobClient(b"0123456789")
+        reader = _AzureRangeReader(client, 10)
+        assert reader.seek(5) == 5
+        assert reader.tell() == 5
+        assert reader.seek(-2, 1) == 3  # SEEK_CUR
+        assert reader.seek(-1, 2) == 9  # SEEK_END
+        assert client.download_count == 0  # no HTTP calls
+
+    @pytest.mark.spec("SEEK-006")
+    def test_one_request_per_readinto(self) -> None:
+        """Each readinto() issues exactly one HTTP Range request."""
+        from remote_store.backends._azure import _AzureRangeReader
+
+        data = b"abcdefghij"
+        client = _FakeBlobClient(data)
+        reader = _AzureRangeReader(client, len(data))
+        buf = bytearray(5)
+        n = reader.readinto(buf)
+        assert n == 5
+        assert buf == b"abcde"
+        assert client.download_count == 1
+        n = reader.readinto(buf)
+        assert n == 5
+        assert buf == b"fghij"
+        assert client.download_count == 2
+
+    @pytest.mark.spec("SEEK-006")
+    def test_seek_then_read(self) -> None:
+        """Seek to offset, read from there."""
+        from remote_store.backends._azure import _AzureRangeReader
+
+        data = b"0123456789"
+        client = _FakeBlobClient(data)
+        reader = _AzureRangeReader(client, len(data))
+        reader.seek(7)
+        buf = bytearray(10)
+        n = reader.readinto(buf)
+        assert n == 3
+        assert buf[:n] == b"789"
+
+    @pytest.mark.spec("SEEK-006")
+    def test_eof_returns_zero(self) -> None:
+        """readinto() at EOF returns 0."""
+        from remote_store.backends._azure import _AzureRangeReader
+
+        reader = _AzureRangeReader(_FakeBlobClient(b"hi"), 2)
+        reader.seek(0, 2)  # seek to end
+        assert reader.readinto(bytearray(10)) == 0
+
+    @pytest.mark.spec("SEEK-006")
+    def test_error_mapping_wrapping(self) -> None:
+        """Range reader errors are caught by _ErrorMappingStream."""
+        from remote_store._stream import _ErrorMappingStream
+        from remote_store.backends._azure import _AzureRangeReader
+
+        client = _FakeBlobClient(b"data", fail_on_read=True)
+        reader = _AzureRangeReader(client, 4)
+
+        def classify(exc: Exception, path: str) -> Exception:
+            return exc
+
+        wrapped = _ErrorMappingStream(reader, classify, "test.txt")
+        assert wrapped.seekable()
+        # Actually exercise the error path: readinto raises OSError,
+        # _ErrorMappingStream catches it and passes to classify.
+        with pytest.raises(OSError):
+            wrapped.read(4)
+
+
+class _FakeBlobClient:
+    """Mock blob client for _AzureRangeReader unit tests."""
+
+    def __init__(self, data: bytes, *, fail_on_read: bool = False) -> None:
+        self._data = data
+        self.download_count = 0
+        self._fail = fail_on_read
+
+    def download_blob(self, *, offset: int = 0, length: int | None = None, max_concurrency: int = 1) -> _FakeDownloader:
+        self.download_count += 1
+        if self._fail:
+            raise OSError("simulated download failure")
+        end = offset + length if length is not None else len(self._data)
+        return _FakeDownloader(self._data[offset:end])
+
+
+class _FakeDownloader:
+    def __init__(self, data: bytes) -> None:
+        self._data = data
+
+    def readall(self) -> bytes:
+        return self._data
+
+
+# ===========================================================================
+# SEEK-008: Arrow integration
+# ===========================================================================
+
+
+class TestArrowIntegration:
+    """SEEK-008: open_input_file() calls read_seekable() for Tier 3."""
 
     @pytest.mark.spec("SEEK-008")
-    def test_mismatch_warns_and_falls_back(self, store: Store) -> None:
-        # MemoryBackend declares SEEKABLE_READ, so mock the stream to be non-seekable
-        original_read = store.read
+    def test_arrow_uses_read_seekable(self, store: Store) -> None:
+        """Arrow open_input_file calls read_seekable for large files."""
+        calls: list[str] = []
+        original = store.read_seekable
 
-        def broken_read(path: str) -> io.BinaryIO:
-            stream = original_read(path)
-            data = stream.read()
-            stream.close()
-            return io.BufferedReader(_NonSeekableStream(data))  # type: ignore[arg-type]
+        def tracking(path: str) -> io.BinaryIO:
+            calls.append(path)
+            return original(path)
 
-        store.read = broken_read  # type: ignore[assignment]
+        store.read_seekable = tracking  # type: ignore[assignment]
+        try:
+            from remote_store.ext.arrow import pyarrow_fs
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            result = seekable_read(store, "test.txt")
-
-        assert len(w) == 1
-        assert "SEEKABLE_READ" in str(w[0].message)
-        assert result.seekable()
-        assert result.read() == b"hello seekable world"
-        result.close()
+            store.write("test.bin", b"x" * 100)
+            fs = pyarrow_fs(store, materialization_threshold=10)
+            with fs.open_input_file("test.bin") as f:
+                f.read()
+            assert "test.bin" in calls
+        except ImportError:
+            pytest.skip("pyarrow not installed")
+        finally:
+            store.read_seekable = original  # type: ignore[assignment]
 
 
 # ===========================================================================
-# SEEK-009: fileno() limitation on in-memory spool
+# SEEK-009: ProxyStore forwarding
 # ===========================================================================
 
 
-class TestFilenoLimitation:
-    """SEEK-009: SpooledTemporaryFile fileno() behavior.
-
-    SpooledTemporaryFile exposes fileno() from its underlying file.
-    Behavior varies across Python versions, so we just verify the
-    stream is seekable and usable regardless.
-    """
+class TestProxyForwarding:
+    """SEEK-009: ProxyStore.read_seekable() delegates to inner."""
 
     @pytest.mark.spec("SEEK-009")
-    def test_spooled_stream_is_seekable(self, store: Store) -> None:
-        ns_store = _make_non_seekable_store(store)
-        stream = seekable_read(ns_store, "test.txt", max_memory=1024 * 1024)
+    def test_proxy_forwards_read_seekable(self, store: Store) -> None:
+        from remote_store._proxy import ProxyStore
+
+        proxy = ProxyStore(store)
+        stream = proxy.read_seekable("test.txt")
         assert stream.seekable()
-        assert stream.read() == b"hello seekable world"
-        stream.seek(0)
         assert stream.read() == b"hello seekable world"
         stream.close()

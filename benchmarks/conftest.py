@@ -50,6 +50,12 @@ def pytest_addoption(parser: Any) -> None:
         type=int,
         help="Per-test timeout in seconds (default: 120 cloud, 60 docker).",
     )
+    parser.addoption(
+        "--latency",
+        default=0,
+        type=int,
+        help="Simulated network latency in ms for azure-latency backend (via Toxiproxy).",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -185,15 +191,16 @@ MINIO_ENDPOINT = f"http://{MINIO_HOST}:{MINIO_PORT}"
 MINIO_ACCESS_KEY = os.environ.get("BENCH_MINIO_ACCESS_KEY", "minioadmin")
 MINIO_SECRET_KEY = os.environ.get("BENCH_MINIO_SECRET_KEY", "minioadmin")
 
-AZURITE_HOST = os.environ.get("BENCH_AZURITE_HOST", "127.0.0.1")
-AZURITE_PORT = int(os.environ.get("BENCH_AZURITE_PORT", "10000"))
 AZURE_MAX_CONCURRENCY = int(os.environ.get("BENCH_AZURE_MAX_CONCURRENCY", "1"))
-AZURITE_CONN_STR = (
-    "DefaultEndpointsProtocol=http;"
-    "AccountName=devstoreaccount1;"
-    "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq"
-    "/K1SZFPTOtr/KBHBeksoGMGw==;"
-    f"BlobEndpoint=http://{AZURITE_HOST}:{AZURITE_PORT}/devstoreaccount1;"
+
+# Azurite and Toxiproxy connection strings / config from shared module.
+from benchmarks._toxiproxy import (  # noqa: E402
+    AZURITE_CONN_STR,
+    AZURITE_HOST,
+    AZURITE_PORT,
+    TOXIPROXY_API_PORT,
+    TOXIPROXY_AZURITE_CONN_STR,
+    TOXIPROXY_HOST,
 )
 
 SFTP_HOST = os.environ.get("BENCH_SFTP_HOST", "127.0.0.1")
@@ -237,6 +244,14 @@ def _azurite_available() -> bool:
     return _port_open(AZURITE_HOST, AZURITE_PORT)
 
 
+def _toxiproxy_available() -> bool:
+    try:
+        import azure.storage.blob  # noqa: F401
+    except ImportError:
+        return False
+    return _port_open(TOXIPROXY_HOST, TOXIPROXY_API_PORT)
+
+
 def _sftp_docker_available() -> bool:
     try:
         import paramiko  # noqa: F401
@@ -278,12 +293,25 @@ else:
         not _azurite_available(), reason="Azurite not reachable or azure SDK not installed"
     )
 
+_toxiproxy_skip = pytest.mark.skipif(
+    not _toxiproxy_available(), reason="Toxiproxy not reachable or azure SDK not installed"
+)
+
 _local_param = pytest.param("local", id="local")
 _s3_param = pytest.param("s3", id="s3-minio", marks=_s3_skip)
 _s3_pyarrow_param = pytest.param("s3-pyarrow", id="s3-pyarrow-minio", marks=_pa_skip)
 _sftp_param = pytest.param("sftp", id="sftp-docker", marks=_sftp_skip)
 _azure_param = pytest.param("azure", id="azure-azurite", marks=_azure_skip)
+_azure_latency_param = pytest.param("azure-latency", id="azure-latency", marks=_toxiproxy_skip)
 
+
+# ---------------------------------------------------------------------------
+# Toxiproxy latency management
+# ---------------------------------------------------------------------------
+
+
+from benchmarks._toxiproxy import clear_latency as _toxiproxy_clear_latency  # noqa: E402
+from benchmarks._toxiproxy import set_latency as _toxiproxy_set_latency  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # SFTP cleanup helper (with try/finally safety)
@@ -325,7 +353,16 @@ def _sftp_cleanup(
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(params=[_local_param, _s3_param, _s3_pyarrow_param, _sftp_param, _azure_param])
+@pytest.fixture(
+    params=[
+        _local_param,
+        _s3_param,
+        _s3_pyarrow_param,
+        _sftp_param,
+        _azure_param,
+        _azure_latency_param,
+    ]
+)
 def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
     """Yield a fresh backend instance for each parameterized backend type.
 
@@ -489,6 +526,30 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             service.delete_container(container)
             service.close()
 
+    elif request.param == "azure-latency":
+        from azure.storage.blob import BlobServiceClient
+
+        from remote_store.backends._azure import AzureBackend
+
+        latency_ms = request.config.getoption("--latency")
+        container = f"bench-azl-{tag}"
+        # Create container via direct Azurite connection (bypasses toxiproxy).
+        service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
+        service.create_container(container)
+        # Set up latency toxic.
+        _toxiproxy_set_latency(latency_ms)
+        # Backend connects through toxiproxy.
+        b = AzureBackend(
+            container=container,
+            connection_string=TOXIPROXY_AZURITE_CONN_STR,
+            max_concurrency=AZURE_MAX_CONCURRENCY,
+        )
+        yield b
+        b.close()
+        _toxiproxy_clear_latency()
+        service.delete_container(container)
+        service.close()
+
     else:
         pytest.skip(f"Unknown backend: {request.param}")
 
@@ -552,6 +613,11 @@ def _build_target_params() -> list[Any]:
         pytest.mark.skipif(not _adlfs_available(), reason="adlfs not installed"),
     ]
     params.append(pytest.param(("azure", "adlfs"), id="azure-adlfs", marks=adlfs_skip))
+
+    # Azure with simulated latency (Toxiproxy)
+    params.append(
+        pytest.param(("azure-latency", "remote_store"), id="azure-latency-remote_store", marks=_toxiproxy_skip)
+    )
 
     return params
 
@@ -760,6 +826,32 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
                     cc.delete_blob(blob.name)
             else:
                 service.delete_container(container)
+            service.close()
+
+    elif backend_type == "azure-latency":
+        from azure.storage.blob import BlobServiceClient
+
+        from remote_store.backends._azure import AzureBackend
+
+        latency_ms = request.config.getoption("--latency")
+        container = f"bench-tgt-azl-{tag}"
+        # Create container via direct Azurite (bypasses toxiproxy).
+        service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
+        service.create_container(container)
+        _toxiproxy_set_latency(latency_ms)
+        try:
+            if target_kind == "remote_store":
+                bk = AzureBackend(
+                    container=container,
+                    connection_string=TOXIPROXY_AZURITE_CONN_STR,
+                    max_concurrency=AZURE_MAX_CONCURRENCY,
+                )
+                t = RemoteStoreTarget(bk)
+                yield t
+                t.close()
+        finally:
+            _toxiproxy_clear_latency()
+            service.delete_container(container)
             service.close()
 
 

@@ -112,6 +112,7 @@ class StoreEvent:
 _OP_HOOK_MAP: dict[str, str] = {
     "read": "on_read",
     "read_bytes": "on_read",
+    "read_seekable": "on_read",
     "read_text": "on_read",
     "write": "on_write",
     "write_text": "on_write",
@@ -291,6 +292,10 @@ class ObservedStore(ProxyStore):
     def read_bytes(self, path: str) -> bytes:
         with self._observe_op("read_bytes", path, {}):
             return self._inner.read_bytes(path)
+
+    def read_seekable(self, path: str) -> BinaryIO:
+        with self._observe_op("read_seekable", path, {}):
+            return self._inner.read_seekable(path)
 
     def read_text(self, path: str, *, encoding: str = "utf-8", errors: str = "strict") -> str:
         with self._observe_op("read_text", path, {"encoding": encoding}):

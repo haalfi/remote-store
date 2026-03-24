@@ -71,6 +71,71 @@ class _AzureBinaryIO(io.RawIOBase):
             super().close()
 
 
+class _AzureRangeReader(io.RawIOBase):
+    """Seekable reader using Azure Blob SDK range requests.
+
+    Each ``readinto()`` issues a single HTTP Range request via
+    ``download_blob(offset=, length=)``.  No data is downloaded until
+    ``read()`` is called, making this ideal for PyArrow's
+    ``PythonFile.read_at(nbytes, offset)`` which seeks then reads small
+    byte ranges for Parquet column pruning.
+    """
+
+    def __init__(self, blob_client: Any, file_size: int, max_concurrency: int = 1) -> None:
+        self._bc = blob_client
+        self._size = file_size
+        self._pos = 0
+        self._max_concurrency = max_concurrency
+
+    def readable(self) -> bool:
+        return True
+
+    def seekable(self) -> bool:
+        return True
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        if whence == 0:  # SEEK_SET
+            self._pos = offset
+        elif whence == 1:  # SEEK_CUR
+            self._pos += offset
+        elif whence == 2:  # SEEK_END
+            self._pos = self._size + offset
+        self._pos = max(0, min(self._pos, self._size))
+        return self._pos
+
+    def tell(self) -> int:
+        return self._pos
+
+    def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
+        remaining = self._size - self._pos
+        if remaining <= 0:
+            return 0
+        length = min(len(b), remaining)
+        try:
+            data = self._bc.download_blob(
+                offset=self._pos,
+                length=length,
+                max_concurrency=self._max_concurrency,
+            ).readall()
+        except OSError:
+            raise
+        except Exception as exc:
+            # Azure SDK raises AzureError subclasses (HttpResponseError,
+            # ResourceNotFoundError, etc.) which are not OSError.
+            # Re-raise as OSError so _ErrorMappingStream can catch and
+            # classify them via the backend's _classify() method.
+            raise OSError(str(exc)) from exc
+        n = len(data)
+        b[:n] = data
+        self._pos += n
+        return n
+
+    def close(self) -> None:
+        if not self.closed:
+            self._bc = None
+            super().close()
+
+
 class AzureBackend(Backend):
     """Azure Storage backend.
 
@@ -221,6 +286,18 @@ class AzureBackend(Backend):
             downloader = bc.download_blob(max_concurrency=self._max_concurrency)
             raw = _AzureBinaryIO(downloader.chunks())
             return io.BufferedReader(cast("io.RawIOBase", _ErrorMappingStream(raw, self._classify, path)))
+
+    def read_seekable(self, path: str) -> BinaryIO:
+        with self._errors(path):
+            bc = self._blob_client(path)
+            props = bc.get_blob_properties()
+            file_size = props.size
+            raw = _AzureRangeReader(bc, file_size, self._max_concurrency)
+            # No BufferedReader: PyArrow's PythonFile handles unbuffered
+            # RawIOBase directly, and BufferedReader's seek-invalidates-buffer
+            # behavior would turn each PythonFile.read_at() into a new HTTP
+            # request even for adjacent reads. Matches S3PyArrowBackend pattern.
+            return cast("BinaryIO", _ErrorMappingStream(raw, self._classify, path))
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
@@ -740,8 +817,14 @@ class AzureBackend(Backend):
             raise self._classify(exc, path) from None
 
     def _classify(self, exc: Exception, path: str) -> RemoteStoreError:
-        """Classify an Azure SDK exception into a remote_store error type."""
+        """Classify an Azure SDK exception into a remote_store error type.
+
+        When called via ``_ErrorMappingStream`` on an ``_AzureRangeReader``,
+        the exception may be an ``OSError`` wrapping the original Azure SDK
+        exception (via ``__cause__``).  Unwrap before matching.
+        """
         from azure.core.exceptions import (
+            AzureError,
             ClientAuthenticationError,
             HttpResponseError,
             ResourceExistsError,
@@ -749,6 +832,16 @@ class AzureBackend(Backend):
             ServiceRequestError,
             ServiceResponseError,
         )
+
+        # Unwrap OSError wrapper from _AzureRangeReader.readinto().
+        # Only _AzureRangeReader does `raise OSError(...) from exc` — the
+        # chunked _AzureBinaryIO path (read()) does not, so this branch
+        # only activates for range-reader errors in practice.
+        # Narrowed to AzureError to avoid misclassifying genuine OS-level
+        # OSErrors that happen to carry a __cause__.
+
+        if isinstance(exc, OSError) and isinstance(exc.__cause__, AzureError):
+            exc = exc.__cause__
 
         if isinstance(exc, ResourceNotFoundError):
             return NotFound(f"Not found: {path}", path=path, backend=self.name)

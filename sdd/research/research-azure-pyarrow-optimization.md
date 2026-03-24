@@ -597,7 +597,83 @@ Backlog item: **ID-102**.
 
 ---
 
-## 8. References
+## 8. Benchmark Results (Phase 1 Implementation)
+
+**Date:** 2026-03-24
+**Setup:** Azurite (Docker) + Toxiproxy for latency simulation. Windows 11,
+Python 3.13, PyArrow 19.0. 50-column int64 Parquet files. 3 iterations per
+measurement, median reported.
+
+**Implementation:** `Store.read_seekable()` on `AzureBackend` returns
+`_AzureRangeReader` (seekable `io.RawIOBase`, one HTTP Range request per
+`readinto()`), wrapped in `_ErrorMappingStream` (no `BufferedReader` --
+matches S3PyArrow pattern). Arrow's `open_input_file()` Tier 3 calls
+`read_seekable()` instead of `read()`. ADR-0017 supersedes ADR-0016;
+`ext.seekable` removed (never released).
+
+### 8.1 Phase 1: File size x selectivity x latency
+
+| File size | Columns | Latency | Tier 2 (ms) | Tier 3 (ms) | Speedup | Reqs |
+|-----------|---------|---------|-------------|-------------|---------|------|
+| ~1 MB | 3/50 | 0 ms | 10 | 11 | 0.96x | 2 |
+| ~1 MB | 3/50 | 30 ms | 44 | 104 | 0.42x | 2 |
+| ~10 MB | 3/50 | 0 ms | 66 | 17 | **3.95x** | 2 |
+| ~10 MB | 3/50 | 10 ms | 69 | 50 | **1.37x** | 2 |
+| ~10 MB | 3/50 | 30 ms | 92 | 116 | 0.79x | 2 |
+| ~10 MB | 10/50 | 0 ms | 59 | 33 | **1.76x** | 2 |
+| ~10 MB | 10/50 | 10 ms | 70 | 60 | **1.17x** | 2 |
+| ~10 MB | 25/50 | 0 ms | 62 | 45 | **1.36x** | 2 |
+| ~100 MB | 3/50 | 0 ms | 724 | 41 | **17.5x** | 2 |
+| ~100 MB | 3/50 | 30 ms | 1358 | 133 | **10.2x** | 2 |
+| ~100 MB | 3/50 | 50 ms | 1745 | 206 | **8.5x** | 2 |
+| ~100 MB | 10/50 | 30 ms | 1330 | 198 | **6.7x** | 2 |
+| ~100 MB | 25/50 | 50 ms | 1753 | 427 | **4.1x** | 3 |
+| ~100 MB | 50/50 | 50 ms | 1744 | 803 | **2.2x** | 5 |
+
+### 8.2 Phase 2: Batch reads (10 MB files, 3/50 columns)
+
+| Files | Latency | Tier 2 (ms) | Tier 3 (ms) | Speedup |
+|-------|---------|-------------|-------------|---------|
+| 1 | 0 ms | 55 | 16 | **3.5x** |
+| 5 | 0 ms | 264 | 78 | **3.4x** |
+| 10 | 0 ms | 525 | 150 | **3.5x** |
+| 10 | 10 ms | 650 | 474 | **1.4x** |
+| 10 | 30 ms | 878 | 1104 | 0.80x |
+
+### 8.3 Key findings
+
+1. **The crossover is file size, not latency.** At ~100 MB, range reader wins
+   in every scenario (16/16), even reading all 50/50 columns at 50 ms latency
+   (2.2x). At ~1 MB, range reader never wins (0/16).
+
+2. **22/48 scenarios won overall.** All wins are at 10 MB+ file sizes with
+   selective column reads or at 100 MB+ regardless of selectivity.
+
+3. **Only 2-5 HTTP Range requests per read.** PyArrow reads the Parquet footer
+   (1 request) then column chunks (1-4 requests depending on selectivity).
+   The `get_blob_properties()` call in `read_seekable()` adds 1 more.
+
+4. **Arrow's materialization threshold (64 MB) is a natural guard.** Files
+   below threshold use Tier 2 (full materialization) and never reach
+   `read_seekable()`. The range reader only activates for files where it wins.
+
+5. **Batch reads scale linearly.** 10 files at 3.5x = same ratio per file, no
+   degradation.
+
+6. **No `BufferedReader` wrapping.** Removing `BufferedReader` was critical --
+   its seek-invalidates-buffer behavior turned each `PythonFile.read_at()` into
+   a separate HTTP request even for adjacent reads.
+
+### 8.4 Decision
+
+The range reader is the **primary implementation**, not a PoC. Ship as-is.
+`AzureFileSystem` (C++ Tier 1) is an optional future optimization track, only
+worth pursuing if benchmarks on real Azure workloads show GIL overhead or I/O
+coalescing gaps that matter for the target audience.
+
+---
+
+## 9. References
 
 - Spec 014: PyArrow FileSystem Adapter (`sdd/specs/014-pyarrow-filesystem-adapter.md`)
 - Spec 011: S3-PyArrow Hybrid Backend (`sdd/specs/011-s3-pyarrow-backend.md`)

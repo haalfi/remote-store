@@ -297,10 +297,9 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
             stream = self._store.read(path)
             # NOTE: Subsequent reads from PythonFile bypass _map_errors(), so
             # mid-read RemoteStoreError from cloud streams would leak unmapped.
-            # Also affects Tier 3 in open_input_file. Currently inert: cloud
-            # backends materialize via Tier 2, LocalBackend raises OSError
-            # directly. Future seekable cloud streams would need an
-            # error-mapping stream wrapper.
+            # Currently inert for open_input_stream: cloud backends' read()
+            # streams are forward-only. open_input_file uses read_seekable()
+            # which wraps in _ErrorMappingStream for Azure range reads.
             try:
                 return pa.PythonFile(stream, mode="r")
             except Exception:  # pragma: no cover
@@ -324,29 +323,16 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                 data = self._store.read_bytes(path)
                 return pa.BufferReader(pa.py_buffer(data))
 
-            # Tier 3: streaming via PythonFile for large seekable files
-            stream = self._store.read(path)
-            if hasattr(stream, "seekable") and stream.seekable():
-                try:
-                    return pa.PythonFile(stream, mode="r")
-                except Exception:  # pragma: no cover
-                    stream.close()
-                    raise
-
-            # Tier 2 fallback: non-seekable large file — materialize with warning
-            log.warning(
-                "Materializing %d-byte file %r into memory because the backend "
-                "stream is not seekable. Consider using a backend with native "
-                "PyArrow support or increasing materialization_threshold.",
-                info.size,
-                path,
-                extra={"op": "open_input_file", "path": path},
-            )
+            # Tier 3: seekable streaming via PythonFile for large files.
+            # read_seekable() returns a backend-optimized seekable stream:
+            # zero-copy passthrough on Local/S3/SFTP, HTTP Range reader on
+            # Azure, SpooledTemporaryFile fallback on HTTP.
+            stream = self._store.read_seekable(path)
             try:
-                data = stream.read()
-            finally:
+                return pa.PythonFile(stream, mode="r")
+            except Exception:  # pragma: no cover
                 stream.close()
-            return pa.BufferReader(pa.py_buffer(data))
+                raise
 
     # endregion
 

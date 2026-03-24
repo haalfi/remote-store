@@ -91,7 +91,7 @@ Complete reference for all public exports of `remote-store`.
 | [ext.otel](extensions/otel.md) | OpenTelemetry bridge for ext.observe |
 | [ext.partition](extensions/partition.md) | Hive-style partition path helpers |
 | [ext.pydantic](extensions/pydantic.md) | Pydantic model to RegistryConfig adapter |
-| [ext.seekable](extensions/seekable.md) | Portable seekable read with SpooledTemporaryFile fallback |
+| [Seekable read](extensions/seekable.md) | Now built into `Store.read_seekable()` |
 | [ext.streams](extensions/streams.md) | Composable BinaryIO wrappers for progress and checksums |
 | [ext.transfer](extensions/transfer.md) | Upload, download, and cross-store transfer |
 | [ext.yaml](extensions/yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |

@@ -102,6 +102,9 @@ class ProxyStore(Store):
     def read_bytes(self, path: str) -> bytes:
         return self._inner.read_bytes(path)
 
+    def read_seekable(self, path: str) -> BinaryIO:
+        return self._inner.read_seekable(path)
+
     def read_text(self, path: str, *, encoding: str = "utf-8", errors: str = "strict") -> str:
         return self._inner.read_text(path, encoding=encoding, errors=errors)
 
