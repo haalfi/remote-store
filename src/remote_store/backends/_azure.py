@@ -284,7 +284,11 @@ class AzureBackend(Backend):
             props = bc.get_blob_properties()
             file_size = props.size
             raw = _AzureRangeReader(bc, file_size, self._max_concurrency)
-            return io.BufferedReader(cast("io.RawIOBase", _ErrorMappingStream(raw, self._classify, path)))
+            # No BufferedReader: PyArrow's PythonFile handles unbuffered
+            # RawIOBase directly, and BufferedReader's seek-invalidates-buffer
+            # behavior would turn each PythonFile.read_at() into a new HTTP
+            # request even for adjacent reads. Matches S3PyArrowBackend pattern.
+            return cast("BinaryIO", _ErrorMappingStream(raw, self._classify, path))
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
