@@ -6271,6 +6271,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-29-consolidation-and-code-hygiene-v0190" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 29: Consolidation and Code Hygiene (v0.19.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6912,6 +6923,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-29-consolidation-and-code-hygiene-v0190" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 29: Consolidation and Code Hygiene (v0.19.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7192,15 +7214,15 @@
 </tr>
 <tr>
 <td>Tests</td>
-<td>~1,850 tests, ~17,800 lines</td>
+<td>~1,875 tests, ~16,300 lines</td>
 </tr>
 <tr>
 <td>Specs &amp; docs</td>
-<td>35 specs, 14 ADRs, 4 RFCs</td>
+<td>35 specs, 14 ADRs, 7 RFCs</td>
 </tr>
 <tr>
 <td>Examples</td>
-<td>22 core + 4 cloud + 5 notebooks</td>
+<td>22 core + 4 cloud + 5 notebooks + 2 snippet scripts</td>
 </tr>
 <tr>
 <td>Extensions</td>
@@ -7616,6 +7638,12 @@
 <p>v0.18.0 was the middleware release. ADR-0014 introduced <code>ProxyStore</code> as an internal delegation base for <code>ObservedStore</code> and <code>CachedStore</code>, centralizing the boilerplate that both proxies duplicated. Two new extension modules landed alongside it: <code>ext.streams</code> (composable <code>BinaryIO</code> wrappers — <code>ProgressReader</code>, <code>ProgressWriter</code>, <code>ChecksumReader</code>, <code>ChecksumWriter</code>) and <code>ext.integrity</code> (store-level checksum verification via <code>checksum()</code>, <code>verify()</code>, <code>verify_hex()</code>). The <code>ContentDigest</code> frozen dataclass replaced the informal <code>FileInfo.checksum</code> field with typed <code>digest</code> and <code>etag</code> fields, and S3/Azure backends learned to populate them from server-side checksums.</p>
 <p>The biggest lesson came from the BK-008 Medallion + Dagster showcase — a self-contained example composing four extensions over live MeteoSwiss weather data. AI-generated showcase code had three bugs that only surfaced when running against the real API: wrong data URLs, wrong column names and timestamp formats, and a cache bypass where <code>transfer()</code> uses streaming <code>read()</code> which <code>CachedStore</code> doesn't cache. All three passed type checking and looked plausible in review. <strong>Running the code against live data caught what static analysis and code review could not.</strong> This reinforced the project principle "run it, don't just type-check it" — and extended it to examples and showcases, not just library code.</p>
 <p>The HTTP backend gained HEAD fallback (ID-085): when a CDN blocks HEAD requests with 401/403, the backend retries with <code>GET + Range: bytes=0-0</code> and caches the result. Discovered during live testing against opentransportdata.swiss. The docs site got a purpose-built landing page (ID-090) replacing the README include, and the API reference gained dedicated sections for backends (ID-088) and extensions (ID-089).</p>
+<h3 id="phase-29-consolidation-and-code-hygiene-v0190">Phase 29: Consolidation and Code Hygiene (v0.19.0)<a class="headerlink" href="#phase-29-consolidation-and-code-hygiene-v0190" title="Permanent link">&para;</a></h3>
+<p>v0.19.0 was a housekeeping release — no new features, just making the existing codebase smaller, more consistent, and easier to maintain.</p>
+<p>The biggest theme was <strong>deduplication across three layers.</strong> BK-011 extracted <code>_S3Base</code> from the two S3 backends, consolidating 155 lines of duplicated listing, error handling, and FileInfo construction into a single base class (net −94 lines). BK-012 did the same for extensions: <code>_StreamWrapper</code> in <code>ext/streams.py</code> eliminated close/context-manager boilerplate from four stream wrappers, <code>_run_batch()</code> in <code>ext/batch.py</code> replaced two near-identical sequential/concurrent executors, and <code>_deprecated_alias()</code> in <code>ext/_helpers.py</code> turned three hand-written deprecation wrappers into one-liners. BK-014 then tackled the test suite: 30 of 40 test files were refactored (~17,800 → ~16,300 lines, −8.6%) through parametrization, fixture extraction, and class merging — all while preserving identical coverage.</p>
+<p>The naming pass (BK-010) renamed three extension factory functions (<code>pydantic_to_registry_config</code> → <code>from_pydantic</code>, <code>remote_store_io_manager</code> → <code>dagster_io_manager</code>, <code>cached_store</code> → <code>cache</code>) to match existing <code>from_*</code> and bare-verb patterns. Old names remained as deprecated aliases — a one-line helper <code>_deprecated_alias()</code> (itself a product of BK-012) made this trivial.</p>
+<p>Documentation got the same treatment. ID-057 introduced single-source code snippets (<code>examples/snippets/</code> with pymdownx named regions) so docs and tested code can't diverge. ID-058 automated example doc wrappers via <code>scripts/gen_pages.py</code> — scanning <code>examples/*.py</code>, extracting docstrings, generating pages. BK-013 added <code>## See also</code> sections to all 57 docs pages and linked backend names in comparison tables. And ID-099 consolidated SDD document categories from 7 to 5, merging <code>proposals/</code> into <code>rfcs/</code> and <code>plans/</code> into <code>research/</code>.</p>
+<p><strong>The lesson from this phase is that deduplication compounds.</strong> Each individual change was small, but together they removed ~300 lines of library code and ~1,500 lines of tests while making the codebase more navigable. The <code>_deprecated_alias()</code> helper that made BK-010 trivial only existed because BK-012 created it. The auto-generated example wrappers that eliminated a class of "forgot to add a wrapper" bugs only worked because BK-013 had already established cross-linking conventions. Housekeeping releases aren't exciting, but they create the infrastructure that makes future feature work faster.</p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>
