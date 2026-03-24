@@ -168,15 +168,14 @@ hatch run bench -- --bench-timeout 30
 hatch run bench-cloud -- --bench-timeout 300
 ```
 
-**Latency runs need adjusted settings.** Under simulated latency,
-pytest-benchmark's default `--benchmark-max-time=1.0` still produces
-many rounds on sub-100ms operations, inflating runtime without adding
-statistical value. Use `--benchmark-max-time=0.5` for a measured feel
-without excessive rounds, and raise the timeout to 120s:
+**Latency runs need adjusted settings.** Pedantic benchmarks (delete, move)
+pre-create a pool of files and run one operation per round. The default pool
+size is 200, which is excessive under simulated latency. Use `--pool-size`
+to reduce rounds, and raise the timeout to 120s:
 
 ```bash
 hatch run bench -- --backend s3-latency --network-profile rtt50 \
-  --benchmark-max-time=0.5 --bench-timeout 120
+  --pool-size=20 --bench-timeout 120
 ```
 
 ## Commands

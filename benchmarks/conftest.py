@@ -62,6 +62,12 @@ def pytest_addoption(parser: Any) -> None:
         choices=["clean", "rtt20", "rtt50", "rtt100"],
         help="Named network profile for *-latency backends (clean|rtt20|rtt50|rtt100).",
     )
+    parser.addoption(
+        "--pool-size",
+        default=None,
+        type=int,
+        help="Override pool size for pedantic benchmarks (delete, move). Default: 200.",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -108,6 +114,20 @@ def pytest_collection_modifyitems(config: Any, items: list[Any]) -> None:
     if deselected:
         config.hook.pytest_deselected(items=deselected)
         items[:] = selected
+
+
+# ---------------------------------------------------------------------------
+# Pool size for pedantic benchmarks (delete, move)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def pool_size(request: pytest.FixtureRequest) -> int:
+    """Pool size for pedantic benchmarks. Override with ``--pool-size``."""
+    override = request.config.getoption("--pool-size")
+    if override is not None:
+        return override
+    return 200
 
 
 # ---------------------------------------------------------------------------
