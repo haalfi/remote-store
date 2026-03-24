@@ -289,10 +289,10 @@ def _verdict(rs_seconds: float, raw_seconds: float) -> str:
 
     | Verdict       | Criteria                                |
     |---------------|-----------------------------------------|
-    | Favorable     | remote-store faster than raw SDK        |
+    | Favorable     | >10% faster and >1ms absolute           |
     | Negligible    | delta <10% or <1ms absolute             |
-    | Moderate      | 10-50% and <5ms absolute                |
-    | Visible       | >50% and >5ms absolute                  |
+    | Moderate      | either <=50% or <5ms absolute           |
+    | Visible       | >50% and >=5ms absolute                 |
     """
     if raw_seconds <= 0:
         return ""

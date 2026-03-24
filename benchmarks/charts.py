@@ -294,7 +294,9 @@ def chart_throughput(benchmarks: list[dict[str, Any]], output: Path) -> None:
     if len(backends) == 1:
         axes = [axes]
 
-    size_labels = [label for _, label in THROUGHPUT_SIZES]
+    # Canonical x positions and labels for all sizes.
+    all_sizes = [sz for sz, _ in THROUGHPUT_SIZES]
+    all_labels = [lbl for _, lbl in THROUGHPUT_SIZES]
 
     # Distinct colors: indigo for remote-store, amber for raw SDK.
     _RS_COLOR = "#3F51B5"  # indigo 500
@@ -310,17 +312,18 @@ def chart_throughput(benchmarks: list[dict[str, Any]], output: Path) -> None:
                 size_means = targets.get(target_kind, {})
                 if not size_means:
                     continue
+                # Plot at canonical x positions so all series align.
+                x_positions = []
                 throughputs = []
-                valid_labels = []
-                for sz, lbl in THROUGHPUT_SIZES:
+                for i, sz in enumerate(all_sizes):
                     if sz in size_means and size_means[sz] > 0:
                         mb_per_s = (sz / 1_048_576) / size_means[sz]
+                        x_positions.append(i)
                         throughputs.append(mb_per_s)
-                        valid_labels.append(lbl)
                 if throughputs:
                     label = f"{op_label}{style_suffix}"
                     ax.plot(
-                        range(len(valid_labels)),
+                        x_positions,
                         throughputs,
                         ls,
                         color=color,
@@ -330,8 +333,8 @@ def chart_throughput(benchmarks: list[dict[str, Any]], output: Path) -> None:
                     )
 
         ax.set_title(BACKEND_LABELS.get(backend, backend), fontsize=_LABEL_SIZE)
-        ax.set_xticks(range(len(size_labels)))
-        ax.set_xticklabels(size_labels, fontsize=_TICK_SIZE)
+        ax.set_xticks(range(len(all_labels)))
+        ax.set_xticklabels(all_labels, fontsize=_TICK_SIZE)
         ax.tick_params(axis="y", labelsize=_TICK_SIZE)
         ax.legend(fontsize=8, frameon=False, loc="upper left")
         ax.grid(axis="y", alpha=_GRID_ALPHA)
