@@ -23,7 +23,12 @@ matplotlib.use("Agg")  # non-interactive backend — must precede pyplot import
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-from benchmarks.report import RAW_SDK_TARGET  # noqa: E402
+from benchmarks.report import (  # noqa: E402
+    RAW_SDK_TARGET,
+    _build_comparative_table,
+    _parse_backend_and_target,
+    _test_name,
+)
 
 # ---------------------------------------------------------------------------
 # Shared configuration
@@ -93,52 +98,8 @@ def _apply_style() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Data extraction
+# Data extraction (shared helpers imported from report.py)
 # ---------------------------------------------------------------------------
-
-
-def _test_name(bm: dict[str, Any]) -> str:
-    name = bm["name"]
-    bracket = name.find("[")
-    return name[:bracket] if bracket != -1 else name
-
-
-def _parse_target(bm: dict[str, Any]) -> tuple[str, str] | None:
-    params = bm.get("params", {})
-    if "bench_target" not in params:
-        return None
-    target = params["bench_target"]
-    if isinstance(target, list) and len(target) == 2:
-        return (target[0], target[1])
-    return None
-
-
-def _matches(bm: dict[str, Any], param_filter: dict[str, Any]) -> bool:
-    params = bm.get("params", {})
-    return all(params.get(k) == v for k, v in param_filter.items())
-
-
-def _extract_comparative(
-    benchmarks: list[dict[str, Any]],
-    ops: list[tuple[str, dict[str, Any], str]],
-) -> dict[str, dict[str, dict[str, float]]]:
-    """Return {op_label: {backend: {target_kind: mean_seconds}}}."""
-    result: dict[str, dict[str, dict[str, float]]] = {}
-    for test_prefix, param_filter, label in ops:
-        per_backend: dict[str, dict[str, float]] = {}
-        for bm in benchmarks:
-            if _test_name(bm) != test_prefix:
-                continue
-            if not _matches(bm, param_filter):
-                continue
-            bt = _parse_target(bm)
-            if bt is None:
-                continue
-            backend_type, target_kind = bt
-            per_backend.setdefault(backend_type, {})[target_kind] = bm["stats"]["mean"]
-        if per_backend:
-            result[label] = per_backend
-    return result
 
 
 def _extract_throughput(
@@ -151,7 +112,7 @@ def _extract_throughput(
     for bm in benchmarks:
         if _test_name(bm) != test_prefix:
             continue
-        bt = _parse_target(bm)
+        bt = _parse_backend_and_target(bm)
         if bt is None:
             continue
         backend_type, target_kind = bt
@@ -171,7 +132,7 @@ def _extract_throughput(
 
 def chart_overhead(benchmarks: list[dict[str, Any]], output: Path) -> None:
     """Generate grouped bar chart: overhead % vs raw SDK per backend."""
-    data = _extract_comparative(benchmarks, OVERHEAD_OPS)
+    data = _build_comparative_table(benchmarks, ops=OVERHEAD_OPS)
     op_labels = [label for _, _, label in OVERHEAD_OPS]
     backends = [b for b in COMPARATIVE_BACKENDS if any(b in data.get(op, {}) for op in op_labels)]
 

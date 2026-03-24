@@ -242,10 +242,17 @@ def _parse_backend_and_target(bm: dict[str, Any]) -> tuple[str, str] | None:
 
 def _build_comparative_table(
     benchmarks: list[dict[str, Any]],
+    ops: list[tuple[str, dict[str, Any], str]] | None = None,
 ) -> dict[str, dict[str, dict[str, float]]]:
-    """Build {label: {backend: {target_kind: mean}}} for comparative view."""
+    """Build {label: {backend: {target_kind: mean}}} for comparative view.
+
+    Args:
+        benchmarks: List of benchmark entries from saved JSON.
+        ops: Operation definitions ``(test_prefix, param_filter, label)``.
+            Defaults to ``COMPARATIVE_ROWS``.
+    """
     table: dict[str, dict[str, dict[str, float]]] = {}
-    for test_prefix, param_filter, label in COMPARATIVE_ROWS:
+    for test_prefix, param_filter, label in ops or COMPARATIVE_ROWS:
         per_backend: dict[str, dict[str, float]] = {}
         for bm in benchmarks:
             if _test_name(bm) != test_prefix:
