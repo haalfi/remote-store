@@ -61,7 +61,9 @@ issues a single HTTP Range request via `download_blob(offset=, length=)`.
 - No data is downloaded until `read()` is called.
 - `seek()` and `tell()` update position without I/O.
 - Sequential `read()` calls issue one HTTP request per `readinto()` call.
-- The stream is wrapped in `_ErrorMappingStream` and `BufferedReader`.
+- The stream is wrapped in `_ErrorMappingStream` (no `BufferedReader` -- its
+  seek-invalidation would defeat range reads by turning each
+  `PythonFile.read_at()` into a separate HTTP request).
 
 ## SEEK-007: Azure `read()` Unchanged
 

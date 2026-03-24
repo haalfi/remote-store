@@ -817,7 +817,12 @@ class AzureBackend(Backend):
             raise self._classify(exc, path) from None
 
     def _classify(self, exc: Exception, path: str) -> RemoteStoreError:
-        """Classify an Azure SDK exception into a remote_store error type."""
+        """Classify an Azure SDK exception into a remote_store error type.
+
+        When called via ``_ErrorMappingStream`` on an ``_AzureRangeReader``,
+        the exception may be an ``OSError`` wrapping the original Azure SDK
+        exception (via ``__cause__``).  Unwrap before matching.
+        """
         from azure.core.exceptions import (
             ClientAuthenticationError,
             HttpResponseError,
@@ -826,6 +831,10 @@ class AzureBackend(Backend):
             ServiceRequestError,
             ServiceResponseError,
         )
+
+        # Unwrap OSError wrapper from _AzureRangeReader.readinto()
+        if isinstance(exc, OSError) and isinstance(exc.__cause__, Exception):
+            exc = exc.__cause__
 
         if isinstance(exc, ResourceNotFoundError):
             return NotFound(f"Not found: {path}", path=path, backend=self.name)
