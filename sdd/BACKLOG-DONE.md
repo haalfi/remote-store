@@ -30,6 +30,18 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Streaming & I/O
 
+- [x] **ID-102 — Azure PyArrow column pruning via seekable range reads**
+  `Store.read_seekable()` + `_AzureRangeReader` (HTTP Range per `readinto()`)
+  enables Parquet column pruning on Azure without full-file download. 2–17x
+  speedup for selective reads on 10 MB+ files. Arrow adapter Tier 3 uses
+  `read_seekable()` for files above the materialization threshold.
+  - [x] [Research](research/research-azure-pyarrow-optimization.md) (PR #260)
+  - [x] Phase 1: `_AzureRangeReader`, `Store.read_seekable()`, spec 036,
+    ADR-0017, arrow integration (PR #262)
+  - [x] Phase 2: Benchmarks — column pruning, batch reads, dataset scans.
+    `PythonFile` overhead acceptable. Phases 3–4 not needed.
+    ([Verdict](research/research-azure-pyarrow-optimization.md#9-phase-2-verdict-real-workload-benchmarks))
+
 - [x] **ID-100 — Seekable read capability + extension**
   `Capability.SEEKABLE_READ` flag for backends that always return seekable
   streams (Local, Memory, S3, S3-PyArrow, SFTP). `ext.seekable.seekable_read()`

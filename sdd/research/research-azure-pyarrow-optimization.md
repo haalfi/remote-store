@@ -673,7 +673,69 @@ coalescing gaps that matter for the target audience.
 
 ---
 
-## 9. References
+## 9. Phase 2 Verdict: Real-Workload Benchmarks
+
+**Date:** 2026-03-24
+
+Phase 2 asked: *"benchmark on real workloads (Parquet column pruning, dataset
+scans, Dagster). Decide if `PythonFile` overhead is acceptable."*
+
+### 9.1 Coverage
+
+| Workload | Status | Evidence |
+|----------|--------|----------|
+| Parquet column pruning | Covered | Section 8.1 — 2–17x speedup at 10 MB+, wins in 22/48 scenarios |
+| Batch reads | Covered | Section 8.2 — linear scaling, 3.5x at 0 ms latency |
+| Dataset scans (`ds.dataset()`) | Covered | `bench_azure_pyarrow.py` Phase 3 — `pyarrow.dataset` via `pyarrow_fs()` adapter |
+| Dagster | Deferred | Dagster extension v2 (ID-083) not yet built; no pipeline to benchmark against |
+
+### 9.2 `PythonFile` Overhead Assessment
+
+**Is `PythonFile` GIL overhead a practical bottleneck?** No.
+
+1. **Low request count.** PyArrow issues only 2–5 HTTP Range requests per
+   Parquet file read (footer + column chunks). The GIL is held briefly per
+   `readinto()` call, not during the network I/O itself.
+
+2. **No I/O coalescing gap for typical use.** PyArrow's `pre_buffer=True`
+   coalescing (PARQUET-1820) requires a C++ `RandomAccessFile`. Through
+   `PythonFile`, each `read_at()` becomes a separate HTTP request. However,
+   with only 2–5 requests per file, the coalescing benefit is marginal —
+   there are too few requests to coalesce.
+
+3. **Crossover is file size, not GIL.** The range reader loses at ~1 MB (where
+   full materialization is cheaper than multiple round trips) and wins at
+   10 MB+ regardless of selectivity. This is a data-transfer issue, not a
+   GIL-contention issue.
+
+4. **Arrow's 64 MB materialization threshold is a natural guard.** Files below
+   threshold use Tier 2 (full materialization) and never reach `read_seekable()`.
+   The range reader only activates for files large enough to benefit.
+
+### 9.3 Dataset Scan Compatibility
+
+The `pyarrow.dataset` API (`ds.dataset()`) works correctly through the
+`pyarrow_fs()` adapter with `materialization_threshold=0` (forcing Tier 3 for
+all files). PyArrow's dataset scanner calls `open_input_file()` per file, which
+routes through `read_seekable()` → `_AzureRangeReader`. The dataset API's own
+I/O scheduling (file discovery via `get_file_info_selector`, parallel reads)
+operates normally because the adapter implements the full `FileSystemHandler`
+interface.
+
+### 9.4 Decision
+
+**Phase 3 (spike `AzureFileSystem`) is not needed.** The `PythonFile`-backed
+range reader delivers 2–17x speedup for the target workload (selective Parquet
+reads on 10 MB+ files) with zero new dependencies and ~200 LOC. The only
+scenario where C++ Tier 1 would help is high-concurrency GIL contention or
+I/O coalescing on files with many small column chunks — neither is a realistic
+concern for the target audience (citizen developers, Dagster pipelines).
+
+**ID-102 is complete.** Phases 1–2 shipped. Phases 3–4 are not pursued.
+
+---
+
+## 10. References
 
 - Spec 014: PyArrow FileSystem Adapter (`sdd/specs/014-pyarrow-filesystem-adapter.md`)
 - Spec 011: S3-PyArrow Hybrid Backend (`sdd/specs/011-s3-pyarrow-backend.md`)
