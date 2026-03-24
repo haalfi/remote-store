@@ -24,6 +24,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `read()` issues a single HTTP Range request — no full-file download.
   Enables PyArrow Tier 3 column pruning for Parquet on Azure.
 
+- **Seekable read and cache benchmarks** (ID-103 Phase 4):
+  `test_seekable.py` measures `read_seekable()` cost (open+read, sequential
+  chunks, random seeks) across backends with different seek strategies.
+  `test_cache.py` measures CachedStore cold read (miss) vs warm read (hit)
+  vs uncached baseline.
+
 - **Benchmark charts and user-facing report** (ID-103 Phases 2--3):
   SVG chart generation (`hatch run bench-charts`) for overhead %, overhead
   vs RTT, and throughput by file size. User-facing verdict report

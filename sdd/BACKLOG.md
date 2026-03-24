@@ -59,7 +59,7 @@ Items graduate through the SDD pipeline:
   - [x] Phase 1: Toxiproxy expansion (docker-compose, fixtures, profiles)
   - [x] Phase 2: Chart generation + "worth it?" verdicts in reporting
   - [x] Phase 3: README section + performance guide reframe
-  - [ ] Phase 4: seekable_read() + cache hit/miss benchmarks
+  - [x] Phase 4: seekable_read() + cache hit/miss benchmarks
 
 - [~] **ID-102 — Azure PyArrow column pruning via seekable range reads**
   Enable column pruning for Parquet/PyArrow workloads on Azure via a seekable
