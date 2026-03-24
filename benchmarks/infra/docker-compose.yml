@@ -1,12 +1,19 @@
 # Docker Compose for remote-store backend benchmarking.
 #
-# Starts MinIO (S3-compatible), Azurite (Azure Blob emulator), and an
-# OpenSSH-based SFTP server so benchmarks can run against realistic
-# network services instead of pure in-process mocks.
+# Starts MinIO (S3-compatible), Azurite (Azure Blob emulator), an
+# OpenSSH-based SFTP server, and Toxiproxy (latency simulation) so
+# benchmarks can run against realistic network services instead of
+# pure in-process mocks.
+#
+# Toxiproxy sits in front of Azurite on port 10001, forwarding to
+# azurite:10000. Use ``--latency <ms>`` with pytest to add simulated
+# network latency (default: 0 = passthrough). The Toxiproxy HTTP API
+# is exposed on port 8474 for manual toxic management.
 #
 # Usage:
 #   docker compose up -d
 #   pytest benchmarks/ -v
+#   pytest benchmarks/ -v --backend azure-latency --latency 30
 #   docker compose down -v
 
 services:
@@ -36,6 +43,23 @@ services:
       - "10000:10000"
     healthcheck:
       test: ["CMD", "nc", "-z", "127.0.0.1", "10000"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.12.0
+    ports:
+      - "10001:10001"           # proxied Azurite blob endpoint
+      - "127.0.0.1:8474:8474"  # Toxiproxy HTTP API — localhost only
+    volumes:
+      - ./toxiproxy.json:/config/toxiproxy.json:ro
+    command: -config /config/toxiproxy.json -host 0.0.0.0
+    depends_on:
+      azurite:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/toxiproxy-cli", "list"]
       interval: 5s
       timeout: 5s
       retries: 5
