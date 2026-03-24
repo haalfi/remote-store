@@ -144,7 +144,12 @@ except BaseException:
     raise
 finally:
     stream.close()
-spool.seek(0)
+
+try:
+    spool.seek(0)
+except BaseException:
+    spool.close()
+    raise
 return spool
 ```
 
@@ -314,6 +319,17 @@ Tests should additionally assert that all backends declaring `SEEKABLE_READ`
 actually return seekable streams, but the runtime guard is the primary safety
 net.
 
+### `SpooledTemporaryFile` and `fileno()`
+
+`SpooledTemporaryFile.fileno()` raises `AttributeError` when content is still
+in memory (not rolled to disk). Callers that pass the returned stream to APIs
+requiring a real file descriptor (`mmap.mmap()`, `os.sendfile()`, some C
+extensions) will get a confusing error for files ≤ `max_memory`.
+
+This is a known `SpooledTemporaryFile` limitation. `seekable_read()` guarantees
+`seek()`/`tell()`/`seekable()`, but **not** `fileno()`. This should be
+documented in the docstring and the spec.
+
 ### `SpooledTemporaryFile` on Windows
 
 `SpooledTemporaryFile` uses `tempfile.mkstemp()` internally when spilling to
@@ -348,6 +364,8 @@ closes what they get. Same contract as `Store.read()`.
 8. **Runtime guard test** — If a backend declares `SEEKABLE_READ` but returns
    a non-seekable stream (mocked), the extension falls back to spooling and
    logs a warning.
+9. **`fileno()` limitation test** — Spooled (in-memory) stream raises on
+   `fileno()` access. Verify this is the case so callers know the boundary.
 
 ---
 
