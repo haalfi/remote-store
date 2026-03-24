@@ -130,6 +130,12 @@ stream = store.read(path)
 if stream.seekable():
     return stream                     # already seekable, zero-copy
 
+if store.supports(Capability.SEEKABLE_READ):
+    warnings.warn(
+        f"Backend declares SEEKABLE_READ but stream is not seekable",
+        stacklevel=2,
+    )
+
 spool = SpooledTemporaryFile(max_size=max_memory)
 try:
     shutil.copyfileobj(stream, spool)
@@ -259,7 +265,10 @@ portable wrapper" pattern.
 | `src/remote_store/ext/__init__.py` | Re-export `seekable_read` |
 | `src/remote_store/__init__.py` | Re-export from top-level |
 | `examples/backends/azure_backend.py` | Replace `BytesIO` workaround |
-| `docs-src/api/extensions.md` | Add seekable section |
+| `docs-src/api/extensions/seekable.md` | New per-extension doc page |
+| `docs-src/api/extensions/_nav.yml` | Add entry |
+| `docs-src/api/extensions/index.md` | Add row to extensions table |
+| `README.md` | Add row to extensions table |
 | `CHANGELOG.md` | New capability + extension |
 
 ### Ripple Check (per CLAUDE-REFERENCE.md)
