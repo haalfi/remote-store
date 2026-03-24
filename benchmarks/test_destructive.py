@@ -109,7 +109,7 @@ class TestDirectoryDestructivePerformance:
 
     def test_move_across_subtrees(self, bench_backend: Backend, benchmark: Any, pool_size: int) -> None:
         """Move files from one subtree to another (pre-created pool)."""
-        n = pool_size // 2
+        n = max(pool_size // 2, 1)
         paths: list[str] = []
         for i in range(n):
             p = f"{self._root}/mvpool/f_{i:04d}.txt"
