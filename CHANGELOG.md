@@ -24,9 +24,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `read()` issues a single HTTP Range request — no full-file download.
   Enables PyArrow Tier 3 column pruning for Parquet on Azure.
 
-- **Toxiproxy latency simulation**: Docker benchmark infrastructure gains
-  Toxiproxy sidecar for simulating network latency. New `--latency <ms>`
-  pytest option and `azure-latency` backend for realistic benchmarks.
+- **Toxiproxy latency simulation for all backends** (ID-103 Phase 1):
+  Toxiproxy now proxies all three network backends (MinIO, Azurite, SFTP).
+  New `--network-profile` flag with named profiles (`clean`, `rtt20`,
+  `rtt50`, `rtt100`). New `s3-latency` and `sftp-latency` backend params
+  alongside the existing `azure-latency`.
 
 - **ProxyStore added to API reference** (ID-101): `ProxyStore` is now exported
   from `remote_store` and documented. It remains an internal delegation base by

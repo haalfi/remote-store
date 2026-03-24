@@ -39,6 +39,9 @@ hatch run bench-report-comparative
 | S3-PyArrow | MinIO :9000 | S3PyArrowBackend | - | - |
 | SFTP | OpenSSH :2222 | SFTPBackend | paramiko | sshfs |
 | Azure | Azurite :10000 | AzureBackend | azure-storage-blob | adlfs |
+| S3 (latency) | Toxiproxy :19000 → MinIO | S3Backend | - | - |
+| SFTP (latency) | Toxiproxy :12222 → SFTP | SFTPBackend | - | - |
+| Azure (latency) | Toxiproxy :10001 → Azurite | AzureBackend | - | - |
 
 ## Scenarios
 
@@ -129,6 +132,32 @@ hatch run bench -- --backend s3,sftp
 hatch run bench-standard -- --backend s3,s3-pyarrow
 ```
 
+## Latency Simulation (Toxiproxy)
+
+Toxiproxy sits in front of all three network backends, enabling simulated
+network latency. Use the `--network-profile` flag to apply a named profile:
+
+| Profile | Latency | Jitter | Use case |
+|---------|---------|--------|----------|
+| `clean` | 0 ms | 0 ms | Baseline (passthrough) |
+| `rtt20` | 20 ms | 7 ms | Same-region cloud |
+| `rtt50` | 50 ms | 17 ms | Cross-region |
+| `rtt100` | 100 ms | 33 ms | Cross-continent |
+
+```bash
+# Run S3 with 50ms simulated latency
+hatch run bench -- --backend s3-latency --network-profile rtt50
+
+# Run all latency backends with 100ms
+hatch run bench -- --backend s3-latency,sftp-latency,azure-latency --network-profile rtt100
+```
+
+The `-latency` backend variants connect through Toxiproxy. The non-latency
+variants connect directly. Both can run in the same session.
+
+The legacy `--latency <ms>` flag still works for Azure-only backward
+compatibility but `--network-profile` is preferred.
+
 ## Timeout Watchdog
 
 Each test has a timeout watchdog (default: 60s docker, 120s cloud). Override
@@ -172,6 +201,12 @@ hatch run bench-cloud -- --bench-timeout 300
 | `BENCH_SFTP_PORT` | 2222 | SFTP port |
 | `BENCH_SFTP_USER` | benchuser | SFTP username |
 | `BENCH_SFTP_PASS` | benchpass | SFTP password |
+| `BENCH_TOXIPROXY_HOST` | 127.0.0.1 | Toxiproxy API host |
+| `BENCH_TOXIPROXY_API_PORT` | 8474 | Toxiproxy API port |
+| `BENCH_TOXIPROXY_AZURITE_PORT` | 10001 | Proxied Azurite port |
+| `BENCH_MINIO_PROXY_PORT` | 19000 | Proxied MinIO port |
+| `BENCH_SFTP_PROXY_PORT` | 12222 | Proxied SFTP port |
+| `BENCH_AZURE_MAX_CONCURRENCY` | 1 | Azure max concurrency |
 | `BENCH_LARGE_FILE_MB` | 10 | Large-file test size (MB) |
 | `BENCH_S3_BUCKET` | - | Cloud S3 bucket |
 | `BENCH_AZURE_CONTAINER` | - | Cloud Azure container |
@@ -217,10 +252,12 @@ benchmarks/
   test_listing.py                 # comparative (flat) + RS-only (dir-scale, deep)
   test_destructive.py             # comparative (delete) + RS-only (copy, move)
   test_large_file.py              # remote-store only (memory tracking)
+  _toxiproxy.py                    # Toxiproxy helpers, profiles, connection strings
   report.py                        # summary table generator (bench-report)
   results/
     comparative.md               # generated comparative data (checked in)
   infra/
     docker-compose.yml
+    toxiproxy.json               # proxy definitions (azurite, minio, sftp)
   README.md
 ```

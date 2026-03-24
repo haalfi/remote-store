@@ -56,7 +56,7 @@ Items graduate through the SDD pipeline:
   reframe performance guide for user decisions, add README performance
   section.
   - [x] [Research](research/research-benchmark-suite-v2.md) (PR #263)
-  - [ ] Phase 1: Toxiproxy expansion (docker-compose, fixtures, profiles)
+  - [x] Phase 1: Toxiproxy expansion (docker-compose, fixtures, profiles)
   - [ ] Phase 2: Chart generation + "worth it?" verdicts in reporting
   - [ ] Phase 3: README section + performance guide reframe
   - [ ] Phase 4: seekable_read() + cache hit/miss benchmarks
