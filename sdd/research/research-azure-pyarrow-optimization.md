@@ -145,7 +145,7 @@ the I/O path itself.
 ### 3.2 adlfs (fsspec-based)
 
 **Repository:** github.com/fsspec/adlfs
-**PyPI:** adlfs (~1.3M downloads/week)
+**PyPI:** adlfs (~2.5M downloads/week)
 **Status:** Actively maintained by multiple contributors.
 
 **Strengths:**
