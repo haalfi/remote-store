@@ -6012,10 +6012,71 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#9-references" class="md-nav__link">
+  <a href="#9-phase-2-verdict-real-workload-benchmarks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        9. References
+        9. Phase 2 Verdict: Real-Workload Benchmarks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Phase 2 Verdict: Real-Workload Benchmarks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Coverage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-pythonfile-overhead-assessment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 PythonFile Overhead Assessment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93-dataset-scan-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 Dataset Scan Compatibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#94-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.4 Decision
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. References
       
     </span>
   </a>
@@ -7004,10 +7065,71 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#9-references" class="md-nav__link">
+  <a href="#9-phase-2-verdict-real-workload-benchmarks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        9. References
+        9. Phase 2 Verdict: Real-Workload Benchmarks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Phase 2 Verdict: Real-Workload Benchmarks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Coverage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-pythonfile-overhead-assessment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 PythonFile Overhead Assessment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93-dataset-scan-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 Dataset Scan Compatibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#94-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.4 Decision
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. References
       
     </span>
   </a>
@@ -8006,7 +8128,87 @@ matches S3PyArrow pattern). Arrow's <code>open_input_file()</code> Tier 3 calls
 worth pursuing if benchmarks on real Azure workloads show GIL overhead or I/O
 coalescing gaps that matter for the target audience.</p>
 <hr />
-<h2 id="9-references">9. References<a class="headerlink" href="#9-references" title="Permanent link">&para;</a></h2>
+<h2 id="9-phase-2-verdict-real-workload-benchmarks">9. Phase 2 Verdict: Real-Workload Benchmarks<a class="headerlink" href="#9-phase-2-verdict-real-workload-benchmarks" title="Permanent link">&para;</a></h2>
+<p><strong>Date:</strong> 2026-03-24</p>
+<p>Phase 2 asked: <em>"benchmark on real workloads (Parquet column pruning, dataset
+scans, Dagster). Decide if <code>PythonFile</code> overhead is acceptable."</em></p>
+<h3 id="91-coverage">9.1 Coverage<a class="headerlink" href="#91-coverage" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Workload</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Parquet column pruning</td>
+<td>Covered</td>
+<td>Section 8.1 — 2–17x speedup at 10 MB+, wins in 22/48 scenarios</td>
+</tr>
+<tr>
+<td>Batch reads</td>
+<td>Covered</td>
+<td>Section 8.2 — linear scaling, 3.5x at 0 ms latency</td>
+</tr>
+<tr>
+<td>Dataset scans (<code>ds.dataset()</code>)</td>
+<td>Covered</td>
+<td><code>bench_azure_pyarrow.py</code> Phase 3 — <code>pyarrow.dataset</code> via <code>pyarrow_fs()</code> adapter</td>
+</tr>
+<tr>
+<td>Dagster</td>
+<td>Deferred</td>
+<td>Dagster extension v2 (ID-083) not yet built; no pipeline to benchmark against</td>
+</tr>
+</tbody>
+</table>
+<h3 id="92-pythonfile-overhead-assessment">9.2 <code>PythonFile</code> Overhead Assessment<a class="headerlink" href="#92-pythonfile-overhead-assessment" title="Permanent link">&para;</a></h3>
+<p><strong>Is <code>PythonFile</code> GIL overhead a practical bottleneck?</strong> No.</p>
+<ol>
+<li>
+<p><strong>Low request count.</strong> PyArrow issues only 2–5 HTTP Range requests per
+   Parquet file read (footer + column chunks). The GIL is held briefly per
+   <code>readinto()</code> call, not during the network I/O itself.</p>
+</li>
+<li>
+<p><strong>No I/O coalescing gap for typical use.</strong> PyArrow's <code>pre_buffer=True</code>
+   coalescing (PARQUET-1820) requires a C++ <code>RandomAccessFile</code>. Through
+   <code>PythonFile</code>, each <code>read_at()</code> becomes a separate HTTP request. However,
+   with only 2–5 requests per file, the coalescing benefit is marginal —
+   there are too few requests to coalesce.</p>
+</li>
+<li>
+<p><strong>Crossover is file size, not GIL.</strong> The range reader loses at ~1 MB (where
+   full materialization is cheaper than multiple round trips) and wins at
+   10 MB+ regardless of selectivity. This is a data-transfer issue, not a
+   GIL-contention issue.</p>
+</li>
+<li>
+<p><strong>Arrow's 64 MB materialization threshold is a natural guard.</strong> Files below
+   threshold use Tier 2 (full materialization) and never reach <code>read_seekable()</code>.
+   The range reader only activates for files large enough to benefit.</p>
+</li>
+</ol>
+<h3 id="93-dataset-scan-compatibility">9.3 Dataset Scan Compatibility<a class="headerlink" href="#93-dataset-scan-compatibility" title="Permanent link">&para;</a></h3>
+<p>The <code>pyarrow.dataset</code> API (<code>ds.dataset()</code>) works correctly through the
+<code>pyarrow_fs()</code> adapter with <code>materialization_threshold=0</code> (forcing Tier 3 for
+all files). PyArrow's dataset scanner calls <code>open_input_file()</code> per file, which
+routes through <code>read_seekable()</code> → <code>_AzureRangeReader</code>. The dataset API's own
+I/O scheduling (file discovery via <code>get_file_info_selector</code>, parallel reads)
+operates normally because the adapter implements the full <code>FileSystemHandler</code>
+interface.</p>
+<h3 id="94-decision">9.4 Decision<a class="headerlink" href="#94-decision" title="Permanent link">&para;</a></h3>
+<p><strong>Phase 3 (spike <code>AzureFileSystem</code>) is not needed.</strong> The <code>PythonFile</code>-backed
+range reader delivers 2–17x speedup for the target workload (selective Parquet
+reads on 10 MB+ files) with zero new dependencies and ~200 LOC. The only
+scenario where C++ Tier 1 would help is high-concurrency GIL contention or
+I/O coalescing on files with many small column chunks — neither is a realistic
+concern for the target audience (citizen developers, Dagster pipelines).</p>
+<p><strong>ID-102 is complete.</strong> Phases 1–2 shipped. Phases 3–4 are not pursued.</p>
+<hr />
+<h2 id="10-references">10. References<a class="headerlink" href="#10-references" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Spec 014: PyArrow FileSystem Adapter (<code>sdd/specs/014-pyarrow-filesystem-adapter.md</code>)</li>
 <li>Spec 011: S3-PyArrow Hybrid Backend (<code>sdd/specs/011-s3-pyarrow-backend.md</code>)</li>
