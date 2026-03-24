@@ -25,8 +25,8 @@ at runtime before calling an operation.
 **Near-full (9/10):** Memory and SFTP lack native `GLOB`. Use the portable
 fallback `ext.glob.glob_files()` instead — see the
 [Glob Pattern Matching](glob-pattern-matching.md) guide.
-Azure lacks `SEEKABLE_READ` (forward-only chunk iterator). Use
-`ext.seekable.seekable_read()` for portable seekable reads.
+Azure lacks `SEEKABLE_READ` (forward-only chunk iterator) but supports
+`Store.read_seekable()` via an optimized HTTP Range reader.
 
 **Partial (2/10):** HTTP supports only `READ` and `METADATA` (read-only backend).
 

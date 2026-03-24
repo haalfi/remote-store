@@ -85,6 +85,37 @@ class Store:
         self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
         return self._backend.read_bytes(self._require_file_path(path))
 
+    def read_seekable(self, path: str) -> BinaryIO:
+        """Return a seekable binary stream for random-access reading.
+
+        Always returns a seekable stream.  On backends that natively
+        return seekable streams from ``read()``, this is zero-overhead.
+        On other backends (Azure, HTTP), the backend provides an
+        optimized seekable implementation (e.g. HTTP Range requests)
+        or falls back to spooling into a temporary file.
+
+        Use ``read()`` for sequential streaming.  Use ``read_seekable()``
+        when you need ``seek()`` / ``tell()`` -- for example, when
+        passing the stream to PyArrow or other analytical readers.
+
+        Args:
+            path: Store-relative file path.
+
+        Returns:
+            A seekable binary stream positioned at byte 0.
+
+        Raises:
+            NotFound: If the file does not exist.
+            InvalidPath: If *path* is empty.
+        """
+        log.debug(
+            "read_seekable path=%r",
+            path,
+            extra={"op": "read_seekable", "path": path, "backend": self._backend.name},
+        )
+        self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
+        return self._backend.read_seekable(self._require_file_path(path))
+
     def read_text(self, path: str, *, encoding: str = "utf-8", errors: str = "strict") -> str:
         """Read the entire file and decode it as text.
 

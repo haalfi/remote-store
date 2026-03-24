@@ -167,7 +167,7 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Via `posix_rename` on most OpenSSH servers; falls back to copy+delete.
 
-All backends except HTTP support read, write, delete, list, copy, move, and metadata. The HTTP backend is read-only (`{READ, METADATA}`). Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback `ext.glob.glob_files()`. Seekable reads are native on Local, Memory, S3, S3-PyArrow, and SFTP; for Azure and HTTP use `ext.seekable.seekable_read()`. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
+All backends except HTTP support read, write, delete, list, copy, move, and metadata. The HTTP backend is read-only (`{READ, METADATA}`). Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback `ext.glob.glob_files()`. Seekable reads are available on all backends via `Store.read_seekable()` — zero-overhead on seekable backends, HTTP Range reader on Azure, spool fallback on HTTP. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
 
 ## Store API
 
@@ -206,7 +206,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Observability hooks | *(none)* | Callback-based instrumentation for logging, metrics, and tracing |
 | OpenTelemetry bridge | `remote-store[otel]` | Pre-built OTel spans and metrics for Store operations |
 | Caching middleware | *(none)* | TTL-based read cache with automatic invalidation on mutations |
-| Seekable read | *(none)* | Portable seekable stream wrapper with SpooledTemporaryFile fallback |
+| Seekable read | *(none)* | `Store.read_seekable()` — backend-optimized seekable streams (built-in) |
 | Stream wrappers | *(none)* | Composable BinaryIO wrappers for progress tracking and checksums |
 | Integrity helpers | *(none)* | Checksum computation and verification over Store's public API |
 | Dagster IO manager | `remote-store[dagster]` | Use any Store as a Dagster IOManager with pluggable serialization |

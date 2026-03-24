@@ -1,9 +1,13 @@
-# ext.seekable
+# Seekable Read
 
-::: remote_store.ext.seekable
+Seekable read is built into the Store API via `Store.read_seekable()`.
+See the [Store API reference](../store.md) for method documentation.
+
+`ext.seekable` was removed before its first release — its functionality
+is now part of the core API (ADR-0017).
 
 ## See also
 
-- [Streaming I/O spec](https://github.com/haalfi/remote-store/blob/master/sdd/specs/006-streaming-io.md) — SIO-008 seekable read capability
-- [Seekable read spec](https://github.com/haalfi/remote-store/blob/master/sdd/specs/036-seekable-read.md) — SEEK-001 through SEEK-009
+- [Seekable read spec](https://github.com/haalfi/remote-store/blob/master/sdd/specs/036-seekable-read.md) — SEEK-001 through SEEK-012
+- [ADR-0017](https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0017-seekable-read-on-store-api.md) — Store-level read_seekable() design
 - [ext.streams](streams.md) — composable BinaryIO wrappers for progress and checksums

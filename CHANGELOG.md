@@ -6,14 +6,27 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Changed
+
+- **Seekable read promoted to Store API** (ID-100, ID-102): New
+  `Store.read_seekable()` method — always returns a seekable stream,
+  backend-optimized. On seekable backends (Local, S3, SFTP) it's
+  zero-overhead passthrough. On Azure it returns `_AzureRangeReader`
+  (HTTP Range requests per read — ideal for PyArrow column pruning).
+  On HTTP it spools to `SpooledTemporaryFile`. Replaces
+  `ext.seekable.seekable_read()` (removed, never released).
+  ADR-0017 supersedes ADR-0016. Spec 036 revised.
+
 ### Added
 
-- **Seekable read capability + extension** (ID-100): New `Capability.SEEKABLE_READ`
-  flag for backends that always return seekable streams (Local, Memory, S3,
-  S3-PyArrow, SFTP). New `ext.seekable.seekable_read()` portable wrapper:
-  returns seekable streams on any backend — zero-copy passthrough when native,
-  `SpooledTemporaryFile` fallback for Azure/HTTP. Replaces the
-  `read_bytes() + BytesIO` anti-pattern. ADR-0016, spec 036.
+- **Azure range reader** (ID-102): `AzureBackend.read_seekable()` returns
+  a seekable stream backed by `download_blob(offset=, length=)`. Each
+  `read()` issues a single HTTP Range request — no full-file download.
+  Enables PyArrow Tier 3 column pruning for Parquet on Azure.
+
+- **Toxiproxy latency simulation**: Docker benchmark infrastructure gains
+  Toxiproxy sidecar for simulating network latency. New `--latency <ms>`
+  pytest option and `azure-latency` backend for realistic benchmarks.
 
 - **ProxyStore added to API reference** (ID-101): `ProxyStore` is now exported
   from `remote_store` and documented. It remains an internal delegation base by

@@ -7,7 +7,7 @@ All I/O in `remote_store` is streaming-first. Read operations return `BinaryIO` 
 ## SIO-001: Streaming Reads
 
 **Invariant:** `Backend.read(path)` returns a `BinaryIO` stream positioned at the start.
-**Postconditions:** The caller is responsible for consuming and closing the stream. The returned stream is not guaranteed to be seekable. Seekability is a backend-level property (e.g. local files are seekable, HTTP-based streams typically are not), not a Store API contract. Callers that require seekability should use `read_bytes()` and wrap in `BytesIO`.
+**Postconditions:** The caller is responsible for consuming and closing the stream. The returned stream is not guaranteed to be seekable. Seekability is a backend-level property (e.g. local files are seekable, HTTP-based streams typically are not), not a Store API contract. Callers that require seekability should use `Store.read_seekable()`.
 **Example:**
 ```python
 stream = backend.read("data.bin")
@@ -47,5 +47,5 @@ chunk = stream.read(4096)
 ## SIO-008: Seekable Read Capability
 
 **Invariant:** `Capability.SEEKABLE_READ` indicates that `Backend.read()` always returns a seekable stream (`stream.seekable()` is `True`).
-**Postconditions:** This is a static guarantee — callers can check `store.supports(Capability.SEEKABLE_READ)` once at setup time instead of checking every stream. For portable seekable reads across all backends, use `ext.seekable.seekable_read()`.
-**See also:** [036-seekable-read.md](036-seekable-read.md), [ADR-0016](../adrs/0016-seekable-read-three-tier-design.md).
+**Postconditions:** This is a static guarantee — callers can check `store.supports(Capability.SEEKABLE_READ)` once at setup time instead of checking every stream. All backends support `Store.read_seekable()` regardless of this capability — the capability indicates zero-overhead (no spooling needed).
+**See also:** [036-seekable-read.md](036-seekable-read.md), [ADR-0017](../adrs/0017-seekable-read-on-store-api.md).

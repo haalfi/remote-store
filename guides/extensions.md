@@ -13,7 +13,6 @@ on top of the core Store API.
 | [`ext.integrity`](api/extensions/integrity.md) | *(none)* | Checksum computation and verification helpers | — | — |
 | [`ext.observe`](api/extensions/observe.md) | *(none)* | Callback-based observability hooks for Store operations | [Guide](observe.md) | [Example](examples/observe-hooks.md) |
 | [`ext.partition`](api/extensions/partition.md) | *(none)* | Hive-style partition path helpers | — | — |
-| [`ext.seekable`](api/extensions/seekable.md) | *(none)* | Portable seekable read with SpooledTemporaryFile fallback | — | — |
 | [`ext.streams`](api/extensions/streams.md) | *(none)* | Composable BinaryIO wrappers for progress and checksums | — | — |
 | [`ext.transfer`](api/extensions/transfer.md) | *(none)* | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](examples/transfer-operations.md) |
 | [`ext.arrow`](api/extensions/arrow.md) | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](examples/pyarrow-adapter.md) |
@@ -27,7 +26,7 @@ on top of the core Store API.
 ### Always-available extensions (pure Python)
 
 `ext.batch`, `ext.cache`, `ext.glob`, `ext.integrity`, `ext.observe`,
-`ext.partition`, `ext.seekable`, `ext.streams`, and `ext.transfer`
+`ext.partition`, `ext.streams`, and `ext.transfer`
 have no extra dependencies. They are re-exported from the top-level package:
 
 ```python
@@ -36,7 +35,6 @@ from remote_store import cache                   # ext.cache
 from remote_store import checksum, verify       # ext.integrity
 from remote_store import partition_path, parse_partition  # ext.partition
 from remote_store import ProgressReader, ChecksumReader   # ext.streams
-from remote_store import seekable_read                    # ext.seekable
 ```
 
 Or import from the extension module directly:
@@ -48,10 +46,12 @@ from remote_store.ext.glob import glob_files
 from remote_store.ext.integrity import checksum, verify
 from remote_store.ext.observe import observe
 from remote_store.ext.partition import partition_path, parse_partition
-from remote_store.ext.seekable import seekable_read
 from remote_store.ext.streams import ProgressReader, ChecksumReader
 from remote_store.ext.transfer import upload
 ```
+
+Seekable reads are built into the core API via `Store.read_seekable()` —
+no extension import needed.
 
 ### Optional-dependency extensions
 

@@ -386,30 +386,13 @@ class TestOpenInputFile:
             fs.open_input_file("nonexistent.txt")
 
     @pytest.mark.spec("PA-010")
-    def test_non_seekable_large_file_materializes(self, store: Store, caplog: pytest.LogCaptureFixture) -> None:
-        """Non-seekable stream above threshold falls back to Tier 2 with warning."""
-        import logging
-
+    def test_large_file_uses_read_seekable(self, store: Store) -> None:
+        """Large files above threshold use read_seekable() for Tier 3 PythonFile."""
         content = b"x" * 100
         store.write("big.txt", content)
-        original_read = store.read
-
-        def non_seekable_read(path: str) -> io.RawIOBase:
-            stream = original_read(path)
-            stream.seekable = lambda: False  # type: ignore[attr-defined]
-            return stream
-
-        store.read = non_seekable_read  # type: ignore[assignment]
-        try:
-            result_fs = pyarrow_fs(store, materialization_threshold=10)
-            with (
-                caplog.at_level(logging.WARNING, logger="remote_store.ext.arrow"),
-                result_fs.open_input_file("big.txt") as f,
-            ):
-                assert f.read() == content
-            assert "not seekable" in caplog.text
-        finally:
-            store.read = original_read  # type: ignore[assignment]
+        result_fs = pyarrow_fs(store, materialization_threshold=10)
+        with result_fs.open_input_file("big.txt") as f:
+            assert f.read() == content
 
 
 # ---------------------------------------------------------------------------

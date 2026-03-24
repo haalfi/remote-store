@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import abc
+import shutil
+import tempfile
 from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._errors import CapabilityNotSupported
@@ -16,6 +18,17 @@ if TYPE_CHECKING:
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
+
+
+class _SeekableSpool(tempfile.SpooledTemporaryFile):  # type: ignore[type-arg]
+    """SpooledTemporaryFile subclass that exposes ``seekable()``.
+
+    ``SpooledTemporaryFile`` gained ``seekable()`` in Python 3.11.
+    This subclass adds it for Python 3.10 compatibility.
+    """
+
+    def seekable(self) -> bool:
+        return True
 
 
 class Backend(abc.ABC):
@@ -95,6 +108,41 @@ class Backend(abc.ABC):
         Raises:
             NotFound: If the file does not exist.
         """
+
+    def read_seekable(self, path: str) -> BinaryIO:
+        """Open a file for random-access reading and return a seekable stream.
+
+        The default implementation delegates to ``read()``.  If the returned
+        stream is already seekable, it is returned as-is.  Otherwise, the
+        stream is spooled into a ``SpooledTemporaryFile`` (up to 8 MB in
+        RAM, beyond that on disk) and returned positioned at byte 0.
+
+        Backends MAY override to provide an optimized implementation.
+        For example, ``AzureBackend`` returns a range reader that issues
+        HTTP Range requests on each ``read()`` call.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            A seekable binary stream positioned at byte 0.
+
+        Raises:
+            NotFound: If the file does not exist.
+        """
+        stream = self.read(path)
+        if stream.seekable():
+            return stream
+        spool: BinaryIO = _SeekableSpool(max_size=8 * 1024 * 1024)  # type: ignore[assignment]
+        try:
+            shutil.copyfileobj(stream, spool)
+        except BaseException:
+            spool.close()
+            raise
+        finally:
+            stream.close()
+        spool.seek(0)
+        return spool
 
     @abc.abstractmethod
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:

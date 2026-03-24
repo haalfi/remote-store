@@ -40,10 +40,11 @@ class Capability(enum.Enum):
       Gates ``Store.glob()``. Not all backends support this -- use
       ``ext.glob.glob_files()`` as a portable fallback.
     - ``SEEKABLE_READ`` -- ``Store.read()`` always returns a seekable
-      stream (``stream.seekable()`` is ``True``).  Not all backends
-      support this -- use ``ext.seekable.seekable_read()`` as a
-      portable fallback that spools non-seekable streams to a temp
-      file.
+      stream (``stream.seekable()`` is ``True``).  Backends that
+      declare this capability return seekable streams from both
+      ``read()`` and ``read_seekable()`` with zero overhead.
+      Backends without this capability still support
+      ``read_seekable()`` via an optimized override or spool fallback.
     """
 
     READ = "read"

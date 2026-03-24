@@ -292,6 +292,10 @@ class ObservedStore(ProxyStore):
         with self._observe_op("read_bytes", path, {}):
             return self._inner.read_bytes(path)
 
+    def read_seekable(self, path: str) -> BinaryIO:
+        with self._observe_op("read_seekable", path, {}):
+            return self._inner.read_seekable(path)
+
     def read_text(self, path: str, *, encoding: str = "utf-8", errors: str = "strict") -> str:
         with self._observe_op("read_text", path, {"encoding": encoding}):
             return self._inner.read_text(path, encoding=encoding, errors=errors)
