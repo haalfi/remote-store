@@ -60,8 +60,8 @@ Items graduate through the SDD pipeline:
   access without a new backend class.
   - Done: [research](research/research-azure-pyarrow-optimization.md).
   - Remaining:
-    - Phase 1: `_AzureRangeReader` in `_azure.py` (~50–100 LOC) + PoC
-      measuring bytes transferred / time / memory vs current Tier 2.
+    - Phase 1: `_AzureRangeReader` with dual-mode integration (~150–200
+      LOC) + PoC measuring bytes transferred / time / memory vs Tier 2.
     - Phase 2: benchmark on real workloads (Parquet column pruning, dataset
       scans, Dagster). Decide if `PythonFile` overhead is acceptable.
     - Phase 3 (only if Phase 2 shows need): spike

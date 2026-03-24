@@ -371,8 +371,9 @@ machinery handles everything else:
 3. **Column pruning works**: 3 columns from a 500 MB Parquet file downloads
    ~30 MB instead of 500 MB.
 
-No new backend class. No `FileSystemHandler`. No `unwrap()`. A ~50–100 line
-change to `_azure.py`.
+No new backend class. No `FileSystemHandler`. No `unwrap()`. The core reader
+is ~50 LOC; the dual-mode integration (keeping chunked streaming for
+sequential callers, exposing seekable reads for PyArrow) adds ~100–150 LOC.
 
 ### 5.2 Implementation Sketch
 
@@ -430,10 +431,34 @@ class _AzureRangeReader(io.RawIOBase):
         return n
 ```
 
-`AzureBackend.read()` would return this instead of the current forward-only
-`_AzureBinaryIO`. The change is backward-compatible: callers that read
-sequentially get the same behavior (each `readinto` fetches the next range),
-while callers that seek (PyArrow via `PythonFile.read_at`) get column pruning.
+**Error mapping:** The sketch omits `_ErrorMappingStream` wrapping. Currently
+`read()` returns `BufferedReader(ErrorMappingStream(raw))` — Azure SDK
+exceptions are translated to `RemoteStoreError`. The range reader would let
+`azure.core.exceptions.*` propagate raw. The real implementation must wrap
+`_AzureRangeReader` in `_ErrorMappingStream` (or integrate error mapping
+directly). Notably, `ext/arrow.py` lines 298–303 already flag this concern:
+subsequent reads from `PythonFile` bypass `_map_errors()`, so the range
+reader's error mapping is the last translation boundary.
+
+**Not a drop-in replacement for `read()`:** `_AzureRangeReader.readinto()`
+issues a fresh HTTP Range request per call. When wrapped in `BufferedReader`
+(as the current `read()` does), each call uses the buffer size (default 8 KB)
+— meaning a 100 MB sequential read would issue ~12,800 individual HTTP
+requests instead of the current chunked streaming. This is unacceptable for
+`Store.read()` general-purpose callers.
+
+The implementation needs a **dual-mode approach**:
+- `read()` keeps the current chunked streaming (`_AzureBinaryIO`) for
+  sequential callers — no behavior change.
+- A separate path exposes `_AzureRangeReader` for the PyArrow adapter.
+  Options: (a) a new `Capability.SEEKABLE_READ` flag that `open_input_file`
+  checks, (b) a backend-internal method like `_open_seekable(path)`, or
+  (c) the `ext.seekable` composition point with a range-read implementation.
+
+This raises the complexity estimate from ~50–100 LOC to ~150–200 LOC and
+requires spec-level design for how the seekable path is exposed. The PoC
+(Phase 1) should validate the range-read performance before committing to
+the integration approach.
 
 ### 5.3 What This Does NOT Solve
 
@@ -511,8 +536,10 @@ azure-pyarrow = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"
 
 ### 7.1 Phasing
 
-**Phase 1: Seekable range reader + PoC** (low effort, high value)
-- Add `_AzureRangeReader` to `AzureBackend.read()`. ~50–100 LOC.
+**Phase 1: Seekable range reader + PoC** (moderate effort, high value)
+- Add `_AzureRangeReader` with dual-mode integration (~150–200 LOC):
+  `read()` keeps chunked streaming for sequential callers; a separate
+  seekable path exposes range reads for the PyArrow adapter.
 - Build a PoC that reads a multi-column Parquet file from Azure via the
   `StoreFileSystemHandler` and measures: bytes transferred, time, memory.
 - Compare against current Tier 2 (full materialization) baseline.
@@ -557,7 +584,7 @@ For analytical workloads (Parquet, PyArrow datasets, Dagster):
 | I/O coalescing | No | No | Yes (`ReadRangeCache`) |
 | Large file handling | Tier 2 fallback with warning | Tier 3 streaming | Tier 1 native |
 | New dependencies | — | None | None (ships with PyArrow) |
-| Code complexity | — | ~50–100 LOC in `_azure.py` | New backend class (~300–500 LOC) |
+| Code complexity | — | ~150–200 LOC (dual-mode reader) | New backend class (~300–500 LOC) |
 
 Backlog item: **ID-102**.
 
