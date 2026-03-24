@@ -11,15 +11,20 @@ capability, and a portable `ext.seekable` extension.
 `Store.read()` returns `BinaryIO` but spec SIO-001 explicitly does not
 guarantee seekability. Whether the stream is seekable depends on the backend:
 
-| Backend | Seekable? | Inner type |
-|---------|-----------|------------|
-| Local | Yes | `open()` file handle |
+| Backend | Seekable? | Mechanism |
+|---------|-----------|-----------|
+| Local | Yes | OS file handle |
 | Memory | Yes | `BufferedReader(BytesIO)` |
-| S3 PyArrow | Yes | `_PyArrowBinaryIO` (C++ filesystem) |
+| S3 PyArrow | Yes | PyArrow C++ filesystem (local-like) |
 | SFTP | Yes | paramiko `SFTPFile` (with `seek()` quirk) |
-| S3 (s3fs) | No | HTTP-based streaming handle |
+| S3 (s3fs) | Yes* | fsspec `AbstractBufferedFile` — range requests |
 | Azure | No | Forward-only chunk iterator |
 | HTTP | No | Response body stream |
+
+\* S3 (s3fs) streams are technically seekable — fsspec's `AbstractBufferedFile`
+implements `seek()`/`seekable()` via HTTP range requests. However, seeking is
+not free: each seek may trigger a new HTTP request. See §3 Tier 1 for how the
+capability accounts for this.
 
 The recommended workaround today is:
 
@@ -59,23 +64,30 @@ Neither is acceptable for a library that promises backend independence.
 
 ### Tier 1: Capability Declaration
 
-Add `Capability.SEEKABLE_READ` to the enum. Backends that always return
-seekable streams from `read()` declare this capability:
+Add `Capability.SEEKABLE_READ` to the enum. The capability means the backend
+**always returns seekable streams from `read()`** — see §1 for the per-backend
+seekability table.
 
-| Backend | Declares `SEEKABLE_READ`? | Reason |
-|---------|---------------------------|--------|
-| Local | Yes | OS file handles are seekable |
-| Memory | Yes | BytesIO is seekable |
-| S3 PyArrow | Yes | PyArrow C++ filesystem is seekable |
-| SFTP | Yes | paramiko SFTPFile supports seek/tell |
-| S3 (s3fs) | No | HTTP-based, forward-only |
-| Azure | No | Forward-only chunk adapter |
-| HTTP | No | Response body, forward-only |
+**Capability semantics — "always seekable" vs "technically seekable":**
+
+All backends in the "Yes" column of §1 declare `SEEKABLE_READ`. This includes
+S3 (s3fs), whose streams are seekable via HTTP range requests (fsspec's
+`AbstractBufferedFile`). While seeking on s3fs is not zero-cost like a local
+file, the capability flag means "the stream supports `seek()`/`tell()` and
+`seekable()` returns `True`" — it does not promise that seeking is free.
+
+This matches how `Capability.GLOB` works: some backends implement glob via
+native filesystem calls (Local), others via prefix-optimized listing + client
+filtering (S3, Azure). The capability means "this operation works," not "this
+operation is equally fast everywhere."
+
+Backends that declare `SEEKABLE_READ`: Local, Memory, S3 PyArrow, SFTP,
+S3 (s3fs). Backends that do not: Azure, HTTP.
 
 User code can query: `store.supports(Capability.SEEKABLE_READ)`.
 
 This costs nothing — it's a single enum member and one extra value in the
-capability sets of 4 backends. No new methods, no behavior change.
+capability sets of 5 backends. No new methods, no behavior change.
 
 ### Tier 2: Store-Level Contract Clarification
 
@@ -103,26 +115,27 @@ def seekable_read(
 ) -> BinaryIO:
     """Return a seekable stream for *path*.
 
-    If the store declares ``SEEKABLE_READ``, delegates directly to
-    ``store.read()`` — zero overhead.
-
-    Otherwise, spools the stream into a ``SpooledTemporaryFile``:
-    content up to *max_memory* bytes stays in RAM, beyond that spills
-    to a temporary file on disk. The returned stream is always seekable
-    and positioned at byte 0.
+    If the stream returned by ``store.read()`` is already seekable,
+    returns it directly — zero overhead. Otherwise, spools the stream
+    into a ``SpooledTemporaryFile``: content up to *max_memory* bytes
+    stays in RAM, beyond that spills to a temporary file on disk. The
+    returned stream is always seekable and positioned at byte 0.
     """
 ```
 
 **Algorithm:**
 
 ```
-if store.supports(Capability.SEEKABLE_READ):
-    return store.read(path)           # already seekable, zero-copy
-
 stream = store.read(path)
+if stream.seekable():
+    return stream                     # already seekable, zero-copy
+
 spool = SpooledTemporaryFile(max_size=max_memory)
 try:
     shutil.copyfileobj(stream, spool)
+except BaseException:
+    spool.close()
+    raise
 finally:
     stream.close()
 spool.seek(0)
@@ -135,12 +148,14 @@ return spool
   small files (≤8 MB default) and spills to disk for large ones. This avoids
   the memory bomb of `read_bytes() + BytesIO` while still providing
   seekability.
-- **Zero overhead on seekable backends.** When the capability is declared, no
-  copying happens at all.
+- **Zero overhead on seekable backends.** When the stream is already seekable,
+  no copying happens at all. The runtime `seekable()` check is the authority;
+  the `SEEKABLE_READ` capability is a static hint for callers who want to
+  branch at setup time.
 - **Caller doesn't need to know the backend.** The extension handles the
   branching.
 - **`max_memory` is tunable.** Callers who know their files are small can raise
-  it (or set it to `math.inf` for pure in-memory). Callers with tight memory
+  it (e.g., `sys.maxsize` for always-in-memory). Callers with tight memory
   budgets can lower it to 0 (always spool to disk).
 
 ---
@@ -225,6 +240,7 @@ portable wrapper" pattern.
 | `src/remote_store/backends/_memory.py` | Add to capability set |
 | `src/remote_store/backends/_s3_pyarrow.py` | Add to capability set |
 | `src/remote_store/backends/_sftp.py` | Add to capability set |
+| `src/remote_store/backends/_s3.py` | Add to capability set |
 | `sdd/specs/006-streaming-io.md` | Add SIO-008 for capability |
 | `sdd/specs/003-backend-adapter-contract.md` | Update capability table |
 
@@ -274,13 +290,20 @@ themselves, but that's orthogonal to seekability.
 ### Dynamic Seekability Mismatch
 
 A backend could theoretically return a non-seekable stream even if it declares
-`SEEKABLE_READ`. This would be a backend bug (violating its own capability
-declaration). The extension trusts the capability flag. For defense-in-depth,
-the extension could check `stream.seekable()` at runtime and fall back to
-spooling — but this adds complexity for a scenario that shouldn't happen.
+`SEEKABLE_READ`. Rather than trusting the capability flag blindly, the
+extension always checks `stream.seekable()` at runtime and falls back to
+spooling if it returns `False`. This is a one-line guard with negligible cost
+that catches backend bugs at the exact call site, rather than relying on a test
+suite the user never runs.
 
-**Recommendation:** Trust the capability. Add a debug assertion in tests
-that all backends declaring `SEEKABLE_READ` actually return seekable streams.
+When the fallback triggers unexpectedly, the extension logs a warning so the
+backend bug is visible. The `SEEKABLE_READ` capability still serves its purpose
+as a **static** guarantee for callers who want to branch at setup time without
+reading a stream first.
+
+Tests should additionally assert that all backends declaring `SEEKABLE_READ`
+actually return seekable streams, but the runtime guard is the primary safety
+net.
 
 ### `SpooledTemporaryFile` on Windows
 
@@ -301,7 +324,8 @@ closes what they get. Same contract as `Store.read()`.
 ## 8. Test Strategy
 
 1. **Capability declaration tests** — Assert that Local, Memory, S3 PyArrow,
-   and SFTP declare `SEEKABLE_READ`. Assert that S3, Azure, and HTTP do not.
+   SFTP, and S3 (s3fs) declare `SEEKABLE_READ`. Assert that Azure and HTTP
+   do not.
 2. **Passthrough test** — `seekable_read()` on a seekable backend returns the
    same stream object (no wrapping).
 3. **Spool test** — `seekable_read()` on a non-seekable backend returns a
@@ -312,6 +336,9 @@ closes what they get. Same contract as `Store.read()`.
 6. **Error propagation** — Backend errors during spooling propagate as Store
    errors (not raw OS errors).
 7. **Stream closure** — Original stream is closed after spooling.
+8. **Runtime guard test** — If a backend declares `SEEKABLE_READ` but returns
+   a non-seekable stream (mocked), the extension falls back to spooling and
+   logs a warning.
 
 ---
 
