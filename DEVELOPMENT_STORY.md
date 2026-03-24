@@ -7,9 +7,9 @@ This document chronicles how `remote-store` was built as a collaboration between
 | Metric | Value |
 |--------|-------|
 | Source code | ~10,000 lines (7 backends) |
-| Tests | ~1,850 tests, ~17,800 lines |
-| Specs & docs | 35 specs, 14 ADRs, 4 RFCs |
-| Examples | 22 core + 4 cloud + 5 notebooks |
+| Tests | ~1,875 tests, ~16,300 lines |
+| Specs & docs | 35 specs, 14 ADRs, 7 RFCs |
+| Examples | 22 core + 4 cloud + 5 notebooks + 2 snippet scripts |
 | Extensions | 13 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.dagster`, `ext.glob`, `ext.integrity`, `ext.observe`, `ext.otel`, `ext.partition`, `ext.pydantic`, `ext.streams`, `ext.transfer`, `ext.yaml`) |
 | Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
 | Coverage | >= 95% CI floor (actual in README badge) |
@@ -480,6 +480,18 @@ v0.18.0 was the middleware release. ADR-0014 introduced `ProxyStore` as an inter
 The biggest lesson came from the BK-008 Medallion + Dagster showcase — a self-contained example composing four extensions over live MeteoSwiss weather data. AI-generated showcase code had three bugs that only surfaced when running against the real API: wrong data URLs, wrong column names and timestamp formats, and a cache bypass where `transfer()` uses streaming `read()` which `CachedStore` doesn't cache. All three passed type checking and looked plausible in review. **Running the code against live data caught what static analysis and code review could not.** This reinforced the project principle "run it, don't just type-check it" — and extended it to examples and showcases, not just library code.
 
 The HTTP backend gained HEAD fallback (ID-085): when a CDN blocks HEAD requests with 401/403, the backend retries with `GET + Range: bytes=0-0` and caches the result. Discovered during live testing against opentransportdata.swiss. The docs site got a purpose-built landing page (ID-090) replacing the README include, and the API reference gained dedicated sections for backends (ID-088) and extensions (ID-089).
+
+### Phase 29: Consolidation and Code Hygiene (v0.19.0)
+
+v0.19.0 was a housekeeping release — no new features, just making the existing codebase smaller, more consistent, and easier to maintain.
+
+The biggest theme was **deduplication across three layers.** BK-011 extracted `_S3Base` from the two S3 backends, consolidating 155 lines of duplicated listing, error handling, and FileInfo construction into a single base class (net −94 lines). BK-012 did the same for extensions: `_StreamWrapper` in `ext/streams.py` eliminated close/context-manager boilerplate from four stream wrappers, `_run_batch()` in `ext/batch.py` replaced two near-identical sequential/concurrent executors, and `_deprecated_alias()` in `ext/_helpers.py` turned three hand-written deprecation wrappers into one-liners. BK-014 then tackled the test suite: 30 of 40 test files were refactored (~17,800 → ~16,300 lines, −8.6%) through parametrization, fixture extraction, and class merging — all while preserving identical coverage.
+
+The naming pass (BK-010) renamed three extension factory functions (`pydantic_to_registry_config` → `from_pydantic`, `remote_store_io_manager` → `dagster_io_manager`, `cached_store` → `cache`) to match existing `from_*` and bare-verb patterns. Old names remained as deprecated aliases — a one-line helper `_deprecated_alias()` (itself a product of BK-012) made this trivial.
+
+Documentation got the same treatment. ID-057 introduced single-source code snippets (`examples/snippets/` with pymdownx named regions) so docs and tested code can't diverge. ID-058 automated example doc wrappers via `scripts/gen_pages.py` — scanning `examples/*.py`, extracting docstrings, generating pages. BK-013 added `## See also` sections to all 57 docs pages and linked backend names in comparison tables. And ID-099 consolidated SDD document categories from 7 to 5, merging `proposals/` into `rfcs/` and `plans/` into `research/`.
+
+**The lesson from this phase is that deduplication compounds.** Each individual change was small, but together they removed ~1,800 lines of code and ~500 lines of tests while making the codebase more navigable. The `_deprecated_alias()` helper that made BK-010 trivial only existed because BK-012 created it. The auto-generated example wrappers that eliminated a class of "forgot to add a wrapper" bugs only worked because BK-013 had already established cross-linking conventions. Housekeeping releases aren't exciting, but they create the infrastructure that makes future feature work faster.
 
 ## What Worked Well
 

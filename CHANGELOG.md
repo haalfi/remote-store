@@ -8,27 +8,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [0.19.0] - 2026-03-23
 
-### Internal
+### Changed
 
-- **S3 backend code deduplication** (BK-011): extracted `_S3Base` base class,
-  `_fileinfo` helpers, and error factories from the two S3 backends. Net −94
-  lines, single maintenance point for 155 previously duplicated lines.
-
-- **Extension code deduplication** (BK-012): `_StreamWrapper` base class in
-  `ext/streams.py`, generic `_run_batch()` executor in `ext/batch.py`,
-  `_deprecated_alias()` helper in `ext/_helpers.py`.
-
-- **Test suite deduplication and parametrization** (BK-014): refactored 30 of 40
-  test files (~17,800 → ~16,300 lines, −8.6%) while preserving identical
-  coverage. Parametrized similar tests, extracted shared fixtures, merged
-  single-method classes, and consolidated repeated assertion patterns.
-
-- **SDD document category consolidation** (ID-099): merged `proposals/` →
-  `rfcs/` and `plans/` → `research/`, reducing SDD categories from 7 to 5.
-  Added Document Types table to `000-process.md`.
-
-- **Fixed compound-command PreToolUse hook**: replaced `jq` (not installed) with
-  Python for JSON parsing. Also blocks `git -C` pattern.
+- **Renamed ext factory functions for naming consistency** (BK-010):
+  - `pydantic_to_registry_config()` → `from_pydantic()` — matches the `from_*`
+    pattern used by `from_yaml`, `from_dict`, `from_toml`.
+  - `remote_store_io_manager()` → `dagster_io_manager()` — drops redundant
+    `remote_store_` prefix, matches `pyarrow_fs` pattern.
+  - `cached_store()` → `cache()` — bare verb, matches `observe()`.
+  - Old names remain as deprecated aliases emitting `DeprecationWarning`.
 
 ### Documentation
 
@@ -51,15 +39,27 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **Docstring and API doc fixes**: replaced private-module imports with public
   API paths in docs, completed extensions table, fixed Sphinx-style remnants.
 
-### Changed
+### Internal
 
-- **Renamed ext factory functions for naming consistency** (BK-010):
-  - `pydantic_to_registry_config()` → `from_pydantic()` — matches the `from_*`
-    pattern used by `from_yaml`, `from_dict`, `from_toml`.
-  - `remote_store_io_manager()` → `dagster_io_manager()` — drops redundant
-    `remote_store_` prefix, matches `pyarrow_fs` pattern.
-  - `cached_store()` → `cache()` — bare verb, matches `observe()`.
-  - Old names remain as deprecated aliases emitting `DeprecationWarning`.
+- **S3 backend code deduplication** (BK-011): extracted `_S3Base` base class,
+  `_fileinfo` helpers, and error factories from the two S3 backends. Net −94
+  lines, single maintenance point for 155 previously duplicated lines.
+
+- **Extension code deduplication** (BK-012): `_StreamWrapper` base class in
+  `ext/streams.py`, generic `_run_batch()` executor in `ext/batch.py`,
+  `_deprecated_alias()` helper in `ext/_helpers.py`.
+
+- **Test suite deduplication and parametrization** (BK-014): refactored 30 of 40
+  test files (~17,800 → ~16,300 lines, −8.6%) while preserving identical
+  coverage. Parametrized similar tests, extracted shared fixtures, merged
+  single-method classes, and consolidated repeated assertion patterns.
+
+- **SDD document category consolidation** (ID-099): merged `proposals/` →
+  `rfcs/` and `plans/` → `research/`, reducing SDD categories from 7 to 5.
+  Added Document Types table to `000-process.md`.
+
+- **Fixed compound-command PreToolUse hook**: replaced `jq` (not installed) with
+  Python for JSON parsing. Also blocks `git -C` pattern.
 
 ## [0.18.0] - 2026-03-18
 
