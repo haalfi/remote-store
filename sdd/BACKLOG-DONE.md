@@ -4,6 +4,20 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Benchmarks & Performance
+
+- [x] **ID-103 — Benchmark suite v2: user-decision framing**
+  Expand Toxiproxy to all Docker backends, generate overhead charts,
+  reframe performance guide for user decisions, add README performance
+  section.
+  - [x] [Research](research/research-benchmark-suite-v2.md) (PR #263)
+  - [x] Phase 1: Toxiproxy expansion (docker-compose, fixtures, profiles) (PR #267)
+  - [x] Phase 2: Chart generation + "worth it?" verdicts in reporting (PR #268)
+  - [x] Phase 3: README section + performance guide reframe (PR #268)
+  - [x] Phase 4: seekable_read() + cache hit/miss benchmarks (PR #270)
+
+---
+
 ## Docs & DX
 
 - [x] **BUG-004 — Snippet indentation leaks into docs code blocks**
