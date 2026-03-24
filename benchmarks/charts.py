@@ -17,10 +17,13 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
 
-matplotlib.use("Agg")  # non-interactive backend
+matplotlib.use("Agg")  # non-interactive backend — must precede pyplot import
+
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+
+from benchmarks.report import RAW_SDK_TARGET  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Shared configuration
@@ -44,14 +47,6 @@ OVERHEAD_OPS: list[tuple[str, dict[str, Any], str]] = [
     ("test_list_files", {}, "List 50"),
     ("test_delete", {}, "Delete"),
 ]
-
-# Raw SDK target_kind per backend.
-RAW_SDK_TARGET = {
-    "s3": "boto3_raw",
-    "sftp": "paramiko_raw",
-    "azure": "azure_blob_raw",
-    "local": "pathlib_raw",
-}
 
 # Throughput file sizes.
 THROUGHPUT_SIZES: list[tuple[int, str]] = [
@@ -197,7 +192,7 @@ def chart_overhead(benchmarks: list[dict[str, Any]], output: Path) -> None:
                 pct = ((rs - raw) / raw) * 100
                 overheads.append(pct)
             else:
-                overheads.append(0)
+                overheads.append(float("nan"))
 
         offset = (i - len(backends) / 2 + 0.5) * _BAR_WIDTH
         bars = ax.bar(
@@ -211,7 +206,7 @@ def chart_overhead(benchmarks: list[dict[str, Any]], output: Path) -> None:
         )
         # Value labels on bars.
         for bar, val in zip(bars, overheads, strict=True):
-            if abs(val) > 3:
+            if not np.isnan(val) and abs(val) > 3:
                 va = "bottom" if val >= 0 else "top"
                 ax.text(
                     bar.get_x() + bar.get_width() / 2,

@@ -27,7 +27,7 @@ the SDK directly (often due to connection pooling and caching).
 
 ## What Happens Under Real Latency
 
-Under realistic network round-trip times (20--100ms), the abstraction overhead
+Under realistic network round-trip times (20-100ms), the abstraction overhead
 collapses into the noise. A 1ms overhead on a 100ms round trip is 1% — invisible.
 
 ![Overhead vs network latency](img/benchmarks/overhead-vs-rtt.svg)
@@ -100,7 +100,7 @@ For a condensed view with verdicts, use `hatch run bench-report-user`.
   sub-100us listing times that reflect client-side caching, not real
   storage-layer performance. Similarly, raw boto3 listing without caching
   is slower than remote-store's cached s3fs path.
-- **Delete overhead.** 2--3x vs raw SDK across all backends is expected
+- **Delete overhead.** 2-3x vs raw SDK across all backends is expected
   from the error-mapping layer and not an optimization target.
 - **Streaming reads keep memory constant** regardless of file size.
 

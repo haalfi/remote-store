@@ -298,7 +298,7 @@ def _verdict(rs_seconds: float, raw_seconds: float) -> str:
         return ""
     delta_abs = (rs_seconds - raw_seconds) * 1000  # ms
     delta_pct = ((rs_seconds - raw_seconds) / raw_seconds) * 100
-    if delta_abs < 0:
+    if delta_pct < -10 and delta_abs < -1:
         return "Favorable"
     if abs(delta_pct) < 10 or abs(delta_abs) < 1:
         return "Negligible"
