@@ -14,6 +14,6 @@ extensions ([ADR-0015](https://github.com/haalfi/remote-store/blob/master/sdd/ad
 
 ## See also
 
-- [ext.observe](extensions/observe.md) --- ObservedStore, built on ProxyStore
-- [ext.cache](extensions/cache.md) --- CachedStore, built on ProxyStore
-- [ext.streams](extensions/streams.md) --- composable stream wrappers (an alternative to Store-level proxying)
+- [ext.observe](extensions/observe.md) — ObservedStore, built on ProxyStore
+- [ext.cache](extensions/cache.md) — CachedStore, built on ProxyStore
+- [ext.streams](extensions/streams.md) — composable stream wrappers (an alternative to Store-level proxying)
