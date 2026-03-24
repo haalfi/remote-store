@@ -175,8 +175,8 @@ class TestLargeFileSpool:
         stream = seekable_read(ns_store, "large.bin", max_memory=50)
         assert stream.seekable()
         assert stream.read() == b"x" * 200
-        # SpooledTemporaryFile._rolled is True when spilled to disk
-        assert getattr(stream, "_rolled", False) is True
+        # Content exceeded max_memory, so it spilled to a real file (not BytesIO)
+        assert not isinstance(stream, io.BytesIO)
         stream.close()
 
 
@@ -277,19 +277,28 @@ class TestRuntimeGuard:
 
 
 class TestFilenoLimitation:
-    """SEEK-009: SpooledTemporaryFile fileno() behavior.
+    """SEEK-009: fileno() availability depends on whether content spilled to disk.
 
-    On CPython 3.10+, SpooledTemporaryFile always wraps a real
-    NamedTemporaryFile, so fileno() works even in-memory.
-    The spec documents this as a potential limitation for callers
-    on alternative runtimes; here we verify current CPython behavior.
+    In-memory spool returns BytesIO (no fileno). Disk spool returns a real
+    temp file (has fileno). Callers needing fileno should set max_memory=0.
     """
 
     @pytest.mark.spec("SEEK-009")
-    def test_fileno_on_spooled_stream(self, store: Store) -> None:
+    def test_in_memory_has_no_fileno(self, store: Store) -> None:
         ns_store = _make_non_seekable_store(store)
         stream = seekable_read(ns_store, "test.txt", max_memory=1024 * 1024)
         assert stream.seekable()
-        # CPython 3.10+ SpooledTemporaryFile always has a file descriptor
+        assert isinstance(stream, io.BytesIO)
+        with pytest.raises(io.UnsupportedOperation):
+            stream.fileno()
+        stream.close()
+
+    @pytest.mark.spec("SEEK-009")
+    def test_disk_spool_has_fileno(self, store: Store) -> None:
+        ns_store = _make_non_seekable_store(store)
+        # max_memory=0 forces disk spool
+        stream = seekable_read(ns_store, "large.bin", max_memory=0)
+        assert stream.seekable()
+        assert not isinstance(stream, io.BytesIO)
         assert isinstance(stream.fileno(), int)
         stream.close()

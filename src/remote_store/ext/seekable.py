@@ -19,6 +19,7 @@ with seekable_read(store, "report.csv") as f:
 
 from __future__ import annotations
 
+import io
 import logging
 import shutil
 import tempfile
@@ -46,15 +47,10 @@ def seekable_read(
     """Return a seekable stream for *path*.
 
     If the stream returned by ``store.read()`` is already seekable,
-    returns it directly — zero overhead.  Otherwise, spools the stream
-    into a ``SpooledTemporaryFile``: content up to *max_memory* bytes
-    stays in RAM, beyond that spills to a temporary file on disk.
-    The returned stream is always seekable and positioned at byte 0.
-
-    Note:
-        ``SpooledTemporaryFile.fileno()`` raises when content is still
-        in memory (not rolled to disk).  If you need a real file
-        descriptor, set *max_memory* to ``0``.
+    returns it directly — zero overhead.  Otherwise, spools the content:
+    files up to *max_memory* bytes are kept in RAM (``BytesIO``), larger
+    files spill to a temporary file on disk.  The returned stream is
+    always seekable and positioned at byte 0.
 
     Args:
         store: The Store to read from.
@@ -73,25 +69,42 @@ def seekable_read(
 
     if store.supports(Capability.SEEKABLE_READ):
         warnings.warn(
-            "Backend declares SEEKABLE_READ but stream.seekable() is False; falling back to SpooledTemporaryFile",
+            "Backend declares SEEKABLE_READ but stream.seekable() is False; falling back to spool",
             stacklevel=2,
         )
 
-    spool: tempfile.SpooledTemporaryFile[bytes] = tempfile.SpooledTemporaryFile(  # noqa: SIM115
-        max_size=max_memory,
-    )
+    # Spool into a temporary file, then read into BytesIO.
+    # We avoid SpooledTemporaryFile because it lacks seekable() on
+    # Python < 3.11 and its _rolled behavior varies across versions.
+    # Instead, spool to a real temp file when content exceeds max_memory,
+    # or directly to BytesIO when it fits.
+    chunks: list[bytes] = []
+    total = 0
     try:
-        shutil.copyfileobj(stream, spool)
-    except BaseException:
-        spool.close()
-        raise
-    finally:
+        while True:
+            chunk = stream.read(65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+            if total > max_memory:
+                # Content exceeds threshold — spool remainder to disk.
+                tmp = tempfile.TemporaryFile()  # noqa: SIM115
+                try:
+                    for c in chunks:
+                        tmp.write(c)
+                    chunks.clear()
+                    shutil.copyfileobj(stream, tmp)
+                except BaseException:
+                    tmp.close()
+                    raise
+                finally:
+                    stream.close()
+                tmp.seek(0)
+                return tmp  # type: ignore[return-value]
         stream.close()
-
-    try:
-        spool.seek(0)
     except BaseException:
-        spool.close()
+        stream.close()
         raise
 
-    return spool  # type: ignore[return-value]
+    return io.BytesIO(b"".join(chunks))
