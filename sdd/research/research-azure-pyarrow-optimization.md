@@ -21,8 +21,8 @@ This has three consequences for analytical workloads:
    downloads all 500 MB instead of ~30 MB of column chunks. The C++
    `ReadAt(offset, length)` → HTTP Range request pipeline is unavailable.
 2. **No I/O coalescing.** PyArrow's `pre_buffer=True` optimization
-   (ARROW-8562), which coalesces nearby byte ranges into fewer requests for
-   4–6x speedups, cannot activate without a native filesystem.
+   (PARQUET-1820), which coalesces nearby byte ranges into fewer requests
+   for significant speedups, cannot activate without a native filesystem.
 3. **No streaming for large files.** Files > 64 MB trigger full
    materialization with a memory-cost warning. PR #259 (ID-100) adds
    `ext.seekable` with `SpooledTemporaryFile` fallback, which enables Tier 3
@@ -235,7 +235,7 @@ fs = AzureFileSystem(account_name="mystorageacct")
   Our backend supports `connection_string`, `account_key`,
   `DefaultAzureCredential`, and `ClientSecretCredential` — each needs
   validation against the C++ SDK.
-- **Maturity.** `AzureFileSystem` was added in PyArrow 15.0.0 (Jan 2024) and
+- **Maturity.** `AzureFileSystem` was added in PyArrow 16.0.0 (Apr 2024) and
   is still marked as experimental. The S3 and GCS C++ filesystems are
   significantly more mature.
 - **HNS handling unclear.** Whether the C++ SDK correctly handles hierarchical
@@ -520,7 +520,7 @@ If `AzureFileSystem` proves viable, build an `AzurePyArrowBackend`:
 - Auth coverage: does `AzureFileSystem` support `connection_string`,
   `account_key`, `DefaultAzureCredential`, `ClientSecretCredential`?
 - HNS handling: does the C++ SDK handle both HNS and non-HNS accounts?
-- Maturity: `AzureFileSystem` is experimental (added PyArrow 15.0.0, Jan 2024).
+- Maturity: `AzureFileSystem` is experimental (added PyArrow 16.0.0, Apr 2024).
   Stability for production workloads needs validation.
 
 ### 6.3 Dependencies
@@ -532,7 +532,7 @@ No new PyPI dependencies for either path. The seekable range reader uses
 
 A combined extra would be convenient for the Tier 1 path:
 ```toml
-azure-pyarrow = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0", "pyarrow>=12.0.0"]
+azure-pyarrow = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0", "pyarrow>=16.0.0"]
 ```
 
 ---
@@ -605,7 +605,8 @@ Backlog item: **ID-102**.
 - pyarrowfs-adlgen2: github.com/kaaveland/pyarrowfs-adlgen2 (v0.2.5)
 - adlfs: github.com/fsspec/adlfs
 - obstore: github.com/developmentseed/obstore
-- ARROW-8562: I/O coalescing for Parquet (github.com/apache/arrow/pull/7022)
+- PARQUET-1820: pre_buffer / read coalescing for Parquet (github.com/apache/arrow/pull/6744)
+- ARROW-8562: I/O coalescing parameterization (github.com/apache/arrow/pull/7022)
 - Azure SDK: `download_blob(offset=, length=)` range request support
 - PyArrow AzureFileSystem: arrow.apache.org/docs/python/generated/pyarrow.fs.AzureFileSystem.html
 - PyArrow NativeFile: arrow.apache.org/docs/python/generated/pyarrow.NativeFile.html
