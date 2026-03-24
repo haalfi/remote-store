@@ -134,11 +134,14 @@ def _api_request(url: str, token: str, method: str = "POST", data: dict | None =
         headers=headers,
     )
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
             return json.loads(resp.read())
     except urllib.error.HTTPError as e:
         body = e.read().decode()
         print(f"GitHub API error ({e.code}): {body}", file=sys.stderr)
+        sys.exit(1)
+    except urllib.error.URLError as e:
+        print(f"Network error: {e.reason}", file=sys.stderr)
         sys.exit(1)
 
 
