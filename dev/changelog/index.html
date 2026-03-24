@@ -8314,9 +8314,11 @@
   Enables PyArrow Tier 3 column pruning for Parquet on Azure.</p>
 </li>
 <li>
-<p><strong>Toxiproxy latency simulation</strong>: Docker benchmark infrastructure gains
-  Toxiproxy sidecar for simulating network latency. New <code>--latency &lt;ms&gt;</code>
-  pytest option and <code>azure-latency</code> backend for realistic benchmarks.</p>
+<p><strong>Toxiproxy latency simulation for all backends</strong> (ID-103 Phase 1):
+  Toxiproxy now proxies all three network backends (MinIO, Azurite, SFTP).
+  New <code>--network-profile</code> flag with named profiles (<code>clean</code>, <code>rtt20</code>,
+  <code>rtt50</code>, <code>rtt100</code>). New <code>s3-latency</code> and <code>sftp-latency</code> backend params
+  alongside the existing <code>azure-latency</code>.</p>
 </li>
 <li>
 <p><strong>ProxyStore added to API reference</strong> (ID-101): <code>ProxyStore</code> is now exported
