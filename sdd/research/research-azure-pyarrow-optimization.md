@@ -402,14 +402,18 @@ class _AzureRangeReader(io.RawIOBase):
         if remaining <= 0:
             return 0
         length = min(len(b), remaining)
-        stream = self._bc.download_blob(
+        # Note: download_blob().readall() double-buffers (allocates a
+        # temporary bytes object then copies into b).  The real
+        # implementation should use a _BufferWriter adapter whose
+        # write() copies directly into the target memoryview at an
+        # offset — avoiding the intermediate allocation.  Kept simple
+        # here for sketch clarity.
+        data = self._bc.download_blob(
             offset=self._pos, length=length,
             max_concurrency=self._max_concurrency,
-        )
-        # Stream directly into caller's buffer to avoid a temporary
-        # copy.  writable_buf adapts memoryview/bytearray for readinto.
-        writable_buf = memoryview(b)[:length]
-        n = stream.readinto(writable_buf)
+        ).readall()
+        n = len(data)
+        b[:n] = data
         self._pos += n
         return n
 ```
