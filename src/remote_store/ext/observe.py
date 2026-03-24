@@ -112,6 +112,7 @@ class StoreEvent:
 _OP_HOOK_MAP: dict[str, str] = {
     "read": "on_read",
     "read_bytes": "on_read",
+    "read_seekable": "on_read",
     "read_text": "on_read",
     "write": "on_write",
     "write_text": "on_write",
