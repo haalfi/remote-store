@@ -118,16 +118,20 @@ def _build_jwt(app_id: str, private_key_pem: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _api_request(url: str, token: str, method: str = "POST") -> dict:
+def _api_request(url: str, token: str, method: str = "POST", data: dict | None = None) -> dict:
     """Make an authenticated GitHub API request."""
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    if data is not None:
+        headers["Content-Type"] = "application/json"
     req = urllib.request.Request(
         url,
+        data=json.dumps(data).encode() if data else None,
         method=method,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
+        headers=headers,
     )
     try:
         with urllib.request.urlopen(req) as resp:
@@ -138,11 +142,18 @@ def _api_request(url: str, token: str, method: str = "POST") -> dict:
         sys.exit(1)
 
 
+REPO_NAME = "remote-store"
+
+
 def _get_installation_token(jwt_token: str, installation_id: str) -> str:
-    """Exchange a JWT for a 1-hour installation access token."""
+    """Exchange a JWT for a 1-hour installation access token.
+
+    Explicitly scopes the token to a single repository so that installing
+    the app on additional repos later doesn't silently widen access.
+    """
     url = f"https://api.github.com/app/installations/{installation_id}/access_tokens"
-    data = _api_request(url, jwt_token)
-    return data["token"]
+    result = _api_request(url, jwt_token, data={"repositories": [REPO_NAME]})
+    return result["token"]
 
 
 # ---------------------------------------------------------------------------
