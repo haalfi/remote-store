@@ -3135,7 +3135,7 @@
   <span class="md-ellipsis">
     
   
-    ext.seekable
+    Seekable read
   
 
     
@@ -5245,6 +5245,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017: Seekable Read on Store API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6356,8 +6384,8 @@ at runtime before calling an operation.</p>
 <p><strong>Near-full (9/10):</strong> Memory and SFTP lack native <code>GLOB</code>. Use the portable
 fallback <code>ext.glob.glob_files()</code> instead — see the
 <a href="../glob-pattern-matching/">Glob Pattern Matching</a> guide.
-Azure lacks <code>SEEKABLE_READ</code> (forward-only chunk iterator). Use
-<code>ext.seekable.seekable_read()</code> for portable seekable reads.</p>
+Azure lacks <code>SEEKABLE_READ</code> (forward-only chunk iterator) but supports
+<code>Store.read_seekable()</code> via an optimized HTTP Range reader.</p>
 <p><strong>Partial (2/10):</strong> HTTP supports only <code>READ</code> and <code>METADATA</code> (read-only backend).</p>
 <h2 id="querying-capabilities-at-runtime">Querying capabilities at runtime<a class="headerlink" href="#querying-capabilities-at-runtime" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>

@@ -3130,7 +3130,7 @@
   <span class="md-ellipsis">
     
   
-    ext.seekable
+    Seekable read
   
 
     
@@ -4717,10 +4717,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-002-passthrough-for-seekable-streams" class="md-nav__link">
+  <a href="#seek-002-storeread_seekable-contract" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-002: Passthrough for Seekable Streams
+        SEEK-002: Store.read_seekable() Contract
       
     </span>
   </a>
@@ -4728,10 +4728,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-003-spool-for-non-seekable-streams" class="md-nav__link">
+  <a href="#seek-003-backendread_seekable-default" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-003: Spool for Non-Seekable Streams
+        SEEK-003: Backend.read_seekable() Default
       
     </span>
   </a>
@@ -4739,10 +4739,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-004-large-file-spool-spills-to-disk" class="md-nav__link">
+  <a href="#seek-004-passthrough-for-seekable-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-004: Large File Spool Spills to Disk
+        SEEK-004: Passthrough for Seekable Backends
       
     </span>
   </a>
@@ -4750,10 +4750,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-005-max_memory0-forces-disk-spool" class="md-nav__link">
+  <a href="#seek-005-spool-fallback-for-non-seekable-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-005: max_memory=0 Forces Disk Spool
+        SEEK-005: Spool Fallback for Non-Seekable Backends
       
     </span>
   </a>
@@ -4761,10 +4761,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-006-error-propagation" class="md-nav__link">
+  <a href="#seek-006-azure-range-reader-override" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-006: Error Propagation
+        SEEK-006: Azure Range Reader Override
       
     </span>
   </a>
@@ -4772,10 +4772,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-007-stream-closure-after-spooling" class="md-nav__link">
+  <a href="#seek-007-azure-read-unchanged" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-007: Stream Closure After Spooling
+        SEEK-007: Azure read() Unchanged
       
     </span>
   </a>
@@ -4783,10 +4783,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-008-runtime-guard-for-capability-mismatch" class="md-nav__link">
+  <a href="#seek-008-arrow-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-008: Runtime Guard for Capability Mismatch
+        SEEK-008: Arrow Integration
       
     </span>
   </a>
@@ -4794,10 +4794,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-009-fileno-limitation" class="md-nav__link">
+  <a href="#seek-009-proxystore-forwarding" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-009: fileno() Limitation
+        SEEK-009: ProxyStore Forwarding
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#seek-010-error-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEEK-010: Error Propagation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#seek-011-stream-closure-after-spooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEEK-011: Stream Closure After Spooling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#seek-012-fileno-limitation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEEK-012: fileno() Limitation
       
     </span>
   </a>
@@ -5313,6 +5346,34 @@
     
   
     0016: Seekable Read — Three-Tier Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017: Seekable Read on Store API
   
 
     
@@ -6281,10 +6342,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-002-passthrough-for-seekable-streams" class="md-nav__link">
+  <a href="#seek-002-storeread_seekable-contract" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-002: Passthrough for Seekable Streams
+        SEEK-002: Store.read_seekable() Contract
       
     </span>
   </a>
@@ -6292,10 +6353,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-003-spool-for-non-seekable-streams" class="md-nav__link">
+  <a href="#seek-003-backendread_seekable-default" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-003: Spool for Non-Seekable Streams
+        SEEK-003: Backend.read_seekable() Default
       
     </span>
   </a>
@@ -6303,10 +6364,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-004-large-file-spool-spills-to-disk" class="md-nav__link">
+  <a href="#seek-004-passthrough-for-seekable-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-004: Large File Spool Spills to Disk
+        SEEK-004: Passthrough for Seekable Backends
       
     </span>
   </a>
@@ -6314,10 +6375,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-005-max_memory0-forces-disk-spool" class="md-nav__link">
+  <a href="#seek-005-spool-fallback-for-non-seekable-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-005: max_memory=0 Forces Disk Spool
+        SEEK-005: Spool Fallback for Non-Seekable Backends
       
     </span>
   </a>
@@ -6325,10 +6386,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-006-error-propagation" class="md-nav__link">
+  <a href="#seek-006-azure-range-reader-override" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-006: Error Propagation
+        SEEK-006: Azure Range Reader Override
       
     </span>
   </a>
@@ -6336,10 +6397,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-007-stream-closure-after-spooling" class="md-nav__link">
+  <a href="#seek-007-azure-read-unchanged" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-007: Stream Closure After Spooling
+        SEEK-007: Azure read() Unchanged
       
     </span>
   </a>
@@ -6347,10 +6408,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-008-runtime-guard-for-capability-mismatch" class="md-nav__link">
+  <a href="#seek-008-arrow-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-008: Runtime Guard for Capability Mismatch
+        SEEK-008: Arrow Integration
       
     </span>
   </a>
@@ -6358,10 +6419,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#seek-009-fileno-limitation" class="md-nav__link">
+  <a href="#seek-009-proxystore-forwarding" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SEEK-009: fileno() Limitation
+        SEEK-009: ProxyStore Forwarding
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#seek-010-error-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEEK-010: Error Propagation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#seek-011-stream-closure-after-spooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEEK-011: Stream Closure After Spooling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#seek-012-fileno-limitation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SEEK-012: fileno() Limitation
       
     </span>
   </a>
@@ -6387,34 +6481,87 @@
 
 <h1 id="seekable-read-specification">Seekable Read Specification<a class="headerlink" href="#seekable-read-specification" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>Seekable read adds a <code>Capability.SEEKABLE_READ</code> flag for backends that always return seekable streams from <code>read()</code>, plus a portable <code>ext.seekable.seekable_read()</code> wrapper that guarantees seekability on any backend. Follows the three-tier pattern established in <a href="../../adrs/0009-glob-three-tier-design/">ADR-0009</a> and formalized in <a href="../../adrs/0016-seekable-read-three-tier-design/">ADR-0016</a>.</p>
+<p>Seekable read provides <code>Store.read_seekable()</code> -- a method that always
+returns a seekable <code>BinaryIO</code> stream, backend-optimized for random access.
+Complements <code>Store.read()</code> (which returns the backend's natural stream,
+possibly non-seekable). Follows <a href="../../adrs/0017-seekable-read-on-store-api/">ADR-0017</a>,
+superseding the three-tier extension design in ADR-0016.</p>
 <hr />
 <h2 id="seek-001-capability-declaration">SEEK-001: Capability Declaration<a class="headerlink" href="#seek-001-capability-declaration" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> <code>Capability.SEEKABLE_READ</code> is an enum member. Backends whose <code>read()</code> always returns a seekable stream declare it in their <code>CapabilitySet</code>.
-<strong>Postconditions:</strong> Local, Memory, S3, S3-PyArrow, and SFTP declare <code>SEEKABLE_READ</code>. Azure and HTTP do not.</p>
-<h2 id="seek-002-passthrough-for-seekable-streams">SEEK-002: Passthrough for Seekable Streams<a class="headerlink" href="#seek-002-passthrough-for-seekable-streams" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> <code>seekable_read(store, path)</code> returns the stream from <code>store.read(path)</code> directly when <code>stream.seekable()</code> is <code>True</code>.
-<strong>Postconditions:</strong> No wrapping, no copying. The returned object is the same stream instance.</p>
-<h2 id="seek-003-spool-for-non-seekable-streams">SEEK-003: Spool for Non-Seekable Streams<a class="headerlink" href="#seek-003-spool-for-non-seekable-streams" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> When <code>stream.seekable()</code> is <code>False</code>, <code>seekable_read()</code> spools the stream into a <code>SpooledTemporaryFile</code> and returns a seekable stream with the same content.
-<strong>Postconditions:</strong> The returned stream is seekable and positioned at byte 0. Content matches the original stream exactly.</p>
-<h2 id="seek-004-large-file-spool-spills-to-disk">SEEK-004: Large File Spool Spills to Disk<a class="headerlink" href="#seek-004-large-file-spool-spills-to-disk" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> When the streamed content exceeds <code>max_memory</code> bytes, the <code>SpooledTemporaryFile</code> rolls to a temporary file on disk.
-<strong>Postconditions:</strong> Content is preserved. The stream remains seekable.</p>
-<h2 id="seek-005-max_memory0-forces-disk-spool">SEEK-005: max_memory=0 Forces Disk Spool<a class="headerlink" href="#seek-005-max_memory0-forces-disk-spool" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> Setting <code>max_memory=0</code> causes immediate spooling to disk regardless of content size.</p>
-<h2 id="seek-006-error-propagation">SEEK-006: Error Propagation<a class="headerlink" href="#seek-006-error-propagation" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> Backend errors (e.g. <code>NotFound</code>) propagate through <code>seekable_read()</code> as Store errors.
-<strong>Postconditions:</strong> No error remapping. <code>NotFound</code> stays <code>NotFound</code>.</p>
-<h2 id="seek-007-stream-closure-after-spooling">SEEK-007: Stream Closure After Spooling<a class="headerlink" href="#seek-007-stream-closure-after-spooling" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> When spooling occurs, the original stream from <code>store.read()</code> is closed after the content is fully copied.
-<strong>Postconditions:</strong> The caller owns only the returned spool. The original stream is not leaked.</p>
-<h2 id="seek-008-runtime-guard-for-capability-mismatch">SEEK-008: Runtime Guard for Capability Mismatch<a class="headerlink" href="#seek-008-runtime-guard-for-capability-mismatch" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> If a backend declares <code>SEEKABLE_READ</code> but <code>stream.seekable()</code> returns <code>False</code>, the extension issues a <code>UserWarning</code> and falls back to spooling.
-<strong>Postconditions:</strong> The warning message mentions <code>SEEKABLE_READ</code>. The returned stream is still seekable.</p>
-<h2 id="seek-009-fileno-limitation">SEEK-009: fileno() Limitation<a class="headerlink" href="#seek-009-fileno-limitation" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> <code>SpooledTemporaryFile.fileno()</code> behavior varies across Python versions. On Python &lt; 3.12, it may raise when content is still in memory.
-<strong>Postconditions:</strong> Callers requiring <code>fileno()</code> should set <code>max_memory=0</code> to force a disk spool.</p>
+<p><strong>Invariant:</strong> <code>Capability.SEEKABLE_READ</code> is an enum member. Backends whose
+<code>read()</code> always returns a seekable stream declare it in their <code>CapabilitySet</code>.
+<strong>Postconditions:</strong> Local, Memory, S3, S3-PyArrow, and SFTP declare
+<code>SEEKABLE_READ</code>. Azure and HTTP do not.</p>
+<h2 id="seek-002-storeread_seekable-contract">SEEK-002: <code>Store.read_seekable()</code> Contract<a class="headerlink" href="#seek-002-storeread_seekable-contract" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>Store.read_seekable(path)</code> always returns a seekable
+<code>BinaryIO</code> stream positioned at byte 0.
+<strong>Postconditions:</strong>
+- The returned stream satisfies <code>stream.seekable() == True</code>.
+- The stream content matches the file at <em>path</em>.
+- The caller owns the stream and must close it.</p>
+<h2 id="seek-003-backendread_seekable-default">SEEK-003: <code>Backend.read_seekable()</code> Default<a class="headerlink" href="#seek-003-backendread_seekable-default" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>Backend.read_seekable(path)</code> has a concrete default
+implementation. Calls <code>self.read(path)</code>. If the returned stream is
+seekable, returns it directly (zero-copy passthrough). Otherwise, spools
+into a <code>SpooledTemporaryFile(max_size=8_388_608)</code> and returns it
+positioned at byte 0.
+<strong>Postconditions:</strong> All backends support <code>read_seekable()</code> without
+overriding. Backends MAY override for optimization.</p>
+<h2 id="seek-004-passthrough-for-seekable-backends">SEEK-004: Passthrough for Seekable Backends<a class="headerlink" href="#seek-004-passthrough-for-seekable-backends" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> When <code>self.read(path)</code> returns a seekable stream,
+<code>read_seekable()</code> returns the same stream instance with no copying.
+<strong>Postconditions:</strong> Local, Memory, S3, S3-PyArrow, and SFTP return the
+<code>read()</code> stream directly. Zero overhead.</p>
+<h2 id="seek-005-spool-fallback-for-non-seekable-backends">SEEK-005: Spool Fallback for Non-Seekable Backends<a class="headerlink" href="#seek-005-spool-fallback-for-non-seekable-backends" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> When <code>self.read(path)</code> returns a non-seekable stream,
+the default <code>read_seekable()</code> spools it into a <code>SpooledTemporaryFile</code>.
+Content up to 8 MB stays in RAM; beyond that spills to a temporary file
+on disk.
+<strong>Postconditions:</strong> The returned stream is seekable at byte 0. The
+original stream is closed after spooling.</p>
+<h2 id="seek-006-azure-range-reader-override">SEEK-006: Azure Range Reader Override<a class="headerlink" href="#seek-006-azure-range-reader-override" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>AzureBackend</code> overrides <code>read_seekable()</code> to return an
+<code>_AzureRangeReader</code> -- a seekable <code>io.RawIOBase</code> where each <code>readinto()</code>
+issues a single HTTP Range request via <code>download_blob(offset=, length=)</code>.
+<strong>Postconditions:</strong>
+- No data is downloaded until <code>read()</code> is called.
+- <code>seek()</code> and <code>tell()</code> update position without I/O.
+- Sequential <code>read()</code> calls issue one HTTP request per <code>readinto()</code> call.
+- The stream is wrapped in <code>_ErrorMappingStream</code> (no <code>BufferedReader</code> -- its
+  seek-invalidation would defeat range reads by turning each
+  <code>PythonFile.read_at()</code> into a separate HTTP request).</p>
+<h2 id="seek-007-azure-read-unchanged">SEEK-007: Azure <code>read()</code> Unchanged<a class="headerlink" href="#seek-007-azure-read-unchanged" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>AzureBackend.read()</code> continues to return the chunked
+forward-only <code>_AzureBinaryIO</code> stream. It is NOT replaced by the range
+reader.
+<strong>Postconditions:</strong> Sequential callers get efficient chunked streaming.
+<code>read()</code> and <code>read_seekable()</code> serve different I/O patterns.</p>
+<h2 id="seek-008-arrow-integration">SEEK-008: Arrow Integration<a class="headerlink" href="#seek-008-arrow-integration" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>StoreFileSystemHandler.open_input_file()</code> calls
+<code>store.read_seekable()</code> instead of <code>store.read()</code> for the Tier 3
+streaming path (files larger than <code>materialization_threshold</code>).
+<strong>Postconditions:</strong> PyArrow gets a seekable handle optimized for sparse
+random access. Column pruning works on Azure without full-file
+materialization.</p>
+<h2 id="seek-009-proxystore-forwarding">SEEK-009: ProxyStore Forwarding<a class="headerlink" href="#seek-009-proxystore-forwarding" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>ProxyStore.read_seekable()</code> delegates to
+<code>self._inner.read_seekable()</code>. <code>ObservedStore</code> fires hooks.
+<code>CachedStore</code> inherits the default.
+<strong>Postconditions:</strong> All proxy layers forward correctly.</p>
+<h2 id="seek-010-error-propagation">SEEK-010: Error Propagation<a class="headerlink" href="#seek-010-error-propagation" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> Backend errors (e.g. <code>NotFound</code>) propagate through
+<code>read_seekable()</code> as Store errors.
+<strong>Postconditions:</strong> No error remapping beyond the standard
+<code>_ErrorMappingStream</code> behavior.</p>
+<h2 id="seek-011-stream-closure-after-spooling">SEEK-011: Stream Closure After Spooling<a class="headerlink" href="#seek-011-stream-closure-after-spooling" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> When the default <code>read_seekable()</code> spools, the original
+stream from <code>read()</code> is closed after the content is fully copied.
+<strong>Postconditions:</strong> The caller owns only the returned spool.</p>
+<h2 id="seek-012-fileno-limitation">SEEK-012: <code>fileno()</code> Limitation<a class="headerlink" href="#seek-012-fileno-limitation" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> When <code>read_seekable()</code> returns a <code>SpooledTemporaryFile</code>
+(non-seekable backend, no override), <code>fileno()</code> may raise when content
+is still in memory (Python &lt; 3.12).
+<strong>Postconditions:</strong> Documented in the method docstring.</p>
 
 
 

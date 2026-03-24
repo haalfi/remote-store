@@ -3298,7 +3298,7 @@
   <span class="md-ellipsis">
     
   
-    ext.seekable
+    Seekable read
   
 
     
@@ -5328,6 +5328,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017: Seekable Read on Store API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6561,9 +6589,9 @@ use a Registry with declarative config:</p>
 </table>
 <p>* Same-filesystem only; cross-filesystem falls back to copy+delete.
 ** Via <code>posix_rename</code> on most OpenSSH servers; falls back to copy+delete.</p>
-<p>All backends except HTTP support read, write, delete, list, copy, move, and metadata. The HTTP backend is read-only (<code>{READ, METADATA}</code>). Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback <code>ext.glob.glob_files()</code>. Seekable reads are native on Local, Memory, S3, S3-PyArrow, and SFTP; for Azure and HTTP use <code>ext.seekable.seekable_read()</code>. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
+<p>All backends except HTTP support read, write, delete, list, copy, move, and metadata. The HTTP backend is read-only (<code>{READ, METADATA}</code>). Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback <code>ext.glob.glob_files()</code>. Seekable reads are available on all backends via <code>Store.read_seekable()</code> — zero-overhead on seekable backends, HTTP Range reader on Azure, spool fallback on HTTP. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
 <h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
-<p>The Store provides 27 methods across read/write, browsing, management, and utility. Key highlights:</p>
+<p>The Store provides 28 methods across read/write, browsing, management, and utility. Key highlights:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>             <span class="c1"># → str</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>   <span class="c1"># write string</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;path/to/file.csv&quot;</span><span class="p">)</span>            <span class="c1"># → bytes</span>
@@ -6626,7 +6654,7 @@ use a Registry with declarative config:</p>
 <tr>
 <td>Seekable read</td>
 <td><em>(none)</em></td>
-<td>Portable seekable stream wrapper with SpooledTemporaryFile fallback</td>
+<td><code>Store.read_seekable()</code> — backend-optimized seekable streams (built-in)</td>
 </tr>
 <tr>
 <td>Stream wrappers</td>
@@ -6673,7 +6701,7 @@ use a Registry with declarative config:</p>
 <td><code>open()</code> only</td>
 <td>pathlib-style</td>
 <td>~10 methods</td>
-<td>27 methods</td>
+<td>28 methods</td>
 </tr>
 <tr>
 <td>Backends</td>

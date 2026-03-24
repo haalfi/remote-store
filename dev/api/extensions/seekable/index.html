@@ -27,7 +27,7 @@
     
     
       
-        <title>ext.seekable - remote-store</title>
+        <title>Seekable read - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#extseekable" class="md-skip">
+        <a href="#seekable-read" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ext.seekable
+              Seekable read
             
           </span>
         </div>
@@ -3148,7 +3148,7 @@
   <span class="md-ellipsis">
     
   
-    ext.seekable
+    Seekable read
   
 
     
@@ -3166,7 +3166,7 @@
   <span class="md-ellipsis">
     
   
-    ext.seekable
+    Seekable read
   
 
     
@@ -3190,34 +3190,6 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.ext.seekable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;seekable
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" seekable">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.ext.seekable.seekable_read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;seekable_read
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
       
         <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
@@ -5255,6 +5227,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../design/adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017: Seekable Read on Store API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6188,34 +6188,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#remote_store.ext.seekable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;seekable
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" seekable">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.ext.seekable.seekable_read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;seekable_read
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6246,141 +6218,15 @@
   
 
 
-<h1 id="extseekable">ext.seekable<a class="headerlink" href="#extseekable" title="Permanent link">&para;</a></h1>
-
-
-<div class="doc doc-object doc-module">
-
-
-
-<h2 id="remote_store.ext.seekable" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">seekable</span>
-
-
-<a href="#remote_store.ext.seekable" class="headerlink" title="Permanent link">&para;</a></h2>
-
-    <div class="doc doc-contents first">
-
-        <p>Seekable read — portable seekable stream for any backend.</p>
-<p>Delegates to <code>Store.read()</code> and returns the stream as-is when it is
-already seekable.  For non-seekable backends (Azure, HTTP) the stream
-is spooled into a <code>SpooledTemporaryFile</code>: content up to <em>max_memory</em>
-stays in RAM, beyond that spills to a temporary file on disk.</p>
-<p>Usage:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.seekable</span><span class="w"> </span><span class="kn">import</span> <span class="n">seekable_read</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">with</span> <span class="n">seekable_read</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;report.csv&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># guaranteed to work on any backend</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">full</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-</code></pre></div>
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.ext.seekable.seekable_read" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">seekable_read</span>
-
-
-<a href="#remote_store.ext.seekable.seekable_read" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">seekable_read</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_memory</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.BinaryIO">BinaryIO</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Return a seekable stream for <em>path</em>.</p>
-<p>If the stream returned by <code>store.read()</code> is already seekable,
-returns it directly — zero overhead.  Otherwise, spools the stream
-into a <code>SpooledTemporaryFile</code>: content up to <em>max_memory</em> bytes
-stays in RAM, beyond that spills to a temporary file on disk.
-The returned stream is always seekable and positioned at byte 0.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>store</code></b>
-              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></code>)
-          –
-          <div class="doc-md-description">
-            <p>The Store to read from.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>path</code></b>
-              (<code><span title="str">str</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Store-relative file path.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>max_memory</code></b>
-              (<code><span title="int">int</span></code>, default:
-                  <code>8 * 1024 * 1024</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Maximum bytes to keep in RAM before spilling to
-disk.  Defaults to 8 MB (matching atomic-write default).</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Returns:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="typing.BinaryIO">BinaryIO</span></code>
-          –
-          <div class="doc-md-description">
-            <p>A seekable <code>BinaryIO</code> stream.  The caller owns the stream</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-              <code><span title="typing.BinaryIO">BinaryIO</span></code>
-          –
-          <div class="doc-md-description">
-            <p>and must close it.</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div>
-
-
-
-  </div>
-
-    </div>
-
-</div><h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<h1 id="seekable-read">Seekable Read<a class="headerlink" href="#seekable-read" title="Permanent link">&para;</a></h1>
+<p>Seekable read is built into the Store API via <code>Store.read_seekable()</code>.
+See the <a href="../../store/">Store API reference</a> for method documentation.</p>
+<p><code>ext.seekable</code> was removed before its first release — its functionality
+is now part of the core API (ADR-0017).</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="https://github.com/haalfi/remote-store/blob/master/sdd/specs/006-streaming-io.md">Streaming I/O spec</a> — SIO-008 seekable read capability</li>
-<li><a href="https://github.com/haalfi/remote-store/blob/master/sdd/specs/036-seekable-read.md">Seekable read spec</a> — SEEK-001 through SEEK-009</li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/sdd/specs/036-seekable-read.md">Seekable read spec</a> — SEEK-001 through SEEK-012</li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0017-seekable-read-on-store-api.md">ADR-0017</a> — Store-level read_seekable() design</li>
 <li><a href="../streams/">ext.streams</a> — composable BinaryIO wrappers for progress and checksums</li>
 </ul>
 

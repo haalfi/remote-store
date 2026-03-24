@@ -3130,7 +3130,7 @@
   <span class="md-ellipsis">
     
   
-    ext.seekable
+    Seekable read
   
 
     
@@ -5315,6 +5315,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017: Seekable Read on Store API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6368,7 +6396,7 @@
 <p>All I/O in <code>remote_store</code> is streaming-first. Read operations return <code>BinaryIO</code> streams by default. Write operations accept both <code>bytes</code> and <code>BinaryIO</code>. This spec defines the streaming semantics and cancellation behavior.</p>
 <h2 id="sio-001-streaming-reads">SIO-001: Streaming Reads<a class="headerlink" href="#sio-001-streaming-reads" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>Backend.read(path)</code> returns a <code>BinaryIO</code> stream positioned at the start.
-<strong>Postconditions:</strong> The caller is responsible for consuming and closing the stream. The returned stream is not guaranteed to be seekable. Seekability is a backend-level property (e.g. local files are seekable, HTTP-based streams typically are not), not a Store API contract. Callers that require seekability should use <code>read_bytes()</code> and wrap in <code>BytesIO</code>.
+<strong>Postconditions:</strong> The caller is responsible for consuming and closing the stream. The returned stream is not guaranteed to be seekable. Seekability is a backend-level property (e.g. local files are seekable, HTTP-based streams typically are not), not a Store API contract. Callers that require seekability should use <code>Store.read_seekable()</code>.
 <strong>Example:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">stream</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;data.bin&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">chunk</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4096</span><span class="p">)</span>
@@ -6393,8 +6421,8 @@
 <strong>Postconditions:</strong> This is a Store-level convenience -- no backend changes. Raises <code>UnicodeDecodeError</code> on decode failure with <code>errors="strict"</code>. See <a href="../028-read-text/">028-read-text.md</a> (RTXT-001).</p>
 <h2 id="sio-008-seekable-read-capability">SIO-008: Seekable Read Capability<a class="headerlink" href="#sio-008-seekable-read-capability" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>Capability.SEEKABLE_READ</code> indicates that <code>Backend.read()</code> always returns a seekable stream (<code>stream.seekable()</code> is <code>True</code>).
-<strong>Postconditions:</strong> This is a static guarantee — callers can check <code>store.supports(Capability.SEEKABLE_READ)</code> once at setup time instead of checking every stream. For portable seekable reads across all backends, use <code>ext.seekable.seekable_read()</code>.
-<strong>See also:</strong> <a href="../036-seekable-read/">036-seekable-read.md</a>, <a href="../../adrs/0016-seekable-read-three-tier-design/">ADR-0016</a>.</p>
+<strong>Postconditions:</strong> This is a static guarantee — callers can check <code>store.supports(Capability.SEEKABLE_READ)</code> once at setup time instead of checking every stream. All backends support <code>Store.read_seekable()</code> regardless of this capability — the capability indicates zero-overhead (no spooling needed).
+<strong>See also:</strong> <a href="../036-seekable-read/">036-seekable-read.md</a>, <a href="../../adrs/0017-seekable-read-on-store-api/">ADR-0017</a>.</p>
 
 
 

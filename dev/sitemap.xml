@@ -353,6 +353,10 @@
          <lastmod>2026-03-24</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0017-seekable-read-on-store-api/</loc>
+         <lastmod>2026-03-24</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/design/research/</loc>
          <lastmod>2026-03-24</lastmod>
     </url>

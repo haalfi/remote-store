@@ -3245,7 +3245,7 @@
   <span class="md-ellipsis">
     
   
-    ext.seekable
+    Seekable read
   
 
     
@@ -5275,6 +5275,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017: Seekable Read on Store API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6334,10 +6362,11 @@ Use <code>Store.supports()</code> to query at runtime.</p>
   Gates <code>Store.glob()</code>. Not all backends support this -- use
   <code>ext.glob.glob_files()</code> as a portable fallback.</li>
 <li><code>SEEKABLE_READ</code> -- <code>Store.read()</code> always returns a seekable
-  stream (<code>stream.seekable()</code> is <code>True</code>).  Not all backends
-  support this -- use <code>ext.seekable.seekable_read()</code> as a
-  portable fallback that spools non-seekable streams to a temp
-  file.</li>
+  stream (<code>stream.seekable()</code> is <code>True</code>).  Backends that
+  declare this capability return seekable streams from both
+  <code>read()</code> and <code>read_seekable()</code> with zero overhead.
+  Backends without this capability still support
+  <code>read_seekable()</code> via an optimized override or spool fallback.</li>
 </ul>
 
 

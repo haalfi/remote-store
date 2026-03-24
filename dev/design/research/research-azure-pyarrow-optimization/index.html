@@ -3130,7 +3130,7 @@
   <span class="md-ellipsis">
     
   
-    ext.seekable
+    Seekable read
   
 
     
@@ -5167,6 +5167,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017: Seekable Read on Store API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5923,10 +5951,71 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-references" class="md-nav__link">
+  <a href="#8-benchmark-results-phase-1-implementation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8. References
+        8. Benchmark Results (Phase 1 Implementation)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Benchmark Results (Phase 1 Implementation)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-phase-1-file-size-x-selectivity-x-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Phase 1: File size x selectivity x latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-phase-2-batch-reads-10-mb-files-350-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Phase 2: Batch reads (10 MB files, 3/50 columns)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-key-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Key findings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 Decision
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. References
       
     </span>
   </a>
@@ -6826,10 +6915,71 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-references" class="md-nav__link">
+  <a href="#8-benchmark-results-phase-1-implementation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8. References
+        8. Benchmark Results (Phase 1 Implementation)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Benchmark Results (Phase 1 Implementation)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-phase-1-file-size-x-selectivity-x-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Phase 1: File size x selectivity x latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-phase-2-batch-reads-10-mb-files-350-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Phase 2: Batch reads (10 MB files, 3/50 columns)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-key-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Key findings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 Decision
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. References
       
     </span>
   </a>
@@ -7589,7 +7739,246 @@ beyond <code>PythonFile</code>.</p>
 </table>
 <p>Backlog item: <strong>ID-102</strong>.</p>
 <hr />
-<h2 id="8-references">8. References<a class="headerlink" href="#8-references" title="Permanent link">&para;</a></h2>
+<h2 id="8-benchmark-results-phase-1-implementation">8. Benchmark Results (Phase 1 Implementation)<a class="headerlink" href="#8-benchmark-results-phase-1-implementation" title="Permanent link">&para;</a></h2>
+<p><strong>Date:</strong> 2026-03-24
+<strong>Setup:</strong> Azurite (Docker) + Toxiproxy for latency simulation. Windows 11,
+Python 3.13, PyArrow 19.0. 50-column int64 Parquet files. 3 iterations per
+measurement, median reported.</p>
+<p><strong>Implementation:</strong> <code>Store.read_seekable()</code> on <code>AzureBackend</code> returns
+<code>_AzureRangeReader</code> (seekable <code>io.RawIOBase</code>, one HTTP Range request per
+<code>readinto()</code>), wrapped in <code>_ErrorMappingStream</code> (no <code>BufferedReader</code> --
+matches S3PyArrow pattern). Arrow's <code>open_input_file()</code> Tier 3 calls
+<code>read_seekable()</code> instead of <code>read()</code>. ADR-0017 supersedes ADR-0016;
+<code>ext.seekable</code> removed (never released).</p>
+<h3 id="81-phase-1-file-size-x-selectivity-x-latency">8.1 Phase 1: File size x selectivity x latency<a class="headerlink" href="#81-phase-1-file-size-x-selectivity-x-latency" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>File size</th>
+<th>Columns</th>
+<th>Latency</th>
+<th>Tier 2 (ms)</th>
+<th>Tier 3 (ms)</th>
+<th>Speedup</th>
+<th>Reqs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>~1 MB</td>
+<td>3/50</td>
+<td>0 ms</td>
+<td>10</td>
+<td>11</td>
+<td>0.96x</td>
+<td>2</td>
+</tr>
+<tr>
+<td>~1 MB</td>
+<td>3/50</td>
+<td>30 ms</td>
+<td>44</td>
+<td>104</td>
+<td>0.42x</td>
+<td>2</td>
+</tr>
+<tr>
+<td>~10 MB</td>
+<td>3/50</td>
+<td>0 ms</td>
+<td>66</td>
+<td>17</td>
+<td><strong>3.95x</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td>~10 MB</td>
+<td>3/50</td>
+<td>10 ms</td>
+<td>69</td>
+<td>50</td>
+<td><strong>1.37x</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td>~10 MB</td>
+<td>3/50</td>
+<td>30 ms</td>
+<td>92</td>
+<td>116</td>
+<td>0.79x</td>
+<td>2</td>
+</tr>
+<tr>
+<td>~10 MB</td>
+<td>10/50</td>
+<td>0 ms</td>
+<td>59</td>
+<td>33</td>
+<td><strong>1.76x</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td>~10 MB</td>
+<td>10/50</td>
+<td>10 ms</td>
+<td>70</td>
+<td>60</td>
+<td><strong>1.17x</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td>~10 MB</td>
+<td>25/50</td>
+<td>0 ms</td>
+<td>62</td>
+<td>45</td>
+<td><strong>1.36x</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td>~100 MB</td>
+<td>3/50</td>
+<td>0 ms</td>
+<td>724</td>
+<td>41</td>
+<td><strong>17.5x</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td>~100 MB</td>
+<td>3/50</td>
+<td>30 ms</td>
+<td>1358</td>
+<td>133</td>
+<td><strong>10.2x</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td>~100 MB</td>
+<td>3/50</td>
+<td>50 ms</td>
+<td>1745</td>
+<td>206</td>
+<td><strong>8.5x</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td>~100 MB</td>
+<td>10/50</td>
+<td>30 ms</td>
+<td>1330</td>
+<td>198</td>
+<td><strong>6.7x</strong></td>
+<td>2</td>
+</tr>
+<tr>
+<td>~100 MB</td>
+<td>25/50</td>
+<td>50 ms</td>
+<td>1753</td>
+<td>427</td>
+<td><strong>4.1x</strong></td>
+<td>3</td>
+</tr>
+<tr>
+<td>~100 MB</td>
+<td>50/50</td>
+<td>50 ms</td>
+<td>1744</td>
+<td>803</td>
+<td><strong>2.2x</strong></td>
+<td>5</td>
+</tr>
+</tbody>
+</table>
+<h3 id="82-phase-2-batch-reads-10-mb-files-350-columns">8.2 Phase 2: Batch reads (10 MB files, 3/50 columns)<a class="headerlink" href="#82-phase-2-batch-reads-10-mb-files-350-columns" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Files</th>
+<th>Latency</th>
+<th>Tier 2 (ms)</th>
+<th>Tier 3 (ms)</th>
+<th>Speedup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>0 ms</td>
+<td>55</td>
+<td>16</td>
+<td><strong>3.5x</strong></td>
+</tr>
+<tr>
+<td>5</td>
+<td>0 ms</td>
+<td>264</td>
+<td>78</td>
+<td><strong>3.4x</strong></td>
+</tr>
+<tr>
+<td>10</td>
+<td>0 ms</td>
+<td>525</td>
+<td>150</td>
+<td><strong>3.5x</strong></td>
+</tr>
+<tr>
+<td>10</td>
+<td>10 ms</td>
+<td>650</td>
+<td>474</td>
+<td><strong>1.4x</strong></td>
+</tr>
+<tr>
+<td>10</td>
+<td>30 ms</td>
+<td>878</td>
+<td>1104</td>
+<td>0.80x</td>
+</tr>
+</tbody>
+</table>
+<h3 id="83-key-findings">8.3 Key findings<a class="headerlink" href="#83-key-findings" title="Permanent link">&para;</a></h3>
+<ol>
+<li>
+<p><strong>The crossover is file size, not latency.</strong> At ~100 MB, range reader wins
+   in every scenario (16/16), even reading all 50/50 columns at 50 ms latency
+   (2.2x). At ~1 MB, range reader never wins (0/16).</p>
+</li>
+<li>
+<p><strong>22/48 scenarios won overall.</strong> All wins are at 10 MB+ file sizes with
+   selective column reads or at 100 MB+ regardless of selectivity.</p>
+</li>
+<li>
+<p><strong>Only 2-5 HTTP Range requests per read.</strong> PyArrow reads the Parquet footer
+   (1 request) then column chunks (1-4 requests depending on selectivity).
+   The <code>get_blob_properties()</code> call in <code>read_seekable()</code> adds 1 more.</p>
+</li>
+<li>
+<p><strong>Arrow's materialization threshold (64 MB) is a natural guard.</strong> Files
+   below threshold use Tier 2 (full materialization) and never reach
+   <code>read_seekable()</code>. The range reader only activates for files where it wins.</p>
+</li>
+<li>
+<p><strong>Batch reads scale linearly.</strong> 10 files at 3.5x = same ratio per file, no
+   degradation.</p>
+</li>
+<li>
+<p><strong>No <code>BufferedReader</code> wrapping.</strong> Removing <code>BufferedReader</code> was critical --
+   its seek-invalidates-buffer behavior turned each <code>PythonFile.read_at()</code> into
+   a separate HTTP request even for adjacent reads.</p>
+</li>
+</ol>
+<h3 id="84-decision">8.4 Decision<a class="headerlink" href="#84-decision" title="Permanent link">&para;</a></h3>
+<p>The range reader is the <strong>primary implementation</strong>, not a PoC. Ship as-is.
+<code>AzureFileSystem</code> (C++ Tier 1) is an optional future optimization track, only
+worth pursuing if benchmarks on real Azure workloads show GIL overhead or I/O
+coalescing gaps that matter for the target audience.</p>
+<hr />
+<h2 id="9-references">9. References<a class="headerlink" href="#9-references" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Spec 014: PyArrow FileSystem Adapter (<code>sdd/specs/014-pyarrow-filesystem-adapter.md</code>)</li>
 <li>Spec 011: S3-PyArrow Hybrid Backend (<code>sdd/specs/011-s3-pyarrow-backend.md</code>)</li>
