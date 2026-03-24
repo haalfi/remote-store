@@ -39,6 +39,7 @@ from remote_store.ext.observe import (
     set_correlation_id,
 )
 from remote_store.ext.partition import ParsedPartition, parse_partition, partition_path
+from remote_store.ext.seekable import seekable_read
 from remote_store.ext.streams import ChecksumReader, ChecksumWriter, ProgressReader, ProgressWriter, read_with_progress
 from remote_store.ext.transfer import download, transfer, upload
 
@@ -108,6 +109,8 @@ __all__ = [
     "content_digest",
     "verify",
     "verify_hex",
+    # Seekable read
+    "seekable_read",
     # Stream wrappers
     "ProgressReader",
     "ProgressWriter",

@@ -39,6 +39,11 @@ class Capability(enum.Enum):
     - ``GLOB`` -- Native pattern matching against file paths.
       Gates ``Store.glob()``. Not all backends support this -- use
       ``ext.glob.glob_files()`` as a portable fallback.
+    - ``SEEKABLE_READ`` -- ``Store.read()`` always returns a seekable
+      stream (``stream.seekable()`` is ``True``).  Not all backends
+      support this -- use ``ext.seekable.seekable_read()`` as a
+      portable fallback that spools non-seekable streams to a temp
+      file.
     """
 
     READ = "read"
@@ -50,6 +55,7 @@ class Capability(enum.Enum):
     ATOMIC_WRITE = "atomic_write"
     METADATA = "metadata"
     GLOB = "glob"
+    SEEKABLE_READ = "seekable_read"
 
 
 class CapabilitySet:

@@ -43,3 +43,9 @@ chunk = stream.read(4096)
 
 **Invariant:** `Store.read_text(path, *, encoding="utf-8", errors="strict")` reads the full content via `read_bytes()` and decodes it to `str`.
 **Postconditions:** This is a Store-level convenience -- no backend changes. Raises `UnicodeDecodeError` on decode failure with `errors="strict"`. See [028-read-text.md](028-read-text.md) (RTXT-001).
+
+## SIO-008: Seekable Read Capability
+
+**Invariant:** `Capability.SEEKABLE_READ` indicates that `Backend.read()` always returns a seekable stream (`stream.seekable()` is `True`).
+**Postconditions:** This is a static guarantee — callers can check `store.supports(Capability.SEEKABLE_READ)` once at setup time instead of checking every stream. For portable seekable reads across all backends, use `ext.seekable.seekable_read()`.
+**See also:** [036-seekable-read.md](036-seekable-read.md), [ADR-0016](../adrs/0016-seekable-read-three-tier-design.md).

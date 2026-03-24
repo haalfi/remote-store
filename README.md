@@ -167,7 +167,7 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Via `posix_rename` on most OpenSSH servers; falls back to copy+delete.
 
-All backends except HTTP support read, write, delete, list, copy, move, and metadata. The HTTP backend is read-only (`{READ, METADATA}`). Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback `ext.glob.glob_files()`. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
+All backends except HTTP support read, write, delete, list, copy, move, and metadata. The HTTP backend is read-only (`{READ, METADATA}`). Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback `ext.glob.glob_files()`. Seekable reads are native on Local, Memory, S3, S3-PyArrow, and SFTP; for Azure and HTTP use `ext.seekable.seekable_read()`. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
 
 ## Store API
 

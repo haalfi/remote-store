@@ -16,6 +16,7 @@ to enable each one. For usage guides, see [Extensions](../../extensions.md).
 | [ext.otel](otel.md) | OpenTelemetry bridge for ext.observe |
 | [ext.partition](partition.md) | Hive-style partition path helpers |
 | [ext.pydantic](pydantic.md) | Pydantic model to RegistryConfig adapter |
+| [ext.seekable](seekable.md) | Portable seekable read with SpooledTemporaryFile fallback |
 | [ext.streams](streams.md) | Composable BinaryIO wrappers for progress and checksums |
 | [ext.transfer](transfer.md) | Upload, download, and cross-store transfer |
 | [ext.yaml](yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |

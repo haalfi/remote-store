@@ -23,6 +23,7 @@ class TestCapabilityEnum:
             "ATOMIC_WRITE",
             "METADATA",
             "GLOB",
+            "SEEKABLE_READ",
         }
         actual = {c.name for c in Capability}
         assert actual == expected
