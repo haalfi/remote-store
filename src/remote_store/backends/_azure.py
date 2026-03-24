@@ -824,6 +824,7 @@ class AzureBackend(Backend):
         exception (via ``__cause__``).  Unwrap before matching.
         """
         from azure.core.exceptions import (
+            AzureError,
             ClientAuthenticationError,
             HttpResponseError,
             ResourceExistsError,
@@ -836,7 +837,10 @@ class AzureBackend(Backend):
         # Only _AzureRangeReader does `raise OSError(...) from exc` — the
         # chunked _AzureBinaryIO path (read()) does not, so this branch
         # only activates for range-reader errors in practice.
-        if isinstance(exc, OSError) and isinstance(exc.__cause__, Exception):
+        # Narrowed to AzureError to avoid misclassifying genuine OS-level
+        # OSErrors that happen to carry a __cause__.
+
+        if isinstance(exc, OSError) and isinstance(exc.__cause__, AzureError):
             exc = exc.__cause__
 
         if isinstance(exc, ResourceNotFoundError):
