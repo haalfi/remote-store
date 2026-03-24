@@ -51,16 +51,6 @@ Items graduate through the SDD pipeline:
 
 ### Integrations
 
-- [x] **ID-103 — Benchmark suite v2: user-decision framing**
-  Expand Toxiproxy to all Docker backends, generate overhead charts,
-  reframe performance guide for user decisions, add README performance
-  section.
-  - [x] [Research](research/research-benchmark-suite-v2.md) (PR #263)
-  - [x] Phase 1: Toxiproxy expansion (docker-compose, fixtures, profiles)
-  - [x] Phase 2: Chart generation + "worth it?" verdicts in reporting
-  - [x] Phase 3: README section + performance guide reframe
-  - [x] Phase 4: seekable_read() + cache hit/miss benchmarks
-
 - [~] **ID-102 — Azure PyArrow column pruning via seekable range reads**
   Enable column pruning for Parquet/PyArrow workloads on Azure via a seekable
   range reader backed by `download_blob(offset=, length=)`, exposed through a
