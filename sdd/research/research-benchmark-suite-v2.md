@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-24
 **Backlog:** ID-103 (new)
-**Status:** Plan approved, ready for implementation
+**Status:** Proposed
 **Scope:** Redesign benchmark reporting and expand Toxiproxy coverage to reframe
 the suite around user adoption decisions rather than maintainer diagnostics.
 
@@ -256,10 +256,10 @@ The key change: **lead with the answer, not the methodology.**
 
 Add to `test_throughput.py` or new `test_seekable.py`:
 
-- `seekable_read()` on a non-seekable backend (Azure, HTTP)
+- `Store.read_seekable()` on backends with different seek strategies
 - Measure: open cost, first seek latency, repeated random seeks, peak memory
-- Compare: native seekable (local, S3) vs `ext.seekable` wrapper
-- This is directly relevant given the recent ID-100 work
+- Compare: native seekable (local, S3-PyArrow) vs Azure `_AzureRangeReader` vs spool path (HTTP)
+- This is directly relevant given the recent ID-102 work (`Store.read_seekable()`, `_AzureRangeReader`)
 
 #### 4b. Cache hit/miss benchmark
 
