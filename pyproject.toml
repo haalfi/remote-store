@@ -261,6 +261,10 @@ ignore_missing_imports = true
 module = "remote_store.ext.dagster"
 warn_unused_ignores = false
 
+[[tool.mypy.overrides]]
+module = "remote_store.ext.seekable"
+warn_unused_ignores = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
