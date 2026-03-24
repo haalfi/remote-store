@@ -206,6 +206,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Observability hooks | *(none)* | Callback-based instrumentation for logging, metrics, and tracing |
 | OpenTelemetry bridge | `remote-store[otel]` | Pre-built OTel spans and metrics for Store operations |
 | Caching middleware | *(none)* | TTL-based read cache with automatic invalidation on mutations |
+| Seekable read | *(none)* | Portable seekable stream wrapper with SpooledTemporaryFile fallback |
 | Stream wrappers | *(none)* | Composable BinaryIO wrappers for progress tracking and checksums |
 | Integrity helpers | *(none)* | Checksum computation and verification over Store's public API |
 | Dagster IO manager | `remote-store[dagster]` | Use any Store as a Dagster IOManager with pluggable serialization |
