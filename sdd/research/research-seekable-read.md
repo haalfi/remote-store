@@ -338,4 +338,4 @@ Store.read() passthrough → ext.seekable fallback) solves the real problem
 costs. The implementation is small, the pattern is proven, and the
 `SpooledTemporaryFile` mechanism is already battle-tested in this codebase.
 
-**Backlog item:** `ID-084 — Seekable Read Capability + Extension`
+**Backlog item:** `ID-100 — Seekable Read Capability + Extension`
