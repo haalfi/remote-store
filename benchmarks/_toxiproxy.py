@@ -75,8 +75,14 @@ TOXIPROXY_SFTP_PORT = int(os.environ.get("BENCH_SFTP_PROXY_PORT", "12222"))
 # ---------------------------------------------------------------------------
 
 
-def set_latency(latency_ms: int, proxy_name: str = "azurite") -> None:
-    """Add or remove a latency toxic on the given proxy via the Toxiproxy HTTP API."""
+def set_latency(latency_ms: int, proxy_name: str = "azurite", jitter_ms: int | None = None) -> None:
+    """Add or remove a latency toxic on the given proxy via the Toxiproxy HTTP API.
+
+    Args:
+        latency_ms: Base latency in milliseconds. 0 removes the toxic.
+        proxy_name: Toxiproxy proxy name (must match ``toxiproxy.json``).
+        jitter_ms: Jitter in milliseconds. Defaults to ``latency_ms // 3``.
+    """
     toxic_url = f"{_TOXIPROXY_API}/proxies/{proxy_name}/toxics"
 
     # Remove existing latency toxic (ignore 404 if absent).
@@ -88,13 +94,14 @@ def set_latency(latency_ms: int, proxy_name: str = "azurite") -> None:
             raise
 
     if latency_ms > 0:
+        jitter = jitter_ms if jitter_ms is not None else latency_ms // 3
         payload = json.dumps(
             {
                 "name": "bench_latency",
                 "type": "latency",
                 "stream": "upstream",
                 "toxicity": 1.0,
-                "attributes": {"latency": latency_ms, "jitter": latency_ms // 3},
+                "attributes": {"latency": latency_ms, "jitter": jitter},
             }
         ).encode()
         req = urllib.request.Request(toxic_url, data=payload, method="POST")
@@ -126,7 +133,7 @@ def apply_profile(profile_name: str, proxy_name: str | None = None) -> None:
     profile = NETWORK_PROFILES[profile_name]
     targets = (proxy_name,) if proxy_name else PROXY_NAMES
     for name in targets:
-        set_latency(profile["latency"], proxy_name=name)
+        set_latency(profile["latency"], proxy_name=name, jitter_ms=profile["jitter"])
 
 
 def clear_all_toxics() -> None:

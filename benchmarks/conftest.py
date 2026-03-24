@@ -253,10 +253,6 @@ def _azurite_available() -> bool:
 
 
 def _toxiproxy_available() -> bool:
-    try:
-        import azure.storage.blob  # noqa: F401
-    except ImportError:
-        return False
     return _port_open(TOXIPROXY_HOST, TOXIPROXY_API_PORT)
 
 
