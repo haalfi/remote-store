@@ -51,6 +51,24 @@ Items graduate through the SDD pipeline:
 
 ### Integrations
 
+- [~] **ID-102 — Azure PyArrow column pruning via seekable range reads**
+  Enable column pruning for Parquet/PyArrow workloads on Azure via a seekable
+  range reader backed by `download_blob(offset=, length=)`, exposed through a
+  separate path alongside the existing chunked-streaming `read()`. The existing
+  Tier 3 path in `ext/arrow.py` wraps seekable streams in `pa.PythonFile`,
+  which exposes `read_at(nbytes, offset)` — giving PyArrow's Parquet reader
+  byte-range access without a new backend class.
+  - Done: [research](research/research-azure-pyarrow-optimization.md).
+  - Remaining:
+    - Phase 1: `_AzureRangeReader` with dual-mode integration (~150–200
+      LOC) + PoC measuring bytes transferred / time / memory vs Tier 2.
+    - Phase 2: benchmark on real workloads (Parquet column pruning, dataset
+      scans, Dagster). Decide if `PythonFile` overhead is acceptable.
+    - Phase 3 (only if Phase 2 shows need): spike
+      `pyarrow.fs.AzureFileSystem` (C++ Tier 1) for GIL-free I/O coalescing.
+    - Phase 4 (only if Phase 3 viable): `AzurePyArrowBackend` following
+      `S3PyArrowBackend` pattern, spec, tests, docs.
+
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.
   - Done: [recipe](../packaging/conda-forge/recipe.yaml),
