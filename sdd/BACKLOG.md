@@ -51,23 +51,23 @@ Items graduate through the SDD pipeline:
 
 ### Integrations
 
-- [ ] **ID-102 — AzurePyArrowBackend: Tier 1 PyArrow reads for Azure**
-  Hybrid Azure backend (following the S3PyArrowBackend pattern) that exposes a
-  native `pyarrow.fs.FileSystem` via `unwrap()` for Tier 1 reads in the
-  `StoreFileSystemHandler`. Uses Azure SDK range requests
-  (`download_blob(offset=, length=)`) for column pruning and seekable reads.
-  HNS accounts get DFS-based directory listing; non-HNS falls back to base
-  `AzureBackend` behavior.
+- [ ] **ID-102 — Azure PyArrow column pruning via seekable range reads**
+  Enable column pruning for Parquet/PyArrow workloads on Azure by making
+  `AzureBackend.read()` return a seekable range reader backed by
+  `download_blob(offset=, length=)`. The existing Tier 3 path in
+  `ext/arrow.py` wraps seekable streams in `pa.PythonFile`, which exposes
+  `read_at(offset, length)` — giving PyArrow's Parquet reader byte-range
+  access without a new backend class.
   - Done: [research](research/research-azure-pyarrow-optimization.md).
   - Remaining:
-    - Phase 0: spike — evaluate `pyarrow.fs.AzureFileSystem` (built-in C++)
-      against our auth methods and HNS/non-HNS accounts. If viable, use as
-      data-path (true C++ Tier 1). If not, proceed with custom handler.
-    - Phase 1: `_AzureRangeReader`, `_AzureFileSystemHandler`,
-      `AzurePyArrowBackend`, spec, tests.
-    - Phase 2: benchmarks on real Parquet datasets (column pruning, listing,
-      memory).
-    - Phase 3: Dagster integration, docs, example, optional non-HNS support.
+    - Phase 1: `_AzureRangeReader` in `_azure.py` (~50–100 LOC) + PoC
+      measuring bytes transferred / time / memory vs current Tier 2.
+    - Phase 2: benchmark on real workloads (Parquet column pruning, dataset
+      scans, Dagster). Decide if `PythonFile` overhead is acceptable.
+    - Phase 3 (only if Phase 2 shows need): spike
+      `pyarrow.fs.AzureFileSystem` (C++ Tier 1) for GIL-free I/O coalescing.
+    - Phase 4 (only if Phase 3 viable): `AzurePyArrowBackend` following
+      `S3PyArrowBackend` pattern, spec, tests, docs.
 
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.

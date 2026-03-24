@@ -25,8 +25,9 @@ This has three consequences for analytical workloads:
    4–6x speedups, cannot activate without a native filesystem.
 3. **No streaming for large files.** Files > 64 MB trigger full
    materialization with a memory-cost warning. PR #259 (ID-100) adds
-   `ext.seekable` with `SpooledTemporaryFile` fallback, but the file is still
-   downloaded entirely before any byte is consumed.
+   `ext.seekable` with `SpooledTemporaryFile` fallback, which enables Tier 3
+   (`PythonFile` streaming), but the entire file is still downloaded before
+   any byte is consumed — there are no range requests.
 
 The S3 backend solved this with `S3PyArrowBackend` (spec 011) — a hybrid that
 uses PyArrow's C++ `S3FileSystem` for data-path operations and `s3fs` for
@@ -57,8 +58,8 @@ the current adapter does not expose them.
 |------|-----------|-------------|
 | **Tier 1** | `store.unwrap(pyarrow.fs.FileSystem)` succeeds | Not available — `unwrap()` only supports `FileSystemClient` |
 | **Tier 2** | File ≤ 64 MB | Used (full materialization) |
-| **Tier 3** | File > 64 MB, seekable stream | Not applicable (non-seekable) |
-| **Tier 2 fallback** | File > 64 MB, non-seekable | Used with memory warning |
+| **Tier 3** | File > 64 MB, seekable stream | Available via `ext.seekable` (ID-100), but downloads entire file — no range requests |
+| **Tier 2 fallback** | File > 64 MB, non-seekable | Used with memory warning (default without `ext.seekable`) |
 
 ### 2.3 S3PyArrow Pattern (Precedent)
 
@@ -115,7 +116,7 @@ fs = pyarrow.fs.PyFileSystem(handler)
 
 **Strengths:**
 - Uses `azure-storage-file-datalake` (DFS endpoint) — same SDK as our backend.
-- Native ADLS Gen2 directory listing — O(1) vs Blob SDK's prefix scanning.
+- Native ADLS Gen2 directory listing — fewer round-trips vs Blob SDK's prefix scanning.
 - `FileSystemHandler` interface — direct PyArrow integration without fsspec.
 - `FilesystemHandler` constructor accepts a raw `FileSystemClient`, which our
   backend already creates lazily (`_fs` property).
@@ -161,9 +162,14 @@ the I/O path itself.
 - Transitive dependency weight (fsspec + azure-storage-blob).
 - Already rejected in RFC-0001 for the base Azure backend.
 
-**Conclusion:** adlfs is worse than pyarrowfs-adlgen2 for our use case. It
-provides no PyArrow-native I/O, adds the Blob SDK endpoint (slower listing),
-and was already rejected for the base backend.
+**Conclusion:** adlfs is a weaker fit than pyarrowfs-adlgen2 for HNS accounts.
+Both share the same `PythonFile` GIL overhead (neither provides C++ native I/O),
+but adlfs adds `azure-storage-blob` as a transitive dependency (we already use
+`azure-storage-file-datalake`), and its Blob-endpoint listing is slower on HNS
+accounts. adlfs does support non-HNS accounts, which pyarrowfs-adlgen2 does
+not — but this advantage is marginal since our primary target (analytical
+workloads on data lakes) implies HNS. RFC-0001 rejected adlfs for the base
+backend; the dependency-weight and error-translation concerns carry over here.
 
 ### 3.3 obstore (object-store-python)
 
@@ -335,42 +341,48 @@ differences are:
 
 ---
 
-## 5. Recommendation
+## 5. Simpler Path: Seekable Range Reader in Existing Backend
 
-### 5.1 Preferred Approach: AzurePyArrowBackend (Custom Handler)
+### 5.1 The Insight
 
-Build an `AzurePyArrowBackend` that follows the `S3PyArrowBackend` pattern:
+The candidate evaluation in Section 3 focuses on `FileSystemHandler`
+implementations and new backend classes. But `pyarrow.NativeFile` — the base
+class for all Arrow streams — supports `read_at(nbytes, offset)` for
+stateless random access. `pa.PythonFile` (which wraps Python file objects)
+exposes this as `seek(offset) + read(nbytes)`. The existing Tier 3 path in
+`ext/arrow.py` already wraps seekable streams in `PythonFile`:
 
-| Path | Implementation | Operations |
-|------|---------------|-----------|
-| **Data path** | Custom `FileSystemHandler` using `download_blob(offset=, length=)` for range reads, `upload_blob()` for writes | `read`, `read_bytes`, `write`, `write_atomic`, `open_atomic` |
-| **Control path** | Inherit from `AzureBackend` (or shared base) | `exists`, `is_file`, `list_files`, `delete`, `move`, `copy` |
-| **PyArrow bridge** | `unwrap(pyarrow.fs.FileSystem)` → `PyFileSystem(handler)` | Tier 1 reads in `StoreFileSystemHandler` |
+```python
+# ext/arrow.py, open_input_file — Tier 3
+stream = self._store.read(path)
+if hasattr(stream, "seekable") and stream.seekable():
+    return pa.PythonFile(stream, mode="r")
+```
 
-**Why not pyarrowfs-adlgen2:**
-1. HNS-only — breaks for non-HNS users.
-2. No error mapping — Azure exceptions propagate raw.
-3. Alpha status, single maintainer.
-4. No server-side copy.
-5. We'd need to bridge credentials anyway.
-6. ~80% of what we need, but the remaining 20% (HNS fallback, error mapping,
-   credential bridging) requires enough glue code that we might as well own
-   the handler.
+If `AzureBackend.read()` returned a **seekable range-reader** — a `RawIOBase`
+subclass that translates `seek()` + `readinto()` into
+`download_blob(offset=, length=)` HTTP Range requests — the existing tier
+machinery handles everything else:
 
-**Why not obstore:**
-1. Rust binary dependency — heavier than the Azure SDK we already use.
-2. Less control over Azure-specific features (HNS detection, atomic rename).
-3. Would replace our carefully designed error mapping and capability system.
-4. Overkill for a single-cloud optimization when we already have the SDK.
+1. PyArrow's Parquet reader calls `read_at(offset, length)` on the
+   `PythonFile` for column-chunk access.
+2. Each `read_at` becomes a single HTTP Range request via
+   `download_blob(offset=, length=)`.
+3. **Column pruning works**: 3 columns from a 500 MB Parquet file downloads
+   ~30 MB instead of 500 MB.
 
-**Why not adlfs:**
-1. Already rejected in RFC-0001. Same weaknesses still apply.
+No new backend class. No `FileSystemHandler`. No `unwrap()`. A ~50–100 line
+change to `_azure.py`.
 
-### 5.2 Implementation Outline
+### 5.2 Implementation Sketch
 
 ```python
 class _AzureRangeReader(io.RawIOBase):
-    """Seekable reader using Azure Blob SDK range requests."""
+    """Seekable reader using Azure Blob SDK range requests.
+
+    Each readinto() issues a single HTTP Range request via
+    download_blob(offset=, length=).  No data is downloaded until read.
+    """
 
     def __init__(self, blob_client, file_size: int, max_concurrency: int = 1):
         self._bc = blob_client
@@ -418,89 +430,140 @@ class _AzureRangeReader(io.RawIOBase):
         return n
 ```
 
-This gives PyArrow's Parquet reader the `seek()` + `read()` interface it needs
-for column-chunk access. Each `ReadAt(offset, length)` translates to a single
-HTTP Range request via `download_blob(offset=, length=)`.
+`AzureBackend.read()` would return this instead of the current forward-only
+`_AzureBinaryIO`. The change is backward-compatible: callers that read
+sequentially get the same behavior (each `readinto` fetches the next range),
+while callers that seek (PyArrow via `PythonFile.read_at`) get column pruning.
 
-### 5.3 Scope and Phasing
+### 5.3 What This Does NOT Solve
 
-**Phase 0: Spike — evaluate `pyarrow.fs.AzureFileSystem`**
-- Test `AzureFileSystem` with: `connection_string`, `account_key`,
-  `DefaultAzureCredential`, `ClientSecretCredential`.
-- Verify against both HNS and non-HNS accounts.
-- Confirm `ReadRangeCache` activates (I/O coalescing for Parquet).
-- Benchmark vs `download_blob(offset=, length=)` for range-read throughput.
-- **If viable:** use as data-path filesystem (true C++ Tier 1, same as
-  `S3PyArrowBackend`). **If not:** proceed with custom `FileSystemHandler`.
+The seekable range reader delivers column pruning — the single biggest win
+(Section 4.2). But it has inherent limitations:
 
-**Phase 1: Core handler + Tier 1 reads** (this item)
-- `_AzureRangeReader` — seekable reader via range requests.
-- `_AzureFileSystemHandler` — `pyarrow.fs.FileSystemHandler` impl.
-- `AzurePyArrowBackend` — hybrid backend with `unwrap(pyarrow.fs.FileSystem)`.
-- Spec: `sdd/specs/0XX-azure-pyarrow-backend.md`.
-- Works with HNS accounts only (DFS listing); non-HNS falls back to base
-  `AzureBackend` behavior (Tier 2 in adapter).
+| Capability | Seekable range reader (Tier 3) | C++ native filesystem (Tier 1) |
+|-----------|-------------------------------|-------------------------------|
+| Column pruning | Yes — range reads via Python | Yes — range reads via C++ |
+| I/O coalescing | No — one HTTP request per `read_at` | Yes — `ReadRangeCache` batches nearby ranges |
+| GIL-free reads | No — `PythonFile` acquires GIL per call | Yes — all I/O in C++ |
+| Connection pooling | Per-request (Azure SDK) | C++ HTTP client with keep-alive |
+| Concurrent reads | Serialized (GIL + seek/read pair) | Parallel (C++ thread pool) |
 
-**Phase 2: Benchmarks and validation**
-- Benchmark against Tier 2 on real Parquet datasets.
-- Quantify: column pruning savings, listing speedup, memory reduction.
-- Compare with pyarrowfs-adlgen2 to validate our handler matches its
-  listing performance.
+For most workloads (single-user, moderate concurrency), the `PythonFile`
+overhead is acceptable. I/O coalescing and GIL-free reads matter at high
+concurrency or when reading many small column chunks — a measurable but
+secondary optimization.
 
-**Phase 3: Polish**
-- Dagster integration testing (medallion pipeline with Azure + PyArrow).
-- Documentation: guide update, example script.
-- Optional: support non-HNS accounts with Blob SDK range reads (no DFS
-  listing benefit, but still gets column pruning).
+---
 
-### 5.4 Dependencies
+## 6. Full Tier 1 Path (If Needed)
 
-No new PyPI dependencies. The handler uses:
-- `azure-storage-file-datalake` (already required by `azure` extra).
-- `pyarrow` (already required by `arrow` extra).
+If benchmarks show that the `PythonFile` overhead from Section 5 is a
+bottleneck (likely only at high concurrency or with many small range reads),
+the next step is true C++ Tier 1 via `pyarrow.fs.AzureFileSystem`.
 
-A new combined extra would be convenient:
+### 6.1 Why AzureFileSystem Over the Other Candidates
+
+**pyarrowfs-adlgen2, adlfs, custom FileSystemHandler:** All use `PythonFile`
+wrapping — they do NOT eliminate the GIL overhead that motivates moving beyond
+Section 5. Building a `FileSystemHandler` adds ~300–500 LOC of complexity for
+zero I/O performance gain over the seekable range reader.
+
+**obstore:** True Rust-native I/O (no GIL), but adds a heavy Rust binary
+dependency and abstracts away Azure-specific features we need (HNS detection,
+error mapping). Overkill when PyArrow ships its own C++ Azure filesystem.
+
+**`pyarrow.fs.AzureFileSystem`:** The only option that provides true C++ Tier 1
+(zero GIL, I/O coalescing, connection pooling) without a new dependency. Direct
+analog of the `S3PyArrowBackend` pattern. The right choice if we need to go
+beyond `PythonFile`.
+
+### 6.2 AzurePyArrowBackend (S3PyArrow Pattern)
+
+If `AzureFileSystem` proves viable, build an `AzurePyArrowBackend`:
+
+| Path | Implementation | Operations |
+|------|---------------|-----------|
+| **Data path** | `pyarrow.fs.AzureFileSystem` (C++) | read, read_bytes, write, write_atomic, copy |
+| **Control path** | Existing `AzureBackend` (Python SDK) | exists, is_file, list_files, delete, move |
+| **PyArrow bridge** | `unwrap(pyarrow.fs.FileSystem)` → native C++ FS | True Tier 1 in `StoreFileSystemHandler` |
+
+**Open questions** (require spike):
+- Auth coverage: does `AzureFileSystem` support `connection_string`,
+  `account_key`, `DefaultAzureCredential`, `ClientSecretCredential`?
+- HNS handling: does the C++ SDK handle both HNS and non-HNS accounts?
+- Maturity: `AzureFileSystem` is experimental (added PyArrow 15.0.0, Jan 2024).
+  Stability for production workloads needs validation.
+
+### 6.3 Dependencies
+
+No new PyPI dependencies for either path. The seekable range reader uses only
+`azure-storage-blob` (already in `azure` extra). The `AzurePyArrowBackend`
+would additionally use `pyarrow.fs.AzureFileSystem` (ships with `pyarrow`).
+
+A combined extra would be convenient for the Tier 1 path:
 ```toml
 azure-pyarrow = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0", "pyarrow>=12.0.0"]
 ```
 
-### 5.5 Risk Assessment
+---
+
+## 7. Recommendation
+
+### 7.1 Phasing
+
+**Phase 1: Seekable range reader + PoC** (low effort, high value)
+- Add `_AzureRangeReader` to `AzureBackend.read()`. ~50–100 LOC.
+- Build a PoC that reads a multi-column Parquet file from Azure via the
+  `StoreFileSystemHandler` and measures: bytes transferred, time, memory.
+- Compare against current Tier 2 (full materialization) baseline.
+- Expected result: ~10–17x less data transfer for selective column reads.
+
+**Phase 2: Benchmark and decide** (data-driven gate)
+- Run the PoC against real workloads: Parquet column pruning, dataset scans,
+  Dagster medallion pipeline.
+- Measure whether `PythonFile` GIL overhead or missing I/O coalescing is a
+  practical bottleneck.
+- **If Phase 1 is sufficient:** ship it, close ID-102. The seekable range
+  reader gives Azure users best-in-class column pruning with zero new
+  complexity.
+- **If not:** proceed to Phase 3.
+
+**Phase 3: Spike `pyarrow.fs.AzureFileSystem`** (only if Phase 2 shows need)
+- Test auth methods, HNS/non-HNS, `ReadRangeCache` activation.
+- Benchmark against Phase 1 range reader for throughput delta.
+- **If viable:** proceed to Phase 4. **If not:** the seekable range reader
+  from Phase 1 is the final answer — document the ceiling.
+
+**Phase 4: `AzurePyArrowBackend`** (only if Phase 3 succeeds)
+- Build the hybrid backend following the `S3PyArrowBackend` pattern.
+- Spec, tests, Dagster integration, docs, example.
+
+### 7.2 Risk Assessment
 
 | Risk | Likelihood | Mitigation |
 |------|-----------|-----------|
-| `download_blob(offset=, length=)` per range is too slow (HTTP overhead per call) | Medium | Batch small ranges into larger requests; profile first |
-| Non-HNS accounts get no benefit | Low (HNS is standard for analytics) | Document clearly; non-HNS users keep base `AzureBackend` |
-| `PythonFile` GIL overhead limits concurrency | Low for typical use | Acceptable trade-off; only obstore avoids this |
-| Maintenance burden of custom handler | Low | ~300–500 LOC, thin wrapper over Azure SDK we already use |
+| `download_blob(offset=, length=)` per range is too slow (HTTP overhead per call) | Medium | PoC will measure this directly in Phase 1 |
+| `PythonFile` GIL overhead limits concurrency | Low for typical use | Phase 2 benchmarks; only proceed to Tier 1 if measured |
+| `AzureFileSystem` auth gaps block Tier 1 | Medium | Phase 1 delivers value regardless; Tier 1 is optional |
+| Non-HNS accounts get no listing benefit | Low (HNS standard for analytics) | Column pruning works on any account type |
 
----
+### 7.3 What This Gives Azure Users
 
-## 6. Decision
+For analytical workloads (Parquet, PyArrow datasets, Dagster):
 
-**Proceed with Phase 0 spike first** — evaluate `pyarrow.fs.AzureFileSystem`
-(Section 3.4) against our four auth methods and both HNS/non-HNS accounts.
-If viable, it replaces the custom handler as the data-path implementation
-(true C++ Tier 1). If not viable (auth gaps, experimental instability), fall
-back to Phase 1 with the custom `PythonFile`-based handler.
-
-**Phase 1** — create `AzurePyArrowBackend` with the chosen data-path
-implementation. This provides:
-
-1. **Column pruning** for Parquet reads (the single biggest win — up to 17x
-   less data transfer per Section 4.2).
-2. **Tier 1 dispatch** with `StoreFileSystemHandler` — `unwrap()` returns a
-   `pyarrow.fs.FileSystem`, enabling range-read column access. Note: this is
-   a `PythonFile` bridge, not true C++ Tier 1; I/O coalescing and GIL-free
-   reads require `pyarrow.fs.AzureFileSystem` (see Section 3.4 and Phase 0).
-3. **No new dependencies** beyond what the `azure` and `arrow` extras already provide.
-4. **Consistent error mapping** and credential handling.
-5. **HNS-aware listing** via the DFS SDK (already implemented in `AzureBackend`).
+| Capability | Before | After Phase 1 | After Phase 4 (if needed) |
+|-----------|--------|--------------|--------------------------|
+| Column pruning | No (full file download) | Yes (range reads via `PythonFile`) | Yes (range reads via C++) |
+| I/O coalescing | No | No | Yes (`ReadRangeCache`) |
+| Large file handling | Tier 2 fallback with warning | Tier 3 streaming | Tier 1 native |
+| New dependencies | — | None | None (ships with PyArrow) |
+| Code complexity | — | ~50–100 LOC in `_azure.py` | New backend class (~300–500 LOC) |
 
 Backlog item: **ID-102**.
 
 ---
 
-## 7. References
+## 8. References
 
 - Spec 014: PyArrow FileSystem Adapter (`sdd/specs/014-pyarrow-filesystem-adapter.md`)
 - Spec 011: S3-PyArrow Hybrid Backend (`sdd/specs/011-s3-pyarrow-backend.md`)
@@ -513,3 +576,4 @@ Backlog item: **ID-102**.
 - ARROW-8562: I/O coalescing for Parquet (github.com/apache/arrow/pull/7022)
 - Azure SDK: `download_blob(offset=, length=)` range request support
 - PyArrow AzureFileSystem: arrow.apache.org/docs/python/generated/pyarrow.fs.AzureFileSystem.html
+- PyArrow NativeFile: arrow.apache.org/docs/python/generated/pyarrow.NativeFile.html
