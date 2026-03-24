@@ -45,7 +45,7 @@ class ProxyStore(Store):
         class LoggingStore(ProxyStore):
             def read_bytes(self, path: str) -> bytes:
                 print(f"Reading {path}")
-                return self._inner.read_bytes(path)
+                return self.inner.read_bytes(path)
 
             def _wrap_child(self, inner_child: Store) -> "LoggingStore":
                 return LoggingStore(inner_child)
