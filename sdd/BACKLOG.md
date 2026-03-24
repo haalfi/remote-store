@@ -89,6 +89,16 @@ Items graduate through the SDD pipeline:
   [Research](research/research-dagster-extension.md),
   [showcase architecture](research/research-medallion-dagster-showcase.md).
 
+### Streaming & I/O
+
+- [ ] **ID-100 — Seekable read capability + extension**
+  `Capability.SEEKABLE_READ` flag for backends that return seekable streams,
+  plus `ext.seekable.seekable_read()` portable wrapper (glob three-tier
+  pattern). Backends that are natively seekable get zero-overhead passthrough;
+  others spool via `SpooledTemporaryFile` (in-memory up to threshold, then
+  disk). Replaces the `read_bytes() + BytesIO` anti-pattern.
+  [Research](research/research-seekable-read.md).
+
 ### Documentation & Developer Experience
 
 - [ ] **ID-066 — PR preview deployments**
