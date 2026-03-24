@@ -5,15 +5,20 @@
 # benchmarks can run against realistic network services instead of
 # pure in-process mocks.
 #
-# Toxiproxy sits in front of Azurite on port 10001, forwarding to
-# azurite:10000. Use ``--latency <ms>`` with pytest to add simulated
-# network latency (default: 0 = passthrough). The Toxiproxy HTTP API
-# is exposed on port 8474 for manual toxic management.
+# Toxiproxy sits in front of all three network backends:
+#   - Azurite:  port 10001 → azurite:10000
+#   - MinIO:    port 19000 → minio:9000
+#   - SFTP:     port 12222 → sftp:22
+#
+# Use ``--network-profile rtt50`` with pytest to add simulated network
+# latency to all proxied backends (default: clean = passthrough).
+# The Toxiproxy HTTP API is exposed on port 8474 for manual toxic
+# management.
 #
 # Usage:
 #   docker compose up -d
 #   pytest benchmarks/ -v
-#   pytest benchmarks/ -v --backend azure-latency --latency 30
+#   pytest benchmarks/ -v --backend s3-latency --network-profile rtt50
 #   docker compose down -v
 
 services:
@@ -51,12 +56,18 @@ services:
     image: ghcr.io/shopify/toxiproxy:2.12.0
     ports:
       - "10001:10001"           # proxied Azurite blob endpoint
+      - "19000:19000"           # proxied MinIO S3 endpoint
+      - "12222:12222"           # proxied SFTP endpoint
       - "127.0.0.1:8474:8474"  # Toxiproxy HTTP API — localhost only
     volumes:
       - ./toxiproxy.json:/config/toxiproxy.json:ro
     command: -config /config/toxiproxy.json -host 0.0.0.0
     depends_on:
       azurite:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      sftp:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "/toxiproxy-cli", "list"]

@@ -4,5 +4,17 @@
     "listen": "0.0.0.0:10001",
     "upstream": "azurite:10000",
     "enabled": true
+  },
+  {
+    "name": "minio",
+    "listen": "0.0.0.0:19000",
+    "upstream": "minio:9000",
+    "enabled": true
+  },
+  {
+    "name": "sftp",
+    "listen": "0.0.0.0:12222",
+    "upstream": "sftp:22",
+    "enabled": true
   }
 ]
