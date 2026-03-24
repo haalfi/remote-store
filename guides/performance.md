@@ -30,7 +30,7 @@ the SDK directly (often due to connection pooling and caching).
 Under realistic network round-trip times (20-100ms), the abstraction overhead
 collapses into the noise. A 1ms overhead on a 100ms round trip is 1% — invisible.
 
-![Overhead vs network latency](img/benchmarks/overhead-vs-rtt.svg)
+<!-- TODO: add overhead-vs-rtt.svg chart once multi-profile benchmark data is collected -->
 
 The benchmark suite simulates latency using [Toxiproxy](https://github.com/Shopify/toxiproxy)
 with four named profiles:

@@ -197,6 +197,8 @@ hatch run bench -- --backend s3-latency --network-profile rtt50 \
 | `hatch run bench-report-json` | Machine-readable JSON | CI / scripting |
 | `hatch run bench-report-comparative` | remote-store vs SDK vs fsspec | Overhead analysis |
 | `hatch run bench-report-comparative-md` | Same, as Markdown to file | Docs generation |
+| `hatch run bench-report-user` | Condensed report with verdicts | User-facing overview |
+| `hatch run bench-charts` | Generate SVG charts from saved JSON | Docs charts |
 
 ## Environment Variables
 
