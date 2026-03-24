@@ -6,10 +6,12 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## API Surface
 
-- [x] **ID-101 — Promote ProxyStore to public API**
+- [x] **ID-101 — Add ProxyStore to API reference**
   Exported `ProxyStore` from `remote_store`, added API reference page
   (`docs-src/api/proxy.md`), rewrote docstrings for extension authors.
-  Supersedes the "internal only" stance in ADR-0014. PR #258.
+  ProxyStore remains an internal delegation base by design (ADR-0014)
+  but is documented because it is visible in the inheritance chain and
+  useful for custom extensions. PR #258.
 
 ---
 
