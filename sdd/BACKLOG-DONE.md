@@ -4,6 +4,15 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## API Surface
+
+- [x] **ID-101 — Promote ProxyStore to public API**
+  Exported `ProxyStore` from `remote_store`, added API reference page
+  (`docs-src/api/proxy.md`), rewrote docstrings for extension authors.
+  Supersedes the "internal only" stance in ADR-0014. PR #258.
+
+---
+
 ## SDD Housekeeping
 
 - [x] **ID-099 — Consolidate SDD document categories from 7 to 5**

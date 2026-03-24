@@ -99,13 +99,6 @@ Items graduate through the SDD pipeline:
   disk). Replaces the `read_bytes() + BytesIO` anti-pattern.
   [Research](research/research-seekable-read.md).
 
-### API Surface
-
-- [~] **ID-101 — Promote ProxyStore to public API**
-  Export `ProxyStore` from `remote_store`, add API reference page,
-  update docstrings for extension authors.
-  Supersedes the "internal only" stance in ADR-0014.
-
 ### Documentation & Developer Experience
 
 - [ ] **ID-066 — PR preview deployments**

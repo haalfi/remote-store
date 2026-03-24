@@ -208,6 +208,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Caching middleware | *(none)* | TTL-based read cache with automatic invalidation on mutations |
 | Stream wrappers | *(none)* | Composable BinaryIO wrappers for progress tracking and checksums |
 | Integrity helpers | *(none)* | Checksum computation and verification over Store's public API |
+| Custom middleware | *(none)* | Subclass [`ProxyStore`](https://docs.remotestore.dev/stable/api/proxy/) to build your own Store wrapper |
 | Dagster IO manager | `remote-store[dagster]` | Use any Store as a Dagster IOManager with pluggable serialization |
 
 Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/extensions/) for details.
