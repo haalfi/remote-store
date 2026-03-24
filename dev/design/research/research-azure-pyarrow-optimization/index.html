@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/adrs/0006-documentation-architecture/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-azure-pyarrow-optimization/">
       
       
-        <link rel="prev" href="../0005-native-path-resolution/">
+        <link rel="prev" href="../research-async-store-api/">
       
       
-        <link rel="next" href="../0007-docs-src-literate-nav/">
+        <link rel="next" href="../research-dagster-extension/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>0006: Documentation Architecture - Source of Truth and Audiences - remote-store</title>
+        <title>Azure PyArrow Optimization - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0006-documentation-architecture-source-of-truth-and-audiences" class="md-skip">
+        <a href="#research-azure-pyarrow-optimization" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              0006: Documentation Architecture - Source of Truth and Audiences
+              Azure PyArrow Optimization
             
           </span>
         </div>
@@ -4666,8 +4666,6 @@
                 
   
   
-    
-  
   
   
     
@@ -4678,15 +4676,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../adrs/" class="md-nav__link ">
               
   
   
@@ -4710,7 +4708,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4728,7 +4726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -4756,7 +4754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -4784,7 +4782,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -4812,7 +4810,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -4840,7 +4838,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -4865,37 +4863,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0006: Documentation Architecture - Source of Truth and Audiences
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -4911,159 +4882,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Context">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#problems-with-original-content-living-in-docs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Problems with original content living in docs/
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#principle-docs-is-a-representation-never-the-source" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Principle: docs/ is a representation, never the source
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#content-homes-by-type" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Content homes by type
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#audience-entry-points" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Audience entry points
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#the-guides-directory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The guides/ directory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#build-process" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Build process
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#where-to-put-new-content-decision-rule" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where to put new content — decision rule
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -5076,7 +4894,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -5104,7 +4922,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0008-extension-architecture/" class="md-nav__link">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -5132,7 +4950,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5160,7 +4978,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -5188,7 +5006,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -5216,7 +5034,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5244,7 +5062,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -5272,7 +5090,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -5300,7 +5118,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -5328,7 +5146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5622,6 +5440,8 @@
                 
   
   
+    
+  
   
   
     
@@ -5632,15 +5452,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_6" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -5664,7 +5484,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_5_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -5682,7 +5502,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -5707,10 +5527,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure PyArrow Optimization
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -5726,6 +5573,370 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Problem Statement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-current-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Current Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Current Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-azure-backend-data-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Azure Backend Data Path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-pyarrow-adapter-tier-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 PyArrow Adapter Tier Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-s3pyarrow-pattern-precedent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 S3PyArrow Pattern (Precedent)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-candidate-libraries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Candidate Libraries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Candidate Libraries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-pyarrowfs-adlgen2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 pyarrowfs-adlgen2
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-adlfs-fsspec-based" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 adlfs (fsspec-based)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-obstore-object-store-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 obstore (object-store-python)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-pyarrowfsazurefilesystem-built-in-c-filesystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 pyarrow.fs.AzureFileSystem (Built-in C++ Filesystem)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-build-our-own-filesystemhandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Build Our Own FileSystemHandler
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-performance-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Performance Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Performance Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-where-does-the-performance-actually-come-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Where Does the Performance Actually Come From?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-estimated-impact-by-workload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Estimated Impact by Workload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-pyarrowfs-adlgen2-vs-custom-handler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 pyarrowfs-adlgen2 vs Custom Handler
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-simpler-path-seekable-range-reader-in-existing-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Simpler Path: Seekable Range Reader in Existing Backend
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Simpler Path: Seekable Range Reader in Existing Backend">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-the-insight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 The Insight
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-implementation-sketch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Implementation Sketch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-what-this-does-not-solve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 What This Does NOT Solve
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-full-tier-1-path-if-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Full Tier 1 Path (If Needed)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Full Tier 1 Path (If Needed)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-why-azurefilesystem-over-the-other-candidates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Why AzureFileSystem Over the Other Candidates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-azurepyarrowbackend-s3pyarrow-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 AzurePyArrowBackend (S3PyArrow Pattern)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-recommendation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Recommendation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Recommendation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-phasing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Phasing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-risk-assessment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Risk Assessment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-what-this-gives-azure-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 What This Gives Azure Users
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -5738,7 +5949,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-dagster-extension/" class="md-nav__link">
+      <a href="../research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -5766,7 +5977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -5794,7 +6005,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
+      <a href="../research-example-testing/" class="md-nav__link">
         
   
   
@@ -5822,7 +6033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -5850,7 +6061,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -5878,7 +6089,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
+      <a href="../research-health-check/" class="md-nav__link">
         
   
   
@@ -5906,7 +6117,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -5934,7 +6145,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -5962,7 +6173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -5990,7 +6201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
+      <a href="../research-retry-policy/" class="md-nav__link">
         
   
   
@@ -6018,7 +6229,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-seekable-read/" class="md-nav__link">
+      <a href="../research-seekable-read/" class="md-nav__link">
         
   
   
@@ -6046,7 +6257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -6074,7 +6285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
+      <a href="../research-store-config/" class="md-nav__link">
         
   
   
@@ -6102,7 +6313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -6130,7 +6341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -6282,10 +6493,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
+  <a href="#1-problem-statement" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status
+        1. Problem Statement
       
     </span>
   </a>
@@ -6293,22 +6504,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
+  <a href="#2-current-architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Context
+        2. Current Architecture
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Context">
+    <nav class="md-nav" aria-label="2. Current Architecture">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#problems-with-original-content-living-in-docs" class="md-nav__link">
+  <a href="#21-azure-backend-data-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Problems with original content living in docs/
+        2.1 Azure Backend Data Path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-pyarrow-adapter-tier-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 PyArrow Adapter Tier Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-s3pyarrow-pattern-precedent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 S3PyArrow Pattern (Precedent)
       
     </span>
   </a>
@@ -6321,22 +6554,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
+  <a href="#3-candidate-libraries" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision
+        3. Candidate Libraries
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
+    <nav class="md-nav" aria-label="3. Candidate Libraries">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#principle-docs-is-a-representation-never-the-source" class="md-nav__link">
+  <a href="#31-pyarrowfs-adlgen2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Principle: docs/ is a representation, never the source
+        3.1 pyarrowfs-adlgen2
       
     </span>
   </a>
@@ -6344,10 +6577,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#content-homes-by-type" class="md-nav__link">
+  <a href="#32-adlfs-fsspec-based" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Content homes by type
+        3.2 adlfs (fsspec-based)
       
     </span>
   </a>
@@ -6355,10 +6588,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#audience-entry-points" class="md-nav__link">
+  <a href="#33-obstore-object-store-python" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Audience entry points
+        3.3 obstore (object-store-python)
       
     </span>
   </a>
@@ -6366,10 +6599,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#the-guides-directory" class="md-nav__link">
+  <a href="#34-pyarrowfsazurefilesystem-built-in-c-filesystem" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The guides/ directory
+        3.4 pyarrow.fs.AzureFileSystem (Built-in C++ Filesystem)
       
     </span>
   </a>
@@ -6377,21 +6610,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#build-process" class="md-nav__link">
+  <a href="#35-build-our-own-filesystemhandler" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Build process
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#where-to-put-new-content-decision-rule" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where to put new content — decision rule
+        3.5 Build Our Own FileSystemHandler
       
     </span>
   </a>
@@ -6404,10 +6626,210 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
+  <a href="#4-performance-analysis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Consequences
+        4. Performance Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Performance Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-where-does-the-performance-actually-come-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Where Does the Performance Actually Come From?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-estimated-impact-by-workload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Estimated Impact by Workload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-pyarrowfs-adlgen2-vs-custom-handler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 pyarrowfs-adlgen2 vs Custom Handler
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-simpler-path-seekable-range-reader-in-existing-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Simpler Path: Seekable Range Reader in Existing Backend
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Simpler Path: Seekable Range Reader in Existing Backend">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-the-insight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 The Insight
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-implementation-sketch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Implementation Sketch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-what-this-does-not-solve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 What This Does NOT Solve
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-full-tier-1-path-if-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Full Tier 1 Path (If Needed)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Full Tier 1 Path (If Needed)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-why-azurefilesystem-over-the-other-candidates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Why AzureFileSystem Over the Other Candidates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-azurepyarrowbackend-s3pyarrow-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 AzurePyArrowBackend (S3PyArrow Pattern)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-recommendation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Recommendation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Recommendation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-phasing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Phasing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-risk-assessment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Risk Assessment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-what-this-gives-azure-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 What This Gives Azure Users
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. References
       
     </span>
   </a>
@@ -6431,156 +6853,757 @@
 
 
 
-<h1 id="adr-0006-documentation-architecture-source-of-truth-and-audiences">ADR-0006: Documentation Architecture - Source of Truth and Audiences<a class="headerlink" href="#adr-0006-documentation-architecture-source-of-truth-and-audiences" title="Permanent link">&para;</a></h1>
-<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Superseded by <a href="../0007-docs-src-literate-nav/">ADR-0007</a></p>
-<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The project serves two distinct audiences:</p>
+<h1 id="research-azure-pyarrow-optimization">Research: Azure PyArrow Optimization<a class="headerlink" href="#research-azure-pyarrow-optimization" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-03-24
+<strong>Scope:</strong> Evaluating native PyArrow filesystem integration for the Azure
+backend to achieve Tier 1 read performance for analytical workloads
+(Parquet, PyArrow datasets, Dagster, medallion architecture).</p>
+<hr />
+<h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
+<p>The Azure backend (<code>AzureBackend</code>) currently lacks a native PyArrow filesystem
+handle. When used through the <code>StoreFileSystemHandler</code> (spec 014), it falls to
+<strong>Tier 2</strong> (full materialization via <code>read_bytes()</code> → <code>BufferReader</code>) for all
+<code>open_input_file</code> calls. For files over the materialization threshold (64 MB),
+a warning is emitted and the entire file is loaded into memory.</p>
+<p>This has three consequences for analytical workloads:</p>
 <ol>
-<li><strong>Package users</strong> — install <code>remote-store</code>, need to configure backends, use
-   the API, follow guides.</li>
-<li><strong>Developers / contributors</strong> — need to understand design decisions, specs,
-   and repo structure as a precondition for contribution.</li>
+<li><strong>No column pruning.</strong> Reading 3 columns from a 500 MB Parquet file
+   downloads all 500 MB instead of ~30 MB of column chunks. The C++
+   <code>ReadAt(offset, length)</code> → HTTP Range request pipeline is unavailable.</li>
+<li><strong>No I/O coalescing.</strong> PyArrow's <code>pre_buffer=True</code> optimization
+   (PARQUET-1820), which coalesces nearby byte ranges into fewer requests
+   for significant speedups, cannot activate without a native filesystem.</li>
+<li><strong>No streaming for large files.</strong> Files &gt; 64 MB trigger full
+   materialization with a memory-cost warning. PR #259 (ID-100) adds
+   <code>ext.seekable</code> with <code>SpooledTemporaryFile</code> fallback, which enables Tier 3
+   (<code>PythonFile</code> streaming), but the entire file is still downloaded before
+   any byte is consumed — there are no range requests.</li>
 </ol>
-<p>Content was accumulating in <code>docs/</code> with mixed provenance: some files were
-thin <code>include-markdown</code> wrappers pointing to source files elsewhere, while
-others contained original content found nowhere else in the repo. This
-created a contradiction — <code>docs/</code> was treated as a build artifact in some
-places and as the source of truth in others.</p>
-<p>The <code>docs/</code> directory is consumed by MkDocs to produce the published
-documentation site. MkDocs requires a specific directory layout, navigation
-structure, and directive syntax (<code>include-markdown</code>, <code>mkdocstrings</code>,
-<code>pymdownx.snippets</code>). These are <strong>presentation concerns</strong>, not content
-concerns.</p>
-<h3 id="problems-with-original-content-living-in-docs">Problems with original content living in <code>docs/</code><a class="headerlink" href="#problems-with-original-content-living-in-docs" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Redundancy risk.</strong> Content drifts between the "real" source (<code>README.md</code>,
-  <code>sdd/</code>, <code>examples/</code>) and the <code>docs/</code> copy.</li>
-<li><strong>Wrong abstraction level.</strong> Detailed backend guides, getting-started
-  tutorials, and design specs are valuable independently of MkDocs — they
-  should be readable on GitHub, in editors, and offline.</li>
-<li><strong>Unclear ownership.</strong> Contributors don't know whether to edit <code>docs/s3.md</code>
-  or create a source file and wrap it.</li>
-</ul>
-<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<h3 id="principle-docs-is-a-representation-never-the-source">Principle: <code>docs/</code> is a representation, never the source<a class="headerlink" href="#principle-docs-is-a-representation-never-the-source" title="Permanent link">&para;</a></h3>
-<p>All publishable content lives in source directories. The <code>docs/</code> directory
-is <strong>fully generated</strong> — every file is either a wrapper directive or produced
-by the build script. <code>docs/</code> is gitignored.</p>
-<h3 id="content-homes-by-type">Content homes by type<a class="headerlink" href="#content-homes-by-type" title="Permanent link">&para;</a></h3>
+<p>The S3 backend solved this with <code>S3PyArrowBackend</code> (spec 011) — a hybrid that
+uses PyArrow's C++ <code>S3FileSystem</code> for data-path operations and <code>s3fs</code> for
+control-path operations. An analogous approach is needed for Azure.</p>
+<hr />
+<h2 id="2-current-architecture">2. Current Architecture<a class="headerlink" href="#2-current-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="21-azure-backend-data-path">2.1 Azure Backend Data Path<a class="headerlink" href="#21-azure-backend-data-path" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>AzureBackend.read(path)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  → BlobClient.download_blob(max_concurrency=N)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  → StorageStreamDownloader.chunks()     # forward-only iterator
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  → _AzureBinaryIO(chunks_iter)          # io.RawIOBase adapter
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  → BufferedReader(ErrorMappingStream)    # no seek(), no readat()
+</code></pre></div>
+<p><strong>Key limitation:</strong> <code>_AzureBinaryIO</code> wraps a chunk iterator — there is no
+<code>seek()</code>, no random access, and no way to request byte ranges. The Azure
+Blob SDK's <code>download_blob(offset=, length=)</code> supports range requests, but
+the current adapter does not expose them.</p>
+<h3 id="22-pyarrow-adapter-tier-mapping">2.2 PyArrow Adapter Tier Mapping<a class="headerlink" href="#22-pyarrow-adapter-tier-mapping" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Content type</th>
-<th>Source location</th>
-<th>Audience</th>
+<th>Tier</th>
+<th>Condition</th>
+<th>Azure Status</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Project introduction, installation, quick start</td>
-<td><code>README.md</code></td>
-<td>Both</td>
+<td><strong>Tier 1</strong></td>
+<td><code>store.unwrap(pyarrow.fs.FileSystem)</code> succeeds</td>
+<td>Not available — <code>unwrap()</code> only supports <code>FileSystemClient</code></td>
 </tr>
 <tr>
-<td>User-facing guides (backends, streaming, patterns)</td>
-<td><code>guides/</code></td>
-<td>Package users</td>
+<td><strong>Tier 2</strong></td>
+<td>File ≤ 64 MB</td>
+<td>Used (full materialization)</td>
 </tr>
 <tr>
-<td>Runnable code examples</td>
-<td><code>examples/</code></td>
-<td>Package users</td>
+<td><strong>Tier 3</strong></td>
+<td>File &gt; 64 MB, seekable stream</td>
+<td>Available via <code>ext.seekable</code> (ID-100), but downloads entire file — no range requests</td>
 </tr>
 <tr>
-<td>API docstrings</td>
-<td>Python source (<code>src/</code>)</td>
-<td>Both</td>
-</tr>
-<tr>
-<td>Design specs</td>
-<td><code>sdd/specs/</code></td>
-<td>Developers</td>
-</tr>
-<tr>
-<td>Architecture decision records</td>
-<td><code>sdd/adrs/</code></td>
-<td>Developers</td>
-</tr>
-<tr>
-<td>Design process &amp; overview</td>
-<td><code>sdd/</code> (root files)</td>
-<td>Developers</td>
-</tr>
-<tr>
-<td>Contributor workflow</td>
-<td><code>CONTRIBUTING.md</code></td>
-<td>Developers</td>
-</tr>
-<tr>
-<td>Release history</td>
-<td><code>CHANGELOG.md</code></td>
-<td>Both</td>
-</tr>
-<tr>
-<td>Development narrative</td>
-<td><code>DEVELOPMENT_STORY.md</code></td>
-<td>Developers</td>
+<td><strong>Tier 2 fallback</strong></td>
+<td>File &gt; 64 MB, non-seekable</td>
+<td>Used with memory warning (default without <code>ext.seekable</code>)</td>
 </tr>
 </tbody>
 </table>
-<h3 id="audience-entry-points">Audience entry points<a class="headerlink" href="#audience-entry-points" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Package users</strong> enter through <code>README.md</code> (also the PyPI landing page).
-  It links to <code>guides/</code> for deeper topics and <code>examples/</code> for runnable code.</li>
-<li><strong>Developers</strong> enter through <code>README.md</code> for orientation, then navigate to
-  <code>sdd/</code> for design context and <code>CONTRIBUTING.md</code> for workflow.</li>
-</ul>
-<h3 id="the-guides-directory">The <code>guides/</code> directory<a class="headerlink" href="#the-guides-directory" title="Permanent link">&para;</a></h3>
-<p>Top-level directory for all user-facing guide content — any topic that helps
-a package user accomplish something. Organized by subject:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>guides/
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  backends/
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    index.md          # comparison table, pluggable architecture
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    local.md
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    s3.md
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    s3-pyarrow.md
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    sftp.md
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>  # future topics added as needed
+<h3 id="23-s3pyarrow-pattern-precedent">2.3 S3PyArrow Pattern (Precedent)<a class="headerlink" href="#23-s3pyarrow-pattern-precedent" title="Permanent link">&para;</a></h3>
+<p><code>S3PyArrowBackend</code> (spec 011) demonstrates the dual-library approach:</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Library</th>
+<th>Operations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Data path</strong></td>
+<td><code>pyarrow.fs.S3FileSystem</code> (C++)</td>
+<td>read, read_bytes, write, write_atomic, copy</td>
+</tr>
+<tr>
+<td><strong>Control path</strong></td>
+<td><code>s3fs</code> (Python/botocore)</td>
+<td>exists, is_file, list_files, delete, move</td>
+</tr>
+</tbody>
+</table>
+<p>Both libraries authenticate with the same credentials. The <code>unwrap()</code> method
+returns the PyArrow filesystem, enabling Tier 1 reads through the
+<code>StoreFileSystemHandler</code>.</p>
+<hr />
+<h2 id="3-candidate-libraries">3. Candidate Libraries<a class="headerlink" href="#3-candidate-libraries" title="Permanent link">&para;</a></h2>
+<h3 id="31-pyarrowfs-adlgen2">3.1 pyarrowfs-adlgen2<a class="headerlink" href="#31-pyarrowfs-adlgen2" title="Permanent link">&para;</a></h3>
+<p><strong>Repository:</strong> github.com/kaaveland/pyarrowfs-adlgen2
+<strong>PyPI:</strong> pyarrowfs-adlgen2 (MIT license)
+<strong>Version:</strong> 0.2.5 (June 2024)
+<strong>Downloads:</strong> ~48,000/week</p>
+<p>A thin <code>pyarrow.fs.FileSystemHandler</code> implementation for ADLS Gen2. Uses the
+same <code>azure-storage-file-datalake</code> SDK that our <code>AzureBackend</code> already uses.</p>
+<p><strong>API:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrowfs_adlgen2</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">azure.identity</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.fs</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Single-container access</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">handler</span> <span class="o">=</span> <span class="n">pyarrowfs_adlgen2</span><span class="o">.</span><span class="n">FilesystemHandler</span><span class="o">.</span><span class="n">from_account_name</span><span class="p">(</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="s2">&quot;mystorageacct&quot;</span><span class="p">,</span> <span class="s2">&quot;mycontainer&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">credential</span><span class="o">=</span><span class="n">azure</span><span class="o">.</span><span class="n">identity</span><span class="o">.</span><span class="n">DefaultAzureCredential</span><span class="p">(),</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">timeouts</span><span class="o">=</span><span class="n">pyarrowfs_adlgen2</span><span class="o">.</span><span class="n">Timeouts</span><span class="p">(</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="n">file_client_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="n">file_system_timeout</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="p">),</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="p">)</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">fs</span> <span class="o">=</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">PyFileSystem</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="c1"># Whole-account access (paths: &quot;container/path/file&quot;)</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">handler</span> <span class="o">=</span> <span class="n">pyarrowfs_adlgen2</span><span class="o">.</span><span class="n">AccountHandler</span><span class="o">.</span><span class="n">from_account_name</span><span class="p">(</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="s2">&quot;mystorageacct&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">credential</span><span class="o">=</span><span class="n">azure</span><span class="o">.</span><span class="n">identity</span><span class="o">.</span><span class="n">DefaultAzureCredential</span><span class="p">(),</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="p">)</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="n">fs</span> <span class="o">=</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">PyFileSystem</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
 </code></pre></div>
-<p>Guides are written as standalone Markdown, readable on GitHub without MkDocs.
-The build script wraps them into <code>docs/</code> for the published site.</p>
-<h3 id="build-process">Build process<a class="headerlink" href="#build-process" title="Permanent link">&para;</a></h3>
-<p>A build script (or MkDocs hook) generates the entire <code>docs/</code> tree:</p>
+<p><strong>Strengths:</strong>
+- Uses <code>azure-storage-file-datalake</code> (DFS endpoint) — same SDK as our backend.
+- Native ADLS Gen2 directory listing — fewer round-trips vs Blob SDK's prefix scanning.
+- <code>FileSystemHandler</code> interface — direct PyArrow integration without fsspec.
+- <code>FilesystemHandler</code> constructor accepts a raw <code>FileSystemClient</code>, which our
+  backend already creates lazily (<code>_fs</code> property).
+- Lightweight: ~1k LOC, MIT license, minimal dependencies.</p>
+<p><strong>Weaknesses:</strong>
+- <strong>HNS-only.</strong> Does not work with plain Blob Storage accounts. Uses the
+  DFS SDK exclusively — no fallback to Blob SDK.
+- <strong>Alpha status</strong> on PyPI despite being described as "stable."
+- Single maintainer, low activity (28 stars, last release June 2024).
+- <code>copy_file</code> uses download-then-upload (no server-side copy).
+- No CI/CD, no published docs, still uses <code>setup.py</code>.
+- Hard-coded <code>*.dfs.core.windows.net</code> endpoint validation — no OneLake
+  support (issue #27).
+- No version pin on <code>azure-storage-file-datalake</code>.
+- <code>open_input_file</code> is identical to <code>open_input_stream</code> — same <code>PythonFile</code>
+  wrapping, same GIL overhead. <strong>Does NOT provide true C++ range requests.</strong></p>
+<p><strong>Critical finding:</strong> pyarrowfs-adlgen2 wraps Python file objects in
+<code>PythonFile</code>, which means every <code>ReadAt</code> call acquires the GIL and goes through
+Python dispatch. This is the <strong>same overhead</strong> that spec 014 criticizes in
+PyArrow's <code>FSSpecHandler</code>. It does NOT provide C++ native I/O — the performance
+benefit comes primarily from faster directory listing via the DFS SDK, not from
+the I/O path itself.</p>
+<h3 id="32-adlfs-fsspec-based">3.2 adlfs (fsspec-based)<a class="headerlink" href="#32-adlfs-fsspec-based" title="Permanent link">&para;</a></h3>
+<p><strong>Repository:</strong> github.com/fsspec/adlfs
+<strong>PyPI:</strong> adlfs (~2.5M downloads/week)
+<strong>Status:</strong> Actively maintained by multiple contributors.</p>
+<p><strong>Strengths:</strong>
+- Wide adoption, active maintenance.
+- Works with both HNS and non-HNS accounts.
+- Broad ecosystem support (Dask, xarray, pandas).
+- PyArrow can wrap it via <code>FSSpecHandler</code>.</p>
+<p><strong>Weaknesses:</strong>
+- Uses <code>azure-storage-blob</code> (Blob endpoint), not the DFS SDK.
+- Directory listing is prefix-based — O(n) for deep hierarchies.
+- <code>FSSpecHandler</code> wrapping has the same <code>PythonFile</code> GIL overhead.
+- Fragile error translation (string matching on exception messages).
+- Transitive dependency weight (fsspec + azure-storage-blob).
+- Already rejected in RFC-0001 for the base Azure backend.</p>
+<p><strong>Conclusion:</strong> adlfs is a weaker fit than pyarrowfs-adlgen2 for HNS accounts.
+Both share the same <code>PythonFile</code> GIL overhead (neither provides C++ native I/O),
+but adlfs pulls in <code>fsspec</code> as a new transitive dependency (we don't use fsspec
+anywhere else), and its Blob-endpoint listing is slower on HNS accounts.
+(<code>azure-storage-blob</code> is NOT an incremental dep — it's already a transitive
+dependency of <code>azure-storage-file-datalake</code>.) adlfs does support non-HNS
+accounts, which pyarrowfs-adlgen2 does not — but this advantage is marginal
+since our primary target (analytical workloads on data lakes) implies HNS.
+RFC-0001 rejected adlfs for the base backend; the <code>fsspec</code> dependency-weight
+and error-translation concerns carry over here.</p>
+<h3 id="33-obstore-object-store-python">3.3 obstore (object-store-python)<a class="headerlink" href="#33-obstore-object-store-python" title="Permanent link">&para;</a></h3>
+<p><strong>Repository:</strong> github.com/developmentseed/obstore
+<strong>PyPI:</strong> obstore
+<strong>Status:</strong> Active development, backed by Rust <code>object_store</code> crate (same
+crate used by DataFusion, Polars, InfluxDB, Delta-rs).</p>
+<p>A Rust-backed <code>pyarrow.fs.FileSystemHandler</code> via PyO3. Implements I/O
+entirely in Rust — no <code>PythonFile</code>, no GIL contention on the read path.</p>
+<p><strong>Strengths:</strong>
+- <strong>True C++-equivalent I/O.</strong> Rust native code issues HTTP Range requests
+  without GIL overhead. This is the performance ceiling for
+  <code>FileSystemHandler</code> implementations.
+- Multi-cloud: S3, GCS, Azure (Blob + ADLS Gen2), local.
+- Active maintenance, growing community.
+- Server-side copy, multipart uploads.
+- Supports <code>pyarrow.fs.FileSystem</code> interface directly.</p>
+<p><strong>Weaknesses:</strong>
+- Rust binary dependency — more complex build, platform-specific wheels.
+- Young project, API may still evolve.
+- Adds a non-trivial transitive dependency (<code>object_store</code> crate).
+- Azure support may not use the DFS endpoint natively in all operations
+  (the <code>object_store</code> crate treats Azure as flat blob storage).
+- Less control over Azure-specific features (HNS detection, atomic
+  rename) — the Rust crate abstracts these away.</p>
+<h3 id="34-pyarrowfsazurefilesystem-built-in-c-filesystem">3.4 pyarrow.fs.AzureFileSystem (Built-in C++ Filesystem)<a class="headerlink" href="#34-pyarrowfsazurefilesystem-built-in-c-filesystem" title="Permanent link">&para;</a></h3>
+<p><strong>Source:</strong> PyArrow ships a C++ <code>AzureFileSystem</code> backed by the Azure SDK for
+C++, directly analogous to <code>S3FileSystem</code> used by <code>S3PyArrowBackend</code>.</p>
+<p><strong>API:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyarrow.fs</span><span class="w"> </span><span class="kn">import</span> <span class="n">AzureFileSystem</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Account-key auth</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">fs</span> <span class="o">=</span> <span class="n">AzureFileSystem</span><span class="p">(</span><span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;mystorageacct&quot;</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># DefaultAzureCredential-style (via C++ Azure SDK)</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">fs</span> <span class="o">=</span> <span class="n">AzureFileSystem</span><span class="p">(</span><span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;mystorageacct&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Strengths:</strong>
+- <strong>True Tier 1 — zero GIL overhead.</strong> All I/O happens in C++ with no
+  <code>PythonFile</code> bridge. <code>ReadAt</code> maps directly to HTTP Range requests via the
+  C++ Azure SDK, with <code>ReadRangeCache</code> coalescing and connection pooling.
+- Direct analog of the <code>S3PyArrowBackend</code> pattern — <code>unwrap()</code> returns this
+  filesystem, <code>StoreFileSystemHandler</code> gets native C++ performance.
+- No new Python dependency — ships with PyArrow itself.
+- Supports Blob Storage and ADLS Gen2.</p>
+<p><strong>Weaknesses:</strong>
+- <strong>Auth limitations.</strong> The C++ Azure SDK's credential support is narrower than
+  the Python <code>azure-identity</code> package. <code>DefaultAzureCredential</code>, managed
+  identity, and environment-based auth are supported, but interactive browser
+  auth, <code>AzureCliCredential</code>, and custom token providers require investigation.
+  Our backend supports <code>connection_string</code>, <code>account_key</code>,
+  <code>DefaultAzureCredential</code>, and <code>ClientSecretCredential</code> — each needs
+  validation against the C++ SDK.
+- <strong>Maturity.</strong> <code>AzureFileSystem</code> was added in PyArrow 16.0.0 (Apr 2024) and
+  is still marked as experimental. The S3 and GCS C++ filesystems are
+  significantly more mature.
+- <strong>HNS handling unclear.</strong> Whether the C++ SDK correctly handles hierarchical
+  namespace operations (atomic rename, directory-level ACLs) on ADLS Gen2
+  needs investigation.
+- <strong>Limited control-path operations.</strong> Like <code>S3FileSystem</code>, it may lack some
+  control-path features we need (HNS detection, soft-delete, last-modified
+  filtering). We would still need the Python Azure SDK for the control path.</p>
+<p><strong>Critical assessment:</strong> If <code>AzureFileSystem</code> supports our required auth
+methods and handles both HNS and non-HNS accounts, it is the strongest
+candidate — providing the same true-Tier-1 benefits that <code>S3FileSystem</code> gives
+<code>S3PyArrowBackend</code>. However, its experimental status and auth coverage gaps
+must be validated before committing to it. A spike is needed: test the four
+auth methods against both HNS and non-HNS accounts, verify <code>ReadRangeCache</code>
+activates, and benchmark against <code>download_blob(offset=, length=)</code>.</p>
+<h3 id="35-build-our-own-filesystemhandler">3.5 Build Our Own FileSystemHandler<a class="headerlink" href="#35-build-our-own-filesystemhandler" title="Permanent link">&para;</a></h3>
+<p>Rather than depending on a third-party library, we could implement a
+<code>pyarrow.fs.FileSystemHandler</code> directly in the <code>AzureBackend</code>, analogous to
+how <code>StoreFileSystemHandler</code> works but using the Azure SDK's range-request
+capabilities directly.</p>
+<p><strong>Approach:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># In AzureBackend or a new AzurePyArrowBackend:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_hint</span><span class="p">):</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="k">if</span> <span class="n">type_hint</span> <span class="ow">is</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">FileSystem</span><span class="p">:</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        <span class="k">return</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">PyFileSystem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_handler</span><span class="p">())</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="o">...</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">_build_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="c1"># Return a FileSystemHandler that uses:</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="c1"># - download_blob(offset=, length=) for range reads</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="c1"># - DataLake SDK for listing</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="c1"># - Existing error mapping</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="o">...</span>
+</code></pre></div>
+<p><strong>Strengths:</strong>
+- Full control over credential bridging, error mapping, HNS detection.
+- Can use <code>download_blob(offset=, length=)</code> for byte-range requests.
+- No new dependency.
+- Consistent with the codebase's "direct SDK" philosophy (RFC-0001).
+- Can fall back gracefully for non-HNS accounts.</p>
+<p><strong>Weaknesses:</strong>
+- Still <code>PythonFile</code> wrapping — GIL overhead on every <code>ReadAt</code>.
+- More code to write and maintain (~300–500 LOC).
+- <code>download_blob(offset=, length=)</code> incurs per-request round-trip latency
+  for each range, unlike C++ implementations that use HTTP/2 multiplexing
+  and request pipelining. (The Azure SDK does pool TCP connections via
+  <code>requests.Session</code>, so connection establishment is not the bottleneck.)</p>
+<p><strong>Critical insight:</strong> Even with our own <code>FileSystemHandler</code>, the <code>PythonFile</code>
+bridge is unavoidable for any Python-based implementation. The GIL overhead
+from <code>ReadAt → GIL acquire → Python seek + read → GIL release</code> is inherent
+to <code>pyarrow.fs.PyFileSystem</code>. Only Rust/C++ implementations (obstore,
+PyArrow's built-in S3/GCS) avoid this.</p>
+<hr />
+<h2 id="4-performance-analysis">4. Performance Analysis<a class="headerlink" href="#4-performance-analysis" title="Permanent link">&para;</a></h2>
+<h3 id="41-where-does-the-performance-actually-come-from">4.1 Where Does the Performance Actually Come From?<a class="headerlink" href="#41-where-does-the-performance-actually-come-from" title="Permanent link">&para;</a></h3>
+<p>Breaking down the performance layers:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>C++ native (S3FileSystem)</th>
+<th>PythonFile (pyarrowfs/adlfs/custom)</th>
+<th>Tier 2 (current Azure)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Column pruning</td>
+<td>Yes (range reads)</td>
+<td>Yes (range reads via Python)</td>
+<td>No (full file)</td>
+</tr>
+<tr>
+<td>I/O coalescing</td>
+<td>Yes (C++ ReadRangeCache)</td>
+<td>No (Python dispatch per range)</td>
+<td>No</td>
+</tr>
+<tr>
+<td>GIL-free reads</td>
+<td>Yes</td>
+<td>No</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td>Request pipelining</td>
+<td>Yes (C++ HTTP/2 multiplexing)</td>
+<td>No (one round-trip per range; connections pooled)</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td>Directory listing</td>
+<td>S3 ListObjectsV2</td>
+<td>Varies by SDK</td>
+<td>Blob prefix scan</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key takeaway:</strong> The biggest win is <strong>column pruning</strong> — reading only the byte
+ranges needed instead of the full file. This is achievable with any
+<code>FileSystemHandler</code> that supports range reads, even with <code>PythonFile</code> overhead.
+I/O coalescing and GIL-free reads are secondary optimizations that matter at
+high concurrency.</p>
+<h3 id="42-estimated-impact-by-workload">4.2 Estimated Impact by Workload<a class="headerlink" href="#42-estimated-impact-by-workload" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Workload</th>
+<th>Current (Tier 2)</th>
+<th>With range-read handler</th>
+<th>Improvement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Single Parquet file, 3/50 columns, 500 MB</td>
+<td>Download 500 MB</td>
+<td>Download ~30 MB</td>
+<td><strong>~17x less data</strong></td>
+</tr>
+<tr>
+<td>Dataset scan, 100 files × 200 MB, filter pushdown</td>
+<td>20 GB into memory</td>
+<td>~2 GB range reads</td>
+<td><strong>~10x less data</strong></td>
+</tr>
+<tr>
+<td>Directory listing, 1000 files on HNS</td>
+<td>Blob prefix scan</td>
+<td>DFS native listing</td>
+<td><strong>~3x faster</strong></td>
+</tr>
+<tr>
+<td>Small Parquet file (&lt; 64 MB)</td>
+<td>Full materialization (fast enough)</td>
+<td>Range reads (marginal gain)</td>
+<td>Minimal</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-pyarrowfs-adlgen2-vs-custom-handler">4.3 pyarrowfs-adlgen2 vs Custom Handler<a class="headerlink" href="#43-pyarrowfs-adlgen2-vs-custom-handler" title="Permanent link">&para;</a></h3>
+<p>Both use <code>PythonFile</code> wrapping, so I/O performance should be similar. The
+differences are:</p>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>pyarrowfs-adlgen2</th>
+<th>Custom handler</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Credential bridging</td>
+<td>Factory method or raw <code>FileSystemClient</code></td>
+<td>Reuse existing backend credentials</td>
+</tr>
+<tr>
+<td>HNS fallback</td>
+<td>None (HNS-only)</td>
+<td>Full (reuse existing <code>_hns</code> detection)</td>
+</tr>
+<tr>
+<td>Error mapping</td>
+<td>Azure exceptions propagate raw</td>
+<td>Mapped to <code>RemoteStoreError</code> hierarchy</td>
+</tr>
+<tr>
+<td>Listing performance</td>
+<td>Native DFS directory listing</td>
+<td>Same (we already use DFS on HNS)</td>
+</tr>
+<tr>
+<td>Server-side copy</td>
+<td>Not supported (download + upload)</td>
+<td>Supported (existing <code>copy()</code> method)</td>
+</tr>
+<tr>
+<td>Maintenance</td>
+<td>External dependency</td>
+<td>Internal code</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-simpler-path-seekable-range-reader-in-existing-backend">5. Simpler Path: Seekable Range Reader in Existing Backend<a class="headerlink" href="#5-simpler-path-seekable-range-reader-in-existing-backend" title="Permanent link">&para;</a></h2>
+<h3 id="51-the-insight">5.1 The Insight<a class="headerlink" href="#51-the-insight" title="Permanent link">&para;</a></h3>
+<p>The candidate evaluation in Section 3 focuses on <code>FileSystemHandler</code>
+implementations and new backend classes. But <code>pyarrow.NativeFile</code> — the base
+class for all Arrow streams — supports <code>read_at(nbytes, offset)</code> for
+stateless random access. <code>pa.PythonFile</code> (which wraps Python file objects)
+exposes this as <code>seek(offset) + read(nbytes)</code>. The existing Tier 3 path in
+<code>ext/arrow.py</code> already wraps seekable streams in <code>PythonFile</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># ext/arrow.py, open_input_file — Tier 3</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="s2">&quot;seekable&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">stream</span><span class="o">.</span><span class="n">seekable</span><span class="p">():</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="k">return</span> <span class="n">pa</span><span class="o">.</span><span class="n">PythonFile</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>If <code>AzureBackend.read()</code> returned a <strong>seekable range-reader</strong> — a <code>RawIOBase</code>
+subclass that translates <code>seek()</code> + <code>readinto()</code> into
+<code>download_blob(offset=, length=)</code> HTTP Range requests — the existing tier
+machinery handles everything else:</p>
 <ol>
-<li>Creates wrapper files with <code>include-markdown</code> directives pointing to
-   source locations (<code>README.md</code>, <code>guides/</code>, <code>sdd/</code>, <code>examples/</code>).</li>
-<li>Generates navigation index pages from <code>mkdocs.yml</code> structure.</li>
-<li>Copies or symlinks assets as needed.</li>
+<li>PyArrow's Parquet reader calls <code>read_at(offset, length)</code> on the
+   <code>PythonFile</code> for column-chunk access.</li>
+<li>Each <code>read_at</code> becomes a single HTTP Range request via
+   <code>download_blob(offset=, length=)</code>.</li>
+<li><strong>Column pruning works</strong>: 3 columns from a 500 MB Parquet file downloads
+   ~30 MB instead of 500 MB.</li>
 </ol>
-<p>The generated <code>docs/</code> directory is excluded from version control via
-<code>.gitignore</code>.</p>
-<h3 id="where-to-put-new-content-decision-rule">Where to put new content — decision rule<a class="headerlink" href="#where-to-put-new-content-decision-rule" title="Permanent link">&para;</a></h3>
-<blockquote>
-<p>If you can read it on GitHub and it makes sense without MkDocs, it belongs
-in a source directory. If it only makes sense as part of the site build,
-it belongs in the build script.</p>
-</blockquote>
-<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<p>No new backend class. No <code>FileSystemHandler</code>. No <code>unwrap()</code>. The core reader
+is ~50 LOC; the dual-mode integration (keeping chunked streaming for
+sequential callers, exposing seekable reads for PyArrow) adds ~100–150 LOC.</p>
+<h3 id="52-implementation-sketch">5.2 Implementation Sketch<a class="headerlink" href="#52-implementation-sketch" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">_AzureRangeReader</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">RawIOBase</span><span class="p">):</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Seekable reader using Azure Blob SDK range requests.</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="sd">    Each readinto() issues a single HTTP Range request via</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="sd">    download_blob(offset=, length=).  No data is downloaded until read.</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">blob_client</span><span class="p">,</span> <span class="n">file_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">max_concurrency</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span> <span class="o">=</span> <span class="n">blob_client</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_size</span> <span class="o">=</span> <span class="n">file_size</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_max_concurrency</span> <span class="o">=</span> <span class="n">max_concurrency</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">readable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>        <span class="k">return</span> <span class="kc">True</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">seekable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>        <span class="k">return</span> <span class="kc">True</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">seek</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">whence</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>        <span class="k">if</span> <span class="n">whence</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span> <span class="o">=</span> <span class="n">offset</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>        <span class="k">elif</span> <span class="n">whence</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span> <span class="o">+=</span> <span class="n">offset</span>
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a>        <span class="k">elif</span> <span class="n">whence</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_size</span> <span class="o">+</span> <span class="n">offset</span>
+<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_size</span><span class="p">))</span>
+<a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span>
+<a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>
+<a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">tell</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span>
+<a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a>
+<a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">readinto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">bytearray</span> <span class="o">|</span> <span class="nb">memoryview</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a>        <span class="n">remaining</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_size</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span>
+<a id="__codelineno-5-35" name="__codelineno-5-35" href="#__codelineno-5-35"></a>        <span class="k">if</span> <span class="n">remaining</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-5-36" name="__codelineno-5-36" href="#__codelineno-5-36"></a>            <span class="k">return</span> <span class="mi">0</span>
+<a id="__codelineno-5-37" name="__codelineno-5-37" href="#__codelineno-5-37"></a>        <span class="n">length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="n">remaining</span><span class="p">)</span>
+<a id="__codelineno-5-38" name="__codelineno-5-38" href="#__codelineno-5-38"></a>        <span class="c1"># Note: download_blob().readall() double-buffers (allocates a</span>
+<a id="__codelineno-5-39" name="__codelineno-5-39" href="#__codelineno-5-39"></a>        <span class="c1"># temporary bytes object then copies into b).  The real</span>
+<a id="__codelineno-5-40" name="__codelineno-5-40" href="#__codelineno-5-40"></a>        <span class="c1"># implementation should use a _BufferWriter adapter whose</span>
+<a id="__codelineno-5-41" name="__codelineno-5-41" href="#__codelineno-5-41"></a>        <span class="c1"># write() copies directly into the target memoryview at an</span>
+<a id="__codelineno-5-42" name="__codelineno-5-42" href="#__codelineno-5-42"></a>        <span class="c1"># offset — avoiding the intermediate allocation.  Kept simple</span>
+<a id="__codelineno-5-43" name="__codelineno-5-43" href="#__codelineno-5-43"></a>        <span class="c1"># here for sketch clarity.</span>
+<a id="__codelineno-5-44" name="__codelineno-5-44" href="#__codelineno-5-44"></a>        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bc</span><span class="o">.</span><span class="n">download_blob</span><span class="p">(</span>
+<a id="__codelineno-5-45" name="__codelineno-5-45" href="#__codelineno-5-45"></a>            <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_pos</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span>
+<a id="__codelineno-5-46" name="__codelineno-5-46" href="#__codelineno-5-46"></a>            <span class="n">max_concurrency</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_concurrency</span><span class="p">,</span>
+<a id="__codelineno-5-47" name="__codelineno-5-47" href="#__codelineno-5-47"></a>        <span class="p">)</span><span class="o">.</span><span class="n">readall</span><span class="p">()</span>
+<a id="__codelineno-5-48" name="__codelineno-5-48" href="#__codelineno-5-48"></a>        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<a id="__codelineno-5-49" name="__codelineno-5-49" href="#__codelineno-5-49"></a>        <span class="n">b</span><span class="p">[:</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+<a id="__codelineno-5-50" name="__codelineno-5-50" href="#__codelineno-5-50"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_pos</span> <span class="o">+=</span> <span class="n">n</span>
+<a id="__codelineno-5-51" name="__codelineno-5-51" href="#__codelineno-5-51"></a>        <span class="k">return</span> <span class="n">n</span>
+</code></pre></div>
+<p><strong>Error mapping:</strong> The sketch omits <code>_ErrorMappingStream</code> wrapping. Currently
+<code>read()</code> returns <code>BufferedReader(ErrorMappingStream(raw))</code> — Azure SDK
+exceptions are translated to <code>RemoteStoreError</code>. The range reader would let
+<code>azure.core.exceptions.*</code> propagate raw. The real implementation must wrap
+<code>_AzureRangeReader</code> in <code>_ErrorMappingStream</code> (or integrate error mapping
+directly). Notably, <code>ext/arrow.py</code> lines 298–303 already flag this concern:
+subsequent reads from <code>PythonFile</code> bypass <code>_map_errors()</code>, so the range
+reader's error mapping is the last translation boundary.</p>
+<p><strong>Not a drop-in replacement for <code>read()</code>:</strong> <code>_AzureRangeReader.readinto()</code>
+issues a fresh HTTP Range request per call. When wrapped in <code>BufferedReader</code>
+(as the current <code>read()</code> does), each call uses the buffer size (default 8 KB)
+— meaning a 100 MB sequential read would issue ~12,800 individual HTTP
+requests instead of the current chunked streaming. This is unacceptable for
+<code>Store.read()</code> general-purpose callers.</p>
+<p>The implementation needs a <strong>dual-mode approach</strong>:
+- <code>read()</code> keeps the current chunked streaming (<code>_AzureBinaryIO</code>) for
+  sequential callers — no behavior change.
+- A separate path exposes <code>_AzureRangeReader</code> for the PyArrow adapter.
+  Options: (a) a new capability flag (e.g., <code>RANGE_READ</code> — NOT
+  <code>SEEKABLE_READ</code>, which already exists with the meaning "read() always
+  returns a seekable stream"), (b) a backend-internal method like
+  <code>_open_seekable(path)</code>, or (c) the <code>ext.seekable</code> composition point
+  with a range-read implementation.</p>
+<p>This raises the complexity estimate from ~50–100 LOC to ~150–200 LOC and
+requires spec-level design for how the seekable path is exposed. The PoC
+(Phase 1) should validate the range-read performance before committing to
+the integration approach.</p>
+<h3 id="53-what-this-does-not-solve">5.3 What This Does NOT Solve<a class="headerlink" href="#53-what-this-does-not-solve" title="Permanent link">&para;</a></h3>
+<p>The seekable range reader delivers column pruning — the single biggest win
+(Section 4.2). But it has inherent limitations:</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Seekable range reader (Tier 3)</th>
+<th>C++ native filesystem (Tier 1)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Column pruning</td>
+<td>Yes — range reads via Python</td>
+<td>Yes — range reads via C++</td>
+</tr>
+<tr>
+<td>I/O coalescing</td>
+<td>No — one HTTP request per <code>read_at</code></td>
+<td>Yes — <code>ReadRangeCache</code> batches nearby ranges</td>
+</tr>
+<tr>
+<td>GIL-free reads</td>
+<td>No — <code>PythonFile</code> acquires GIL per call</td>
+<td>Yes — all I/O in C++</td>
+</tr>
+<tr>
+<td>Request pipelining</td>
+<td>No (one round-trip per range; connections pooled)</td>
+<td>Yes (C++ HTTP/2 multiplexing)</td>
+</tr>
+<tr>
+<td>Concurrent reads</td>
+<td>Serialized (GIL + seek/read pair)</td>
+<td>Parallel (C++ thread pool)</td>
+</tr>
+</tbody>
+</table>
+<p>For most workloads (single-user, moderate concurrency), the <code>PythonFile</code>
+overhead is acceptable. I/O coalescing and GIL-free reads matter at high
+concurrency or when reading many small column chunks — a measurable but
+secondary optimization.</p>
+<hr />
+<h2 id="6-full-tier-1-path-if-needed">6. Full Tier 1 Path (If Needed)<a class="headerlink" href="#6-full-tier-1-path-if-needed" title="Permanent link">&para;</a></h2>
+<p>If benchmarks show that the <code>PythonFile</code> overhead from Section 5 is a
+bottleneck (likely only at high concurrency or with many small range reads),
+the next step is true C++ Tier 1 via <code>pyarrow.fs.AzureFileSystem</code>.</p>
+<h3 id="61-why-azurefilesystem-over-the-other-candidates">6.1 Why AzureFileSystem Over the Other Candidates<a class="headerlink" href="#61-why-azurefilesystem-over-the-other-candidates" title="Permanent link">&para;</a></h3>
+<p><strong>pyarrowfs-adlgen2, adlfs, custom FileSystemHandler:</strong> All use <code>PythonFile</code>
+wrapping — they do NOT eliminate the GIL overhead that motivates moving beyond
+Section 5. Building a <code>FileSystemHandler</code> adds ~300–500 LOC of complexity for
+zero I/O performance gain over the seekable range reader.</p>
+<p><strong>obstore:</strong> True Rust-native I/O (no GIL), but adds a heavy Rust binary
+dependency and abstracts away Azure-specific features we need (HNS detection,
+error mapping). Overkill when PyArrow ships its own C++ Azure filesystem.</p>
+<p><strong><code>pyarrow.fs.AzureFileSystem</code>:</strong> The only option that provides true C++ Tier 1
+(zero GIL, I/O coalescing, connection pooling) without a new dependency. Direct
+analog of the <code>S3PyArrowBackend</code> pattern. The right choice if we need to go
+beyond <code>PythonFile</code>.</p>
+<h3 id="62-azurepyarrowbackend-s3pyarrow-pattern">6.2 AzurePyArrowBackend (S3PyArrow Pattern)<a class="headerlink" href="#62-azurepyarrowbackend-s3pyarrow-pattern" title="Permanent link">&para;</a></h3>
+<p>If <code>AzureFileSystem</code> proves viable, build an <code>AzurePyArrowBackend</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Implementation</th>
+<th>Operations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Data path</strong></td>
+<td><code>pyarrow.fs.AzureFileSystem</code> (C++)</td>
+<td>read, read_bytes, write, write_atomic, copy</td>
+</tr>
+<tr>
+<td><strong>Control path</strong></td>
+<td>Existing <code>AzureBackend</code> (Python SDK)</td>
+<td>exists, is_file, list_files, delete, move</td>
+</tr>
+<tr>
+<td><strong>PyArrow bridge</strong></td>
+<td><code>unwrap(pyarrow.fs.FileSystem)</code> → native C++ FS</td>
+<td>True Tier 1 in <code>StoreFileSystemHandler</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Open questions</strong> (require spike):
+- Auth coverage: does <code>AzureFileSystem</code> support <code>connection_string</code>,
+  <code>account_key</code>, <code>DefaultAzureCredential</code>, <code>ClientSecretCredential</code>?
+- HNS handling: does the C++ SDK handle both HNS and non-HNS accounts?
+- Maturity: <code>AzureFileSystem</code> is experimental (added PyArrow 16.0.0, Apr 2024).
+  Stability for production workloads needs validation.</p>
+<h3 id="63-dependencies">6.3 Dependencies<a class="headerlink" href="#63-dependencies" title="Permanent link">&para;</a></h3>
+<p>No new PyPI dependencies for either path. The seekable range reader uses
+<code>azure-storage-blob</code> (transitively via <code>azure-storage-file-datalake</code> in the
+<code>azure</code> extra). The <code>AzurePyArrowBackend</code> would additionally use
+<code>pyarrow.fs.AzureFileSystem</code> (ships with <code>pyarrow</code>).</p>
+<p>A combined extra would be convenient for the Tier 1 path:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">azure-pyarrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;azure-storage-file-datalake&gt;=12.16.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;azure-identity&gt;=1.0.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;pyarrow&gt;=16.0.0&quot;</span><span class="p">]</span>
+</code></pre></div></p>
+<hr />
+<h2 id="7-recommendation">7. Recommendation<a class="headerlink" href="#7-recommendation" title="Permanent link">&para;</a></h2>
+<h3 id="71-phasing">7.1 Phasing<a class="headerlink" href="#71-phasing" title="Permanent link">&para;</a></h3>
+<p><strong>Phase 1: Seekable range reader + PoC</strong> (moderate effort, high value)
+- Add <code>_AzureRangeReader</code> with dual-mode integration (~150–200 LOC):
+  <code>read()</code> keeps chunked streaming for sequential callers; a separate
+  seekable path exposes range reads for the PyArrow adapter.
+- Build a PoC that reads a multi-column Parquet file from Azure via the
+  <code>StoreFileSystemHandler</code> and measures: bytes transferred, time, memory.
+- Compare against current Tier 2 (full materialization) baseline.
+- Expected result: ~10–17x less data transfer for selective column reads.</p>
+<p><strong>Phase 2: Benchmark and decide</strong> (data-driven gate)
+- Run the PoC against real workloads: Parquet column pruning, dataset scans,
+  Dagster medallion pipeline.
+- Measure whether <code>PythonFile</code> GIL overhead or missing I/O coalescing is a
+  practical bottleneck.
+- <strong>If Phase 1 is sufficient:</strong> ship it, close ID-102. The seekable range
+  reader gives Azure users best-in-class column pruning with zero new
+  complexity.
+- <strong>If not:</strong> proceed to Phase 3.</p>
+<p><strong>Phase 3: Spike <code>pyarrow.fs.AzureFileSystem</code></strong> (only if Phase 2 shows need)
+- Test auth methods, HNS/non-HNS, <code>ReadRangeCache</code> activation.
+- Benchmark against Phase 1 range reader for throughput delta.
+- <strong>If viable:</strong> proceed to Phase 4. <strong>If not:</strong> the seekable range reader
+  from Phase 1 is the final answer — document the ceiling.</p>
+<p><strong>Phase 4: <code>AzurePyArrowBackend</code></strong> (only if Phase 3 succeeds)
+- Build the hybrid backend following the <code>S3PyArrowBackend</code> pattern.
+- Spec, tests, Dagster integration, docs, example.</p>
+<h3 id="72-risk-assessment">7.2 Risk Assessment<a class="headerlink" href="#72-risk-assessment" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Likelihood</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>download_blob(offset=, length=)</code> per range is too slow (HTTP overhead per call)</td>
+<td>Medium</td>
+<td>PoC will measure this directly in Phase 1</td>
+</tr>
+<tr>
+<td><code>PythonFile</code> GIL overhead limits concurrency</td>
+<td>Low for typical use</td>
+<td>Phase 2 benchmarks; only proceed to Tier 1 if measured</td>
+</tr>
+<tr>
+<td><code>AzureFileSystem</code> auth gaps block Tier 1</td>
+<td>Medium</td>
+<td>Phase 1 delivers value regardless; Tier 1 is optional</td>
+</tr>
+<tr>
+<td>Non-HNS accounts get no listing benefit</td>
+<td>Low (HNS standard for analytics)</td>
+<td>Column pruning works on any account type</td>
+</tr>
+</tbody>
+</table>
+<h3 id="73-what-this-gives-azure-users">7.3 What This Gives Azure Users<a class="headerlink" href="#73-what-this-gives-azure-users" title="Permanent link">&para;</a></h3>
+<p>For analytical workloads (Parquet, PyArrow datasets, Dagster):</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Before</th>
+<th>After Phase 1</th>
+<th>After Phase 4 (if needed)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Column pruning</td>
+<td>No (full file download)</td>
+<td>Yes (range reads via <code>PythonFile</code>)</td>
+<td>Yes (range reads via C++)</td>
+</tr>
+<tr>
+<td>I/O coalescing</td>
+<td>No</td>
+<td>No</td>
+<td>Yes (<code>ReadRangeCache</code>)</td>
+</tr>
+<tr>
+<td>Large file handling</td>
+<td>Tier 2 fallback with warning</td>
+<td>Tier 3 streaming</td>
+<td>Tier 1 native</td>
+</tr>
+<tr>
+<td>New dependencies</td>
+<td>—</td>
+<td>None</td>
+<td>None (ships with PyArrow)</td>
+</tr>
+<tr>
+<td>Code complexity</td>
+<td>—</td>
+<td>~150–200 LOC (dual-mode reader)</td>
+<td>New backend class (~300–500 LOC)</td>
+</tr>
+</tbody>
+</table>
+<p>Backlog item: <strong>ID-102</strong>.</p>
+<hr />
+<h2 id="8-references">8. References<a class="headerlink" href="#8-references" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Single source of truth.</strong> Every piece of content has exactly one home.
-  No drift between source and <code>docs/</code> copies.</li>
-<li><strong><code>docs/</code> is gitignored.</strong> Eliminates an entire class of "forgot to update
-  the wrapper" bugs and keeps the repo clean.</li>
-<li><strong>GitHub-readable.</strong> All guides, specs, and examples render correctly on
-  GitHub without a docs build.</li>
-<li><strong>Clear contributor guidance.</strong> New content goes into the appropriate source
-  directory; the build script handles presentation.</li>
-<li><strong><code>guides/</code> grows organically.</strong> New topics (streaming patterns, error
-  handling, migration guides) are added as standalone files without touching
-  build infrastructure.</li>
-<li><strong>Build script becomes load-bearing.</strong> The script that generates <code>docs/</code>
-  must be maintained and tested. A broken script means a broken docs site.</li>
+<li>Spec 014: PyArrow FileSystem Adapter (<code>sdd/specs/014-pyarrow-filesystem-adapter.md</code>)</li>
+<li>Spec 011: S3-PyArrow Hybrid Backend (<code>sdd/specs/011-s3-pyarrow-backend.md</code>)</li>
+<li>Spec 012: Azure Backend (<code>sdd/specs/012-azure-backend.md</code>)</li>
+<li>RFC-0001: Azure Backend via Direct ADLS Gen2 SDK (<code>sdd/rfcs/rfc-0001-azure-backend.md</code>)</li>
+<li>PR #259: ID-100 Seekable read capability + extension</li>
+<li>pyarrowfs-adlgen2: github.com/kaaveland/pyarrowfs-adlgen2 (v0.2.5)</li>
+<li>adlfs: github.com/fsspec/adlfs</li>
+<li>obstore: github.com/developmentseed/obstore</li>
+<li>PARQUET-1820: pre_buffer / read coalescing for Parquet (github.com/apache/arrow/pull/6744)</li>
+<li>ARROW-8562: I/O coalescing parameterization (github.com/apache/arrow/pull/7022)</li>
+<li>Azure SDK: <code>download_blob(offset=, length=)</code> range request support</li>
+<li>PyArrow AzureFileSystem: arrow.apache.org/docs/python/generated/pyarrow.fs.AzureFileSystem.html</li>
+<li>PyArrow NativeFile: arrow.apache.org/docs/python/generated/pyarrow.NativeFile.html</li>
 </ul>
 
 
