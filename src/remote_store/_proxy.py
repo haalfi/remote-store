@@ -1,8 +1,9 @@
 """ProxyStore — shared base for Store proxy subclasses.
 
-Internal module. Centralizes delegation boilerplate, private-attribute
-coupling, and ``child()`` propagation for proxy wrappers like
-``ObservedStore`` and ``CachedStore``.
+Centralizes delegation boilerplate, private-attribute coupling, and
+``child()`` propagation for proxy wrappers like ``ObservedStore`` and
+``CachedStore``.  Subclass ``ProxyStore`` to build custom Store
+middleware — override only the methods you want to intercept.
 
 See ADR-0014 for the design rationale.
 """
@@ -27,13 +28,28 @@ T = TypeVar("T")
 class ProxyStore(Store):
     """Base class for Store proxies that delegate to an inner Store.
 
-    Handles the private-attribute coupling (``_backend``, ``_root``,
-    ``_owns_backend``) in one place. All public Store methods delegate
-    to ``self._inner`` by default. Subclasses override only the methods
-    they intercept.
+    All public ``Store`` methods delegate to ``self._inner`` by default.
+    Subclasses override only the methods they intercept and must implement
+    ``_wrap_child()`` to control how ``child()`` propagates wrapper behavior.
 
-    Subclasses must implement ``_wrap_child()`` to control how ``child()``
-    propagates wrapper behavior.
+    ``ObservedStore`` and ``CachedStore`` are built on this base.
+    Subclass it to build your own Store middleware.
+
+    Args:
+        inner: The Store instance to wrap.
+
+    Example:
+        ```python
+        from remote_store import ProxyStore, Store
+
+        class LoggingStore(ProxyStore):
+            def read_bytes(self, path: str) -> bytes:
+                print(f"Reading {path}")
+                return self._inner.read_bytes(path)
+
+            def _wrap_child(self, inner_child: Store) -> "LoggingStore":
+                return LoggingStore(inner_child)
+        ```
     """
 
     _inner: Store

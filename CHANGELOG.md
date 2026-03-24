@@ -6,6 +6,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **ProxyStore promoted to public API**: `ProxyStore` is now exported from
+  `remote_store` and documented in the API reference. Subclass it to build
+  custom Store middleware — override only the methods you intercept.
+
 ## [0.19.0] - 2026-03-23
 
 ### Changed

@@ -24,6 +24,7 @@ from remote_store._errors import (
 )
 from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, PathEntry
 from remote_store._path import RemotePath
+from remote_store._proxy import ProxyStore
 from remote_store._registry import Registry, register_backend
 from remote_store._store import Store
 from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_exists
@@ -48,6 +49,7 @@ logging.getLogger("remote_store").addHandler(logging.NullHandler())
 __all__ = [
     # Core
     "Store",
+    "ProxyStore",
     "Registry",
     "Backend",
     "register_backend",

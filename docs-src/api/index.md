@@ -7,6 +7,7 @@ Complete reference for all public exports of `remote-store`.
 | Class | Description |
 |-------|-------------|
 | [Store](store.md) | Main entry point for all file operations |
+| [ProxyStore](proxy.md) | Base class for building Store middleware |
 | [Registry](registry.md) | Creates and manages backend instances and stores |
 | [Backend](backend.md) | Abstract base class for storage backends |
 
