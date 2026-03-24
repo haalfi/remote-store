@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/retry/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-benchmark-suite-v2/">
       
       
-        <link rel="prev" href="../dagster/">
+        <link rel="prev" href="../research-azure-pyarrow-optimization/">
       
       
-        <link rel="next" href="../health-check/">
+        <link rel="next" href="../research-dagster-extension/">
       
       
         
       
       
-      <link rel="icon" href="../assets/logo.png">
+      <link rel="icon" href="../../../assets/logo.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Retry Policy - remote-store</title>
+        <title>Benchmark Suite v2 — User-Decision Framing - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../css/custom.css">
+      <link rel="stylesheet" href="../../../css/custom.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#retry-policy" class="md-skip">
+        <a href="#research-benchmark-suite-v2-user-decision-framing" class="md-skip">
           Skip to content
         </a>
       
@@ -102,9 +102,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../assets/logo.png" alt="logo">
+  <img src="../../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Retry Policy
+              Benchmark Suite v2 — User-Decision Framing
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../../.." class="md-tabs__link">
         
   
   
@@ -249,7 +249,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../getting-started/" class="md-tabs__link">
+        <a href="../../../getting-started/" class="md-tabs__link">
           
   
   
@@ -265,13 +265,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../backends/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../../backends/" class="md-tabs__link">
           
   
   
@@ -291,7 +289,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../api/" class="md-tabs__link">
+        <a href="../../../api/" class="md-tabs__link">
           
   
   
@@ -307,11 +305,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../../architecture/" class="md-tabs__link">
           
   
   
@@ -329,7 +329,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../contributing/" class="md-tabs__link">
+      <a href="../../../contributing/" class="md-tabs__link">
         
   
   
@@ -348,7 +348,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../further-reading/" class="md-tabs__link">
+      <a href="../../../further-reading/" class="md-tabs__link">
         
   
   
@@ -367,7 +367,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../development-story/" class="md-tabs__link">
+      <a href="../../../development-story/" class="md-tabs__link">
         
   
   
@@ -408,9 +408,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../assets/logo.png" alt="logo">
+  <img src="../../../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -437,7 +437,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -514,7 +514,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/" class="md-nav__link">
+      <a href="../../../getting-started/" class="md-nav__link">
         
   
   
@@ -557,7 +557,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../examples/" class="md-nav__link ">
+            <a href="../../../examples/" class="md-nav__link ">
               
   
   
@@ -599,7 +599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/quickstart/" class="md-nav__link">
+      <a href="../../../examples/quickstart/" class="md-nav__link">
         
   
   
@@ -627,7 +627,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/file-operations/" class="md-nav__link">
+      <a href="../../../examples/file-operations/" class="md-nav__link">
         
   
   
@@ -655,7 +655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/streaming-io/" class="md-nav__link">
+      <a href="../../../examples/streaming-io/" class="md-nav__link">
         
   
   
@@ -683,7 +683,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/atomic-writes/" class="md-nav__link">
+      <a href="../../../examples/atomic-writes/" class="md-nav__link">
         
   
   
@@ -711,7 +711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/configuration/" class="md-nav__link">
+      <a href="../../../examples/configuration/" class="md-nav__link">
         
   
   
@@ -739,7 +739,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/config-loaders/" class="md-nav__link">
+      <a href="../../../examples/config-loaders/" class="md-nav__link">
         
   
   
@@ -767,7 +767,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/error-handling/" class="md-nav__link">
+      <a href="../../../examples/error-handling/" class="md-nav__link">
         
   
   
@@ -795,7 +795,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/capabilities-and-errors/" class="md-nav__link">
+      <a href="../../../examples/capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -823,7 +823,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/path-model/" class="md-nav__link">
+      <a href="../../../examples/path-model/" class="md-nav__link">
         
   
   
@@ -851,7 +851,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/memory-backend/" class="md-nav__link">
+      <a href="../../../examples/memory-backend/" class="md-nav__link">
         
   
   
@@ -879,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/store-child/" class="md-nav__link">
+      <a href="../../../examples/store-child/" class="md-nav__link">
         
   
   
@@ -907,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/s3-backend/" class="md-nav__link">
+      <a href="../../../examples/s3-backend/" class="md-nav__link">
         
   
   
@@ -935,7 +935,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../../examples/s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -963,7 +963,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/sftp-backend/" class="md-nav__link">
+      <a href="../../../examples/sftp-backend/" class="md-nav__link">
         
   
   
@@ -991,7 +991,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/azure-backend/" class="md-nav__link">
+      <a href="../../../examples/azure-backend/" class="md-nav__link">
         
   
   
@@ -1019,7 +1019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/http-backend/" class="md-nav__link">
+      <a href="../../../examples/http-backend/" class="md-nav__link">
         
   
   
@@ -1047,7 +1047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/batch-operations/" class="md-nav__link">
+      <a href="../../../examples/batch-operations/" class="md-nav__link">
         
   
   
@@ -1075,7 +1075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/transfer-operations/" class="md-nav__link">
+      <a href="../../../examples/transfer-operations/" class="md-nav__link">
         
   
   
@@ -1103,7 +1103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../examples/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1131,7 +1131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/caching/" class="md-nav__link">
+      <a href="../../../examples/caching/" class="md-nav__link">
         
   
   
@@ -1159,7 +1159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/observe-hooks/" class="md-nav__link">
+      <a href="../../../examples/observe-hooks/" class="md-nav__link">
         
   
   
@@ -1187,7 +1187,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/otel-tracing/" class="md-nav__link">
+      <a href="../../../examples/otel-tracing/" class="md-nav__link">
         
   
   
@@ -1215,7 +1215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../examples/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1243,7 +1243,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/dagster-io-manager/" class="md-nav__link">
+      <a href="../../../examples/dagster-io-manager/" class="md-nav__link">
         
   
   
@@ -1271,7 +1271,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/retry-policy/" class="md-nav__link">
+      <a href="../../../examples/retry-policy/" class="md-nav__link">
         
   
   
@@ -1299,7 +1299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/health-check/" class="md-nav__link">
+      <a href="../../../examples/health-check/" class="md-nav__link">
         
   
   
@@ -1327,7 +1327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/medallion-dagster/" class="md-nav__link">
+      <a href="../../../examples/medallion-dagster/" class="md-nav__link">
         
   
   
@@ -1367,29 +1367,24 @@
       
   
   
-    
   
   
-  
     
     
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -1407,7 +1402,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1440,7 +1435,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../backends/" class="md-nav__link ">
+            <a href="../../../backends/" class="md-nav__link ">
               
   
   
@@ -1482,7 +1477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/local/" class="md-nav__link">
+      <a href="../../../backends/local/" class="md-nav__link">
         
   
   
@@ -1510,7 +1505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/memory/" class="md-nav__link">
+      <a href="../../../backends/memory/" class="md-nav__link">
         
   
   
@@ -1538,7 +1533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/http/" class="md-nav__link">
+      <a href="../../../backends/http/" class="md-nav__link">
         
   
   
@@ -1566,7 +1561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/s3/" class="md-nav__link">
+      <a href="../../../backends/s3/" class="md-nav__link">
         
   
   
@@ -1594,7 +1589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -1622,7 +1617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/sftp/" class="md-nav__link">
+      <a href="../../../backends/sftp/" class="md-nav__link">
         
   
   
@@ -1650,7 +1645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/azure/" class="md-nav__link">
+      <a href="../../../backends/azure/" class="md-nav__link">
         
   
   
@@ -1683,8 +1678,6 @@
                 
   
   
-    
-  
   
   
     
@@ -1695,11 +1688,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
         
           
           <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
@@ -1720,7 +1713,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1738,7 +1731,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../extensions/" class="md-nav__link">
+      <a href="../../../extensions/" class="md-nav__link">
         
   
   
@@ -1766,7 +1759,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1794,7 +1787,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../batch-operations/" class="md-nav__link">
+      <a href="../../../batch-operations/" class="md-nav__link">
         
   
   
@@ -1822,7 +1815,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1850,7 +1843,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../transfer-operations/" class="md-nav__link">
+      <a href="../../../transfer-operations/" class="md-nav__link">
         
   
   
@@ -1878,7 +1871,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observe/" class="md-nav__link">
+      <a href="../../../observe/" class="md-nav__link">
         
   
   
@@ -1906,7 +1899,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cache/" class="md-nav__link">
+      <a href="../../../cache/" class="md-nav__link">
         
   
   
@@ -1934,7 +1927,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dagster/" class="md-nav__link">
+      <a href="../../../dagster/" class="md-nav__link">
         
   
   
@@ -1959,37 +1952,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Retry Policy
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../retry/" class="md-nav__link">
         
   
   
@@ -2005,153 +1971,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick Start
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#retrypolicy-fields" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RetryPolicy Fields
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#disabling-retries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Disabling Retries
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#toml-yaml-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        TOML / YAML Configuration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#per-backend-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Per-Backend Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Per-Backend Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sftp" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SFTP
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-pyarrow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-PyArrow
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#azure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Azure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#local-and-memory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Local and Memory
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See also
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2172,7 +1991,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../health-check/" class="md-nav__link">
+      <a href="../../../health-check/" class="md-nav__link">
         
   
   
@@ -2200,7 +2019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../data-lake-patterns/" class="md-nav__link">
+      <a href="../../../data-lake-patterns/" class="md-nav__link">
         
   
   
@@ -2228,7 +2047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../troubleshooting/" class="md-nav__link">
+      <a href="../../../troubleshooting/" class="md-nav__link">
         
   
   
@@ -2256,7 +2075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../choosing-a-backend/" class="md-nav__link">
+      <a href="../../../choosing-a-backend/" class="md-nav__link">
         
   
   
@@ -2284,7 +2103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../migration/" class="md-nav__link">
+      <a href="../../../migration/" class="md-nav__link">
         
   
   
@@ -2384,7 +2203,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../api/" class="md-nav__link ">
+            <a href="../../../api/" class="md-nav__link ">
               
   
   
@@ -2426,7 +2245,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/store/" class="md-nav__link">
+      <a href="../../../api/store/" class="md-nav__link">
         
   
   
@@ -2454,7 +2273,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/proxy/" class="md-nav__link">
+      <a href="../../../api/proxy/" class="md-nav__link">
         
   
   
@@ -2482,7 +2301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/registry/" class="md-nav__link">
+      <a href="../../../api/registry/" class="md-nav__link">
         
   
   
@@ -2510,7 +2329,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backend/" class="md-nav__link">
+      <a href="../../../api/backend/" class="md-nav__link">
         
   
   
@@ -2538,7 +2357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/sftp-utils/" class="md-nav__link">
+      <a href="../../../api/sftp-utils/" class="md-nav__link">
         
   
   
@@ -2566,7 +2385,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/config/" class="md-nav__link">
+      <a href="../../../api/config/" class="md-nav__link">
         
   
   
@@ -2594,7 +2413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/models/" class="md-nav__link">
+      <a href="../../../api/models/" class="md-nav__link">
         
   
   
@@ -2622,7 +2441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/path/" class="md-nav__link">
+      <a href="../../../api/path/" class="md-nav__link">
         
   
   
@@ -2650,7 +2469,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/capabilities/" class="md-nav__link">
+      <a href="../../../api/capabilities/" class="md-nav__link">
         
   
   
@@ -2678,7 +2497,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/errors/" class="md-nav__link">
+      <a href="../../../api/errors/" class="md-nav__link">
         
   
   
@@ -2721,7 +2540,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../api/backends/" class="md-nav__link ">
+            <a href="../../../api/backends/" class="md-nav__link ">
               
   
   
@@ -2763,7 +2582,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/local/" class="md-nav__link">
+      <a href="../../../api/backends/local/" class="md-nav__link">
         
   
   
@@ -2791,7 +2610,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/memory/" class="md-nav__link">
+      <a href="../../../api/backends/memory/" class="md-nav__link">
         
   
   
@@ -2819,7 +2638,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/http/" class="md-nav__link">
+      <a href="../../../api/backends/http/" class="md-nav__link">
         
   
   
@@ -2847,7 +2666,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/s3/" class="md-nav__link">
+      <a href="../../../api/backends/s3/" class="md-nav__link">
         
   
   
@@ -2875,7 +2694,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../api/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -2903,7 +2722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/sftp/" class="md-nav__link">
+      <a href="../../../api/backends/sftp/" class="md-nav__link">
         
   
   
@@ -2931,7 +2750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/azure/" class="md-nav__link">
+      <a href="../../../api/backends/azure/" class="md-nav__link">
         
   
   
@@ -2982,7 +2801,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../api/extensions/" class="md-nav__link ">
+            <a href="../../../api/extensions/" class="md-nav__link ">
               
   
   
@@ -3024,7 +2843,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/arrow/" class="md-nav__link">
+      <a href="../../../api/extensions/arrow/" class="md-nav__link">
         
   
   
@@ -3052,7 +2871,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/batch/" class="md-nav__link">
+      <a href="../../../api/extensions/batch/" class="md-nav__link">
         
   
   
@@ -3080,7 +2899,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/cache/" class="md-nav__link">
+      <a href="../../../api/extensions/cache/" class="md-nav__link">
         
   
   
@@ -3108,7 +2927,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/dagster/" class="md-nav__link">
+      <a href="../../../api/extensions/dagster/" class="md-nav__link">
         
   
   
@@ -3136,7 +2955,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/glob/" class="md-nav__link">
+      <a href="../../../api/extensions/glob/" class="md-nav__link">
         
   
   
@@ -3164,7 +2983,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/integrity/" class="md-nav__link">
+      <a href="../../../api/extensions/integrity/" class="md-nav__link">
         
   
   
@@ -3192,7 +3011,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/observe/" class="md-nav__link">
+      <a href="../../../api/extensions/observe/" class="md-nav__link">
         
   
   
@@ -3220,7 +3039,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/otel/" class="md-nav__link">
+      <a href="../../../api/extensions/otel/" class="md-nav__link">
         
   
   
@@ -3248,7 +3067,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/partition/" class="md-nav__link">
+      <a href="../../../api/extensions/partition/" class="md-nav__link">
         
   
   
@@ -3276,7 +3095,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/pydantic/" class="md-nav__link">
+      <a href="../../../api/extensions/pydantic/" class="md-nav__link">
         
   
   
@@ -3304,7 +3123,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/seekable/" class="md-nav__link">
+      <a href="../../../api/extensions/seekable/" class="md-nav__link">
         
   
   
@@ -3332,7 +3151,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/streams/" class="md-nav__link">
+      <a href="../../../api/extensions/streams/" class="md-nav__link">
         
   
   
@@ -3360,7 +3179,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/transfer/" class="md-nav__link">
+      <a href="../../../api/extensions/transfer/" class="md-nav__link">
         
   
   
@@ -3388,7 +3207,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/yaml/" class="md-nav__link">
+      <a href="../../../api/extensions/yaml/" class="md-nav__link">
         
   
   
@@ -3432,7 +3251,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../capabilities-matrix/" class="md-nav__link">
+      <a href="../../../capabilities-matrix/" class="md-nav__link">
         
   
   
@@ -3460,7 +3279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../changelog/" class="md-nav__link">
+      <a href="../../../changelog/" class="md-nav__link">
         
   
   
@@ -3492,24 +3311,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -3527,7 +3351,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3545,7 +3369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/" class="md-nav__link">
+      <a href="../../../architecture/" class="md-nav__link">
         
   
   
@@ -3573,7 +3397,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../performance/" class="md-nav__link">
+      <a href="../../../performance/" class="md-nav__link">
         
   
   
@@ -3601,7 +3425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../concurrency/" class="md-nav__link">
+      <a href="../../../concurrency/" class="md-nav__link">
         
   
   
@@ -3629,7 +3453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security-model/" class="md-nav__link">
+      <a href="../../../security-model/" class="md-nav__link">
         
   
   
@@ -3654,6 +3478,8 @@
                 
   
   
+    
+  
   
   
     
@@ -3664,15 +3490,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -3696,7 +3522,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3714,7 +3540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/design-spec/" class="md-nav__link">
+      <a href="../../design-spec/" class="md-nav__link">
         
   
   
@@ -3742,7 +3568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/process/" class="md-nav__link">
+      <a href="../../process/" class="md-nav__link">
         
   
   
@@ -3785,7 +3611,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/specs/" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -3827,7 +3653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -3855,7 +3681,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -3883,7 +3709,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -3911,7 +3737,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -3939,7 +3765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/005-error-model/" class="md-nav__link">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -3967,7 +3793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -3995,7 +3821,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -4023,7 +3849,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/008-s3-backend/" class="md-nav__link">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -4051,7 +3877,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -4079,7 +3905,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -4107,7 +3933,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -4135,7 +3961,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/012-azure-backend/" class="md-nav__link">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -4163,7 +3989,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -4191,7 +4017,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -4219,7 +4045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -4247,7 +4073,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -4275,7 +4101,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -4303,7 +4129,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -4331,7 +4157,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -4359,7 +4185,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -4387,7 +4213,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -4415,7 +4241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -4443,7 +4269,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -4471,7 +4297,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -4499,7 +4325,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/025-retry-policy/" class="md-nav__link">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -4527,7 +4353,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/026-health-check/" class="md-nav__link">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -4555,7 +4381,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/027-iter-children/" class="md-nav__link">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -4583,7 +4409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/028-read-text/" class="md-nav__link">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -4611,7 +4437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -4639,7 +4465,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/030-write-text/" class="md-nav__link">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -4667,7 +4493,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/031-ext-dagster/" class="md-nav__link">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -4695,7 +4521,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/032-http-backend/" class="md-nav__link">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -4723,7 +4549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/033-ext-streams/" class="md-nav__link">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -4751,7 +4577,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/034-ext-integrity/" class="md-nav__link">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -4779,7 +4605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/035-content-digest/" class="md-nav__link">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -4807,7 +4633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/036-seekable-read/" class="md-nav__link">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -4858,7 +4684,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/adrs/" class="md-nav__link ">
+            <a href="../../adrs/" class="md-nav__link ">
               
   
   
@@ -4900,7 +4726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -4928,7 +4754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -4956,7 +4782,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -4984,7 +4810,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -5012,7 +4838,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -5040,7 +4866,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -5068,7 +4894,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -5096,7 +4922,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -5124,7 +4950,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5152,7 +4978,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -5180,7 +5006,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -5208,7 +5034,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5236,7 +5062,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -5264,7 +5090,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -5292,7 +5118,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -5320,7 +5146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5348,7 +5174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -5399,7 +5225,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/rfcs/" class="md-nav__link ">
+            <a href="../../rfcs/" class="md-nav__link ">
               
   
   
@@ -5441,7 +5267,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -5469,7 +5295,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -5497,7 +5323,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -5525,7 +5351,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -5553,7 +5379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
         
   
   
@@ -5581,7 +5407,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
         
   
   
@@ -5609,7 +5435,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
         
   
   
@@ -5642,6 +5468,8 @@
                 
   
   
+    
+  
   
   
     
@@ -5652,15 +5480,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_6" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/research/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -5684,7 +5512,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_5_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -5702,7 +5530,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -5730,7 +5558,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -5755,10 +5583,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../design/research/research-benchmark-suite-v2/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark Suite v2 — User-Decision Framing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -5774,6 +5629,381 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Problem Statement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-design-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Design Decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Design Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-this-plan-is-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this plan is NOT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scope-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope boundaries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-not-restructure-into-3-benchmark-families" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why NOT restructure into 3 benchmark families
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-not-add-most-feature-cost-benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why NOT add most "feature cost" benchmarks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-not-add-workflow-benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why NOT add workflow benchmarks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-implementation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Implementation Plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Implementation Plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-toxiproxy-expansion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Toxiproxy expansion
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 1: Toxiproxy expansion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1a-docker-infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1a. Docker infrastructure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1b-toxiproxy-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1b. Toxiproxy module
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1c-conftest-fixtures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1c. Conftest fixtures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1d-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1d. Environment variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1e-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1e. Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-reporting-and-charts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Reporting and charts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 2: Reporting and charts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#2a-chart-generation-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2a. Chart generation script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2b-worth-it-verdicts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2b. "Worth it?" verdicts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2c-user-facing-report-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2c. User-facing report command
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-readme-and-performance-guide-reframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: README and performance guide reframe
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 3: README and performance guide reframe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3a-readme-addition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3a. README addition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3b-performance-guide-reframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3b. Performance guide reframe
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-selective-benchmark-additions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Selective benchmark additions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 4: Selective benchmark additions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#4a-seekable-read-benchmark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4a. Seekable read benchmark
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4b-cache-hitmiss-benchmark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4b. Cache hit/miss benchmark
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-backlog-item" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Backlog item
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-estimated-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Estimated scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-what-was-explicitly-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. What was explicitly rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -5786,7 +6016,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-dagster-extension/" class="md-nav__link">
+      <a href="../research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -5814,7 +6044,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -5842,7 +6072,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-example-testing/" class="md-nav__link">
+      <a href="../research-example-testing/" class="md-nav__link">
         
   
   
@@ -5870,7 +6100,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -5898,7 +6128,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -5926,7 +6156,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-health-check/" class="md-nav__link">
+      <a href="../research-health-check/" class="md-nav__link">
         
   
   
@@ -5954,7 +6184,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -5982,7 +6212,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -6010,7 +6240,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -6038,7 +6268,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-retry-policy/" class="md-nav__link">
+      <a href="../research-retry-policy/" class="md-nav__link">
         
   
   
@@ -6066,7 +6296,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-seekable-read/" class="md-nav__link">
+      <a href="../research-seekable-read/" class="md-nav__link">
         
   
   
@@ -6094,7 +6324,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -6122,7 +6352,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-store-config/" class="md-nav__link">
+      <a href="../research-store-config/" class="md-nav__link">
         
   
   
@@ -6150,7 +6380,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -6178,7 +6408,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -6229,7 +6459,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/" class="md-nav__link">
+      <a href="../../../contributing/" class="md-nav__link">
         
   
   
@@ -6256,7 +6486,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../further-reading/" class="md-nav__link">
+      <a href="../../../further-reading/" class="md-nav__link">
         
   
   
@@ -6283,7 +6513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../development-story/" class="md-nav__link">
+      <a href="../../../development-story/" class="md-nav__link">
         
   
   
@@ -6330,10 +6560,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#1-problem-statement" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start
+        1. Problem Statement
       
     </span>
   </a>
@@ -6341,55 +6571,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#retrypolicy-fields" class="md-nav__link">
+  <a href="#2-design-decisions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RetryPolicy Fields
+        2. Design Decisions
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#disabling-retries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Disabling Retries
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#toml-yaml-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        TOML / YAML Configuration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#per-backend-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Per-Backend Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Per-Backend Mapping">
+    <nav class="md-nav" aria-label="2. Design Decisions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sftp" class="md-nav__link">
+  <a href="#what-this-plan-is-not" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SFTP
+        What this plan is NOT
       
     </span>
   </a>
@@ -6397,10 +6594,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3" class="md-nav__link">
+  <a href="#scope-boundaries" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3
+        Scope boundaries
       
     </span>
   </a>
@@ -6408,10 +6605,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-pyarrow" class="md-nav__link">
+  <a href="#why-not-restructure-into-3-benchmark-families" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-PyArrow
+        Why NOT restructure into 3 benchmark families
       
     </span>
   </a>
@@ -6419,10 +6616,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#azure" class="md-nav__link">
+  <a href="#why-not-add-most-feature-cost-benchmarks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Azure
+        Why NOT add most "feature cost" benchmarks
       
     </span>
   </a>
@@ -6430,10 +6627,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#local-and-memory" class="md-nav__link">
+  <a href="#why-not-add-workflow-benchmarks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Local and Memory
+        Why NOT add workflow benchmarks
       
     </span>
   </a>
@@ -6442,6 +6639,267 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-implementation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Implementation Plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Implementation Plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-toxiproxy-expansion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Toxiproxy expansion
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 1: Toxiproxy expansion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1a-docker-infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1a. Docker infrastructure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1b-toxiproxy-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1b. Toxiproxy module
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1c-conftest-fixtures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1c. Conftest fixtures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1d-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1d. Environment variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1e-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1e. Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-reporting-and-charts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Reporting and charts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 2: Reporting and charts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#2a-chart-generation-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2a. Chart generation script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2b-worth-it-verdicts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2b. "Worth it?" verdicts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2c-user-facing-report-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2c. User-facing report command
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-readme-and-performance-guide-reframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: README and performance guide reframe
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 3: README and performance guide reframe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3a-readme-addition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3a. README addition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3b-performance-guide-reframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3b. Performance guide reframe
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-selective-benchmark-additions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Selective benchmark additions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 4: Selective benchmark additions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#4a-seekable-read-benchmark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4a. Seekable read benchmark
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4b-cache-hitmiss-benchmark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4b. Cache hit/miss benchmark
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-backlog-item" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Backlog item
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-estimated-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Estimated scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-what-was-explicitly-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. What was explicitly rejected
+      
+    </span>
+  </a>
   
 </li>
       
@@ -6472,204 +6930,437 @@
                   
 
 
-  
-  
 
-
-<h1 id="retry-policy">Retry Policy<a class="headerlink" href="#retry-policy" title="Permanent link">&para;</a></h1>
-<p><code>RetryPolicy</code> provides unified retry configuration across backends.
-Each backend maps the policy to its native retry mechanism, avoiding
-retry multiplication.</p>
-<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">RetryPolicy</span><span class="p">,</span> <span class="n">Store</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTPBackend</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Custom retry: 5 attempts, 2s base backoff, 30s max, 0.5s jitter</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">policy</span> <span class="o">=</span> <span class="n">RetryPolicy</span><span class="p">(</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">max_attempts</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">backoff_base</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">backoff_max</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">jitter</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SFTPBackend</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;sftp.example.com&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="retrypolicy-fields">RetryPolicy Fields<a class="headerlink" href="#retrypolicy-fields" title="Permanent link">&para;</a></h2>
+<h1 id="research-benchmark-suite-v2-user-decision-framing">Research: Benchmark Suite v2 — User-Decision Framing<a class="headerlink" href="#research-benchmark-suite-v2-user-decision-framing" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-03-24
+<strong>Backlog:</strong> ID-103 (new)
+<strong>Status:</strong> Proposed
+<strong>Scope:</strong> Redesign benchmark reporting and expand Toxiproxy coverage to reframe
+the suite around user adoption decisions rather than maintainer diagnostics.</p>
+<hr />
+<h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
+<p>The current benchmark suite is strong at measuring raw operation cost across
+backends. It is weaker at answering the actual user question:</p>
+<blockquote>
+<p>"What am I paying for abstraction, and when does that overhead disappear
+relative to network/storage latency?"</p>
+</blockquote>
+<p>Specific gaps:</p>
+<ol>
+<li><strong>No README signal.</strong> The README mentions nothing about performance. Users
+   who care (most, for a storage abstraction) have no indication the project
+   even thinks about it.</li>
+<li><strong>Toxiproxy covers only Azure.</strong> S3 and SFTP have no latency simulation,
+   so the suite cannot show overhead collapsing under realistic RTT.</li>
+<li><strong>Tables only, no charts.</strong> The performance guide has raw tables. A chart
+   showing "overhead vs RTT" communicates in one glance what tables cannot.</li>
+<li><strong>Maintainer framing.</strong> The performance guide opens with "remote-store
+   includes a comprehensive benchmark suite" — maintainer language. Users want
+   to know: should I worry about overhead?</li>
+<li><strong>No "worth it?" verdict.</strong> Users must interpret raw numbers themselves.</li>
+</ol>
+<h2 id="2-design-decisions">2. Design Decisions<a class="headerlink" href="#2-design-decisions" title="Permanent link">&para;</a></h2>
+<h3 id="what-this-plan-is-not">What this plan is NOT<a class="headerlink" href="#what-this-plan-is-not" title="Permanent link">&para;</a></h3>
+<p>This is NOT a rewrite of the benchmark test suite. The current tests measure
+the right primitives. The changes are:</p>
+<ul>
+<li><strong>Toxiproxy expansion</strong> (infra + fixtures)</li>
+<li><strong>Better reporting</strong> (new chart generation, reframed docs)</li>
+<li><strong>README addition</strong> (one paragraph + link)</li>
+<li><strong>Selective benchmark additions</strong> (seekable, cache — only where real gaps exist)</li>
+</ul>
+<h3 id="scope-boundaries">Scope boundaries<a class="headerlink" href="#scope-boundaries" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Field</th>
-<th>Type</th>
+<th>In scope</th>
+<th>Out of scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Toxiproxy for S3 + SFTP</td>
+<td>Concurrency benchmarks (separate project)</td>
+</tr>
+<tr>
+<td>4 named network profiles</td>
+<td>Cold/warm tracking (impractical)</td>
+</tr>
+<tr>
+<td>Chart generation script</td>
+<td>Interactive/JS charts</td>
+</tr>
+<tr>
+<td>Performance guide reframe</td>
+<td>New "workflow" benchmarks</td>
+</tr>
+<tr>
+<td>README one-paragraph addition</td>
+<td>README chart</td>
+</tr>
+<tr>
+<td>"Worth it?" verdicts in reports</td>
+<td>Feature-cost benchmarks (except seekable + cache)</td>
+</tr>
+<tr>
+<td><code>seekable_read()</code> benchmark</td>
+<td>OTel/atomic/glob cost benchmarks (noise-level deltas)</td>
+</tr>
+<tr>
+<td>Cache hit/miss benchmark</td>
+<td>Restructuring test files into "families"</td>
+</tr>
+</tbody>
+</table>
+<h3 id="why-not-restructure-into-3-benchmark-families">Why NOT restructure into 3 benchmark families<a class="headerlink" href="#why-not-restructure-into-3-benchmark-families" title="Permanent link">&para;</a></h3>
+<p>The proposal to split into "overhead / workload / network" families is a
+<strong>presentation concern, not a structural one.</strong> The current test files
+(<code>test_throughput.py</code>, <code>test_metadata.py</code>, etc.) organize by operation type,
+which is correct for pytest. The "family" framing belongs in reporting and
+docs, not in test file layout.</p>
+<h3 id="why-not-add-most-feature-cost-benchmarks">Why NOT add most "feature cost" benchmarks<a class="headerlink" href="#why-not-add-most-feature-cost-benchmarks" title="Permanent link">&para;</a></h3>
+<p>Most feature costs (atomic write, error mapping, path validation, OTel hooks)
+are <strong>dominated by underlying I/O</strong>. The delta is one syscall or one function
+call — ~50µs locally, invisible on network. Measuring them produces noise,
+not signal.</p>
+<p>Exceptions worth measuring:
+- <strong><code>seekable_read()</code></strong> — real spill cost (temp file materialization)
+- <strong>Cache hit/miss</strong> — real I/O skip</p>
+<h3 id="why-not-add-workflow-benchmarks">Why NOT add workflow benchmarks<a class="headerlink" href="#why-not-add-workflow-benchmarks" title="Permanent link">&para;</a></h3>
+<p>"Ingest 10,000 × 4 KB files" sounds realistic but is still synthetic. Under
+Toxiproxy (10k × 100ms RTT = 17 min for one workload), runtime explodes. The
+insight over extrapolating from primitive ops is marginal. The current suite
+already covers 50/1k/10k listings and 1KB–100MB throughput.</p>
+<hr />
+<h2 id="3-implementation-plan">3. Implementation Plan<a class="headerlink" href="#3-implementation-plan" title="Permanent link">&para;</a></h2>
+<h3 id="phase-1-toxiproxy-expansion">Phase 1: Toxiproxy expansion<a class="headerlink" href="#phase-1-toxiproxy-expansion" title="Permanent link">&para;</a></h3>
+<p><strong>Goal:</strong> Enable latency simulation for all Docker backends.</p>
+<h4 id="1a-docker-infrastructure">1a. Docker infrastructure<a class="headerlink" href="#1a-docker-infrastructure" title="Permanent link">&para;</a></h4>
+<p>Update <code>benchmarks/infra/docker-compose.yml</code>:</p>
+<ul>
+<li>Add <code>minio</code> proxy: toxiproxy listens on 19000, forwards to minio:9000</li>
+<li>Add <code>sftp</code> proxy: toxiproxy listens on 12222, forwards to sftp:2222</li>
+<li>Keep existing <code>azurite</code> proxy (10001 → azurite:10000)</li>
+<li>Update <code>toxiproxy.json</code> with all three proxy definitions</li>
+</ul>
+<h4 id="1b-toxiproxy-module">1b. Toxiproxy module<a class="headerlink" href="#1b-toxiproxy-module" title="Permanent link">&para;</a></h4>
+<p>Extend <code>benchmarks/_toxiproxy.py</code>:</p>
+<ul>
+<li>Support multiple proxy names (not just <code>"azurite"</code>)</li>
+<li>Add named profiles:</li>
+<li><code>clean</code> — no toxics (baseline)</li>
+<li><code>rtt20</code> — 20ms latency, 7ms jitter</li>
+<li><code>rtt50</code> — 50ms latency, 17ms jitter</li>
+<li><code>rtt100</code> — 100ms latency, 33ms jitter</li>
+<li>Add <code>apply_profile(proxy_name, profile_name)</code> function</li>
+<li>Add <code>clear_all_toxics(proxy_name)</code> function</li>
+<li>Keep existing <code>set_latency()</code> / <code>clear_latency()</code> as low-level API</li>
+</ul>
+<h4 id="1c-conftest-fixtures">1c. Conftest fixtures<a class="headerlink" href="#1c-conftest-fixtures" title="Permanent link">&para;</a></h4>
+<p>Update <code>benchmarks/conftest.py</code>:</p>
+<ul>
+<li>Add <code>--network-profile</code> CLI flag: <code>clean|rtt20|rtt50|rtt100</code> (default: clean)</li>
+<li>Add <code>s3-latency</code> and <code>sftp-latency</code> backend params (parallel to existing
+  <code>azure-latency</code>)</li>
+<li>Apply selected profile to all <code>-latency</code> backends at session start</li>
+<li>Clear toxics at session end</li>
+</ul>
+<h4 id="1d-environment-variables">1d. Environment variables<a class="headerlink" href="#1d-environment-variables" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
 <th>Default</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>max_attempts</code></td>
-<td><code>int</code></td>
-<td><code>3</code></td>
-<td>Total attempts (including the initial one). Must be &gt;= 1.</td>
+<td><code>BENCH_TOXIPROXY_HOST</code></td>
+<td>127.0.0.1</td>
+<td>Toxiproxy API host</td>
 </tr>
 <tr>
-<td><code>backoff_base</code></td>
-<td><code>float</code></td>
-<td><code>1.0</code></td>
-<td>Minimum delay in seconds between retries.</td>
+<td><code>BENCH_TOXIPROXY_API_PORT</code></td>
+<td>8474</td>
+<td>Toxiproxy API port</td>
 </tr>
 <tr>
-<td><code>backoff_max</code></td>
-<td><code>float</code></td>
-<td><code>60.0</code></td>
-<td>Maximum delay in seconds between retries.</td>
+<td><code>BENCH_TOXIPROXY_AZURITE_PORT</code></td>
+<td>10001</td>
+<td>Proxied Azurite port (existing)</td>
 </tr>
 <tr>
-<td><code>jitter</code></td>
-<td><code>float</code></td>
-<td><code>1.0</code></td>
-<td>Random jitter added to each delay (0 to <code>jitter</code> seconds).</td>
+<td><code>BENCH_MINIO_PROXY_PORT</code></td>
+<td>19000</td>
+<td>Proxied MinIO port (new)</td>
 </tr>
 <tr>
-<td><code>timeout</code></td>
-<td><code>float \| None</code></td>
-<td><code>None</code></td>
-<td>Overall timeout in seconds. <code>None</code> means no timeout.</td>
+<td><code>BENCH_SFTP_PROXY_PORT</code></td>
+<td>12222</td>
+<td>Proxied SFTP port (new)</td>
 </tr>
 </tbody>
 </table>
-<p>All fields are validated at construction time:</p>
+<h4 id="1e-verification">1e. Verification<a class="headerlink" href="#1e-verification" title="Permanent link">&para;</a></h4>
 <ul>
-<li><code>max_attempts &gt;= 1</code></li>
-<li><code>backoff_base &gt;= 0</code></li>
-<li><code>backoff_max &gt;= 0</code></li>
-<li><code>jitter &gt;= 0</code></li>
-<li><code>timeout &gt; 0</code> or <code>None</code></li>
+<li>Run existing comparative tests with <code>--backend s3-latency --network-profile rtt50</code></li>
+<li>Confirm latency is visible in results (write 1MB should show ~50ms+ increase)</li>
+<li>Run with <code>--network-profile clean</code> to confirm baseline matches direct connection</li>
 </ul>
-<h2 id="disabling-retries">Disabling Retries<a class="headerlink" href="#disabling-retries" title="Permanent link">&para;</a></h2>
-<p>Use the <code>disabled()</code> factory to create a single-attempt (no retry) policy:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">RetryPolicy</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">no_retry</span> <span class="o">=</span> <span class="n">RetryPolicy</span><span class="o">.</span><span class="n">disabled</span><span class="p">()</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Equivalent to: RetryPolicy(max_attempts=1)</span>
-</code></pre></div>
-<h2 id="toml-yaml-configuration">TOML / YAML Configuration<a class="headerlink" href="#toml-yaml-configuration" title="Permanent link">&para;</a></h2>
-<p>Retry can be configured per-backend in config files:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[backends.production]</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;sftp&quot;</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">[backends.production.options]</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;sftp.example.com&quot;</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">[backends.production.retry]</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">max_attempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">backoff_base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">backoff_max</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">30.0</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">jitter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.5</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">backends</span><span class="p">:</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">production</span><span class="p">:</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sftp</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sftp.example.com</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">retry</span><span class="p">:</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="nt">max_attempts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="nt">backoff_base</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.0</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">      </span><span class="nt">backoff_max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30.0</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="nt">jitter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
-</code></pre></div>
-<p>Load with the standard config loaders:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegistryConfig</span><span class="p">,</span> <span class="n">Registry</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_toml</span><span class="p">(</span><span class="s2">&quot;config.toml&quot;</span><span class="p">)</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">registry</span> <span class="o">=</span> <span class="n">Registry</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;my-store&quot;</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="per-backend-mapping">Per-Backend Mapping<a class="headerlink" href="#per-backend-mapping" title="Permanent link">&para;</a></h2>
-<p>Each backend translates <code>RetryPolicy</code> to its native retry mechanism.
-Not all fields are mappable to every backend — unmappable fields are
-logged at debug level.</p>
-<h3 id="sftp">SFTP<a class="headerlink" href="#sftp" title="Permanent link">&para;</a></h3>
-<p>Full mapping via tenacity:</p>
+<h3 id="phase-2-reporting-and-charts">Phase 2: Reporting and charts<a class="headerlink" href="#phase-2-reporting-and-charts" title="Permanent link">&para;</a></h3>
+<p><strong>Goal:</strong> Generate user-facing charts from benchmark data + add "worth it?" verdicts.</p>
+<h4 id="2a-chart-generation-script">2a. Chart generation script<a class="headerlink" href="#2a-chart-generation-script" title="Permanent link">&para;</a></h4>
+<p>Create <code>benchmarks/charts.py</code> (or extend <code>report.py</code>):</p>
+<ul>
+<li>Reads <code>.benchmarks/</code> JSON files (same source as <code>report.py</code>)</li>
+<li>Generates SVG charts via matplotlib to <code>docs-src/img/benchmarks/</code></li>
+<li>Add <code>hatch run bench-charts</code> command</li>
+</ul>
+<p><strong>Charts to generate (3 total):</strong></p>
+<ol>
+<li><strong>Overhead % by backend</strong> — grouped bar chart</li>
+<li>X-axis: operation (write 1MB, read 1MB, exists, list 50, delete)</li>
+<li>Bars: overhead % vs raw SDK</li>
+<li>Groups: one color per backend (S3, Azure, SFTP, Local)</li>
+<li>
+<p>This answers: "what am I paying?"</p>
+</li>
+<li>
+<p><strong>Overhead vs RTT</strong> — line chart <em>(requires Phase 1 data)</em></p>
+</li>
+<li>X-axis: network profile (0ms, 20ms, 50ms, 100ms)</li>
+<li>Y-axis: overhead %</li>
+<li>Lines: one per operation category (I/O ops, metadata ops)</li>
+<li>
+<p>This is the killer chart — shows overhead collapsing under latency</p>
+</li>
+<li>
+<p><strong>Throughput by file size</strong> — line chart</p>
+</li>
+<li>X-axis: file size (1KB, 64KB, 1MB, 10MB)</li>
+<li>Y-axis: MB/s</li>
+<li>Lines: remote-store vs raw SDK, one chart per backend</li>
+<li>Shows where remote-store converges with raw SDK</li>
+</ol>
+<p><strong>Chart style:</strong> clean, minimal, no gridlines clutter. Match the project's
+visual identity. SVG for crisp rendering in docs.</p>
+<h4 id="2b-worth-it-verdicts">2b. "Worth it?" verdicts<a class="headerlink" href="#2b-worth-it-verdicts" title="Permanent link">&para;</a></h4>
+<p>Extend <code>report.py</code> comparative output to append a verdict per backend/op:</p>
 <table>
 <thead>
 <tr>
-<th>RetryPolicy field</th>
-<th>Tenacity equivalent</th>
+<th>Verdict</th>
+<th>Criteria</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>max_attempts</code></td>
-<td><code>stop_after_attempt(N)</code></td>
+<td><strong>Negligible</strong></td>
+<td>delta &lt;10% or &lt;1ms absolute</td>
 </tr>
 <tr>
-<td><code>backoff_base</code></td>
-<td><code>wait_exponential(min=N)</code></td>
+<td><strong>Moderate</strong></td>
+<td>10–50% but &lt;5ms absolute</td>
 </tr>
 <tr>
-<td><code>backoff_max</code></td>
-<td><code>wait_exponential(max=N)</code></td>
+<td><strong>Visible</strong></td>
+<td>&gt;50% and &gt;5ms absolute</td>
 </tr>
 <tr>
-<td><code>jitter</code></td>
-<td><code>+ wait_random(0, N)</code></td>
-</tr>
-<tr>
-<td><code>timeout</code></td>
-<td><code>\| stop_after_delay(N)</code></td>
+<td><strong>Favorable</strong></td>
+<td>remote-store faster than raw SDK</td>
 </tr>
 </tbody>
 </table>
-<p>Retry scope: <strong>connection only</strong> (not per-operation).</p>
-<h3 id="s3">S3<a class="headerlink" href="#s3" title="Permanent link">&para;</a></h3>
-<p>Only <code>max_attempts</code> is mappable to botocore:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>botocore.config.Config(retries={&quot;max_attempts&quot;: N, &quot;mode&quot;: &quot;standard&quot;})
-</code></pre></div>
-<p><code>backoff_base</code>, <code>backoff_max</code>, <code>jitter</code>, and <code>timeout</code> are managed by
-botocore internally and cannot be overridden.</p>
-<h3 id="s3-pyarrow">S3-PyArrow<a class="headerlink" href="#s3-pyarrow" title="Permanent link">&para;</a></h3>
-<p>Dual mapping:</p>
+<p>Example output line:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>S3 Write 1MB: 20.1ms vs 31.6ms raw → Favorable (remote-store 1.6x faster)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>S3 Exists:    1.4ms vs 1.3ms raw   → Negligible (+0.1ms, +8%)
+</code></pre></div></p>
+<h4 id="2c-user-facing-report-command">2c. User-facing report command<a class="headerlink" href="#2c-user-facing-report-command" title="Permanent link">&para;</a></h4>
+<p>Add <code>hatch run bench-report-user</code> that produces a condensed summary:</p>
 <ul>
-<li><strong>PyArrow C++ side:</strong> <code>AwsStandardS3RetryStrategy(max_attempts=N)</code></li>
-<li><strong>s3fs side:</strong> Same botocore config as S3.</li>
+<li>One table per backend with verdicts</li>
+<li>Bottom-line statement per backend</li>
+<li>No maintainer detail (stddev, rounds, etc.)</li>
 </ul>
-<p>Only <code>max_attempts</code> is mappable on both sides.</p>
-<h3 id="azure">Azure<a class="headerlink" href="#azure" title="Permanent link">&para;</a></h3>
-<p>Three fields are mappable to <code>ExponentialRetry</code>:</p>
+<h3 id="phase-3-readme-and-performance-guide-reframe">Phase 3: README and performance guide reframe<a class="headerlink" href="#phase-3-readme-and-performance-guide-reframe" title="Permanent link">&para;</a></h3>
+<p><strong>Goal:</strong> Surface performance story where users look first.</p>
+<h4 id="3a-readme-addition">3a. README addition<a class="headerlink" href="#3a-readme-addition" title="Permanent link">&para;</a></h4>
+<p>Add a "Performance" section after Quick Start (before Extensions/Features).
+Approximately 3 lines of prose + link. Content:</p>
+<blockquote>
+<p>remote-store adds minimal overhead on top of the native SDKs it wraps. For
+network backends (S3, Azure, SFTP), writes and reads are typically within
+5–15% of raw SDK calls; under realistic network latency, the abstraction
+cost becomes negligible. See the
+<a href="https://docs.remotestore.dev/stable/performance/">performance guide</a> for
+comparative benchmarks, methodology, and overhead analysis.</p>
+</blockquote>
+<p>No tables, no charts in README. Just the story + link.</p>
+<h4 id="3b-performance-guide-reframe">3b. Performance guide reframe<a class="headerlink" href="#3b-performance-guide-reframe" title="Permanent link">&para;</a></h4>
+<p>Restructure <code>guides/performance.md</code>:</p>
+<p><strong>Current structure:</strong>
+1. Methodology (H2)
+   - What We Measure (H3, table)
+   - Comparative Benchmarks (H3, explanation)
+2. Running Benchmarks (H2)
+   - Prerequisites (H3)
+   - Commands (H3)
+   - Sample Results (H3, table)
+3. How remote-store Compares (H2, prose)
+4. Analyzing Results (H2)
+5. Reproducing (H2)
+6. See also (H2)</p>
+<p><strong>New structure:</strong>
+1. <strong>Lead paragraph</strong> — answer the user's question upfront:
+   "remote-store wraps established Python storage libraries. The abstraction
+   adds measurable overhead for fast local operations, but for remote backends
+   under realistic network latency, the cost is typically small relative to
+   network and service time."
+2. <strong>Overhead at a glance</strong> — the overhead % chart (from 2a)
+3. <strong>What happens under real latency</strong> — the overhead vs RTT chart (from 2a),
+   with 2–3 sentences explaining the takeaway
+4. <strong>Comparative results</strong> — existing tables (keep, they're good for detail)
+5. <strong>Throughput by file size</strong> — chart (from 2a)
+6. <strong>Caveats</strong> — existing emulator/caching notes (keep, move here)
+7. <strong>Methodology</strong> — condensed (move down, users care less)
+8. <strong>Running benchmarks yourself</strong> — existing commands (move to end)
+9. <strong>See also</strong> — existing links</p>
+<p>The key change: <strong>lead with the answer, not the methodology.</strong></p>
+<h3 id="phase-4-selective-benchmark-additions">Phase 4: Selective benchmark additions<a class="headerlink" href="#phase-4-selective-benchmark-additions" title="Permanent link">&para;</a></h3>
+<p><strong>Goal:</strong> Fill the two real gaps in measurement coverage.</p>
+<h4 id="4a-seekable-read-benchmark">4a. Seekable read benchmark<a class="headerlink" href="#4a-seekable-read-benchmark" title="Permanent link">&para;</a></h4>
+<p>Add to <code>test_throughput.py</code> or new <code>test_seekable.py</code>:</p>
+<ul>
+<li><code>Store.read_seekable()</code> on backends with different seek strategies</li>
+<li>Measure: open cost, first seek latency, repeated random seeks, peak memory</li>
+<li>Compare: native seekable (local, S3-PyArrow) vs Azure <code>_AzureRangeReader</code> vs spool path (HTTP)</li>
+<li>This is directly relevant given the recent ID-102 work (<code>Store.read_seekable()</code>, <code>_AzureRangeReader</code>)</li>
+</ul>
+<h4 id="4b-cache-hitmiss-benchmark">4b. Cache hit/miss benchmark<a class="headerlink" href="#4b-cache-hitmiss-benchmark" title="Permanent link">&para;</a></h4>
+<p>Add to <code>test_throughput.py</code> or new <code>test_cache.py</code>:</p>
+<ul>
+<li>Read same file with/without <code>CachedStore</code></li>
+<li>Cold read (miss) vs warm read (hit)</li>
+<li>Measure: read latency, I/O eliminated</li>
+<li>This demonstrates real feature value</li>
+</ul>
+<hr />
+<h2 id="4-backlog-item">4. Backlog item<a class="headerlink" href="#4-backlog-item" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>- [ ] **ID-103 — Benchmark suite v2: user-decision framing**
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  Expand Toxiproxy to all Docker backends, generate overhead charts,
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  reframe performance guide for user decisions, add README performance
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  section.
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  - Research: [research-benchmark-suite-v2.md](research/research-benchmark-suite-v2.md)
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>  - Phase 1: Toxiproxy expansion (docker-compose, fixtures, profiles)
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>  - Phase 2: Chart generation + &quot;worth it?&quot; verdicts in reporting
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>  - Phase 3: README section + performance guide reframe
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>  - Phase 4: seekable_read() + cache hit/miss benchmarks
+</code></pre></div>
+<h2 id="5-dependencies">5. Dependencies<a class="headerlink" href="#5-dependencies" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Phase 1 has no dependencies (can start immediately)</li>
+<li>Phase 2 chart #2 (overhead vs RTT) requires Phase 1 data</li>
+<li>Phase 2 charts #1 and #3 can use existing benchmark data</li>
+<li>Phase 3 can start in parallel with Phase 2 (prose doesn't need charts)</li>
+<li>Phase 4 is independent of all other phases</li>
+</ul>
+<h2 id="6-estimated-scope">6. Estimated scope<a class="headerlink" href="#6-estimated-scope" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>RetryPolicy field</th>
-<th>Azure equivalent</th>
+<th>Phase</th>
+<th>Files touched</th>
+<th>New code</th>
+<th>Effort</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>max_attempts</code></td>
-<td><code>retry_total = max_attempts - 1</code></td>
+<td>1</td>
+<td>docker-compose.yml, toxiproxy.json, _toxiproxy.py, conftest.py</td>
+<td>~150 lines</td>
+<td>Medium</td>
 </tr>
 <tr>
-<td><code>backoff_base</code></td>
-<td><code>initial_backoff = max(1, round(backoff_base))</code></td>
+<td>2</td>
+<td>charts.py (new), report.py, pyproject.toml</td>
+<td>~200 lines</td>
+<td>Medium</td>
 </tr>
 <tr>
-<td><code>jitter</code></td>
-<td><code>random_jitter_range = round(jitter)</code></td>
+<td>3</td>
+<td>README.md, guides/performance.md, docs-src/performance.md</td>
+<td>~50 lines net</td>
+<td>Small</td>
+</tr>
+<tr>
+<td>4</td>
+<td>test_seekable.py or test_throughput.py, test_cache.py</td>
+<td>~100 lines</td>
+<td>Small</td>
 </tr>
 </tbody>
 </table>
-<p>Azure expects integer seconds, so fractional values are rounded (with
-a minimum of 1 for <code>initial_backoff</code>).</p>
-<p><code>backoff_max</code> and <code>timeout</code> are not mappable.</p>
-<h3 id="local-and-memory">Local and Memory<a class="headerlink" href="#local-and-memory" title="Permanent link">&para;</a></h3>
-<p>These backends do not accept a <code>retry</code> parameter — passing one raises
-<code>TypeError</code>. Local filesystem and in-memory operations do not have
-transient failures that benefit from retry.</p>
+<p>Total: ~500 lines of new/changed code. No test suite restructuring.</p>
+<h2 id="7-what-was-explicitly-rejected">7. What was explicitly rejected<a class="headerlink" href="#7-what-was-explicitly-rejected" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Idea</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Restructure tests into 3 "families"</td>
+<td>Presentation concern, not structural</td>
+</tr>
+<tr>
+<td>10 workload benchmarks</td>
+<td>Synthetic, runtime explosion under latency</td>
+</tr>
+<tr>
+<td>Feature-cost benchmarks (OTel, atomic, glob)</td>
+<td>Noise-level deltas</td>
+</tr>
+<tr>
+<td>Cold/warm explicit tracking</td>
+<td>Impractical to enforce, marginal value</td>
+</tr>
+<tr>
+<td>Concurrency benchmarks</td>
+<td>Separate project, sync API</td>
+</tr>
+<tr>
+<td>8 network profiles</td>
+<td>4 is enough to make the point</td>
+</tr>
+<tr>
+<td>Interactive/JS charts</td>
+<td>Adds weight, doesn't work in README/PyPI</td>
+</tr>
+<tr>
+<td>Mermaid for benchmark charts</td>
+<td>xychart-beta too limited for grouped bars</td>
+</tr>
+<tr>
+<td>Chart in README</td>
+<td>Too much for first impression; prose + link suffices</td>
+</tr>
+<tr>
+<td>Tier A/B/C comparison classification</td>
+<td>Already handled by existing caveats</td>
+</tr>
+</tbody>
+</table>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../examples/retry-policy/">Retry policy example</a> — runnable script</li>
-<li><a href="../backends/">Backend guides</a> — per-backend configuration details</li>
+<li><a href="../../guides/performance.md">Performance guide</a> — current user-facing docs</li>
+<li><a href="../../benchmarks/results/comparative.md">Comparative results</a> — current baseline</li>
+<li><a href="../../benchmarks/_toxiproxy.py">Toxiproxy module</a> — existing latency simulation</li>
+<li><a href="../../benchmarks/README.md">Benchmark README</a> — current suite documentation</li>
 </ul>
 
 
@@ -6726,10 +7417,10 @@ transient failures that benefit from retry.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
