@@ -6,6 +6,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **ProxyStore added to API reference** (ID-101): `ProxyStore` is now exported
+  from `remote_store` and documented. It remains an internal delegation base by
+  design (ADR-0014) but is visible in the inheritance chain of `ObservedStore`
+  and `CachedStore`, and useful for building custom Store extensions.
+
 ## [0.19.0] - 2026-03-23
 
 ### Changed

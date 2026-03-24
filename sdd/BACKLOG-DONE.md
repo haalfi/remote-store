@@ -4,6 +4,17 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## API Surface
+
+- [x] **ID-101 — Add ProxyStore to API reference**
+  Exported `ProxyStore` from `remote_store`, added API reference page
+  (`docs-src/api/proxy.md`), rewrote docstrings for extension authors.
+  ProxyStore remains an internal delegation base by design (ADR-0014)
+  but is documented because it is visible in the inheritance chain and
+  useful for custom extensions. PR #258.
+
+---
+
 ## SDD Housekeeping
 
 - [x] **ID-099 — Consolidate SDD document categories from 7 to 5**

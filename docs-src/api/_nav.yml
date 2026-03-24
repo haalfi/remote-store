@@ -1,4 +1,5 @@
 - Store: store.md
+- ProxyStore: proxy.md
 - Registry: registry.md
 - Backend: backend.md
 - SFTPUtils: sftp-utils.md
