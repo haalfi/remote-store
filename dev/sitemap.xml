@@ -133,6 +133,10 @@
          <lastmod>2026-03-24</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/api/proxy/</loc>
+         <lastmod>2026-03-24</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/api/registry/</loc>
          <lastmod>2026-03-24</lastmod>
     </url>
@@ -334,6 +338,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/</loc>
+         <lastmod>2026-03-24</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0015-proxystore-publicly-documented/</loc>
          <lastmod>2026-03-24</lastmod>
     </url>
     <url>
