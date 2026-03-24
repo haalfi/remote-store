@@ -277,23 +277,19 @@ class TestRuntimeGuard:
 
 
 class TestFilenoLimitation:
-    """SEEK-009: SpooledTemporaryFile fileno() availability depends on Python version.
+    """SEEK-009: SpooledTemporaryFile fileno() behavior.
 
-    Python < 3.12: fileno() raises when content is in memory.
-    Python >= 3.12: SpooledTemporaryFile always has a file descriptor.
+    On CPython 3.10+, SpooledTemporaryFile always wraps a real
+    NamedTemporaryFile, so fileno() works even in-memory.
+    The spec documents this as a potential limitation for callers
+    on alternative runtimes; here we verify current CPython behavior.
     """
 
     @pytest.mark.spec("SEEK-009")
     def test_fileno_on_spooled_stream(self, store: Store) -> None:
-        import sys
-
         ns_store = _make_non_seekable_store(store)
         stream = seekable_read(ns_store, "test.txt", max_memory=1024 * 1024)
         assert stream.seekable()
-        if sys.version_info >= (3, 12):
-            # Python 3.12+ always has a real file descriptor
-            assert isinstance(stream.fileno(), int)
-        else:
-            with pytest.raises((AttributeError, io.UnsupportedOperation)):
-                stream.fileno()
+        # CPython 3.10+ SpooledTemporaryFile always has a file descriptor
+        assert isinstance(stream.fileno(), int)
         stream.close()
