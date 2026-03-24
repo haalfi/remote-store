@@ -168,13 +168,15 @@ hatch run bench -- --bench-timeout 30
 hatch run bench-cloud -- --bench-timeout 300
 ```
 
-**Latency runs need higher timeouts.** Under `rtt50`, multi-round-trip
-operations (SFTP copy, S3 move) can exceed 1s per iteration. With 200
-benchmark rounds, a single test can take several minutes. Use
-`--bench-timeout 600` for latency profiles:
+**Latency runs need adjusted settings.** Under simulated latency,
+pytest-benchmark's default `--benchmark-max-time=1.0` still produces
+many rounds on sub-100ms operations, inflating runtime without adding
+statistical value. Use `--benchmark-max-time=0.5` for a measured feel
+without excessive rounds, and raise the timeout to 120s:
 
 ```bash
-hatch run bench -- --backend s3-latency --network-profile rtt50 --bench-timeout 600
+hatch run bench -- --backend s3-latency --network-profile rtt50 \
+  --benchmark-max-time=0.5 --bench-timeout 120
 ```
 
 ## Commands
