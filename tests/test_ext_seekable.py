@@ -125,12 +125,26 @@ class TestPassthrough:
 
     @pytest.mark.spec("SEEK-004")
     def test_passthrough_returns_same_object(self, store: Store) -> None:
-        read_stream = store.read("test.txt")
-        seekable_stream = store.read_seekable("test.txt")
-        # Both should produce the same content
-        assert read_stream.read() == seekable_stream.read()
-        read_stream.close()
-        seekable_stream.close()
+        # Monkey-patch the backend's read() to capture the returned stream,
+        # then verify read_seekable() returns the exact same object (identity).
+        captured: list[io.BinaryIO] = []
+        backend = store._backend
+        original_read = backend.read
+
+        def tracking_read(path: str) -> io.BinaryIO:
+            s = original_read(path)
+            captured.append(s)
+            return s
+
+        backend.read = tracking_read  # type: ignore[assignment]
+        try:
+            result = store.read_seekable("test.txt")
+            assert len(captured) == 1
+            assert result is captured[0], "read_seekable must return the same stream, not a wrapper"
+            assert result.read() == b"hello seekable world"
+            result.close()
+        finally:
+            backend.read = original_read  # type: ignore[assignment]
 
 
 # ===========================================================================

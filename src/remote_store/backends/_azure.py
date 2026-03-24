@@ -111,11 +111,20 @@ class _AzureRangeReader(io.RawIOBase):
         if remaining <= 0:
             return 0
         length = min(len(b), remaining)
-        data = self._bc.download_blob(
-            offset=self._pos,
-            length=length,
-            max_concurrency=self._max_concurrency,
-        ).readall()
+        try:
+            data = self._bc.download_blob(
+                offset=self._pos,
+                length=length,
+                max_concurrency=self._max_concurrency,
+            ).readall()
+        except OSError:
+            raise
+        except Exception as exc:
+            # Azure SDK raises AzureError subclasses (HttpResponseError,
+            # ResourceNotFoundError, etc.) which are not OSError.
+            # Re-raise as OSError so _ErrorMappingStream can catch and
+            # classify them via the backend's _classify() method.
+            raise OSError(str(exc)) from exc
         n = len(data)
         b[:n] = data
         self._pos += n
