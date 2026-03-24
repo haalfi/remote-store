@@ -193,7 +193,59 @@ entirely in Rust — no `PythonFile`, no GIL contention on the read path.
 - Less control over Azure-specific features (HNS detection, atomic
   rename) — the Rust crate abstracts these away.
 
-### 3.4 Build Our Own FileSystemHandler
+### 3.4 pyarrow.fs.AzureFileSystem (Built-in C++ Filesystem)
+
+**Source:** PyArrow ships a C++ `AzureFileSystem` backed by the Azure SDK for
+C++, directly analogous to `S3FileSystem` used by `S3PyArrowBackend`.
+
+**API:**
+
+```python
+from pyarrow.fs import AzureFileSystem
+
+# Account-key auth
+fs = AzureFileSystem(account_name="mystorageacct", account_key="...")
+
+# DefaultAzureCredential-style (via C++ Azure SDK)
+fs = AzureFileSystem(account_name="mystorageacct")
+```
+
+**Strengths:**
+- **True Tier 1 — zero GIL overhead.** All I/O happens in C++ with no
+  `PythonFile` bridge. `ReadAt` maps directly to HTTP Range requests via the
+  C++ Azure SDK, with `ReadRangeCache` coalescing and connection pooling.
+- Direct analog of the `S3PyArrowBackend` pattern — `unwrap()` returns this
+  filesystem, `StoreFileSystemHandler` gets native C++ performance.
+- No new Python dependency — ships with PyArrow itself.
+- Supports Blob Storage and ADLS Gen2.
+
+**Weaknesses:**
+- **Auth limitations.** The C++ Azure SDK's credential support is narrower than
+  the Python `azure-identity` package. `DefaultAzureCredential`, managed
+  identity, and environment-based auth are supported, but interactive browser
+  auth, `AzureCliCredential`, and custom token providers require investigation.
+  Our backend supports `connection_string`, `account_key`,
+  `DefaultAzureCredential`, and `ClientSecretCredential` — each needs
+  validation against the C++ SDK.
+- **Maturity.** `AzureFileSystem` was added in PyArrow 15.0.0 (Jan 2024) and
+  is still marked as experimental. The S3 and GCS C++ filesystems are
+  significantly more mature.
+- **HNS handling unclear.** Whether the C++ SDK correctly handles hierarchical
+  namespace operations (atomic rename, directory-level ACLs) on ADLS Gen2
+  needs investigation.
+- **Limited control-path operations.** Like `S3FileSystem`, it may lack some
+  control-path features we need (HNS detection, soft-delete, last-modified
+  filtering). We would still need the Python Azure SDK for the control path.
+
+**Critical assessment:** If `AzureFileSystem` supports our required auth
+methods and handles both HNS and non-HNS accounts, it is the strongest
+candidate — providing the same true-Tier-1 benefits that `S3FileSystem` gives
+`S3PyArrowBackend`. However, its experimental status and auth coverage gaps
+must be validated before committing to it. A spike is needed: test the four
+auth methods against both HNS and non-HNS accounts, verify `ReadRangeCache`
+activates, and benchmark against `download_blob(offset=, length=)`.
+
+### 3.5 Build Our Own FileSystemHandler
 
 Rather than depending on a third-party library, we could implement a
 `pyarrow.fs.FileSystemHandler` directly in the `AzureBackend`, analogous to
@@ -350,12 +402,14 @@ class _AzureRangeReader(io.RawIOBase):
         if remaining <= 0:
             return 0
         length = min(len(b), remaining)
-        data = self._bc.download_blob(
+        stream = self._bc.download_blob(
             offset=self._pos, length=length,
             max_concurrency=self._max_concurrency,
-        ).readall()
-        n = len(data)
-        b[:n] = data
+        )
+        # Stream directly into caller's buffer to avoid a temporary
+        # copy.  writable_buf adapts memoryview/bytearray for readinto.
+        writable_buf = memoryview(b)[:length]
+        n = stream.readinto(writable_buf)
         self._pos += n
         return n
 ```
@@ -365,6 +419,15 @@ for column-chunk access. Each `ReadAt(offset, length)` translates to a single
 HTTP Range request via `download_blob(offset=, length=)`.
 
 ### 5.3 Scope and Phasing
+
+**Phase 0: Spike — evaluate `pyarrow.fs.AzureFileSystem`**
+- Test `AzureFileSystem` with: `connection_string`, `account_key`,
+  `DefaultAzureCredential`, `ClientSecretCredential`.
+- Verify against both HNS and non-HNS accounts.
+- Confirm `ReadRangeCache` activates (I/O coalescing for Parquet).
+- Benchmark vs `download_blob(offset=, length=)` for range-read throughput.
+- **If viable:** use as data-path filesystem (true C++ Tier 1, same as
+  `S3PyArrowBackend`). **If not:** proceed with custom `FileSystemHandler`.
 
 **Phase 1: Core handler + Tier 1 reads** (this item)
 - `_AzureRangeReader` — seekable reader via range requests.
@@ -410,11 +473,21 @@ azure-pyarrow = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"
 
 ## 6. Decision
 
-**Proceed with Phase 1** — create `AzurePyArrowBackend` with custom
-`FileSystemHandler` using Azure SDK range requests. This provides:
+**Proceed with Phase 0 spike first** — evaluate `pyarrow.fs.AzureFileSystem`
+(Section 3.4) against our four auth methods and both HNS/non-HNS accounts.
+If viable, it replaces the custom handler as the data-path implementation
+(true C++ Tier 1). If not viable (auth gaps, experimental instability), fall
+back to Phase 1 with the custom `PythonFile`-based handler.
 
-1. **Column pruning** for Parquet reads (the single biggest win).
-2. **Tier 1 integration** with `StoreFileSystemHandler`.
+**Phase 1** — create `AzurePyArrowBackend` with the chosen data-path
+implementation. This provides:
+
+1. **Column pruning** for Parquet reads (the single biggest win — up to 17x
+   less data transfer per Section 4.2).
+2. **Tier 1 dispatch** with `StoreFileSystemHandler` — `unwrap()` returns a
+   `pyarrow.fs.FileSystem`, enabling range-read column access. Note: this is
+   a `PythonFile` bridge, not true C++ Tier 1; I/O coalescing and GIL-free
+   reads require `pyarrow.fs.AzureFileSystem` (see Section 3.4 and Phase 0).
 3. **No new dependencies** beyond what the `azure` and `arrow` extras already provide.
 4. **Consistent error mapping** and credential handling.
 5. **HNS-aware listing** via the DFS SDK (already implemented in `AzureBackend`).
@@ -435,3 +508,4 @@ Backlog item: **ID-102**.
 - obstore: github.com/developmentseed/obstore
 - ARROW-8562: I/O coalescing for Parquet (github.com/apache/arrow/pull/7022)
 - Azure SDK: `download_blob(offset=, length=)` range request support
+- PyArrow AzureFileSystem: arrow.apache.org/docs/python/generated/pyarrow.fs.AzureFileSystem.html

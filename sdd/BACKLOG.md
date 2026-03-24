@@ -60,6 +60,9 @@ Items graduate through the SDD pipeline:
   `AzureBackend` behavior.
   - Done: [research](research/research-azure-pyarrow-optimization.md).
   - Remaining:
+    - Phase 0: spike — evaluate `pyarrow.fs.AzureFileSystem` (built-in C++)
+      against our auth methods and HNS/non-HNS accounts. If viable, use as
+      data-path (true C++ Tier 1). If not, proceed with custom handler.
     - Phase 1: `_AzureRangeReader`, `_AzureFileSystemHandler`,
       `AzurePyArrowBackend`, spec, tests.
     - Phase 2: benchmarks on real Parquet datasets (column pruning, listing,
