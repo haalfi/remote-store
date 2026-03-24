@@ -3123,6 +3123,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../api/extensions/seekable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.seekable
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../api/extensions/streams/" class="md-nav__link">
         
   
@@ -3908,6 +3936,17 @@
     <span class="md-ellipsis">
       
         SIO-007: Text Convenience Reads
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sio-008-seekable-read-capability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIO-008: Seekable Read Capability
       
     </span>
   </a>
@@ -4735,6 +4774,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../036-seekable-read/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    036: Seekable Read Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5207,6 +5274,34 @@
     
   
     0015: Document ProxyStore in the Public API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0016: Seekable Read — Three-Tier Design
   
 
     
@@ -6212,6 +6307,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#sio-008-seekable-read-capability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIO-008: Seekable Read Capability
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -6257,6 +6363,10 @@
 <h2 id="sio-007-text-convenience-reads">SIO-007: Text Convenience Reads<a class="headerlink" href="#sio-007-text-convenience-reads" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>Store.read_text(path, *, encoding="utf-8", errors="strict")</code> reads the full content via <code>read_bytes()</code> and decodes it to <code>str</code>.
 <strong>Postconditions:</strong> This is a Store-level convenience -- no backend changes. Raises <code>UnicodeDecodeError</code> on decode failure with <code>errors="strict"</code>. See <a href="../028-read-text/">028-read-text.md</a> (RTXT-001).</p>
+<h2 id="sio-008-seekable-read-capability">SIO-008: Seekable Read Capability<a class="headerlink" href="#sio-008-seekable-read-capability" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>Capability.SEEKABLE_READ</code> indicates that <code>Backend.read()</code> always returns a seekable stream (<code>stream.seekable()</code> is <code>True</code>).
+<strong>Postconditions:</strong> This is a static guarantee — callers can check <code>store.supports(Capability.SEEKABLE_READ)</code> once at setup time instead of checking every stream. For portable seekable reads across all backends, use <code>ext.seekable.seekable_read()</code>.
+<strong>See also:</strong> <a href="../036-seekable-read/">036-seekable-read.md</a>, <a href="../../adrs/0016-seekable-read-three-tier-design/">ADR-0016</a>.</p>
 
 
 

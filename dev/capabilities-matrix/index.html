@@ -3128,6 +3128,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/extensions/seekable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.seekable
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/extensions/streams/" class="md-nav__link">
         
   
@@ -4676,6 +4704,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/036-seekable-read/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    036: Seekable Read Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5148,6 +5204,34 @@
     
   
     0015: Document ProxyStore in the Public API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0016: Seekable Read — Three-Tier Design
   
 
     
@@ -6228,13 +6312,25 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">Yes</td>
 </tr>
+<tr>
+<td>SEEKABLE_READ</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
+</tr>
 </tbody>
 </table>
-<p><strong>Full support (9/9):</strong> Local, S3, S3-PyArrow, Azure.</p>
-<p><strong>Partial (8/9):</strong> Memory and SFTP lack native <code>GLOB</code>. Use the portable
+<p><strong>Full support (10/10):</strong> Local, S3, S3-PyArrow.</p>
+<p><strong>Near-full (9/10):</strong> Memory and SFTP lack native <code>GLOB</code>. Use the portable
 fallback <code>ext.glob.glob_files()</code> instead — see the
-<a href="../glob-pattern-matching/">Glob Pattern Matching</a> guide.</p>
-<p><strong>Partial (2/9):</strong> HTTP supports only <code>READ</code> and <code>METADATA</code> (read-only backend).</p>
+<a href="../glob-pattern-matching/">Glob Pattern Matching</a> guide.
+Azure lacks <code>SEEKABLE_READ</code> (forward-only chunk iterator). Use
+<code>ext.seekable.seekable_read()</code> for portable seekable reads.</p>
+<p><strong>Partial (2/10):</strong> HTTP supports only <code>READ</code> and <code>METADATA</code> (read-only backend).</p>
 <h2 id="querying-capabilities-at-runtime">Querying capabilities at runtime<a class="headerlink" href="#querying-capabilities-at-runtime" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
@@ -6243,6 +6339,13 @@ fallback <code>ext.glob.glob_files()</code> instead — see the
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">else</span><span class="p">:</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">glob_files</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">glob_files</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;**/*.csv&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Seekable read — works on any backend</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">seekable_read</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="k">with</span> <span class="n">seekable_read</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;report.csv&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># guaranteed seekable</span>
 </code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>

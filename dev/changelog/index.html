@@ -3128,6 +3128,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/extensions/seekable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.seekable
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/extensions/streams/" class="md-nav__link">
         
   
@@ -5656,6 +5684,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/036-seekable-read/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    036: Seekable Read Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6128,6 +6184,34 @@
     
   
     0015: Document ProxyStore in the Public API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0016: Seekable Read — Three-Tier Design
   
 
     
@@ -8084,10 +8168,20 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>ProxyStore added to API reference</strong> (ID-101): <code>ProxyStore</code> is now exported
+<li>
+<p><strong>Seekable read capability + extension</strong> (ID-100): New <code>Capability.SEEKABLE_READ</code>
+  flag for backends that always return seekable streams (Local, Memory, S3,
+  S3-PyArrow, SFTP). New <code>ext.seekable.seekable_read()</code> portable wrapper:
+  returns seekable streams on any backend — zero-copy passthrough when native,
+  <code>SpooledTemporaryFile</code> fallback for Azure/HTTP. Replaces the
+  <code>read_bytes() + BytesIO</code> anti-pattern. ADR-0016, spec 036.</p>
+</li>
+<li>
+<p><strong>ProxyStore added to API reference</strong> (ID-101): <code>ProxyStore</code> is now exported
   from <code>remote_store</code> and documented. It remains an internal delegation base by
   design (ADR-0014) but is visible in the inheritance chain of <code>ObservedStore</code>
-  and <code>CachedStore</code>, and useful for building custom Store extensions.</li>
+  and <code>CachedStore</code>, and useful for building custom Store extensions.</p>
+</li>
 </ul>
 <h2 id="0190-2026-03-23">[0.19.0] - 2026-03-23<a class="headerlink" href="#0190-2026-03-23" title="Permanent link">&para;</a></h2>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>

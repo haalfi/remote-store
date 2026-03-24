@@ -3291,6 +3291,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/extensions/seekable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.seekable
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/extensions/streams/" class="md-nav__link">
         
   
@@ -4759,6 +4787,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/036-seekable-read/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    036: Seekable Read Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5231,6 +5287,34 @@
     
   
     0015: Document ProxyStore in the Public API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0016: Seekable Read — Three-Tier Design
   
 
     
@@ -6449,7 +6533,7 @@ use a Registry with declarative config:</p>
 </table>
 <p>* Same-filesystem only; cross-filesystem falls back to copy+delete.
 ** Via <code>posix_rename</code> on most OpenSSH servers; falls back to copy+delete.</p>
-<p>All backends except HTTP support read, write, delete, list, copy, move, and metadata. The HTTP backend is read-only (<code>{READ, METADATA}</code>). Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback <code>ext.glob.glob_files()</code>. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
+<p>All backends except HTTP support read, write, delete, list, copy, move, and metadata. The HTTP backend is read-only (<code>{READ, METADATA}</code>). Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback <code>ext.glob.glob_files()</code>. Seekable reads are native on Local, Memory, S3, S3-PyArrow, and SFTP; for Azure and HTTP use <code>ext.seekable.seekable_read()</code>. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
 <h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
 <p>The Store provides 27 methods across read/write, browsing, management, and utility. Key highlights:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>             <span class="c1"># → str</span>
@@ -6510,6 +6594,11 @@ use a Registry with declarative config:</p>
 <td>Caching middleware</td>
 <td><em>(none)</em></td>
 <td>TTL-based read cache with automatic invalidation on mutations</td>
+</tr>
+<tr>
+<td>Seekable read</td>
+<td><em>(none)</em></td>
+<td>Portable seekable stream wrapper with SpooledTemporaryFile fallback</td>
 </tr>
 <tr>
 <td>Stream wrappers</td>
