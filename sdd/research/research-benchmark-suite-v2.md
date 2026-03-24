@@ -325,7 +325,7 @@ Total: ~500 lines of new/changed code. No test suite restructuring.
 
 ## See also
 
-- [Performance guide](../../guides/performance.md) — current user-facing docs
-- [Comparative results](../../benchmarks/results/comparative.md) — current baseline
-- [Toxiproxy module](../../benchmarks/_toxiproxy.py) — existing latency simulation
-- [Benchmark README](../../benchmarks/README.md) — current suite documentation
+- `docs-src/performance.md` — user-facing performance guide (reframe in Phase 3)
+- `benchmarks/results/comparative.md` — current baseline results
+- `benchmarks/_toxiproxy.py` — existing latency simulation module
+- `benchmarks/README.md` — current suite documentation
