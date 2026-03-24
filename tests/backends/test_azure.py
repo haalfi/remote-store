@@ -188,7 +188,10 @@ class TestAzureConstruction:
         caps = _make_backend().capabilities
         assert isinstance(caps, CapabilitySet)
         for cap in Capability:
-            assert caps.supports(cap), f"Missing capability: {cap.value}"
+            if cap is Capability.SEEKABLE_READ:
+                assert not caps.supports(cap), "Azure must not declare SEEKABLE_READ"
+            else:
+                assert caps.supports(cap), f"Missing capability: {cap.value}"
 
     @pytest.mark.spec("AZ-004")
     def test_lazy_connection(self) -> None:

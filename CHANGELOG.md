@@ -8,6 +8,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **Seekable read capability + extension** (ID-100): New `Capability.SEEKABLE_READ`
+  flag for backends that always return seekable streams (Local, Memory, S3,
+  S3-PyArrow, SFTP). New `ext.seekable.seekable_read()` portable wrapper:
+  returns seekable streams on any backend — zero-copy passthrough when native,
+  `SpooledTemporaryFile` fallback for Azure/HTTP. Replaces the
+  `read_bytes() + BytesIO` anti-pattern. ADR-0016, spec 036.
+
 - **ProxyStore added to API reference** (ID-101): `ProxyStore` is now exported
   from `remote_store` and documented. It remains an internal delegation base by
   design (ADR-0014) but is visible in the inheritance chain of `ObservedStore`

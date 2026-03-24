@@ -4,6 +4,16 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Streaming & I/O
+
+- [x] **ID-100 — Seekable read capability + extension**
+  `Capability.SEEKABLE_READ` flag for backends that always return seekable
+  streams (Local, Memory, S3, S3-PyArrow, SFTP). `ext.seekable.seekable_read()`
+  portable wrapper with `SpooledTemporaryFile` fallback for non-seekable
+  backends (Azure, HTTP). ADR-0016, spec 036.
+
+---
+
 ## API Surface
 
 - [x] **ID-101 — Add ProxyStore to API reference**
