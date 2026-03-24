@@ -123,6 +123,7 @@ class TestReadSeekableContract:
 class TestPassthrough:
     """SEEK-004: read_seekable() returns the read() stream on seekable backends."""
 
+    @pytest.mark.spec("SEEK-003")
     @pytest.mark.spec("SEEK-004")
     def test_passthrough_returns_same_object(self, store: Store) -> None:
         # Monkey-patch the backend's read() to capture the returned stream,
@@ -155,6 +156,7 @@ class TestPassthrough:
 class TestSpoolFallback:
     """SEEK-005: non-seekable backends get spooled to SpooledTemporaryFile."""
 
+    @pytest.mark.spec("SEEK-003")
     @pytest.mark.spec("SEEK-005")
     def test_non_seekable_backend_spools(self) -> None:
         """Backend.read_seekable() default spools non-seekable streams."""

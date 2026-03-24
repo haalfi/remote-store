@@ -832,7 +832,10 @@ class AzureBackend(Backend):
             ServiceResponseError,
         )
 
-        # Unwrap OSError wrapper from _AzureRangeReader.readinto()
+        # Unwrap OSError wrapper from _AzureRangeReader.readinto().
+        # Only _AzureRangeReader does `raise OSError(...) from exc` — the
+        # chunked _AzureBinaryIO path (read()) does not, so this branch
+        # only activates for range-reader errors in practice.
         if isinstance(exc, OSError) and isinstance(exc.__cause__, Exception):
             exc = exc.__cause__
 
