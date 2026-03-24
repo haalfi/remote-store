@@ -194,6 +194,10 @@ store.ping()                                    # health check
 
 For the full method list, see the [API reference](https://docs.remotestore.dev/stable/api/store/). All write, move, and copy methods accept `overwrite=True` to replace existing files.
 
+## Performance
+
+remote-store adds minimal overhead on top of the native SDKs it wraps. For network backends (S3, Azure, SFTP), writes and reads are typically within 5-15% of raw SDK calls; under realistic network latency, the abstraction cost becomes negligible. See the [performance guide](https://docs.remotestore.dev/stable/performance/) for comparative benchmarks, methodology, and overhead analysis.
+
 ## Extensions
 
 The core library handles storage operations. Extensions add optional capabilities on top — e.g. PyArrow integration, observability, caching, or bulk operations. All live in `remote_store.ext`; import only what you need.

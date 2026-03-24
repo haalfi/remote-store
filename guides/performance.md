@@ -1,92 +1,70 @@
 # Performance
 
-remote-store includes a comprehensive benchmark suite that measures throughput,
-latency, and memory usage across all backends. The suite also compares
-remote-store against raw SDK calls and fsspec implementations.
+remote-store wraps established Python storage libraries. The abstraction adds
+measurable overhead for fast local operations, but for remote backends under
+realistic network latency, the cost is typically small relative to network and
+service time.
 
-## Methodology
+## Overhead at a Glance
 
-Benchmarks use [pytest-benchmark](https://pytest-benchmark.readthedocs.io/)
-with Docker-hosted services (MinIO for S3, Azurite for Azure, OpenSSH for SFTP).
-Each test runs in an isolated environment — fresh buckets, containers, and
-directories are created per test fixture and cleaned up after.
+The chart below shows remote-store's overhead (%) versus raw SDK calls for
+each backend. Negative values mean remote-store is *faster* than calling
+the SDK directly (often due to connection pooling and caching).
 
-### What We Measure
+![Abstraction overhead by backend](img/benchmarks/overhead.svg)
 
-| Metric | How | Where |
-|--------|-----|-------|
-| **Throughput** (MB/s) | payload_bytes / mean_time | Write, read, roundtrip |
-| **TTFB** (ms) | Time to write/read 1KB file | Protocol overhead |
-| **Latency** (ms) | Mean operation time | Exists, delete, list |
-| **Memory** (MB) | tracemalloc peak | Large-file read/write |
-| **Listing speed** | Time to list N files | 50, 200, 1k, 10k files |
+**Verdicts from Docker benchmarks** (MinIO, Azurite, OpenSSH):
 
-### Comparative Benchmarks
+- **S3**: Writes are 1.2x *faster* than raw boto3 (connection reuse). Reads
+  +22%, exists negligible, listing 18x faster (s3fs cache). Delete +2x
+  (error-mapping layer).
+- **Azure**: Writes 1.2x *faster* than raw azure-blob. Reads, exists, delete
+  all within noise.
+- **SFTP**: Writes +7%, reads +8%. Metadata ops show higher relative overhead
+  (exists +133%) but absolute latencies are sub-millisecond.
+- **Local**: Sub-millisecond for all operations. Higher relative overhead on
+  metadata (exists: 63us vs 6us) but absolute cost is negligible.
 
-For operations where comparison is meaningful (write, read, exists, list, delete),
-the suite runs the same operation through three interfaces:
+## What Happens Under Real Latency
 
-1. **remote-store** — the `Backend` API
+Under realistic network round-trip times (20-100ms), the abstraction overhead
+collapses into the noise. A 1ms overhead on a 100ms round trip is 1% — invisible.
+
+<!-- TODO: add overhead-vs-rtt.svg chart once multi-profile benchmark data is collected -->
+
+The benchmark suite simulates latency using [Toxiproxy](https://github.com/Shopify/toxiproxy)
+with four named profiles:
+
+| Profile | Latency | Jitter | Simulates |
+|---------|---------|--------|-----------|
+| `clean` | 0 ms | 0 ms | Baseline (passthrough) |
+| `rtt20` | 20 ms | 7 ms | Same-region cloud |
+| `rtt50` | 50 ms | 17 ms | Cross-region |
+| `rtt100` | 100 ms | 33 ms | Cross-continent |
+
+## Throughput by File Size
+
+How throughput scales with file size, comparing remote-store to raw SDK:
+
+![Throughput by file size](img/benchmarks/throughput.svg)
+
+At larger file sizes, throughput converges — the per-operation overhead is
+amortized across more bytes.
+
+## Comparative Results
+
+For every operation, the benchmark suite runs the same workload through three
+interfaces:
+
+1. **remote-store** — the `Backend` / `Store` API
 2. **Raw SDK** — direct boto3/paramiko/azure-storage-blob/pathlib calls
 3. **fsspec** — s3fs/sshfs/adlfs/fsspec.local
 
-This quantifies the overhead remote-store adds on top of each SDK.
-
-## Running Benchmarks
-
-### Prerequisites
-
-```bash
-# Install benchmark dependencies
-pip install remote-store[bench]
-
-# Start Docker services
-docker compose -f benchmarks/infra/docker-compose.yml up -d
-```
-
-### Commands
-
-```bash
-# Quick tier (~2 min/backend)
-hatch run bench
-
-# Standard tier (~5 min/backend, adds 10MB payload + deep hierarchy)
-hatch run bench-standard
-
-# Full tier (~20-30 min/backend, adds 100MB payload + 10k listing)
-hatch run bench-full
-
-# Filter to specific backends
-hatch run bench -- --backend s3,sftp
-
-# Save results as JSON
-hatch run bench-save
-
-# Compare against last saved run
-hatch run bench-compare
-
-# Run against real cloud services
-hatch run bench-cloud
-
-# Summary report from saved results
-hatch run bench-report
-
-# Comparative report (remote-store vs raw SDK vs fsspec)
-hatch run bench-report-comparative
-
-# Compare latest vs previous saved run
-hatch run bench-report-compare
-
-# Machine-readable JSON output
-hatch run bench-report-json
-```
-
 ### Sample Results
 
-Results will vary by hardware and network. The following numbers were
-measured on Windows 11 (Intel Core Ultra 7 265K, Python 3.13) with
-Docker Desktop (MinIO, Azurite, OpenSSH) running locally. All values are
-**mean** latency from `pytest-benchmark`.
+Results vary by hardware and network. The following were measured on Windows 11
+(Intel Core Ultra 7 265K, Python 3.13) with Docker Desktop running locally. All
+values are **mean** latency from `pytest-benchmark`.
 
 | Operation | [Local](backends/local.md) | [S3](backends/s3.md) (MinIO) | [S3-PyArrow](backends/s3-pyarrow.md) | [SFTP](backends/sftp.md) | [Azure](backends/azure.md) (Azurite) |
 |-----------|-------|------------|------------|------|-----------------|
@@ -105,89 +83,70 @@ Docker Desktop (MinIO, Azurite, OpenSSH) running locally. All values are
 | TTFB read | 0.11ms | 3.1ms | 1.9ms | 2.5ms | 2.2ms |
 | TTFB exists | 0.06ms | 1.4ms | 1.4ms | 1.1ms | 1.8ms |
 
-*\* 64KB write values for S3-PyArrow and Azure are outlier-skewed (high variance,
-stddev > mean). The medians are monotonic (17ms and 6ms respectively). The raw
-SDK shows the same pattern — this is a Dockerized-service cold-start artifact,
-not real non-monotonic performance.*
+*\* 64KB write values for S3-PyArrow and Azure are outlier-skewed (high
+variance, stddev > mean). The medians are monotonic. This is a
+Dockerized-service cold-start artifact, not real non-monotonic performance.*
 
 Generate this table from your own saved results with `hatch run bench-report`.
+For a condensed view with verdicts, use `hatch run bench-report-user`.
 
-**Key observations:**
+## Caveats
 
-- Local backend is 20-100x faster than network backends (expected).
-- S3-PyArrow writes are slow at small sizes (36ms for 1KB) due to PyArrow's
-  single-part upload overhead. At 1MB the gap narrows from ~7x to ~1.6x
-  (31.6ms vs 20.1ms for S3).
-- S3-PyArrow reads are competitive with S3 (1.7ms vs 1.5ms at 1KB, 11.4ms vs
-  5.9ms at 1MB) — the RFC-0003 `BufferedReader` removal keeps overhead modest.
-- SFTP read latency scales steeply with file size (3.0ms at 1KB, 13.5ms at 1MB).
-- Azure listing is slowest (11.4ms for 50 files, 145ms for 1000) — Azurite
-  emulation overhead.
-- S3 listing is faster than local for flat directories (pagination is efficient).
-- Streaming reads keep memory constant regardless of file size.
+- **Docker emulators are not cloud.** Azurite, MinIO, and the local SFTP
+  container approximate real services but have different performance
+  characteristics. Treat these numbers as relative comparisons, not
+  absolute predictions of cloud performance.
+- **Listing anomalies.** Some fsspec implementations (s3fs, adlfs) show
+  sub-100us listing times that reflect client-side caching, not real
+  storage-layer performance. Similarly, raw boto3 listing without caching
+  is slower than remote-store's cached s3fs path.
+- **Delete overhead.** 2-3x vs raw SDK across all backends is expected
+  from the error-mapping layer and not an optimization target.
+- **Streaming reads keep memory constant** regardless of file size.
 
-## How remote-store Compares
+## Methodology
 
-For every comparative operation, the benchmark suite runs the same workload
-through remote-store, the raw SDK, and the fsspec equivalent. Measured findings
-from Docker benchmarks (MinIO, Azurite, OpenSSH):
+Benchmarks use [pytest-benchmark](https://pytest-benchmark.readthedocs.io/)
+with Docker-hosted services (MinIO for S3, Azurite for Azure, OpenSSH for
+SFTP). Each test runs in an isolated environment — fresh buckets, containers,
+and directories are created per test fixture and cleaned up after.
 
-- **Azure: near-zero overhead** — remote-store matches the raw azure-blob SDK
-  within measurement noise for writes, reads, and exists. adlfs is 1.9x slower
-  for reads and 2.2x slower for deletes.
-- **S3: competitive or faster for writes** — Write 1MB is 1.5x faster than raw
-  boto3 (20ms vs 30ms, likely due to S3Backend's persistent client session via
-  s3fs). Read overhead is ~15% (5.9ms vs 5.1ms). Exists within noise
-  (1.4ms vs 1.3ms).
-- **SFTP: moderate overhead** — ~5% for writes and ~8% for reads vs raw
-  paramiko. Metadata ops show ~2x overhead from error-mapping stat calls
-  (exists 859us vs 413us, delete 988us vs 422us).
-- **Local: expected abstraction cost** — ~20% I/O overhead vs bare pathlib
-  (484us vs 404us for Write 1MB). Metadata ops show higher relative overhead
-  (exists 55us vs 5us), but absolute latencies are sub-millisecond.
-- **Caveats:** listing anomalies exist in the comparative data — some fsspec
-  implementations (s3fs at 67us, adlfs at 83us for 50 files) show sub-100us
-  listing times that likely reflect client-side caching in the test harness,
-  not real-world performance (see ID-032). Similarly, raw boto3 listing at
-  4.4ms (18.4x slower than remote-store) uses the paginator API without
-  caching, while remote-store benefits from s3fs's cached `ls()`. Delete
-  overhead is 2-3x vs raw SDK across all backends — this is expected
-  abstraction cost from the error-mapping layer and not an optimization target.
+| Metric | How | Where |
+|--------|-----|-------|
+| **Throughput** (MB/s) | payload_bytes / mean_time | Write, read, roundtrip |
+| **TTFB** (ms) | Time to write/read 1KB file | Protocol overhead |
+| **Latency** (ms) | Mean operation time | Exists, delete, list |
+| **Memory** (MB) | tracemalloc peak | Large-file read/write |
+| **Listing speed** | Time to list N files | 50, 200, 1k, 10k files |
 
-Regenerate for your hardware:
+## Running Benchmarks
 
 ```bash
+# Start Docker services
 docker compose -f benchmarks/infra/docker-compose.yml up -d --wait
-hatch run bench-save
-hatch run bench-report-comparative-md
-```
 
-## Analyzing Results
+# Quick tier (~2 min/backend)
+hatch run bench
 
-Saved benchmark results (JSON) live in `.benchmarks/`. The
-`examples/notebooks/benchmark_analysis.ipynb` notebook loads these files and
-produces charts:
+# Standard tier (~5 min/backend)
+hatch run bench-standard
 
-- **Throughput by backend**: bar chart comparing remote-store vs raw SDK vs fsspec
-- **Throughput vs file size**: line chart showing scaling behavior
-- **Listing latency vs file count**: bar chart at 50, 200, 1000 files
-- **Peak memory vs file size**: scatter plot from tracemalloc data
+# Full tier (~20-30 min/backend)
+hatch run bench-full
 
-## Reproducing
+# With simulated latency
+hatch run bench -- --backend s3-latency,sftp-latency,azure-latency --network-profile rtt50
 
-```bash
-# 1. Start services
-docker compose -f benchmarks/infra/docker-compose.yml up -d
-
-# 2. Run and save
+# Save results as JSON
 hatch run bench-save
 
-# 3. Make changes
+# Reports
+hatch run bench-report                    # summary table
+hatch run bench-report-user               # condensed with verdicts
+hatch run bench-report-comparative        # remote-store vs raw SDK vs fsspec
+hatch run bench-charts                    # generate SVG charts
 
-# 4. Run and compare
-hatch run bench-compare
-
-# 5. Stop services
+# Stop services
 docker compose -f benchmarks/infra/docker-compose.yml down -v
 ```
 

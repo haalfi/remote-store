@@ -75,6 +75,7 @@ bench = [
   "azure-identity>=1.0.0",
   "adlfs>=2024.2.0",
   "sshfs>=2023.1.0",
+  "matplotlib>=3.8",
 ]
 
 docs = [
@@ -158,6 +159,7 @@ dependencies = [
   "pytest-httpserver>=1.0.0",
   "requests>=2.25.0",
   "httpx>=0.24.0",
+  "matplotlib>=3.8",
 ]
 
 [tool.hatch.envs.default.scripts]
@@ -205,6 +207,8 @@ bench-report-compare = "python benchmarks/report.py --compare"
 bench-report-json = "python benchmarks/report.py --json"
 bench-report-comparative = "python benchmarks/report.py --comparative"
 bench-report-comparative-md = "python benchmarks/report.py --comparative --markdown --output benchmarks/results/comparative.md"
+bench-report-user = "python benchmarks/report.py --user"
+bench-charts = "python -m benchmarks.charts"
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"

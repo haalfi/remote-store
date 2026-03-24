@@ -168,6 +168,17 @@ hatch run bench -- --bench-timeout 30
 hatch run bench-cloud -- --bench-timeout 300
 ```
 
+**Latency runs need adjusted settings.** Under simulated latency,
+pytest-benchmark's default `--benchmark-max-time=1.0` still produces
+many rounds on sub-100ms operations, inflating runtime without adding
+statistical value. Use `--benchmark-max-time=0.5` for a measured feel
+without excessive rounds, and raise the timeout to 120s:
+
+```bash
+hatch run bench -- --backend s3-latency --network-profile rtt50 \
+  --benchmark-max-time=0.5 --bench-timeout 120
+```
+
 ## Commands
 
 | Command | What runs | Use case |
@@ -186,6 +197,8 @@ hatch run bench-cloud -- --bench-timeout 300
 | `hatch run bench-report-json` | Machine-readable JSON | CI / scripting |
 | `hatch run bench-report-comparative` | remote-store vs SDK vs fsspec | Overhead analysis |
 | `hatch run bench-report-comparative-md` | Same, as Markdown to file | Docs generation |
+| `hatch run bench-report-user` | Condensed report with verdicts | User-facing overview |
+| `hatch run bench-charts` | Generate SVG charts from saved JSON | Docs charts |
 
 ## Environment Variables
 

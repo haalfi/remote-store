@@ -24,6 +24,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `read()` issues a single HTTP Range request — no full-file download.
   Enables PyArrow Tier 3 column pruning for Parquet on Azure.
 
+- **Benchmark charts and user-facing report** (ID-103 Phases 2--3):
+  SVG chart generation (`hatch run bench-charts`) for overhead %, overhead
+  vs RTT, and throughput by file size. User-facing verdict report
+  (`hatch run bench-report-user`) classifying overhead as
+  Negligible/Moderate/Visible/Favorable. Performance guide reframed to
+  lead with the answer. README gains a Performance section.
+
 - **Toxiproxy latency simulation for all backends** (ID-103 Phase 1):
   Toxiproxy now proxies all three network backends (MinIO, Azurite, SFTP).
   New `--network-profile` flag with named profiles (`clean`, `rtt20`,

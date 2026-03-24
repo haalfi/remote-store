@@ -242,10 +242,17 @@ def _parse_backend_and_target(bm: dict[str, Any]) -> tuple[str, str] | None:
 
 def _build_comparative_table(
     benchmarks: list[dict[str, Any]],
+    ops: list[tuple[str, dict[str, Any], str]] | None = None,
 ) -> dict[str, dict[str, dict[str, float]]]:
-    """Build {label: {backend: {target_kind: mean}}} for comparative view."""
+    """Build {label: {backend: {target_kind: mean}}} for comparative view.
+
+    Args:
+        benchmarks: List of benchmark entries from saved JSON.
+        ops: Operation definitions ``(test_prefix, param_filter, label)``.
+            Defaults to ``COMPARATIVE_ROWS``.
+    """
     table: dict[str, dict[str, dict[str, float]]] = {}
-    for test_prefix, param_filter, label in COMPARATIVE_ROWS:
+    for test_prefix, param_filter, label in ops or COMPARATIVE_ROWS:
         per_backend: dict[str, dict[str, float]] = {}
         for bm in benchmarks:
             if _test_name(bm) != test_prefix:
@@ -272,6 +279,73 @@ def _format_relative(value: float, baseline: float) -> str:
     if ratio < 0.95:
         return f" ({1 / ratio:.1f}x faster)"
     return ""
+
+
+# ---- Raw SDK targets per backend (for verdict computation) ----------------
+
+RAW_SDK_TARGET: dict[str, str] = {
+    "local": "pathlib_raw",
+    "s3": "boto3_raw",
+    "sftp": "paramiko_raw",
+    "azure": "azure_blob_raw",
+}
+
+
+def _verdict(rs_seconds: float, raw_seconds: float) -> str:
+    """Classify overhead vs raw SDK into a user-friendly verdict.
+
+    | Verdict       | Criteria                                |
+    |---------------|-----------------------------------------|
+    | Favorable     | >10% faster and >1ms absolute           |
+    | Negligible    | delta <10% or <1ms absolute             |
+    | Moderate      | either <=50% or <5ms absolute           |
+    | Visible       | >50% and >=5ms absolute                 |
+    """
+    if raw_seconds <= 0:
+        return ""
+    delta_abs = (rs_seconds - raw_seconds) * 1000  # ms
+    delta_pct = ((rs_seconds - raw_seconds) / raw_seconds) * 100
+    if delta_pct < -10 and delta_abs < -1:
+        return "Favorable"
+    if abs(delta_pct) < 10 or abs(delta_abs) < 1:
+        return "Negligible"
+    if delta_pct <= 50 or delta_abs < 5:
+        return "Moderate"
+    return "Visible"
+
+
+def _print_user_report(
+    table: dict[str, dict[str, dict[str, float]]],
+) -> None:
+    """Print a condensed user-facing report with verdicts."""
+    for backend in BACKEND_ORDER:
+        labels = TARGET_LABELS.get(backend, {})
+        raw_key = RAW_SDK_TARGET.get(backend)
+        if not raw_key or raw_key not in labels:
+            continue
+        has_data = any(backend in row for row in table.values())
+        if not has_data:
+            continue
+
+        print(f"\n### {BACKEND_LABELS.get(backend, backend)}\n")
+
+        for label, per_backend in table.items():
+            if backend not in per_backend:
+                continue
+            targets = per_backend[backend]
+            rs = targets.get("remote_store")
+            raw = targets.get(raw_key)
+            if rs is None or raw is None:
+                continue
+
+            rs_str = _format_time(rs)
+            raw_str = _format_time(raw)
+            v = _verdict(rs, raw)
+            delta_pct = ((rs - raw) / raw) * 100 if raw > 0 else 0
+
+            detail = f"remote-store {1 / (rs / raw):.1f}x faster" if delta_pct < 0 else f"+{delta_pct:.0f}%"
+
+            print(f"  {label + ':':<16} {rs_str:>8} vs {raw_str:>8} raw -> {v} ({detail})")
 
 
 def _print_comparative_text(
@@ -397,6 +471,11 @@ def main() -> None:
         help="Write output to file instead of stdout",
     )
     parser.add_argument(
+        "--user",
+        action="store_true",
+        help="Condensed user-facing report with verdicts (Negligible/Moderate/Visible/Favorable)",
+    )
+    parser.add_argument(
         "--dir",
         type=Path,
         default=Path(".benchmarks"),
@@ -430,6 +509,17 @@ def main() -> None:
             print(f"Comparative report -- {cpu}, Python {py}")
             print()
             _print_comparative_text(comp_table)
+        return
+
+    # --- User-facing verdict mode ---
+    if args.user:
+        comp_table = _build_comparative_table(latest["benchmarks"])
+        machine = latest.get("machine_info", {})
+        cpu = machine.get("cpu", {}).get("brand_raw", "unknown")
+        py = machine.get("python_version", "?")
+        print(f"User report -- {cpu}, Python {py}")
+        _print_user_report(comp_table)
+        print()
         return
 
     # --- Standard summary mode ---
