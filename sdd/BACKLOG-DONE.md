@@ -4,6 +4,16 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Docs & DX
+
+- [x] **BUG-004 — Snippet indentation leaks into docs code blocks**
+  pymdownx.snippets extracts named regions verbatim; regions inside
+  function bodies carry 4–8 spaces of indentation into rendered docs.
+  Fix: enable `dedent_subsections: true` in pymdownx.snippets config.
+  Affects `homepage.py` (4 regions) and `core_operations.py` (3 regions).
+
+---
+
 ## Streaming & I/O
 
 - [x] **ID-100 — Seekable read capability + extension**

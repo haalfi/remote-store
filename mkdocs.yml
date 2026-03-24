@@ -78,6 +78,7 @@ markdown_extensions:
       anchor_linenums: true
   - pymdownx.snippets:
       base_path: ["."]
+      dedent_subsections: true
   - pymdownx.tabbed:
       alternate_style: true
   - toc:
