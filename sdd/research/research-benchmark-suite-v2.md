@@ -128,9 +128,9 @@ Update `benchmarks/conftest.py`:
 |----------|---------|-------------|
 | `BENCH_TOXIPROXY_HOST` | 127.0.0.1 | Toxiproxy API host |
 | `BENCH_TOXIPROXY_API_PORT` | 8474 | Toxiproxy API port |
-| `BENCH_MINIO_PROXY_PORT` | 19000 | Proxied MinIO port |
-| `BENCH_SFTP_PROXY_PORT` | 12222 | Proxied SFTP port |
-| `BENCH_AZURITE_PROXY_PORT` | 10001 | Proxied Azurite port (existing) |
+| `BENCH_TOXIPROXY_AZURITE_PORT` | 10001 | Proxied Azurite port (existing) |
+| `BENCH_MINIO_PROXY_PORT` | 19000 | Proxied MinIO port (new) |
+| `BENCH_SFTP_PROXY_PORT` | 12222 | Proxied SFTP port (new) |
 
 #### 1e. Verification
 
@@ -221,14 +221,17 @@ No tables, no charts in README. Just the story + link.
 Restructure `guides/performance.md`:
 
 **Current structure:**
-1. Methodology
-2. What We Measure (table)
-3. Comparative Benchmarks (explanation)
-4. Running Benchmarks (commands)
-5. Sample Results (table)
-6. How remote-store Compares (prose)
-7. Analyzing Results
-8. Reproducing
+1. Methodology (H2)
+   - What We Measure (H3, table)
+   - Comparative Benchmarks (H3, explanation)
+2. Running Benchmarks (H2)
+   - Prerequisites (H3)
+   - Commands (H3)
+   - Sample Results (H3, table)
+3. How remote-store Compares (H2, prose)
+4. Analyzing Results (H2)
+5. Reproducing (H2)
+6. See also (H2)
 
 **New structure:**
 1. **Lead paragraph** — answer the user's question upfront:
