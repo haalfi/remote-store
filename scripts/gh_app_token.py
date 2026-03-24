@@ -129,7 +129,7 @@ def _api_request(url: str, token: str, method: str = "POST", data: dict | None =
         headers["Content-Type"] = "application/json"
     req = urllib.request.Request(
         url,
-        data=json.dumps(data).encode() if data else None,
+        data=json.dumps(data).encode() if data is not None else None,
         method=method,
         headers=headers,
     )
@@ -155,7 +155,14 @@ def _get_installation_token(jwt_token: str, installation_id: str) -> str:
     the app on additional repos later doesn't silently widen access.
     """
     url = f"https://api.github.com/app/installations/{installation_id}/access_tokens"
-    result = _api_request(url, jwt_token, data={"repositories": [REPO_NAME]})
+    result = _api_request(
+        url,
+        jwt_token,
+        data={
+            "repositories": [REPO_NAME],
+            "permissions": {"contents": "read", "pull_requests": "write"},
+        },
+    )
     return result["token"]
 
 
