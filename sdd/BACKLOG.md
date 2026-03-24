@@ -51,6 +51,21 @@ Items graduate through the SDD pipeline:
 
 ### Integrations
 
+- [ ] **ID-102 — AzurePyArrowBackend: Tier 1 PyArrow reads for Azure**
+  Hybrid Azure backend (following the S3PyArrowBackend pattern) that exposes a
+  native `pyarrow.fs.FileSystem` via `unwrap()` for Tier 1 reads in the
+  `StoreFileSystemHandler`. Uses Azure SDK range requests
+  (`download_blob(offset=, length=)`) for column pruning and seekable reads.
+  HNS accounts get DFS-based directory listing; non-HNS falls back to base
+  `AzureBackend` behavior.
+  - Done: [research](research/research-azure-pyarrow-optimization.md).
+  - Remaining:
+    - Phase 1: `_AzureRangeReader`, `_AzureFileSystemHandler`,
+      `AzurePyArrowBackend`, spec, tests.
+    - Phase 2: benchmarks on real Parquet datasets (column pruning, listing,
+      memory).
+    - Phase 3: Dagster integration, docs, example, optional non-HNS support.
+
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.
   - Done: [recipe](../packaging/conda-forge/recipe.yaml),
