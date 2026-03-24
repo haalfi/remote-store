@@ -23,6 +23,7 @@ matplotlib.use("Agg")  # non-interactive backend — must precede pyplot import
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
+from benchmarks.report import BACKEND_LABELS as _REPORT_LABELS  # noqa: E402
 from benchmarks.report import (  # noqa: E402
     RAW_SDK_TARGET,
     _build_comparative_table,
@@ -37,12 +38,8 @@ from benchmarks.report import (  # noqa: E402
 # Backends shown in comparative charts (must have raw SDK baseline).
 COMPARATIVE_BACKENDS = ["s3", "sftp", "azure"]
 
-BACKEND_LABELS = {
-    "local": "Local",
-    "s3": "S3 (MinIO)",
-    "sftp": "SFTP",
-    "azure": "Azure (Azurite)",
-}
+# Extend report labels with emulator suffixes for chart clarity.
+BACKEND_LABELS = {**_REPORT_LABELS, "azure": "Azure (Azurite)"}
 
 # Operations for overhead chart.
 OVERHEAD_OPS: list[tuple[str, dict[str, Any], str]] = [
@@ -165,18 +162,9 @@ def chart_overhead(benchmarks: list[dict[str, Any]], output: Path) -> None:
             edgecolor="white",
             linewidth=0.5,
         )
-        # Value labels on bars.
-        for bar, val in zip(bars, overheads, strict=True):
-            if not np.isnan(val) and abs(val) > 3:
-                va = "bottom" if val >= 0 else "top"
-                ax.text(
-                    bar.get_x() + bar.get_width() / 2,
-                    bar.get_height(),
-                    f"{val:+.0f}%",
-                    ha="center",
-                    va=va,
-                    fontsize=7,
-                )
+        # Value labels on bars (bar_label handles alignment automatically).
+        labels = [f"{v:+.0f}%" if not np.isnan(v) and abs(v) > 3 else "" for v in overheads]
+        ax.bar_label(bars, labels=labels, fontsize=7, label_type="edge")
 
     ax.set_xlabel("")
     ax.set_ylabel("Overhead vs raw SDK (%)", fontsize=_LABEL_SIZE)
