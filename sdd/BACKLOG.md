@@ -51,7 +51,7 @@ Items graduate through the SDD pipeline:
 
 ### Integrations
 
-- [~] **ID-103 — Benchmark suite v2: user-decision framing**
+- [x] **ID-103 — Benchmark suite v2: user-decision framing**
   Expand Toxiproxy to all Docker backends, generate overhead charts,
   reframe performance guide for user decisions, add README performance
   section.

@@ -38,9 +38,9 @@ class TestCachePerformance:
 
         def _cold_read() -> None:
             # Fresh cache each call — always a miss.
+            # Don't close — CachedStore.close() closes the underlying backend.
             cached = cache(store, ttl=300.0)
             cached.read(path)
-            cached.close()
 
         benchmark(_cold_read)
         benchmark.extra_info["payload_bytes"] = len(data)
