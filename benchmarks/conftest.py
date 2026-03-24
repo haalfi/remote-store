@@ -319,12 +319,18 @@ from benchmarks._toxiproxy import clear_latency as _toxiproxy_clear_latency  # n
 from benchmarks._toxiproxy import set_latency as _toxiproxy_set_latency  # noqa: E402
 
 
-def _resolve_latency(config: Any) -> int:
-    """Resolve effective latency from --network-profile or legacy --latency."""
+def _resolve_latency(config: Any) -> tuple[int, int | None]:
+    """Resolve effective latency and jitter from --network-profile or legacy --latency.
+
+    Returns:
+        ``(latency_ms, jitter_ms)`` tuple. *jitter_ms* is ``None`` when using
+        the legacy ``--latency`` flag (falls back to ``latency_ms // 3``).
+    """
     profile = config.getoption("--network-profile")
     if profile is not None:
-        return NETWORK_PROFILES[profile]["latency"]
-    return config.getoption("--latency")
+        p = NETWORK_PROFILES[profile]
+        return p["latency"], p["jitter"]
+    return config.getoption("--latency"), None
 
 
 # ---------------------------------------------------------------------------
@@ -547,31 +553,32 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
 
         from remote_store.backends._azure import AzureBackend
 
-        latency_ms = _resolve_latency(request.config)
+        latency_ms, jitter_ms = _resolve_latency(request.config)
         container = f"bench-azl-{tag}"
         # Create container via direct Azurite connection (bypasses toxiproxy).
         service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
         service.create_container(container)
-        # Set up latency toxic.
-        _toxiproxy_set_latency(latency_ms, proxy_name="azurite")
-        # Backend connects through toxiproxy.
-        b = AzureBackend(
-            container=container,
-            connection_string=TOXIPROXY_AZURITE_CONN_STR,
-            max_concurrency=AZURE_MAX_CONCURRENCY,
-        )
-        yield b
-        b.close()
-        _toxiproxy_clear_latency(proxy_name="azurite")
-        service.delete_container(container)
-        service.close()
+        _toxiproxy_set_latency(latency_ms, proxy_name="azurite", jitter_ms=jitter_ms)
+        try:
+            # Backend connects through toxiproxy.
+            b = AzureBackend(
+                container=container,
+                connection_string=TOXIPROXY_AZURITE_CONN_STR,
+                max_concurrency=AZURE_MAX_CONCURRENCY,
+            )
+            yield b
+            b.close()
+        finally:
+            _toxiproxy_clear_latency(proxy_name="azurite")
+            service.delete_container(container)
+            service.close()
 
     elif request.param == "s3-latency":
         import boto3
 
         from remote_store.backends._s3 import S3Backend
 
-        latency_ms = _resolve_latency(request.config)
+        latency_ms, jitter_ms = _resolve_latency(request.config)
         bucket = f"bench-s3l-{tag}"
         # Create bucket via direct MinIO connection (bypasses toxiproxy).
         client = boto3.client(
@@ -582,41 +589,45 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             region_name="us-east-1",
         )
         client.create_bucket(Bucket=bucket)
-        _toxiproxy_set_latency(latency_ms, proxy_name="minio")
-        # Backend connects through toxiproxy.
-        b = S3Backend(
-            bucket=bucket,
-            key=MINIO_ACCESS_KEY,
-            secret=MINIO_SECRET_KEY,
-            region_name="us-east-1",
-            endpoint_url=TOXIPROXY_MINIO_ENDPOINT,
-        )
-        yield b
-        b.close()
-        _toxiproxy_clear_latency(proxy_name="minio")
-        _paginated_delete_s3(client, bucket)
-        client.delete_bucket(Bucket=bucket)
+        _toxiproxy_set_latency(latency_ms, proxy_name="minio", jitter_ms=jitter_ms)
+        try:
+            # Backend connects through toxiproxy.
+            b = S3Backend(
+                bucket=bucket,
+                key=MINIO_ACCESS_KEY,
+                secret=MINIO_SECRET_KEY,
+                region_name="us-east-1",
+                endpoint_url=TOXIPROXY_MINIO_ENDPOINT,
+            )
+            yield b
+            b.close()
+        finally:
+            _toxiproxy_clear_latency(proxy_name="minio")
+            _paginated_delete_s3(client, bucket)
+            client.delete_bucket(Bucket=bucket)
 
     elif request.param == "sftp-latency":
         from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
 
-        latency_ms = _resolve_latency(request.config)
+        latency_ms, jitter_ms = _resolve_latency(request.config)
         base_path = f"/upload/bench_sftpl_{tag}"
-        _toxiproxy_set_latency(latency_ms, proxy_name="sftp")
-        # Backend connects through toxiproxy.
-        b = SFTPBackend(
-            host=TOXIPROXY_HOST,
-            port=TOXIPROXY_SFTP_PORT,
-            username=SFTP_USER,
-            password=SFTP_PASS,
-            base_path=base_path,
-            host_key_policy=HostKeyPolicy.AUTO_ADD,
-            connect_kwargs={"allow_agent": False, "look_for_keys": False},
-        )
-        yield b
-        b.close()
-        _toxiproxy_clear_latency(proxy_name="sftp")
-        _sftp_cleanup(SFTP_HOST, SFTP_PORT, SFTP_USER, base_path, password=SFTP_PASS)
+        _toxiproxy_set_latency(latency_ms, proxy_name="sftp", jitter_ms=jitter_ms)
+        try:
+            # Backend connects through toxiproxy.
+            b = SFTPBackend(
+                host=TOXIPROXY_HOST,
+                port=TOXIPROXY_SFTP_PORT,
+                username=SFTP_USER,
+                password=SFTP_PASS,
+                base_path=base_path,
+                host_key_policy=HostKeyPolicy.AUTO_ADD,
+                connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            )
+            yield b
+            b.close()
+        finally:
+            _toxiproxy_clear_latency(proxy_name="sftp")
+            _sftp_cleanup(SFTP_HOST, SFTP_PORT, SFTP_USER, base_path, password=SFTP_PASS)
 
     else:
         pytest.skip(f"Unknown backend: {request.param}")
@@ -923,12 +934,12 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
 
         from remote_store.backends._azure import AzureBackend
 
-        latency_ms = _resolve_latency(request.config)
+        latency_ms, jitter_ms = _resolve_latency(request.config)
         container = f"bench-tgt-azl-{tag}"
         # Create container via direct Azurite (bypasses toxiproxy).
         service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
         service.create_container(container)
-        _toxiproxy_set_latency(latency_ms, proxy_name="azurite")
+        _toxiproxy_set_latency(latency_ms, proxy_name="azurite", jitter_ms=jitter_ms)
         try:
             if target_kind == "remote_store":
                 bk = AzureBackend(
@@ -949,7 +960,7 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
 
         from remote_store.backends._s3 import S3Backend
 
-        latency_ms = _resolve_latency(request.config)
+        latency_ms, jitter_ms = _resolve_latency(request.config)
         bucket = f"bench-tgt-s3l-{tag}"
         # Create bucket via direct MinIO (bypasses toxiproxy).
         client = boto3.client(
@@ -960,7 +971,7 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
             region_name="us-east-1",
         )
         client.create_bucket(Bucket=bucket)
-        _toxiproxy_set_latency(latency_ms, proxy_name="minio")
+        _toxiproxy_set_latency(latency_ms, proxy_name="minio", jitter_ms=jitter_ms)
         try:
             if target_kind == "remote_store":
                 bk = S3Backend(
@@ -981,9 +992,9 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
     elif backend_type == "sftp-latency":
         from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
 
-        latency_ms = _resolve_latency(request.config)
+        latency_ms, jitter_ms = _resolve_latency(request.config)
         base_path = f"/upload/bench_tgt_sftpl_{tag}"
-        _toxiproxy_set_latency(latency_ms, proxy_name="sftp")
+        _toxiproxy_set_latency(latency_ms, proxy_name="sftp", jitter_ms=jitter_ms)
         try:
             if target_kind == "remote_store":
                 bk = SFTPBackend(
