@@ -287,8 +287,10 @@ def _build_handler(self):
 **Weaknesses:**
 - Still `PythonFile` wrapping — GIL overhead on every `ReadAt`.
 - More code to write and maintain (~300–500 LOC).
-- `download_blob(offset=, length=)` issues a fresh HTTP request per range,
-  unlike C++ implementations that use connection pooling and HTTP/2.
+- `download_blob(offset=, length=)` incurs per-request round-trip latency
+  for each range, unlike C++ implementations that use HTTP/2 multiplexing
+  and request pipelining. (The Azure SDK does pool TCP connections via
+  `requests.Session`, so connection establishment is not the bottleneck.)
 
 **Critical insight:** Even with our own `FileSystemHandler`, the `PythonFile`
 bridge is unavoidable for any Python-based implementation. The GIL overhead
@@ -309,7 +311,7 @@ Breaking down the performance layers:
 | Column pruning | Yes (range reads) | Yes (range reads via Python) | No (full file) |
 | I/O coalescing | Yes (C++ ReadRangeCache) | No (Python dispatch per range) | No |
 | GIL-free reads | Yes | No | N/A |
-| Connection pooling | Yes (C++ HTTP client) | Per-request (Azure SDK) | N/A |
+| Request pipelining | Yes (C++ HTTP/2 multiplexing) | No (one round-trip per range; connections pooled) | N/A |
 | Directory listing | S3 ListObjectsV2 | Varies by SDK | Blob prefix scan |
 
 **Key takeaway:** The biggest win is **column pruning** — reading only the byte
@@ -474,7 +476,7 @@ The seekable range reader delivers column pruning — the single biggest win
 | Column pruning | Yes — range reads via Python | Yes — range reads via C++ |
 | I/O coalescing | No — one HTTP request per `read_at` | Yes — `ReadRangeCache` batches nearby ranges |
 | GIL-free reads | No — `PythonFile` acquires GIL per call | Yes — all I/O in C++ |
-| Connection pooling | Per-request (Azure SDK) | C++ HTTP client with keep-alive |
+| Request pipelining | No (one round-trip per range; connections pooled) | Yes (C++ HTTP/2 multiplexing) |
 | Concurrent reads | Serialized (GIL + seek/read pair) | Parallel (C++ thread pool) |
 
 For most workloads (single-user, moderate concurrency), the `PythonFile`

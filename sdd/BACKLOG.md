@@ -51,13 +51,13 @@ Items graduate through the SDD pipeline:
 
 ### Integrations
 
-- [ ] **ID-102 — Azure PyArrow column pruning via seekable range reads**
-  Enable column pruning for Parquet/PyArrow workloads on Azure by making
-  `AzureBackend.read()` return a seekable range reader backed by
-  `download_blob(offset=, length=)`. The existing Tier 3 path in
-  `ext/arrow.py` wraps seekable streams in `pa.PythonFile`, which exposes
-  `read_at(offset, length)` — giving PyArrow's Parquet reader byte-range
-  access without a new backend class.
+- [~] **ID-102 — Azure PyArrow column pruning via seekable range reads**
+  Enable column pruning for Parquet/PyArrow workloads on Azure via a seekable
+  range reader backed by `download_blob(offset=, length=)`, exposed through a
+  separate path alongside the existing chunked-streaming `read()`. The existing
+  Tier 3 path in `ext/arrow.py` wraps seekable streams in `pa.PythonFile`,
+  which exposes `read_at(nbytes, offset)` — giving PyArrow's Parquet reader
+  byte-range access without a new backend class.
   - Done: [research](research/research-azure-pyarrow-optimization.md).
   - Remaining:
     - Phase 1: `_AzureRangeReader` with dual-mode integration (~150–200
