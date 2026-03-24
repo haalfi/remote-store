@@ -164,12 +164,14 @@ the I/O path itself.
 
 **Conclusion:** adlfs is a weaker fit than pyarrowfs-adlgen2 for HNS accounts.
 Both share the same `PythonFile` GIL overhead (neither provides C++ native I/O),
-but adlfs adds `azure-storage-blob` as a transitive dependency (we already use
-`azure-storage-file-datalake`), and its Blob-endpoint listing is slower on HNS
-accounts. adlfs does support non-HNS accounts, which pyarrowfs-adlgen2 does
-not — but this advantage is marginal since our primary target (analytical
-workloads on data lakes) implies HNS. RFC-0001 rejected adlfs for the base
-backend; the dependency-weight and error-translation concerns carry over here.
+but adlfs pulls in `fsspec` as a new transitive dependency (we don't use fsspec
+anywhere else), and its Blob-endpoint listing is slower on HNS accounts.
+(`azure-storage-blob` is NOT an incremental dep — it's already a transitive
+dependency of `azure-storage-file-datalake`.) adlfs does support non-HNS
+accounts, which pyarrowfs-adlgen2 does not — but this advantage is marginal
+since our primary target (analytical workloads on data lakes) implies HNS.
+RFC-0001 rejected adlfs for the base backend; the `fsspec` dependency-weight
+and error-translation concerns carry over here.
 
 ### 3.3 obstore (object-store-python)
 
@@ -451,9 +453,11 @@ The implementation needs a **dual-mode approach**:
 - `read()` keeps the current chunked streaming (`_AzureBinaryIO`) for
   sequential callers — no behavior change.
 - A separate path exposes `_AzureRangeReader` for the PyArrow adapter.
-  Options: (a) a new `Capability.SEEKABLE_READ` flag that `open_input_file`
-  checks, (b) a backend-internal method like `_open_seekable(path)`, or
-  (c) the `ext.seekable` composition point with a range-read implementation.
+  Options: (a) a new capability flag (e.g., `RANGE_READ` — NOT
+  `SEEKABLE_READ`, which already exists with the meaning "read() always
+  returns a seekable stream"), (b) a backend-internal method like
+  `_open_seekable(path)`, or (c) the `ext.seekable` composition point
+  with a range-read implementation.
 
 This raises the complexity estimate from ~50–100 LOC to ~150–200 LOC and
 requires spec-level design for how the seekable path is exposed. The PoC
@@ -521,9 +525,10 @@ If `AzureFileSystem` proves viable, build an `AzurePyArrowBackend`:
 
 ### 6.3 Dependencies
 
-No new PyPI dependencies for either path. The seekable range reader uses only
-`azure-storage-blob` (already in `azure` extra). The `AzurePyArrowBackend`
-would additionally use `pyarrow.fs.AzureFileSystem` (ships with `pyarrow`).
+No new PyPI dependencies for either path. The seekable range reader uses
+`azure-storage-blob` (transitively via `azure-storage-file-datalake` in the
+`azure` extra). The `AzurePyArrowBackend` would additionally use
+`pyarrow.fs.AzureFileSystem` (ships with `pyarrow`).
 
 A combined extra would be convenient for the Tier 1 path:
 ```toml
