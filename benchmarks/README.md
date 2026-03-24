@@ -168,6 +168,15 @@ hatch run bench -- --bench-timeout 30
 hatch run bench-cloud -- --bench-timeout 300
 ```
 
+**Latency runs need higher timeouts.** Under `rtt50`, multi-round-trip
+operations (SFTP copy, S3 move) can exceed 1s per iteration. With 200
+benchmark rounds, a single test can take several minutes. Use
+`--bench-timeout 600` for latency profiles:
+
+```bash
+hatch run bench -- --backend s3-latency --network-profile rtt50 --bench-timeout 600
+```
+
 ## Commands
 
 | Command | What runs | Use case |
