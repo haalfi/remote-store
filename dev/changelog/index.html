@@ -8314,6 +8314,14 @@
   Enables PyArrow Tier 3 column pruning for Parquet on Azure.</p>
 </li>
 <li>
+<p><strong>Benchmark charts and user-facing report</strong> (ID-103 Phases 2--3):
+  SVG chart generation (<code>hatch run bench-charts</code>) for overhead %, overhead
+  vs RTT, and throughput by file size. User-facing verdict report
+  (<code>hatch run bench-report-user</code>) classifying overhead as
+  Negligible/Moderate/Visible/Favorable. Performance guide reframed to
+  lead with the answer. README gains a Performance section.</p>
+</li>
+<li>
 <p><strong>Toxiproxy latency simulation for all backends</strong> (ID-103 Phase 1):
   Toxiproxy now proxies all three network backends (MinIO, Azurite, SFTP).
   New <code>--network-profile</code> flag with named profiles (<code>clean</code>, <code>rtt20</code>,
