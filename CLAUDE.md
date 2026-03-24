@@ -64,6 +64,22 @@ It requires a `GITHUB_TOKEN` environment variable with PR read/write scope.
 
 All other `gh` operations (creating/closing/merging PRs, pushing code, commenting on issues, etc.) require explicit user request. If you believe one would be beneficial, ask the user and wait for confirmation before proceeding.
 
+## Resolving PR review threads
+
+The MCP `get_review_comments` tool does **not** return GraphQL node IDs needed to resolve threads. Use this two-step workaround with `gh api graphql`:
+
+1. **Fetch thread IDs**:
+
+```bash
+gh api graphql -f query='{ repository(owner:"haalfi", name:"remote-store") { pullRequest(number:NUMBER) { reviewThreads(last:100) { nodes { id isResolved } } } } }'
+```
+
+2. **Resolve** each unresolved thread by passing its `PRRT_...` ID:
+
+```bash
+gh api graphql -f query='mutation { resolveReviewThread(input:{threadId:"PRRT_..._ID"}) { thread { isResolved } } }'
+```
+
 For lookup tables, detailed procedures, and repo layout see `sdd/CLAUDE-REFERENCE.md`.
 
 Ignore AGENTS.md; this file defines Claude Code behavior for this repo.
