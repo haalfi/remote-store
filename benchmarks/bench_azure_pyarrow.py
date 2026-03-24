@@ -12,6 +12,10 @@ Sweeps four dimensions:
 - **Latency:** 0, 10, 30, 50 ms (via Toxiproxy)
 - **File count:** 1, 5, 10 (batch reads of identically-shaped files)
 
+Phase 3 adds a ``pyarrow.dataset`` scan comparison: ``ds.dataset()`` via the
+``pyarrow_fs()`` adapter vs manual ``pq.read_table`` loop, testing whether
+PyArrow's dataset I/O scheduling works correctly with the range reader.
+
 Usage::
 
     docker compose -f benchmarks/infra/docker-compose.yml up -d
@@ -26,8 +30,10 @@ import statistics
 import time
 import uuid
 from dataclasses import dataclass
+from typing import Any
 
 import pyarrow as pa
+import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 
 from benchmarks._toxiproxy import (
@@ -39,6 +45,7 @@ from benchmarks._toxiproxy import (
 )
 from remote_store import Store
 from remote_store.backends._azure import AzureBackend
+from remote_store.ext.arrow import pyarrow_fs
 
 # ---------------------------------------------------------------------------
 # Config
@@ -292,6 +299,78 @@ def _run_all(container: str) -> None:
             row = f"{n_files:>6} {lat:>7}"
             row += f" {t2:>10.1f} {t3:>10.1f}"
             row += f" {speedup:>7.2f}x {marker}"
+            print(row)
+
+            backend.close()
+
+    # ---------------------------------------------------------------
+    # Phase 3: Dataset scan (pyarrow.dataset via adapter)
+    # ---------------------------------------------------------------
+    print()
+    print("=" * 78)
+    print("Phase 3: Dataset scan (ds.dataset() via pyarrow_fs adapter)")
+    print("=" * 78)
+
+    # Write dataset files into a subdirectory for ds.dataset() discovery.
+    ds_rows = 50_000
+    ds_data = make_parquet(ds_rows)
+    ds_size = len(ds_data)
+    ds_file_counts = [1, 5, 10]
+    max_ds_files = max(ds_file_counts)
+    for i in range(max_ds_files):
+        setup_store.write(f"dataset/file_{i:03d}.parquet", ds_data, overwrite=True)
+
+    ds_cols = col_names(3)
+    print(f"\nFile size: {ds_size:,} bytes each, selecting 3/50 columns")
+    print("Compares: manual pq.read_table loop (Tier 3) vs ds.dataset() scan")
+
+    hdr = f"{'Files':>6} {'Lat ms':>7}"
+    hdr += f" {'Loop ms':>10} {'DS ms':>10} {'DS/Loop':>8}"
+    print(hdr)
+    print("-" * 50)
+
+    for n_files in ds_file_counts:
+        ds_paths = [f"dataset/file_{i:03d}.parquet" for i in range(n_files)]
+        for lat in [0, 10, 30]:
+            set_latency(lat)
+            backend = AzureBackend(
+                container=container,
+                connection_string=TOXIPROXY_CONN_STR,
+            )
+            store = Store(backend=backend)
+            fs = pyarrow_fs(store, materialization_threshold=0)
+
+            def loop_read(
+                _s: Store = store,
+                _ps: list[str] = ds_paths,
+                _c: list[str] = ds_cols,
+            ) -> None:
+                for p in _ps:
+                    read_tier3(_s, p, _c)
+
+            def dataset_read(
+                _fs: Any = fs,
+                _c: list[str] = ds_cols,
+            ) -> None:
+                dataset = ds.dataset(
+                    "dataset/",
+                    format="parquet",
+                    filesystem=_fs,
+                )
+                dataset.to_table(columns=_c)
+
+            # Warm up
+            loop_read()
+            dataset_read()
+
+            t_loop = time_fn(loop_read)
+            t_ds = time_fn(dataset_read)
+            ratio = t_ds / t_loop if t_loop > 0 else 0.0
+
+            marker = "<--" if ratio <= 1.1 else ""
+            row = f"{n_files:>6} {lat:>7}"
+            row += f" {t_loop:>10.1f} {t_ds:>10.1f}"
+            row += f" {ratio:>7.2f}x {marker}"
             print(row)
 
             backend.close()
