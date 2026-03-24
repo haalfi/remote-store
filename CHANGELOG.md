@@ -33,6 +33,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   design (ADR-0014) but is visible in the inheritance chain of `ObservedStore`
   and `CachedStore`, and useful for building custom Store extensions.
 
+### Fixed
+
+- **Snippet indentation in docs code blocks** (BUG-004): named snippet
+  regions inside function bodies rendered with extra leading whitespace.
+  Fixed via pymdownx.snippets `dedent_subsections` option.
+
 ## [0.19.0] - 2026-03-23
 
 ### Changed
