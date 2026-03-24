@@ -28,8 +28,7 @@ def _unique(prefix: str = "bench") -> str:
 class TestDeletePerformance:
     """Comparative delete latency (bench_target)."""
 
-    def test_delete(self, bench_target: BenchTarget, benchmark: Any) -> None:
-        pool_size = 200
+    def test_delete(self, bench_target: BenchTarget, benchmark: Any, pool_size: int) -> None:
         paths: list[str] = []
         for _ in range(pool_size):
             p = _unique("del")
@@ -63,8 +62,7 @@ class TestCopyMovePerformance:
 
         benchmark(_copy)
 
-    def test_move(self, bench_backend: Backend, benchmark: Any) -> None:
-        pool_size = 200
+    def test_move(self, bench_backend: Backend, benchmark: Any, pool_size: int) -> None:
         paths: list[str] = []
         for _ in range(pool_size):
             p = _unique("mvsrc")
@@ -109,11 +107,11 @@ class TestDirectoryDestructivePerformance:
 
         benchmark(_copy)
 
-    def test_move_across_subtrees(self, bench_backend: Backend, benchmark: Any) -> None:
+    def test_move_across_subtrees(self, bench_backend: Backend, benchmark: Any, pool_size: int) -> None:
         """Move files from one subtree to another (pre-created pool)."""
-        pool_size = 100
+        n = max(pool_size // 2, 1)
         paths: list[str] = []
-        for i in range(pool_size):
+        for i in range(n):
             p = f"{self._root}/mvpool/f_{i:04d}.txt"
             bench_backend.write(p, b"m")
             paths.append(p)
@@ -125,13 +123,13 @@ class TestDirectoryDestructivePerformance:
             if i < len(paths):
                 bench_backend.move(paths[i], f"{self._root}/sub_3/{_unique('mv')}")
 
-        benchmark.pedantic(_move, rounds=pool_size, iterations=1, warmup_rounds=0)
+        benchmark.pedantic(_move, rounds=n, iterations=1, warmup_rounds=0)
 
-    def test_delete_folder_recursive(self, bench_backend: Backend, benchmark: Any) -> None:
+    def test_delete_folder_recursive(self, bench_backend: Backend, benchmark: Any, pool_size: int) -> None:
         """Delete an entire subtree (36 files) recursively."""
-        pool_size = 30
+        n = max(pool_size // 6, 5)
         subtrees: list[str] = []
-        for t in range(pool_size):
+        for t in range(n):
             base = f"{self._root}/delfolder_{t}"
             for i in range(20):
                 bench_backend.write(f"{base}/f_{i:02d}.txt", b"d")
@@ -146,4 +144,4 @@ class TestDirectoryDestructivePerformance:
             if i < len(subtrees):
                 bench_backend.delete_folder(subtrees[i], recursive=True)
 
-        benchmark.pedantic(_delete, rounds=pool_size, iterations=1, warmup_rounds=0)
+        benchmark.pedantic(_delete, rounds=n, iterations=1, warmup_rounds=0)
