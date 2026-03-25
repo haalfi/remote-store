@@ -19,11 +19,11 @@ extraction strategy, and proposes a phased plan.
 ## 1. S3 backend twins (highest value)
 
 `_s3.py` (502 lines) and `_s3_pyarrow.py` (590 lines) share an s3fs
-code path for **all listing, metadata, and error handling** --- the
+code path for **all listing, metadata, and error handling** — the
 PyArrow backend only diverges for read/write I/O and copy (which route
 through `pyarrow.fs`).
 
-### 1a. Identical methods --- copy-paste verbatim
+### 1a. Identical methods — copy-paste verbatim
 
 | Method | `_s3.py` lines | `_s3_pyarrow.py` lines | Diff |
 |---|---|---|---|
@@ -40,7 +40,7 @@ through `pyarrow.fs`).
 
 | Method | Difference |
 |---|---|
-| `_info_to_fileinfo()` | **Functional divergence:** S3Backend extracts ETag (21 lines); S3PyArrowBackend omits it entirely (17 lines).  The mixin cannot own this method without parameterizing ETag extraction --- see design note below. |
+| `_info_to_fileinfo()` | **Functional divergence:** S3Backend extracts ETag (21 lines); S3PyArrowBackend omits it entirely (17 lines).  The mixin cannot own this method without parameterizing ETag extraction — see design note below. |
 | `_errors()` / `_s3fs_errors()` | Identical body.  PyArrow adds a second `_pyarrow_errors()` for the OSError branch. |
 | `move()` / `copy()` | Identical existence checks; PyArrow splits error context around `_pa_fs.copy_file()`. |
 | `_s3_path()` | Verbatim identical. |
@@ -48,7 +48,7 @@ through `pyarrow.fs`).
 
 ### Proposed extraction: `_s3_base.py`
 
-A private base class **`_S3Base`** (not a mixin --- it carries state
+A private base class **`_S3Base`** (not a mixin — it carries state
 via the abstract property) that owns:
 
 - `_s3_path()`, `to_key()`, `native_path()`
@@ -73,7 +73,7 @@ class _S3Base(Backend):
 
 `S3Backend` adds a one-line property alias (`_s3fs = property(lambda
 self: self._fs)`).  `S3PyArrowBackend` already uses `_s3fs`
-internally --- no change needed.
+internally — no change needed.
 
 **`_info_to_fileinfo()` design:** The base class provides the common
 path/size/datetime logic.  ETag extraction is handled by an overridable
@@ -113,7 +113,7 @@ pieces:
 | `_s3fs` property alias (one-liner) | `_s3fs` + `_pa_fs` properties |
 | `read()`, `write()` via s3fs | `read()`, `write()` via PyArrow |
 | `move()`, `copy()` single error ctx | `move()`, `copy()` split error ctx |
-| --- | `_pyarrow_errors()` |
+| — | `_pyarrow_errors()` |
 | `_head_to_fileinfo()`, digest helpers | `_extract_etag()` override (returns None) |
 
 **Estimated savings:** ~130 net lines removed (gross ~150, plus ~20
@@ -122,13 +122,13 @@ logic, error classification, and FileInfo construction.
 
 **Backward compatibility:** The MRO of both backends changes (new base
 class inserted).  `isinstance(backend, S3Backend)` still works.
-`type(backend).__mro__` gains `_S3Base` --- low risk, but worth noting
+`type(backend).__mro__` gains `_S3Base` — low risk, but worth noting
 for anyone doing MRO introspection.
 
 **Test impact:** Both S3 test suites have independent fixture setups
 (moto mocking).  The conformance suite covers all public operations,
 so the mixin extraction is guarded by existing tests.  No test
-restructuring is expected --- both test modules continue to
+restructuring is expected — both test modules continue to
 instantiate their concrete backend class.
 
 **Spec impact:** No spec references internal backend method names
@@ -169,7 +169,7 @@ def permission_denied(path: str, backend: str) -> PermissionDenied:
     return PermissionDenied(f"Permission denied: {path}", path=path, backend=backend)
 ```
 
-### 2b. `classify_by_message()` --- fallback, not primary path
+### 2b. `classify_by_message()` — fallback, not primary path
 
 The string-matching heuristic (`"404"`, `"403"`, etc.) is a code smell
 being promoted to shared infrastructure.  Design it as a **fallback**
@@ -239,11 +239,11 @@ normalization:
 
 Common sub-patterns:
 
-- **Name from path:** `path.rsplit("/", 1)[-1] if "/" in path else path` ---
+- **Name from path:** `path.rsplit("/", 1)[-1] if "/" in path else path` —
   appears 6+ times.
 - **Timezone normalization:** parse string, add UTC if naive, fallback to
-  `now(UTC)` --- appears 5 times.
-- **ETag cleaning:** `raw.strip('"').lower()` --- appears 3 times.
+  `now(UTC)` — appears 5 times.
+- **ETag cleaning:** `raw.strip('"').lower()` — appears 3 times.
 
 ### Proposed extraction: `backends/_fileinfo.py`
 
@@ -273,9 +273,9 @@ silently).
 All four stream classes (`ProgressReader`, `ProgressWriter`,
 `ChecksumReader`, `ChecksumWriter`) repeat identical:
 
-- `close()` --- 3 lines x 4 = 12 lines
-- `__enter__` / `__exit__` --- 9 lines x 4 = 36 lines
-- `__getattr__` --- 2 lines x 4 = 8 lines
+- `close()` — 3 lines x 4 = 12 lines
+- `__enter__` / `__exit__` — 9 lines x 4 = 36 lines
+- `__getattr__` — 2 lines x 4 = 8 lines
 
 **56 lines of pure boilerplate.**
 
@@ -413,9 +413,9 @@ The two methods are 30 lines each, adjacent, and readable.  A generic
 
 | Phase | Scope | Net savings | Risk | Backlog ID |
 |---|---|---|---|---|
-| **1** | S3 base class + error factories + FileInfo helpers | ~240 lines | Medium --- MRO change, abstract property contract | BK-011 (done, PR #242) |
+| **1** | S3 base class + error factories + FileInfo helpers | ~240 lines | Medium — MRO change, abstract property contract | BK-011 (done, PR #242) |
 | **2** | `_StreamWrapper` base | ~35 lines | Low | BK-012 (done, PR #243) |
-| **3** | `_run_batch()` generic executor | ~65 lines | Low --- tests already comprehensive | BK-012 (done, PR #243) |
+| **3** | `_run_batch()` generic executor | ~65 lines | Low — tests already comprehensive | BK-012 (done, PR #243) |
 | **4** | `ext/_helpers.py`: `_deprecated_alias()` | ~25 lines | Low | BK-012 (done, PR #243) |
 
 **Total estimated net reduction: ~385 lines** (~6.4% of the 6,031
