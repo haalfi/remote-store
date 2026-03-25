@@ -8,6 +8,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Changed
 
+- **Performance messaging rewrite** (ID-104): README and performance guide now
+  present overhead as measured values in ms (with percentages in brackets)
+  instead of judgmental language. Users see the numbers and decide for
+  themselves.
+
 - **Seekable read promoted to Store API** (ID-100, ID-102): New
   `Store.read_seekable()` method — always returns a seekable stream,
   backend-optimized. On seekable backends (Local, S3, SFTP) it's
@@ -23,6 +28,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   a seekable stream backed by `download_blob(offset=, length=)`. Each
   `read()` issues a single HTTP Range request — no full-file download.
   Enables PyArrow Tier 3 column pruning for Parquet on Azure.
+
+- **Latency matrix benchmark command** (ID-104):
+  `hatch run bench-latency-matrix` runs rtt20/rtt50/rtt100 profiles
+  sequentially. Cross-platform Python script with configurable `--profiles`,
+  `--pool-size`, `--bench-timeout`.
 
 - **Seekable read and cache benchmarks** (ID-103 Phase 4):
   `test_seekable.py` measures `read_seekable()` cost (open+read, sequential

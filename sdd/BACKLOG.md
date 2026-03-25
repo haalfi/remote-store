@@ -99,7 +99,7 @@ Items graduate through the SDD pipeline:
   [Research](research/research-dagster-extension.md),
   [showcase architecture](research/research-medallion-dagster-showcase.md).
 
-- [ ] **ID-104 — Benchmark: S3 vs S3-PyArrow comparison + overhead-vs-RTT chart**
+- [~] **ID-104 — Benchmark: S3 vs S3-PyArrow comparison + overhead-vs-RTT chart**
   Two gaps in benchmark reporting:
   1. S3-PyArrow is excluded from comparative charts (no raw SDK target).
      Add S3-PyArrow overhead vs boto3 baseline, and show S3 vs S3-PyArrow
@@ -109,6 +109,9 @@ Items graduate through the SDD pipeline:
      multiple run files. Also: `charts.py` and `report.py` always pick
      the latest JSON file — need a `--file` flag or auto-select the
      largest run for baseline charts.
+  - Done: rewrite performance messaging to present numbers without judgment
+    (README + performance guide); add cross-platform
+    `hatch run bench-latency-matrix` command (Python script).
 
 ### Documentation & Developer Experience
 
