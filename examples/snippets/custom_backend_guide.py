@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, BinaryIO
 
 try:
     import redis
-except ImportError:  # optional -- use ``pip install redis``
+except ImportError:  # graceful fallback when redis is not installed
     redis = None  # type: ignore[assignment]
 
 from remote_store import (
