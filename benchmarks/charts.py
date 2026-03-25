@@ -197,7 +197,7 @@ def chart_overhead(benchmarks: list[dict[str, Any]], output: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Chart 2: Overhead vs RTT (line chart — placeholder structure)
+# Chart 2: Overhead vs RTT (line chart)
 # ---------------------------------------------------------------------------
 
 
@@ -515,8 +515,6 @@ def main() -> None:
         files = sorted(args.dir.rglob("*.json"))
         if args.file.resolve() not in {f.resolve() for f in files}:
             files.append(args.file)
-        if not files:
-            files = [args.file]  # RTT chart can still use the single file
     else:
         files = sorted(args.dir.rglob("*.json"))
         if not files:
