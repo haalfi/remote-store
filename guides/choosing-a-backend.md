@@ -13,10 +13,10 @@ This guide helps you pick the right `remote-store` backend for your use case.
    caches. Lacks native glob (use `ext.glob` fallback).
 
 3. **S3-compatible object store (AWS S3, MinIO, Ceph, etc.)?**
-    - Need **maximum throughput** or PyArrow/Parquet integration? Use **S3-PyArrow**.
-      C++ I/O via PyArrow, zero-copy reads, native `FileSystem` escape hatch.
-    - Otherwise use **S3** (fsspec-based). Lighter dependency footprint, same
-      API surface.
+    - Need **analytical workloads** (Parquet column pruning, PyArrow datasets)?
+      Use **S3-PyArrow**. Native C++ `FileSystem` for PyArrow, GIL-free reads.
+    - Otherwise use **S3** (fsspec-based). Faster for sequential reads/writes,
+      lighter dependency footprint, same API surface.
 
 4. **Azure Blob Storage or ADLS Gen2?** Use **Azure**.
    Supports both flat and HNS (hierarchical namespace) accounts. Connection
@@ -38,7 +38,7 @@ This guide helps you pick the right `remote-store` backend for your use case.
 | [Local](backends/local.md) | None | Native | Disk-bound | Dev, single machine |
 | [Memory](backends/memory.md) | None | Fallback | In-process | Tests, caches |
 | [S3](backends/s3.md) | `s3fs` | Native | Network | General S3 workloads |
-| [S3-PyArrow](backends/s3-pyarrow.md) | `pyarrow` | Native | High (C++) | Data lake, Parquet |
+| [S3-PyArrow](backends/s3-pyarrow.md) | `pyarrow` | Native | Network | Parquet, PyArrow datasets |
 | [SFTP](backends/sftp.md) | `paramiko` | Fallback | Network | Legacy, on-prem |
 | [Azure](backends/azure.md) | `azure-storage-blob` | Native | Network | Azure workloads |
 | [HTTP](backends/http.md) | None | — | Network | Read-only public data |

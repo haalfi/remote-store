@@ -1,6 +1,6 @@
 # S3-PyArrow Backend
 
-Drop-in alternative to the [S3 backend](s3.md) that uses [PyArrow's C++ S3 filesystem](https://arrow.apache.org/docs/python/generated/pyarrow.fs.S3FileSystem.html) for data-path operations (reads, writes, copies) and s3fs for control-path operations (listing, metadata, deletion). This gives higher throughput for large files while keeping the same API.
+Drop-in alternative to the [S3 backend](s3.md) optimized for analytical workloads. Uses [PyArrow's C++ S3 filesystem](https://arrow.apache.org/docs/python/generated/pyarrow.fs.S3FileSystem.html) for data-path operations (reads, writes, copies) and s3fs for control-path operations (listing, metadata, deletion). This enables Tier 1 PyArrow integration — Parquet column pruning, I/O coalescing, and GIL-free reads — while keeping the same API.
 
 ## Installation
 
@@ -53,9 +53,16 @@ Same constructor signature as the S3 backend:
 | Scenario | Recommended backend |
 |----------|-------------------|
 | General-purpose file storage | `s3` |
-| Large file reads/writes (100 MB+) | `s3-pyarrow` |
+| Sequential byte streaming (read/write) | `s3` (faster at every file size) |
+| Analytical workloads (Parquet, datasets) | `s3-pyarrow` (Tier 1 column pruning) |
 | Minimal dependencies | `s3` (only needs `s3fs`) |
 | PyArrow already in your stack | `s3-pyarrow` (zero extra deps) |
+
+S3-PyArrow's C++ data path adds per-call overhead that makes sequential reads
+~2x slower than the regular S3 backend. The advantage is native PyArrow
+integration: when PyArrow reads Parquet files through the
+[adapter](../pyarrow-adapter.md), it uses C++ range requests and I/O coalescing
+directly — no Python in the loop.
 
 Both backends support all capabilities and are fully interchangeable — switch by changing the `type` in your config.
 
