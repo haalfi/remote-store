@@ -3490,6 +3490,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#s3-vs-s3-pyarrow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3 vs S3-PyArrow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#comparative-results" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6400,6 +6411,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#s3-vs-s3-pyarrow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3 vs S3-PyArrow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#comparative-results" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6577,8 +6599,7 @@ the SDK directly (often due to connection pooling and caching).</p>
 <h2 id="what-happens-under-real-latency">What Happens Under Real Latency<a class="headerlink" href="#what-happens-under-real-latency" title="Permanent link">&para;</a></h2>
 <p>Under realistic network round-trip times (20–100 ms), overhead as a percentage
 shrinks. For example, a 1 ms overhead on a 100 ms round trip is 1%.</p>
-<!-- TODO: add overhead-vs-rtt.svg chart once multi-profile benchmark data is collected -->
-
+<p><img alt="Overhead vs RTT" src="../img/benchmarks/overhead-vs-rtt.svg" /></p>
 <p>The benchmark suite simulates latency using <a href="https://github.com/Shopify/toxiproxy">Toxiproxy</a>
 with four named profiles:</p>
 <table>
@@ -6622,6 +6643,11 @@ with four named profiles:</p>
 <p><img alt="Throughput by file size" src="../img/benchmarks/throughput.svg" /></p>
 <p>At larger file sizes, throughput converges as the fixed per-operation overhead
 is amortized across more bytes.</p>
+<h2 id="s3-vs-s3-pyarrow">S3 vs S3-PyArrow<a class="headerlink" href="#s3-vs-s3-pyarrow" title="Permanent link">&para;</a></h2>
+<p>Both S3 backends connect to the same service. S3 uses s3fs (Python), S3-PyArrow
+uses PyArrow's C++ <code>S3FileSystem</code> for data-path operations. The chart below
+compares their absolute latencies:</p>
+<p><img alt="S3 vs S3-PyArrow" src="../img/benchmarks/s3-comparison.svg" /></p>
 <h2 id="comparative-results">Comparative Results<a class="headerlink" href="#comparative-results" title="Permanent link">&para;</a></h2>
 <p>For every operation, the benchmark suite runs the same workload through three
 interfaces:</p>

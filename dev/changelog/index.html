@@ -8322,6 +8322,23 @@
   Enables PyArrow Tier 3 column pruning for Parquet on Azure.</p>
 </li>
 <li>
+<p><strong>S3-PyArrow in comparative benchmarks</strong> (ID-104): S3-PyArrow now appears
+  in overhead charts, comparative reports, and user-facing verdicts with boto3
+  as its raw SDK baseline. New S3 vs S3-PyArrow comparison chart.</p>
+</li>
+<li>
+<p><strong>Overhead-vs-RTT chart</strong> (ID-104): Replaces the placeholder with a real
+  line chart showing how overhead % changes across network latency profiles
+  (clean, rtt20, rtt50, rtt100). Raw SDK targets added for latency backends
+  for apples-to-apples comparison. Network profile metadata saved in
+  benchmark JSON.</p>
+</li>
+<li>
+<p><strong><code>--file</code> flag for benchmark tools</strong> (ID-104): <code>report.py</code> and <code>charts.py</code>
+  accept <code>--file PATH</code> to load a specific JSON file instead of auto-detecting
+  the latest.</p>
+</li>
+<li>
 <p><strong>Latency matrix benchmark command</strong> (ID-104):
   <code>hatch run bench-latency-matrix</code> runs rtt20/rtt50/rtt100 profiles
   sequentially. Cross-platform Python script with configurable <code>--profiles</code>,
