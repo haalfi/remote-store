@@ -180,6 +180,7 @@ contributing_text = _rewrite_links(
         "](sdd/rfcs/rfc-template.md)": "](design/rfcs/rfc-template.md)",
         "](sdd/DESIGN.md)": "](design/design-spec.md)",
         "](sdd/adrs/0008-extension-architecture.md)": "](design/adrs/0008-extension-architecture.md)",
+        "](guides/custom-backend-guide.md)": "](custom-backend-guide.md)",
     },
 )
 with mkdocs_gen_files.open("contributing.md", "w") as f:
@@ -300,10 +301,16 @@ _EXAMPLE_DESCRIPTIONS: dict[str, str] = {
     "streaming_io.py": "Streaming writes and reads with `BytesIO`.",
     "store_child.py": "Runtime sub-scoping: create child stores that share a backend but isolate paths.",
     "http_backend.py": "Read-only access to files over HTTP/HTTPS — no credentials needed for public endpoints.",
-    "caching.py": "Store-level caching with `ext.cache` — cached reads, automatic invalidation on writes, and cache statistics.",
-    "observe_hooks.py": "Callback-based instrumentation for Store operations — logging, metrics, auditing, and error tracking.",
+    "caching.py": (
+        "Store-level caching with `ext.cache` — cached reads, automatic invalidation on writes, and cache statistics."
+    ),
+    "observe_hooks.py": (
+        "Callback-based instrumentation for Store operations — logging, metrics, auditing, and error tracking."
+    ),
     "otel_tracing.py": "Instrument any Store with OpenTelemetry spans and metrics.",
-    "glob_pattern_matching.py": "Three-tier file filtering with `list_files(pattern=)`, `Store.glob()`, and `glob_files()`.",
+    "glob_pattern_matching.py": (
+        "Three-tier file filtering with `list_files(pattern=)`, `Store.glob()`, and `glob_files()`."
+    ),
     "path_model.py": "`RemotePath` normalization, properties, validation, and the `/` operator.",
     "pyarrow_adapter.py": "Use any Store as a `pyarrow.fs.FileSystem` for Parquet, CSV, and dataset I/O.",
     "dagster_io_manager.py": "Use any Store as a Dagster IOManager with pluggable serialization.",
@@ -314,10 +321,14 @@ _EXAMPLE_DESCRIPTIONS: dict[str, str] = {
     "configuration.py": "Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs.",
     "config_loaders.py": "Load registry configuration from TOML, YAML, and Pydantic models.",
     "capabilities_and_errors.py": "Capability querying, gating, and the structured error hierarchy.",
-    "file_operations.py": "Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key.",
+    "file_operations.py": (
+        "Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key."
+    ),
     "atomic_writes.py": "Atomic writes and overwrite semantics.",
     "backends/s3_backend.py": "Connect to Amazon S3 or any S3-compatible service (MinIO, DigitalOcean Spaces, etc.).",
-    "backends/s3_pyarrow_backend.py": "High-throughput S3 via PyArrow's C++ filesystem. Drop-in swap from the S3 backend.",
+    "backends/s3_pyarrow_backend.py": (
+        "High-throughput S3 via PyArrow's C++ filesystem. Drop-in swap from the S3 backend."
+    ),
     "backends/sftp_backend.py": "Connect to any SSH/SFTP server with paramiko.",
     "backends/azure_backend.py": "Connect to Azure Blob Storage or Azure Data Lake Storage Gen2.",
 }
@@ -373,18 +384,36 @@ def _make_title(stem: str, docstring_first: str) -> str:
 
 # Categorisation for the index page
 _CORE_EXAMPLES = [
-    "quickstart", "file_operations", "streaming_io", "atomic_writes",
-    "configuration", "config_loaders", "error_handling",
-    "capabilities_and_errors", "path_model", "memory_backend", "store_child",
+    "quickstart",
+    "file_operations",
+    "streaming_io",
+    "atomic_writes",
+    "configuration",
+    "config_loaders",
+    "error_handling",
+    "capabilities_and_errors",
+    "path_model",
+    "memory_backend",
+    "store_child",
 ]
 _BACKEND_EXAMPLES = [
-    "backends/s3_backend", "backends/s3_pyarrow_backend",
-    "backends/sftp_backend", "backends/azure_backend", "http_backend",
+    "backends/s3_backend",
+    "backends/s3_pyarrow_backend",
+    "backends/sftp_backend",
+    "backends/azure_backend",
+    "http_backend",
 ]
 _EXTENSION_EXAMPLES = [
-    "batch_operations", "transfer_operations", "glob_pattern_matching",
-    "caching", "observe_hooks", "otel_tracing", "pyarrow_adapter",
-    "dagster_io_manager", "retry_policy", "health_check",
+    "batch_operations",
+    "transfer_operations",
+    "glob_pattern_matching",
+    "caching",
+    "observe_hooks",
+    "otel_tracing",
+    "pyarrow_adapter",
+    "dagster_io_manager",
+    "retry_policy",
+    "health_check",
 ]
 _SHOWCASE_EXAMPLES = [
     "medallion_dagster",
@@ -480,17 +509,19 @@ def _gen_example_index(
         else:
             warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=2)
 
-    lines.extend([
-        "",
-        "## Backend Examples",
-        "",
-        "These require a running service (AWS, MinIO, an SFTP server, Azure, Azurite, etc.) "
-        "and credentials supplied via environment variables. Each script prints a help message "
-        "when the required variables are missing.",
-        "",
-        "| Example | Description |",
-        "|---------|-------------|",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Backend Examples",
+            "",
+            "These require a running service (AWS, MinIO, an SFTP server, Azure, Azurite, etc.) "
+            "and credentials supplied via environment variables. Each script prints a help message "
+            "when the required variables are missing.",
+            "",
+            "| Example | Description |",
+            "|---------|-------------|",
+        ]
+    )
     for key in backends:
         entry = _example_by_key.get(key + ".py")
         if entry:
@@ -499,13 +530,15 @@ def _gen_example_index(
         else:
             warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=2)
 
-    lines.extend([
-        "",
-        "## Extension Examples",
-        "",
-        "| Example | Description |",
-        "|---------|-------------|",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Extension Examples",
+            "",
+            "| Example | Description |",
+            "|---------|-------------|",
+        ]
+    )
     for key in extensions:
         entry = _example_by_key.get(key + ".py")
         if entry:
@@ -514,15 +547,17 @@ def _gen_example_index(
         else:
             warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=2)
 
-    lines.extend([
-        "",
-        "## Showcases",
-        "",
-        "Full project examples demonstrating multiple extensions working together.",
-        "",
-        "| Example | Description |",
-        "|---------|-------------|",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Showcases",
+            "",
+            "Full project examples demonstrating multiple extensions working together.",
+            "",
+            "| Example | Description |",
+            "|---------|-------------|",
+        ]
+    )
     for key in showcases:
         if key == "medallion_dagster":
             lines.append(
@@ -530,23 +565,22 @@ def _gen_example_index(
                 "End-to-end Bronze/Silver/Gold pipeline with Dagster, 4 extensions, live MeteoSwiss data |"
             )
 
-    lines.extend([
-        "",
-        "Interactive Jupyter notebooks are also available in the",
-        f"[`examples/notebooks/`]({REPO_URL}/tree/master/examples/notebooks)",
-        "directory of the repository.",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "Interactive Jupyter notebooks are also available in the",
+            f"[`examples/notebooks/`]({REPO_URL}/tree/master/examples/notebooks)",
+            "directory of the repository.",
+            "",
+        ]
+    )
     return "\n".join(lines)
 
 
 # --- Write example wrapper pages ---
 for rel_key, slug, title, description in _example_entries:
     # Backend examples get the backend prefix in their slug for the docs
-    if rel_key.startswith("backends/"):
-        doc_slug = _stem_to_slug(rel_key.split("/")[1].replace(".py", ""))
-    else:
-        doc_slug = slug
+    doc_slug = _stem_to_slug(rel_key.split("/")[1].replace(".py", "")) if rel_key.startswith("backends/") else slug
     page_content = _gen_example_page(rel_key, doc_slug, title, description)
     with mkdocs_gen_files.open(f"examples/{doc_slug}.md", "w") as f:
         f.write(page_content)
@@ -596,7 +630,10 @@ with mkdocs_gen_files.open("examples/medallion-dagster.md", "w") as f:
 
 # --- Write examples/index.md ---
 index_content = _gen_example_index(
-    _CORE_EXAMPLES, _BACKEND_EXAMPLES, _EXTENSION_EXAMPLES, _SHOWCASE_EXAMPLES,
+    _CORE_EXAMPLES,
+    _BACKEND_EXAMPLES,
+    _EXTENSION_EXAMPLES,
+    _SHOWCASE_EXAMPLES,
 )
 with mkdocs_gen_files.open("examples/index.md", "w") as f:
     f.write(index_content)
