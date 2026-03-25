@@ -1,6 +1,6 @@
 # Build Your Own Backend
 
-Write file storage code once. Run it against local files, S3, SFTP, Azure ---
+Write file storage code once. Run it against local files, S3, SFTP, Azure —
 or your own custom storage system.
 
 This guide walks you through implementing a custom [`Backend`](api/backend.md) for remote-store.
@@ -24,9 +24,9 @@ listing, metadata, error mapping, and capability declarations.
 Every backend is a subclass of [`Backend`](api/backend.md). The contract is
 straightforward:
 
-1. **Declare capabilities** --- which operations does your backend support?
-2. **Implement abstract members** --- 16 methods and 2 properties covering CRUD, listing, and metadata.
-3. **Map all exceptions** --- native errors must become `remote_store` errors. No leaks.
+1. **Declare capabilities** — which operations does your backend support?
+2. **Implement abstract members** — 16 methods and 2 properties covering CRUD, listing, and metadata.
+3. **Map all exceptions** — native errors must become `remote_store` errors. No leaks.
 
 The [`Store`](api/store.md) class wraps your backend, adds path validation, capability gating,
 and scoping. You implement the raw operations; `Store` handles the policy.
@@ -59,7 +59,7 @@ Every backend starts with these imports. The key types:
 ```
 
 **Capabilities gate Store methods.** If you don't declare `ATOMIC_WRITE`, calls
-to `store.write_atomic()` raise `CapabilityNotSupported` automatically --- you
+to `store.write_atomic()` raise `CapabilityNotSupported` automatically — you
 don't need to handle it.
 
 The 10 capabilities and what they gate:
@@ -88,7 +88,7 @@ The 10 capabilities and what they gate:
 **Rules:**
 
 - `name` must be a unique string. Used in error messages and the registry.
-- `capabilities` returns a [`CapabilitySet`](api/capabilities.md) --- immutable, created once.
+- `capabilities` returns a [`CapabilitySet`](api/capabilities.md) — immutable, created once.
 - Constructor parameters become `options:` in YAML config (more on this later).
 
 ---
@@ -124,7 +124,7 @@ traceback for debugging.
 
 **Key invariants:**
 
-- `exists()` **never raises `NotFound`** --- always returns `bool`.
+- `exists()` **never raises `NotFound`** — always returns `bool`.
 - `""` and `"."` are root aliases. Root always exists and is always a folder.
 - `is_file("")` is always `False`. `is_folder("")` is always `True`.
 
@@ -139,13 +139,13 @@ traceback for debugging.
 **Notes:**
 
 - `read()` returns a `BinaryIO`. Since we return `BytesIO`, streams are
-  seekable --- that's why we declared `SEEKABLE_READ`.
+  seekable — that's why we declared `SEEKABLE_READ`.
 - `read_bytes()` can be more efficient than `read().read()` because it avoids
   wrapping in a stream object.
 - Both raise `NotFound` for missing files.
 
 Since our `read()` returns seekable streams, we don't need to override
-`read_seekable()` --- the default implementation detects seekability and
+`read_seekable()` — the default implementation detects seekability and
 returns the stream as-is.
 
 ---
@@ -159,7 +159,7 @@ returns the stream as-is.
 **Key patterns:**
 
 - `content` is `bytes | BinaryIO`. Normalize with `content if isinstance(content, bytes) else content.read()`.
-- **Write creates parent folders implicitly** --- in Redis, there's nothing to create, but filesystem-based backends must `mkdir -p`.
+- **Write creates parent folders implicitly** — in Redis, there's nothing to create, but filesystem-based backends must `mkdir -p`.
 - Re-raise your own errors (`AlreadyExists`, `InvalidPath`) before the catch-all `RedisError` handler.
 - Even though Store gates `write_atomic()` via capabilities, implement the methods anyway (they're abstract). Raise `CapabilityNotSupported` as a safety net.
 
@@ -190,7 +190,7 @@ returns the stream as-is.
 
 - `list_files(path="")` lists from root.
 - `recursive=False` (default) yields only immediate children.
-- `list_folders()` is always non-recursive --- only immediate subfolders.
+- `list_folders()` is always non-recursive — only immediate subfolders.
 - Non-existent paths yield nothing (no exception).
 - [`FileInfo`](api/models.md)`.path` must be a [`RemotePath`](api/path.md).
 
@@ -206,7 +206,7 @@ returns the stream as-is.
 
 - `get_file_info()` raises `NotFound` if missing.
 - `get_folder_info()` raises `NotFound` if the folder doesn't exist.
-- `exists()` never raises --- returns `bool`.
+- `exists()` never raises — returns `bool`.
 
 ---
 
@@ -276,7 +276,7 @@ extension works out of the box:
 ```
 
 Extensions that require specific capabilities will check at runtime. For
-example, `ext.glob.glob_files()` works with any `LIST`-capable backend ---
+example, `ext.glob.glob_files()` works with any `LIST`-capable backend —
 it doesn't need the `GLOB` capability.
 
 ---
@@ -365,7 +365,7 @@ custom backend, write tests covering:
 Declare it only if `read()` **always** returns a seekable stream with zero
 overhead. `BytesIO` qualifies. Streams backed by network iterators don't.
 
-If your `read()` returns a non-seekable stream, don't worry --- `Store` handles
+If your `read()` returns a non-seekable stream, don't worry — `Store` handles
 it. `read_seekable()` will spool to a temp file automatically. You can also
 override `read_seekable()` for an optimized path (like Azure's HTTP Range
 reader).
@@ -375,7 +375,7 @@ reader).
 Support it if your backend can guarantee that readers never see partial content.
 Filesystem backends use temp-file-and-rename. Databases can use transactions.
 If your backend's writes are inherently atomic (single Redis `HSET`), you could
-declare it --- but be honest about the guarantee. "Atomic at the key level"
+declare it — but be honest about the guarantee. "Atomic at the key level"
 isn't the same as "atomic rename of a visible path."
 
 ### Thread safety
@@ -428,9 +428,9 @@ are generally thread-safe, so our example doesn't need explicit locking.
 
 ## See also
 
-- [Backend API reference](api/backend.md) --- full method documentation
-- [Error types API reference](api/errors.md) --- all error classes
-- [Backend Adapter Contract](design/specs/003-backend-adapter-contract.md) --- formal spec
-- [Capabilities Matrix](capabilities-matrix.md) --- all backends and their capabilities
-- [Choosing a Backend](choosing-a-backend.md) --- decision guide for built-in backends
-- [Architecture Overview](architecture.md) --- how Store, Backend, and extensions fit together
+- [Backend API reference](api/backend.md) — full method documentation
+- [Error types API reference](api/errors.md) — all error classes
+- [Backend Adapter Contract](design/specs/003-backend-adapter-contract.md) — formal spec
+- [Capabilities Matrix](capabilities-matrix.md) — all backends and their capabilities
+- [Choosing a Backend](choosing-a-backend.md) — decision guide for built-in backends
+- [Architecture Overview](architecture.md) — how Store, Backend, and extensions fit together
