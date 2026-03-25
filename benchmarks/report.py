@@ -67,7 +67,7 @@ COMPARATIVE_ROWS: list[tuple[str, dict[str, Any], str]] = [
 TARGET_LABELS: dict[str, dict[str, str]] = {
     "local": {"remote_store": "remote-store", "pathlib_raw": "pathlib", "fsspec_local": "fsspec"},
     "s3": {"remote_store": "remote-store", "boto3_raw": "boto3", "s3fs": "s3fs"},
-    "s3-pyarrow": {"remote_store": "remote-store"},
+    "s3-pyarrow": {"remote_store": "remote-store", "boto3_raw": "boto3"},
     "sftp": {"remote_store": "remote-store", "paramiko_raw": "paramiko", "sshfs": "sshfs"},
     "azure": {"remote_store": "remote-store", "azure_blob_raw": "azure-blob", "adlfs": "adlfs"},
 }
@@ -286,8 +286,12 @@ def _format_relative(value: float, baseline: float) -> str:
 RAW_SDK_TARGET: dict[str, str] = {
     "local": "pathlib_raw",
     "s3": "boto3_raw",
+    "s3-pyarrow": "boto3_raw",
     "sftp": "paramiko_raw",
     "azure": "azure_blob_raw",
+    "s3-latency": "boto3_raw",
+    "sftp-latency": "paramiko_raw",
+    "azure-latency": "azure_blob_raw",
 }
 
 
@@ -481,15 +485,29 @@ def main() -> None:
         default=Path(".benchmarks"),
         help="Benchmarks directory (default: .benchmarks)",
     )
+    parser.add_argument(
+        "--file",
+        type=Path,
+        default=None,
+        help="Explicit JSON file to load (overrides auto-detection from --dir)",
+    )
     args = parser.parse_args()
 
-    files = _find_json_files(args.dir)
-    if not files:
-        print(f"No benchmark files found in {args.dir}", file=sys.stderr)
-        sys.exit(1)
+    if args.file:
+        if not args.file.exists():
+            print(f"File not found: {args.file}", file=sys.stderr)
+            sys.exit(1)
+        target_file = args.file
+        files = [args.file]
+    else:
+        files = _find_json_files(args.dir)
+        if not files:
+            print(f"No benchmark files found in {args.dir}", file=sys.stderr)
+            sys.exit(1)
+        target_file = files[-1]
 
-    # Load latest
-    latest = json.loads(files[-1].read_text())
+    # Load target file
+    latest = json.loads(target_file.read_text())
 
     # --- Comparative mode ---
     if args.comparative:

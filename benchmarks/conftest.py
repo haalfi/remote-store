@@ -157,7 +157,9 @@ def _bench_timeout(request: pytest.FixtureRequest) -> Any:
 
 
 def pytest_benchmark_update_json(config: Any, benchmarks: Any, output_json: Any) -> None:
-    """Inject ``throughput_MBps`` into saved JSON from ``payload_bytes`` + mean."""
+    """Inject ``throughput_MBps`` and ``network_profile`` into saved JSON."""
+    profile = config.getoption("--network-profile") or "clean"
+    output_json["network_profile"] = profile
     for bench in output_json.get("benchmarks", []):
         extra = bench.get("extra_info", {})
         payload = extra.get("payload_bytes")
@@ -694,6 +696,7 @@ def _build_target_params() -> list[Any]:
 
     # S3-PyArrow (MinIO / cloud)
     params.append(pytest.param(("s3-pyarrow", "remote_store"), id="s3-pyarrow-remote_store", marks=_pa_skip))
+    params.append(pytest.param(("s3-pyarrow", "boto3_raw"), id="s3-pyarrow-boto3_raw", marks=_pa_skip))
 
     # SFTP
     params.append(pytest.param(("sftp", "remote_store"), id="sftp-remote_store", marks=_sftp_skip))
@@ -714,29 +717,53 @@ def _build_target_params() -> list[Any]:
     params.append(pytest.param(("azure", "adlfs"), id="azure-adlfs", marks=adlfs_skip))
 
     # Azure with simulated latency (Toxiproxy)
+    _azure_lat_marks = [_azure_skip, _toxiproxy_skip]
     params.append(
         pytest.param(
             ("azure-latency", "remote_store"),
             id="azure-latency-remote_store",
-            marks=[_azure_skip, _toxiproxy_skip],
+            marks=_azure_lat_marks,
+        )
+    )
+    params.append(
+        pytest.param(
+            ("azure-latency", "azure_blob_raw"),
+            id="azure-latency-azure_blob_raw",
+            marks=_azure_lat_marks,
         )
     )
 
     # S3 with simulated latency (Toxiproxy)
+    _s3_lat_marks = [_s3_skip, _toxiproxy_skip]
     params.append(
         pytest.param(
             ("s3-latency", "remote_store"),
             id="s3-latency-remote_store",
-            marks=[_s3_skip, _toxiproxy_skip],
+            marks=_s3_lat_marks,
+        )
+    )
+    params.append(
+        pytest.param(
+            ("s3-latency", "boto3_raw"),
+            id="s3-latency-boto3_raw",
+            marks=_s3_lat_marks,
         )
     )
 
     # SFTP with simulated latency (Toxiproxy)
+    _sftp_lat_marks = [_sftp_skip, _toxiproxy_skip]
     params.append(
         pytest.param(
             ("sftp-latency", "remote_store"),
             id="sftp-latency-remote_store",
-            marks=[_sftp_skip, _toxiproxy_skip],
+            marks=_sftp_lat_marks,
+        )
+    )
+    params.append(
+        pytest.param(
+            ("sftp-latency", "paramiko_raw"),
+            id="sftp-latency-paramiko_raw",
+            marks=_sftp_lat_marks,
         )
     )
 
@@ -970,6 +997,15 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
                 t = RemoteStoreTarget(bk)
                 yield t
                 t.close()
+            elif target_kind == "azure_blob_raw":
+                from benchmarks.targets._raw_sdk import AzureBlobRawTarget
+
+                t = AzureBlobRawTarget(
+                    container=container,
+                    connection_string=TOXIPROXY_AZURITE_CONN_STR,
+                )
+                yield t
+                t.close()
         finally:
             _toxiproxy_clear_latency(proxy_name="azurite")
             service.delete_container(container)
@@ -1004,6 +1040,18 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
                 t = RemoteStoreTarget(bk)
                 yield t
                 t.close()
+            elif target_kind == "boto3_raw":
+                from benchmarks.targets._raw_sdk import Boto3RawTarget
+
+                # Route through toxiproxy so raw SDK sees the same latency.
+                lat_client = boto3.client(
+                    "s3",
+                    endpoint_url=TOXIPROXY_MINIO_ENDPOINT,
+                    aws_access_key_id=MINIO_ACCESS_KEY,
+                    aws_secret_access_key=MINIO_SECRET_KEY,
+                    region_name="us-east-1",
+                )
+                yield Boto3RawTarget(bucket=bucket, client=lat_client)
         finally:
             _toxiproxy_clear_latency(proxy_name="minio")
             _paginated_delete_s3(client, bucket)
@@ -1027,6 +1075,19 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
                     connect_kwargs={"allow_agent": False, "look_for_keys": False},
                 )
                 t = RemoteStoreTarget(bk)
+                yield t
+                t.close()
+            elif target_kind == "paramiko_raw":
+                from benchmarks.targets._raw_sdk import ParamikoRawTarget
+
+                # Route through toxiproxy so raw SDK sees the same latency.
+                t = ParamikoRawTarget(  # type: ignore[assignment]
+                    host=TOXIPROXY_HOST,
+                    port=TOXIPROXY_SFTP_PORT,
+                    username=SFTP_USER,
+                    password=SFTP_PASS,
+                    base_path=base_path,
+                )
                 yield t
                 t.close()
         finally:
