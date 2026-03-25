@@ -6590,7 +6590,10 @@ with any backend — no extra configuration needed.</p>
 filesystem via <code>unwrap()</code> (currently <code>S3PyArrowBackend</code>). The handler detects
 this at construction time and bypasses Python I/O entirely for reads — the full
 C++ <code>ReadAt</code> -&gt; HTTP Range request -&gt; I/O coalescing pipeline runs with zero GIL
-overhead.</p>
+overhead. This matters for analytical workloads (Parquet column pruning, dataset
+scans) where PyArrow issues many small range reads. For sequential byte
+streaming, Tier 1 does not provide a speed advantage — the regular S3 backend
+is faster for that use case (see <a href="../performance/#s3-vs-s3-pyarrow">Performance</a>).</p>
 <h2 id="thread-safety">Thread Safety<a class="headerlink" href="#thread-safety" title="Permanent link">&para;</a></h2>
 <p>The handler holds no shared mutable state. PyArrow's C++ layer may call handler
 methods from background threads (with the GIL acquired). Thread safety depends

@@ -6325,10 +6325,10 @@
 <li>
 <p><strong>S3-compatible object store (AWS S3, MinIO, Ceph, etc.)?</strong></p>
 <ul>
-<li>Need <strong>maximum throughput</strong> or PyArrow/Parquet integration? Use <strong>S3-PyArrow</strong>.
-  C++ I/O via PyArrow, zero-copy reads, native <code>FileSystem</code> escape hatch.</li>
-<li>Otherwise use <strong>S3</strong> (fsspec-based). Lighter dependency footprint, same
-  API surface.</li>
+<li>Need <strong>analytical workloads</strong> (Parquet column pruning, PyArrow datasets)?
+  Use <strong>S3-PyArrow</strong>. Native C++ <code>FileSystem</code> for PyArrow, GIL-free reads.</li>
+<li>Otherwise use <strong>S3</strong> (fsspec-based). Faster for sequential reads/writes,
+  lighter dependency footprint, same API surface.</li>
 </ul>
 </li>
 <li>
@@ -6385,8 +6385,8 @@
 <td><a href="../backends/s3-pyarrow/">S3-PyArrow</a></td>
 <td><code>pyarrow</code></td>
 <td style="text-align: center;">Native</td>
-<td>High (C++)</td>
-<td>Data lake, Parquet</td>
+<td>Network</td>
+<td>Parquet, PyArrow datasets</td>
 </tr>
 <tr>
 <td><a href="../backends/sftp/">SFTP</a></td>

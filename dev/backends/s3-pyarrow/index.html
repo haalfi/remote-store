@@ -6421,7 +6421,7 @@
 
 
 <h1 id="s3-pyarrow-backend">S3-PyArrow Backend<a class="headerlink" href="#s3-pyarrow-backend" title="Permanent link">&para;</a></h1>
-<p>Drop-in alternative to the <a href="../s3/">S3 backend</a> that uses <a href="https://arrow.apache.org/docs/python/generated/pyarrow.fs.S3FileSystem.html">PyArrow's C++ S3 filesystem</a> for data-path operations (reads, writes, copies) and s3fs for control-path operations (listing, metadata, deletion). This gives higher throughput for large files while keeping the same API.</p>
+<p>Drop-in alternative to the <a href="../s3/">S3 backend</a> optimized for analytical workloads. Uses <a href="https://arrow.apache.org/docs/python/generated/pyarrow.fs.S3FileSystem.html">PyArrow's C++ S3 filesystem</a> for data-path operations (reads, writes, copies) and s3fs for control-path operations (listing, metadata, deletion). This enables Tier 1 PyArrow integration — Parquet column pruning, I/O coalescing, and GIL-free reads — while keeping the same API.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[s3-pyarrow]&quot;</span>
 </code></pre></div>
@@ -6505,8 +6505,12 @@
 <td><code>s3</code></td>
 </tr>
 <tr>
-<td>Large file reads/writes (100 MB+)</td>
-<td><code>s3-pyarrow</code></td>
+<td>Sequential byte streaming (read/write)</td>
+<td><code>s3</code> (faster at every file size)</td>
+</tr>
+<tr>
+<td>Analytical workloads (Parquet, datasets)</td>
+<td><code>s3-pyarrow</code> (Tier 1 column pruning)</td>
 </tr>
 <tr>
 <td>Minimal dependencies</td>
@@ -6518,6 +6522,11 @@
 </tr>
 </tbody>
 </table>
+<p>S3-PyArrow's C++ data path adds per-call overhead that makes sequential reads
+~2x slower than the regular S3 backend. The advantage is native PyArrow
+integration: when PyArrow reads Parquet files through the
+<a href="../../pyarrow-adapter/">adapter</a>, it uses C++ range requests and I/O coalescing
+directly — no Python in the loop.</p>
 <p>Both backends support all capabilities and are fully interchangeable — switch by changing the <code>type</code> in your config.</p>
 <h2 id="escape-hatch">Escape Hatch<a class="headerlink" href="#escape-hatch" title="Permanent link">&para;</a></h2>
 <p>Access the underlying filesystems when you need protocol-level features:</p>
