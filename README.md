@@ -196,7 +196,7 @@ For the full method list, see the [API reference](https://docs.remotestore.dev/s
 
 ## Performance
 
-For S3, reads add 0.2–0.3 ms over raw boto3 (+5–12%); writes are often *faster* due to connection reuse. For Azure, reads add ~0.5 ms (+8%); writes are comparable. For SFTP, reads add ~1 ms (+8%); writes add 1–2 ms (+4–7%). See the [performance guide](https://docs.remotestore.dev/stable/performance/) for full comparative benchmarks, methodology, and per-operation breakdowns.
+For S3, reads add 0.7 ms (+15%) over raw boto3; listing is 29x faster (s3fs caching). For Azure, reads add 0.1 ms (+1%); writes add 2.4 ms (+17%). For SFTP, reads add 3.3 ms (+34%); writes add 1.6 ms (+7%). See the [performance guide](https://docs.remotestore.dev/stable/performance/) for full comparative benchmarks, methodology, and per-operation breakdowns.
 
 ## Extensions
 
