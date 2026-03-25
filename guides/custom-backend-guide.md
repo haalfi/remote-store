@@ -25,7 +25,7 @@ Every backend is a subclass of [`Backend`](api/backend.md). The contract is
 straightforward:
 
 1. **Declare capabilities** --- which operations does your backend support?
-2. **Implement abstract methods** --- 16 methods covering CRUD, listing, and metadata.
+2. **Implement abstract members** --- 16 methods and 2 properties covering CRUD, listing, and metadata.
 3. **Map all exceptions** --- native errors must become `remote_store` errors. No leaks.
 
 The [`Store`](api/store.md) class wraps your backend, adds path validation, capability gating,
@@ -36,7 +36,23 @@ and scoping. You implement the raw operations; `Store` handles the policy.
 ## Step 1: Scaffold the class
 
 ```python
---8<-- "examples/snippets/step1_imports.py.txt"
+"""Redis backend for remote-store."""
+
+from __future__ import annotations
+
+import contextlib
+import io
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, BinaryIO
+
+try:
+    import redis
+except ImportError:  # optional -- use ``pip install redis``
+    redis = None  # type: ignore[assignment]
+```
+
+```python
+--8<-- "examples/snippets/custom_backend_guide.py:step1-imports"
 ```
 
 Every backend starts with these imports. The key types:

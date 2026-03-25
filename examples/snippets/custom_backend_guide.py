@@ -17,10 +17,8 @@ requiring a Redis server.
 # ---------------------------------------------------------------------------
 # Step 1: Scaffold the class -- imports
 #
-# The guide shows these as a standalone module header.  In this snippet
-# file the ``from __future__ import annotations`` and module docstring
-# live at the top of the file; the region below contains the remaining
-# imports exactly as they appear in the guide.
+# Stdlib and redis imports are above (executed on import).  The named
+# region below covers the remote_store imports shown in the guide.
 # ---------------------------------------------------------------------------
 
 from __future__ import annotations
@@ -32,31 +30,33 @@ from typing import TYPE_CHECKING, BinaryIO
 
 try:
     import redis
-except ImportError:  # redis is optional -- class is still syntax-checked
+except ImportError:  # optional -- use ``pip install redis``
     redis = None  # type: ignore[assignment]
 
-from remote_store._backend import Backend
-from remote_store._capabilities import Capability, CapabilitySet
-from remote_store._errors import (
+# --8<-- [start:step1-imports]
+from remote_store import (
     AlreadyExists,
+    Backend,
     BackendUnavailable,
+    Capability,
+    CapabilitySet,
     CapabilityNotSupported,
     DirectoryNotEmpty,
+    FileInfo,
+    FolderEntry,
+    FolderInfo,
     InvalidPath,
     NotFound,
     PermissionDenied,
+    RemotePath,
 )
-from remote_store._models import FileInfo, FolderEntry, FolderInfo
-from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from contextlib import AbstractContextManager
 
     from remote_store._types import WritableContent
-
-# Step 1 imports are in a separate file (step1_imports.py.txt) because
-# ``from __future__`` and ``import redis`` can't coexist in this module.
+# --8<-- [end:step1-imports]
 
 # ---------------------------------------------------------------------------
 # Step 2: Declare capabilities
@@ -537,8 +537,7 @@ def _demo_direct_usage() -> None:
 
 def _demo_registry_usage() -> None:
     # --8<-- [start:step13-registry]
-    from remote_store import Registry, RegistryConfig
-    from remote_store._registry import register_backend
+    from remote_store import Registry, RegistryConfig, register_backend
 
     register_backend("redis", RedisBackend)
 
