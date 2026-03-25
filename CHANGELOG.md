@@ -29,6 +29,20 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `read()` issues a single HTTP Range request — no full-file download.
   Enables PyArrow Tier 3 column pruning for Parquet on Azure.
 
+- **S3-PyArrow in comparative benchmarks** (ID-104): S3-PyArrow now appears
+  in overhead charts, comparative reports, and user-facing verdicts with boto3
+  as its raw SDK baseline. New S3 vs S3-PyArrow comparison chart.
+
+- **Overhead-vs-RTT chart** (ID-104): Replaces the placeholder with a real
+  line chart showing how overhead % changes across network latency profiles
+  (clean, rtt20, rtt50, rtt100). Raw SDK targets added for latency backends
+  for apples-to-apples comparison. Network profile metadata saved in
+  benchmark JSON.
+
+- **`--file` flag for benchmark tools** (ID-104): `report.py` and `charts.py`
+  accept `--file PATH` to load a specific JSON file instead of auto-detecting
+  the latest.
+
 - **Latency matrix benchmark command** (ID-104):
   `hatch run bench-latency-matrix` runs rtt20/rtt50/rtt100 profiles
   sequentially. Cross-platform Python script with configurable `--profiles`,

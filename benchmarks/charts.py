@@ -36,10 +36,14 @@ from benchmarks.report import (  # noqa: E402
 # ---------------------------------------------------------------------------
 
 # Backends shown in comparative charts (must have raw SDK baseline).
-COMPARATIVE_BACKENDS = ["s3", "sftp", "azure"]
+COMPARATIVE_BACKENDS = ["s3", "s3-pyarrow", "sftp", "azure"]
 
 # Extend report labels with emulator suffixes for chart clarity.
-BACKEND_LABELS = {**_REPORT_LABELS, "azure": "Azure (Azurite)"}
+BACKEND_LABELS = {
+    **_REPORT_LABELS,
+    "azure": "Azure (Azurite)",
+    "s3-pyarrow": "S3-PyArrow",
+}
 
 # Operations for overhead chart.
 OVERHEAD_OPS: list[tuple[str, dict[str, Any], str]] = [
@@ -61,10 +65,17 @@ THROUGHPUT_SIZES: list[tuple[int, str]] = [
 # Chart colors — Material Design indigo palette to match docs theme.
 COLORS = {
     "s3": "#3F51B5",  # indigo 500 (primary)
+    "s3-pyarrow": "#7C4DFF",  # deep purple A200
     "sftp": "#7986CB",  # indigo 300
     "azure": "#1A237E",  # indigo 900
     "local": "#C5CAE9",  # indigo 100
 }
+
+# RTT profile metadata: (profile_name, nominal_rtt_ms).
+RTT_PROFILES = [("clean", 0), ("rtt20", 20), ("rtt50", 50), ("rtt100", 100)]
+
+# Map latency backend to its base backend for labeling.
+_LATENCY_BASE = {"s3-latency": "s3", "sftp-latency": "sftp", "azure-latency": "azure"}
 
 # Style constants.
 _FONT_FAMILY = "sans-serif"
@@ -190,30 +201,111 @@ def chart_overhead(benchmarks: list[dict[str, Any]], output: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def chart_overhead_vs_rtt(benchmarks: list[dict[str, Any]], output: Path) -> None:
+def chart_overhead_vs_rtt(
+    profile_data: dict[str, list[dict[str, Any]]],
+    output: Path,
+) -> None:
     """Generate line chart: overhead % at different RTTs.
 
-    This chart requires benchmark data from multiple ``--network-profile``
-    runs stored in separate JSON files. Until that data is collected, this
-    function generates a placeholder with a note.
+    Args:
+        profile_data: ``{profile_name: benchmarks_list}`` from multiple
+            ``--network-profile`` runs. Must include ``"clean"`` as baseline
+            and at least one latency profile.
+        output: Path for the SVG file.
     """
-    # The data for this chart comes from running benchmarks at clean, rtt20,
-    # rtt50, rtt100 profiles and saving each as a separate JSON file.
-    # For now, generate a placeholder noting data collection is needed.
-    fig, ax = plt.subplots(figsize=(8, 4))
-    ax.text(
-        0.5,
-        0.5,
-        "Overhead vs RTT chart\n\nRun benchmarks at each network profile\nand re-run bench-charts to populate.",
-        ha="center",
-        va="center",
-        fontsize=_LABEL_SIZE,
-        color="#888",
-        transform=ax.transAxes,
-    )
-    ax.set_xlabel("Network latency (ms)", fontsize=_LABEL_SIZE)
-    ax.set_ylabel("Overhead vs raw SDK (%)", fontsize=_LABEL_SIZE)
-    ax.set_title("Overhead collapses under network latency", fontsize=_TITLE_SIZE, pad=12)
+    # Compute overhead % per (backend, op) at each RTT.
+    # Use latency backends (s3-latency etc.) for latency profiles,
+    # and base backends (s3 etc.) for clean profile.
+    ops = OVERHEAD_OPS
+    base_backends = ["s3", "sftp", "azure"]
+
+    # Build {profile: {base_backend: {op_label: overhead_pct}}}
+    overhead_by_profile: dict[str, dict[str, dict[str, float]]] = {}
+
+    for profile, benchmarks in profile_data.items():
+        data = _build_comparative_table(benchmarks, ops=ops)
+        per_backend: dict[str, dict[str, float]] = {}
+
+        for base in base_backends:
+            # For clean profile, use base backend; for latency, use latency backend.
+            bk = f"{base}-latency" if profile != "clean" else base
+            raw_key = RAW_SDK_TARGET.get(bk, RAW_SDK_TARGET.get(base, ""))
+            op_overheads: dict[str, float] = {}
+
+            for _, _, op_label in ops:
+                targets = data.get(op_label, {}).get(bk, {})
+                rs = targets.get("remote_store")
+                raw = targets.get(raw_key)
+                if rs is not None and raw is not None and raw > 0:
+                    op_overheads[op_label] = ((rs - raw) / raw) * 100
+
+            if op_overheads:
+                per_backend[base] = op_overheads
+
+        if per_backend:
+            overhead_by_profile[profile] = per_backend
+
+    if len(overhead_by_profile) < 2:
+        # Not enough data — generate placeholder.
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.text(
+            0.5,
+            0.5,
+            "Overhead vs RTT chart\n\nRun benchmarks at each network profile\n"
+            "and re-run bench-charts to populate.\n\n"
+            f"Profiles found: {', '.join(sorted(profile_data.keys())) or 'none'}",
+            ha="center",
+            va="center",
+            fontsize=_LABEL_SIZE,
+            color="#888",
+            transform=ax.transAxes,
+        )
+        ax.set_xlabel("Network latency (ms)", fontsize=_LABEL_SIZE)
+        ax.set_ylabel("Overhead vs raw SDK (%)", fontsize=_LABEL_SIZE)
+        ax.set_title("Overhead vs network latency", fontsize=_TITLE_SIZE, pad=12)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        fig.tight_layout()
+        output.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(output, format="svg", bbox_inches="tight")
+        plt.close(fig)
+        print(f"  {output} (placeholder — need clean + at least one latency profile)")
+        return
+
+    # Plot: one line per backend, average overhead across ops at each RTT.
+    rtt_lookup = dict(RTT_PROFILES)
+    profiles_ordered = [p for p, _ in RTT_PROFILES if p in overhead_by_profile]
+    rtts = [rtt_lookup[p] for p in profiles_ordered]
+
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+
+    for base in base_backends:
+        overheads = []
+        for profile in profiles_ordered:
+            ops_at_profile = overhead_by_profile.get(profile, {}).get(base, {})
+            if ops_at_profile:
+                overheads.append(sum(ops_at_profile.values()) / len(ops_at_profile))
+            else:
+                overheads.append(float("nan"))
+
+        if any(not np.isnan(v) for v in overheads):
+            ax.plot(
+                rtts,
+                overheads,
+                "-o",
+                color=COLORS.get(base, "#888"),
+                label=BACKEND_LABELS.get(base, base),
+                markersize=5,
+            )
+
+    ax.set_xlabel("Network round-trip time (ms)", fontsize=_LABEL_SIZE)
+    ax.set_ylabel("Average overhead vs raw SDK (%)", fontsize=_LABEL_SIZE)
+    ax.set_title("Overhead vs network latency", fontsize=_TITLE_SIZE, pad=12)
+    ax.set_xticks(rtts)
+    ax.tick_params(axis="both", labelsize=_TICK_SIZE)
+    ax.axhline(y=0, color="black", linewidth=0.5)
+    ax.legend(fontsize=_TICK_SIZE, frameon=False)
+    ax.grid(axis="y", alpha=_GRID_ALPHA)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
@@ -221,7 +313,7 @@ def chart_overhead_vs_rtt(benchmarks: list[dict[str, Any]], output: Path) -> Non
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, format="svg", bbox_inches="tight")
     plt.close(fig)
-    print(f"  {output} (placeholder — needs multi-profile data)")
+    print(f"  {output}")
 
 
 # ---------------------------------------------------------------------------
@@ -300,8 +392,94 @@ def chart_throughput(benchmarks: list[dict[str, Any]], output: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Chart 4: S3 vs S3-PyArrow side-by-side (grouped bar)
+# ---------------------------------------------------------------------------
+
+
+_S3_COMPARISON_OPS: list[tuple[str, dict[str, Any], str]] = [
+    ("test_write_bytes", {"payload": 1024}, "Write 1KB"),
+    ("test_write_bytes", {"payload": 1048576}, "Write 1MB"),
+    ("test_read_bytes", {"payload": 1024}, "Read 1KB"),
+    ("test_read_bytes", {"payload": 1048576}, "Read 1MB"),
+    ("test_exists_hit", {}, "Exists"),
+    ("test_list_files", {}, "List 50"),
+    ("test_delete", {}, "Delete"),
+]
+
+
+def chart_s3_comparison(benchmarks: list[dict[str, Any]], output: Path) -> None:
+    """Generate grouped bar chart: S3 vs S3-PyArrow absolute latency."""
+    data = _build_comparative_table(benchmarks, ops=_S3_COMPARISON_OPS)
+    op_labels = [label for _, _, label in _S3_COMPARISON_OPS]
+    backends = ["s3", "s3-pyarrow"]
+
+    # Check we have remote_store data for both.
+    has_data = all(any(b in data.get(op, {}) for op in op_labels) for b in backends)
+    if not has_data:
+        print(f"  {output} (skipped — need both S3 and S3-PyArrow data)", file=sys.stderr)
+        return
+
+    fig, ax = plt.subplots(figsize=(9, 4.5))
+    x = np.arange(len(op_labels))
+    bar_width = 0.3
+
+    for i, backend in enumerate(backends):
+        latencies_ms = []
+        for op_label in op_labels:
+            targets = data.get(op_label, {}).get(backend, {})
+            rs = targets.get("remote_store")
+            latencies_ms.append(rs * 1000 if rs is not None else float("nan"))
+
+        offset = (i - 0.5) * bar_width
+        bars = ax.bar(
+            x + offset,
+            latencies_ms,
+            bar_width,
+            label=BACKEND_LABELS.get(backend, backend),
+            color=COLORS.get(backend, "#888"),
+            edgecolor="white",
+            linewidth=0.5,
+        )
+        labels = [
+            f"{v:.1f}" if not np.isnan(v) and v < 100 else (f"{v:.0f}" if not np.isnan(v) else "") for v in latencies_ms
+        ]
+        ax.bar_label(bars, labels=labels, fontsize=7, label_type="edge")
+
+    ax.set_xlabel("")
+    ax.set_ylabel("Latency (ms)", fontsize=_LABEL_SIZE)
+    ax.set_title("S3 vs S3-PyArrow (remote-store)", fontsize=_TITLE_SIZE, pad=12)
+    ax.set_xticks(x)
+    ax.set_xticklabels(op_labels, fontsize=_TICK_SIZE)
+    ax.tick_params(axis="y", labelsize=_TICK_SIZE)
+    ax.legend(fontsize=_TICK_SIZE, frameon=False)
+    ax.grid(axis="y", alpha=_GRID_ALPHA)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    fig.tight_layout()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output, format="svg", bbox_inches="tight")
+    plt.close(fig)
+    print(f"  {output}")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
+
+def _load_profile_data(files: list[Path]) -> dict[str, list[dict[str, Any]]]:
+    """Load benchmark files and group by network profile.
+
+    Returns ``{profile_name: merged_benchmarks_list}``.  Files without
+    a ``network_profile`` key are treated as ``"clean"``.
+    """
+    by_profile: dict[str, list[dict[str, Any]]] = {}
+    for f in files:
+        data = json.loads(f.read_text())
+        profile = data.get("network_profile", "clean")
+        by_profile.setdefault(profile, []).extend(data.get("benchmarks", []))
+    return by_profile
 
 
 def main() -> None:
@@ -318,6 +496,12 @@ def main() -> None:
         default=Path("docs-src/img/benchmarks"),
         help="Output directory for SVG charts",
     )
+    parser.add_argument(
+        "--file",
+        type=Path,
+        default=None,
+        help="Explicit JSON file for baseline charts (overrides auto-detection)",
+    )
     args = parser.parse_args()
 
     files = sorted(args.dir.rglob("*.json"))
@@ -325,16 +509,31 @@ def main() -> None:
         print(f"No benchmark files found in {args.dir}", file=sys.stderr)
         sys.exit(1)
 
-    latest = json.loads(files[-1].read_text())
+    # Baseline file for single-file charts (overhead, throughput, s3-comparison).
+    if args.file:
+        if not args.file.exists():
+            print(f"File not found: {args.file}", file=sys.stderr)
+            sys.exit(1)
+        baseline_file = args.file
+    else:
+        baseline_file = files[-1]
+
+    latest = json.loads(baseline_file.read_text())
     benchmarks = latest["benchmarks"]
-    print(f"Loaded {len(benchmarks)} benchmarks from {files[-1].name}")
+    print(f"Loaded {len(benchmarks)} benchmarks from {baseline_file.name}")
     print("Generating charts:")
 
     _apply_style()
 
     chart_overhead(benchmarks, args.output_dir / "overhead.svg")
-    chart_overhead_vs_rtt(benchmarks, args.output_dir / "overhead-vs-rtt.svg")
     chart_throughput(benchmarks, args.output_dir / "throughput.svg")
+    chart_s3_comparison(benchmarks, args.output_dir / "s3-comparison.svg")
+
+    # Overhead-vs-RTT needs data from multiple network profiles.
+    profile_data = _load_profile_data(files)
+    profiles_found = sorted(profile_data.keys())
+    print(f"Network profiles found: {', '.join(profiles_found)}")
+    chart_overhead_vs_rtt(profile_data, args.output_dir / "overhead-vs-rtt.svg")
 
     print("Done.")
 

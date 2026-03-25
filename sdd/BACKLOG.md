@@ -109,9 +109,17 @@ Items graduate through the SDD pipeline:
      multiple run files. Also: `charts.py` and `report.py` always pick
      the latest JSON file — need a `--file` flag or auto-select the
      largest run for baseline charts.
-  - Done: rewrite performance messaging to present numbers without judgment
-    (README + performance guide); add cross-platform
+  - Done (PR #273): rewrite performance messaging to present numbers without
+    judgment (README + performance guide); add cross-platform
     `hatch run bench-latency-matrix` command (Python script).
+  - Done: S3-PyArrow added to comparative charts/reports with boto3 as raw
+    SDK baseline. New S3 vs S3-PyArrow comparison chart. Overhead-vs-RTT
+    chart reads multi-profile data from saved JSON files. `--file` flag
+    for `report.py` and `charts.py`. Raw SDK targets for latency backends
+    (apples-to-apples overhead under simulated latency). Network profile
+    metadata injected into saved benchmark JSON.
+  - Remaining: re-collect benchmark data (full baseline run for s3-pyarrow
+    boto3_raw, latency matrix for overhead-vs-RTT chart).
 
 ### Documentation & Developer Experience
 

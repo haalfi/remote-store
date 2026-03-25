@@ -30,7 +30,7 @@ the SDK directly (often due to connection pooling and caching).
 Under realistic network round-trip times (20–100 ms), overhead as a percentage
 shrinks. For example, a 1 ms overhead on a 100 ms round trip is 1%.
 
-<!-- TODO: add overhead-vs-rtt.svg chart once multi-profile benchmark data is collected -->
+![Overhead vs RTT](img/benchmarks/overhead-vs-rtt.svg)
 
 The benchmark suite simulates latency using [Toxiproxy](https://github.com/Shopify/toxiproxy)
 with four named profiles:
@@ -50,6 +50,14 @@ How throughput scales with file size, comparing remote-store to raw SDK:
 
 At larger file sizes, throughput converges as the fixed per-operation overhead
 is amortized across more bytes.
+
+## S3 vs S3-PyArrow
+
+Both S3 backends connect to the same service. S3 uses s3fs (Python), S3-PyArrow
+uses PyArrow's C++ `S3FileSystem` for data-path operations. The chart below
+compares their absolute latencies:
+
+![S3 vs S3-PyArrow](img/benchmarks/s3-comparison.svg)
 
 ## Comparative Results
 
