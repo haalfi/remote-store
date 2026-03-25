@@ -41,6 +41,8 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   - [x] Phase 2: Benchmarks — column pruning, batch reads, dataset scans.
     `PythonFile` overhead acceptable. Phases 3–4 not needed.
     ([Verdict](research/research-azure-pyarrow-optimization.md#9-phase-2-verdict-real-workload-benchmarks))
+  - Deferred: C++ Tier 1 via `pyarrow.fs.AzureFileSystem` — see
+    [ID-105](BACKLOG.md#integrations).
 
 - [x] **ID-100 — Seekable read capability + extension**
   `Capability.SEEKABLE_READ` flag for backends that always return seekable

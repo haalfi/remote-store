@@ -51,6 +51,16 @@ Items graduate through the SDD pipeline:
 
 ### Integrations
 
+- [ ] **ID-105 — AzurePyArrowBackend (C++ Tier 1)**
+  Optional upgrade from the Tier 3 range reader shipped in
+  [ID-102](BACKLOG-DONE.md#streaming--io). Only worth pursuing if real-Azure
+  benchmarks show GIL overhead or missing I/O coalescing matters for target
+  workloads. Approach: `pyarrow.fs.AzureFileSystem` (C++, ships with PyArrow)
+  following the `S3PyArrowBackend` dual-library pattern.
+  [Research § 6](research/research-azure-pyarrow-optimization.md#6-full-tier-1-path-if-needed).
+  - Spike: validate auth methods, HNS/non-HNS, `ReadRangeCache` activation.
+  - If viable: `AzurePyArrowBackend` — spec, tests, docs.
+
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.
   - Done: [recipe](../packaging/conda-forge/recipe.yaml),
