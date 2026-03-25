@@ -196,7 +196,7 @@ For the full method list, see the [API reference](https://docs.remotestore.dev/s
 
 ## Performance
 
-remote-store adds minimal overhead on top of the native SDKs it wraps. For network backends (S3, Azure, SFTP), writes and reads are typically within 5-15% of raw SDK calls; under realistic network latency, the abstraction cost becomes negligible. See the [performance guide](https://docs.remotestore.dev/stable/performance/) for comparative benchmarks, methodology, and overhead analysis.
+For S3, reads add 0.2–0.3 ms over raw boto3 (+5–12%); writes are often *faster* due to connection reuse. For Azure, reads add ~0.5 ms (+8%); writes are comparable. For SFTP, reads add ~1 ms (+8%); writes add 1–2 ms (+4–7%). See the [performance guide](https://docs.remotestore.dev/stable/performance/) for full comparative benchmarks, methodology, and per-operation breakdowns.
 
 ## Extensions
 

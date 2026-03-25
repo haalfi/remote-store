@@ -1,9 +1,8 @@
 # Performance
 
-remote-store wraps established Python storage libraries. The abstraction adds
-measurable overhead for fast local operations, but for remote backends under
-realistic network latency, the cost is typically small relative to network and
-service time.
+remote-store wraps established Python storage libraries. This page presents
+measured overhead so you can judge whether the abstraction cost matters for
+your workloads.
 
 ## Overhead at a Glance
 
@@ -13,22 +12,23 @@ the SDK directly (often due to connection pooling and caching).
 
 ![Abstraction overhead by backend](img/benchmarks/overhead.svg)
 
-**Verdicts from Docker benchmarks** (MinIO, Azurite, OpenSSH):
+**Measured overhead from Docker benchmarks** (MinIO, Azurite, OpenSSH):
 
-- **S3**: Writes are 1.2x *faster* than raw boto3 (connection reuse). Reads
-  +22%, exists negligible, listing 18x faster (s3fs cache). Delete +2x
-  (error-mapping layer).
-- **Azure**: Writes 1.2x *faster* than raw azure-blob. Reads, exists, delete
-  all within noise.
-- **SFTP**: Writes +7%, reads +8%. Metadata ops show higher relative overhead
-  (exists +133%) but absolute latencies are sub-millisecond.
-- **Local**: Sub-millisecond for all operations. Higher relative overhead on
-  metadata (exists: 63us vs 6us) but absolute cost is negligible.
+- **S3**: Reads add 0.2–0.3 ms (+5–12%) over raw boto3. Writes are 1.2x
+  *faster* (connection reuse). Listing 18x faster (s3fs cache). Delete adds
+  ~2 ms (+123%, error-mapping layer).
+- **Azure**: Reads add ~0.5 ms (+8%) over raw azure-blob. Writes add or save
+  ~1 ms depending on file size. Delete adds 0.03 ms (+2%).
+- **SFTP**: Reads add ~1 ms (+8%) over raw paramiko. Writes add 1–2 ms
+  (+4–7%). Metadata ops: exists adds 0.6 ms (+140%), but both sides are
+  sub-millisecond (0.95 ms vs 0.40 ms).
+- **Local**: All operations sub-millisecond. Exists: 63 μs vs 6 μs raw
+  pathlib (+57 μs).
 
 ## What Happens Under Real Latency
 
-Under realistic network round-trip times (20-100ms), the abstraction overhead
-collapses into the noise. A 1ms overhead on a 100ms round trip is 1% — invisible.
+Under realistic network round-trip times (20–100 ms), overhead as a percentage
+shrinks. For example, a 1 ms overhead on a 100 ms round trip is 1%.
 
 <!-- TODO: add overhead-vs-rtt.svg chart once multi-profile benchmark data is collected -->
 
@@ -48,8 +48,8 @@ How throughput scales with file size, comparing remote-store to raw SDK:
 
 ![Throughput by file size](img/benchmarks/throughput.svg)
 
-At larger file sizes, throughput converges — the per-operation overhead is
-amortized across more bytes.
+At larger file sizes, throughput converges as the fixed per-operation overhead
+is amortized across more bytes.
 
 ## Comparative Results
 
@@ -134,8 +134,11 @@ hatch run bench-standard
 # Full tier (~20-30 min/backend)
 hatch run bench-full
 
-# With simulated latency
+# With simulated latency (single profile)
 hatch run bench -- --backend s3-latency,sftp-latency,azure-latency --network-profile rtt50
+
+# Latency matrix (runs rtt20, rtt50, rtt100 sequentially, ~8 min/profile)
+hatch run bench-latency-matrix
 
 # Save results as JSON
 hatch run bench-save
