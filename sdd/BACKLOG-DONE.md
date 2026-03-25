@@ -6,6 +6,16 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Benchmarks & Performance
 
+- [x] **ID-104 — S3-PyArrow comparison chart, overhead-vs-RTT, benchmark tooling**
+  S3-PyArrow in comparative charts/reports with boto3 baseline. New S3 vs
+  S3-PyArrow comparison chart. Overhead-vs-RTT chart with real multi-profile
+  data. Performance messaging rewrite (numbers, not judgment). `--file` flag
+  for `report.py` and `charts.py`. Raw SDK targets for latency backends.
+  Network profile metadata in saved JSON. `bench-latency-matrix` command.
+  - [x] Performance messaging rewrite (PR #273)
+  - [x] Charts, `--file` flag, latency raw SDK targets (PR #274, 4 review rounds)
+  - [x] Regenerated SVGs + updated text with run 0022 numbers (PR #275)
+
 - [x] **ID-103 — Benchmark suite v2: user-decision framing**
   Expand Toxiproxy to all Docker backends, generate overhead charts,
   reframe performance guide for user decisions, add README performance

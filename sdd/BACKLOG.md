@@ -99,28 +99,6 @@ Items graduate through the SDD pipeline:
   [Research](research/research-dagster-extension.md),
   [showcase architecture](research/research-medallion-dagster-showcase.md).
 
-- [~] **ID-104 — Benchmark: S3 vs S3-PyArrow comparison + overhead-vs-RTT chart**
-  Two gaps in benchmark reporting:
-  1. S3-PyArrow is excluded from comparative charts (no raw SDK target).
-     Add S3-PyArrow overhead vs boto3 baseline, and show S3 vs S3-PyArrow
-     side by side so users can see the performance difference.
-  2. Overhead-vs-RTT chart is a placeholder. Latency data is collected
-     (runs 0019-0021) but `charts.py` needs enhancement to combine
-     multiple run files. Also: `charts.py` and `report.py` always pick
-     the latest JSON file — need a `--file` flag or auto-select the
-     largest run for baseline charts.
-  - Done (PR #273): rewrite performance messaging to present numbers without
-    judgment (README + performance guide); add cross-platform
-    `hatch run bench-latency-matrix` command (Python script).
-  - Done: S3-PyArrow added to comparative charts/reports with boto3 as raw
-    SDK baseline. New S3 vs S3-PyArrow comparison chart. Overhead-vs-RTT
-    chart reads multi-profile data from saved JSON files. `--file` flag
-    for `report.py` and `charts.py`. Raw SDK targets for latency backends
-    (apples-to-apples overhead under simulated latency). Network profile
-    metadata injected into saved benchmark JSON.
-  - Remaining: re-collect benchmark data (full baseline run for s3-pyarrow
-    boto3_raw, latency matrix for overhead-vs-RTT chart).
-
 ### Documentation & Developer Experience
 
 - [ ] **ID-066 — PR preview deployments**
