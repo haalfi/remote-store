@@ -1000,10 +1000,12 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
             elif target_kind == "azure_blob_raw":
                 from benchmarks.targets._raw_sdk import AzureBlobRawTarget
 
-                yield AzureBlobRawTarget(
+                t = AzureBlobRawTarget(
                     container=container,
                     connection_string=TOXIPROXY_AZURITE_CONN_STR,
                 )
+                yield t
+                t.close()
         finally:
             _toxiproxy_clear_latency(proxy_name="azurite")
             service.delete_container(container)
