@@ -18,6 +18,7 @@
     - Data Lake Patterns: data-lake-patterns.md
     - Troubleshooting: troubleshooting.md
     - Choosing a Backend: choosing-a-backend.md
+    - Build Your Own Backend: custom-backend-guide.md
     - Migration: migration.md
 - Reference:
     - API: api/
