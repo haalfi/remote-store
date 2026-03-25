@@ -43,11 +43,79 @@ Items graduate through the SDD pipeline:
 
 ## Known Bugs
 
-*(none)*
+- [ ] **BUG-005 — SFTP TOFU host key not persisted when known_hosts absent**
+  `HostKeyPolicy.TRUST_ON_FIRST_USE` uses paramiko's `AutoAddPolicy()` but
+  only calls `load_host_keys()` when `~/.ssh/known_hosts` already exists
+  (`_sftp.py:693`). No `save_host_keys()` call anywhere. First-time users
+  with no known_hosts file get no key persistence — the "first use" promise
+  is session-scoped only.
+  - Option A: call `save_host_keys()` on disconnect (auto-persist)
+  - Option B: document TOFU as session-scoped, recommend STRICT after first use
 
 ---
 
 ## Ideas
+
+### API Surface Enhancements
+
+- [ ] **ID-107 — `list_files(max_depth=N)` extension helper**
+  Flat recursive scan returns leaf-level paths. A `max_depth=N` helper
+  would let callers stop at a meaningful structural level (e.g., top-level
+  dataset dirs) without post-processing.
+  - Semantics: depth 0 = only items in `path` itself; depth 1 = items + direct children
+  - Implementation: extension helper wrapping `list_files()`, **not** a Backend
+    ABC parameter — preserves slim core interface
+
+- [ ] **ID-108 — `list_folders(depth=N)` extension helper**
+  Currently `list_folders("")` gives only one level. A `depth=N` helper
+  discovers natural aggregation levels (e.g., "dataset/v1/" in one call vs.
+  chaining `iter_children`).
+  - Semantics: depth 0 = immediate children; depth N = N levels of nesting
+  - Implementation: extension helper, not ABC change
+  - Note: aggregate stats already available via `get_folder_info()` per folder
+    (returns `FolderInfo(file_count, total_size, modified_at)`)
+
+### S3 Backend DX & Performance
+
+- [ ] **ID-112 — `get_folder_info(path, recursive=False)` optimization**
+  Current `get_folder_info()` uses `s3fs.find()` for full recursive traversal.
+  For bucket-wide aggregation, this rescans the same objects repeatedly
+  (catastrophic for 250k+ files). A `recursive=False` mode using cheap `ls()`
+  for direct-children stats only would avoid this.
+  - Adds flag to existing method — no new ABC surface
+
+- [ ] **ID-113 — Documentation: S3 listing strategies and performance**
+  One flat `ListObjectsV2` stream beats O(n_folders) delimiter-based `ls()`
+  calls. Parallelize-BFS instinct is wrong for large buckets. Add performance
+  guide section with examples and benchmark data.
+  - Scope: docs + examples; no code change
+
+- [ ] **ID-114 — PyArrow-style bucket path support (research)**
+  PyArrow convention: `"bucket/prefix"` embeds bucket in path. Current
+  `S3Backend` requires split (`bucket=...`, `path=...`). Research feasibility
+  of factory method or native convention for easier PyArrow→remote-store
+  migration.
+  - Deliverable: RFC only — low commitment, no code change guaranteed
+
+### S3 & Azure Configuration
+
+- [ ] **ID-117 — S3Backend endpoint URL normalization**
+  Accept bare `host:port` formats (e.g., `"localhost:9000"`) and auto-normalize
+  to `https://host:port`. Reduces migration friction from PyArrow's
+  `endpoint_override` which accepted bare endpoints. URLs with existing schemes
+  returned unchanged.
+  - S3Backend-specific — no ABC impact
+
+- [ ] **ID-118 — Certificate bundle handling (S3 + Azure)**
+  **Phase 1 (S3):** Dedicated `tls_ca_bundle: str | None` parameter replacing
+  nested `client_options={"client_kwargs": {"verify": path}}`. Auto-read
+  `AWS_CA_BUNDLE` env var (aligns with boto3 standard). Early path validation
+  at construction time with clear `ValueError` if cert file missing.
+  - Env vars: `AWS_CA_BUNDLE`, `REQUESTS_CA_BUNDLE`, `SSL_CERT_FILE`
+  - For S3PyArrowBackend: respect `SSL_CERT_FILE` (PyArrow's `tls_ca_file_path`)
+  - **Phase 2 (Azure):** Extend to AzureBackend if demand materializes.
+    Primarily benefits Azure Stack Hub / on-premises deployments.
+    Wrap `ClientOptions(ca_cert=...)`, check `AZURE_CA_CERTIFICATE_PATH`.
 
 ### Integrations
 
