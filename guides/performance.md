@@ -14,16 +14,18 @@ the SDK directly (often due to connection pooling and caching).
 
 **Measured overhead from Docker benchmarks** (MinIO, Azurite, OpenSSH):
 
-- **S3**: Reads add 0.2–0.3 ms (+5–12%) over raw boto3. Writes are 1.2x
-  *faster* (connection reuse). Listing 18x faster (s3fs cache). Delete adds
-  ~2 ms (+123%, error-mapping layer).
-- **Azure**: Reads add ~0.5 ms (+8%) over raw azure-blob. Writes add or save
-  ~1 ms depending on file size. Delete adds 0.03 ms (+2%).
-- **SFTP**: Reads add ~1 ms (+8%) over raw paramiko. Writes add 1–2 ms
-  (+4–7%). Metadata ops: exists adds 0.6 ms (+140%), but both sides are
-  sub-millisecond (0.95 ms vs 0.40 ms).
-- **Local**: All operations sub-millisecond. Exists: 63 μs vs 6 μs raw
-  pathlib (+57 μs).
+- **S3**: Reads add 0.7 ms (+15%) over raw boto3. Listing 29x faster (s3fs
+  cache). Delete adds ~1.7 ms (+124%, error-mapping layer). Write 1MB: 95 ms
+  vs 31 ms raw — variance-heavy, check your own hardware.
+- **S3-PyArrow**: Reads add 6.3 ms (+125%) over raw boto3 (PyArrow C++ data
+  path). Writes add 3.6 ms (+12%). Listing 12x faster.
+- **Azure**: Reads add 0.1 ms (+1%) over raw azure-blob. Writes add 2.4 ms
+  (+17%). Delete adds 0.03 ms (+2%).
+- **SFTP**: Reads add 3.3 ms (+34%) over raw paramiko. Writes add 1.6 ms
+  (+7%). Metadata ops: exists adds 0.4 ms (+100%), but both sides are
+  sub-millisecond (0.80 ms vs 0.40 ms).
+- **Local**: All operations sub-millisecond. Exists: 54 μs vs 5 μs raw
+  pathlib (+49 μs).
 
 ## What Happens Under Real Latency
 
@@ -76,24 +78,22 @@ values are **mean** latency from `pytest-benchmark`.
 
 | Operation | [Local](backends/local.md) | [S3](backends/s3.md) (MinIO) | [S3-PyArrow](backends/s3-pyarrow.md) | [SFTP](backends/sftp.md) | [Azure](backends/azure.md) (Azurite) |
 |-----------|-------|------------|------------|------|-----------------|
-| Write 1KB | 0.26ms | 5.3ms | 36.2ms | 3.8ms | 5.0ms |
-| Write 64KB | 0.26ms | 6.2ms | 66.5ms* | 4.9ms | 22.6ms* |
-| Write 1MB | 0.48ms | 20.1ms | 31.6ms | 24.7ms | 13.7ms |
-| Read 1KB | 0.09ms | 1.5ms | 1.7ms | 3.0ms | 2.0ms |
-| Read 64KB | 0.09ms | 1.8ms | 2.2ms | 3.3ms | 2.3ms |
-| Read 1MB | 0.32ms | 5.9ms | 11.4ms | 13.5ms | 5.8ms |
-| Exists (hit) | 0.06ms | 1.4ms | 1.5ms | 0.86ms | 1.7ms |
-| Exists (miss) | 0.07ms | 2.5ms | 2.9ms | 1.1ms | 3.5ms |
-| List 50 files | 0.70ms | 0.24ms | 0.32ms | 2.8ms | 11.4ms |
-| List 1000 files | 10.2ms | 1.5ms | 1.3ms | 16.2ms | 145ms |
-| Delete | 0.11ms | 3.4ms | 4.7ms | 0.99ms | 1.8ms |
-| TTFB write | 0.26ms | 8.4ms | 19.7ms | 7.2ms | 7.6ms |
-| TTFB read | 0.11ms | 3.1ms | 1.9ms | 2.5ms | 2.2ms |
-| TTFB exists | 0.06ms | 1.4ms | 1.4ms | 1.1ms | 1.8ms |
+| Write 1KB | 0.27ms | 5.5ms | 16.4ms | 4.5ms | 5.4ms |
+| Write 64KB | 0.28ms | 6.5ms | 16.5ms | 5.4ms | 28.8ms* |
+| Write 1MB | 0.47ms | 95.0ms* | 33.8ms | 25.2ms | 16.2ms |
+| Read 1KB | 0.08ms | 1.5ms | 1.8ms | 2.7ms | 2.1ms |
+| Read 64KB | 0.08ms | 1.7ms | 2.2ms | 3.3ms | 2.7ms |
+| Read 1MB | 0.31ms | 5.8ms | 11.4ms | 12.9ms | 5.9ms |
+| Exists (hit) | 0.05ms | 1.4ms | 1.8ms | 0.80ms | 1.6ms |
+| Exists (miss) | 0.07ms | 2.5ms | 2.7ms | 1.4ms | 3.7ms |
+| List 50 files | 0.67ms | 0.22ms | 0.35ms | 2.4ms | 13.4ms |
+| Delete | 0.11ms | 3.1ms | 4.2ms | 0.80ms | 1.7ms |
+| TTFB write | 0.26ms | 8.1ms | 19.0ms | 4.4ms | 8.5ms |
+| TTFB read | 0.07ms | 2.9ms | 1.7ms | 2.0ms | 1.9ms |
+| TTFB exists | 0.06ms | 1.5ms | 1.4ms | 0.85ms | 1.7ms |
 
-*\* 64KB write values for S3-PyArrow and Azure are outlier-skewed (high
-variance, stddev > mean). The medians are monotonic. This is a
-Dockerized-service cold-start artifact, not real non-monotonic performance.*
+*\* S3 Write 1MB and Azure Write 64KB show high variance (stddev > mean).
+This is a Dockerized-service artifact, not real non-monotonic performance.*
 
 Generate this table from your own saved results with `hatch run bench-report`.
 For a condensed view with verdicts, use `hatch run bench-report-user`.
