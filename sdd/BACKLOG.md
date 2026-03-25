@@ -110,8 +110,8 @@ Items graduate through the SDD pipeline:
      the latest JSON file — need a `--file` flag or auto-select the
      largest run for baseline charts.
   - Done: rewrite performance messaging to present numbers without judgment
-    (README + performance guide); add `hatch run bench-latency-matrix`
-    command replacing standalone ps1/sh scripts.
+    (README + performance guide); add cross-platform
+    `hatch run bench-latency-matrix` command (Python script).
 
 ### Documentation & Developer Experience
 
