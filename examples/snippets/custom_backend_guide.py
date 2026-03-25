@@ -85,8 +85,7 @@ class RedisBackend(Backend):
     """Redis-backed file storage.
 
     Files are stored as Redis hash keys under a configurable prefix.
-    Each file is a hash with fields: ``data``, ``size``, ``modified_at``,
-    ``content_type``.
+    Each file is a hash with fields: ``data``, ``size``, ``modified_at``.
     """
 
     # -- Step 3: Constructor and properties --------------------------------

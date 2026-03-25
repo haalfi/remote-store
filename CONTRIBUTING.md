@@ -62,7 +62,7 @@ For spec format and ID prefixes, see [`sdd/000-process.md`](sdd/000-process.md) 
 
 ## Adding a New Backend
 
-See [Build Your Own Backend](custom-backend-guide.md) for a full
+See [Build Your Own Backend](guides/custom-backend-guide.md) for a full
 walkthrough of the `Backend` contract, error mapping, and capabilities.
 
 1. Write a spec in `sdd/specs/` or as an addendum in `sdd/specs/backends/<name>.md`
