@@ -99,7 +99,9 @@ values are **mean** latency from `pytest-benchmark`.
 | TTFB exists | 0.06ms | 1.5ms | 1.4ms | 0.85ms | 1.7ms |
 
 *\* S3 Write 1MB and Azure Write 64KB show high variance (stddev > mean).
-This is a Dockerized-service artifact, not real non-monotonic performance.*
+This is a Dockerized-service artifact, not real non-monotonic performance.
+List 1000 and List 10000 are available in the standard and full tiers
+(`hatch run bench-standard`).*
 
 Generate this table from your own saved results with `hatch run bench-report`.
 For a condensed view with verdicts, use `hatch run bench-report-user`.
