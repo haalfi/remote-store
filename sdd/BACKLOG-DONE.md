@@ -15,6 +15,8 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   - [x] Performance messaging rewrite (PR #273)
   - [x] Charts, `--file` flag, latency raw SDK targets (PR #274, 4 review rounds)
   - [x] Regenerated SVGs + updated text with run 0022 numbers (PR #275)
+  - [x] Fix S3-PyArrow messaging: analytical workloads, not
+    high-throughput (PR #276)
 
 - [x] **ID-103 — Benchmark suite v2: user-decision framing**
   Expand Toxiproxy to all Docker backends, generate overhead charts,

@@ -104,7 +104,10 @@ fs = pyarrow_fs(
 filesystem via `unwrap()` (currently `S3PyArrowBackend`). The handler detects
 this at construction time and bypasses Python I/O entirely for reads — the full
 C++ `ReadAt` -> HTTP Range request -> I/O coalescing pipeline runs with zero GIL
-overhead.
+overhead. This matters for analytical workloads (Parquet column pruning, dataset
+scans) where PyArrow issues many small range reads. For sequential byte
+streaming, Tier 1 does not provide a speed advantage — the regular S3 backend
+is faster for that use case (see [Performance](performance.md#s3-vs-s3-pyarrow)).
 
 ## Thread Safety
 
