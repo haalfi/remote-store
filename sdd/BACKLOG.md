@@ -101,14 +101,6 @@ Items graduate through the SDD pipeline:
 
 ### Documentation & Developer Experience
 
-- [~] **ID-106 — "Build Your Own Backend" guide**
-  Step-by-step tutorial showing how to implement the Backend protocol, using
-  a Redis backend as the running example. Covers capabilities, error mapping,
-  listing, metadata, registry integration, and extension compatibility.
-  - Done: guide (`guides/custom-backend-guide.md`), tested snippets
-    (`examples/snippets/custom_backend_guide.py`), docs wiring.
-  - Remaining: review pass, docs build verification.
-
 - [ ] **ID-066 — PR preview deployments**
   Deploy PR previews to Cloudflare Pages, Netlify, or GitHub Pages artifacts.
   Inspired by FastAPI's Cloudflare Pages pattern. Infrastructure decision needed.

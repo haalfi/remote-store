@@ -106,6 +106,14 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Documentation Tooling
 
+- [x] **ID-106 — "Build Your Own Backend" guide**
+  Step-by-step tutorial showing how to implement the Backend protocol, using
+  a Redis backend as the running example. Covers capabilities, error mapping,
+  listing, metadata, registry integration, and extension compatibility.
+  Tested snippet file with 17 named regions. API ref links throughout.
+  Cross-link from CONTRIBUTING.md.
+  - [x] Guide, snippets, docs wiring (PR #277)
+
 - [x] **ID-057 — Tested code snippets in docs (single-source snippets)**
   Created `examples/snippets/` with named regions using pymdownx.snippets'
   `# --8<-- [start:name]` / `# --8<-- [end:name]` syntax. Two snippet files
