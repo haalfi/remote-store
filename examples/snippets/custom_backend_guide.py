@@ -587,8 +587,7 @@ def _demo_partial_write() -> None:
 def _demo_test_examples() -> None:
     # --8<-- [start:test-examples]
     import pytest
-    from remote_store import Store
-    from remote_store._errors import AlreadyExists, NotFound
+    from remote_store import AlreadyExists, NotFound, Store
 
     @pytest.fixture
     def store():
