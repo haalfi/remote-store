@@ -5495,7 +5495,7 @@
   <a href="#1a-identical-methods-copy-paste-verbatim" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1a. Identical methods --- copy-paste verbatim
+        1a. Identical methods — copy-paste verbatim
       
     </span>
   </a>
@@ -5556,7 +5556,7 @@
   <a href="#2b-classify_by_message-fallback-not-primary-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2b. classify_by_message() --- fallback, not primary path
+        2b. classify_by_message() — fallback, not primary path
       
     </span>
   </a>
@@ -6621,7 +6621,7 @@
   <a href="#1a-identical-methods-copy-paste-verbatim" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1a. Identical methods --- copy-paste verbatim
+        1a. Identical methods — copy-paste verbatim
       
     </span>
   </a>
@@ -6682,7 +6682,7 @@
   <a href="#2b-classify_by_message-fallback-not-primary-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2b. classify_by_message() --- fallback, not primary path
+        2b. classify_by_message() — fallback, not primary path
       
     </span>
   </a>
@@ -6987,10 +6987,10 @@ extraction strategy, and proposes a phased plan.</p>
 <hr />
 <h2 id="1-s3-backend-twins-highest-value">1. S3 backend twins (highest value)<a class="headerlink" href="#1-s3-backend-twins-highest-value" title="Permanent link">&para;</a></h2>
 <p><code>_s3.py</code> (502 lines) and <code>_s3_pyarrow.py</code> (590 lines) share an s3fs
-code path for <strong>all listing, metadata, and error handling</strong> --- the
+code path for <strong>all listing, metadata, and error handling</strong> — the
 PyArrow backend only diverges for read/write I/O and copy (which route
 through <code>pyarrow.fs</code>).</p>
-<h3 id="1a-identical-methods-copy-paste-verbatim">1a. Identical methods --- copy-paste verbatim<a class="headerlink" href="#1a-identical-methods-copy-paste-verbatim" title="Permanent link">&para;</a></h3>
+<h3 id="1a-identical-methods-copy-paste-verbatim">1a. Identical methods — copy-paste verbatim<a class="headerlink" href="#1a-identical-methods-copy-paste-verbatim" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -7051,7 +7051,7 @@ through <code>pyarrow.fs</code>).</p>
 <tbody>
 <tr>
 <td><code>_info_to_fileinfo()</code></td>
-<td><strong>Functional divergence:</strong> S3Backend extracts ETag (21 lines); S3PyArrowBackend omits it entirely (17 lines).  The mixin cannot own this method without parameterizing ETag extraction --- see design note below.</td>
+<td><strong>Functional divergence:</strong> S3Backend extracts ETag (21 lines); S3PyArrowBackend omits it entirely (17 lines).  The mixin cannot own this method without parameterizing ETag extraction — see design note below.</td>
 </tr>
 <tr>
 <td><code>_errors()</code> / <code>_s3fs_errors()</code></td>
@@ -7072,7 +7072,7 @@ through <code>pyarrow.fs</code>).</p>
 </tbody>
 </table>
 <h3 id="proposed-extraction-_s3_basepy">Proposed extraction: <code>_s3_base.py</code><a class="headerlink" href="#proposed-extraction-_s3_basepy" title="Permanent link">&para;</a></h3>
-<p>A private base class <strong><code>_S3Base</code></strong> (not a mixin --- it carries state
+<p>A private base class <strong><code>_S3Base</code></strong> (not a mixin — it carries state
 via the abstract property) that owns:</p>
 <ul>
 <li><code>_s3_path()</code>, <code>to_key()</code>, <code>native_path()</code></li>
@@ -7094,7 +7094,7 @@ backends must implement:</p>
 </code></pre></div>
 <p><code>S3Backend</code> adds a one-line property alias (<code>_s3fs = property(lambda
 self: self._fs)</code>).  <code>S3PyArrowBackend</code> already uses <code>_s3fs</code>
-internally --- no change needed.</p>
+internally — no change needed.</p>
 <p><strong><code>_info_to_fileinfo()</code> design:</strong> The base class provides the common
 path/size/datetime logic.  ETag extraction is handled by an overridable
 hook:</p>
@@ -7145,7 +7145,7 @@ pieces:</p>
 <td><code>move()</code>, <code>copy()</code> split error ctx</td>
 </tr>
 <tr>
-<td>---</td>
+<td>—</td>
 <td><code>_pyarrow_errors()</code></td>
 </tr>
 <tr>
@@ -7159,12 +7159,12 @@ lines for the base class itself), single maintenance point for listing
 logic, error classification, and FileInfo construction.</p>
 <p><strong>Backward compatibility:</strong> The MRO of both backends changes (new base
 class inserted).  <code>isinstance(backend, S3Backend)</code> still works.
-<code>type(backend).__mro__</code> gains <code>_S3Base</code> --- low risk, but worth noting
+<code>type(backend).__mro__</code> gains <code>_S3Base</code> — low risk, but worth noting
 for anyone doing MRO introspection.</p>
 <p><strong>Test impact:</strong> Both S3 test suites have independent fixture setups
 (moto mocking).  The conformance suite covers all public operations,
 so the mixin extraction is guarded by existing tests.  No test
-restructuring is expected --- both test modules continue to
+restructuring is expected — both test modules continue to
 instantiate their concrete backend class.</p>
 <p><strong>Spec impact:</strong> No spec references internal backend method names
 (<code>_classify_error</code>, <code>_info_to_fileinfo</code>, etc.).  Specs reference
@@ -7193,7 +7193,7 @@ message for <code>"404"</code>, <code>"403"</code>, <code>"connect"</code>, etc.
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">permission_denied</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PermissionDenied</span><span class="p">:</span>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">return</span> <span class="n">PermissionDenied</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Permission denied: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="2b-classify_by_message-fallback-not-primary-path">2b. <code>classify_by_message()</code> --- fallback, not primary path<a class="headerlink" href="#2b-classify_by_message-fallback-not-primary-path" title="Permanent link">&para;</a></h3>
+<h3 id="2b-classify_by_message-fallback-not-primary-path">2b. <code>classify_by_message()</code> — fallback, not primary path<a class="headerlink" href="#2b-classify_by_message-fallback-not-primary-path" title="Permanent link">&para;</a></h3>
 <p>The string-matching heuristic (<code>"404"</code>, <code>"403"</code>, etc.) is a code smell
 being promoted to shared infrastructure.  Design it as a <strong>fallback</strong>
 that backends can override with structured classification:</p>
@@ -7278,11 +7278,11 @@ normalization:</p>
 </table>
 <p>Common sub-patterns:</p>
 <ul>
-<li><strong>Name from path:</strong> <code>path.rsplit("/", 1)[-1] if "/" in path else path</code> ---
+<li><strong>Name from path:</strong> <code>path.rsplit("/", 1)[-1] if "/" in path else path</code> —
   appears 6+ times.</li>
 <li><strong>Timezone normalization:</strong> parse string, add UTC if naive, fallback to
-  <code>now(UTC)</code> --- appears 5 times.</li>
-<li><strong>ETag cleaning:</strong> <code>raw.strip('"').lower()</code> --- appears 3 times.</li>
+  <code>now(UTC)</code> — appears 5 times.</li>
+<li><strong>ETag cleaning:</strong> <code>raw.strip('"').lower()</code> — appears 3 times.</li>
 </ul>
 <h3 id="proposed-extraction-backends_fileinfopy">Proposed extraction: <code>backends/_fileinfo.py</code><a class="headerlink" href="#proposed-extraction-backends_fileinfopy" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_name_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -7306,9 +7306,9 @@ silently).</p>
 <p>All four stream classes (<code>ProgressReader</code>, <code>ProgressWriter</code>,
 <code>ChecksumReader</code>, <code>ChecksumWriter</code>) repeat identical:</p>
 <ul>
-<li><code>close()</code> --- 3 lines x 4 = 12 lines</li>
-<li><code>__enter__</code> / <code>__exit__</code> --- 9 lines x 4 = 36 lines</li>
-<li><code>__getattr__</code> --- 2 lines x 4 = 8 lines</li>
+<li><code>close()</code> — 3 lines x 4 = 12 lines</li>
+<li><code>__enter__</code> / <code>__exit__</code> — 9 lines x 4 = 36 lines</li>
+<li><code>__getattr__</code> — 2 lines x 4 = 8 lines</li>
 </ul>
 <p><strong>56 lines of pure boilerplate.</strong></p>
 <h3 id="proposed-extraction-_streamwrapper-base">Proposed extraction: <code>_StreamWrapper</code> base<a class="headerlink" href="#proposed-extraction-_streamwrapper-base" title="Permanent link">&para;</a></h3>
@@ -7422,7 +7422,7 @@ and log string differ.</p>
 <td><strong>1</strong></td>
 <td>S3 base class + error factories + FileInfo helpers</td>
 <td>~240 lines</td>
-<td>Medium --- MRO change, abstract property contract</td>
+<td>Medium — MRO change, abstract property contract</td>
 <td>BK-011 (done, PR #242)</td>
 </tr>
 <tr>
@@ -7436,7 +7436,7 @@ and log string differ.</p>
 <td><strong>3</strong></td>
 <td><code>_run_batch()</code> generic executor</td>
 <td>~65 lines</td>
-<td>Low --- tests already comprehensive</td>
+<td>Low — tests already comprehensive</td>
 <td>BK-012 (done, PR #243)</td>
 </tr>
 <tr>

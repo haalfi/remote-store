@@ -7023,7 +7023,7 @@
 
 
 <h1 id="build-your-own-backend">Build Your Own Backend<a class="headerlink" href="#build-your-own-backend" title="Permanent link">&para;</a></h1>
-<p>Write file storage code once. Run it against local files, S3, SFTP, Azure ---
+<p>Write file storage code once. Run it against local files, S3, SFTP, Azure —
 or your own custom storage system.</p>
 <p>This guide walks you through implementing a custom <a href="../api/backend/"><code>Backend</code></a> for remote-store.
 By the end, you'll have a working backend that plugs into <a href="../api/store/"><code>Store</code></a>,
@@ -7039,9 +7039,9 @@ listing, metadata, error mapping, and capability declarations.</p>
 <p>Every backend is a subclass of <a href="../api/backend/"><code>Backend</code></a>. The contract is
 straightforward:</p>
 <ol>
-<li><strong>Declare capabilities</strong> --- which operations does your backend support?</li>
-<li><strong>Implement abstract members</strong> --- 16 methods and 2 properties covering CRUD, listing, and metadata.</li>
-<li><strong>Map all exceptions</strong> --- native errors must become <code>remote_store</code> errors. No leaks.</li>
+<li><strong>Declare capabilities</strong> — which operations does your backend support?</li>
+<li><strong>Implement abstract members</strong> — 16 methods and 2 properties covering CRUD, listing, and metadata.</li>
+<li><strong>Map all exceptions</strong> — native errors must become <code>remote_store</code> errors. No leaks.</li>
 </ol>
 <p>The <a href="../api/store/"><code>Store</code></a> class wraps your backend, adds path validation, capability gating,
 and scoping. You implement the raw operations; <code>Store</code> handles the policy.</p>
@@ -7056,7 +7056,7 @@ and scoping. You implement the raw operations; <code>Store</code> handles the po
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">try</span><span class="p">:</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">redis</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>  <span class="c1"># optional -- use ``pip install redis``</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>  <span class="c1"># graceful fallback when redis is not installed</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">redis</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: ignore[assignment]</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -7134,7 +7134,7 @@ and scoping. You implement the raw operations; <code>Store</code> handles the po
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="p">)</span>
 </code></pre></div>
 <p><strong>Capabilities gate Store methods.</strong> If you don't declare <code>ATOMIC_WRITE</code>, calls
-to <code>store.write_atomic()</code> raise <code>CapabilityNotSupported</code> automatically --- you
+to <code>store.write_atomic()</code> raise <code>CapabilityNotSupported</code> automatically — you
 don't need to handle it.</p>
 <p>The 10 capabilities and what they gate:</p>
 <table>
@@ -7204,7 +7204,7 @@ don't need to handle it.</p>
 <p><strong>Rules:</strong></p>
 <ul>
 <li><code>name</code> must be a unique string. Used in error messages and the registry.</li>
-<li><code>capabilities</code> returns a <a href="../api/capabilities/"><code>CapabilitySet</code></a> --- immutable, created once.</li>
+<li><code>capabilities</code> returns a <a href="../api/capabilities/"><code>CapabilitySet</code></a> — immutable, created once.</li>
 <li>Constructor parameters become <code>options:</code> in YAML config (more on this later).</li>
 </ul>
 <hr />
@@ -7292,7 +7292,7 @@ traceback for debugging.</p>
 </code></pre></div>
 <p><strong>Key invariants:</strong></p>
 <ul>
-<li><code>exists()</code> <strong>never raises <code>NotFound</code></strong> --- always returns <code>bool</code>.</li>
+<li><code>exists()</code> <strong>never raises <code>NotFound</code></strong> — always returns <code>bool</code>.</li>
 <li><code>""</code> and <code>"."</code> are root aliases. Root always exists and is always a folder.</li>
 <li><code>is_file("")</code> is always <code>False</code>. <code>is_folder("")</code> is always <code>True</code>.</li>
 </ul>
@@ -7319,13 +7319,13 @@ traceback for debugging.</p>
 <p><strong>Notes:</strong></p>
 <ul>
 <li><code>read()</code> returns a <code>BinaryIO</code>. Since we return <code>BytesIO</code>, streams are
-  seekable --- that's why we declared <code>SEEKABLE_READ</code>.</li>
+  seekable — that's why we declared <code>SEEKABLE_READ</code>.</li>
 <li><code>read_bytes()</code> can be more efficient than <code>read().read()</code> because it avoids
   wrapping in a stream object.</li>
 <li>Both raise <code>NotFound</code> for missing files.</li>
 </ul>
 <p>Since our <code>read()</code> returns seekable streams, we don't need to override
-<code>read_seekable()</code> --- the default implementation detects seekability and
+<code>read_seekable()</code> — the default implementation detects seekability and
 returns the stream as-is.</p>
 <hr />
 <h2 id="step-7-writing">Step 7: Writing<a class="headerlink" href="#step-7-writing" title="Permanent link">&para;</a></h2>
@@ -7381,7 +7381,7 @@ returns the stream as-is.</p>
 <p><strong>Key patterns:</strong></p>
 <ul>
 <li><code>content</code> is <code>bytes | BinaryIO</code>. Normalize with <code>content if isinstance(content, bytes) else content.read()</code>.</li>
-<li><strong>Write creates parent folders implicitly</strong> --- in Redis, there's nothing to create, but filesystem-based backends must <code>mkdir -p</code>.</li>
+<li><strong>Write creates parent folders implicitly</strong> — in Redis, there's nothing to create, but filesystem-based backends must <code>mkdir -p</code>.</li>
 <li>Re-raise your own errors (<code>AlreadyExists</code>, <code>InvalidPath</code>) before the catch-all <code>RedisError</code> handler.</li>
 <li>Even though Store gates <code>write_atomic()</code> via capabilities, implement the methods anyway (they're abstract). Raise <code>CapabilityNotSupported</code> as a safety net.</li>
 </ul>
@@ -7508,7 +7508,7 @@ returns the stream as-is.</p>
 <ul>
 <li><code>list_files(path="")</code> lists from root.</li>
 <li><code>recursive=False</code> (default) yields only immediate children.</li>
-<li><code>list_folders()</code> is always non-recursive --- only immediate subfolders.</li>
+<li><code>list_folders()</code> is always non-recursive — only immediate subfolders.</li>
 <li>Non-existent paths yield nothing (no exception).</li>
 <li><a href="../api/models/"><code>FileInfo</code></a><code>.path</code> must be a <a href="../api/path/"><code>RemotePath</code></a>.</li>
 </ul>
@@ -7555,7 +7555,7 @@ returns the stream as-is.</p>
 <ul>
 <li><code>get_file_info()</code> raises <code>NotFound</code> if missing.</li>
 <li><code>get_folder_info()</code> raises <code>NotFound</code> if the folder doesn't exist.</li>
-<li><code>exists()</code> never raises --- returns <code>bool</code>.</li>
+<li><code>exists()</code> never raises — returns <code>bool</code>.</li>
 </ul>
 <hr />
 <h2 id="step-11-move-and-copy">Step 11: Move and copy<a class="headerlink" href="#step-11-move-and-copy" title="Permanent link">&para;</a></h2>
@@ -7695,7 +7695,7 @@ extension works out of the box:</p>
 <a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="n">results</span> <span class="o">=</span> <span class="n">batch_copy</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="p">[(</span><span class="s2">&quot;a.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;b.txt&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;c.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;d.txt&quot;</span><span class="p">)])</span>
 </code></pre></div>
 <p>Extensions that require specific capabilities will check at runtime. For
-example, <code>ext.glob.glob_files()</code> works with any <code>LIST</code>-capable backend ---
+example, <code>ext.glob.glob_files()</code> works with any <code>LIST</code>-capable backend —
 it doesn't need the <code>GLOB</code> capability.</p>
 <hr />
 <h2 id="partial-capability-backends">Partial-capability backends<a class="headerlink" href="#partial-capability-backends" title="Permanent link">&para;</a></h2>
@@ -7842,7 +7842,7 @@ custom backend, write tests covering:</p>
 <h3 id="when-to-declare-seekable_read">When to declare <code>SEEKABLE_READ</code><a class="headerlink" href="#when-to-declare-seekable_read" title="Permanent link">&para;</a></h3>
 <p>Declare it only if <code>read()</code> <strong>always</strong> returns a seekable stream with zero
 overhead. <code>BytesIO</code> qualifies. Streams backed by network iterators don't.</p>
-<p>If your <code>read()</code> returns a non-seekable stream, don't worry --- <code>Store</code> handles
+<p>If your <code>read()</code> returns a non-seekable stream, don't worry — <code>Store</code> handles
 it. <code>read_seekable()</code> will spool to a temp file automatically. You can also
 override <code>read_seekable()</code> for an optimized path (like Azure's HTTP Range
 reader).</p>
@@ -7850,7 +7850,7 @@ reader).</p>
 <p>Support it if your backend can guarantee that readers never see partial content.
 Filesystem backends use temp-file-and-rename. Databases can use transactions.
 If your backend's writes are inherently atomic (single Redis <code>HSET</code>), you could
-declare it --- but be honest about the guarantee. "Atomic at the key level"
+declare it — but be honest about the guarantee. "Atomic at the key level"
 isn't the same as "atomic rename of a visible path."</p>
 <h3 id="thread-safety">Thread safety<a class="headerlink" href="#thread-safety" title="Permanent link">&para;</a></h3>
 <p>Backends may be called from multiple threads (e.g., <code>batch_copy</code> with
@@ -8006,12 +8006,12 @@ are generally thread-safe, so our example doesn't need explicit locking.</p>
 <hr />
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../api/backend/">Backend API reference</a> --- full method documentation</li>
-<li><a href="../api/errors/">Error types API reference</a> --- all error classes</li>
-<li><a href="../design/specs/003-backend-adapter-contract/">Backend Adapter Contract</a> --- formal spec</li>
-<li><a href="../capabilities-matrix/">Capabilities Matrix</a> --- all backends and their capabilities</li>
-<li><a href="../choosing-a-backend/">Choosing a Backend</a> --- decision guide for built-in backends</li>
-<li><a href="../architecture/">Architecture Overview</a> --- how Store, Backend, and extensions fit together</li>
+<li><a href="../api/backend/">Backend API reference</a> — full method documentation</li>
+<li><a href="../api/errors/">Error types API reference</a> — all error classes</li>
+<li><a href="../design/specs/003-backend-adapter-contract/">Backend Adapter Contract</a> — formal spec</li>
+<li><a href="../capabilities-matrix/">Capabilities Matrix</a> — all backends and their capabilities</li>
+<li><a href="../choosing-a-backend/">Choosing a Backend</a> — decision guide for built-in backends</li>
+<li><a href="../architecture/">Architecture Overview</a> — how Store, Backend, and extensions fit together</li>
 </ul>
 
 
