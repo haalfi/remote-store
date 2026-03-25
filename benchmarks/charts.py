@@ -74,8 +74,8 @@ COLORS = {
 # RTT profile metadata: (profile_name, nominal_rtt_ms).
 RTT_PROFILES = [("clean", 0), ("rtt20", 20), ("rtt50", 50), ("rtt100", 100)]
 
-# Map latency backend to its base backend for labeling.
-_LATENCY_BASE = {"s3-latency": "s3", "sftp-latency": "sftp", "azure-latency": "azure"}
+# Map base backend to its latency variant.
+_LATENCY_VARIANT = {"s3": "s3-latency", "sftp": "sftp-latency", "azure": "azure-latency"}
 
 # Style constants.
 _FONT_FAMILY = "sans-serif"
@@ -227,8 +227,8 @@ def chart_overhead_vs_rtt(
         per_backend: dict[str, dict[str, float]] = {}
 
         for base in base_backends:
-            # For clean profile, use base backend; for latency, use latency backend.
-            bk = f"{base}-latency" if profile != "clean" else base
+            # For clean profile, use base backend; for latency, use latency variant.
+            bk = _LATENCY_VARIANT[base] if profile != "clean" else base
             raw_key = RAW_SDK_TARGET.get(bk, RAW_SDK_TARGET.get(base, ""))
             op_overheads: dict[str, float] = {}
 
@@ -504,18 +504,20 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    files = sorted(args.dir.rglob("*.json"))
-    if not files:
-        print(f"No benchmark files found in {args.dir}", file=sys.stderr)
-        sys.exit(1)
-
     # Baseline file for single-file charts (overhead, throughput, s3-comparison).
     if args.file:
         if not args.file.exists():
             print(f"File not found: {args.file}", file=sys.stderr)
             sys.exit(1)
         baseline_file = args.file
+        files = sorted(args.dir.rglob("*.json"))
+        if not files:
+            files = [args.file]  # RTT chart can still use the single file
     else:
+        files = sorted(args.dir.rglob("*.json"))
+        if not files:
+            print(f"No benchmark files found in {args.dir}", file=sys.stderr)
+            sys.exit(1)
         baseline_file = files[-1]
 
     latest = json.loads(baseline_file.read_text())
