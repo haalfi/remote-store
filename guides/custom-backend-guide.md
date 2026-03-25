@@ -36,22 +36,6 @@ and scoping. You implement the raw operations; `Store` handles the policy.
 ## Step 1: Scaffold the class
 
 ```python
-"""Redis backend for remote-store."""
-
-from __future__ import annotations
-
-import contextlib
-import io
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, BinaryIO
-
-try:
-    import redis
-except ImportError:  # optional -- use ``pip install redis``
-    redis = None  # type: ignore[assignment]
-```
-
-```python
 --8<-- "examples/snippets/custom_backend_guide.py:step1-imports"
 ```
 

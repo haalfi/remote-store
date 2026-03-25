@@ -16,11 +16,9 @@ requiring a Redis server.
 
 # ---------------------------------------------------------------------------
 # Step 1: Scaffold the class -- imports
-#
-# Stdlib and redis imports are above (executed on import).  The named
-# region below covers the remote_store imports shown in the guide.
 # ---------------------------------------------------------------------------
 
+# --8<-- [start:step1-imports]
 from __future__ import annotations
 
 import contextlib
@@ -33,7 +31,6 @@ try:
 except ImportError:  # optional -- use ``pip install redis``
     redis = None  # type: ignore[assignment]
 
-# --8<-- [start:step1-imports]
 from remote_store import (
     AlreadyExists,
     Backend,
