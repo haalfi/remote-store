@@ -413,8 +413,10 @@ def chart_s3_comparison(benchmarks: list[dict[str, Any]], output: Path) -> None:
     op_labels = [label for _, _, label in _S3_COMPARISON_OPS]
     backends = ["s3", "s3-pyarrow"]
 
-    # Check we have remote_store data for both.
-    has_data = all(any(b in data.get(op, {}) for op in op_labels) for b in backends)
+    # Check we have remote_store data for both backends.
+    has_data = all(
+        any(data.get(op, {}).get(b, {}).get("remote_store") is not None for op in op_labels) for b in backends
+    )
     if not has_data:
         print(f"  {output} (skipped — need both S3 and S3-PyArrow data)", file=sys.stderr)
         return
@@ -511,6 +513,8 @@ def main() -> None:
             sys.exit(1)
         baseline_file = args.file
         files = sorted(args.dir.rglob("*.json"))
+        if args.file.resolve() not in {f.resolve() for f in files}:
+            files.append(args.file)
         if not files:
             files = [args.file]  # RTT chart can still use the single file
     else:
