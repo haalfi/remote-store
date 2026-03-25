@@ -6585,16 +6585,18 @@ the SDK directly (often due to connection pooling and caching).</p>
 <p><img alt="Abstraction overhead by backend" src="../img/benchmarks/overhead.svg" /></p>
 <p><strong>Measured overhead from Docker benchmarks</strong> (MinIO, Azurite, OpenSSH):</p>
 <ul>
-<li><strong>S3</strong>: Reads add 0.2–0.3 ms (+5–12%) over raw boto3. Writes are 1.2x
-  <em>faster</em> (connection reuse). Listing 18x faster (s3fs cache). Delete adds
-  ~2 ms (+123%, error-mapping layer).</li>
-<li><strong>Azure</strong>: Reads add ~0.5 ms (+8%) over raw azure-blob. Writes add or save
-  ~1 ms depending on file size. Delete adds 0.03 ms (+2%).</li>
-<li><strong>SFTP</strong>: Reads add ~1 ms (+8%) over raw paramiko. Writes add 1–2 ms
-  (+4–7%). Metadata ops: exists adds 0.6 ms (+140%), but both sides are
-  sub-millisecond (0.95 ms vs 0.40 ms).</li>
-<li><strong>Local</strong>: All operations sub-millisecond. Exists: 63 μs vs 6 μs raw
-  pathlib (+57 μs).</li>
+<li><strong>S3</strong>: Reads add 0.7 ms (+15%) over raw boto3. Listing 29x faster (s3fs
+  cache). Delete adds ~1.7 ms (+124%, error-mapping layer). Write 1MB: 95 ms
+  vs 31 ms raw — variance-heavy, check your own hardware.</li>
+<li><strong>S3-PyArrow</strong>: Reads add 6.3 ms (+125%) over raw boto3 (PyArrow C++ data
+  path). Writes add 3.6 ms (+12%). Listing 12x faster.</li>
+<li><strong>Azure</strong>: Reads add 0.1 ms (+1%) over raw azure-blob. Writes add 2.4 ms
+  (+17%). Delete adds 0.03 ms (+2%).</li>
+<li><strong>SFTP</strong>: Reads add 3.3 ms (+34%) over raw paramiko. Writes add 1.6 ms
+  (+7%). Metadata ops: exists adds 0.4 ms (+100%), but both sides are
+  sub-millisecond (0.80 ms vs 0.40 ms).</li>
+<li><strong>Local</strong>: All operations sub-millisecond. Exists: 54 μs vs 5 μs raw
+  pathlib (+49 μs).</li>
 </ul>
 <h2 id="what-happens-under-real-latency">What Happens Under Real Latency<a class="headerlink" href="#what-happens-under-real-latency" title="Permanent link">&para;</a></h2>
 <p>Under realistic network round-trip times (20–100 ms), overhead as a percentage
@@ -6648,6 +6650,11 @@ is amortized across more bytes.</p>
 uses PyArrow's C++ <code>S3FileSystem</code> for data-path operations. The chart below
 compares their absolute latencies:</p>
 <p><img alt="S3 vs S3-PyArrow" src="../img/benchmarks/s3-comparison.svg" /></p>
+<p>S3-PyArrow reads are slower for sequential workloads because the C++ data path
+adds connection management and metadata overhead per call. The S3-PyArrow
+backend's advantage is native <a href="../pyarrow-adapter/">PyArrow integration</a> — Tier 1
+Parquet column pruning, I/O coalescing, and GIL-free reads. For sequential
+byte streaming, the regular S3 backend is faster.</p>
 <h2 id="comparative-results">Comparative Results<a class="headerlink" href="#comparative-results" title="Permanent link">&para;</a></h2>
 <p>For every operation, the benchmark suite runs the same workload through three
 interfaces:</p>
@@ -6674,121 +6681,114 @@ values are <strong>mean</strong> latency from <code>pytest-benchmark</code>.</p>
 <tbody>
 <tr>
 <td>Write 1KB</td>
-<td>0.26ms</td>
-<td>5.3ms</td>
-<td>36.2ms</td>
-<td>3.8ms</td>
-<td>5.0ms</td>
+<td>0.27ms</td>
+<td>5.5ms</td>
+<td>16.4ms</td>
+<td>4.5ms</td>
+<td>5.4ms</td>
 </tr>
 <tr>
 <td>Write 64KB</td>
-<td>0.26ms</td>
-<td>6.2ms</td>
-<td>66.5ms*</td>
-<td>4.9ms</td>
-<td>22.6ms*</td>
+<td>0.28ms</td>
+<td>6.5ms</td>
+<td>16.5ms</td>
+<td>5.4ms</td>
+<td>28.8ms*</td>
 </tr>
 <tr>
 <td>Write 1MB</td>
-<td>0.48ms</td>
-<td>20.1ms</td>
-<td>31.6ms</td>
-<td>24.7ms</td>
-<td>13.7ms</td>
+<td>0.47ms</td>
+<td>95.0ms*</td>
+<td>33.8ms</td>
+<td>25.2ms</td>
+<td>16.2ms</td>
 </tr>
 <tr>
 <td>Read 1KB</td>
-<td>0.09ms</td>
+<td>0.08ms</td>
 <td>1.5ms</td>
-<td>1.7ms</td>
-<td>3.0ms</td>
-<td>2.0ms</td>
+<td>1.8ms</td>
+<td>2.7ms</td>
+<td>2.1ms</td>
 </tr>
 <tr>
 <td>Read 64KB</td>
-<td>0.09ms</td>
-<td>1.8ms</td>
+<td>0.08ms</td>
+<td>1.7ms</td>
 <td>2.2ms</td>
 <td>3.3ms</td>
-<td>2.3ms</td>
+<td>2.7ms</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td>0.32ms</td>
-<td>5.9ms</td>
-<td>11.4ms</td>
-<td>13.5ms</td>
+<td>0.31ms</td>
 <td>5.8ms</td>
+<td>11.4ms</td>
+<td>12.9ms</td>
+<td>5.9ms</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
-<td>0.06ms</td>
+<td>0.05ms</td>
 <td>1.4ms</td>
-<td>1.5ms</td>
-<td>0.86ms</td>
-<td>1.7ms</td>
+<td>1.8ms</td>
+<td>0.80ms</td>
+<td>1.6ms</td>
 </tr>
 <tr>
 <td>Exists (miss)</td>
 <td>0.07ms</td>
 <td>2.5ms</td>
-<td>2.9ms</td>
-<td>1.1ms</td>
-<td>3.5ms</td>
+<td>2.7ms</td>
+<td>1.4ms</td>
+<td>3.7ms</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td>0.70ms</td>
-<td>0.24ms</td>
-<td>0.32ms</td>
-<td>2.8ms</td>
-<td>11.4ms</td>
-</tr>
-<tr>
-<td>List 1000 files</td>
-<td>10.2ms</td>
-<td>1.5ms</td>
-<td>1.3ms</td>
-<td>16.2ms</td>
-<td>145ms</td>
+<td>0.67ms</td>
+<td>0.22ms</td>
+<td>0.35ms</td>
+<td>2.4ms</td>
+<td>13.4ms</td>
 </tr>
 <tr>
 <td>Delete</td>
 <td>0.11ms</td>
-<td>3.4ms</td>
-<td>4.7ms</td>
-<td>0.99ms</td>
-<td>1.8ms</td>
+<td>3.1ms</td>
+<td>4.2ms</td>
+<td>0.80ms</td>
+<td>1.7ms</td>
 </tr>
 <tr>
 <td>TTFB write</td>
 <td>0.26ms</td>
-<td>8.4ms</td>
-<td>19.7ms</td>
-<td>7.2ms</td>
-<td>7.6ms</td>
+<td>8.1ms</td>
+<td>19.0ms</td>
+<td>4.4ms</td>
+<td>8.5ms</td>
 </tr>
 <tr>
 <td>TTFB read</td>
-<td>0.11ms</td>
-<td>3.1ms</td>
+<td>0.07ms</td>
+<td>2.9ms</td>
+<td>1.7ms</td>
+<td>2.0ms</td>
 <td>1.9ms</td>
-<td>2.5ms</td>
-<td>2.2ms</td>
 </tr>
 <tr>
 <td>TTFB exists</td>
 <td>0.06ms</td>
+<td>1.5ms</td>
 <td>1.4ms</td>
-<td>1.4ms</td>
-<td>1.1ms</td>
-<td>1.8ms</td>
+<td>0.85ms</td>
+<td>1.7ms</td>
 </tr>
 </tbody>
 </table>
-<p><em>* 64KB write values for S3-PyArrow and Azure are outlier-skewed (high
-variance, stddev &gt; mean). The medians are monotonic. This is a
-Dockerized-service cold-start artifact, not real non-monotonic performance.</em></p>
+<p><em>* S3 Write 1MB and Azure Write 64KB show high variance (stddev &gt; mean).
+This is a Dockerized-service artifact, not real non-monotonic performance.
+List 1000 and List 10000 are available in the standard and full tiers
+(<code>hatch run bench-standard</code>).</em></p>
 <p>Generate this table from your own saved results with <code>hatch run bench-report</code>.
 For a condensed view with verdicts, use <code>hatch run bench-report-user</code>.</p>
 <h2 id="caveats">Caveats<a class="headerlink" href="#caveats" title="Permanent link">&para;</a></h2>

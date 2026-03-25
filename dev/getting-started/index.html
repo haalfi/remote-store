@@ -6661,7 +6661,7 @@ use a Registry with declarative config:</p>
 </code></pre></div>
 <p>For the full method list, see the <a href="https://docs.remotestore.dev/stable/api/store/">API reference</a>. All write, move, and copy methods accept <code>overwrite=True</code> to replace existing files.</p>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
-<p>For S3, reads add 0.2–0.3 ms over raw boto3 (+5–12%); writes are often <em>faster</em> due to connection reuse. For Azure, reads add ~0.5 ms (+8%); writes are comparable. For SFTP, reads add ~1 ms (+8%); writes add 1–2 ms (+4–7%). See the <a href="https://docs.remotestore.dev/stable/performance/">performance guide</a> for full comparative benchmarks, methodology, and per-operation breakdowns.</p>
+<p>For S3, reads add 0.7 ms (+15%) over raw boto3; listing is 29x faster (s3fs caching). For Azure, reads add 0.1 ms (+1%); writes add 2.4 ms (+17%). For SFTP, reads add 3.3 ms (+34%); writes add 1.6 ms (+7%). See the <a href="https://docs.remotestore.dev/stable/performance/">performance guide</a> for full comparative benchmarks, methodology, and per-operation breakdowns.</p>
 <h2 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">&para;</a></h2>
 <p>The core library handles storage operations. Extensions add optional capabilities on top — e.g. PyArrow integration, observability, caching, or bulk operations. All live in <code>remote_store.ext</code>; import only what you need.</p>
 <table>
