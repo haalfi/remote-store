@@ -8296,14 +8296,22 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Seekable read promoted to Store API</strong> (ID-100, ID-102): New
+<li>
+<p><strong>Performance messaging rewrite</strong> (ID-104): README and performance guide now
+  present overhead as measured values in ms (with percentages in brackets)
+  instead of judgmental language. Users see the numbers and decide for
+  themselves.</p>
+</li>
+<li>
+<p><strong>Seekable read promoted to Store API</strong> (ID-100, ID-102): New
   <code>Store.read_seekable()</code> method — always returns a seekable stream,
   backend-optimized. On seekable backends (Local, S3, SFTP) it's
   zero-overhead passthrough. On Azure it returns <code>_AzureRangeReader</code>
   (HTTP Range requests per read — ideal for PyArrow column pruning).
   On HTTP it spools to <code>SpooledTemporaryFile</code>. Replaces
   <code>ext.seekable.seekable_read()</code> (removed, never released).
-  ADR-0017 supersedes ADR-0016. Spec 036 revised.</li>
+  ADR-0017 supersedes ADR-0016. Spec 036 revised.</p>
+</li>
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
@@ -8312,6 +8320,12 @@
   a seekable stream backed by <code>download_blob(offset=, length=)</code>. Each
   <code>read()</code> issues a single HTTP Range request — no full-file download.
   Enables PyArrow Tier 3 column pruning for Parquet on Azure.</p>
+</li>
+<li>
+<p><strong>Latency matrix benchmark command</strong> (ID-104):
+  <code>hatch run bench-latency-matrix</code> runs rtt20/rtt50/rtt100 profiles
+  sequentially. Cross-platform Python script with configurable <code>--profiles</code>,
+  <code>--pool-size</code>, <code>--bench-timeout</code>.</p>
 </li>
 <li>
 <p><strong>Seekable read and cache benchmarks</strong> (ID-103 Phase 4):

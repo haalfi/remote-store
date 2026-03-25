@@ -6553,30 +6553,30 @@
 
 
 <h1 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h1>
-<p>remote-store wraps established Python storage libraries. The abstraction adds
-measurable overhead for fast local operations, but for remote backends under
-realistic network latency, the cost is typically small relative to network and
-service time.</p>
+<p>remote-store wraps established Python storage libraries. This page presents
+measured overhead so you can judge whether the abstraction cost matters for
+your workloads.</p>
 <h2 id="overhead-at-a-glance">Overhead at a Glance<a class="headerlink" href="#overhead-at-a-glance" title="Permanent link">&para;</a></h2>
 <p>The chart below shows remote-store's overhead (%) versus raw SDK calls for
 each backend. Negative values mean remote-store is <em>faster</em> than calling
 the SDK directly (often due to connection pooling and caching).</p>
 <p><img alt="Abstraction overhead by backend" src="../img/benchmarks/overhead.svg" /></p>
-<p><strong>Verdicts from Docker benchmarks</strong> (MinIO, Azurite, OpenSSH):</p>
+<p><strong>Measured overhead from Docker benchmarks</strong> (MinIO, Azurite, OpenSSH):</p>
 <ul>
-<li><strong>S3</strong>: Writes are 1.2x <em>faster</em> than raw boto3 (connection reuse). Reads
-  +22%, exists negligible, listing 18x faster (s3fs cache). Delete +2x
-  (error-mapping layer).</li>
-<li><strong>Azure</strong>: Writes 1.2x <em>faster</em> than raw azure-blob. Reads, exists, delete
-  all within noise.</li>
-<li><strong>SFTP</strong>: Writes +7%, reads +8%. Metadata ops show higher relative overhead
-  (exists +133%) but absolute latencies are sub-millisecond.</li>
-<li><strong>Local</strong>: Sub-millisecond for all operations. Higher relative overhead on
-  metadata (exists: 63us vs 6us) but absolute cost is negligible.</li>
+<li><strong>S3</strong>: Reads add 0.2–0.3 ms (+5–12%) over raw boto3. Writes are 1.2x
+  <em>faster</em> (connection reuse). Listing 18x faster (s3fs cache). Delete adds
+  ~2 ms (+123%, error-mapping layer).</li>
+<li><strong>Azure</strong>: Reads add ~0.5 ms (+8%) over raw azure-blob. Writes add or save
+  ~1 ms depending on file size. Delete adds 0.03 ms (+2%).</li>
+<li><strong>SFTP</strong>: Reads add ~1 ms (+8%) over raw paramiko. Writes add 1–2 ms
+  (+4–7%). Metadata ops: exists adds 0.6 ms (+140%), but both sides are
+  sub-millisecond (0.95 ms vs 0.40 ms).</li>
+<li><strong>Local</strong>: All operations sub-millisecond. Exists: 63 μs vs 6 μs raw
+  pathlib (+57 μs).</li>
 </ul>
 <h2 id="what-happens-under-real-latency">What Happens Under Real Latency<a class="headerlink" href="#what-happens-under-real-latency" title="Permanent link">&para;</a></h2>
-<p>Under realistic network round-trip times (20-100ms), the abstraction overhead
-collapses into the noise. A 1ms overhead on a 100ms round trip is 1% — invisible.</p>
+<p>Under realistic network round-trip times (20–100 ms), overhead as a percentage
+shrinks. For example, a 1 ms overhead on a 100 ms round trip is 1%.</p>
 <!-- TODO: add overhead-vs-rtt.svg chart once multi-profile benchmark data is collected -->
 
 <p>The benchmark suite simulates latency using <a href="https://github.com/Shopify/toxiproxy">Toxiproxy</a>
@@ -6620,8 +6620,8 @@ with four named profiles:</p>
 <h2 id="throughput-by-file-size">Throughput by File Size<a class="headerlink" href="#throughput-by-file-size" title="Permanent link">&para;</a></h2>
 <p>How throughput scales with file size, comparing remote-store to raw SDK:</p>
 <p><img alt="Throughput by file size" src="../img/benchmarks/throughput.svg" /></p>
-<p>At larger file sizes, throughput converges — the per-operation overhead is
-amortized across more bytes.</p>
+<p>At larger file sizes, throughput converges as the fixed per-operation overhead
+is amortized across more bytes.</p>
 <h2 id="comparative-results">Comparative Results<a class="headerlink" href="#comparative-results" title="Permanent link">&para;</a></h2>
 <p>For every operation, the benchmark suite runs the same workload through three
 interfaces:</p>
@@ -6833,20 +6833,23 @@ and directories are created per test fixture and cleaned up after.</p>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Full tier (~20-30 min/backend)</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-full
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># With simulated latency</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># With simulated latency (single profile)</span>
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench<span class="w"> </span>--<span class="w"> </span>--backend<span class="w"> </span>s3-latency,sftp-latency,azure-latency<span class="w"> </span>--network-profile<span class="w"> </span>rtt50
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1"># Save results as JSON</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-save
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1"># Latency matrix (runs rtt20, rtt50, rtt100 sequentially, ~8 min/profile)</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-latency-matrix
 <a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="c1"># Reports</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report<span class="w">                    </span><span class="c1"># summary table</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-user<span class="w">               </span><span class="c1"># condensed with verdicts</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-comparative<span class="w">        </span><span class="c1"># remote-store vs raw SDK vs fsspec</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-charts<span class="w">                    </span><span class="c1"># generate SVG charts</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="c1"># Stop services</span>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>benchmarks/infra/docker-compose.yml<span class="w"> </span>down<span class="w"> </span>-v
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="c1"># Save results as JSON</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-save
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="c1"># Reports</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report<span class="w">                    </span><span class="c1"># summary table</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-user<span class="w">               </span><span class="c1"># condensed with verdicts</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-comparative<span class="w">        </span><span class="c1"># remote-store vs raw SDK vs fsspec</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-charts<span class="w">                    </span><span class="c1"># generate SVG charts</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="c1"># Stop services</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>benchmarks/infra/docker-compose.yml<span class="w"> </span>down<span class="w"> </span>-v
 </code></pre></div>
 <p>For cloud benchmarks, set the appropriate environment variables (see
 <code>benchmarks/README.md</code> for the full reference table) and use <code>--infra cloud</code>.</p>
