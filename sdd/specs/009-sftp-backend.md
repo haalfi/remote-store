@@ -241,3 +241,26 @@ operations will trigger a new connection via lazy init.
 
 **Invariant:** Calling `close()` multiple times must not raise. Internal state is
 set to `None` after close, and the next operation will reconnect lazily.
+
+### SFTP-028: TOFU Host Key Persistence
+
+**Invariant:** When `host_key_policy` is `TRUST_ON_FIRST_USE` and keys are resolved
+from the file-based path (not from inline `known_host_keys`, config, or environment),
+the backend persists newly accepted host keys to disk on disconnect.
+
+**Preconditions:**
+
+- `_resolved_host_keys` is `None` (no inline keys).
+- Policy is `TRUST_ON_FIRST_USE`.
+
+**Postconditions:**
+
+- The known_hosts file (default `~/.ssh/known_hosts` or `host_keys_path`) and its
+  parent directory are created if absent, with `0o700` directory / `0o644` file
+  permissions (best-effort on Windows).
+- `load_host_keys(path)` is always called so paramiko records the filename internally.
+- `save_host_keys(path)` is called in `_close_clients()` before SSH client closure.
+- On reconnection, keys saved during the previous session are loaded back.
+- Save failures are suppressed -- they must not prevent connection teardown.
+- Inline keys (`known_host_keys` parameter, config dict, or env var) are never
+  persisted to disk.

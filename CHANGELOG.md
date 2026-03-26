@@ -74,6 +74,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **SFTP TOFU host key persistence** (BUG-005): `TRUST_ON_FIRST_USE` now
+  persists accepted host keys to disk on disconnect, creating the known_hosts
+  file and parent directories if absent. Inline keys (code/config/env) are
+  never persisted. Spec SFTP-028.
+
 - **Snippet indentation in docs code blocks** (BUG-004): named snippet
   regions inside function bodies rendered with extra leading whitespace.
   Fixed via pymdownx.snippets `dedent_subsections` option.

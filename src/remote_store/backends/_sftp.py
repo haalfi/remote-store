@@ -208,6 +208,7 @@ class SFTPBackend(Backend):
         self._retry = retry
         self._resolved_host_keys = self._resolve_host_keys(known_host_keys, config)
 
+        self._tofu_keys_path: str | None = None
         self._ssh_client: Any = None
         self._sftp_client: Any = None
 
@@ -685,15 +686,18 @@ class SFTPBackend(Backend):
         # Load known host keys from resolved source or file fallback
         if self._resolved_host_keys:  # pragma: no cover -- tested via unit test
             _load_host_keys_from_string(ssh, self._resolved_host_keys)
-        elif self._host_key_policy in (  # pragma: no cover -- tests use AUTO_ADD
-            HostKeyPolicy.STRICT,
-            HostKeyPolicy.TRUST_ON_FIRST_USE,
-        ):
+            self._tofu_keys_path = None  # inline keys are never persisted
+        elif self._host_key_policy == HostKeyPolicy.TRUST_ON_FIRST_USE:
+            keys_path = self._host_keys_path or os.path.expanduser("~/.ssh/known_hosts")
+            self._ensure_known_hosts_file(keys_path)
+            ssh.load_host_keys(keys_path)
+            self._tofu_keys_path = keys_path
+        elif self._host_key_policy == HostKeyPolicy.STRICT:  # pragma: no cover
             keys_path = self._host_keys_path or os.path.expanduser("~/.ssh/known_hosts")
             if os.path.isfile(keys_path):
                 ssh.load_host_keys(keys_path)
 
-        if self._host_key_policy == HostKeyPolicy.TRUST_ON_FIRST_USE:  # pragma: no cover
+        if self._host_key_policy == HostKeyPolicy.TRUST_ON_FIRST_USE:
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         elif self._host_key_policy == HostKeyPolicy.AUTO_ADD:
             log.warning(
@@ -724,6 +728,16 @@ class SFTPBackend(Backend):
             return val_env
         return None
 
+    @staticmethod
+    def _ensure_known_hosts_file(path: str) -> None:
+        """Create the known_hosts file and parent directories if absent."""
+        parent = os.path.dirname(path)
+        if parent and not os.path.isdir(parent):
+            os.makedirs(parent, mode=0o700, exist_ok=True)
+        if not os.path.isfile(path):
+            fd = os.open(path, os.O_CREAT | os.O_WRONLY, 0o644)
+            os.close(fd)
+
     def _close_clients(self) -> None:
         """Close SFTP and SSH clients if open."""
         if self._sftp_client is not None:
@@ -731,6 +745,9 @@ class SFTPBackend(Backend):
                 self._sftp_client.close()
             self._sftp_client = None
         if self._ssh_client is not None:
+            if self._tofu_keys_path is not None:
+                with contextlib.suppress(Exception):
+                    self._ssh_client.save_host_keys(self._tofu_keys_path)
             with contextlib.suppress(Exception):
                 self._ssh_client.close()
             self._ssh_client = None

@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import errno
 import io
+import os
+import shutil
+import tempfile
 import uuid
 from typing import TYPE_CHECKING
 from unittest.mock import patch
@@ -1034,6 +1037,185 @@ class TestSFTPCollectFolderStatsOSError:
         assert count == 0
         assert size == 0
         assert latest is None
+
+
+# endregion
+
+# region: TOFU persistence (SFTP-028)
+
+
+class TestSFTPTofuPersistence:
+    """SFTP-028: TOFU host key persistence to disk."""
+
+    @pytest.mark.spec("SFTP-028")
+    def test_tofu_creates_and_persists_key(self, sftp_server: tuple[int, str]) -> None:
+        """TOFU creates known_hosts file and persists the accepted key."""
+        port, _host_key_entry = sftp_server
+        tmpdir = tempfile.mkdtemp(prefix="tofu_test_")
+        keys_path = os.path.join(tmpdir, "known_hosts")
+        try:
+            assert not os.path.isfile(keys_path)
+            backend = SFTPBackend(
+                host="127.0.0.1",
+                port=port,
+                username="testuser",
+                password="testpass",
+                base_path="/",
+                host_key_policy=HostKeyPolicy.TRUST_ON_FIRST_USE,
+                host_keys_path=keys_path,
+                connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            )
+            backend.exists("nonexistent.txt")
+            backend.close()
+            assert os.path.isfile(keys_path)
+            assert os.path.getsize(keys_path) > 0
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    @pytest.mark.spec("SFTP-028")
+    def test_tofu_persisted_key_verifiable_by_strict(self, sftp_server: tuple[int, str]) -> None:
+        """After TOFU persists a key, a STRICT backend can connect using the same file."""
+        port, _host_key_entry = sftp_server
+        tmpdir = tempfile.mkdtemp(prefix="tofu_test_")
+        keys_path = os.path.join(tmpdir, "known_hosts")
+        try:
+            # First connection: TOFU accepts and persists the key
+            tofu_backend = SFTPBackend(
+                host="127.0.0.1",
+                port=port,
+                username="testuser",
+                password="testpass",
+                base_path="/",
+                host_key_policy=HostKeyPolicy.TRUST_ON_FIRST_USE,
+                host_keys_path=keys_path,
+                connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            )
+            tofu_backend.exists("nonexistent.txt")
+            tofu_backend.close()
+
+            # Second connection: STRICT should succeed with the persisted key
+            strict_backend = SFTPBackend(
+                host="127.0.0.1",
+                port=port,
+                username="testuser",
+                password="testpass",
+                base_path="/",
+                host_key_policy=HostKeyPolicy.STRICT,
+                host_keys_path=keys_path,
+                connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            )
+            strict_backend.exists("nonexistent.txt")
+            strict_backend.close()
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    @pytest.mark.spec("SFTP-028")
+    def test_tofu_creates_parent_directories(self, sftp_server: tuple[int, str]) -> None:
+        """TOFU creates nested parent directories for the known_hosts file."""
+        port, _host_key_entry = sftp_server
+        tmpdir = tempfile.mkdtemp(prefix="tofu_test_")
+        keys_path = os.path.join(tmpdir, "a", "b", "known_hosts")
+        try:
+            backend = SFTPBackend(
+                host="127.0.0.1",
+                port=port,
+                username="testuser",
+                password="testpass",
+                base_path="/",
+                host_key_policy=HostKeyPolicy.TRUST_ON_FIRST_USE,
+                host_keys_path=keys_path,
+                connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            )
+            backend.exists("nonexistent.txt")
+            backend.close()
+            assert os.path.isfile(keys_path)
+            assert os.path.isdir(os.path.join(tmpdir, "a", "b"))
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    @pytest.mark.spec("SFTP-028")
+    def test_tofu_reconnect_preserves_keys(self, sftp_server: tuple[int, str]) -> None:
+        """Keys survive the close-then-reconnect cycle within one backend lifetime."""
+        port, _host_key_entry = sftp_server
+        tmpdir = tempfile.mkdtemp(prefix="tofu_test_")
+        keys_path = os.path.join(tmpdir, "known_hosts")
+        try:
+            backend = SFTPBackend(
+                host="127.0.0.1",
+                port=port,
+                username="testuser",
+                password="testpass",
+                base_path="/",
+                host_key_policy=HostKeyPolicy.TRUST_ON_FIRST_USE,
+                host_keys_path=keys_path,
+                connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            )
+            # First operation triggers connection and TOFU key acceptance
+            backend.exists("nonexistent.txt")
+            # Force disconnect (saves keys) then reconnect (loads them back)
+            backend._close_clients()
+            backend.exists("nonexistent.txt")
+            backend.close()
+
+            # Verify the file still has the persisted key
+            assert os.path.isfile(keys_path)
+            assert os.path.getsize(keys_path) > 0
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    @pytest.mark.spec("SFTP-028")
+    def test_tofu_inline_keys_not_persisted(self, sftp_server: tuple[int, str]) -> None:
+        """Inline known_host_keys with TOFU policy do not trigger file persistence."""
+        port, host_key_entry = sftp_server
+        tmpdir = tempfile.mkdtemp(prefix="tofu_test_")
+        keys_path = os.path.join(tmpdir, "known_hosts")
+        try:
+            backend = SFTPBackend(
+                host="127.0.0.1",
+                port=port,
+                username="testuser",
+                password="testpass",
+                base_path="/",
+                host_key_policy=HostKeyPolicy.TRUST_ON_FIRST_USE,
+                known_host_keys=host_key_entry,
+                host_keys_path=keys_path,
+                connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            )
+            backend.exists("nonexistent.txt")
+            assert backend._tofu_keys_path is None
+            backend.close()
+            # known_hosts file should not have been created by TOFU persistence
+            # (it may exist as an empty file from _ensure, but _tofu_keys_path is None
+            # so save_host_keys was never called)
+            if os.path.isfile(keys_path):
+                assert os.path.getsize(keys_path) == 0
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    @pytest.mark.spec("SFTP-028")
+    def test_tofu_save_failure_suppressed(self, sftp_server: tuple[int, str]) -> None:
+        """Save failure during close does not raise."""
+        port, _host_key_entry = sftp_server
+        tmpdir = tempfile.mkdtemp(prefix="tofu_test_")
+        keys_path = os.path.join(tmpdir, "known_hosts")
+        try:
+            backend = SFTPBackend(
+                host="127.0.0.1",
+                port=port,
+                username="testuser",
+                password="testpass",
+                base_path="/",
+                host_key_policy=HostKeyPolicy.TRUST_ON_FIRST_USE,
+                host_keys_path=keys_path,
+                connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            )
+            backend.exists("nonexistent.txt")
+            # Mock save_host_keys to reliably fail on all platforms
+            # (os.chmod is a no-op for owner on Windows)
+            with patch.object(backend._ssh_client, "save_host_keys", side_effect=OSError("boom")):
+                backend.close()
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 # endregion
