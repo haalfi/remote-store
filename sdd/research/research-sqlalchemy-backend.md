@@ -1,6 +1,6 @@
-# Research: SQLAlchemy Backend & Tiered Meta-Store
+# Research: SQLAlchemy Backends & Composite Store
 
-**Item ID:** ID-119 (SQLAlchemy backend), ID-120 (tiered meta-store)
+**Item ID:** ID-119 (SQLAlchemy backends), ID-120 (composite store)
 **Date:** 2026-03-26
 **Status:** Research complete
 
@@ -8,25 +8,39 @@
 
 ## 1. Problem Statement
 
-Data products often live in databases during their "hot" phase (recent, frequently
-queried) and migrate to blob storage (S3, Azure, Glacier) as they age. Today,
-consumers must use different APIs depending on where the data currently resides.
+### The unifying concept: key → byte resolution
 
-Two complementary ideas address this:
+A Store is a **deterministic key → byte resolver**. Not storage. Not filesystem.
+Not database. A resolver. Every existing backend already works this way:
 
-1. **SQLAlchemy backend** — a Store backend that maps path keys to SQL queries
-   and returns serialized results (Parquet, CSV, etc.). `store.read("dp_daily_sales.parquet")`
-   executes a configured query and returns bytes, identical to reading from S3.
+- `LocalBackend`: key → filesystem path → bytes
+- `S3Backend`: key → S3 object → bytes
+- `ReadOnlyHttpBackend`: key → URL → bytes
 
-2. **Tiered meta-store** — a routing layer above backends that resolves keys to
-   different backends based on rules (recency, partition, explicit config). Hot data
-   comes from a database, warm from S3, cold from Glacier — consumers see one Store.
+This framing makes two new ideas feel natural rather than bolted on:
+
+1. **SQLAlchemy backends** — resolvers that map keys to SQL. `SQLBlobBackend`
+   resolves key → row lookup → bytes. `SQLQueryBackend` resolves key → query
+   execution → serialized bytes. From the caller's perspective, identical to
+   reading from S3.
+
+2. **Composite store** — a resolver that delegates to other resolvers.
+   `CompositeStore` resolves key → (try hot store, then warm, then cold) → bytes.
+   The caller sees one Store.
 
 ### Why these belong together
 
-The SQLAlchemy backend is useful standalone (query results as portable data products).
-The meta-store is useful standalone (multi-tier blob storage). Combined, they enable
-the full hot/warm/cold lifecycle without consumer code changes.
+The SQLAlchemy backends are useful standalone (database as key-value store, or
+query results as portable data products). The composite store is useful standalone
+(multi-tier blob storage). Combined, they enable the full hot/warm/cold lifecycle
+without consumer code changes.
+
+### The deeper pattern
+
+Every backend is a resolution strategy. The capability system already describes
+*what resolution strategies are available*, not what a filesystem can do.
+SQLAlchemy backends and CompositeStore make this explicit — they extend the
+resolution model into databases and across backend boundaries.
 
 ---
 
@@ -142,10 +156,11 @@ convention mode (`schema/table.ext → SELECT * FROM schema.table`) can expose
 arbitrary tables to anyone with Store access. Use only with trusted callers or
 read-only database users.
 
-**Introspection**:
+**Introspection** (via unified `resolve()` — see §5.1):
 ```python
-backend.resolve_query("reports/daily_sales.parquet")
-# → ResolvedQuery(sql="SELECT ...", source="explicit", format="parquet")
+store.resolve("reports/daily_sales.parquet")
+# → ResolutionPlan(kind="sql_query", source="explicit",
+#      query="SELECT ...", format="parquet")
 ```
 
 ### SQLBlobBackend (read-write key-value store)
@@ -266,62 +281,106 @@ cache_key = hashlib.sha256(
 Note: Python's built-in `hash()` is randomized per process (PYTHONHASHSEED) and
 must not be used for persistent or cross-process cache keys.
 
-The backend provides `resolve_query()` for introspection; ext.cache wraps the Store.
-No built-in TTL, no `refresh()` method — that's the cache extension's job.
+The backend provides `resolve()` for introspection (see §5.1); ext.cache wraps
+the Store. No built-in TTL, no `refresh()` method — that's the cache extension's
+job. Future: cache keys could derive from `hash(plan)` for principled
+invalidation.
 
 ---
 
-## 5. Tiered Meta-Store (ID-120)
+## 5. Resolution Model & Composite Store
 
-A routing layer above backends. A `Store` subclass (not a Backend, not an extension)
-that delegates to child stores based on resolution rules.
+### 5.1 ResolutionPlan — unified introspection
 
-### Positioning
+Every backend already resolves keys to bytes through different strategies.
+`ResolutionPlan` makes this explicit and inspectable:
 
 ```python
-class MetaStore(Store):
-    """Routes keys to different backend stores by tier."""
+@dataclass(frozen=True)
+class ResolutionPlan:
+    kind: str          # "blob", "sql_query", "sql_blob", "composite", ...
+    backend: str       # backend name
+    key: str           # resolved key
+    details: dict      # backend-specific (query, table, tier chain, ...)
 ```
 
-**Construction:** `Store.__init__` requires a `Backend` instance. MetaStore handles
-this by creating an internal `_MultiplexBackend` adapter that delegates to tier
-backends based on resolution rules, then passes it to `super().__init__()`. This
-keeps MetaStore as a true Store subclass (compatible with `ext.cache`, `ext.observe`,
-`Store.child()`) without fragile `__init__` overrides.
-
-**Core, not extension.** MetaStore composes Stores — it's a first-class construct like
-`Store.child()`, not a decorator. Extensions (`ext.cache`, `ext.observe`) wrap a single
-Store; MetaStore multiplexes across several.
-
-**Relationship to ProxyStore:** `ProxyStore(Store)` delegates to a single inner store.
-MetaStore delegates to *multiple* stores, so it does not inherit from ProxyStore — it
-subclasses Store directly and overrides the same methods. Each tier's store can
-independently be wrapped with `ext.cache` or `ext.observe`:
+Every Store gains a `resolve()` method:
 
 ```python
-meta = MetaStore(
+# SQLQueryBackend
+store.resolve("reports/daily_sales.parquet")
+# → ResolutionPlan(kind="sql_query", backend="postgresql",
+#      key="reports/daily_sales.parquet",
+#      details={"source": "explicit", "query": "SELECT ...", "format": "parquet"})
+
+# SQLBlobBackend
+store.resolve("models/v3.pkl")
+# → ResolutionPlan(kind="sql_blob", backend="sqlite",
+#      key="models/v3.pkl",
+#      details={"table": "remote_store_objects"})
+
+# CompositeStore
+store.resolve("sales/2024-Q1.parquet")
+# → ResolutionPlan(kind="composite", backend="composite",
+#      key="sales/2024-Q1.parquet",
+#      details={"resolved_tier": "warm", "tried": ["hot", "warm"]})
+```
+
+This replaces the separate `resolve_query()`, `resolve_tier()`, and `explain()`
+methods with one unified concept. `plan.details` carries backend-specific
+information; `plan.kind` lets callers branch on strategy without `isinstance`.
+
+**Implementation:** `Backend` gains an optional `resolve(key) → ResolutionPlan`
+method with a sensible default (returns plan with `kind=backend.name`). Backends
+override to add meaningful details. `Store.resolve()` delegates to the backend
+and rebases the key. No ABC change required — default is backward-compatible.
+
+### 5.2 CompositeStore (ID-120)
+
+A composition layer above stores. A `Store` subclass (not a Backend, not an
+extension) that delegates to child stores based on resolution rules.
+
+**Construction:** `Store.__init__` requires a `Backend` instance. CompositeStore
+handles this by creating an internal `_MultiplexBackend` adapter that delegates
+to tier backends based on resolution rules, then passes it to
+`super().__init__()`. This keeps CompositeStore as a true Store subclass
+(compatible with `ext.cache`, `ext.observe`, `Store.child()`) without fragile
+`__init__` overrides.
+
+**Core, not extension.** CompositeStore composes Stores — it's a first-class
+construct like `Store.child()`, not a decorator. Extensions (`ext.cache`,
+`ext.observe`) wrap a single Store; CompositeStore multiplexes across several.
+
+**Relationship to ProxyStore:** `ProxyStore(Store)` delegates to a single inner
+store. CompositeStore delegates to *multiple* stores, so it does not inherit
+from ProxyStore — it subclasses Store directly and overrides the same methods.
+Each tier's store can independently be wrapped with `ext.cache` or `ext.observe`:
+
+```python
+composite = CompositeStore(
     tiers=[
         Tier("hot", store=observe(cached_sql_store)),
         Tier("warm", store=observe(s3_store)),
     ],
 )
-# The MetaStore itself can also be wrapped:
-observed_meta = observe(meta)
+# The CompositeStore itself can also be wrapped:
+observed = observe(composite)
 ```
 
 **Write-then-read visibility caveat:** In fallthrough mode, a write goes to the
 primary tier. A subsequent read tries tiers in order — if the primary tier is not
-the first tier checked, or if caching hides the write, the caller may not see their
-own write immediately. The `explain()` method helps diagnose this. v1 keeps it
-simple: writes always go to the first tier, reads try tiers in order, so
-write-then-read is consistent as long as the primary tier is first.
+the first tier checked, or if caching hides the write, the caller may not see
+their own write immediately. `resolve()` helps diagnose this. v1 keeps it simple:
+writes always go to the first tier, reads try tiers in order, so write-then-read
+is consistent as long as the primary tier is first.
 
 ### Architecture
 
 ```python
-from remote_store import Store, MetaStore, Tier
+from remote_store import Store, CompositeStore, Tier
 
-meta = MetaStore(
+# Pattern-match mode:
+composite = CompositeStore(
     tiers=[
         Tier("hot",     store=sql_store,     match="hot/**"),
         Tier("warm",    store=s3_store,      match="warm/**"),
@@ -329,7 +388,7 @@ meta = MetaStore(
     ],
 )
 # Fallthrough mode (v1 default):
-meta = MetaStore(
+composite = CompositeStore(
     tiers=[
         Tier("hot",     store=sql_store),
         Tier("warm",    store=s3_store),
@@ -355,24 +414,14 @@ Deterministic: tier order defines priority. No ambiguity.
 
 - Writes go to **primary tier only** (first tier, or configurable `write_tier`)
 - No cross-tier overwrite — `write()` never touches non-primary tiers
-- Cross-tier migration is explicit: `meta.migrate(key, from_tier, to_tier)`
+- Cross-tier migration is explicit: `composite.migrate(key, from_tier, to_tier)`
 - Optional: `write_through=True` for writing to multiple tiers simultaneously
 
 ### LIST behavior
 
 - Default: **union across all tiers**, deduplicated by key (first tier wins on conflicts)
 - Stable ordering: tier priority, then alphabetical within tier
-- Optional: `meta.list_files(path, tier="hot")` to scope to a single tier
-
-### Introspection
-
-```python
-meta.resolve_tier("sales/2024-Q1.parquet")
-# → TierResolution(tier="warm", store=s3_store, found=True)
-
-meta.explain("sales/2024-Q1.parquet")
-# → "tier=warm, backend=s3, path=sales/2024-Q1.parquet, cache=miss"
-```
+- Optional: `composite.list_files(path, tier="hot")` to scope to a single tier
 
 ### Capability model
 
@@ -381,7 +430,7 @@ meta.explain("sales/2024-Q1.parquet")
 - `LIST`, `GLOB` → union across tiers that support them
 - `METADATA` → union/fallthrough (like READ)
 
-Since write operations target the primary tier only, MetaStore advertises the
+Since write operations target the primary tier only, CompositeStore advertises the
 primary tier's write-side capabilities — not the intersection across all tiers.
 This avoids unnecessarily disabling MOVE/COPY/ATOMIC_WRITE when read-only tiers
 lack them.
@@ -438,7 +487,7 @@ v2 when SQLQueryBackend ships.
 | 1 | One backend or two? | **Two**: `SQLQueryBackend` + `SQLBlobBackend`, shared `_SQLAlchemyBaseBackend` |
 | 2 | Priority | **SQLBlobBackend first** (v1), SQLQueryBackend second (v2) |
 | 3 | Caching | **ext.cache only** — no embedded caching in backend |
-| 4 | MetaStore scope | **Core `Store` subclass** (not ProxyStore subclass) — multiplexes, not delegates |
+| 4 | CompositeStore scope | **Core `Store` subclass** (not ProxyStore subclass) — multiplexes, not delegates |
 | 5 | FileInfo.size | **`size: int \| None`** — deferred to v2 (SQLBlobBackend always knows size) |
 | 6 | SQLite specialization | **Worth it** — blobopen(), WAL, PRAGMA tuning |
 | 7 | Serialization | **ResultSerializer protocol** — clean abstraction boundary |
@@ -468,19 +517,19 @@ v2 when SQLQueryBackend ships.
 
 ### v1 — Foundation
 - [ ] `SQLBlobBackend` with SQLite (full Backend contract, SQLite optimizations)
-- [ ] `MetaStore` (prefix-based + fallthrough, union LIST, primary-tier writes)
+- [ ] `CompositeStore` (prefix-based + fallthrough, union LIST, primary-tier writes)
 
 ### v2 — Query Materializer
 - [ ] `SQLQueryBackend` (basic: explicit mappings + view fallback, `strict=True` default)
 - [ ] `ResultSerializer` protocol + `ArrowSerializer` implementation
-- [ ] `resolve_query()` / `explain()` introspection API
+- [ ] `resolve()` → `ResolutionPlan` introspection API (unified across all backends)
 - [ ] `FileInfo.size: int | None` contract change (audit ripple effects first)
 
 ### v3 — Performance & Advanced
 - [ ] ADBC / ConnectorX fast path for SQLQueryBackend
 - [ ] Partitioned queries (key encodes WHERE clause parameters)
-- [ ] MetaStore `write_through=True` option
-- [ ] MetaStore `migrate()` for cross-tier data movement
+- [ ] CompositeStore `write_through=True` option
+- [ ] CompositeStore `migrate()` for cross-tier data movement
 
 ### Immediate next step
 - [ ] Spike `SQLBlobBackend` with SQLite — validates Backend contract fit with
@@ -493,14 +542,65 @@ v2 when SQLQueryBackend ships.
 | Risk | Mitigation |
 |------|------------|
 | **SQLQueryBackend complexity underestimated** | Ship SQLBlobBackend first; SQLQueryBackend gets its own spec after spike |
-| **MetaStore LIST semantics unclear at scale** | v1 = simple union + dedup; document edge cases; defer optimization |
+| **CompositeStore LIST semantics unclear at scale** | v1 = simple union + dedup; document edge cases; defer optimization |
 | **`FileInfo.size: int \| None` ripple effects** | Deferred to v2; SQLBlobBackend always knows size. Audit callers before v2 ships |
-| **Debuggability** | `resolve_query()`, `resolve_tier()`, `explain()` are required, not nice-to-have |
+| **Debuggability** | `resolve()` → `ResolutionPlan` is required, not nice-to-have — unified across all backends |
 | **Performance expectations** | Document blob size guidelines explicitly; `max_blob_size` guard for SQLBlobBackend |
 
 ---
 
-## 10. References
+## 10. Future Directions
+
+These ideas follow naturally from the resolution model but are **not committed
+work** — they are documented here so future decisions can be evaluated against
+a coherent vision rather than invented ad hoc.
+
+### Resolution algebra
+
+CompositeStore v1 supports fallthrough (try each tier in order). The resolution
+model generalizes to other composition strategies:
+
+- **Parallel reads** — race multiple tiers, return first response (latency optimization)
+- **Shadow reads** — read from primary, also read from secondary and compare (migration validation)
+- **Quorum reads** — require N-of-M tiers to agree (consistency guarantee)
+
+These are all different `ResolutionPlan` compositions. No new abstraction
+needed — just new `CompositeStore` strategy options.
+
+### Compute stores
+
+SQLQueryBackend is a "compute store" — key → computation → bytes. SQL is one
+implementation. The pattern generalizes:
+
+- Python callable store (key → function → bytes)
+- REST endpoint store (key → HTTP request → bytes)
+- Spark/DuckDB store (key → query plan → bytes)
+
+If a second compute-style backend materializes, extract a `ComputeBackend`
+base. Until then, SQLQueryBackend stands alone — premature abstraction is
+worse than duplication.
+
+### Structured keys
+
+Today keys are strings. Partitioned queries (open question #3) suggest
+structured keys: `Key(path="sales/2024-Q1", format="parquet", params={"year": 2024})`.
+The backend would extract params from the key to parameterize queries.
+
+The simpler v1 path: keep keys as strings, let SQLQueryBackend parse them
+against config-defined patterns. Structured keys are a v3+ consideration if
+multiple backends need parameterized resolution.
+
+### README messaging
+
+The "key → byte resolver" framing belongs in the README when SQLAlchemy backends
+ship. It retroactively explains why the capability system works — capabilities
+describe available resolution strategies, not filesystem features. Current
+tagline ("Write file storage code once") remains accurate but undersells the
+system once it resolves queries and composes backends.
+
+---
+
+## 11. References
 
 ### Existing projects
 

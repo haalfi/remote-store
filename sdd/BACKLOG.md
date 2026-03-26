@@ -97,6 +97,16 @@ Items graduate through the SDD pipeline:
 
 ### New Backends
 
+- [ ] **ID-121 — `resolve()` → `ResolutionPlan` introspection API**
+  Unified introspection across all backends. `Store.resolve(key)` returns a
+  `ResolutionPlan` dataclass (`kind`, `backend`, `key`, `details`). Replaces
+  ad-hoc `resolve_query()` / `resolve_tier()` / `explain()` methods.
+  - [Research](research/research-sqlalchemy-backend.md#51-resolutionplan--unified-introspection)
+  - Default implementation on `Backend` returns plan with `kind=backend.name`
+  - SQLAlchemy + CompositeStore override with meaningful details
+  - Enables principled cache keys (`hash(plan)`) and debuggability
+  - Next: spec after ID-119 spike validates the pattern
+
 - [ ] **ID-119 — SQLAlchemy backends (research complete)**
   Two concrete backends sharing `_SQLAlchemyBaseBackend`:
   - `SQLBlobBackend` (v1) — KV blob store, `(key TEXT PK, data BLOB, ...)`,
@@ -107,12 +117,12 @@ Items graduate through the SDD pipeline:
   - Dependencies: `sqlalchemy` (required), `pyarrow` (SQLQueryBackend), `adbc` (v3)
   - Next: spike `SQLBlobBackend` with SQLite, then draft spec
 
-- [ ] **ID-120 — Tiered meta-store (research complete)**
-  `MetaStore(Store)` — core Store subclass (not extension) that routes keys to
-  different backend stores. Deterministic fallthrough resolution for reads, union
+- [ ] **ID-120 — CompositeStore (research complete)**
+  `CompositeStore(Store)` — core Store subclass (not extension) that composes
+  multiple stores into one. Deterministic fallthrough resolution for reads, union
   LIST (deduplicated), writes to primary tier only.
-  - [Research](research/research-sqlalchemy-backend.md#5-tiered-meta-store-id-120)
-  - Includes: `resolve_tier()`, `explain()` introspection API
+  - [Research](research/research-sqlalchemy-backend.md#52-compositestore-id-120)
+  - Includes: unified `resolve()` → `ResolutionPlan` introspection API
   - Depends on: at least two working backends to be useful; pairs well with ID-119
   - Next: design as separate spec — backend-agnostic, useful independently
 
