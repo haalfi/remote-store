@@ -258,7 +258,10 @@ def list_folders(
 
 **Implementation at Store level — no ABC change:**
 
-- `list_files(max_depth=N)`: delegates to
+- `list_files(max_depth=0)`: delegates to
+  `Backend.list_files(path, recursive=False)` — equivalent to the current
+  non-recursive call, no filtering needed.
+- `list_files(max_depth=N)` where N > 0: delegates to
   `Backend.list_files(path, recursive=True)` and filters results client-side
   by counting path components relative to `path`. The Store already does
   client-side filtering for `pattern` — depth filtering follows the same

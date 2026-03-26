@@ -77,7 +77,7 @@ Items graduate through the SDD pipeline:
   (catastrophic for 250k+ files). A non-recursive mode using cheap `ls()`
   for direct-children stats only would avoid this.
   - Implementation: Store-level helper using `list_files()` / `list_folders()`,
-    consistent with ID-107/108 extension-helper pattern — no ABC change
+    consistent with ID-107/108 Store-param pattern — no ABC change
 
 - [ ] **ID-113 — Documentation: S3 listing strategies and performance**
   One flat `ListObjectsV2` stream beats O(n_folders) delimiter-based `ls()`
