@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-depth-limited-listing/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-sqlalchemy-backend/">
       
       
-        <link rel="prev" href="../research-dagster-extension/">
+        <link rel="prev" href="../research-seekable-read/">
       
       
-        <link rel="next" href="../research-docs-landing-page/">
+        <link rel="next" href="../research-store-api-refinement/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Depth-Limited Listing - remote-store</title>
+        <title>SQLAlchemy Backends & Composite Store - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#research-depth-limited-listing" class="md-skip">
+        <a href="#research-sqlalchemy-backends-composite-store" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Depth-Limited Listing
+              SQLAlchemy Backends & Composite Store
             
           </span>
         </div>
@@ -5695,37 +5695,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Depth-Limited Listing
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -5741,364 +5714,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-problem-statement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Problem Statement
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-current-backend-listing-mechanisms" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Current Backend Listing Mechanisms
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Current Backend Listing Mechanisms">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#21-s3-s3fs-and-s3-pyarrow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.1 S3 (s3fs) and S3 PyArrow
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#22-azure-blob-storage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.2 Azure Blob Storage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#23-local-filesystem" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.3 Local Filesystem
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#24-sftp" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.4 SFTP
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#25-memory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.5 Memory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#26-http" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.6 HTTP
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-performance-summary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Performance Summary
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-design-proposal-two-phase-depth-limited-listing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Design Proposal: Two-Phase Depth-Limited Listing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. Design Proposal: Two-Phase Depth-Limited Listing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#41-depth-semantics-unified-across-list_files-and-list_folders" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.1 Depth semantics (unified across list_files and list_folders)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#42-interaction-with-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.2 Interaction with recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#43-interaction-with-pattern" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.3 Interaction with pattern
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#44-interaction-with-iter_children" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.4 Interaction with iter_children
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#45-phase-1-store-level-parameters-with-client-side-filtering" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.5 Phase 1: Store-level parameters with client-side filtering
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#46-phase-2-backend-native-optimization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.6 Phase 2: Backend-native optimization
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-why-not-an-extension-module" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Why Not an Extension Module?
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="5. Why Not an Extension Module?">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#comparison-with-glob-pattern" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Comparison with glob pattern
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-alternatives-considered" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Alternatives Considered
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. Alternatives Considered">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#a-extension-only-never-add-to-storebackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        A. Extension only — never add to Store/Backend
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#b-new-capabilitydepth_list-flag" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        B. New Capability.DEPTH_LIST flag
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#c-add-max_depth-to-backend-abc-as-required-parameter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        C. Add max_depth to Backend ABC as required parameter
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#d-separate-list_files_depth-method-on-backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        D. Separate list_files_depth() method on Backend
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#e-extension-first-then-promote-to-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        E. Extension-first, then promote to Store
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-backlog-items" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Backlog Items
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="7. Backlog Items">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#phase-1-store-parameters-with-client-side-filtering" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 1 — Store parameters with client-side filtering
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-2-backend-native-optimization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 2 — Backend-native optimization
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#8-recommendation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. Recommendation
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -6388,10 +6003,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQLAlchemy Backends & Composite Store
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -6407,6 +6049,614 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Problem Statement
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Problem Statement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-unifying-concept-key-byte-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The unifying concept: key → byte resolution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-these-belong-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why these belong together
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-deeper-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The deeper pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-prior-art-comparable-abstractions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Prior Art &amp; Comparable Abstractions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Prior Art &amp; Comparable Abstractions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-query-results-as-data-products" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Query Results as Data Products
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-database-as-blob-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Database as Blob Store
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-tiered-federated-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Tiered / Federated Storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-filesystem-abstractions-that-considered-sql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Filesystem Abstractions That Considered SQL
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-architecture-two-backends-shared-base" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Architecture: Two Backends, Shared Base
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Architecture: Two Backends, Shared Base">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sqlquerybackend-read-only-query-materializer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQLQueryBackend (read-only query materializer)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sqlblobbackend-read-write-key-value-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQLBlobBackend (read-write key-value store)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-serialization-pipeline-sqlquerybackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Serialization Pipeline (SQLQueryBackend)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Serialization Pipeline (SQLQueryBackend)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resultserializer-abstraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ResultSerializer abstraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sql-bytes-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQL → Bytes pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-mapping-concerns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type mapping concerns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-resolution-model-composite-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Resolution Model &amp; Composite Store
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Resolution Model &amp; Composite Store">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-resolutionplan-unified-introspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 ResolutionPlan — unified introspection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-compositestore-id-120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 CompositeStore (ID-120)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read-resolution-deterministic-fallthrough" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read resolution (deterministic fallthrough)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LIST behavior
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-capability-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Capability Profile
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Capability Profile">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sqlquerybackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQLQueryBackend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sqlblobbackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQLBlobBackend
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-decisions-made-remaining-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Decisions Made &amp; Remaining Open Questions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Decisions Made &amp; Remaining Open Questions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#decided" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decided
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remaining-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remaining open questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-prioritization-next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Prioritization &amp; Next Steps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Prioritization &amp; Next Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#v1-foundation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1 — Foundation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v2-query-materializer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v2 — Query Materializer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v3-performance-advanced" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v3 — Performance &amp; Advanced
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#immediate-next-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Immediate next step
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-key-risks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Key Risks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-future-directions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Future Directions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Future Directions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resolution-algebra" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolution algebra
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compute-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compute stores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structured-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#readme-messaging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        README messaging
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. References
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. References">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#existing-projects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Existing projects
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-blob-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database blob storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serialization-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serialization &amp; performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tiered-storage-precedent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tiered storage precedent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -6663,25 +6913,14 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-current-backend-listing-mechanisms" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Current Backend Listing Mechanisms
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Current Backend Listing Mechanisms">
+    <nav class="md-nav" aria-label="1. Problem Statement">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#21-s3-s3fs-and-s3-pyarrow" class="md-nav__link">
+  <a href="#the-unifying-concept-key-byte-resolution" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.1 S3 (s3fs) and S3 PyArrow
+        The unifying concept: key → byte resolution
       
     </span>
   </a>
@@ -6689,10 +6928,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-azure-blob-storage" class="md-nav__link">
+  <a href="#why-these-belong-together" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 Azure Blob Storage
+        Why these belong together
       
     </span>
   </a>
@@ -6700,43 +6939,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#23-local-filesystem" class="md-nav__link">
+  <a href="#the-deeper-pattern" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.3 Local Filesystem
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#24-sftp" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.4 SFTP
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#25-memory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.5 Memory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#26-http" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.6 HTTP
+        The deeper pattern
       
     </span>
   </a>
@@ -6749,33 +6955,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-performance-summary" class="md-nav__link">
+  <a href="#2-prior-art-comparable-abstractions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Performance Summary
+        2. Prior Art &amp; Comparable Abstractions
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-design-proposal-two-phase-depth-limited-listing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Design Proposal: Two-Phase Depth-Limited Listing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. Design Proposal: Two-Phase Depth-Limited Listing">
+    <nav class="md-nav" aria-label="2. Prior Art &amp; Comparable Abstractions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#41-depth-semantics-unified-across-list_files-and-list_folders" class="md-nav__link">
+  <a href="#21-query-results-as-data-products" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.1 Depth semantics (unified across list_files and list_folders)
+        2.1 Query Results as Data Products
       
     </span>
   </a>
@@ -6783,10 +6978,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#42-interaction-with-recursive" class="md-nav__link">
+  <a href="#22-database-as-blob-store" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.2 Interaction with recursive
+        2.2 Database as Blob Store
       
     </span>
   </a>
@@ -6794,10 +6989,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#43-interaction-with-pattern" class="md-nav__link">
+  <a href="#23-tiered-federated-storage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.3 Interaction with pattern
+        2.3 Tiered / Federated Storage
       
     </span>
   </a>
@@ -6805,32 +7000,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#44-interaction-with-iter_children" class="md-nav__link">
+  <a href="#24-filesystem-abstractions-that-considered-sql" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.4 Interaction with iter_children
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#45-phase-1-store-level-parameters-with-client-side-filtering" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.5 Phase 1: Store-level parameters with client-side filtering
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#46-phase-2-backend-native-optimization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.6 Phase 2: Backend-native optimization
+        2.4 Filesystem Abstractions That Considered SQL
       
     </span>
   </a>
@@ -6843,22 +7016,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-why-not-an-extension-module" class="md-nav__link">
+  <a href="#3-architecture-two-backends-shared-base" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Why Not an Extension Module?
+        3. Architecture: Two Backends, Shared Base
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="5. Why Not an Extension Module?">
+    <nav class="md-nav" aria-label="3. Architecture: Two Backends, Shared Base">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#comparison-with-glob-pattern" class="md-nav__link">
+  <a href="#sqlquerybackend-read-only-query-materializer" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Comparison with glob pattern
+        SQLQueryBackend (read-only query materializer)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sqlblobbackend-read-write-key-value-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQLBlobBackend (read-write key-value store)
       
     </span>
   </a>
@@ -6871,22 +7055,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#6-alternatives-considered" class="md-nav__link">
+  <a href="#4-serialization-pipeline-sqlquerybackend" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. Alternatives Considered
+        4. Serialization Pipeline (SQLQueryBackend)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="6. Alternatives Considered">
+    <nav class="md-nav" aria-label="4. Serialization Pipeline (SQLQueryBackend)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#a-extension-only-never-add-to-storebackend" class="md-nav__link">
+  <a href="#resultserializer-abstraction" class="md-nav__link">
     <span class="md-ellipsis">
       
-        A. Extension only — never add to Store/Backend
+        ResultSerializer abstraction
       
     </span>
   </a>
@@ -6894,10 +7078,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#b-new-capabilitydepth_list-flag" class="md-nav__link">
+  <a href="#sql-bytes-pipeline" class="md-nav__link">
     <span class="md-ellipsis">
       
-        B. New Capability.DEPTH_LIST flag
+        SQL → Bytes pipeline
       
     </span>
   </a>
@@ -6905,10 +7089,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#c-add-max_depth-to-backend-abc-as-required-parameter" class="md-nav__link">
+  <a href="#type-mapping-concerns" class="md-nav__link">
     <span class="md-ellipsis">
       
-        C. Add max_depth to Backend ABC as required parameter
+        Type mapping concerns
       
     </span>
   </a>
@@ -6916,10 +7100,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#d-separate-list_files_depth-method-on-backend" class="md-nav__link">
+  <a href="#dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D. Separate list_files_depth() method on Backend
+        Dependencies
       
     </span>
   </a>
@@ -6927,10 +7111,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#e-extension-first-then-promote-to-store" class="md-nav__link">
+  <a href="#caching" class="md-nav__link">
     <span class="md-ellipsis">
       
-        E. Extension-first, then promote to Store
+        Caching
       
     </span>
   </a>
@@ -6943,22 +7127,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7-backlog-items" class="md-nav__link">
+  <a href="#5-resolution-model-composite-store" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. Backlog Items
+        5. Resolution Model &amp; Composite Store
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="7. Backlog Items">
+    <nav class="md-nav" aria-label="5. Resolution Model &amp; Composite Store">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#phase-1-store-parameters-with-client-side-filtering" class="md-nav__link">
+  <a href="#51-resolutionplan-unified-introspection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 1 — Store parameters with client-side filtering
+        5.1 ResolutionPlan — unified introspection
       
     </span>
   </a>
@@ -6966,10 +7150,65 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#phase-2-backend-native-optimization" class="md-nav__link">
+  <a href="#52-compositestore-id-120" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 2 — Backend-native optimization
+        5.2 CompositeStore (ID-120)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read-resolution-deterministic-fallthrough" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read resolution (deterministic fallthrough)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LIST behavior
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability model
       
     </span>
   </a>
@@ -6982,13 +7221,274 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-recommendation" class="md-nav__link">
+  <a href="#6-capability-profile" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8. Recommendation
+        6. Capability Profile
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="6. Capability Profile">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sqlquerybackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQLQueryBackend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sqlblobbackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQLBlobBackend
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-decisions-made-remaining-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Decisions Made &amp; Remaining Open Questions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Decisions Made &amp; Remaining Open Questions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#decided" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decided
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remaining-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remaining open questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-prioritization-next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Prioritization &amp; Next Steps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Prioritization &amp; Next Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#v1-foundation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1 — Foundation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v2-query-materializer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v2 — Query Materializer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v3-performance-advanced" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v3 — Performance &amp; Advanced
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#immediate-next-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Immediate next step
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-key-risks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Key Risks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-future-directions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Future Directions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Future Directions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resolution-algebra" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolution algebra
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compute-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compute stores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structured-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#readme-messaging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        README messaging
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. References
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. References">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#existing-projects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Existing projects
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-blob-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database blob storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serialization-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serialization &amp; performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tiered-storage-precedent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tiered storage precedent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -7009,670 +7509,824 @@
 
 
 
-<h1 id="research-depth-limited-listing">Research: Depth-Limited Listing<a class="headerlink" href="#research-depth-limited-listing" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> 2026-03-26
-<strong>Status:</strong> Proposed
-<strong>Scope:</strong> <code>list_files(max_depth=N)</code> and <code>list_folders(max_depth=N)</code> —
-performance analysis, native backend feasibility, and a phased design proposal.
-<strong>Related:</strong> ID-107, ID-108, ID-112, ID-113,
-<a href="../../adrs/0009-glob-three-tier-design/">ADR-0009</a>,
-<a href="../../specs/018-glob/">018-glob.md</a>.</p>
+<h1 id="research-sqlalchemy-backends-composite-store">Research: SQLAlchemy Backends &amp; Composite Store<a class="headerlink" href="#research-sqlalchemy-backends-composite-store" title="Permanent link">&para;</a></h1>
+<p><strong>Item ID:</strong> ID-119 (SQLAlchemy backends), ID-120 (composite store)
+<strong>Date:</strong> 2026-03-26
+<strong>Status:</strong> Research complete</p>
 <hr />
 <h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
-<p><code>Store.list_files()</code> offers a binary choice: <code>recursive=False</code> (depth 0 only)
-or <code>recursive=True</code> (all depths). <code>Store.list_folders()</code> always returns
-immediate children (depth 0). There is no way to request "files/folders up to
-N levels deep."</p>
-<p>Real use cases where depth control matters:</p>
+<h3 id="the-unifying-concept-key-byte-resolution">The unifying concept: key → byte resolution<a class="headerlink" href="#the-unifying-concept-key-byte-resolution" title="Permanent link">&para;</a></h3>
+<p>A Store is a <strong>deterministic key → byte resolver</strong>. Not storage. Not filesystem.
+Not database. A resolver. Every existing backend already works this way:</p>
 <ul>
-<li><strong>Dataset discovery:</strong> A data lake has <code>dataset/version/partition/</code> structure.
-  Listing top-level dataset directories (<code>max_depth=1</code>) without scanning
-  millions of leaf files.</li>
-<li><strong>Shallow inventory:</strong> Show the first two levels of a project folder for a
-  UI tree view without fetching the full recursive listing.</li>
-<li><strong>Controlled recursion:</strong> Enumerate files at depth 0--2 to populate a preview
-  table, without waiting for a full S3 <code>find()</code> over 250k+ objects.</li>
+<li><code>LocalBackend</code>: key → filesystem path → bytes</li>
+<li><code>S3Backend</code>: key → S3 object → bytes</li>
+<li><code>ReadOnlyHttpBackend</code>: key → URL → bytes</li>
 </ul>
-<p>The workaround today is <code>list_files(recursive=True)</code> and post-filtering by
-path component count. This is <strong>correct but wasteful</strong> — every backend fetches
-the full tree, then the caller discards most of it.</p>
+<p>This framing makes two new ideas feel natural rather than bolted on:</p>
+<ol>
+<li>
+<p><strong>SQLAlchemy backends</strong> — resolvers that map keys to SQL. <code>SQLBlobBackend</code>
+   resolves key → row lookup → bytes. <code>SQLQueryBackend</code> resolves key → query
+   execution → serialized bytes. From the caller's perspective, identical to
+   reading from S3.</p>
+</li>
+<li>
+<p><strong>Composite store</strong> — a resolver that delegates to other resolvers.
+   <code>CompositeStore</code> resolves key → (try hot store, then warm, then cold) → bytes.
+   The caller sees one Store.</p>
+</li>
+</ol>
+<h3 id="why-these-belong-together">Why these belong together<a class="headerlink" href="#why-these-belong-together" title="Permanent link">&para;</a></h3>
+<p>The SQLAlchemy backends are useful standalone (database as key-value store, or
+query results as portable data products). The composite store is useful standalone
+(multi-tier blob storage). Combined, they enable the full hot/warm/cold lifecycle
+without consumer code changes.</p>
+<h3 id="the-deeper-pattern">The deeper pattern<a class="headerlink" href="#the-deeper-pattern" title="Permanent link">&para;</a></h3>
+<p>Every backend is a resolution strategy. The capability system already describes
+<em>what resolution strategies are available</em>, not what a filesystem can do.
+SQLAlchemy backends and CompositeStore make this explicit — they extend the
+resolution model into databases and across backend boundaries.</p>
 <hr />
-<h2 id="2-current-backend-listing-mechanisms">2. Current Backend Listing Mechanisms<a class="headerlink" href="#2-current-backend-listing-mechanisms" title="Permanent link">&para;</a></h2>
-<p>Understanding what each backend does under the hood is critical for evaluating
-whether native depth-limiting would actually reduce I/O.</p>
-<h3 id="21-s3-s3fs-and-s3-pyarrow">2.1 S3 (s3fs) and S3 PyArrow<a class="headerlink" href="#21-s3-s3fs-and-s3-pyarrow" title="Permanent link">&para;</a></h3>
+<h2 id="2-prior-art-comparable-abstractions">2. Prior Art &amp; Comparable Abstractions<a class="headerlink" href="#2-prior-art-comparable-abstractions" title="Permanent link">&para;</a></h2>
+<h3 id="21-query-results-as-data-products">2.1 Query Results as Data Products<a class="headerlink" href="#21-query-results-as-data-products" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Mode</th>
-<th>Mechanism</th>
-<th>I/O cost</th>
+<th>Project</th>
+<th>Approach</th>
+<th>Key insight for us</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>recursive=False</code></td>
-<td><code>s3fs.ls()</code> — single <code>ListObjectsV2</code> with <code>Delimiter=/</code></td>
-<td>1 paginated API stream</td>
+<td><strong>Dagster IO Managers</strong></td>
+<td><code>DbIOManager</code> maps asset keys to tables by convention (<code>path[-1]</code> = table, <code>path[-2]</code> = schema). Parquet variants exist (DuckDB).</td>
+<td>Closest architectural match. Convention-based key→table, serialization on read.</td>
 </tr>
 <tr>
-<td><code>recursive=True</code></td>
-<td><code>s3fs.find()</code> — single <code>ListObjectsV2</code> <strong>without</strong> delimiter</td>
-<td>1 paginated API stream (all keys)</td>
+<td><strong>Intake (intake-sql)</strong></td>
+<td>YAML catalog maps logical names to SQL connections/queries. Returns DataFrames via <code>pd.read_sql</code>.</td>
+<td>Config-based key→query pattern. Catalog YAML is a proven UX.</td>
+</tr>
+<tr>
+<td><strong>dbt</strong></td>
+<td><code>.sql</code> files as named models. Materialization strategies: view, table, incremental. Filename = table name.</td>
+<td>Convention-based naming. Proves "SQL as named data product" at scale.</td>
+</tr>
+<tr>
+<td><strong>Feast</strong></td>
+<td><code>FeatureView</code> → <code>DataSource</code> mapping. SQL Registry backed by SQLAlchemy.</td>
+<td>Logical name → physical source indirection via registry.</td>
+</tr>
+<tr>
+<td><strong>DuckLake</strong> (2025)</td>
+<td>SQL database as metadata catalog, Parquet files in object storage. All metadata ops are pure SQL transactions.</td>
+<td>Proves "SQL catalog + Parquet files" pattern works at scale.</td>
+</tr>
+<tr>
+<td><strong>dlt</strong></td>
+<td>SQLAlchemy source → filesystem destination (Parquet/CSV/JSON on S3/GCS/Azure).</td>
+<td>Full pipeline from SQL to serialized files.</td>
+</tr>
+<tr>
+<td><strong>aiosql / PugSQL</strong></td>
+<td>Named SQL queries in <code>.sql</code> files, loaded as callable Python methods.</td>
+<td>Clean key→query registry pattern. Comment-based naming (<code>-- name: get_users</code>).</td>
 </tr>
 </tbody>
 </table>
-<p>S3 has no server-side depth parameter. <code>ListObjectsV2</code> supports only two modes:
-flat (all keys under prefix) or delimiter-based (one level of CommonPrefixes).</p>
-<p><strong>Depth-limited alternatives for S3:</strong></p>
+<h3 id="22-database-as-blob-store">2.2 Database as Blob Store<a class="headerlink" href="#22-database-as-blob-store" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Approach</th>
+<th>Key insight for us</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SQLite SQLAR format</strong></td>
+<td>Single table: <code>(name TEXT PK, mode INT, mtime INT, sz INT, data BLOB)</code>. Each row = one file, Deflate-compressed. Only ~2% larger than ZIP.</td>
+<td>Proves file-in-DB works. Minimal schema.</td>
+</tr>
+<tr>
+<td><strong>Fossil SCM</strong></td>
+<td>ALL content (source, wiki, tickets) in SQLite <code>blob</code> table. Delta-compressed.</td>
+<td>Entire VCS backed by SQLite blob storage — extreme validation of the pattern.</td>
+</tr>
+<tr>
+<td><strong>PostgreSQL BYTEA</strong></td>
+<td>Up to 1 GB per value. TOAST transparently chunks into ~2 KB. <code>EXTERNAL</code> storage avoids double-compression.</td>
+<td>Works but ~10x slower than filesystem for retrieval. Hybrid recommended for &gt;100 MB.</td>
+</tr>
+<tr>
+<td><strong>SQLite Blob API</strong> (Python 3.11+)</td>
+<td><code>connection.blobopen()</code> returns file-like <code>Blob</code> with <code>read()</code>, <code>write()</code>, <code>seek()</code>.</td>
+<td>Native file-like interface to DB blobs — maps directly to <code>Backend.read() → BinaryIO</code>.</td>
+</tr>
+<tr>
+<td><strong>django-db-file-storage</strong></td>
+<td>Drop-in Django <code>FileSystemStorage</code> replacement using DB.</td>
+<td>Proves the pattern is wanted in web frameworks. All docs warn about performance.</td>
+</tr>
+<tr>
+<td><strong>Zarr SQLiteStore</strong></td>
+<td><code>CREATE TABLE zarr_table (key TEXT PK, value BLOB)</code>. Zarr v3 proposal adds async.</td>
+<td>Key-value blob store in SQLite. ~2x faster than LocalStore at 10 KB, ~0.6x at 1 MB.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-tiered-federated-storage">2.3 Tiered / Federated Storage<a class="headerlink" href="#23-tiered-federated-storage" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Approach</th>
+<th>Key insight for us</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Trino spooling protocol</strong></td>
+<td>Query results written to object storage (S3/ABFS/GCS) for parallel retrieval. ~4x speedup.</td>
+<td>DB→object-store materialization at query engine level.</td>
+</tr>
+<tr>
+<td><strong>Redash QRDS</strong></td>
+<td>Caches latest query result in PostgreSQL. Query cached results via SQLite syntax. Pluggable storage proposed.</td>
+<td>Query result caching with storage abstraction.</td>
+</tr>
+<tr>
+<td><strong>Superset</strong></td>
+<td><code>RESULTS_BACKEND</code> configurable: Redis, S3, Memcached, filesystem.</td>
+<td>Pluggable result storage backends — same pattern we'd build.</td>
+</tr>
+<tr>
+<td><strong>Data mesh output ports</strong></td>
+<td>Data products expose multiple ports: tables, files, APIs. Consumer picks format.</td>
+<td>Multi-format output is the standard pattern, not an edge case.</td>
+</tr>
+<tr>
+<td><strong>Litestream / LiteFS</strong></td>
+<td>SQLite replication to S3 / FUSE-based cluster replication.</td>
+<td>SQLite as primary store with object-store backup — tiered storage at DB level.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="24-filesystem-abstractions-that-considered-sql">2.4 Filesystem Abstractions That Considered SQL<a class="headerlink" href="#24-filesystem-abstractions-that-considered-sql" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Level-by-level delimiter listing:</strong> Call <code>ListObjectsV2</code> with <code>Delimiter=/</code>
-  at each discovered prefix, up to <code>max_depth</code> levels. Cost: O(folders within
-  depth) API calls, but each returns only one level.</li>
-<li><strong>Single flat scan + client filter:</strong> One <code>find()</code> call, filter by path depth
-  client-side. Cost: 1 API stream, but transfers all object metadata.</li>
+<li><strong>fsspec</strong>: No SQL backend exists. The <code>FSMap</code> / <code>get_mapper()</code> provides key-value
+  interface over any filesystem, but nobody has built a SQL filesystem.</li>
+<li><strong>pyfilesystem2</strong>: Community requested SQL backends (issues #498, #534). Maintainer
+  said "certainly doable" but warned of "a lot of corner-cases." Never implemented.
+  The full filesystem API (mkdir, rename, permissions) is hard to map onto SQL.</li>
 </ul>
-<p>Which is faster depends on the shape of the data:</p>
-<table>
-<thead>
-<tr>
-<th>Scenario</th>
-<th>Flat scan + filter</th>
-<th>Level-by-level</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>10k files, depth 1 of 5 levels</td>
-<td>Fetches 10k, keeps ~2k</td>
-<td>1 + ~20 API calls</td>
-</tr>
-<tr>
-<td>250k files, depth 1 of 3 levels</td>
-<td>Fetches 250k, keeps ~1k</td>
-<td>1 + ~50 API calls</td>
-</tr>
-<tr>
-<td>100 files, depth 10</td>
-<td>Fetches 100, keeps all</td>
-<td>10+ chained API calls</td>
-</tr>
-<tr>
-<td>Wide + shallow (1k dirs, 10 files each)</td>
-<td>Fetches 10k</td>
-<td>1 + 1k API calls</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Takeaway:</strong> For S3, level-by-level is better when depth is shallow and the
-tree is deep/large. Flat scan is better when depth is large or the tree is
-small. A native implementation should choose the strategy based on heuristics
-or let the caller hint.</p>
-<h3 id="22-azure-blob-storage">2.2 Azure Blob Storage<a class="headerlink" href="#22-azure-blob-storage" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Mode</th>
-<th>HNS (Data Lake)</th>
-<th>Non-HNS (Blob prefix)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>recursive=False</code></td>
-<td><code>get_paths(recursive=False)</code></td>
-<td><code>walk_blobs()</code> with prefix</td>
-</tr>
-<tr>
-<td><code>recursive=True</code></td>
-<td><code>get_paths(recursive=True)</code></td>
-<td><code>list_blobs()</code> flat scan</td>
-</tr>
-</tbody>
-</table>
-<p>Same story as S3 for non-HNS: no server-side depth parameter, only flat vs.
-delimiter-based. HNS has <code>get_paths(recursive=bool)</code> — binary, no depth.</p>
-<p><strong>Depth-limited alternative:</strong> Same level-by-level approach using <code>walk_blobs()</code>
-at each level. Same tradeoffs as S3.</p>
-<h3 id="23-local-filesystem">2.3 Local Filesystem<a class="headerlink" href="#23-local-filesystem" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Mode</th>
-<th>Mechanism</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>recursive=False</code></td>
-<td><code>Path.iterdir()</code> — single <code>readdir()</code> syscall</td>
-</tr>
-<tr>
-<td><code>recursive=True</code></td>
-<td><code>Path.rglob("*")</code> — full recursive <code>os.scandir()</code> walk</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Depth-limited alternative:</strong> <code>os.walk()</code> with depth computed from the
-directory path. <code>os.walk()</code> traverses top-down in DFS order, so computing
-depth relative to the root lets us prune subtrees by clearing <code>dirnames</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Sketch: depth-limited walk</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>          <span class="c1"># strip trailing separator</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">root_depth</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">)</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">for</span> <span class="n">dirpath</span><span class="p">,</span> <span class="n">dirnames</span><span class="p">,</span> <span class="n">filenames</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">depth</span> <span class="o">=</span> <span class="n">dirpath</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">)</span> <span class="o">-</span> <span class="n">root_depth</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="k">if</span> <span class="n">depth</span> <span class="o">&lt;</span> <span class="n">max_depth</span><span class="p">:</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="c1"># yield files in dirpath...</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="k">pass</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">elif</span> <span class="n">depth</span> <span class="o">==</span> <span class="n">max_depth</span><span class="p">:</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="c1"># yield files in dirpath, but stop descending</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">dirnames</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="c1"># should not reach here if dirnames.clear() worked,</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="c1"># but guard defensively</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="n">dirnames</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        <span class="k">continue</span>
+<p><strong>Takeaway</strong>: Nobody has built this exact thing. The filesystem abstractions considered
+it and backed off due to API surface mismatch. But remote-store's capability system
+(declare what you support, gate the rest) solves exactly that problem.</p>
+<hr />
+<h2 id="3-architecture-two-backends-shared-base">3. Architecture: Two Backends, Shared Base<a class="headerlink" href="#3-architecture-two-backends-shared-base" title="Permanent link">&para;</a></h2>
+<p>The research reveals two distinct and valid use cases. After review, the decision is
+<strong>two concrete backends</strong> sharing a common base — not one backend with a mode flag.</p>
+<p><strong>Rationale</strong>: the modes have fundamentally different invariants (read-only vs
+read-write KV store), different capability sets, and will evolve independently.
+A <code>mode</code> parameter would spread <code>if mode == ...</code> branching throughout. Separate
+classes give cleaner capability contracts and independent evolution.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>_SQLAlchemyBaseBackend (ABC)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── SQLQueryBackend   (Mode A — read-only query materializer)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>└── SQLBlobBackend    (Mode B — read-write key-value blob store)
 </code></pre></div>
-<p><strong>Important:</strong> <code>root</code> must be normalized before computing <code>root_depth</code>.
-Without <code>os.path.normpath()</code>, a trailing separator (e.g., <code>"/data/"</code>) gives
-<code>root_depth == 2</code> while subdirectory paths like <code>"/data/raw"</code> also give
-<code>count(os.sep) == 2</code>, making the subdir appear at depth 0 instead of depth 1.</p>
-<p>Note: <code>enumerate(os.walk(...))</code> would also be incorrect — <code>os.walk</code> yields
-directories in DFS order, not level-by-level, so the iteration index does not
-correspond to filesystem depth in branched trees. Computing depth from the
-normalized path component count is the reliable approach.</p>
-<p><strong>Takeaway:</strong> Native depth limiting is trivially efficient for Local. The
-<code>rglob()</code> approach scans everything; <code>os.walk()</code> with path-based depth
-tracking stops early. Direct I/O savings.</p>
-<h3 id="24-sftp">2.4 SFTP<a class="headerlink" href="#24-sftp" title="Permanent link">&para;</a></h3>
+<p><strong>Shared base</strong> (<code>_SQLAlchemyBaseBackend</code>) provides:
+- Engine/connection management, pooling
+- Health check (<code>check_health()</code> → <code>SELECT 1</code>)
+- Error mapping (SQLAlchemy exceptions → remote-store errors)
+- <code>unwrap()</code> → returns SQLAlchemy <code>Engine</code>
+- <code>close()</code> → dispose engine</p>
+<p><strong>Engine lifecycle:</strong>
+- Accepts either a URL string (creates and owns the engine) or a pre-existing
+  <code>sqlalchemy.Engine</code> (borrows — <code>close()</code> is a no-op). This lets web apps share
+  their connection pool.
+- <code>Store.child()</code> shares the parent's backend and therefore the same engine/pool.
+- Context manager (<code>with Store(...) as s:</code>) calls <code>close()</code> on exit, which disposes
+  owned engines. Borrowed engines are left to their owner.</p>
+<h3 id="sqlquerybackend-read-only-query-materializer">SQLQueryBackend (read-only query materializer)<a class="headerlink" href="#sqlquerybackend-read-only-query-materializer" title="Permanent link">&para;</a></h3>
+<p>Maps path keys to SQL queries. On <code>read()</code>, executes the query and serializes the
+result set to the format implied by the key extension.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SQLQueryBackend</span><span class="p">(</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;postgresql://...&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">queries</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="s2">&quot;reports/daily_sales.parquet&quot;</span><span class="p">:</span> <span class="s2">&quot;SELECT date, SUM(amount) FROM orders GROUP BY date&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="s2">&quot;reports/user_summary.csv&quot;</span><span class="p">:</span> <span class="s2">&quot;SELECT * FROM user_summary_mv&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="p">},</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># only explicit mappings — no view or convention fallback</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;reports/daily_sales.parquet&quot;</span><span class="p">)</span>  <span class="c1"># → parquet bytes</span>
+</code></pre></div>
+<p><strong>Capabilities</strong>: <code>READ</code>, <code>LIST</code>, <code>METADATA</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code>. Everything
+else raises <code>CapabilityNotSupported</code>.</p>
+<p><strong>Key-to-query resolution</strong> (strict precedence):
+1. Explicit mapping (config dict) — highest priority
+2. View-based — key maps to a database view by name
+3. Convention — <code>"schema/table.ext"</code> → <code>SELECT * FROM schema.table</code></p>
+<p><strong><code>strict</code> defaults to <code>True</code></strong> (security-by-default). Only explicit mappings are
+used. Set <code>strict=False</code> to enable view and convention fallback — but note that
+convention mode (<code>schema/table.ext → SELECT * FROM schema.table</code>) can expose
+arbitrary tables to anyone with Store access. Use only with trusted callers or
+read-only database users.</p>
+<p><strong>Introspection</strong> (via unified <code>resolve()</code> — see §5.1):
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">&quot;reports/daily_sales.parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># → ResolutionPlan(kind=&quot;sql_query&quot;, source=&quot;explicit&quot;,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1">#      query=&quot;SELECT ...&quot;, format=&quot;parquet&quot;)</span>
+</code></pre></div></p>
+<h3 id="sqlblobbackend-read-write-key-value-store">SQLBlobBackend (read-write key-value store)<a class="headerlink" href="#sqlblobbackend-read-write-key-value-store" title="Permanent link">&para;</a></h3>
+<p>Uses a table as key-value storage. Each row holds one "file."</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SQLBlobBackend</span><span class="p">(</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;sqlite:///store.db&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="c1"># Uses default schema: (key TEXT PK, data BLOB, size INT, modified_at TIMESTAMP, content_type TEXT)</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">max_blob_size</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>  <span class="c1"># 10 MB — optional safety limit</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">)</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;models/v3.pkl&quot;</span><span class="p">,</span> <span class="n">model_bytes</span><span class="p">)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;models/v3.pkl&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Capabilities</strong>: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>METADATA</code>, <code>ATOMIC_WRITE</code>,
+<code>MOVE</code>, <code>COPY</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code>.</p>
+<p><strong>Schema</strong> (inspired by SQLAR + Zarr SQLiteStore):
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">remote_store_objects</span><span class="w"> </span><span class="p">(</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="k">key</span><span class="w">         </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="k">length</span><span class="p">(</span><span class="k">key</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="k">data</span><span class="w">        </span><span class="nb">BLOB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="k">size</span><span class="w">        </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="n">modified_at</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">CURRENT_TIMESTAMP</span><span class="p">,</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="n">content_type</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="n">digest</span><span class="w">      </span><span class="nb">TEXT</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="n">extra</span><span class="w">       </span><span class="nb">TEXT</span><span class="w">  </span><span class="c1">-- JSON blob for backend-specific metadata</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">);</span>
+</code></pre></div></p>
+<p>The <code>PRIMARY KEY</code> on <code>key</code> already creates a B-tree index that supports prefix
+range scans (<code>WHERE key LIKE 'prefix/%'</code>). No separate index needed.</p>
+<p><strong>Schema flexibility:</strong>
+- Default: auto-creates <code>remote_store_objects</code> table with the schema above.
+- <code>table_name="my_table"</code> to use a different table name (still auto-created with
+  the default schema).
+- <code>create_table=False</code> for existing tables — requires at minimum <code>(key TEXT PK,
+  data BLOB)</code>. Optional columns (<code>size</code>, <code>modified_at</code>, <code>content_type</code>, <code>digest</code>,
+  <code>extra</code>) are detected by introspection; missing columns degrade gracefully
+  (e.g., no <code>modified_at</code> → <code>FileInfo.modified_at</code> returns <code>None</code>).
+- Column name mapping is a v2 consideration if demand materializes.</p>
+<p><strong>Performance guidelines</strong>:
+- &lt;10 MB per blob: works well across all supported databases
+- 10–100 MB: use with caution; consider <code>max_blob_size</code> guard
+- &gt;100 MB: discouraged — use a blob storage backend (S3, local) instead</p>
+<p><strong>SQLite specialization</strong> (worth it — zero-infrastructure persistent store):
+- Use <code>blobopen()</code> for streaming reads (Python 3.11+). On 3.10: fall back to
+  <code>SELECT data FROM ... WHERE key = ?</code> into <code>BytesIO</code> (full materialization,
+  no streaming). This mirrors the <code>SpooledTemporaryFile</code> 3.10 compat pattern
+  already used in <code>ext/seekable.py</code>.
+- Enable WAL mode (<code>PRAGMA journal_mode=WAL</code>)
+- Set <code>PRAGMA synchronous=NORMAL</code> for better write performance
+- Use <code>GLOB</code> operator instead of <code>LIKE</code> for pattern matching</p>
+<hr />
+<h2 id="4-serialization-pipeline-sqlquerybackend">4. Serialization Pipeline (SQLQueryBackend)<a class="headerlink" href="#4-serialization-pipeline-sqlquerybackend" title="Permanent link">&para;</a></h2>
+<h3 id="resultserializer-abstraction">ResultSerializer abstraction<a class="headerlink" href="#resultserializer-abstraction" title="Permanent link">&para;</a></h3>
+<p>Serialization needs a clean boundary — not inline logic in <code>read()</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ResultSerializer</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a SQL result set to bytes in a specific format.&quot;&quot;&quot;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">CursorResult</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<p>Built-in implementations:
+- <code>ArrowSerializer</code> — default, uses PyArrow: result → Arrow Table → Parquet/CSV/IPC
+- <code>ADBCSerializer</code> — optional fast path, zero-copy Arrow-native for supported DBs</p>
+<p>Benefits: testable in isolation, swappable, enables future formats without touching
+backend logic.</p>
+<h3 id="sql-bytes-pipeline">SQL → Bytes pipeline<a class="headerlink" href="#sql-bytes-pipeline" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Mode</th>
-<th>Mechanism</th>
+<th>Stage</th>
+<th>Options</th>
+<th>Recommendation</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>recursive=False</code></td>
-<td><code>listdir_attr()</code> — 1 SFTP round-trip</td>
+<td><strong>SQL execution</strong></td>
+<td>SQLAlchemy Core <code>connection.execute()</code></td>
+<td>Use <code>stream_results=True</code> + <code>yield_per</code> for memory-bounded reads</td>
 </tr>
 <tr>
-<td><code>recursive=True</code></td>
-<td>Manual recursion: <code>listdir_attr()</code> per directory</td>
+<td><strong>Result → Arrow</strong></td>
+<td>ADBC (zero-copy, fastest), ConnectorX (Rust, parallel), SQLAlchemy + PyArrow (widest support)</td>
+<td>Arrow-native paths (ADBC/ConnectorX) preferred; SQLAlchemy + PyArrow as fallback</td>
+</tr>
+<tr>
+<td><strong>Arrow → bytes</strong></td>
+<td>Parquet (<code>pyarrow.parquet</code>), CSV (<code>pyarrow.csv</code>), Arrow IPC (<code>pyarrow.ipc</code>)</td>
+<td>Extension-based: <code>.parquet</code> → Parquet, <code>.csv</code> → CSV, <code>.arrow</code> → IPC</td>
 </tr>
 </tbody>
 </table>
-<p>SFTP has <strong>no bulk recursive listing</strong>. Each directory requires an independent
-network round-trip. This makes depth limiting the most impactful optimization:</p>
+<p><strong>Prefer Arrow-native paths</strong> over manual batching. ADBC and ConnectorX go directly
+from wire protocol to Arrow columnar format, bypassing Python row-by-row conversion.
+Manual <code>partitions()</code> + <code>RecordBatch.from_pydict()</code> is the fallback when Arrow-native
+drivers aren't available.</p>
+<h3 id="type-mapping-concerns">Type mapping concerns<a class="headerlink" href="#type-mapping-concerns" title="Permanent link">&para;</a></h3>
+<p>SQL types don't map 1:1 to Arrow/Parquet: <code>DECIMAL</code>, <code>INTERVAL</code>, <code>JSONB</code>, <code>ARRAY</code>,
+<code>GEOGRAPHY</code> all need explicit handling. SQLAlchemy's type reflection + PyArrow's type
+coercion handles most cases, but edge cases will need documented escape hatches.</p>
+<h3 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Required</strong>: <code>sqlalchemy</code> (already widely used, pure Python)</li>
+<li><strong>SQLQueryBackend</strong>: <code>pyarrow</code> (already an optional dep for <code>S3PyArrowBackend</code>)</li>
+<li><strong>Optional fast path</strong>: <code>adbc-driver-postgresql</code>, <code>adbc-driver-sqlite</code>, <code>connectorx</code></li>
+</ul>
+<p>Packaging: <code>pip install remote-store[sql]</code> for SQLBlobBackend (sqlalchemy only),
+<code>pip install remote-store[sql-query]</code> for SQLQueryBackend (sqlalchemy + pyarrow).</p>
+<h3 id="caching">Caching<a class="headerlink" href="#caching" title="Permanent link">&para;</a></h3>
+<p>Caching is <strong>not embedded</strong> in the backend. Use <code>ext.cache</code> (existing infrastructure).</p>
+<p>Cache key for query results (deterministic across processes):
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">cache_key</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="p">(</span><span class="n">query_text</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\0</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">params</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\0</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">schema_version</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+</code></pre></div></p>
+<p>Note: Python's built-in <code>hash()</code> is randomized per process (PYTHONHASHSEED) and
+must not be used for persistent or cross-process cache keys.</p>
+<p>The backend provides <code>resolve()</code> for introspection (see §5.1); ext.cache wraps
+the Store. No built-in TTL, no <code>refresh()</code> method — that's the cache extension's
+job. Future: cache keys could derive from <code>hash(plan)</code> for principled
+invalidation.</p>
+<hr />
+<h2 id="5-resolution-model-composite-store">5. Resolution Model &amp; Composite Store<a class="headerlink" href="#5-resolution-model-composite-store" title="Permanent link">&para;</a></h2>
+<h3 id="51-resolutionplan-unified-introspection">5.1 ResolutionPlan — unified introspection<a class="headerlink" href="#51-resolutionplan-unified-introspection" title="Permanent link">&para;</a></h3>
+<p>Every backend already resolves keys to bytes through different strategies.
+<code>ResolutionPlan</code> makes this explicit and inspectable:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ResolutionPlan</span><span class="p">:</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># &quot;blob&quot;, &quot;sql_query&quot;, &quot;sql_blob&quot;, &quot;composite&quot;, ...</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span>       <span class="c1"># backend name</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>           <span class="c1"># resolved key</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">details</span><span class="p">:</span> <span class="nb">dict</span>      <span class="c1"># backend-specific (query, table, tier chain, ...)</span>
+</code></pre></div>
+<p>Every Store gains a <code>resolve()</code> method:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># SQLQueryBackend</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">&quot;reports/daily_sales.parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># → ResolutionPlan(kind=&quot;sql_query&quot;, backend=&quot;postgresql&quot;,</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1">#      key=&quot;reports/daily_sales.parquet&quot;,</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1">#      details={&quot;source&quot;: &quot;explicit&quot;, &quot;query&quot;: &quot;SELECT ...&quot;, &quot;format&quot;: &quot;parquet&quot;})</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># SQLBlobBackend</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">&quot;models/v3.pkl&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># → ResolutionPlan(kind=&quot;sql_blob&quot;, backend=&quot;sqlite&quot;,</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="c1">#      key=&quot;models/v3.pkl&quot;,</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="c1">#      details={&quot;table&quot;: &quot;remote_store_objects&quot;})</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="c1"># CompositeStore</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">&quot;sales/2024-Q1.parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="c1"># → ResolutionPlan(kind=&quot;composite&quot;, backend=&quot;composite&quot;,</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="c1">#      key=&quot;sales/2024-Q1.parquet&quot;,</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="c1">#      details={&quot;resolved_tier&quot;: &quot;warm&quot;, &quot;tried&quot;: [&quot;hot&quot;, &quot;warm&quot;]})</span>
+</code></pre></div>
+<p>This replaces the separate <code>resolve_query()</code>, <code>resolve_tier()</code>, and <code>explain()</code>
+methods with one unified concept. <code>plan.details</code> carries backend-specific
+information; <code>plan.kind</code> lets callers branch on strategy without <code>isinstance</code>.</p>
+<p><strong>Implementation:</strong> <code>Backend</code> gains an optional <code>resolve(key) → ResolutionPlan</code>
+method with a sensible default (returns plan with <code>kind=backend.name</code>). Backends
+override to add meaningful details. <code>Store.resolve()</code> delegates to the backend
+and rebases the key. No ABC change required — default is backward-compatible.</p>
+<h3 id="52-compositestore-id-120">5.2 CompositeStore (ID-120)<a class="headerlink" href="#52-compositestore-id-120" title="Permanent link">&para;</a></h3>
+<p>A composition layer above stores. A <code>Store</code> subclass (not a Backend, not an
+extension) that delegates to child stores based on resolution rules.</p>
+<p><strong>Construction:</strong> <code>Store.__init__</code> requires a <code>Backend</code> instance. CompositeStore
+handles this by creating an internal <code>_MultiplexBackend</code> adapter that delegates
+to tier backends based on resolution rules, then passes it to
+<code>super().__init__()</code>. This keeps CompositeStore as a true Store subclass
+(compatible with <code>ext.cache</code>, <code>ext.observe</code>, <code>Store.child()</code>) without fragile
+<code>__init__</code> overrides.</p>
+<p><strong>Core, not extension.</strong> CompositeStore composes Stores — it's a first-class
+construct like <code>Store.child()</code>, not a decorator. Extensions (<code>ext.cache</code>,
+<code>ext.observe</code>) wrap a single Store; CompositeStore multiplexes across several.</p>
+<p><strong>Relationship to ProxyStore:</strong> <code>ProxyStore(Store)</code> delegates to a single inner
+store. CompositeStore delegates to <em>multiple</em> stores, so it does not inherit
+from ProxyStore — it subclasses Store directly and overrides the same methods.
+Each tier's store can independently be wrapped with <code>ext.cache</code> or <code>ext.observe</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">composite</span> <span class="o">=</span> <span class="n">CompositeStore</span><span class="p">(</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">tiers</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">&quot;hot&quot;</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">observe</span><span class="p">(</span><span class="n">cached_sql_store</span><span class="p">)),</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">&quot;warm&quot;</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">observe</span><span class="p">(</span><span class="n">s3_store</span><span class="p">)),</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="p">],</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">)</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="c1"># The CompositeStore itself can also be wrapped:</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">composite</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Write-then-read visibility caveat:</strong> In fallthrough mode, a write goes to the
+primary tier. A subsequent read tries tiers in order — if the primary tier is not
+the first tier checked, or if caching hides the write, the caller may not see
+their own write immediately. <code>resolve()</code> helps diagnose this. v1 keeps it simple:
+writes always go to the first tier, reads try tiers in order, so write-then-read
+is consistent as long as the primary tier is first.</p>
+<h3 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span><span class="p">,</span> <span class="n">CompositeStore</span><span class="p">,</span> <span class="n">Tier</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># Pattern-match mode:</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">composite</span> <span class="o">=</span> <span class="n">CompositeStore</span><span class="p">(</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">tiers</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">&quot;hot&quot;</span><span class="p">,</span>     <span class="n">store</span><span class="o">=</span><span class="n">sql_store</span><span class="p">,</span>     <span class="n">match</span><span class="o">=</span><span class="s2">&quot;hot/**&quot;</span><span class="p">),</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">&quot;warm&quot;</span><span class="p">,</span>    <span class="n">store</span><span class="o">=</span><span class="n">s3_store</span><span class="p">,</span>      <span class="n">match</span><span class="o">=</span><span class="s2">&quot;warm/**&quot;</span><span class="p">),</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">&quot;archive&quot;</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">glacier_store</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;archive/**&quot;</span><span class="p">),</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="p">],</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="p">)</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="c1"># Fallthrough mode (v1 default):</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="n">composite</span> <span class="o">=</span> <span class="n">CompositeStore</span><span class="p">(</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="n">tiers</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">&quot;hot&quot;</span><span class="p">,</span>     <span class="n">store</span><span class="o">=</span><span class="n">sql_store</span><span class="p">),</span>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">&quot;warm&quot;</span><span class="p">,</span>    <span class="n">store</span><span class="o">=</span><span class="n">s3_store</span><span class="p">),</span>
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">&quot;archive&quot;</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">glacier_store</span><span class="p">),</span>
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>    <span class="p">],</span>
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a><span class="p">)</span>
+</code></pre></div>
+<h3 id="read-resolution-deterministic-fallthrough">Read resolution (deterministic fallthrough)<a class="headerlink" href="#read-resolution-deterministic-fallthrough" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>for tier in tiers:
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    try:
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>        return tier.store.read(key)
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    except NotFound:
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>        continue
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>raise NotFound
+</code></pre></div>
+<p>Deterministic: tier order defines priority. No ambiguity.</p>
+<h3 id="write-semantics">Write semantics<a class="headerlink" href="#write-semantics" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Writes go to <strong>primary tier only</strong> (first tier, or configurable <code>write_tier</code>)</li>
+<li>No cross-tier overwrite — <code>write()</code> never touches non-primary tiers</li>
+<li>Cross-tier migration is explicit: <code>composite.migrate(key, from_tier, to_tier)</code></li>
+<li>Optional: <code>write_through=True</code> for writing to multiple tiers simultaneously</li>
+</ul>
+<h3 id="list-behavior">LIST behavior<a class="headerlink" href="#list-behavior" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Default: <strong>union across all tiers</strong>, deduplicated by key (first tier wins on conflicts)</li>
+<li>Stable ordering: tier priority, then alphabetical within tier</li>
+<li>Optional: <code>composite.list_files(path, tier="hot")</code> to scope to a single tier</li>
+</ul>
+<h3 id="capability-model">Capability model<a class="headerlink" href="#capability-model" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>READ</code>, <code>SEEKABLE_READ</code> → union/fallthrough across tiers</li>
+<li><code>WRITE</code>, <code>ATOMIC_WRITE</code>, <code>MOVE</code>, <code>COPY</code>, <code>DELETE</code> → primary tier only (gated by primary tier's capabilities)</li>
+<li><code>LIST</code>, <code>GLOB</code> → union across tiers that support them</li>
+<li><code>METADATA</code> → union/fallthrough (like READ)</li>
+</ul>
+<p>Since write operations target the primary tier only, CompositeStore advertises the
+primary tier's write-side capabilities — not the intersection across all tiers.
+This avoids unnecessarily disabling MOVE/COPY/ATOMIC_WRITE when read-only tiers
+lack them.</p>
+<hr />
+<h2 id="6-capability-profile">6. Capability Profile<a class="headerlink" href="#6-capability-profile" title="Permanent link">&para;</a></h2>
+<h3 id="sqlquerybackend">SQLQueryBackend<a class="headerlink" href="#sqlquerybackend" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Depth</th>
-<th>Directories listed (10 dirs/level)</th>
-<th>SFTP round-trips saved vs full recursion (4 levels)</th>
+<th>Capability</th>
+<th>Supported</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>0</td>
-<td>1</td>
-<td>~1110</td>
+<td><code>READ</code></td>
+<td>Yes</td>
+<td>Execute query, serialize, return bytes</td>
 </tr>
 <tr>
+<td><code>WRITE</code></td>
+<td>--</td>
+<td>Query results are read-only</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td>--</td>
+<td>Cannot delete a query</td>
+</tr>
+<tr>
+<td><code>LIST</code></td>
+<td>Yes</td>
+<td>List registered query keys</td>
+</tr>
+<tr>
+<td><code>MOVE</code></td>
+<td>--</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>COPY</code></td>
+<td>--</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>ATOMIC_WRITE</code></td>
+<td>--</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>METADATA</code></td>
+<td>Yes</td>
+<td><code>size: int \| None</code> — <code>None</code> until query executes. <code>modified_at</code> from config.</td>
+</tr>
+<tr>
+<td><code>GLOB</code></td>
+<td>Yes</td>
+<td>Pattern match against registered keys (not SQL)</td>
+</tr>
+<tr>
+<td><code>SEEKABLE_READ</code></td>
+<td>Yes</td>
+<td>Serialize to buffer, return seekable <code>BytesIO</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>FileInfo.size</code> contract change</strong> (v2 only — not needed for SQLBlobBackend):
+<code>size: int | None</code> where <code>None</code> means "unknown until materialized." This is
+first-class — do not fake or estimate. Callers that need size must handle <code>None</code>
+(or read first, which populates the cache). SQLBlobBackend always knows the size
+(<code>size INTEGER NOT NULL</code> in its schema), so this contract change is deferred to
+v2 when SQLQueryBackend ships.</p>
+<h3 id="sqlblobbackend">SQLBlobBackend<a class="headerlink" href="#sqlblobbackend" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Supported</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>READ</code></td>
+<td>Yes</td>
+<td><code>SELECT data FROM ... WHERE key = ?</code></td>
+</tr>
+<tr>
+<td><code>WRITE</code></td>
+<td>Yes</td>
+<td><code>INSERT</code> / <code>UPDATE</code></td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td>Yes</td>
+<td><code>DELETE FROM ... WHERE key = ?</code></td>
+</tr>
+<tr>
+<td><code>LIST</code></td>
+<td>Yes</td>
+<td><code>SELECT key FROM ...</code> with prefix filter</td>
+</tr>
+<tr>
+<td><code>MOVE</code></td>
+<td>Yes</td>
+<td><code>UPDATE ... SET key = ? WHERE key = ?</code></td>
+</tr>
+<tr>
+<td><code>COPY</code></td>
+<td>Yes</td>
+<td><code>INSERT INTO ... SELECT ... FROM ... WHERE key = ?</code></td>
+</tr>
+<tr>
+<td><code>ATOMIC_WRITE</code></td>
+<td>Yes</td>
+<td><code>write_atomic()</code>: single INSERT/UPDATE. <code>open_atomic()</code>: buffer in <code>BytesIO</code>, commit via INSERT on success, discard on exception (MemoryBackend pattern).</td>
+</tr>
+<tr>
+<td><code>METADATA</code></td>
+<td>Yes</td>
+<td>All metadata columns available</td>
+</tr>
+<tr>
+<td><code>GLOB</code></td>
+<td>Yes</td>
+<td><code>LIKE</code> / <code>GLOB</code> (SQLite) pattern on key column</td>
+</tr>
+<tr>
+<td><code>SEEKABLE_READ</code></td>
+<td>Yes</td>
+<td><code>BytesIO(data)</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-decisions-made-remaining-open-questions">7. Decisions Made &amp; Remaining Open Questions<a class="headerlink" href="#7-decisions-made-remaining-open-questions" title="Permanent link">&para;</a></h2>
+<h3 id="decided">Decided<a class="headerlink" href="#decided" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
 <td>1</td>
-<td>11</td>
-<td>~1100</td>
+<td>One backend or two?</td>
+<td><strong>Two</strong>: <code>SQLQueryBackend</code> + <code>SQLBlobBackend</code>, shared <code>_SQLAlchemyBaseBackend</code></td>
 </tr>
 <tr>
 <td>2</td>
-<td>111</td>
-<td>~1000</td>
+<td>Priority</td>
+<td><strong>SQLBlobBackend first</strong> (v1), SQLQueryBackend second (v2)</td>
 </tr>
 <tr>
-<td>Full</td>
-<td>1111</td>
-<td>0</td>
+<td>3</td>
+<td>Caching</td>
+<td><strong>ext.cache only</strong> — no embedded caching in backend</td>
+</tr>
+<tr>
+<td>4</td>
+<td>CompositeStore scope</td>
+<td><strong>Core <code>Store</code> subclass</strong> (not ProxyStore subclass) — multiplexes, not delegates</td>
+</tr>
+<tr>
+<td>5</td>
+<td>FileInfo.size</td>
+<td><strong><code>size: int \| None</code></strong> — deferred to v2 (SQLBlobBackend always knows size)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>SQLite specialization</td>
+<td><strong>Worth it</strong> — blobopen(), WAL, PRAGMA tuning</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Serialization</td>
+<td><strong>ResultSerializer protocol</strong> — clean abstraction boundary</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Strict mode</td>
+<td><strong><code>strict=True</code> default</strong> — security-by-default, no convention fallback</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Engine lifecycle</td>
+<td><strong>Owned or borrowed</strong> — URL string = owned, <code>Engine</code> instance = borrowed</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Schema flexibility</td>
+<td><strong>Auto-create default, introspect existing</strong> — <code>create_table=False</code> for BYO</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Cutoff behavior:</strong> The native implementation includes items <em>at</em> <code>max_depth</code>
-but does not descend <em>beyond</em> it. At <code>max_depth=1</code>, files in depth-1 folders
-are returned, but depth-1 subdirectories are not recursed into.</p>
-<p><strong>Takeaway:</strong> SFTP benefits the most from native depth limiting. Every skipped
-level avoids real network round-trips. The extension-only approach (full
-recursive scan + filter) would still make all those round-trips.</p>
-<h3 id="25-memory">2.5 Memory<a class="headerlink" href="#25-memory" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Mode</th>
-<th>Mechanism</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>recursive=False</code></td>
-<td>Direct <code>children</code> dict iteration</td>
-</tr>
-<tr>
-<td><code>recursive=True</code></td>
-<td>Iterative DFS with stack</td>
-</tr>
-</tbody>
-</table>
-<p>The stack already tracks <code>(node, prefix)</code>. Adding depth tracking is trivial:
-change to <code>(node, prefix, depth)</code> and skip pushing children when
-<code>depth &gt;= max_depth</code>.</p>
-<p><strong>Takeaway:</strong> Minor optimization (in-memory traversal is already fast), but
-trivial to implement and useful for test correctness.</p>
-<h3 id="26-http">2.6 HTTP<a class="headerlink" href="#26-http" title="Permanent link">&para;</a></h3>
-<p>Does not support listing (<code>CapabilityNotSupported</code>). Not relevant.</p>
-<hr />
-<h2 id="3-performance-summary">3. Performance Summary<a class="headerlink" href="#3-performance-summary" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Backend</th>
-<th>Extension approach (full scan + filter)</th>
-<th>Native approach (stop early)</th>
-<th>Savings</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>SFTP</strong></td>
-<td>O(total_dirs) round-trips</td>
-<td>O(dirs within depth) round-trips</td>
-<td><strong>Critical</strong> — network I/O</td>
-</tr>
-<tr>
-<td><strong>Local</strong></td>
-<td>Full <code>rglob()</code> filesystem walk</td>
-<td><code>os.walk()</code> stops at depth N</td>
-<td><strong>High</strong> — syscall I/O</td>
-</tr>
-<tr>
-<td><strong>S3</strong></td>
-<td>1 flat API stream (all keys)</td>
-<td>Level-by-level delimiter calls</td>
-<td><strong>Depends on shape</strong> (§2.1)</td>
-</tr>
-<tr>
-<td><strong>Azure</strong></td>
-<td>1 flat API stream or HNS recursive</td>
-<td>Level-by-level <code>walk_blobs()</code></td>
-<td><strong>Depends on shape</strong> (§2.2)</td>
-</tr>
-<tr>
-<td><strong>Memory</strong></td>
-<td>Full DFS traversal</td>
-<td>DFS with depth cutoff</td>
-<td><strong>Low</strong> — in-memory</td>
-</tr>
-</tbody>
-</table>
-<p>The key insight: <strong>for SFTP and Local, native depth limiting is unambiguously
-better.</strong> For S3 and Azure, neither strategy dominates — flat scan transfers
-more metadata but uses fewer API calls, while level-by-level uses more API
-calls but transfers less data (§2.1). The flat-scan-and-filter strategy is a
-safe default for S3/Azure because it is always <em>correct</em> and avoids the
-complexity of shape-dependent heuristics. It may transfer unnecessary data for
-shallow depth on large trees, but avoids the O(folders) API call overhead
-that level-by-level incurs on wide trees.</p>
-<hr />
-<h2 id="4-design-proposal-two-phase-depth-limited-listing">4. Design Proposal: Two-Phase Depth-Limited Listing<a class="headerlink" href="#4-design-proposal-two-phase-depth-limited-listing" title="Permanent link">&para;</a></h2>
-<h3 id="41-depth-semantics-unified-across-list_files-and-list_folders">4.1 Depth semantics (unified across <code>list_files</code> and <code>list_folders</code>)<a class="headerlink" href="#41-depth-semantics-unified-across-list_files-and-list_folders" title="Permanent link">&para;</a></h3>
-<p>Both <code>list_files</code> and <code>list_folders</code> use the same <code>max_depth</code> parameter with
-consistent semantics.</p>
-<p><strong>Depth definition:</strong> depth is the number of path components between the
-listing root and the item's parent directory. Computed on normalized relative
-paths (leading/trailing slashes stripped, no <code>.</code> or <code>..</code> components) — never
-on raw string operations like <code>str.count("/")</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>store.list_files(&quot;data&quot;, max_depth=1)
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>data/file_a.csv          → depth 0 (parent = data)    ✓ included
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>data/raw/file_b.csv      → depth 1 (parent = data/raw) ✓ included
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>data/raw/2026/file_c.csv → depth 2                     ✗ excluded
-</code></pre></div>
-<ul>
-<li><code>max_depth=None</code> (default): current behavior unchanged.</li>
-<li><code>max_depth=0</code>: items directly in <code>path</code> itself (no descent).</li>
-<li><code>max_depth=1</code>: items in <code>path</code> + items in its direct subfolders.</li>
-<li><code>max_depth=N</code>: items up to N folder levels below <code>path</code>.</li>
-</ul>
-<p><strong>Input validation:</strong> <code>max_depth</code> must be <code>&gt;= 0</code> when provided. Negative
-values raise <code>ValueError</code>.</p>
-<p>Using the same parameter name and semantics for both methods avoids the
-off-by-one confusion that would arise from naming one <code>max_depth</code> and the
-other <code>depth</code> with different reference frames.</p>
-<h3 id="42-interaction-with-recursive">4.2 Interaction with <code>recursive</code><a class="headerlink" href="#42-interaction-with-recursive" title="Permanent link">&para;</a></h3>
-<p>When <code>max_depth</code> is provided, it takes full control of traversal depth —
-<code>recursive</code> is ignored. This avoids contradictory states and keeps the
-contract simple:</p>
-<ul>
-<li><code>max_depth=None</code> (default): <code>recursive</code> flag controls, as today.</li>
-<li><code>max_depth=0</code>: items in <code>path</code> only (equivalent to <code>recursive=False</code>).
-  <code>recursive</code> is ignored.</li>
-<li><code>max_depth &gt; 0</code>: descend up to N levels. <code>recursive</code> is ignored — depth
-  implies recursion.</li>
-</ul>
-<p>The alternative — raising <code>ValueError</code> when <code>max_depth &gt; 0</code> and
-<code>recursive=False</code> — was considered but rejected. Since <code>recursive</code> defaults
-to <code>False</code>, callers writing <code>store.list_files(path, max_depth=2)</code> would hit
-the <code>ValueError</code> unless they also passed <code>recursive=True</code>, which is redundant.
-Ignoring <code>recursive</code> when <code>max_depth</code> is set is the more ergonomic contract.</p>
-<h3 id="43-interaction-with-pattern">4.3 Interaction with <code>pattern</code><a class="headerlink" href="#43-interaction-with-pattern" title="Permanent link">&para;</a></h3>
-<p><code>Store.list_files(pattern=)</code> applies fnmatch on basenames client-side.
-When combined with <code>max_depth</code>:</p>
+<h3 id="remaining-open-questions">Remaining open questions<a class="headerlink" href="#remaining-open-questions" title="Permanent link">&para;</a></h3>
 <ol>
-<li>Depth filtering applies first (determines which files to consider).</li>
-<li>Pattern filtering applies second (filters the depth-limited set by name).</li>
+<li>
+<p><strong>Config format for key→query mapping</strong> — Python dict? YAML file? SQLAlchemy
+   <code>text()</code> objects? View-only (no custom SQL)?</p>
+</li>
+<li>
+<p><strong>ADBC fast path</strong> — Worth the dependency complexity for SQLQueryBackend? ADBC
+   bypasses Python row-by-row conversion, going directly to Arrow columnar format.
+   (Deferred to v3.)</p>
+</li>
+<li>
+<p><strong>Partitioned queries</strong> — <code>store.read("sales/2024-Q1.parquet")</code> where the key
+   encodes a WHERE clause parameter. Config-driven or convention-driven?</p>
+</li>
+<li>
+<p><strong><code>FileInfo.size: int | None</code> ripple effects</strong> — Deferred to v2 (SQLBlobBackend
+   always knows size). Before implementing for SQLQueryBackend, audit all callers
+   that assume <code>size</code> is always <code>int</code>. May need a deprecation path or type guard.</p>
+</li>
 </ol>
-<p>These compose naturally — no special handling needed.</p>
-<h3 id="44-interaction-with-iter_children">4.4 Interaction with <code>iter_children</code><a class="headerlink" href="#44-interaction-with-iter_children" title="Permanent link">&para;</a></h3>
-<p><code>Store.iter_children()</code> returns <code>FileInfo | FolderEntry</code> at a single level.
-It stays single-level by design. Depth-limiting applies only to <code>list_files</code>
-and <code>list_folders</code>. Users who want depth-limited mixed listings can combine
-the two calls.</p>
-<h3 id="45-phase-1-store-level-parameters-with-client-side-filtering">4.5 Phase 1: Store-level parameters with client-side filtering<a class="headerlink" href="#45-phase-1-store-level-parameters-with-client-side-filtering" title="Permanent link">&para;</a></h3>
-<p>Add <code>max_depth</code> to <code>Store.list_files()</code> and <code>Store.list_folders()</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_files</span><span class="p">(</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">]:</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_folders</span><span class="p">(</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FolderEntry</span><span class="p">]:</span>
-</code></pre></div>
-<p><strong>Backend invariant:</strong> Store-level depth filtering depends on backends
-returning only items under the requested prefix. This invariant already holds
-for all backends — <code>Backend.list_files(path)</code> never returns items outside
-<code>path</code>. The depth filter computes relative paths from the listing root and
-counts components; if a backend violated the prefix invariant, the relative
-path computation would be incorrect.</p>
-<p><strong>Implementation at Store level — no ABC change:</strong></p>
+<hr />
+<h2 id="8-prioritization-next-steps">8. Prioritization &amp; Next Steps<a class="headerlink" href="#8-prioritization-next-steps" title="Permanent link">&para;</a></h2>
+<h3 id="v1-foundation">v1 — Foundation<a class="headerlink" href="#v1-foundation" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>list_files(max_depth=0)</code>: delegates to
-  <code>Backend.list_files(path, recursive=False)</code> — equivalent to the current
-  non-recursive call, no filtering needed.</li>
-<li><code>list_files(max_depth=N)</code> where N &gt; 0: delegates to
-  <code>Backend.list_files(path, recursive=True)</code> and filters results client-side
-  by computing the normalized relative path from <code>path</code> to each item and
-  counting components. The Store already does client-side filtering for
-  <code>pattern</code> — depth filtering follows the same approach.</li>
-<li><code>list_folders(max_depth=N)</code>: BFS using <code>Backend.list_folders()</code> at each
-  level, up to <code>max_depth</code> levels. Each BFS step is one call to the existing
-  backend method. Note: BFS cost is O(total folders within depth), not
-  O(depth) — wide directory trees with many folders per level will issue
-  proportionally more backend calls.</li>
+<li>[ ] <code>SQLBlobBackend</code> with SQLite (full Backend contract, SQLite optimizations)</li>
+<li>[ ] <code>CompositeStore</code> (prefix-based + fallthrough, union LIST, primary-tier writes)</li>
 </ul>
-<p><strong>Phase 1 performance expectation:</strong> For S3 and Azure, <code>list_files(max_depth=N)</code>
-with N &gt; 0 will perform a full recursive scan (<code>find()</code> / <code>list_blobs()</code>) and
-filter client-side. This transfers all object metadata even when only a shallow
-slice is needed. Phase 2 backend optimization addresses this for backends
-where early termination is possible (SFTP, Local, Memory). S3 and Azure may
-still use the flat-scan strategy in Phase 2, as level-by-level listing is not
-always faster (§2.1, §2.2).</p>
-<p>This matches how <code>pattern</code> was added: Store-level concern, no backend
-awareness needed, works with all backends immediately.</p>
-<p><strong>What ships:</strong> Store parameter, spec, tests, docs. No new extension module.</p>
-<p><strong>Effort:</strong> Small-medium. Store plumbing, spec, ~150 lines of tests.</p>
-<h3 id="46-phase-2-backend-native-optimization">4.6 Phase 2: Backend-native optimization<a class="headerlink" href="#46-phase-2-backend-native-optimization" title="Permanent link">&para;</a></h3>
-<p>Add <code>max_depth: int | None = None</code> as an optional keyword parameter to
-<code>Backend.list_files()</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Backend ABC — default implementation</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_files</span><span class="p">(</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">]:</span>
-</code></pre></div>
-<p><strong>Default behavior in ABC:</strong> The default implementation ignores <code>max_depth</code> and
-uses the existing <code>recursive</code> logic. This is backward-compatible — existing
-backend implementations (including third-party) continue to work without
-changes.</p>
-<p><strong>Store delegation:</strong> When <code>max_depth</code> is not <code>None</code>, <code>Store.list_files()</code>
-passes it through to the backend. The Store still applies client-side depth
-filtering on the result — this is a no-op when the backend already filtered
-natively, and a correctness safety net when it didn't. No <code>TypeError</code>
-catching, no <code>inspect.signature</code> probing — just always filter at the Store
-level and let native backends reduce the work upstream.</p>
-<p><strong>Backend overrides:</strong></p>
+<h3 id="v2-query-materializer">v2 — Query Materializer<a class="headerlink" href="#v2-query-materializer" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] <code>SQLQueryBackend</code> (basic: explicit mappings + view fallback, <code>strict=True</code> default)</li>
+<li>[ ] <code>ResultSerializer</code> protocol + <code>ArrowSerializer</code> implementation</li>
+<li>[ ] <code>resolve()</code> → <code>ResolutionPlan</code> introspection API (unified across all backends)</li>
+<li>[ ] <code>FileInfo.size: int | None</code> contract change (audit ripple effects first)</li>
+</ul>
+<h3 id="v3-performance-advanced">v3 — Performance &amp; Advanced<a class="headerlink" href="#v3-performance-advanced" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] ADBC / ConnectorX fast path for SQLQueryBackend</li>
+<li>[ ] Partitioned queries (key encodes WHERE clause parameters)</li>
+<li>[ ] CompositeStore <code>write_through=True</code> option</li>
+<li>[ ] CompositeStore <code>migrate()</code> for cross-tier data movement</li>
+</ul>
+<h3 id="immediate-next-step">Immediate next step<a class="headerlink" href="#immediate-next-step" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Spike <code>SQLBlobBackend</code> with SQLite — validates Backend contract fit with
+  minimal infrastructure. A few hundred lines of code. Separate spec after spike.</li>
+</ul>
+<hr />
+<h2 id="9-key-risks">9. Key Risks<a class="headerlink" href="#9-key-risks" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Backend</th>
-<th>Native strategy</th>
+<th>Risk</th>
+<th>Mitigation</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Local</strong></td>
-<td><code>os.walk()</code> with depth counter (§2.3). Clear win.</td>
+<td><strong>SQLQueryBackend complexity underestimated</strong></td>
+<td>Ship SQLBlobBackend first; SQLQueryBackend gets its own spec after spike</td>
 </tr>
 <tr>
-<td><strong>SFTP</strong></td>
-<td>Pass depth limit through recursive calls. Clear win.</td>
+<td><strong>CompositeStore LIST semantics unclear at scale</strong></td>
+<td>v1 = simple union + dedup; document edge cases; defer optimization</td>
 </tr>
 <tr>
-<td><strong>Memory</strong></td>
-<td>Track depth in DFS stack. Trivial.</td>
+<td><strong><code>FileInfo.size: int \| None</code> ripple effects</strong></td>
+<td>Deferred to v2; SQLBlobBackend always knows size. Audit callers before v2 ships</td>
 </tr>
 <tr>
-<td><strong>S3</strong></td>
-<td>Keep flat scan + client filter. Level-by-level is a future optimization when tree shape heuristics are available.</td>
+<td><strong>Debuggability</strong></td>
+<td><code>resolve()</code> → <code>ResolutionPlan</code> is required, not nice-to-have — unified across all backends</td>
 </tr>
 <tr>
-<td><strong>Azure</strong></td>
-<td>Same as S3 — flat scan + client filter.</td>
+<td><strong>Performance expectations</strong></td>
+<td>Document blob size guidelines explicitly; <code>max_blob_size</code> guard for SQLBlobBackend</td>
 </tr>
 </tbody>
 </table>
-<p><strong><code>Backend.list_folders()</code> — no ABC change needed.</strong> Recursive folder listing
-is always a BFS/DFS traversal using <code>list_folders()</code> at each level. The
-Store-level implementation (Phase 1) handles this without backend changes.
-The backends that benefit most (SFTP) already get the win through
-<code>list_files(max_depth=N)</code> stopping the recursion early.</p>
-<p>Backends that implement <code>max_depth</code> natively don't need a new capability flag.
-Unlike glob, there is no semantic difference between "native" and "fallback"
-depth filtering — the result is identical. The only difference is performance.</p>
-<p><strong>Backend implementation priority:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Backend</th>
-<th>Priority</th>
-<th>Reason</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>SFTP</strong></td>
-<td>P0</td>
-<td>Biggest I/O savings (network round-trips)</td>
-</tr>
-<tr>
-<td><strong>Local</strong></td>
-<td>P0</td>
-<td><code>os.walk()</code> depth cutoff is trivial and effective</td>
-</tr>
-<tr>
-<td><strong>Memory</strong></td>
-<td>P1</td>
-<td>Easy, useful for tests</td>
-</tr>
-<tr>
-<td><strong>S3</strong></td>
-<td>P2</td>
-<td>Flat scan is often optimal anyway; level-by-level needs heuristics</td>
-</tr>
-<tr>
-<td><strong>Azure</strong></td>
-<td>P2</td>
-<td>Same reasoning as S3</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Effort:</strong> Medium. ABC change, 2--3 backend overrides, Store delegation
-update, spec updates, test updates.</p>
 <hr />
-<h2 id="5-why-not-an-extension-module">5. Why Not an Extension Module?<a class="headerlink" href="#5-why-not-an-extension-module" title="Permanent link">&para;</a></h2>
-<p>The original proposal included a <code>ext/listing.py</code> module with
-<code>list_files_deep()</code> and <code>list_folders_deep()</code> as a Phase 1 deliverable,
-following the glob three-tier pattern (ADR-0009). On review, this adds
-API surface that would be deprecated shortly after:</p>
+<h2 id="10-future-directions">10. Future Directions<a class="headerlink" href="#10-future-directions" title="Permanent link">&para;</a></h2>
+<p>These ideas follow naturally from the resolution model but are <strong>not committed
+work</strong> — they are documented here so future decisions can be evaluated against
+a coherent vision rather than invented ad hoc.</p>
+<h3 id="resolution-algebra">Resolution algebra<a class="headerlink" href="#resolution-algebra" title="Permanent link">&para;</a></h3>
+<p>CompositeStore v1 supports fallthrough (try each tier in order). The resolution
+model generalizes to other composition strategies:</p>
 <ul>
-<li><strong>Glob's extension earned its existence</strong> because <code>ext.glob.glob_files()</code>
-  does something <code>Store.list_files(pattern=)</code> cannot — full-path matching
-  with <code>**</code> patterns. The extension provides genuinely different behavior.</li>
-<li><strong>Depth filtering has no such gap.</strong> <code>Store.list_files(max_depth=N)</code> is
-  the complete API. An extension wrapping it adds nothing.</li>
-<li><strong>Naming is awkward.</strong> "Deep" implies going deeper, but the feature limits
-  depth. Any name (<code>list_files_to_depth</code>, <code>list_files_bounded</code>) is clunky
-  compared to the native parameter.</li>
+<li><strong>Parallel reads</strong> — race multiple tiers, return first response (latency optimization)</li>
+<li><strong>Shadow reads</strong> — read from primary, also read from secondary and compare (migration validation)</li>
+<li><strong>Quorum reads</strong> — require N-of-M tiers to agree (consistency guarantee)</li>
 </ul>
-<p>The simpler path: add <code>max_depth</code> to Store directly (Phase 1) with
-client-side filtering. This ships the same user-facing API without a
-throwaway extension layer.</p>
-<h3 id="comparison-with-glob-pattern">Comparison with glob pattern<a class="headerlink" href="#comparison-with-glob-pattern" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Aspect</th>
-<th>Glob</th>
-<th>Depth-Limited Listing</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Store param</strong></td>
-<td><code>list_files(pattern=...)</code> — name filter</td>
-<td><code>list_files(max_depth=N)</code> — depth filter</td>
-</tr>
-<tr>
-<td><strong>Native backend</strong></td>
-<td><code>Backend.glob()</code> + <code>Capability.GLOB</code></td>
-<td><code>Backend.list_files(max_depth=N)</code> — no new capability</td>
-</tr>
-<tr>
-<td><strong>Extension</strong></td>
-<td><code>ext.glob.glob_files()</code> — full path glob (genuinely different)</td>
-<td>Not needed — Store param is sufficient</td>
-</tr>
-<tr>
-<td><strong>Fallback</strong></td>
-<td><code>list_files()</code> + client regex</td>
-<td><code>list_files(recursive=True)</code> + client depth filter</td>
-</tr>
-<tr>
-<td><strong>ABC change?</strong></td>
-<td>Yes (new <code>glob()</code> method)</td>
-<td>Yes (new <code>max_depth</code> kwarg, Phase 2 only)</td>
-</tr>
-</tbody>
-</table>
-<p>The key difference: glob needed three tiers because each tier offers distinct
-semantics. Depth limiting does not — the output is always identical regardless
-of where filtering happens. Two phases (Store param, then backend
-optimization) are sufficient.</p>
-<hr />
-<h2 id="6-alternatives-considered">6. Alternatives Considered<a class="headerlink" href="#6-alternatives-considered" title="Permanent link">&para;</a></h2>
-<h3 id="a-extension-only-never-add-to-storebackend">A. Extension only — never add to Store/Backend<a class="headerlink" href="#a-extension-only-never-add-to-storebackend" title="Permanent link">&para;</a></h3>
-<p><strong>Pros:</strong> No ABC change, no risk of breaking backends.
-<strong>Cons:</strong> Permanently leaves performance on the table for SFTP and Local.
-Users who need depth limiting always pay for a full recursive scan.</p>
-<p><strong>Verdict:</strong> Insufficient long-term. The Store parameter (Phase 1) is nearly
-as simple and avoids the throwaway extension problem.</p>
-<h3 id="b-new-capabilitydepth_list-flag">B. New <code>Capability.DEPTH_LIST</code> flag<a class="headerlink" href="#b-new-capabilitydepth_list-flag" title="Permanent link">&para;</a></h3>
-<p>Add a capability that signals "this backend supports <code>max_depth</code> natively."
-The extension checks the capability and delegates or falls back.</p>
-<p><strong>Pros:</strong> Follows glob pattern exactly.
-<strong>Cons:</strong> Unnecessary complexity. Unlike glob, depth filtering produces
-identical results whether done natively or client-side. A capability flag is
-for semantic differences, not performance differences. The Store can handle
-the fallback transparently.</p>
-<p><strong>Verdict:</strong> Rejected. No user-visible behavioral difference to gate on.</p>
-<h3 id="c-add-max_depth-to-backend-abc-as-required-parameter">C. Add <code>max_depth</code> to Backend ABC as required parameter<a class="headerlink" href="#c-add-max_depth-to-backend-abc-as-required-parameter" title="Permanent link">&para;</a></h3>
-<p>Make <code>max_depth</code> a required parameter on <code>Backend.list_files()</code>.</p>
-<p><strong>Pros:</strong> All backends must handle it.
-<strong>Cons:</strong> Breaking change for all backend implementations, including
-third-party backends (e.g., community backends following the Build Your Own
-Backend guide).</p>
-<p><strong>Verdict:</strong> Rejected. Optional keyword with default <code>None</code> is
-backward-compatible.</p>
-<h3 id="d-separate-list_files_depth-method-on-backend">D. Separate <code>list_files_depth()</code> method on Backend<a class="headerlink" href="#d-separate-list_files_depth-method-on-backend" title="Permanent link">&para;</a></h3>
-<p>Add a new abstract method instead of extending the existing one.</p>
-<p><strong>Pros:</strong> Clean separation, no signature change.
-<strong>Cons:</strong> Duplicates listing logic. Every backend would need two nearly
-identical methods. Maintenance burden.</p>
-<p><strong>Verdict:</strong> Rejected. An optional kwarg is simpler.</p>
-<h3 id="e-extension-first-then-promote-to-store">E. Extension-first, then promote to Store<a class="headerlink" href="#e-extension-first-then-promote-to-store" title="Permanent link">&para;</a></h3>
-<p>Ship <code>ext/listing.py</code> with <code>list_files_deep()</code> / <code>list_folders_deep()</code> first,
-then add Store parameters and deprecate the extension.</p>
-<p><strong>Pros:</strong> Incremental delivery, lowest-risk first step.
-<strong>Cons:</strong> Ships public API that will be deprecated. Extension naming is
-awkward ("deep" = limiting depth). The Store parameter with client-side
-filtering is equally simple to implement and avoids the deprecation cycle.</p>
-<p><strong>Verdict:</strong> Rejected. Adding the Store parameter directly is just as easy
-and avoids throwaway API surface. See §5.</p>
-<hr />
-<h2 id="7-backlog-items">7. Backlog Items<a class="headerlink" href="#7-backlog-items" title="Permanent link">&para;</a></h2>
-<p>This research proposes splitting ID-107 and ID-108 into two phases:</p>
-<h3 id="phase-1-store-parameters-with-client-side-filtering">Phase 1 — Store parameters with client-side filtering<a class="headerlink" href="#phase-1-store-parameters-with-client-side-filtering" title="Permanent link">&para;</a></h3>
+<p>These are all different <code>ResolutionPlan</code> compositions. No new abstraction
+needed — just new <code>CompositeStore</code> strategy options.</p>
+<h3 id="compute-stores">Compute stores<a class="headerlink" href="#compute-stores" title="Permanent link">&para;</a></h3>
+<p>SQLQueryBackend is a "compute store" — key → computation → bytes. SQL is one
+implementation. The pattern generalizes:</p>
 <ul>
-<li>
-<p><strong>ID-107 — <code>Store.list_files(max_depth=N)</code> with client-side filtering</strong>
-  Add <code>max_depth</code> parameter to <code>Store.list_files()</code>. Implement via
-  <code>Backend.list_files(recursive=True)</code> + client-side depth filtering at the
-  Store level. Spec, tests, docs. No ABC change, no extension module.</p>
-</li>
-<li>
-<p><strong>ID-108 — <code>Store.list_folders(max_depth=N)</code> with BFS traversal</strong>
-  Add <code>max_depth</code> parameter to <code>Store.list_folders()</code>. Implement via BFS
-  using <code>Backend.list_folders()</code> at each level. Spec, tests, docs. No ABC
-  change.</p>
-</li>
+<li>Python callable store (key → function → bytes)</li>
+<li>REST endpoint store (key → HTTP request → bytes)</li>
+<li>Spark/DuckDB store (key → query plan → bytes)</li>
 </ul>
-<h3 id="phase-2-backend-native-optimization">Phase 2 — Backend-native optimization<a class="headerlink" href="#phase-2-backend-native-optimization" title="Permanent link">&para;</a></h3>
-<ul>
-<li>
-<p><strong>ID-107b — <code>Backend.list_files(max_depth=N)</code> native optimization</strong>
-  Add optional <code>max_depth</code> kwarg to <code>Backend.list_files()</code> ABC.
-  Implement native depth limiting in Local (<code>os.walk()</code>), SFTP (recursive
-  call depth tracking), Memory (DFS stack depth). S3/Azure: client-side
-  filter (flat scan is often optimal). Store continues to filter client-side
-  as safety net.
-  Depends on: ID-107.</p>
-</li>
-<li>
-<p><strong>ID-108b — <code>Store.list_folders(max_depth=N)</code> optimization (if needed)</strong>
-  Evaluate whether backend-native folder depth limiting is needed based on
-  Phase 1 usage. The Store-level BFS may be sufficient — folder listings are
-  typically much smaller than file listings.
-  Depends on: ID-108.</p>
-</li>
-</ul>
+<p>If a second compute-style backend materializes, extract a <code>ComputeBackend</code>
+base. Until then, SQLQueryBackend stands alone — premature abstraction is
+worse than duplication.</p>
+<h3 id="structured-keys">Structured keys<a class="headerlink" href="#structured-keys" title="Permanent link">&para;</a></h3>
+<p>Today keys are strings. Partitioned queries (open question #3) suggest
+structured keys: <code>Key(path="sales/2024-Q1", format="parquet", params={"year": 2024})</code>.
+The backend would extract params from the key to parameterize queries.</p>
+<p>The simpler v1 path: keep keys as strings, let SQLQueryBackend parse them
+against config-defined patterns. Structured keys are a v3+ consideration if
+multiple backends need parameterized resolution.</p>
+<h3 id="readme-messaging">README messaging<a class="headerlink" href="#readme-messaging" title="Permanent link">&para;</a></h3>
+<p>The "key → byte resolver" framing belongs in the README when SQLAlchemy backends
+ship. It retroactively explains why the capability system works — capabilities
+describe available resolution strategies, not filesystem features. Current
+tagline ("Write file storage code once") remains accurate but undersells the
+system once it resolves queries and composes backends.</p>
 <hr />
-<h2 id="8-recommendation">8. Recommendation<a class="headerlink" href="#8-recommendation" title="Permanent link">&para;</a></h2>
-<p><strong>Proceed with Phase 1 (Store parameters) first.</strong> Add <code>max_depth</code> to
-<code>Store.list_files()</code> and <code>Store.list_folders()</code> with client-side filtering.
-No ABC change, no extension module, no new capability. This ships correct
-behavior with a clean API that will remain stable through Phase 2.</p>
-<p><strong>Follow with Phase 2 (native backend optimization) when depth-limited
-listing sees real usage.</strong> The performance gap is most acute for SFTP
-(network round-trips) and Local (filesystem I/O). S3 and Azure can defer
-native optimization — their flat scan is often competitive with or better
-than level-by-level delimiter listing.</p>
-<p>Phase 1 and Phase 2 can ship in the same release or separately. The user-
-facing API (<code>Store.list_files(max_depth=N)</code>) is identical in both phases —
-Phase 2 only changes performance characteristics.</p>
+<h2 id="11-references">11. References<a class="headerlink" href="#11-references" title="Permanent link">&para;</a></h2>
+<h3 id="existing-projects">Existing projects<a class="headerlink" href="#existing-projects" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://docs.dagster.io/concepts/io-management/io-managers">Dagster IO Managers</a> — closest architectural match</li>
+<li><a href="https://ducklake.select/">DuckLake</a> — SQL catalog + Parquet storage at scale</li>
+<li><a href="https://github.com/intake/intake-sql">intake-sql</a> — YAML catalog for SQL sources</li>
+<li><a href="https://github.com/dlt-hub/dlt">dlt</a> — SQL source → file destination pipelines</li>
+<li><a href="https://docs.feast.dev/reference/registries/sql">Feast SQL Registry</a> — feature store with SQL metadata</li>
+<li><a href="https://github.com/nackjicholson/aiosql">aiosql</a> — named SQL queries from files</li>
+<li><a href="https://github.com/pylover/sqlalchemy-media">sqlalchemy-media</a> — file storage tracked by SQLAlchemy models</li>
+<li><a href="https://github.com/zarr-developers/zarr-python/issues/3319">Zarr SQLiteStore</a> — key-value blob store in SQLite</li>
+</ul>
+<h3 id="database-blob-storage">Database blob storage<a class="headerlink" href="#database-blob-storage" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://www.sqlite.org/sqlar.html">SQLite SQLAR format</a> — file archive in SQLite</li>
+<li><a href="https://wiki.postgresql.org/wiki/BinaryFilesInDB">PostgreSQL Binary Data</a> — BYTEA vs Large Objects</li>
+<li><a href="https://docs.python.org/3/library/sqlite3.html#sqlite3.Blob">SQLite Blob API (Python 3.11+)</a> — native file-like blob access</li>
+<li><a href="https://pypi.org/project/django-db-file-storage/">django-db-file-storage</a> — DB-backed Django file storage</li>
+</ul>
+<h3 id="serialization-performance">Serialization &amp; performance<a class="headerlink" href="#serialization-performance" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://arrow.apache.org/blog/2025/01/10/arrow-result-transfer/">Arrow query result transfer</a> — Arrow IPC performance</li>
+<li><a href="https://arrow.apache.org/blog/2023/01/05/introducing-arrow-adbc/">ADBC introduction</a> — Arrow-native DB connectivity</li>
+<li><a href="https://www.vldb.org/pvldb/vol15/p2994-wang.pdf">ConnectorX</a> — Rust-based parallel SQL→Arrow loading</li>
+<li><a href="https://docs.sqlalchemy.org/en/20/_modules/examples/performance/large_resultsets.html">SQLAlchemy streaming results</a></li>
+<li><a href="https://pythonspeed.com/articles/pandas-sql-chunking/">Pandas SQL chunking</a> — memory-bounded SQL reads</li>
+</ul>
+<h3 id="tiered-storage-precedent">Tiered storage precedent<a class="headerlink" href="#tiered-storage-precedent" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://www.starburst.io/blog/trino-spooling-protocol/">Trino spooling protocol</a> — query results to object storage</li>
+<li><a href="https://litestream.io/">Litestream</a> — SQLite replication to S3</li>
+<li><a href="https://martinfowler.com/articles/data-mesh-principles.html">Data mesh principles</a> — data products with output ports</li>
+</ul>
 
 
 
