@@ -73,6 +73,13 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## API Surface
 
+- [x] **ID-107b — `Backend.list_files(max_depth=N)` native optimization**
+  Added optional `max_depth` kwarg to `Backend.list_files()` ABC. Native depth
+  limiting in Local (`os.walk()` depth counter), SFTP (recursive call depth
+  tracking), Memory (DFS stack depth). S3/Azure/HTTP accept the parameter but
+  rely on Store-level client-side filter. Store passes `max_depth` through to
+  backend; client-side filter remains as safety net. Spec 037 (DEPTH-003).
+
 - [x] **ID-107 — `Store.list_files(max_depth=N)` with client-side filtering**
   Added `max_depth` parameter to `Store.list_files()`. When set, `recursive`
   is ignored. Client-side depth filtering at Store level via path component

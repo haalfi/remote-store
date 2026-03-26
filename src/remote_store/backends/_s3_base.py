@@ -61,7 +61,13 @@ class _S3Base(Backend):
 
     # region: shared listing methods
 
-    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
+    def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+    ) -> Iterator[FileInfo]:
         try:
             s3_path = self._s3_path(path)
             if recursive:

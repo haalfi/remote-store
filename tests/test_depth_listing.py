@@ -1,14 +1,20 @@
 """Tests for depth-limited listing.
 
-Covers spec 037-depth-limited-listing.md (DEPTH-001, DEPTH-002).
+Covers spec 037-depth-limited-listing.md (DEPTH-001, DEPTH-002, DEPTH-003).
 """
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 from remote_store._store import Store
+from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -196,3 +202,112 @@ class TestListFoldersMaxDepth:
         child = parent.child("root")
         folders = sorted(str(f.path) for f in child.list_folders("", max_depth=1))
         assert folders == ["sub", "sub/deep"]
+
+
+# ---------------------------------------------------------------------------
+# DEPTH-003: Backend-native max_depth optimization
+# ---------------------------------------------------------------------------
+
+
+def _seed_backend(backend: MemoryBackend | LocalBackend) -> None:
+    """Write a nested file tree into a backend for depth tests."""
+    for key, data in [
+        ("d/a.txt", b"a"),
+        ("d/sub1/b.txt", b"b"),
+        ("d/sub2/c.txt", b"c"),
+        ("d/sub1/deep/d.txt", b"d"),
+        ("d/sub1/deep/deeper/e.txt", b"e"),
+    ]:
+        backend.write(key, data)
+
+
+class TestMemoryBackendNativeDepth:
+    """DEPTH-003: MemoryBackend.list_files(max_depth=N) prunes DFS."""
+
+    @pytest.fixture
+    def backend(self) -> MemoryBackend:
+        b = MemoryBackend()
+        _seed_backend(b)
+        return b
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_none_ignores(self, backend: MemoryBackend) -> None:
+        """max_depth=None preserves existing recursive behavior."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=None))
+        assert len(files) == 5
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_zero(self, backend: MemoryBackend) -> None:
+        """max_depth=0 with recursive=True returns only immediate files."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=0))
+        assert files == ["a.txt"]
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_one(self, backend: MemoryBackend) -> None:
+        """max_depth=1 includes files in immediate subfolders."""
+        files = sorted(str(f.path) for f in backend.list_files("d", recursive=True, max_depth=1))
+        assert files == ["d/a.txt", "d/sub1/b.txt", "d/sub2/c.txt"]
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_two(self, backend: MemoryBackend) -> None:
+        """max_depth=2 includes files up to 2 levels deep."""
+        files = sorted(str(f.path) for f in backend.list_files("d", recursive=True, max_depth=2))
+        assert files == ["d/a.txt", "d/sub1/b.txt", "d/sub1/deep/d.txt", "d/sub2/c.txt"]
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_exceeds_tree(self, backend: MemoryBackend) -> None:
+        """max_depth larger than tree returns all files."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=100))
+        assert len(files) == 5
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_without_recursive(self, backend: MemoryBackend) -> None:
+        """max_depth has no effect when recursive=False."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=False, max_depth=5))
+        assert files == ["a.txt"]
+
+
+class TestLocalBackendNativeDepth:
+    """DEPTH-003: LocalBackend.list_files(max_depth=N) uses os.walk depth cutoff."""
+
+    @pytest.fixture
+    def backend(self, tmp_path: Path) -> LocalBackend:
+        b = LocalBackend(root=str(tmp_path))
+        _seed_backend(b)
+        return b
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_none_ignores(self, backend: LocalBackend) -> None:
+        """max_depth=None preserves existing recursive behavior."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=None))
+        assert len(files) == 5
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_zero(self, backend: LocalBackend) -> None:
+        """max_depth=0 with recursive=True returns only immediate files."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=0))
+        assert files == ["a.txt"]
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_one(self, backend: LocalBackend) -> None:
+        """max_depth=1 includes files in immediate subfolders."""
+        files = sorted(str(f.path) for f in backend.list_files("d", recursive=True, max_depth=1))
+        assert files == ["d/a.txt", "d/sub1/b.txt", "d/sub2/c.txt"]
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_two(self, backend: LocalBackend) -> None:
+        """max_depth=2 includes files up to 2 levels deep."""
+        files = sorted(str(f.path) for f in backend.list_files("d", recursive=True, max_depth=2))
+        assert files == ["d/a.txt", "d/sub1/b.txt", "d/sub1/deep/d.txt", "d/sub2/c.txt"]
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_exceeds_tree(self, backend: LocalBackend) -> None:
+        """max_depth larger than tree returns all files."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=100))
+        assert len(files) == 5
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_without_recursive(self, backend: LocalBackend) -> None:
+        """max_depth has no effect when recursive=False."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=False, max_depth=5))
+        assert files == ["a.txt"]

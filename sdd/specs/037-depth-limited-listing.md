@@ -4,7 +4,7 @@ Adds `max_depth` parameter to `Store.list_files()` and `Store.list_folders()`
 for controlling traversal depth without fetching the full recursive tree.
 
 **Related:** [Research](../research/research-depth-limited-listing.md),
-ID-107, ID-108.
+ID-107, ID-108, ID-107b.
 
 ---
 
@@ -57,3 +57,43 @@ data/raw/2026/file_c.csv -> depth 2  excluded
 **Implementation (Phase 1):** BFS at the Store level. Each BFS step calls the
 existing `Backend.list_folders()` for one level. Cost is O(total folders within
 depth), not O(depth). No Backend ABC change.
+
+---
+
+## DEPTH-003: Backend-native `max_depth` optimization
+
+**Invariant:** `Backend.list_files(path, *, recursive=False, max_depth=None)`
+accepts an optional `max_depth` keyword. Backends that implement native depth
+limiting prune traversal early, reducing I/O. Backends that do not override the
+parameter simply ignore it — the Store-level client-side filter (DEPTH-001)
+serves as a correctness safety net.
+
+**ABC signature:**
+
+```python
+@abc.abstractmethod
+def list_files(
+    self, path: str, *, recursive: bool = False, max_depth: int | None = None,
+) -> Iterator[FileInfo]:
+```
+
+**Default behavior:** `max_depth=None` preserves existing `recursive` semantics.
+When `max_depth` is set, backends that support it prune traversal natively;
+others yield the full recursive result and the Store filters client-side.
+
+**Store delegation:** `Store.list_files()` passes `max_depth` through to the
+backend call. The existing client-side depth filter remains as a no-op safety
+net when the backend already filtered natively.
+
+**No capability flag:** Unlike glob, depth filtering produces identical results
+whether done natively or client-side. The optimization is purely performance.
+
+**Backend strategies:**
+
+| Backend    | Native strategy                                       |
+|------------|-------------------------------------------------------|
+| **Local**  | `os.walk()` with depth counter; skip dirs beyond limit. |
+| **SFTP**   | Depth tracking in recursive calls; stop recursing at limit. |
+| **Memory** | DFS stack depth tracking; don't push beyond limit.    |
+| **S3**     | Accept parameter, no native optimization (flat scan + client filter). |
+| **Azure**  | Accept parameter, no native optimization (flat scan + client filter). |

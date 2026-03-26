@@ -30,6 +30,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `recursive` is ignored. Client-side filtering at the Store level; no
   Backend ABC change. Spec 037.
 
+- **Backend-native `max_depth` optimization** (ID-107b):
+  `Backend.list_files()` now accepts optional `max_depth` kwarg. Local, SFTP,
+  and Memory backends prune traversal natively, reducing filesystem and network
+  I/O. S3/Azure accept the parameter but defer to Store-level client-side
+  filtering. Spec 037 (DEPTH-003).
+
 - **Azure range reader** (ID-102): `AzureBackend.read_seekable()` returns
   a seekable stream backed by `download_blob(offset=, length=)`. Each
   `read()` issues a single HTTP Range request — no full-file download.

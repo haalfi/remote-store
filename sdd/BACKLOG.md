@@ -45,13 +45,6 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
-- [ ] **ID-107b — `Backend.list_files(max_depth=N)` native optimization**
-  Add optional `max_depth` kwarg to `Backend.list_files()` ABC. Implement
-  native depth limiting in Local (`os.walk()`), SFTP (recursive call depth
-  tracking), Memory (DFS stack depth). S3/Azure: client-side filter.
-  - Depends on: ID-107.
-  - [Research](research/research-depth-limited-listing.md) §4.6.
-
 ### S3 Backend DX & Performance
 
 - [ ] **ID-112 — Non-recursive `get_folder_info` optimization**

@@ -419,24 +419,44 @@ class SFTPBackend(Backend):
                     )
                 self._sftp.rmdir(sftp_path)
 
-    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
+    def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+    ) -> Iterator[FileInfo]:
         try:
-            sftp_path = self._sftp_path(path)
-            try:
-                entries = self._sftp.listdir_attr(sftp_path)
-            except OSError:
-                return
-            for attr in entries:
-                if stat.S_ISREG(attr.st_mode):
-                    rel = f"{path}/{attr.filename}" if path else attr.filename
-                    yield self._stat_to_fileinfo(rel, attr)
-                elif recursive and stat.S_ISDIR(attr.st_mode):
-                    subpath = f"{path}/{attr.filename}" if path else attr.filename
-                    yield from self.list_files(subpath, recursive=True)
+            yield from self._list_files_depth(path, recursive=recursive, max_depth=max_depth, _depth=0)
         except RemoteStoreError:
             raise
         except Exception as exc:
             raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
+
+    def _list_files_depth(
+        self,
+        path: str,
+        *,
+        recursive: bool,
+        max_depth: int | None,
+        _depth: int,
+    ) -> Iterator[FileInfo]:
+        sftp_path = self._sftp_path(path)
+        try:
+            entries = self._sftp.listdir_attr(sftp_path)
+        except OSError:
+            return
+        for attr in entries:
+            if stat.S_ISREG(attr.st_mode):
+                rel = f"{path}/{attr.filename}" if path else attr.filename
+                yield self._stat_to_fileinfo(rel, attr)
+            elif recursive and stat.S_ISDIR(attr.st_mode):
+                if max_depth is not None and _depth >= max_depth:
+                    continue
+                subpath = f"{path}/{attr.filename}" if path else attr.filename
+                yield from self._list_files_depth(
+                    subpath, recursive=True, max_depth=max_depth, _depth=_depth + 1,
+                )
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         try:
