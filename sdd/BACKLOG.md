@@ -77,12 +77,13 @@ Items graduate through the SDD pipeline:
 
 ### S3 Backend DX & Performance
 
-- [ ] **ID-112 — `get_folder_info(path, recursive=False)` optimization**
+- [ ] **ID-112 — Non-recursive `get_folder_info` optimization**
   Current `get_folder_info()` uses `s3fs.find()` for full recursive traversal.
   For bucket-wide aggregation, this rescans the same objects repeatedly
-  (catastrophic for 250k+ files). A `recursive=False` mode using cheap `ls()`
+  (catastrophic for 250k+ files). A non-recursive mode using cheap `ls()`
   for direct-children stats only would avoid this.
-  - Adds flag to existing method — no new ABC surface
+  - Implementation: Store-level helper using `list_files()` / `list_folders()`,
+    consistent with ID-107/108 extension-helper pattern — no ABC change
 
 - [ ] **ID-113 — Documentation: S3 listing strategies and performance**
   One flat `ListObjectsV2` stream beats O(n_folders) delimiter-based `ls()`
