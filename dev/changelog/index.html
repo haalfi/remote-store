@@ -8435,6 +8435,13 @@
   Backend ABC change. Spec 037.</p>
 </li>
 <li>
+<p><strong>Backend-native <code>max_depth</code> optimization</strong> (ID-107b):
+  <code>Backend.list_files()</code> now accepts optional <code>max_depth</code> kwarg. Local, SFTP,
+  and Memory backends prune traversal natively, reducing filesystem and network
+  I/O. S3/Azure accept the parameter but defer to Store-level client-side
+  filtering. Spec 037 (DEPTH-003).</p>
+</li>
+<li>
 <p><strong>Azure range reader</strong> (ID-102): <code>AzureBackend.read_seekable()</code> returns
   a seekable stream backed by <code>download_blob(offset=, length=)</code>. Each
   <code>read()</code> issues a single HTTP Range request — no full-file download.

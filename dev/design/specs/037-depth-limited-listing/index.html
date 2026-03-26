@@ -4772,6 +4772,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#depth-003-backend-native-max_depth-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DEPTH-003: Backend-native max_depth optimization
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -6360,6 +6371,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#depth-003-backend-native-max_depth-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DEPTH-003: Backend-native max_depth optimization
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -6381,7 +6403,7 @@
 <p>Adds <code>max_depth</code> parameter to <code>Store.list_files()</code> and <code>Store.list_folders()</code>
 for controlling traversal depth without fetching the full recursive tree.</p>
 <p><strong>Related:</strong> <a href="../../research/research-depth-limited-listing/">Research</a>,
-ID-107, ID-108.</p>
+ID-107, ID-108, ID-107b.</p>
 <hr />
 <h2 id="depth-001-list_filesmax_depthn">DEPTH-001: list_files(max_depth=N)<a class="headerlink" href="#depth-001-list_filesmax_depthn" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>list_files(path, *, recursive=False, pattern=None, max_depth=None)</code>
@@ -6421,6 +6443,62 @@ change.</p>
 <p><strong>Implementation (Phase 1):</strong> BFS at the Store level. Each BFS step calls the
 existing <code>Backend.list_folders()</code> for one level. Cost is O(total folders within
 depth), not O(depth). No Backend ABC change.</p>
+<hr />
+<h2 id="depth-003-backend-native-max_depth-optimization">DEPTH-003: Backend-native <code>max_depth</code> optimization<a class="headerlink" href="#depth-003-backend-native-max_depth-optimization" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>Backend.list_files(path, *, recursive=False, max_depth=None)</code>
+accepts an optional <code>max_depth</code> keyword. Backends that implement native depth
+limiting prune traversal early, reducing I/O. Backends that do not override the
+parameter simply ignore it — the Store-level client-side filter (DEPTH-001)
+serves as a correctness safety net.</p>
+<p><strong>ABC signature:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_files</span><span class="p">(</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">]:</span>
+</code></pre></div>
+<p><strong>Default behavior:</strong> <code>max_depth=None</code> preserves existing <code>recursive</code> semantics.
+When <code>max_depth</code> is set, backends that support it prune traversal natively;
+others yield the full recursive result and the Store filters client-side.</p>
+<p><strong>Store delegation:</strong> <code>Store.list_files()</code> passes <code>max_depth</code> through to the
+backend call. The existing client-side depth filter remains as a no-op safety
+net when the backend already filtered natively.</p>
+<p><strong>No capability flag:</strong> Unlike glob, depth filtering produces identical results
+whether done natively or client-side. The optimization is purely performance.</p>
+<p><strong>Backend strategies:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Native strategy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Local</strong></td>
+<td><code>os.walk()</code> with depth counter; skip dirs beyond limit.</td>
+</tr>
+<tr>
+<td><strong>SFTP</strong></td>
+<td>Depth tracking in recursive calls; stop recursing at limit.</td>
+</tr>
+<tr>
+<td><strong>Memory</strong></td>
+<td>DFS stack depth tracking; don't push beyond limit.</td>
+</tr>
+<tr>
+<td><strong>S3</strong></td>
+<td>Accept parameter, no native optimization (flat scan + client filter).</td>
+</tr>
+<tr>
+<td><strong>Azure</strong></td>
+<td>Accept parameter, no native optimization (flat scan + client filter).</td>
+</tr>
+<tr>
+<td><strong>HTTP</strong></td>
+<td>Accept parameter; raises <code>CapabilityNotSupported</code> (listing not supported).</td>
+</tr>
+</tbody>
+</table>
 
 
 
