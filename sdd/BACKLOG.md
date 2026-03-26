@@ -45,22 +45,38 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
-- [ ] **ID-107 — `list_files(max_depth=N)` extension helper**
-  Flat recursive scan returns leaf-level paths. A `max_depth=N` helper
-  would let callers stop at a meaningful structural level (e.g., top-level
-  dataset dirs) without post-processing.
+- [ ] **ID-107a — `ext.listing.list_files_deep()` extension helper (Phase 1)**
+  Portable depth-limited file listing via `store.list_files(recursive=True)`
+  + client-side depth filtering. Spec, tests, exports, docs.
   - Semantics: depth 0 = only items in `path` itself; depth 1 = items + direct children
   - Implementation: extension helper wrapping `list_files()`, **not** a Backend
     ABC parameter — preserves slim core interface
+  - [Research](research/research-depth-limited-listing.md) §6 Phase 1.
+  - Supersedes ID-107.
 
-- [ ] **ID-108 — `list_folders(depth=N)` extension helper**
-  Currently `list_folders("")` gives only one level. A `depth=N` helper
-  discovers natural aggregation levels (e.g., "dataset/v1/" in one call vs.
-  chaining `iter_children`).
+- [ ] **ID-107b — `Store.list_files(max_depth=N)` + backend optimization (Phase 2)**
+  Add `max_depth` parameter to `Store.list_files()` and `Backend.list_files()`.
+  Implement native depth limiting in Local (`os.walk()`), SFTP (recursive call
+  depth tracking), Memory (DFS stack depth). S3/Azure: client-side filter (flat
+  scan is often optimal). Update `ext.listing.list_files_deep()` to delegate.
+  - Depends on: ID-107a.
+  - [Research](research/research-depth-limited-listing.md) §6 Phase 2.
+
+- [ ] **ID-108a — `ext.listing.list_folders_deep()` extension helper (Phase 1)**
+  Portable depth-limited folder listing via BFS over `store.list_folders()`.
+  Spec, tests, exports, docs.
   - Semantics: depth 0 = immediate children; depth N = N levels of nesting
-  - Implementation: extension helper, not ABC change
   - Note: aggregate stats already available via `get_folder_info()` per folder
     (returns `FolderInfo(file_count, total_size, modified_at)`)
+  - [Research](research/research-depth-limited-listing.md) §6 Phase 1.
+  - Supersedes ID-108.
+
+- [ ] **ID-108b — `Store.list_folders(depth=N)` Store-level BFS (Phase 2)**
+  Add `depth` parameter to `Store.list_folders()`. Implement BFS traversal at
+  Store level (no backend ABC change needed for folders). Update
+  `ext.listing.list_folders_deep()` to delegate.
+  - Depends on: ID-108a.
+  - [Research](research/research-depth-limited-listing.md) §6 Phase 2.
 
 ### S3 Backend DX & Performance
 
