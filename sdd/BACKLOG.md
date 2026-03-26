@@ -95,6 +95,37 @@ Items graduate through the SDD pipeline:
     Primarily benefits Azure Stack Hub / on-premises deployments.
     Wrap `ClientOptions(ca_cert=...)`, check `AZURE_CA_CERTIFICATE_PATH`.
 
+### New Backends
+
+- [ ] **ID-121 — `resolve()` → `ResolutionPlan` introspection API**
+  Unified introspection across all backends. `Store.resolve(key)` returns a
+  `ResolutionPlan` dataclass (`kind`, `backend`, `key`, `details`). Replaces
+  ad-hoc `resolve_query()` / `resolve_tier()` / `explain()` methods.
+  - [Research](research/research-sqlalchemy-backend.md#51-resolutionplan--unified-introspection)
+  - Default implementation on `Backend` returns plan with `kind=backend.name`
+  - SQLAlchemy + CompositeStore override with meaningful details
+  - Enables principled cache keys (`hash(plan)`) and debuggability
+  - Next: spec after ID-119 spike validates the pattern
+
+- [ ] **ID-119 — SQLAlchemy backends (research complete)**
+  Two concrete backends sharing `_SQLAlchemyBaseBackend`:
+  - `SQLBlobBackend` (v1) — KV blob store, `(key TEXT PK, data BLOB, ...)`,
+    full read-write. SQLite specialization (blobopen, WAL, PRAGMA tuning).
+  - `SQLQueryBackend` (v2) — read-only query materializer, maps path keys to SQL
+    queries via `ResultSerializer` protocol, extension-based output format.
+  - [Research](research/research-sqlalchemy-backend.md)
+  - Dependencies: `sqlalchemy` (required), `pyarrow` (SQLQueryBackend), `adbc` (v3)
+  - Next: spike `SQLBlobBackend` with SQLite, then draft spec
+
+- [ ] **ID-120 — CompositeStore (research complete)**
+  `CompositeStore(Store)` — core Store subclass (not extension) that composes
+  multiple stores into one. Deterministic fallthrough resolution for reads, union
+  LIST (deduplicated), writes to primary tier only.
+  - [Research](research/research-sqlalchemy-backend.md#52-compositestore-id-120)
+  - Depends on: unified `resolve()` → `ResolutionPlan` (ID-121); at least two
+    working backends to be useful; pairs well with ID-119
+  - Next: design as separate spec — backend-agnostic, useful independently
+
 ### Integrations
 
 - [ ] **ID-105 — AzurePyArrowBackend (C++ Tier 1)**
