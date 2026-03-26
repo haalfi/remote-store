@@ -45,22 +45,29 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
-- [ ] **ID-107 — `list_files(max_depth=N)` extension helper**
-  Flat recursive scan returns leaf-level paths. A `max_depth=N` helper
-  would let callers stop at a meaningful structural level (e.g., top-level
-  dataset dirs) without post-processing.
+- [ ] **ID-107 — `Store.list_files(max_depth=N)` with client-side filtering**
+  Add `max_depth` parameter to `Store.list_files()`. Implement via
+  `Backend.list_files(recursive=True)` + client-side depth filtering at the
+  Store level. Spec, tests, docs. No ABC change, no extension module.
   - Semantics: depth 0 = only items in `path` itself; depth 1 = items + direct children
-  - Implementation: extension helper wrapping `list_files()`, **not** a Backend
-    ABC parameter — preserves slim core interface
+  - When `max_depth` is set, `recursive` is ignored (depth takes over)
+  - [Research](research/research-depth-limited-listing.md) §4.5.
 
-- [ ] **ID-108 — `list_folders(depth=N)` extension helper**
-  Currently `list_folders("")` gives only one level. A `depth=N` helper
-  discovers natural aggregation levels (e.g., "dataset/v1/" in one call vs.
-  chaining `iter_children`).
-  - Semantics: depth 0 = immediate children; depth N = N levels of nesting
-  - Implementation: extension helper, not ABC change
+- [ ] **ID-108 — `Store.list_folders(max_depth=N)` with BFS traversal**
+  Add `max_depth` parameter to `Store.list_folders()`. Implement via BFS
+  using `Backend.list_folders()` at each level. Spec, tests, docs. No ABC
+  change.
+  - Semantics: same as `list_files` — depth 0 = immediate children only
   - Note: aggregate stats already available via `get_folder_info()` per folder
     (returns `FolderInfo(file_count, total_size, modified_at)`)
+  - [Research](research/research-depth-limited-listing.md) §4.5.
+
+- [ ] **ID-107b — `Backend.list_files(max_depth=N)` native optimization**
+  Add optional `max_depth` kwarg to `Backend.list_files()` ABC. Implement
+  native depth limiting in Local (`os.walk()`), SFTP (recursive call depth
+  tracking), Memory (DFS stack depth). S3/Azure: client-side filter.
+  - Depends on: ID-107.
+  - [Research](research/research-depth-limited-listing.md) §4.6.
 
 ### S3 Backend DX & Performance
 
@@ -70,7 +77,7 @@ Items graduate through the SDD pipeline:
   (catastrophic for 250k+ files). A non-recursive mode using cheap `ls()`
   for direct-children stats only would avoid this.
   - Implementation: Store-level helper using `list_files()` / `list_folders()`,
-    consistent with ID-107/108 extension-helper pattern — no ABC change
+    consistent with ID-107/108 Store-param pattern — no ABC change
 
 - [ ] **ID-113 — Documentation: S3 listing strategies and performance**
   One flat `ListObjectsV2` stream beats O(n_folders) delimiter-based `ls()`
