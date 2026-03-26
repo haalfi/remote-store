@@ -56,6 +56,15 @@ store.list_files("", pattern="*.[ct]sv")  # matches .csv and .tsv
 This works with every backend (needs only `LIST` capability). The
 filtering is applied at the Store level after path rebasing.
 
+**Composing with `max_depth`:** `pattern` and `max_depth` compose naturally ---
+depth filtering applies first (which files to consider), then pattern filtering
+(which names to keep):
+
+```python
+# CSVs in data/ and its immediate subfolders only
+store.list_files("data", max_depth=1, pattern="*.csv")
+```
+
 **Limitation:** `pattern` matches against the file's **name** (basename),
 not the full path. For path-based patterns like `data/**/*.csv`, use
 `glob_files()` (Tier 3).

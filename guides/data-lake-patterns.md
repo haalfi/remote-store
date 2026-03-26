@@ -228,6 +228,19 @@ batch_copy(bronze, [(f, f"archive/{f}") for f in old_files])
 batch_delete(bronze, old_files)
 ```
 
+For partition discovery without scanning the full tree, use `max_depth` to
+limit traversal:
+
+```python
+# List only top-level partition folders (e.g. date directories)
+for folder in bronze.list_folders("readings", max_depth=0):
+    print(folder.name)  # 2026-01-01, 2026-02-01, ...
+
+# Files in readings/ and its immediate partition folders only
+for f in bronze.list_files("readings", max_depth=1):
+    print(f.path)
+```
+
 ## Cross-backend transfer
 
 Move data between backends without intermediate files:
