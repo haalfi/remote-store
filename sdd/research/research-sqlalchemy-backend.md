@@ -177,9 +177,10 @@ CREATE TABLE remote_store_objects (
     digest      TEXT,
     extra       TEXT  -- JSON blob for backend-specific metadata
 );
--- Optional: prefix index for list_files() performance
-CREATE INDEX IF NOT EXISTS ix_rso_key_prefix ON remote_store_objects (key);
 ```
+
+The `PRIMARY KEY` on `key` already creates a B-tree index that supports prefix
+range scans (`WHERE key LIKE 'prefix/%'`). No separate index needed.
 
 **Schema flexibility:**
 - Default: auto-creates `remote_store_objects` table with the schema above.
@@ -194,7 +195,7 @@ CREATE INDEX IF NOT EXISTS ix_rso_key_prefix ON remote_store_objects (key);
 **Performance guidelines**:
 - <10 MB per blob: works well across all supported databases
 - 10–100 MB: use with caution; consider `max_blob_size` guard
-- &gt;100 MB: discouraged — use a blob storage backend (S3, local) instead
+- >100 MB: discouraged — use a blob storage backend (S3, local) instead
 
 **SQLite specialization** (worth it — zero-infrastructure persistent store):
 - Use `blobopen()` for streaming reads (Python 3.11+)
@@ -281,6 +282,12 @@ that delegates to child stores based on resolution rules.
 class MetaStore(Store):
     """Routes keys to different backend stores by tier."""
 ```
+
+**Construction:** `Store.__init__` requires a `Backend` instance. MetaStore handles
+this by creating an internal `_MultiplexBackend` adapter that delegates to tier
+backends based on resolution rules, then passes it to `super().__init__()`. This
+keeps MetaStore as a true Store subclass (compatible with `ext.cache`, `ext.observe`,
+`Store.child()`) without fragile `__init__` overrides.
 
 **Core, not extension.** MetaStore composes Stores — it's a first-class construct like
 `Store.child()`, not a decorator. Extensions (`ext.cache`, `ext.observe`) wrap a single
@@ -388,12 +395,12 @@ lack them.
 | Capability | Supported | Notes |
 |------------|-----------|-------|
 | `READ` | Yes | Execute query, serialize, return bytes |
-| `WRITE` | No | Query results are read-only |
-| `DELETE` | No | Cannot delete a query |
+| `WRITE` | -- | Query results are read-only |
+| `DELETE` | -- | Cannot delete a query |
 | `LIST` | Yes | List registered query keys |
-| `MOVE` | No | — |
-| `COPY` | No | — |
-| `ATOMIC_WRITE` | No | — |
+| `MOVE` | -- | — |
+| `COPY` | -- | — |
+| `ATOMIC_WRITE` | -- | — |
 | `METADATA` | Yes | `size: int \| None` — `None` until query executes. `modified_at` from config. |
 | `GLOB` | Yes | Pattern match against registered keys (not SQL) |
 | `SEEKABLE_READ` | Yes | Serialize to buffer, return seekable `BytesIO` |
