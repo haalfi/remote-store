@@ -34,7 +34,7 @@ hatch run docs-build        # build docs (strict mode)
 hatch run all               # lint + format-check + typecheck + test-cov + examples + notebooks
 ```
 
-- **Use single commands, not compound commands.** Compound commands (`&&`, `||`, `;`) cannot be auto-approved by permission patterns. Split them into separate tool calls instead. The extra round-trip cost is minor compared to blocking on a security prompt.
+- **No `&&`, `||`, or `;`.** Split into separate Bash tool calls.
 
 ## Branching
 
