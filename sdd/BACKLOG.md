@@ -95,6 +95,27 @@ Items graduate through the SDD pipeline:
     Primarily benefits Azure Stack Hub / on-premises deployments.
     Wrap `ClientOptions(ca_cert=...)`, check `AZURE_CA_CERTIFICATE_PATH`.
 
+### New Backends
+
+- [ ] **ID-119 — SQLAlchemy backends (research complete)**
+  Two concrete backends sharing `_SQLAlchemyBaseBackend`:
+  - `SQLBlobBackend` (v1) — KV blob store, `(key TEXT PK, data BLOB, ...)`,
+    full read-write. SQLite specialization (blobopen, WAL, PRAGMA tuning).
+  - `SQLQueryBackend` (v2) — read-only query materializer, maps path keys to SQL
+    queries via `ResultSerializer` protocol, extension-based output format.
+  - [Research](research/research-sqlalchemy-backend.md)
+  - Dependencies: `sqlalchemy` (required), `pyarrow` (SQLQueryBackend), `adbc` (v3)
+  - Next: spike `SQLBlobBackend` with SQLite, then draft spec
+
+- [ ] **ID-120 — Tiered meta-store (research complete)**
+  `MetaStore(Store)` — core Store subclass (not extension) that routes keys to
+  different backend stores. Deterministic fallthrough resolution for reads, union
+  LIST (deduplicated), writes to primary tier only.
+  - [Research](research/research-sqlalchemy-backend.md#5-tiered-meta-store-id-120)
+  - Includes: `resolve_tier()`, `explain()` introspection API
+  - Depends on: at least two working backends to be useful; pairs well with ID-119
+  - Next: design as separate spec — backend-agnostic, useful independently
+
 ### Integrations
 
 - [ ] **ID-105 — AzurePyArrowBackend (C++ Tier 1)**
