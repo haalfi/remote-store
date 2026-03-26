@@ -122,14 +122,14 @@ backend = SQLQueryBackend(
         "reports/daily_sales.parquet": "SELECT date, SUM(amount) FROM orders GROUP BY date",
         "reports/user_summary.csv": "SELECT * FROM user_summary_mv",
     },
-    strict=True,  # no convention fallback — only explicit mappings and views
+    strict=True,  # only explicit mappings — no view or convention fallback
 )
 store = Store(backend)
 data = store.read_bytes("reports/daily_sales.parquet")  # → parquet bytes
 ```
 
-**Capabilities**: `READ`, `LIST`, `METADATA`, `SEEKABLE_READ`. Everything else
-raises `CapabilityNotSupported`.
+**Capabilities**: `READ`, `LIST`, `METADATA`, `GLOB`, `SEEKABLE_READ`. Everything
+else raises `CapabilityNotSupported`.
 
 **Key-to-query resolution** (strict precedence):
 1. Explicit mapping (config dict) — highest priority
@@ -255,10 +255,15 @@ Packaging: `pip install remote-store[sql]` for SQLBlobBackend (sqlalchemy only),
 
 Caching is **not embedded** in the backend. Use `ext.cache` (existing infrastructure).
 
-Cache key for query results:
+Cache key for query results (deterministic across processes):
 ```python
-cache_key = hash(query_text + sorted(params) + schema_version)
+cache_key = hashlib.sha256(
+    (query_text + "\0" + str(sorted(params)) + "\0" + schema_version).encode()
+).hexdigest()
 ```
+
+Note: Python's built-in `hash()` is randomized per process (PYTHONHASHSEED) and
+must not be used for persistent or cross-process cache keys.
 
 The backend provides `resolve_query()` for introspection; ext.cache wraps the Store.
 No built-in TTL, no `refresh()` method — that's the cache extension's job.
@@ -364,10 +369,15 @@ meta.explain("sales/2024-Q1.parquet")
 
 ### Capability model
 
-- `READ` → union/fallthrough across tiers
-- `WRITE` → primary tier only (gated by primary tier's capabilities)
-- `LIST` → union across tiers that support LIST
-- Other capabilities: intersection of write-tier capabilities (conservative)
+- `READ`, `SEEKABLE_READ` → union/fallthrough across tiers
+- `WRITE`, `ATOMIC_WRITE`, `MOVE`, `COPY`, `DELETE` → primary tier only (gated by primary tier's capabilities)
+- `LIST`, `GLOB` → union across tiers that support them
+- `METADATA` → union/fallthrough (like READ)
+
+Since write operations target the primary tier only, MetaStore advertises the
+primary tier's write-side capabilities — not the intersection across all tiers.
+This avoids unnecessarily disabling MOVE/COPY/ATOMIC_WRITE when read-only tiers
+lack them.
 
 ---
 
@@ -405,7 +415,7 @@ v2 when SQLQueryBackend ships.
 | `LIST` | Yes | `SELECT key FROM ...` with prefix filter |
 | `MOVE` | Yes | `UPDATE ... SET key = ? WHERE key = ?` |
 | `COPY` | Yes | `INSERT INTO ... SELECT ... FROM ... WHERE key = ?` |
-| `ATOMIC_WRITE` | Yes | Single SQL statement = atomic |
+| `ATOMIC_WRITE` | Yes | `write_atomic()`: single INSERT/UPDATE. `open_atomic()`: buffer in `BytesIO`, commit via INSERT on success, discard on exception (MemoryBackend pattern). |
 | `METADATA` | Yes | All metadata columns available |
 | `GLOB` | Yes | `LIKE` / `GLOB` (SQLite) pattern on key column |
 | `SEEKABLE_READ` | Yes | `BytesIO(data)` |
