@@ -1,9 +1,9 @@
 # Research: Depth-Limited Listing
 
 **Date:** 2026-03-26
-**Scope:** `list_files(max_depth=N)` and `list_folders(depth=N)` — performance
-analysis, native backend feasibility, and a phased design proposal following
-the glob three-tier pattern (ADR-0009).
+**Status:** Proposed
+**Scope:** `list_files(max_depth=N)` and `list_folders(max_depth=N)` —
+performance analysis, native backend feasibility, and a phased design proposal.
 **Related:** ID-107, ID-108, ID-112, ID-113,
 [ADR-0009](../adrs/0009-glob-three-tier-design.md),
 [018-glob.md](../specs/018-glob.md).
@@ -20,11 +20,11 @@ N levels deep."
 Real use cases where depth control matters:
 
 - **Dataset discovery:** A data lake has `dataset/version/partition/` structure.
-  Listing top-level dataset directories (`depth=1`) without scanning millions
-  of leaf files.
+  Listing top-level dataset directories (`max_depth=1`) without scanning
+  millions of leaf files.
 - **Shallow inventory:** Show the first two levels of a project folder for a
   UI tree view without fetching the full recursive listing.
-- **Controlled recursion:** Enumerate files at depth 0–2 to populate a preview
+- **Controlled recursion:** Enumerate files at depth 0--2 to populate a preview
   table, without waiting for a full S3 `find()` over 250k+ objects.
 
 The workaround today is `list_files(recursive=True)` and post-filtering by
@@ -167,14 +167,54 @@ the native implementation and still be correct.
 
 ---
 
-## 4. Design Proposal: Three-Tier Depth-Limited Listing
+## 4. Design Proposal: Two-Phase Depth-Limited Listing
 
-Following the glob pattern (ADR-0009): Tier 1 simple Store-level API,
-Tier 2 native backend capability, Tier 3 portable extension.
+### 4.1 Depth semantics (unified across `list_files` and `list_folders`)
 
-### Tier 1: `list_files(max_depth=…)` — Store-level parameter
+Both `list_files` and `list_folders` use the same `max_depth` parameter with
+consistent semantics:
 
-Add an optional `max_depth: int | None` parameter to `Store.list_files()`:
+- `max_depth=None` (default): current behavior unchanged.
+- `max_depth=0`: items directly in `path` itself (no descent).
+- `max_depth=1`: items in `path` + items in its direct subfolders.
+- `max_depth=N`: items up to N folder levels below `path`.
+
+Using the same parameter name and semantics for both methods avoids the
+off-by-one confusion that would arise from naming one `max_depth` and the
+other `depth` with different reference frames.
+
+### 4.2 Interaction with `recursive`
+
+`max_depth` implies recursion — you need to descend to reach depth N. The
+interaction rules:
+
+- `max_depth=None` (default): `recursive` flag controls, as today.
+- `max_depth=0`: equivalent to `recursive=False`. No conflict.
+- `max_depth > 0` with `recursive=False`: raises `ValueError` — contradictory
+  request (asking for depth but forbidding recursion).
+- `max_depth > 0` with `recursive=True` (or default): works normally — `max_depth`
+  refines the recursive scan.
+
+### 4.3 Interaction with `pattern`
+
+`Store.list_files(pattern=)` applies fnmatch on basenames client-side.
+When combined with `max_depth`:
+
+1. Depth filtering applies first (determines which files to consider).
+2. Pattern filtering applies second (filters the depth-limited set by name).
+
+These compose naturally — no special handling needed.
+
+### 4.4 Interaction with `iter_children`
+
+`Store.iter_children()` returns `FileInfo | FolderEntry` at a single level.
+It stays single-level by design. Depth-limiting applies only to `list_files`
+and `list_folders`. Users who want depth-limited mixed listings can combine
+the two calls.
+
+### 4.5 Phase 1: Store-level parameters with client-side filtering
+
+Add `max_depth` to `Store.list_files()` and `Store.list_folders()`:
 
 ```python
 def list_files(
@@ -185,46 +225,34 @@ def list_files(
     pattern: str | None = None,
     max_depth: int | None = None,
 ) -> Iterator[FileInfo]:
-```
 
-**Semantics:**
-- `max_depth=None` (default): current behavior — `recursive` flag controls.
-- `max_depth=0`: only files directly in `path` (same as `recursive=False`).
-- `max_depth=1`: files in `path` + files in its direct subfolders.
-- `max_depth=N`: files up to N folder levels below `path`.
-- When `max_depth` is set, `recursive` is ignored (depth is more precise).
-
-**Implementation at Store level:** When `max_depth` is not `None`,
-`Store.list_files()` delegates to `Backend.list_files(path, max_depth=N)`.
-If the backend raises `TypeError` (doesn't accept `max_depth`), falls back
-to `Backend.list_files(path, recursive=True)` + client-side depth filtering.
-
-This mirrors GLOB-001: `pattern` was added to `Store.list_files()` as a
-Store-level filter that works with any backend, no new capability needed.
-
-**`list_folders` counterpart:** Add an optional `depth: int | None` parameter
-to `Store.list_folders()`:
-
-```python
 def list_folders(
     self,
     path: str,
     *,
-    depth: int | None = None,
+    max_depth: int | None = None,
 ) -> Iterator[FolderEntry]:
 ```
 
-**Semantics:**
-- `depth=None` (default): current behavior — immediate children only.
-- `depth=0`: immediate children only (same as default).
-- `depth=1`: children + grandchildren.
-- `depth=N`: N+1 levels of nesting.
+**Implementation at Store level — no ABC change:**
 
-**Implementation at Store level:** BFS using `store.list_folders(path)` at
-each level, up to `depth` levels. When backend supports native depth, delegate
-directly.
+- `list_files(max_depth=N)`: delegates to
+  `Backend.list_files(path, recursive=True)` and filters results client-side
+  by counting path components relative to `path`. The Store already does
+  client-side filtering for `pattern` — depth filtering follows the same
+  approach.
+- `list_folders(max_depth=N)`: BFS using `Backend.list_folders()` at each
+  level, up to `max_depth` levels. Each BFS step is one call to the existing
+  backend method.
 
-### Tier 2: `Backend.list_files(max_depth=…)` — Native backend optimization
+This matches how `pattern` was added: Store-level concern, no backend
+awareness needed, works with all backends immediately.
+
+**What ships:** Store parameter, spec, tests, docs. No new extension module.
+
+**Effort:** Small-medium. Store plumbing, spec, ~150 lines of tests.
+
+### 4.6 Phase 2: Backend-native optimization
 
 Add `max_depth: int | None = None` as an optional keyword parameter to
 `Backend.list_files()`:
@@ -238,7 +266,15 @@ def list_files(
 
 **Default behavior in ABC:** The default implementation ignores `max_depth` and
 uses the existing `recursive` logic. This is backward-compatible — existing
-backend implementations continue to work without changes.
+backend implementations (including third-party) continue to work without
+changes.
+
+**Store delegation:** When `max_depth` is not `None`, `Store.list_files()`
+passes it through to the backend. The Store still applies client-side depth
+filtering on the result — this is a no-op when the backend already filtered
+natively, and a correctness safety net when it didn't. No `TypeError`
+catching, no `inspect.signature` probing — just always filter at the Store
+level and let native backends reduce the work upstream.
 
 **Backend overrides:**
 
@@ -247,125 +283,18 @@ backend implementations continue to work without changes.
 | **Local** | `os.walk()` with depth counter (§2.3). Clear win. |
 | **SFTP** | Pass depth limit through recursive calls. Clear win. |
 | **Memory** | Track depth in DFS stack. Trivial. |
-| **S3** | Keep flat scan + client filter for now. Level-by-level is a future optimization when tree shape heuristics are available. |
+| **S3** | Keep flat scan + client filter. Level-by-level is a future optimization when tree shape heuristics are available. |
 | **Azure** | Same as S3 — flat scan + client filter. |
 
-Backends that implement `max_depth` natively don't need a new capability flag.
-The parameter is optional with a default of `None` (no limit). Unlike glob,
-there is no semantic difference between "native" and "fallback" depth
-filtering — the result is identical. The only difference is performance.
-
-**`Backend.list_folders()` depth parameter:** Not added to the ABC. Recursive
-folder listing is always a BFS/DFS traversal using `list_folders()` at each
-level. The Store-level implementation handles this without backend changes,
-and the backends that benefit most (SFTP) already get the win through
+**`Backend.list_folders()` — no ABC change needed.** Recursive folder listing
+is always a BFS/DFS traversal using `list_folders()` at each level. The
+Store-level implementation (Phase 1) handles this without backend changes.
+The backends that benefit most (SFTP) already get the win through
 `list_files(max_depth=N)` stopping the recursion early.
 
-### Tier 3: `ext.listing` — Portable extension helpers
-
-Extension module `src/remote_store/ext/listing.py` with two functions:
-
-```python
-def list_files_deep(
-    store: Store,
-    path: str,
-    *,
-    max_depth: int | None = None,
-    pattern: str | None = None,
-) -> Iterator[FileInfo]:
-    """List files under *path* with an optional depth limit.
-
-    Delegates to ``store.list_files(path, max_depth=N, pattern=pattern)``
-    when the Store supports the ``max_depth`` parameter. Otherwise falls
-    back to ``store.list_files(path, recursive=True)`` with client-side
-    depth filtering.
-    """
-
-
-def list_folders_deep(
-    store: Store,
-    path: str,
-    *,
-    depth: int | None = None,
-) -> Iterator[FolderEntry]:
-    """List folders under *path* with an optional depth limit.
-
-    Delegates to ``store.list_folders(path, depth=N)`` when the Store
-    supports the ``depth`` parameter. Otherwise performs a BFS traversal
-    using ``store.list_folders()`` at each level.
-    """
-```
-
-**Why keep the extension if Store already has the parameters?**
-
-The extension serves the same role as `ext.glob.glob_files()`:
-- **Backward-compatible entry point** that works with any Store version.
-- **Documentation hub** — the module docstring and examples explain depth
-  semantics in one place.
-- **Composability** — combines depth limiting with pattern filtering in a
-  single call, where `Store.list_files` requires both parameters separately.
-
-However, unlike glob where the extension provides genuinely different behavior
-(full path matching vs. name-only), the depth extension is thinner. If the
-Store-level parameters are sufficient, the extension may not be needed long
-term. The recommendation is to **start with the extension (Phase 1) and
-promote to Store parameters (Phase 2)** — at that point the extension becomes
-a thin wrapper and may be deprecated.
-
----
-
-## 5. Comparison with Glob Pattern
-
-| Aspect | Glob | Depth-Limited Listing |
-|--------|------|----------------------|
-| **Tier 1** (Store param) | `list_files(pattern=…)` — name filter | `list_files(max_depth=N)` — depth filter |
-| **Tier 2** (native backend) | `Backend.glob()` + `Capability.GLOB` | `Backend.list_files(max_depth=N)` — no new capability needed |
-| **Tier 3** (extension) | `ext.glob.glob_files()` | `ext.listing.list_files_deep()` |
-| **Fallback mechanism** | `list_files()` + client regex | `list_files(recursive=True)` + client depth filter |
-| **Backend optimization** | Prefix extraction | Early traversal termination |
-| **New capability?** | Yes (`GLOB`) | No — result is identical, only perf differs |
-| **ABC change?** | Yes (new `glob()` method) | Yes (new `max_depth` kwarg on `list_files()`) |
-| **Backward compatible?** | Yes (non-abstract default) | Yes (default `max_depth=None` preserves behavior) |
-
-The key difference from glob: depth limiting does **not** need a new
-capability. The output is always the same set of files — the backend just
-produces them more efficiently. With glob, the native implementation may use
-different pattern semantics, so the capability flag signals "this backend
-supports full glob natively."
-
----
-
-## 6. Phased Delivery
-
-### Phase 1: Extension helpers (no ABC change)
-
-**Scope:** New `ext/listing.py` module with `list_files_deep()` and
-`list_folders_deep()`. Spec, tests, exports, docs.
-
-**How it works:**
-- `list_files_deep()`: calls `store.list_files(path, recursive=True)` and
-  filters by path depth client-side.
-- `list_folders_deep()`: BFS using `store.list_folders()` at each level.
-
-**Limitations:**
-- Always fetches the full recursive listing before filtering (SFTP: all
-  round-trips, S3: full `find()`).
-- Acceptable for small-to-medium trees. Problematic for 100k+ file trees
-  when only depth 1 is needed.
-
-**Effort:** Small. ~50 lines of code, ~100 lines of tests, spec, docs.
-
-### Phase 2: Store parameters + backend optimization
-
-**Scope:** Add `max_depth` to `Store.list_files()` and `depth` to
-`Store.list_folders()`. Update `Backend.list_files()` ABC with optional
-`max_depth` kwarg. Implement native optimizations in Local, SFTP, Memory.
-
-**How it works:**
-- Store delegates `max_depth` to backend when provided.
-- Backends that understand `max_depth` stop traversal early.
-- Backends that don't are handled by Store-level fallback (same as Phase 1).
-- `ext.listing` functions become thin wrappers around the Store parameters.
+Backends that implement `max_depth` natively don't need a new capability flag.
+Unlike glob, there is no semantic difference between "native" and "fallback"
+depth filtering — the result is identical. The only difference is performance.
 
 **Backend implementation priority:**
 
@@ -377,12 +306,49 @@ supports full glob natively."
 | **S3** | P2 | Flat scan is often optimal anyway; level-by-level needs heuristics |
 | **Azure** | P2 | Same reasoning as S3 |
 
-**Effort:** Medium. ABC change, 2–3 backend overrides, Store plumbing,
-spec updates, test updates.
+**Effort:** Medium. ABC change, 2--3 backend overrides, Store delegation
+update, spec updates, test updates.
 
 ---
 
-## 7. Alternatives Considered
+## 5. Why Not an Extension Module?
+
+The original proposal included a `ext/listing.py` module with
+`list_files_deep()` and `list_folders_deep()` as a Phase 1 deliverable,
+following the glob three-tier pattern (ADR-0009). On review, this adds
+API surface that would be deprecated shortly after:
+
+- **Glob's extension earned its existence** because `ext.glob.glob_files()`
+  does something `Store.list_files(pattern=)` cannot — full-path matching
+  with `**` patterns. The extension provides genuinely different behavior.
+- **Depth filtering has no such gap.** `Store.list_files(max_depth=N)` is
+  the complete API. An extension wrapping it adds nothing.
+- **Naming is awkward.** "Deep" implies going deeper, but the feature limits
+  depth. Any name (`list_files_to_depth`, `list_files_bounded`) is clunky
+  compared to the native parameter.
+
+The simpler path: add `max_depth` to Store directly (Phase 1) with
+client-side filtering. This ships the same user-facing API without a
+throwaway extension layer.
+
+### Comparison with glob pattern
+
+| Aspect | Glob | Depth-Limited Listing |
+|--------|------|----------------------|
+| **Store param** | `list_files(pattern=...)` — name filter | `list_files(max_depth=N)` — depth filter |
+| **Native backend** | `Backend.glob()` + `Capability.GLOB` | `Backend.list_files(max_depth=N)` — no new capability |
+| **Extension** | `ext.glob.glob_files()` — full path glob (genuinely different) | Not needed — Store param is sufficient |
+| **Fallback** | `list_files()` + client regex | `list_files(recursive=True)` + client depth filter |
+| **ABC change?** | Yes (new `glob()` method) | Yes (new `max_depth` kwarg, Phase 2 only) |
+
+The key difference: glob needed three tiers because each tier offers distinct
+semantics. Depth limiting does not — the output is always identical regardless
+of where filtering happens. Two phases (Store param, then backend
+optimization) are sufficient.
+
+---
+
+## 6. Alternatives Considered
 
 ### A. Extension only — never add to Store/Backend
 
@@ -390,7 +356,8 @@ spec updates, test updates.
 **Cons:** Permanently leaves performance on the table for SFTP and Local.
 Users who need depth limiting always pay for a full recursive scan.
 
-**Verdict:** Insufficient long-term. Fine as Phase 1.
+**Verdict:** Insufficient long-term. The Store parameter (Phase 1) is nearly
+as simple and avoids the throwaway extension problem.
 
 ### B. New `Capability.DEPTH_LIST` flag
 
@@ -411,7 +378,8 @@ Make `max_depth` a required parameter on `Backend.list_files()`.
 
 **Pros:** All backends must handle it.
 **Cons:** Breaking change for all backend implementations, including
-third-party backends.
+third-party backends (e.g., community backends following the Build Your Own
+Backend guide).
 
 **Verdict:** Rejected. Optional keyword with default `None` is
 backward-compatible.
@@ -426,51 +394,68 @@ identical methods. Maintenance burden.
 
 **Verdict:** Rejected. An optional kwarg is simpler.
 
----
+### E. Extension-first, then promote to Store
 
-## 8. Backlog Items
+Ship `ext/listing.py` with `list_files_deep()` / `list_folders_deep()` first,
+then add Store parameters and deprecate the extension.
 
-This research proposes splitting ID-107 and ID-108 into phased delivery:
+**Pros:** Incremental delivery, lowest-risk first step.
+**Cons:** Ships public API that will be deprecated. Extension naming is
+awkward ("deep" = limiting depth). The Store parameter with client-side
+filtering is equally simple to implement and avoids the deprecation cycle.
 
-### Phase 1 items (extension helpers)
-
-- **ID-107a — `ext.listing.list_files_deep()` extension helper**
-  Portable depth-limited file listing via `store.list_files(recursive=True)`
-  + client-side depth filtering. Spec, tests, exports, docs.
-
-- **ID-108a — `ext.listing.list_folders_deep()` extension helper**
-  Portable depth-limited folder listing via BFS over
-  `store.list_folders()`. Spec, tests, exports, docs.
-
-### Phase 2 items (native backend optimization)
-
-- **ID-107b — `Store.list_files(max_depth=N)` + backend optimization**
-  Add `max_depth` parameter to `Store.list_files()` and
-  `Backend.list_files()`. Implement native depth limiting in Local
-  (`os.walk()`), SFTP (recursive call depth tracking), and Memory
-  (DFS stack depth). S3/Azure: client-side filter (flat scan is often
-  optimal). Update `ext.listing.list_files_deep()` to delegate to Store
-  parameter.
-
-- **ID-108b — `Store.list_folders(depth=N)` Store-level BFS**
-  Add `depth` parameter to `Store.list_folders()`. Implement BFS
-  traversal at Store level (no backend ABC change needed for folders).
-  Update `ext.listing.list_folders_deep()` to delegate.
+**Verdict:** Rejected. Adding the Store parameter directly is just as easy
+and avoids throwaway API surface. See §5.
 
 ---
 
-## 9. Recommendation
+## 7. Backlog Items
 
-**Proceed with Phase 1 (extension helpers) first.** This ships correct
-behavior quickly, establishes the API surface and semantics, and provides a
-portable solution that works with all backends today. The extension becomes
-the reference implementation for the Phase 2 Store-level fallback.
+This research proposes splitting ID-107 and ID-108 into two phases:
 
-**Follow with Phase 2 (native) when depth-limited listing sees real usage.**
-The performance gap is most acute for SFTP (network round-trips) and Local
-(filesystem I/O). S3 and Azure can defer native optimization — their flat scan
-is often competitive with or better than level-by-level delimiter listing.
+### Phase 1 — Store parameters with client-side filtering
 
-The three-tier pattern (Store parameter → backend optimization → extension
-fallback) is proven by glob and seekable-read. Depth-limited listing fits
-naturally into the same architecture.
+- **ID-107 — `Store.list_files(max_depth=N)` with client-side filtering**
+  Add `max_depth` parameter to `Store.list_files()`. Implement via
+  `Backend.list_files(recursive=True)` + client-side depth filtering at the
+  Store level. Spec, tests, docs. No ABC change, no extension module.
+
+- **ID-108 — `Store.list_folders(max_depth=N)` with BFS traversal**
+  Add `max_depth` parameter to `Store.list_folders()`. Implement via BFS
+  using `Backend.list_folders()` at each level. Spec, tests, docs. No ABC
+  change.
+
+### Phase 2 — Backend-native optimization
+
+- **ID-107b — `Backend.list_files(max_depth=N)` native optimization**
+  Add optional `max_depth` kwarg to `Backend.list_files()` ABC.
+  Implement native depth limiting in Local (`os.walk()`), SFTP (recursive
+  call depth tracking), Memory (DFS stack depth). S3/Azure: client-side
+  filter (flat scan is often optimal). Store continues to filter client-side
+  as safety net.
+  Depends on: ID-107.
+
+- **ID-108b — `Store.list_folders(max_depth=N)` optimization (if needed)**
+  Evaluate whether backend-native folder depth limiting is needed based on
+  Phase 1 usage. The Store-level BFS may be sufficient — folder listings are
+  typically much smaller than file listings.
+  Depends on: ID-108.
+
+---
+
+## 8. Recommendation
+
+**Proceed with Phase 1 (Store parameters) first.** Add `max_depth` to
+`Store.list_files()` and `Store.list_folders()` with client-side filtering.
+No ABC change, no extension module, no new capability. This ships correct
+behavior with a clean API that will remain stable through Phase 2.
+
+**Follow with Phase 2 (native backend optimization) when depth-limited
+listing sees real usage.** The performance gap is most acute for SFTP
+(network round-trips) and Local (filesystem I/O). S3 and Azure can defer
+native optimization — their flat scan is often competitive with or better
+than level-by-level delimiter listing.
+
+Phase 1 and Phase 2 can ship in the same release or separately. The user-
+facing API (`Store.list_files(max_depth=N)`) is identical in both phases —
+Phase 2 only changes performance characteristics.
