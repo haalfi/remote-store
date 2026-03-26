@@ -83,18 +83,18 @@
 **Rationale:** Covers the common "give me the CSVs" use case without new capabilities or extensions.
 **See also:** [018-glob.md](018-glob.md) (GLOB-001).
 
-### STORE-016: Depth-limited listing
-
-**Invariant:** `list_files(max_depth=N)` and `list_folders(max_depth=N)` control traversal depth. When `max_depth` is set on `list_files`, `recursive` is ignored. Negative values raise `ValueError`. Filtering is applied at the Store level.
-**Rationale:** Covers dataset discovery and shallow inventory without fetching the full recursive tree.
-**See also:** [037-depth-limited-listing.md](037-depth-limited-listing.md) (DEPTH-001, DEPTH-002).
-
 ### STORE-015: glob()
 
 **Invariant:** `glob(pattern)` matches files against a glob pattern. Capability-gated on `Capability.GLOB`. Pattern is relative to the store root; Store prepends `root_path` before delegating to `Backend.glob()`. Returned `FileInfo.path` values are store-relative (same rebasing as `list_files`).
 **Raises:** `CapabilityNotSupported` if the backend lacks `GLOB`.
 **Rationale:** Like `unwrap()`, gives opt-in direct access to native backend capabilities. For portable pattern matching, use `list_files(pattern=…)` or `ext.glob.glob_files()`.
 **See also:** [018-glob.md](018-glob.md) (GLOB-006 through GLOB-008), [ADR-0009](../adrs/0009-glob-three-tier-design.md).
+
+### STORE-016: Depth-limited listing
+
+**Invariant:** `list_files(max_depth=N)` and `list_folders(max_depth=N)` control traversal depth. When `max_depth` is set on `list_files`, `recursive` is ignored. Negative values raise `ValueError`. Filtering is applied at the Store level.
+**Rationale:** Covers dataset discovery and shallow inventory without fetching the full recursive tree.
+**See also:** [037-depth-limited-listing.md](037-depth-limited-listing.md) (DEPTH-001, DEPTH-002).
 
 ---
 

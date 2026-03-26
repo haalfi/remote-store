@@ -123,6 +123,17 @@ class TestListFilesMaxDepth:
         files = sorted(str(f.path) for f in child.list_files("sub", max_depth=0))
         assert files == ["sub/a.txt"]
 
+    @pytest.mark.spec("DEPTH-001")
+    def test_max_depth_child_store_empty_path(self) -> None:
+        """max_depth with empty path on child store exercises base_parts=0 + root_path rebasing."""
+        parent = Store(backend=MemoryBackend())
+        parent.write("root/a.txt", b"a")
+        parent.write("root/sub/b.txt", b"b")
+        parent.write("root/sub/deep/c.txt", b"c")
+        child = parent.child("root")
+        files = sorted(str(f.path) for f in child.list_files("", max_depth=1))
+        assert files == ["a.txt", "sub/b.txt"]
+
 
 # ---------------------------------------------------------------------------
 # DEPTH-002: list_folders(max_depth=N)

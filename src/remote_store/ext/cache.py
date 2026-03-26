@@ -386,7 +386,9 @@ class CachedStore(ProxyStore):
     ) -> Iterator[FileInfo]:
         pattern_key = pattern if pattern is not None else "\x00"
         depth_key = str(max_depth) if max_depth is not None else "\x00"
-        key = ("list_files", path, str(recursive), pattern_key, depth_key)
+        # When max_depth is set, recursive is ignored by Store -- normalize key
+        recursive_key = "\x00" if max_depth is not None else str(recursive)
+        key = ("list_files", path, recursive_key, pattern_key, depth_key)
         cached = self._cache_get(key)
         if cached is not _MISSING:
             return iter(cached)
