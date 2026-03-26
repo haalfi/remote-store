@@ -306,6 +306,14 @@ class TestCachedReads:
         assert cached.stats.hits == 0
 
     @pytest.mark.spec("CACHE-006")
+    def test_list_files_max_depth_normalizes_recursive_key(self, cached: CachedStore) -> None:
+        """When max_depth is set, recursive is ignored -- both calls share one cache entry."""
+        list(cached.list_files("", recursive=False, max_depth=1))
+        list(cached.list_files("", recursive=True, max_depth=1))
+        assert cached.stats.misses == 1
+        assert cached.stats.hits == 1
+
+    @pytest.mark.spec("CACHE-006")
     @pytest.mark.parametrize(
         "max_size, expected_hits",
         [
