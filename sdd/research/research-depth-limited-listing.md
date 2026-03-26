@@ -96,7 +96,8 @@ depth relative to the root lets us prune subtrees by clearing `dirnames`:
 
 ```python
 # Sketch: depth-limited walk
-root_depth = str(root).count(os.sep)
+root = os.path.normpath(root)          # strip trailing separator
+root_depth = root.count(os.sep)
 for dirpath, dirnames, filenames in os.walk(root):
     depth = dirpath.count(os.sep) - root_depth
     if depth < max_depth:
@@ -112,10 +113,15 @@ for dirpath, dirnames, filenames in os.walk(root):
         continue
 ```
 
-Note: `enumerate(os.walk(...))` would be incorrect here — `os.walk` yields
+**Important:** `root` must be normalized before computing `root_depth`.
+Without `os.path.normpath()`, a trailing separator (e.g., `"/data/"`) gives
+`root_depth == 2` while subdirectory paths like `"/data/raw"` also give
+`count(os.sep) == 2`, making the subdir appear at depth 0 instead of depth 1.
+
+Note: `enumerate(os.walk(...))` would also be incorrect — `os.walk` yields
 directories in DFS order, not level-by-level, so the iteration index does not
 correspond to filesystem depth in branched trees. Computing depth from the
-path component count is the reliable approach.
+normalized path component count is the reliable approach.
 
 **Takeaway:** Native depth limiting is trivially efficient for Local. The
 `rglob()` approach scans everything; `os.walk()` with path-based depth
