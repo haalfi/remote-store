@@ -146,11 +146,12 @@ class ProxyStore(Store):
         *,
         recursive: bool = False,
         pattern: str | None = None,
+        max_depth: int | None = None,
     ) -> Iterator[FileInfo]:
-        return self._inner.list_files(path, recursive=recursive, pattern=pattern)
+        return self._inner.list_files(path, recursive=recursive, pattern=pattern, max_depth=max_depth)
 
-    def list_folders(self, path: str) -> Iterator[FolderEntry]:
-        return self._inner.list_folders(path)
+    def list_folders(self, path: str, *, max_depth: int | None = None) -> Iterator[FolderEntry]:
+        return self._inner.list_folders(path, max_depth=max_depth)
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         return self._inner.iter_children(path)

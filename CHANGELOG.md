@@ -24,6 +24,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **Depth-limited listing** (ID-107, ID-108): `Store.list_files(max_depth=N)`
+  and `Store.list_folders(max_depth=N)` control traversal depth without
+  fetching the full recursive tree. When `max_depth` is set on `list_files`,
+  `recursive` is ignored. Client-side filtering at the Store level; no
+  Backend ABC change. Spec 037.
+
 - **Azure range reader** (ID-102): `AzureBackend.read_seekable()` returns
   a seekable stream backed by `download_blob(offset=, length=)`. Each
   `read()` issues a single HTTP Range request — no full-file download.

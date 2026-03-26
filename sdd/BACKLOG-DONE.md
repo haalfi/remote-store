@@ -73,6 +73,17 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## API Surface
 
+- [x] **ID-107 — `Store.list_files(max_depth=N)` with client-side filtering**
+  Added `max_depth` parameter to `Store.list_files()`. When set, `recursive`
+  is ignored. Client-side depth filtering at Store level via path component
+  count. No Backend ABC change. Spec 037 (DEPTH-001).
+
+- [x] **ID-108 — `Store.list_folders(max_depth=N)` with BFS traversal**
+  Added `max_depth` parameter to `Store.list_folders()`. BFS using
+  `Backend.list_folders()` at each level. `max_depth=None`/`0` returns
+  immediate children (unchanged default). No Backend ABC change.
+  Spec 037 (DEPTH-002).
+
 - [x] **ID-101 — Add ProxyStore to API reference**
   Exported `ProxyStore` from `remote_store`, added API reference page
   (`docs-src/api/proxy.md`), rewrote docstrings for extension authors.

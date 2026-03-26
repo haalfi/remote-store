@@ -90,6 +90,12 @@
 **Rationale:** Like `unwrap()`, gives opt-in direct access to native backend capabilities. For portable pattern matching, use `list_files(pattern=…)` or `ext.glob.glob_files()`.
 **See also:** [018-glob.md](018-glob.md) (GLOB-006 through GLOB-008), [ADR-0009](../adrs/0009-glob-three-tier-design.md).
 
+### STORE-016: Depth-limited listing
+
+**Invariant:** `list_files(max_depth=N)` and `list_folders(max_depth=N)` control traversal depth. When `max_depth` is set on `list_files`, `recursive` is ignored. Negative values raise `ValueError`. Filtering is applied at the Store level.
+**Rationale:** Covers dataset discovery and shallow inventory without fetching the full recursive tree.
+**See also:** [037-depth-limited-listing.md](037-depth-limited-listing.md) (DEPTH-001, DEPTH-002).
+
 ---
 
 ## Metadata Models

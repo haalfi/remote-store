@@ -332,49 +332,110 @@ class Store:
 
     # region: listing and iteration
 
-    def list_files(self, path: str, *, recursive: bool = False, pattern: str | None = None) -> Iterator[FileInfo]:
+    def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        pattern: str | None = None,
+        max_depth: int | None = None,
+    ) -> Iterator[FileInfo]:
         """Yield ``FileInfo`` objects for files under *path*.
 
         Args:
             path: Store-relative folder path.
-            recursive: Descend into subfolders.
+            recursive: Descend into subfolders.  Ignored when *max_depth*
+                is set.
             pattern: Glob pattern to filter filenames
                 (e.g. ``"*.csv"``).  Matched against each file's **name**
                 (basename only).  For full path-based patterns, use
                 ``ext.glob.glob_files()``.
+            max_depth: Maximum folder depth to include.  ``0`` means files
+                directly in *path* only; ``1`` adds files in its immediate
+                subfolders, and so on.  ``None`` (default) defers to
+                *recursive*.  When set, *recursive* is ignored.
 
         Returns:
             Iterator of ``FileInfo`` with store-relative paths.
+
+        Raises:
+            ValueError: If *max_depth* is negative.
         """
+        if max_depth is not None and max_depth < 0:
+            msg = f"max_depth must be >= 0, got {max_depth}"
+            raise ValueError(msg)
         _bk = self._backend.name
         log.debug(
-            "list_files path=%r recursive=%r pattern=%r",
+            "list_files path=%r recursive=%r pattern=%r max_depth=%r",
             path,
             recursive,
             pattern,
+            max_depth,
             extra={"op": "list_files", "path": path, "backend": _bk},
         )
         self._backend.capabilities.require(Capability.LIST, backend=_bk)
-        for info in self._backend.list_files(self._full_path(path), recursive=recursive):
+
+        # Determine recursion mode
+        effective_recursive = max_depth > 0 if max_depth is not None else recursive
+
+        # Precompute base depth for filtering
+        base_parts = len(RemotePath(path).parts) if path and path != "." else 0
+
+        for info in self._backend.list_files(
+            self._full_path(path),
+            recursive=effective_recursive,
+        ):
             rebased = self._rebase_file_info(info)
+            # Depth filter: file parts minus 1 (filename) minus base gives depth
+            if max_depth is not None:
+                depth = len(rebased.path.parts) - 1 - base_parts
+                if depth > max_depth:
+                    continue
             if pattern is not None and not fnmatch.fnmatch(rebased.name, pattern):
                 continue
             yield rebased
 
-    def list_folders(self, path: str) -> Iterator[FolderEntry]:
-        """Yield immediate subfolders of *path* as ``FolderEntry`` objects.
+    def list_folders(self, path: str, *, max_depth: int | None = None) -> Iterator[FolderEntry]:
+        """Yield subfolders of *path* as ``FolderEntry`` objects.
 
         Args:
             path: Store-relative folder path.
+            max_depth: Maximum folder depth to include.  ``None`` or ``0``
+                returns immediate children only (default).  ``1`` adds
+                grandchildren, and so on.
 
         Returns:
             Iterator of ``FolderEntry`` with ``.name`` and ``.path`` (store-relative).
+
+        Raises:
+            ValueError: If *max_depth* is negative.
         """
+        if max_depth is not None and max_depth < 0:
+            msg = f"max_depth must be >= 0, got {max_depth}"
+            raise ValueError(msg)
         _bk = self._backend.name
-        log.debug("list_folders path=%r", path, extra={"op": "list_folders", "path": path, "backend": _bk})
+        log.debug(
+            "list_folders path=%r max_depth=%r",
+            path,
+            max_depth,
+            extra={"op": "list_folders", "path": path, "backend": _bk},
+        )
         self._backend.capabilities.require(Capability.LIST, backend=_bk)
-        for entry in self._backend.list_folders(self._full_path(path)):
-            yield self._rebase_folder_entry(entry)
+
+        effective_depth = max_depth if max_depth is not None else 0
+
+        # BFS traversal up to effective_depth levels
+        full = self._full_path(path)
+        current_level: list[str] = [full]
+        for level in range(effective_depth + 1):
+            next_level: list[str] = []
+            for folder_path in current_level:
+                for entry in self._backend.list_folders(folder_path):
+                    rebased = self._rebase_folder_entry(entry)
+                    yield rebased
+                    if level < effective_depth:
+                        next_level.append(str(entry.path))
+            current_level = next_level
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         """Yield all immediate children (files and folders) of *path* in a single pass.

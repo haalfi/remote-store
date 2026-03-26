@@ -340,22 +340,27 @@ class ObservedStore(ProxyStore):
         *,
         recursive: bool = False,
         pattern: str | None = None,
+        max_depth: int | None = None,
     ) -> Iterator[FileInfo]:
         # Materialize: inner list_files() is a generator whose body runs lazily.
         # Collecting into a list ensures timing and error capture cover actual
         # I/O, not just generator creation.
-        with self._observe_op("list_files", path, {"recursive": recursive, "pattern": pattern}):
-            return iter(list(self._inner.list_files(path, recursive=recursive, pattern=pattern)))
+        with self._observe_op(
+            "list_files",
+            path,
+            {"recursive": recursive, "pattern": pattern, "max_depth": max_depth},
+        ):
+            return iter(list(self._inner.list_files(path, recursive=recursive, pattern=pattern, max_depth=max_depth)))
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         # Materialize: see list_files comment.
         with self._observe_op("glob", pattern, {"pattern": pattern}):
             return iter(list(self._inner.glob(pattern)))
 
-    def list_folders(self, path: str) -> Iterator[FolderEntry]:
+    def list_folders(self, path: str, *, max_depth: int | None = None) -> Iterator[FolderEntry]:
         # Materialize: see list_files comment.
-        with self._observe_op("list_folders", path, {}):
-            return iter(list(self._inner.list_folders(path)))
+        with self._observe_op("list_folders", path, {"max_depth": max_depth}):
+            return iter(list(self._inner.list_folders(path, max_depth=max_depth)))
 
     def get_file_info(self, path: str) -> FileInfo:
         with self._observe_op("get_file_info", path, {}):

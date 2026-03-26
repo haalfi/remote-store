@@ -31,6 +31,11 @@ def demo(store):
     for folder in store.list_folders(""):
         print(f"  {folder.name}/")
 
+    # --- Depth-limited folder listing (BFS traversal) ---
+    print("\nFolders up to 1 level deep:")
+    for folder in store.list_folders("", max_depth=1):
+        print(f"  {folder.path}/")
+
     # --- Read ---
     content = store.read_bytes("data/report.csv")
     print(f"\nreport.csv content:\n{content.decode()}")
@@ -71,6 +76,11 @@ def demo(store):
     # --- Recursive listing from store root ---
     print("\nAll files (recursive):")
     for f in store.list_files("", recursive=True):
+        print(f"  {f.path} ({f.size} bytes)")
+
+    # --- Depth-limited file listing ---
+    print("\nFiles up to 1 level deep:")
+    for f in store.list_files("", max_depth=1):
         print(f"  {f.path} ({f.size} bytes)")
 
 
