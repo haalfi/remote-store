@@ -5195,6 +5195,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/specs/037-depth-limited-listing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    037: Depth-Limited Listing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8025,7 +8053,7 @@ root).</p>
 
 
 <a href="#remote_store.Store.list_files" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_files</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_files</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
 
 
   
@@ -8055,7 +8083,8 @@ root).</p>
 )
           –
           <div class="doc-md-description">
-            <p>Descend into subfolders.</p>
+            <p>Descend into subfolders.  Ignored when <em>max_depth</em>
+is set.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -8069,6 +8098,19 @@ root).</p>
 (e.g. <code>"*.csv"</code>).  Matched against each file's <strong>name</strong>
 (basename only).  For full path-based patterns, use
 <code>ext.glob.glob_files()</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>max_depth</code></b>
+              (<code><span title="int">int</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Maximum folder depth to include.  <code>0</code> means files
+directly in <em>path</em> only; <code>1</code> adds files in its immediate
+subfolders, and so on.  <code>None</code> (default) defers to
+<em>recursive</em>.  When set, <em>recursive</em> is ignored.</p>
           </div>
         </li>
     </ul>
@@ -8091,6 +8133,18 @@ root).</p>
     </ul>
 
 
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="ValueError">ValueError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>max_depth</em> is negative.</p>
+          </div>
+        </li>
+    </ul>
+
+
     </div>
 
 </div>
@@ -8103,7 +8157,7 @@ root).</p>
 
 
 <a href="#remote_store.Store.list_folders" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_folders</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_folders</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
 
 
   
@@ -8113,7 +8167,7 @@ root).</p>
 
     <div class="doc doc-contents first">
 
-        <p>Yield immediate subfolders of <em>path</em> as <code>FolderEntry</code> objects.</p>
+        <p>Yield subfolders of <em>path</em> as <code>FolderEntry</code> objects.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8124,6 +8178,18 @@ root).</p>
           –
           <div class="doc-md-description">
             <p>Store-relative folder path.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>max_depth</code></b>
+              (<code><span title="int">int</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Maximum folder depth to include.  <code>None</code> or <code>0</code>
+returns immediate children only (default).  <code>1</code> adds
+grandchildren, and so on.</p>
           </div>
         </li>
     </ul>
@@ -8141,6 +8207,18 @@ root).</p>
           –
           <div class="doc-md-description">
             <p>Iterator of <code>FolderEntry</code> with <code>.name</code> and <code>.path</code> (store-relative).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="ValueError">ValueError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>max_depth</em> is negative.</p>
           </div>
         </li>
     </ul>

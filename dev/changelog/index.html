@@ -5762,6 +5762,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/037-depth-limited-listing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    037: Depth-Limited Listing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8371,6 +8399,13 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong>Depth-limited listing</strong> (ID-107, ID-108): <code>Store.list_files(max_depth=N)</code>
+  and <code>Store.list_folders(max_depth=N)</code> control traversal depth without
+  fetching the full recursive tree. When <code>max_depth</code> is set on <code>list_files</code>,
+  <code>recursive</code> is ignored. Client-side filtering at the Store level; no
+  Backend ABC change. Spec 037.</p>
+</li>
 <li>
 <p><strong>Azure range reader</strong> (ID-102): <code>AzureBackend.read_seekable()</code> returns
   a seekable stream backed by <code>download_blob(offset=, length=)</code>. Each

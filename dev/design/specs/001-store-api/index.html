@@ -3952,6 +3952,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#store-016-depth-limited-listing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        STORE-016: Depth-limited listing
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5038,6 +5049,34 @@
     
   
     036: Seekable Read Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../037-depth-limited-listing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    037: Depth-Limited Listing
   
 
     
@@ -6790,6 +6829,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#store-016-depth-limited-listing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        STORE-016: Depth-limited listing
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6970,6 +7020,10 @@
 <strong>Raises:</strong> <code>CapabilityNotSupported</code> if the backend lacks <code>GLOB</code>.
 <strong>Rationale:</strong> Like <code>unwrap()</code>, gives opt-in direct access to native backend capabilities. For portable pattern matching, use <code>list_files(pattern=…)</code> or <code>ext.glob.glob_files()</code>.
 <strong>See also:</strong> <a href="../018-glob/">018-glob.md</a> (GLOB-006 through GLOB-008), <a href="../../adrs/0009-glob-three-tier-design/">ADR-0009</a>.</p>
+<h3 id="store-016-depth-limited-listing">STORE-016: Depth-limited listing<a class="headerlink" href="#store-016-depth-limited-listing" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>list_files(max_depth=N)</code> and <code>list_folders(max_depth=N)</code> control traversal depth. When <code>max_depth</code> is set on <code>list_files</code>, <code>recursive</code> is ignored. Negative values raise <code>ValueError</code>. Filtering is applied at the Store level.
+<strong>Rationale:</strong> Covers dataset discovery and shallow inventory without fetching the full recursive tree.
+<strong>See also:</strong> <a href="../037-depth-limited-listing/">037-depth-limited-listing.md</a> (DEPTH-001, DEPTH-002).</p>
 <hr />
 <h2 id="metadata-models">Metadata Models<a class="headerlink" href="#metadata-models" title="Permanent link">&para;</a></h2>
 <h3 id="mod-001-fileinfo-immutability">MOD-001: FileInfo Immutability<a class="headerlink" href="#mod-001-fileinfo-immutability" title="Permanent link">&para;</a></h3>
