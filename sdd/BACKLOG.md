@@ -45,23 +45,6 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
-- [ ] **ID-107 — `Store.list_files(max_depth=N)` with client-side filtering**
-  Add `max_depth` parameter to `Store.list_files()`. Implement via
-  `Backend.list_files(recursive=True)` + client-side depth filtering at the
-  Store level. Spec, tests, docs. No ABC change, no extension module.
-  - Semantics: depth 0 = only items in `path` itself; depth 1 = items + direct children
-  - When `max_depth` is set, `recursive` is ignored (depth takes over)
-  - [Research](research/research-depth-limited-listing.md) §4.5.
-
-- [ ] **ID-108 — `Store.list_folders(max_depth=N)` with BFS traversal**
-  Add `max_depth` parameter to `Store.list_folders()`. Implement via BFS
-  using `Backend.list_folders()` at each level. Spec, tests, docs. No ABC
-  change.
-  - Semantics: same as `list_files` — depth 0 = immediate children only
-  - Note: aggregate stats already available via `get_folder_info()` per folder
-    (returns `FolderInfo(file_count, total_size, modified_at)`)
-  - [Research](research/research-depth-limited-listing.md) §4.5.
-
 - [ ] **ID-107b — `Backend.list_files(max_depth=N)` native optimization**
   Add optional `max_depth` kwarg to `Backend.list_files()` ABC. Implement
   native depth limiting in Local (`os.walk()`), SFTP (recursive call depth

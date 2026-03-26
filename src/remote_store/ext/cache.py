@@ -382,22 +382,25 @@ class CachedStore(ProxyStore):
         *,
         recursive: bool = False,
         pattern: str | None = None,
+        max_depth: int | None = None,
     ) -> Iterator[FileInfo]:
         pattern_key = pattern if pattern is not None else "\x00"
-        key = ("list_files", path, str(recursive), pattern_key)
+        depth_key = str(max_depth) if max_depth is not None else "\x00"
+        key = ("list_files", path, str(recursive), pattern_key, depth_key)
         cached = self._cache_get(key)
         if cached is not _MISSING:
             return iter(cached)
-        result = tuple(self._inner.list_files(path, recursive=recursive, pattern=pattern))
+        result = tuple(self._inner.list_files(path, recursive=recursive, pattern=pattern, max_depth=max_depth))
         self._cache.set(key, result, self._ttl)
         return iter(result)
 
-    def list_folders(self, path: str) -> Iterator[FolderEntry]:
-        key = ("list_folders", path)
+    def list_folders(self, path: str, *, max_depth: int | None = None) -> Iterator[FolderEntry]:
+        depth_key = str(max_depth) if max_depth is not None else "\x00"
+        key = ("list_folders", path, depth_key)
         cached = self._cache_get(key)
         if cached is not _MISSING:
             return iter(cached)
-        result = tuple(self._inner.list_folders(path))
+        result = tuple(self._inner.list_folders(path, max_depth=max_depth))
         self._cache.set(key, result, self._ttl)
         return iter(result)
 
