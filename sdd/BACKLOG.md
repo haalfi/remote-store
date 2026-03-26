@@ -50,7 +50,7 @@ Items graduate through the SDD pipeline:
   `Backend.list_files(recursive=True)` + client-side depth filtering at the
   Store level. Spec, tests, docs. No ABC change, no extension module.
   - Semantics: depth 0 = only items in `path` itself; depth 1 = items + direct children
-  - `max_depth > 0` with `recursive=False` raises `ValueError`
+  - When `max_depth` is set, `recursive` is ignored (depth takes over)
   - [Research](research/research-depth-limited-listing.md) §4.5.
 
 - [ ] **ID-108 — `Store.list_folders(max_depth=N)` with BFS traversal**

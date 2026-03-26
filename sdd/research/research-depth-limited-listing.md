@@ -90,23 +90,36 @@ at each level. Same tradeoffs as S3.
 | `recursive=False` | `Path.iterdir()` — single `readdir()` syscall |
 | `recursive=True` | `Path.rglob("*")` — full recursive `os.scandir()` walk |
 
-**Depth-limited alternative:** `os.walk()` with a depth counter. This is a
-well-known pattern and trivially efficient — `os.walk()` yields level by
-level, so stopping at depth N skips all deeper `readdir()` calls entirely.
+**Depth-limited alternative:** `os.walk()` with depth computed from the
+directory path. `os.walk()` traverses top-down in DFS order, so computing
+depth relative to the root lets us prune subtrees by clearing `dirnames`:
 
 ```python
 # Sketch: depth-limited walk
-for depth, (dirpath, dirnames, filenames) in enumerate(os.walk(root)):
-    if depth > max_depth:
-        break
-    # yield files...
-    if depth == max_depth:
-        dirnames.clear()  # prevent os.walk from descending further
+root_depth = str(root).count(os.sep)
+for dirpath, dirnames, filenames in os.walk(root):
+    depth = dirpath.count(os.sep) - root_depth
+    if depth < max_depth:
+        # yield files in dirpath...
+        pass
+    elif depth == max_depth:
+        # yield files in dirpath, but stop descending
+        dirnames.clear()
+    else:
+        # should not reach here if dirnames.clear() worked,
+        # but guard defensively
+        dirnames.clear()
+        continue
 ```
 
+Note: `enumerate(os.walk(...))` would be incorrect here — `os.walk` yields
+directories in DFS order, not level-by-level, so the iteration index does not
+correspond to filesystem depth in branched trees. Computing depth from the
+path component count is the reliable approach.
+
 **Takeaway:** Native depth limiting is trivially efficient for Local. The
-`rglob()` approach scans everything; `os.walk()` with depth tracking stops
-early. Direct I/O savings.
+`rglob()` approach scans everything; `os.walk()` with path-based depth
+tracking stops early. Direct I/O savings.
 
 ### 2.4 SFTP
 
@@ -160,10 +173,13 @@ Does not support listing (`CapabilityNotSupported`). Not relevant.
 | **Memory** | Full DFS traversal | DFS with depth cutoff | **Low** — in-memory |
 
 The key insight: **for SFTP and Local, native depth limiting is unambiguously
-better.** For S3 and Azure, it depends on tree shape — but the extension
-approach (flat scan) is never *worse* than the level-by-level approach for
-those backends, so S3/Azure can keep the flat-scan-and-filter strategy even in
-the native implementation and still be correct.
+better.** For S3 and Azure, neither strategy dominates — flat scan transfers
+more metadata but uses fewer API calls, while level-by-level uses more API
+calls but transfers less data (§2.1). The flat-scan-and-filter strategy is a
+safe default for S3/Azure because it is always *correct* and avoids the
+complexity of shape-dependent heuristics. It may transfer unnecessary data for
+shallow depth on large trees, but avoids the O(folders) API call overhead
+that level-by-level incurs on wide trees.
 
 ---
 
@@ -185,15 +201,21 @@ other `depth` with different reference frames.
 
 ### 4.2 Interaction with `recursive`
 
-`max_depth` implies recursion — you need to descend to reach depth N. The
-interaction rules:
+When `max_depth` is provided, it takes full control of traversal depth —
+`recursive` is ignored. This avoids contradictory states and keeps the
+contract simple:
 
 - `max_depth=None` (default): `recursive` flag controls, as today.
-- `max_depth=0`: equivalent to `recursive=False`. No conflict.
-- `max_depth > 0` with `recursive=False`: raises `ValueError` — contradictory
-  request (asking for depth but forbidding recursion).
-- `max_depth > 0` with `recursive=True` (or default): works normally — `max_depth`
-  refines the recursive scan.
+- `max_depth=0`: items in `path` only (equivalent to `recursive=False`).
+  `recursive` is ignored.
+- `max_depth > 0`: descend up to N levels. `recursive` is ignored — depth
+  implies recursion.
+
+The alternative — raising `ValueError` when `max_depth > 0` and
+`recursive=False` — was considered but rejected. Since `recursive` defaults
+to `False`, callers writing `store.list_files(path, max_depth=2)` would hit
+the `ValueError` unless they also passed `recursive=True`, which is redundant.
+Ignoring `recursive` when `max_depth` is set is the more ergonomic contract.
 
 ### 4.3 Interaction with `pattern`
 
