@@ -6,7 +6,6 @@ All tests are skipped if dependencies are not installed.
 
 from __future__ import annotations
 
-import contextlib
 import errno
 import io
 import os
@@ -1211,17 +1210,11 @@ class TestSFTPTofuPersistence:
                 connect_kwargs={"allow_agent": False, "look_for_keys": False},
             )
             backend.exists("nonexistent.txt")
-            # Point _tofu_keys_path to a non-writable location to force save failure
-            backend._tofu_keys_path = os.path.join(tmpdir, "readonly", "known_hosts")
-            os.makedirs(os.path.join(tmpdir, "readonly"), exist_ok=True)
-            # Make directory read-only (best-effort on Windows)
-            os.chmod(os.path.join(tmpdir, "readonly"), 0o555)
-            # close() should not raise despite save failure
-            backend.close()
+            # Mock save_host_keys to reliably fail on all platforms
+            # (os.chmod is a no-op for owner on Windows)
+            with patch.object(backend._ssh_client, "save_host_keys", side_effect=OSError("boom")):
+                backend.close()
         finally:
-            # Restore write permissions for cleanup
-            with contextlib.suppress(Exception):
-                os.chmod(os.path.join(tmpdir, "readonly"), 0o755)
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 

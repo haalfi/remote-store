@@ -41,8 +41,6 @@ Items graduate through the SDD pipeline:
 
 ---
 
----
-
 ## Ideas
 
 ### API Surface Enhancements
