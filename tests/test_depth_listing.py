@@ -393,3 +393,86 @@ class TestLocalBackendNativeDepth:
         """max_depth has no effect when recursive=False."""
         files = sorted(f.name for f in backend.list_files("d", recursive=False, max_depth=5))
         assert files == ["a.txt"]
+
+
+class TestStoreForwardsMaxDepth:
+    """DEPTH-003: Store.list_files passes max_depth through to backend."""
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_store_forwards_max_depth_to_backend(self) -> None:
+        """Verify the Store actually passes max_depth to the backend call."""
+        captured: dict[str, int | None] = {}
+
+        class CapturingBackend(MemoryBackend):
+            def list_files(
+                self,
+                path: str,
+                *,
+                recursive: bool = False,
+                max_depth: int | None = None,
+            ):  # type: ignore[override]
+                captured["max_depth"] = max_depth
+                return super().list_files(path, recursive=recursive, max_depth=max_depth)
+
+        backend = CapturingBackend()
+        backend.write("d/a.txt", b"a")
+        backend.write("d/sub/b.txt", b"b")
+        store = Store(backend=backend)
+        list(store.list_files("d", max_depth=1))
+        assert captured["max_depth"] == 1
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_store_forwards_none_when_unset(self) -> None:
+        """max_depth=None is forwarded when not explicitly set."""
+        captured: dict[str, int | None] = {}
+
+        class CapturingBackend(MemoryBackend):
+            def list_files(
+                self,
+                path: str,
+                *,
+                recursive: bool = False,
+                max_depth: int | None = None,
+            ):  # type: ignore[override]
+                captured["max_depth"] = max_depth
+                return super().list_files(path, recursive=recursive, max_depth=max_depth)
+
+        backend = CapturingBackend()
+        backend.write("d/a.txt", b"a")
+        store = Store(backend=backend)
+        list(store.list_files("d", recursive=True))
+        assert captured["max_depth"] is None
+
+
+class TestS3AzureMaxDepthSignature:
+    """DEPTH-003: S3/Azure backends accept max_depth without TypeError."""
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_s3_base_accepts_max_depth(self) -> None:
+        """S3 base backend signature accepts max_depth kwarg."""
+        import inspect
+
+        from remote_store.backends._s3_base import _S3Base
+
+        sig = inspect.signature(_S3Base.list_files)
+        assert "max_depth" in sig.parameters
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_azure_accepts_max_depth(self) -> None:
+        """Azure backend signature accepts max_depth kwarg."""
+        import inspect
+
+        from remote_store.backends._azure import AzureBackend
+
+        sig = inspect.signature(AzureBackend.list_files)
+        assert "max_depth" in sig.parameters
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_memory_backend_max_depth_no_typeerror(self) -> None:
+        """Smoke test: calling list_files with max_depth doesn't raise TypeError."""
+        backend = MemoryBackend()
+        backend.write("x/a.txt", b"a")
+        backend.write("x/sub/b.txt", b"b")
+        # Should not raise TypeError
+        files = list(backend.list_files("x", recursive=True, max_depth=1))
+        assert len(files) == 2
