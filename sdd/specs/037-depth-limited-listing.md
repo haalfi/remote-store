@@ -97,3 +97,4 @@ whether done natively or client-side. The optimization is purely performance.
 | **Memory** | DFS stack depth tracking; don't push beyond limit.    |
 | **S3**     | Accept parameter, no native optimization (flat scan + client filter). |
 | **Azure**  | Accept parameter, no native optimization (flat scan + client filter). |
+| **HTTP**   | Accept parameter; raises `CapabilityNotSupported` (listing not supported). |
