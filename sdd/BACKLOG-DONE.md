@@ -4,6 +4,13 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Bug Fixes
+
+- [x] **BUG-005 — SFTP TOFU host key not persisted when known_hosts absent**
+  `TRUST_ON_FIRST_USE` now persists accepted host keys to disk on disconnect.
+  Creates the known_hosts file and parent directories if absent. Inline keys
+  (code/config/env) are never persisted. Spec SFTP-028.
+
 ## Benchmarks & Performance
 
 - [x] **ID-104 — S3-PyArrow comparison chart, overhead-vs-RTT, benchmark tooling**

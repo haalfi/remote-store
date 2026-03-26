@@ -41,17 +41,6 @@ Items graduate through the SDD pipeline:
 
 ---
 
-## Known Bugs
-
-- [ ] **BUG-005 — SFTP TOFU host key not persisted when known_hosts absent**
-  `HostKeyPolicy.TRUST_ON_FIRST_USE` uses paramiko's `AutoAddPolicy()` but
-  only calls `load_host_keys()` when `~/.ssh/known_hosts` already exists
-  (`_sftp.py:693`). No `save_host_keys()` call anywhere. First-time users
-  with no known_hosts file get no key persistence — the "first use" promise
-  is session-scoped only.
-  - Option A: call `save_host_keys()` on disconnect (auto-persist)
-  - Option B: document TOFU as session-scoped, recommend STRICT after first use
-
 ---
 
 ## Ideas
