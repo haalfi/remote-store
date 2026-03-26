@@ -213,7 +213,10 @@ range scans (`WHERE key LIKE 'prefix/%'`). No separate index needed.
 - >100 MB: discouraged — use a blob storage backend (S3, local) instead
 
 **SQLite specialization** (worth it — zero-infrastructure persistent store):
-- Use `blobopen()` for streaming reads (Python 3.11+)
+- Use `blobopen()` for streaming reads (Python 3.11+). On 3.10: fall back to
+  `SELECT data FROM ... WHERE key = ?` into `BytesIO` (full materialization,
+  no streaming). This mirrors the `SpooledTemporaryFile` 3.10 compat pattern
+  already used in `ext/seekable.py`.
 - Enable WAL mode (`PRAGMA journal_mode=WAL`)
 - Set `PRAGMA synchronous=NORMAL` for better write performance
 - Use `GLOB` operator instead of `LIKE` for pattern matching

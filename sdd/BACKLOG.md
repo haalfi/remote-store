@@ -122,8 +122,8 @@ Items graduate through the SDD pipeline:
   multiple stores into one. Deterministic fallthrough resolution for reads, union
   LIST (deduplicated), writes to primary tier only.
   - [Research](research/research-sqlalchemy-backend.md#52-compositestore-id-120)
-  - Includes: unified `resolve()` → `ResolutionPlan` introspection API
-  - Depends on: at least two working backends to be useful; pairs well with ID-119
+  - Depends on: unified `resolve()` → `ResolutionPlan` (ID-121); at least two
+    working backends to be useful; pairs well with ID-119
   - Next: design as separate spec — backend-agnostic, useful independently
 
 ### Integrations
