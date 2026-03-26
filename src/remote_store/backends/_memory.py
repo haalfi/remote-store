@@ -223,7 +223,10 @@ class MemoryBackend(Backend):
                 return
             prefix = "/".join(segments) if segments else ""
             results = self._collect_files(
-                node, prefix, recursive=recursive, max_depth=max_depth,
+                node,
+                prefix,
+                recursive=recursive,
+                max_depth=max_depth,
             )
         yield from results
 

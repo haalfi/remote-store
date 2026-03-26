@@ -455,7 +455,10 @@ class SFTPBackend(Backend):
                     continue
                 subpath = f"{path}/{attr.filename}" if path else attr.filename
                 yield from self._list_files_depth(
-                    subpath, recursive=True, max_depth=max_depth, _depth=_depth + 1,
+                    subpath,
+                    recursive=True,
+                    max_depth=max_depth,
+                    _depth=_depth + 1,
                 )
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
