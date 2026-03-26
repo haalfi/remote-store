@@ -138,6 +138,10 @@ network round-trip. This makes depth limiting the most impactful optimization:
 | 2 | 111 | ~1000 |
 | Full | 1111 | 0 |
 
+**Cutoff behavior:** The native implementation includes items *at* `max_depth`
+but does not descend *beyond* it. At `max_depth=1`, files in depth-1 folders
+are returned, but depth-1 subdirectories are not recursed into.
+
 **Takeaway:** SFTP benefits the most from native depth limiting. Every skipped
 level avoids real network round-trips. The extension-only approach (full
 recursive scan + filter) would still make all those round-trips.
@@ -188,12 +192,28 @@ that level-by-level incurs on wide trees.
 ### 4.1 Depth semantics (unified across `list_files` and `list_folders`)
 
 Both `list_files` and `list_folders` use the same `max_depth` parameter with
-consistent semantics:
+consistent semantics.
+
+**Depth definition:** depth is the number of path components between the
+listing root and the item's parent directory. Computed on normalized relative
+paths (leading/trailing slashes stripped, no `.` or `..` components) — never
+on raw string operations like `str.count("/")`.
+
+```
+store.list_files("data", max_depth=1)
+
+data/file_a.csv          → depth 0 (parent = data)    ✓ included
+data/raw/file_b.csv      → depth 1 (parent = data/raw) ✓ included
+data/raw/2026/file_c.csv → depth 2                     ✗ excluded
+```
 
 - `max_depth=None` (default): current behavior unchanged.
 - `max_depth=0`: items directly in `path` itself (no descent).
 - `max_depth=1`: items in `path` + items in its direct subfolders.
 - `max_depth=N`: items up to N folder levels below `path`.
+
+**Input validation:** `max_depth` must be `>= 0` when provided. Negative
+values raise `ValueError`.
 
 Using the same parameter name and semantics for both methods avoids the
 off-by-one confusion that would arise from naming one `max_depth` and the
@@ -256,6 +276,13 @@ def list_folders(
 ) -> Iterator[FolderEntry]:
 ```
 
+**Backend invariant:** Store-level depth filtering depends on backends
+returning only items under the requested prefix. This invariant already holds
+for all backends — `Backend.list_files(path)` never returns items outside
+`path`. The depth filter computes relative paths from the listing root and
+counts components; if a backend violated the prefix invariant, the relative
+path computation would be incorrect.
+
 **Implementation at Store level — no ABC change:**
 
 - `list_files(max_depth=0)`: delegates to
@@ -263,12 +290,22 @@ def list_folders(
   non-recursive call, no filtering needed.
 - `list_files(max_depth=N)` where N > 0: delegates to
   `Backend.list_files(path, recursive=True)` and filters results client-side
-  by counting path components relative to `path`. The Store already does
-  client-side filtering for `pattern` — depth filtering follows the same
-  approach.
+  by computing the normalized relative path from `path` to each item and
+  counting components. The Store already does client-side filtering for
+  `pattern` — depth filtering follows the same approach.
 - `list_folders(max_depth=N)`: BFS using `Backend.list_folders()` at each
   level, up to `max_depth` levels. Each BFS step is one call to the existing
-  backend method.
+  backend method. Note: BFS cost is O(total folders within depth), not
+  O(depth) — wide directory trees with many folders per level will issue
+  proportionally more backend calls.
+
+**Phase 1 performance expectation:** For S3 and Azure, `list_files(max_depth=N)`
+with N > 0 will perform a full recursive scan (`find()` / `list_blobs()`) and
+filter client-side. This transfers all object metadata even when only a shallow
+slice is needed. Phase 2 backend optimization addresses this for backends
+where early termination is possible (SFTP, Local, Memory). S3 and Azure may
+still use the flat-scan strategy in Phase 2, as level-by-level listing is not
+always faster (§2.1, §2.2).
 
 This matches how `pattern` was added: Store-level concern, no backend
 awareness needed, works with all backends immediately.
