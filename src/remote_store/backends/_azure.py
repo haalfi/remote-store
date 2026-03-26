@@ -467,7 +467,13 @@ class AzureBackend(Backend):
                 elif not missing_ok:
                     raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 
-    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
+    def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+    ) -> Iterator[FileInfo]:
         with self._errors(path):
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""

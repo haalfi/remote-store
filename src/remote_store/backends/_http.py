@@ -335,7 +335,13 @@ class ReadOnlyHttpBackend(Backend):
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         raise CapabilityNotSupported("HTTP backend is read-only", capability="delete", backend=self.name)
 
-    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
+    def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+    ) -> Iterator[FileInfo]:
         raise CapabilityNotSupported("HTTP backend does not support listing", capability="list", backend=self.name)
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:

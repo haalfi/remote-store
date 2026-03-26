@@ -214,12 +214,23 @@ class Backend(abc.ABC):
         """
 
     @abc.abstractmethod
-    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
+    def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+    ) -> Iterator[FileInfo]:
         """List files under ``path``.
 
         Args:
             path: Backend-relative folder key, or ``""`` for the root.
             recursive: If ``True``, include files in all subdirectories.
+            max_depth: Optional maximum folder depth to traverse.  When set,
+                backends that support native depth limiting prune traversal
+                early.  Backends that ignore this parameter still produce
+                correct results — the Store applies client-side filtering
+                as a safety net.  ``None`` (default) defers to *recursive*.
 
         Returns:
             An iterator of ``FileInfo`` objects.

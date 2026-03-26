@@ -1,14 +1,22 @@
 """Tests for depth-limited listing.
 
-Covers spec 037-depth-limited-listing.md (DEPTH-001, DEPTH-002).
+Covers spec 037-depth-limited-listing.md (DEPTH-001, DEPTH-002, DEPTH-003).
 """
 
 from __future__ import annotations
 
+import stat as stat_module
+from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
+
 import pytest
 
 from remote_store._store import Store
+from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -196,3 +204,275 @@ class TestListFoldersMaxDepth:
         child = parent.child("root")
         folders = sorted(str(f.path) for f in child.list_folders("", max_depth=1))
         assert folders == ["sub", "sub/deep"]
+
+
+# ---------------------------------------------------------------------------
+# DEPTH-003: Backend-native max_depth optimization
+# ---------------------------------------------------------------------------
+
+
+def _seed_backend(backend: MemoryBackend | LocalBackend) -> None:
+    """Write a nested file tree into a backend for depth tests."""
+    for key, data in [
+        ("d/a.txt", b"a"),
+        ("d/sub1/b.txt", b"b"),
+        ("d/sub2/c.txt", b"c"),
+        ("d/sub1/deep/d.txt", b"d"),
+        ("d/sub1/deep/deeper/e.txt", b"e"),
+    ]:
+        backend.write(key, data)
+
+
+class TestMemoryBackendNativeDepth:
+    """DEPTH-003: MemoryBackend.list_files(max_depth=N) prunes DFS."""
+
+    @pytest.fixture
+    def backend(self) -> MemoryBackend:
+        b = MemoryBackend()
+        _seed_backend(b)
+        return b
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_none_ignores(self, backend: MemoryBackend) -> None:
+        """max_depth=None preserves existing recursive behavior."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=None))
+        assert len(files) == 5
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_zero(self, backend: MemoryBackend) -> None:
+        """max_depth=0 with recursive=True returns only immediate files."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=0))
+        assert files == ["a.txt"]
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_one(self, backend: MemoryBackend) -> None:
+        """max_depth=1 includes files in immediate subfolders."""
+        files = sorted(str(f.path) for f in backend.list_files("d", recursive=True, max_depth=1))
+        assert files == ["d/a.txt", "d/sub1/b.txt", "d/sub2/c.txt"]
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_two(self, backend: MemoryBackend) -> None:
+        """max_depth=2 includes files up to 2 levels deep."""
+        files = sorted(str(f.path) for f in backend.list_files("d", recursive=True, max_depth=2))
+        assert files == ["d/a.txt", "d/sub1/b.txt", "d/sub1/deep/d.txt", "d/sub2/c.txt"]
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_exceeds_tree(self, backend: MemoryBackend) -> None:
+        """max_depth larger than tree returns all files."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=100))
+        assert len(files) == 5
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_without_recursive(self, backend: MemoryBackend) -> None:
+        """max_depth has no effect when recursive=False."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=False, max_depth=5))
+        assert files == ["a.txt"]
+
+
+class TestSFTPBackendNativeDepth:
+    """DEPTH-003: SFTPBackend._list_files_depth stops recursing at max_depth."""
+
+    @staticmethod
+    def _make_attr(filename: str, *, is_dir: bool = False) -> MagicMock:
+        """Create a mock SFTPAttributes entry."""
+        attr = MagicMock()
+        attr.filename = filename
+        mode = stat_module.S_IFDIR | 0o755 if is_dir else stat_module.S_IFREG | 0o644
+        attr.st_mode = mode
+        attr.st_size = 10
+        attr.st_mtime = 1000000.0
+        return attr
+
+    @pytest.fixture
+    def sftp_stub(self) -> MagicMock:
+        """Build a mock SFTPBackend with a 3-level tree.
+
+        Tree: d/a.txt, d/sub1/b.txt, d/sub1/deep/c.txt
+        """
+        from remote_store.backends._sftp import SFTPBackend
+
+        backend = MagicMock(spec=SFTPBackend)
+        backend.name = "sftp"
+        backend._base_path = "/"
+
+        # Bind the real methods so they use the mock's _sftp
+        backend._sftp_path = SFTPBackend._sftp_path.__get__(backend)
+        backend._stat_to_fileinfo = SFTPBackend._stat_to_fileinfo.__get__(backend)
+        backend._list_files_depth = SFTPBackend._list_files_depth.__get__(backend)
+        backend.list_files = SFTPBackend.list_files.__get__(backend)
+
+        mk = self._make_attr
+
+        def listdir_attr(path: str) -> list[MagicMock]:
+            tree: dict[str, list[MagicMock]] = {
+                "/d": [mk("a.txt"), mk("sub1", is_dir=True)],
+                "/d/sub1": [mk("b.txt"), mk("deep", is_dir=True)],
+                "/d/sub1/deep": [mk("c.txt")],
+            }
+            if path not in tree:
+                raise OSError("not found")
+            return tree[path]
+
+        backend._sftp = MagicMock()
+        backend._sftp.listdir_attr = MagicMock(side_effect=listdir_attr)
+        return backend
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_zero_no_subdirs(self, sftp_stub: MagicMock) -> None:
+        """max_depth=0 returns only files in 'd', no recursive calls."""
+        files = list(sftp_stub.list_files("d", recursive=True, max_depth=0))
+        assert [f.name for f in files] == ["a.txt"]
+        # Only the root directory should be listed
+        assert sftp_stub._sftp.listdir_attr.call_count == 1
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_one_stops_at_sub1(self, sftp_stub: MagicMock) -> None:
+        """max_depth=1 lists d/ and d/sub1/ but not d/sub1/deep/."""
+        files = sorted(f.name for f in sftp_stub.list_files("d", recursive=True, max_depth=1))
+        assert files == ["a.txt", "b.txt"]
+        # d/ and d/sub1/ listed, but d/sub1/deep/ skipped
+        assert sftp_stub._sftp.listdir_attr.call_count == 2
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_none_lists_all(self, sftp_stub: MagicMock) -> None:
+        """max_depth=None recurses fully."""
+        files = sorted(f.name for f in sftp_stub.list_files("d", recursive=True, max_depth=None))
+        assert files == ["a.txt", "b.txt", "c.txt"]
+        assert sftp_stub._sftp.listdir_attr.call_count == 3
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_without_recursive(self, sftp_stub: MagicMock) -> None:
+        """max_depth has no effect when recursive=False."""
+        files = list(sftp_stub.list_files("d", recursive=False, max_depth=5))
+        assert [f.name for f in files] == ["a.txt"]
+        assert sftp_stub._sftp.listdir_attr.call_count == 1
+
+
+@pytest.mark.os_sensitive
+class TestLocalBackendNativeDepth:
+    """DEPTH-003: LocalBackend.list_files(max_depth=N) uses os.walk depth cutoff."""
+
+    @pytest.fixture
+    def backend(self, tmp_path: Path) -> LocalBackend:
+        b = LocalBackend(root=str(tmp_path))
+        _seed_backend(b)
+        return b
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_none_ignores(self, backend: LocalBackend) -> None:
+        """max_depth=None preserves existing recursive behavior."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=None))
+        assert len(files) == 5
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_zero(self, backend: LocalBackend) -> None:
+        """max_depth=0 with recursive=True returns only immediate files."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=0))
+        assert files == ["a.txt"]
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_one(self, backend: LocalBackend) -> None:
+        """max_depth=1 includes files in immediate subfolders."""
+        files = sorted(str(f.path) for f in backend.list_files("d", recursive=True, max_depth=1))
+        assert files == ["d/a.txt", "d/sub1/b.txt", "d/sub2/c.txt"]
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_two(self, backend: LocalBackend) -> None:
+        """max_depth=2 includes files up to 2 levels deep."""
+        files = sorted(str(f.path) for f in backend.list_files("d", recursive=True, max_depth=2))
+        assert files == ["d/a.txt", "d/sub1/b.txt", "d/sub1/deep/d.txt", "d/sub2/c.txt"]
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_exceeds_tree(self, backend: LocalBackend) -> None:
+        """max_depth larger than tree returns all files."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=100))
+        assert len(files) == 5
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_max_depth_without_recursive(self, backend: LocalBackend) -> None:
+        """max_depth has no effect when recursive=False."""
+        files = sorted(f.name for f in backend.list_files("d", recursive=False, max_depth=5))
+        assert files == ["a.txt"]
+
+
+class TestStoreForwardsMaxDepth:
+    """DEPTH-003: Store.list_files passes max_depth through to backend."""
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_store_forwards_max_depth_to_backend(self) -> None:
+        """Verify the Store actually passes max_depth to the backend call."""
+        captured: dict[str, int | None] = {}
+
+        class CapturingBackend(MemoryBackend):
+            def list_files(
+                self,
+                path: str,
+                *,
+                recursive: bool = False,
+                max_depth: int | None = None,
+            ):  # type: ignore[override]
+                captured["max_depth"] = max_depth
+                return super().list_files(path, recursive=recursive, max_depth=max_depth)
+
+        backend = CapturingBackend()
+        backend.write("d/a.txt", b"a")
+        backend.write("d/sub/b.txt", b"b")
+        store = Store(backend=backend)
+        list(store.list_files("d", max_depth=1))
+        assert captured["max_depth"] == 1
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_store_forwards_none_when_unset(self) -> None:
+        """max_depth=None is forwarded when not explicitly set."""
+        captured: dict[str, int | None] = {}
+
+        class CapturingBackend(MemoryBackend):
+            def list_files(
+                self,
+                path: str,
+                *,
+                recursive: bool = False,
+                max_depth: int | None = None,
+            ):  # type: ignore[override]
+                captured["max_depth"] = max_depth
+                return super().list_files(path, recursive=recursive, max_depth=max_depth)
+
+        backend = CapturingBackend()
+        backend.write("d/a.txt", b"a")
+        store = Store(backend=backend)
+        list(store.list_files("d", recursive=True))
+        assert captured["max_depth"] is None
+
+
+class TestS3AzureMaxDepthSignature:
+    """DEPTH-003: S3/Azure backends accept max_depth without TypeError."""
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_s3_base_accepts_max_depth(self) -> None:
+        """S3 base backend signature accepts max_depth kwarg."""
+        import inspect
+
+        from remote_store.backends._s3_base import _S3Base
+
+        sig = inspect.signature(_S3Base.list_files)
+        assert "max_depth" in sig.parameters
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_azure_accepts_max_depth(self) -> None:
+        """Azure backend signature accepts max_depth kwarg."""
+        import inspect
+
+        from remote_store.backends._azure import AzureBackend
+
+        sig = inspect.signature(AzureBackend.list_files)
+        assert "max_depth" in sig.parameters
+
+    @pytest.mark.spec("DEPTH-003")
+    def test_memory_backend_max_depth_no_typeerror(self) -> None:
+        """Smoke test: calling list_files with max_depth doesn't raise TypeError."""
+        backend = MemoryBackend()
+        backend.write("x/a.txt", b"a")
+        backend.write("x/sub/b.txt", b"b")
+        # Should not raise TypeError
+        files = list(backend.list_files("x", recursive=True, max_depth=1))
+        assert len(files) == 2

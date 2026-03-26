@@ -209,14 +209,25 @@ class MemoryBackend(Backend):
                 self._file_count -= files
                 self._folder_count -= folders + 1  # +1 for the node itself
 
-    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
+    def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+    ) -> Iterator[FileInfo]:
         segments = self._split_path(path)
         with self._lock:
             node = self._traverse(segments)
             if not isinstance(node, _DirNode):
                 return
             prefix = "/".join(segments) if segments else ""
-            results = self._collect_files(node, prefix, recursive=recursive)
+            results = self._collect_files(
+                node,
+                prefix,
+                recursive=recursive,
+                max_depth=max_depth,
+            )
         yield from results
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
@@ -476,6 +487,7 @@ class MemoryBackend(Backend):
         prefix: str,
         *,
         recursive: bool,
+        max_depth: int | None = None,
     ) -> list[FileInfo]:
         """Collect FileInfo objects from a directory node (under lock).
 
@@ -483,9 +495,9 @@ class MemoryBackend(Backend):
         ``get_folder_info``, avoiding recursion-limit concerns on deep trees.
         """
         results: list[FileInfo] = []
-        stack: list[tuple[_DirNode, str]] = [(node, prefix)]
+        stack: list[tuple[_DirNode, str, int]] = [(node, prefix, 0)]
         while stack:
-            current, cur_prefix = stack.pop()
+            current, cur_prefix, depth = stack.pop()
             for name, child in current.children.items():
                 child_path = f"{cur_prefix}/{name}" if cur_prefix else name
                 if isinstance(child, _FileEntry):
@@ -499,7 +511,9 @@ class MemoryBackend(Backend):
                         )
                     )
                 elif recursive and isinstance(child, _DirNode):
-                    stack.append((child, child_path))
+                    if max_depth is not None and depth >= max_depth:
+                        continue
+                    stack.append((child, child_path, depth + 1))
         return results
 
     # endregion

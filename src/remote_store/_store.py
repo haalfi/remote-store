@@ -384,6 +384,7 @@ class Store:
         for info in self._backend.list_files(
             self._full_path(path),
             recursive=effective_recursive,
+            max_depth=max_depth,
         ):
             rebased = self._rebase_file_info(info)
             # Depth filter: file parts minus 1 (filename) minus base gives depth

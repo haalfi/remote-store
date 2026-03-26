@@ -210,11 +210,29 @@ class LocalBackend(Backend):
                 rel = self.to_key(str(item))
                 yield self._stat_to_fileinfo(rel, item)
 
-    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
+    def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+    ) -> Iterator[FileInfo]:
         full = self._resolve(path)
         if not full.is_dir():
             return
-        if recursive:
+        if recursive and max_depth is not None:
+            for dirpath, dirnames, filenames in os.walk(full):
+                depth = len(Path(dirpath).relative_to(full).parts)
+                if depth > max_depth:
+                    dirnames.clear()
+                    continue
+                for fname in filenames:
+                    item = Path(dirpath) / fname
+                    rel = self.to_key(str(item))
+                    yield self._stat_to_fileinfo(rel, item)
+                if depth == max_depth:
+                    dirnames.clear()
+        elif recursive:
             for item in full.rglob("*"):
                 if item.is_file():
                     rel = self.to_key(str(item))
