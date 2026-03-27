@@ -36,7 +36,7 @@ class TestResolveTlsCaBundle:
 
     @pytest.mark.spec("TLS-003")
     def test_falls_through_to_ssl_cert_file(self) -> None:
-        env = {"SSL_CERT_FILE": "/ssl/ca.pem"}
+        env = {"AWS_CA_BUNDLE": "", "REQUESTS_CA_BUNDLE": "", "SSL_CERT_FILE": "/ssl/ca.pem"}
         with patch.dict("os.environ", env, clear=False):
             result = _resolve_tls_ca_bundle(None, _S3_CA_ENV_VARS)
         assert result == "/ssl/ca.pem"

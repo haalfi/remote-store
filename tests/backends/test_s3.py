@@ -196,8 +196,10 @@ class TestS3TlsCaBundle:
     @pytest.mark.spec("TLS-001")
     def test_tls_ca_bundle_none_default(self) -> None:
         from remote_store.backends._s3 import S3Backend
+        from remote_store.backends._s3_base import _S3_CA_ENV_VARS
 
-        backend = S3Backend(bucket="b", key="k", secret="s")
+        with patch.dict("os.environ", {v: "" for v in _S3_CA_ENV_VARS}, clear=False):
+            backend = S3Backend(bucket="b", key="k", secret="s")
         assert backend._tls_ca_bundle is None
 
     @pytest.mark.spec("TLS-005")
