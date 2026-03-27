@@ -5790,6 +5790,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/038-nonrecursive-folder-info/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    038: Non-Recursive get_folder_info Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8427,6 +8455,15 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong>Non-recursive <code>get_folder_info</code></strong> (ID-112):
+  <code>Store.get_folder_info(path, max_depth=N)</code> controls traversal depth for
+  folder statistics. <code>max_depth=0</code> aggregates only direct children;
+  <code>max_depth=N</code> includes files up to N levels deep. <code>None</code> (default) preserves
+  the existing full-recursive backend delegation. Store-level computation
+  using <code>list_files()</code>; no Backend ABC change. <code>CachedStore</code> and
+  <code>ObservedStore</code> forward the parameter. Spec 038.</p>
+</li>
 <li>
 <p><strong>Depth-limited listing</strong> (ID-107, ID-108): <code>Store.list_files(max_depth=N)</code>
   and <code>Store.list_folders(max_depth=N)</code> control traversal depth without
