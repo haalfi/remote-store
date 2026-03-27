@@ -7120,10 +7120,14 @@ successful context exit) invalidate:</p>
 recursive folder deletion may affect any cached path.</p>
 <h3 id="cache-010-movecopy-invalidation">CACHE-010: Move/Copy Invalidation<a class="headerlink" href="#cache-010-movecopy-invalidation" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong>
-- <code>move(src, dst)</code> invalidates all per-path entries for both <code>src</code> and
-  <code>dst</code>, plus all listing cache entries.
-- <code>copy(src, dst)</code> invalidates all per-path entries for <code>dst</code>, plus all
-  listing cache entries. Source entries are not invalidated.</p>
+- <code>move(src, dst)</code> clears the entire cache. When moving a path (file or
+  folder), all nested paths are relocated, requiring full invalidation to
+  prevent stale entries for paths like <code>dst/file.txt</code>. Consistent with
+  <code>delete_folder()</code> safety strategy.
+- <code>copy(src, dst)</code> clears the entire cache. When copying to an existing
+  destination with <code>overwrite=True</code>, nested paths may be overwritten,
+  requiring full invalidation. Full cache clear ensures no stale entries
+  persist for affected paths.</p>
 <hr />
 <h2 id="safety">Safety<a class="headerlink" href="#safety" title="Permanent link">&para;</a></h2>
 <h3 id="cache-011-drift-protection-test">CACHE-011: Drift-Protection Test<a class="headerlink" href="#cache-011-drift-protection-test" title="Permanent link">&para;</a></h3>

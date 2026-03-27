@@ -8545,6 +8545,13 @@
   never persisted. Spec SFTP-028.</p>
 </li>
 <li>
+<p><strong>Cache coherency in move/copy operations</strong> (BUG-006): <code>CachedStore.move()</code>
+  and <code>CachedStore.copy()</code> now clear the entire cache (instead of selective
+  invalidation) to prevent stale cached entries for nested paths that are
+  relocated or overwritten. Consistent with <code>delete_folder()</code> safety strategy.
+  Spec CACHE-010 updated.</p>
+</li>
+<li>
 <p><strong>Snippet indentation in docs code blocks</strong> (BUG-004): named snippet
   regions inside function bodies rendered with extra leading whitespace.
   Fixed via pymdownx.snippets <code>dedent_subsections</code> option.</p>
