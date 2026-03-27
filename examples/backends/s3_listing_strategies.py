@@ -35,8 +35,6 @@ from remote_store import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
     from remote_store import Store
 
 BUCKET = os.environ.get("RS_S3_BUCKET", "")
@@ -172,15 +170,6 @@ def demo_antipattern(store: Store) -> None:
     """Show what NOT to do: manual folder traversal."""
     print("[5] ANTI-PATTERN: Manual Folder Traversal (DO NOT DO THIS)")
     print("    Pseudocode:\n")
-
-    def manual_traverse(path: str) -> Iterator[FileInfo]:
-        """Inefficient folder-by-folder traversal."""
-        # This makes one API call per folder level
-        for entry in store.iter_children(path):
-            if isinstance(entry, FileInfo):
-                yield entry
-            elif isinstance(entry, FolderEntry):
-                yield from manual_traverse(str(entry.path))
 
     print("    def manual_traverse(path):")
     print("        for entry in list_children(path):       # 1 API call")

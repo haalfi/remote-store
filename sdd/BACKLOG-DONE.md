@@ -58,7 +58,7 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   recursive listing trade-offs, why flat `ListObjectsV2` streams beat
   delimiter-based folder iteration, and why parallelization is wrong for large
   buckets. Includes performance data from benchmark suite and practical examples.
-  New example file `examples/s3_listing_strategies.py` demonstrates shallow,
+  New example file `examples/backends/s3_listing_strategies.py` demonstrates shallow,
   recursive, and filtered listing patterns.
 
 - [x] **BUG-004 — Snippet indentation leaks into docs code blocks**
