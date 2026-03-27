@@ -28,7 +28,7 @@ S3Backend(
     retry: RetryPolicy | None = None,  # see spec 025
 )
 ```
-**Postconditions:** The backend stores configuration but does not connect to S3 during construction (see S3-004).
+**Postconditions:** The backend stores configuration but does not connect to S3 during construction (see S3-004). The `endpoint_url` is normalized per S3-025.
 
 ### S3-002: Backend Name
 
@@ -212,3 +212,14 @@ lowercase-normalized in `ContentDigest`).
   base64 decoding the value fails.
 - `FileInfo.digest` from listing paths (`list_files`, `iter_children`) is always `None`
   — the extra request is only issued by `get_file_info`.
+
+### S3-025: Endpoint URL Normalization
+
+**Invariant:** `endpoint_url` is normalized at construction time so that bare `host:port` values are usable.
+**Rules:**
+- `None` → `None` (unchanged).
+- Empty or whitespace-only → `None`.
+- Bare `host:port` or hostname → prefixed with `https://`.
+- URLs with an existing `http://` or `https://` scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.
+
+**Postconditions:** After construction, `self._endpoint_url` always contains a scheme prefix or is `None`.

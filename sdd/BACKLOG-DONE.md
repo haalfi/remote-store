@@ -53,6 +53,12 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Docs & DX
 
+- [x] **ID-117 — S3Backend endpoint URL normalization**
+  `S3Backend` and `S3PyArrowBackend` accept bare `host:port` for
+  `endpoint_url` and auto-prefix with `https://`. Shared
+  `_normalize_endpoint_url()` helper in `_s3_base.py`.
+  Spec S3-025 / S3PA-023.
+
 - [x] **ID-113 — Documentation: S3 listing strategies and performance**
   Comprehensive guide added to `guides/backends/s3.md` explaining shallow vs.
   recursive listing trade-offs, why flat `ListObjectsV2` streams beat

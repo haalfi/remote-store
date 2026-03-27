@@ -28,7 +28,7 @@ S3PyArrowBackend(
     retry: RetryPolicy | None = None,  # see spec 025
 )
 ```
-**Postconditions:** The backend stores configuration but does not connect to S3 during construction (see S3PA-004). Constructor arguments are translated to each library's conventions internally.
+**Postconditions:** The backend stores configuration but does not connect to S3 during construction (see S3PA-004). The `endpoint_url` is normalized per S3PA-023. Constructor arguments are translated to each library's conventions internally.
 
 ### S3PA-002: Backend Name
 
@@ -167,3 +167,14 @@ S3PyArrowBackend(
 
 **Invariant:** Same as S3-021. The `client_options` dict is merged into the s3fs configuration.
 **Postconditions:** `client_options` applies to s3fs only. PyArrow configuration is derived from the explicit constructor parameters.
+
+### S3PA-023: Endpoint URL Normalization
+
+**Invariant:** Same as S3-025. `endpoint_url` is normalized at construction time so that bare `host:port` values are usable.
+**Rules:**
+- `None` → `None` (unchanged).
+- Empty or whitespace-only → `None`.
+- Bare `host:port` or hostname → prefixed with `https://`.
+- URLs with an existing `http://` or `https://` scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.
+
+**Postconditions:** After construction, `self._endpoint_url` always contains a scheme prefix or is `None`.
