@@ -99,6 +99,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   file and parent directories if absent. Inline keys (code/config/env) are
   never persisted. Spec SFTP-028.
 
+- **Cache coherency in move/copy operations** (BUG-006): `CachedStore.move()`
+  and `CachedStore.copy()` now clear the entire cache (instead of selective
+  invalidation) to prevent stale cached entries for nested paths that are
+  relocated or overwritten. Consistent with `delete_folder()` safety strategy.
+  Spec CACHE-010 updated.
+
 - **Snippet indentation in docs code blocks** (BUG-004): named snippet
   regions inside function bodies rendered with extra leading whitespace.
   Fixed via pymdownx.snippets `dedent_subsections` option.
