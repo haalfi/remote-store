@@ -23,6 +23,18 @@ Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC form
 
 Operational items (CI config, docs, dependency pins) skip the spec step: tracked and closed directly in the backlog. Backlog items track *what* needs doing; the RFC or spec tracks *how*.
 
+7. **Bug-fix workflow**: bug fixes follow a compressed but strict pipeline:
+
+```text
+1. BACKLOG   → Create/update item in sdd/BACKLOG.md
+2. CHANGELOG → Add entry under [Unreleased] in CHANGELOG.md
+3. TEST      → Write a failing test that reproduces the bug
+4. FIX       → Make the test pass
+5. COMMIT    → Ship test + fix + backlog + changelog together
+```
+
+Steps must not be skipped or reordered. A fix without a prior failing test is incomplete. If the bug contradicts a spec invariant, update or annotate the spec.
+
 ## Guides
 
 ### Spec format
