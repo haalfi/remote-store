@@ -14,25 +14,20 @@ Spec-Driven Development (SDD).
 5. **Run it, don't just type-check it**: verify behavior, not signatures. Reproduce bugs before claiming fixes. Test what matters, not just what type-checks.
 6. **Be critical, not agreeable**: challenge assumptions, question completeness, flag what's missing. Especially in reviews: a rubber-stamp is worse than no review. Ask what's untested, what could break, what's absent from the checklist.
 
-## Audit workflow
+## Audits
 
-When the user requests an audit, review, or code inspection:
-
-1. **Present findings first.** Report what you found — bugs, smells, risks, suggestions — with evidence. Do NOT fix anything yet.
-2. **Ask before acting.** Let the user decide: which issues to fix, whether to create a backlog item, whether an audit document is warranted. The scope of follow-up work is the user's call.
-3. **If the user greenlights a fix, follow the bug-fix protocol below.**
+1. **Report only.** Present findings with evidence. Do not fix anything.
+2. **User decides next steps** — what to fix, whether to create backlog items or an audit doc.
 
 ## Bug-fix protocol
 
-Every bug fix — whether found in an audit, a review, or ad-hoc — follows this sequence:
+Strict order — no skipping:
 
-1. **Backlog entry** — create or update the item in `sdd/BACKLOG.md`.
-2. **CHANGELOG entry** — add to `[Unreleased]` in `CHANGELOG.md`.
-3. **Failing test first** — write a test that reproduces the bug and confirm it fails.
-4. **Fix the code** — make the test pass.
-5. **Commit together** — test + fix + backlog + changelog in one commit (or mark `[~]` per Principle 1).
-
-Do not skip steps or reorder. A fix without a prior failing test is incomplete.
+1. Backlog entry (`sdd/BACKLOG.md`)
+2. CHANGELOG entry (`[Unreleased]`)
+3. Failing test that reproduces the bug
+4. Fix (make the test pass)
+5. Commit all together (or mark `[~]`)
 
 ## Backlog (mandatory)
 
