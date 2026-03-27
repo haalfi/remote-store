@@ -358,12 +358,12 @@ class CachedStore(ProxyStore):
         self._cache.set(key, result, self._ttl)
         return result
 
-    def get_folder_info(self, path: str) -> FolderInfo:
-        key = ("get_folder_info", path)
+    def get_folder_info(self, path: str, *, max_depth: int | None = None) -> FolderInfo:
+        key = ("get_folder_info", path, str(max_depth))
         cached = self._cache_get(key)
         if cached is not _MISSING:
             return cached  # type: ignore[no-any-return]
-        result = self._inner.get_folder_info(path)
+        result = self._inner.get_folder_info(path, max_depth=max_depth)
         self._cache.set(key, result, self._ttl)
         return result
 

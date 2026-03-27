@@ -366,9 +366,9 @@ class ObservedStore(ProxyStore):
         with self._observe_op("get_file_info", path, {}):
             return self._inner.get_file_info(path)
 
-    def get_folder_info(self, path: str) -> FolderInfo:
-        with self._observe_op("get_folder_info", path, {}):
-            return self._inner.get_folder_info(path)
+    def get_folder_info(self, path: str, *, max_depth: int | None = None) -> FolderInfo:
+        with self._observe_op("get_folder_info", path, {"max_depth": max_depth}):
+            return self._inner.get_folder_info(path, max_depth=max_depth)
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         with self._observe_op("move", src, {"dst": dst, "overwrite": overwrite}):

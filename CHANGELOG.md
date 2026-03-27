@@ -24,6 +24,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **Non-recursive `get_folder_info`** (ID-112):
+  `Store.get_folder_info(path, max_depth=N)` controls traversal depth for
+  folder statistics. `max_depth=0` aggregates only direct children;
+  `max_depth=N` includes files up to N levels deep. `None` (default) preserves
+  the existing full-recursive backend delegation. Store-level computation
+  using `list_files()`; no Backend ABC change. `CachedStore` and
+  `ObservedStore` forward the parameter. Spec 038.
+
 - **Depth-limited listing** (ID-107, ID-108): `Store.list_files(max_depth=N)`
   and `Store.list_folders(max_depth=N)` control traversal depth without
   fetching the full recursive tree. When `max_depth` is set on `list_files`,
