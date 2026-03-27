@@ -495,11 +495,19 @@ class TestInvalidation:
         assert cached.stats.misses == 4
 
     @pytest.mark.spec("CACHE-010")
-    def test_copy_invalidates_dst_only(self, cached: CachedStore) -> None:
+    def test_copy_invalidates_entire_cache(self, cached: CachedStore) -> None:
+        # Read and cache source file (1 miss)
         data = cached.read_bytes("a.txt")
+        assert cached.stats.misses == 1
+
+        # Copy operation invalidates entire cache to prevent stale entries
+        # for nested paths that may have been overwritten
         cached.copy("a.txt", "copied.txt")
+
+        # Subsequent reads are now misses (cache was cleared)
         assert cached.read_bytes("a.txt") == data
-        assert cached.stats.hits == 1
+        assert cached.stats.misses == 2
+        assert cached.stats.hits == 0
 
 
 class TestDriftProtection:

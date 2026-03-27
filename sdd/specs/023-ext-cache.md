@@ -194,10 +194,14 @@ recursive folder deletion may affect any cached path.
 ### CACHE-010: Move/Copy Invalidation
 
 **Invariant:**
-- `move(src, dst)` invalidates all per-path entries for both `src` and
-  `dst`, plus all listing cache entries.
-- `copy(src, dst)` invalidates all per-path entries for `dst`, plus all
-  listing cache entries. Source entries are not invalidated.
+- `move(src, dst)` clears the entire cache. When moving a path (file or
+  folder), all nested paths are relocated, requiring full invalidation to
+  prevent stale entries for paths like `dst/file.txt`. Consistent with
+  `delete_folder()` safety strategy.
+- `copy(src, dst)` clears the entire cache. When copying to an existing
+  destination with `overwrite=True`, nested paths may be overwritten,
+  requiring full invalidation. Full cache clear ensures no stale entries
+  persist for affected paths.
 
 ---
 

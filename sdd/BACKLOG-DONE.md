@@ -11,6 +11,13 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   Creates the known_hosts file and parent directories if absent. Inline keys
   (code/config/env) are never persisted. Spec SFTP-028.
 
+- [x] **BUG-006 — Cache coherency in move/copy operations**
+  `CachedStore.move()` and `CachedStore.copy()` now clear the entire cache
+  to prevent stale cached entries for nested paths that are relocated or
+  overwritten. Previously only invalidated source/destination paths, missing
+  nested paths (e.g., `dst/file.txt`). Now consistent with `delete_folder()`
+  safety strategy. Spec CACHE-010 updated.
+
 ## Benchmarks & Performance
 
 - [x] **ID-104 — S3-PyArrow comparison chart, overhead-vs-RTT, benchmark tooling**

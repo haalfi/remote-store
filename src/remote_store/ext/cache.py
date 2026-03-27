@@ -465,13 +465,15 @@ class CachedStore(ProxyStore):
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         self._inner.move(src, dst, overwrite=overwrite)
-        self._invalidate_path(src)
-        self._invalidate_path(dst)
+        # When moving a path (file or folder), invalidate the entire cache
+        # because any nested paths under src are now under dst.
+        self._cache.clear()
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         self._inner.copy(src, dst, overwrite=overwrite)
-        # Source is unchanged, only invalidate destination + listings.
-        self._invalidate_path(dst)
+        # When copying, destination paths (file or nested paths in a folder)
+        # can change. Clear entire cache to ensure no stale entries remain.
+        self._cache.clear()
 
     # endregion
 
