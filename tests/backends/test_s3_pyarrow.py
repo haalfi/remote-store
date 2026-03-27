@@ -9,6 +9,7 @@ from __future__ import annotations
 import io
 import uuid
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import pytest
 
@@ -30,6 +31,7 @@ from remote_store._models import FileInfo, FolderInfo  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
     from remote_store._backend import Backend
 
@@ -152,6 +154,88 @@ class TestS3PyArrowConstruction:
 
         backend = S3PyArrowBackend(bucket="any-bucket")
         assert backend.name == "s3-pyarrow"
+
+
+class TestS3PyArrowTlsCaBundle:
+    """TLS-002, TLS-004, TLS-006, TLS-007: tls_ca_bundle on S3PyArrowBackend."""
+
+    @pytest.mark.spec("TLS-002")
+    def test_tls_ca_bundle_accepted(self, tmp_path: Path) -> None:
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        cert = tmp_path / "ca.pem"
+        cert.write_text("fake cert")
+        backend = S3PyArrowBackend(bucket="b", key="k", secret="s", tls_ca_bundle=str(cert))
+        assert backend._tls_ca_bundle == str(cert)
+
+    @pytest.mark.spec("TLS-004")
+    def test_tls_ca_bundle_missing_file_raises(self) -> None:
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        with pytest.raises(ValueError, match="does not exist or is not a file"):
+            S3PyArrowBackend(bucket="b", key="k", secret="s", tls_ca_bundle="/no/such/file.pem")
+
+    @pytest.mark.spec("TLS-004")
+    def test_tls_ca_bundle_directory_raises(self, tmp_path: Path) -> None:
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        with pytest.raises(ValueError, match="does not exist or is not a file"):
+            S3PyArrowBackend(bucket="b", key="k", secret="s", tls_ca_bundle=str(tmp_path))
+
+    @pytest.mark.spec("TLS-002")
+    def test_tls_ca_bundle_none_default(self) -> None:
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        backend = S3PyArrowBackend(bucket="b", key="k", secret="s")
+        assert backend._tls_ca_bundle is None
+
+    @pytest.mark.spec("TLS-006")
+    def test_tls_ca_bundle_sets_tls_ca_file_path_on_pyarrow(self, tmp_path: Path) -> None:
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        cert = tmp_path / "ca.pem"
+        cert.write_text("fake cert")
+        backend = S3PyArrowBackend(
+            bucket="b",
+            key="k",
+            secret="s",
+            endpoint_url="http://localhost:9000",
+            tls_ca_bundle=str(cert),
+        )
+        with patch("pyarrow.fs.S3FileSystem") as mock_pa_s3:
+            _ = backend._pa_fs
+            call_kwargs = mock_pa_s3.call_args[1]
+            assert call_kwargs["tls_ca_file_path"] == str(cert)
+
+    @pytest.mark.spec("TLS-007")
+    def test_tls_ca_bundle_sets_verify_on_s3fs(self, tmp_path: Path) -> None:
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        cert = tmp_path / "ca.pem"
+        cert.write_text("fake cert")
+        backend = S3PyArrowBackend(bucket="b", key="k", secret="s", tls_ca_bundle=str(cert))
+        with patch("s3fs.S3FileSystem") as mock_s3fs_cls:
+            _ = backend._s3fs
+            call_kwargs = mock_s3fs_cls.call_args[1]
+            assert call_kwargs["client_kwargs"]["verify"] == str(cert)
+
+    @pytest.mark.spec("TLS-007")
+    def test_tls_ca_bundle_does_not_override_explicit_verify(self, tmp_path: Path) -> None:
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        cert = tmp_path / "ca.pem"
+        cert.write_text("fake cert")
+        backend = S3PyArrowBackend(
+            bucket="b",
+            key="k",
+            secret="s",
+            tls_ca_bundle=str(cert),
+            client_options={"client_kwargs": {"verify": "/other/ca.pem"}},
+        )
+        with patch("s3fs.S3FileSystem") as mock_s3fs_cls:
+            _ = backend._s3fs
+            call_kwargs = mock_s3fs_cls.call_args[1]
+            assert call_kwargs["client_kwargs"]["verify"] == "/other/ca.pem"
 
 
 # endregion

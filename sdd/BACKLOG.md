@@ -56,13 +56,10 @@ Items graduate through the SDD pipeline:
 
 ### S3 & Azure Configuration
 
-- [ ] **ID-118 — Certificate bundle handling (S3 + Azure)**
-  **Phase 1 (S3):** Dedicated `tls_ca_bundle: str | None` parameter replacing
-  nested `client_options={"client_kwargs": {"verify": path}}`. Auto-read
-  `AWS_CA_BUNDLE` env var (aligns with boto3 standard). Early path validation
-  at construction time with clear `ValueError` if cert file missing.
-  - Env vars: `AWS_CA_BUNDLE`, `REQUESTS_CA_BUNDLE`, `SSL_CERT_FILE`
-  - For S3PyArrowBackend: respect `SSL_CERT_FILE` (PyArrow's `tls_ca_file_path`)
+- [~] **ID-118 — Certificate bundle handling (S3 + Azure)**
+  **Phase 1 (S3): Done.** `tls_ca_bundle: str | None` parameter on both
+  `S3Backend` and `S3PyArrowBackend`. Env var fallback chain, early path
+  validation, `setdefault` injection. Spec 039.
   - **Phase 2 (Azure):** Extend to AzureBackend if demand materializes.
     Primarily benefits Azure Stack Hub / on-premises deployments.
     Wrap `ClientOptions(ca_cert=...)`, check `AZURE_CA_CERTIFICATE_PATH`.

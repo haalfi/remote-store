@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import abc
+import os
 from contextlib import contextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from remote_store._backend import Backend
@@ -40,6 +42,29 @@ def _normalize_endpoint_url(url: str | None) -> str | None:
     if lower.startswith("http://") or lower.startswith("https://"):
         return url
     return f"https://{url}"
+
+
+_S3_CA_ENV_VARS: tuple[str, ...] = ("AWS_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE")
+
+
+def _resolve_tls_ca_bundle(
+    explicit: str | None,
+    env_vars: tuple[str, ...],
+) -> str | None:
+    """Resolve CA bundle: explicit param > env vars (in order) > None."""
+    if explicit is not None:
+        return explicit
+    for var in env_vars:
+        val = os.environ.get(var)
+        if val:
+            return val
+    return None
+
+
+def _validate_tls_ca_bundle(resolved: str | None) -> None:
+    """Validate that the resolved CA bundle path is an existing file."""
+    if resolved is not None and not Path(resolved).is_file():
+        raise ValueError(f"tls_ca_bundle path does not exist or is not a file: {resolved}")
 
 
 class _S3Base(Backend):

@@ -32,6 +32,7 @@ from remote_store._models import FileInfo, FolderInfo  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
     from remote_store._backend import Backend
 
@@ -154,6 +155,80 @@ class TestS3Construction:
 
         backend = S3Backend(bucket="any-bucket")
         assert backend.name == "s3"
+
+
+class TestS3TlsCaBundle:
+    """TLS-001, TLS-004, TLS-005: tls_ca_bundle on S3Backend."""
+
+    @pytest.mark.spec("TLS-001")
+    def test_tls_ca_bundle_accepted(self, tmp_path: Path) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        cert = tmp_path / "ca.pem"
+        cert.write_text("fake cert")
+        backend = S3Backend(bucket="b", key="k", secret="s", tls_ca_bundle=str(cert))
+        assert backend._tls_ca_bundle == str(cert)
+
+    @pytest.mark.spec("TLS-004")
+    def test_tls_ca_bundle_missing_file_raises(self) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        with pytest.raises(ValueError, match="does not exist or is not a file"):
+            S3Backend(bucket="b", key="k", secret="s", tls_ca_bundle="/no/such/file.pem")
+
+    @pytest.mark.spec("TLS-004")
+    def test_tls_ca_bundle_directory_raises(self, tmp_path: Path) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        with pytest.raises(ValueError, match="does not exist or is not a file"):
+            S3Backend(bucket="b", key="k", secret="s", tls_ca_bundle=str(tmp_path))
+
+    @pytest.mark.spec("TLS-004")
+    def test_tls_ca_bundle_env_var_missing_file_raises(self, tmp_path: Path) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        with (
+            patch.dict("os.environ", {"AWS_CA_BUNDLE": "/no/such/env.pem"}, clear=False),
+            pytest.raises(ValueError, match="does not exist or is not a file"),
+        ):
+            S3Backend(bucket="b", key="k", secret="s")
+
+    @pytest.mark.spec("TLS-001")
+    def test_tls_ca_bundle_none_default(self) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        backend = S3Backend(bucket="b", key="k", secret="s")
+        assert backend._tls_ca_bundle is None
+
+    @pytest.mark.spec("TLS-005")
+    def test_tls_ca_bundle_sets_verify_on_s3fs(self, tmp_path: Path) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        cert = tmp_path / "ca.pem"
+        cert.write_text("fake cert")
+        backend = S3Backend(bucket="b", key="k", secret="s", tls_ca_bundle=str(cert))
+        with patch("s3fs.S3FileSystem") as mock_s3fs_cls:
+            _ = backend._fs
+            call_kwargs = mock_s3fs_cls.call_args[1]
+            assert call_kwargs["client_kwargs"]["verify"] == str(cert)
+
+    @pytest.mark.spec("TLS-005")
+    def test_tls_ca_bundle_does_not_override_explicit_verify(self, tmp_path: Path) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        cert = tmp_path / "ca.pem"
+        cert.write_text("fake cert")
+        backend = S3Backend(
+            bucket="b",
+            key="k",
+            secret="s",
+            tls_ca_bundle=str(cert),
+            client_options={"client_kwargs": {"verify": "/other/ca.pem"}},
+        )
+        with patch("s3fs.S3FileSystem") as mock_s3fs_cls:
+            _ = backend._fs
+            call_kwargs = mock_s3fs_cls.call_args[1]
+            assert call_kwargs["client_kwargs"]["verify"] == "/other/ca.pem"
 
 
 # endregion

@@ -22,7 +22,13 @@ from remote_store._models import ContentDigest, FileInfo
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
 from remote_store.backends._fileinfo import _clean_etag, _name_from_path, _normalize_modified
-from remote_store.backends._s3_base import _normalize_endpoint_url, _S3Base
+from remote_store.backends._s3_base import (
+    _S3_CA_ENV_VARS,
+    _normalize_endpoint_url,
+    _resolve_tls_ca_bundle,
+    _S3Base,
+    _validate_tls_ca_bundle,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -45,6 +51,8 @@ class S3Backend(_S3Base):
         key: AWS access key ID.
         secret: AWS secret access key.
         region_name: AWS region name.
+        tls_ca_bundle: Path to a PEM CA bundle file.  Falls back to
+            ``AWS_CA_BUNDLE`` / ``REQUESTS_CA_BUNDLE`` / ``SSL_CERT_FILE``.
         client_options: Additional options passed to s3fs.
     """
 
@@ -56,6 +64,7 @@ class S3Backend(_S3Base):
         key: str | Secret | None = None,
         secret: str | Secret | None = None,
         region_name: str | None = None,
+        tls_ca_bundle: str | None = None,
         client_options: dict[str, Any] | None = None,
         retry: RetryPolicy | None = None,
     ) -> None:
@@ -66,6 +75,9 @@ class S3Backend(_S3Base):
         self._key = _reveal(key)
         self._secret = _reveal(secret)
         self._region_name = region_name
+        resolved_tls = _resolve_tls_ca_bundle(tls_ca_bundle, _S3_CA_ENV_VARS)
+        _validate_tls_ca_bundle(resolved_tls)
+        self._tls_ca_bundle = resolved_tls
         self._client_options = client_options or {}
         self._retry = retry
         self._fs_instance: Any = None
@@ -238,7 +250,8 @@ class S3Backend(_S3Base):
             f"endpoint_url={self._endpoint_url!r}, "
             f"key={'***' if self._key is not None else None!r}, "
             f"secret={'***' if self._secret is not None else None!r}, "
-            f"region_name={self._region_name!r})"
+            f"region_name={self._region_name!r}, "
+            f"tls_ca_bundle={self._tls_ca_bundle!r})"
         )
 
     # endregion
@@ -278,6 +291,9 @@ class S3Backend(_S3Base):
                     client_kwargs["config"] = existing_config.merge(retry_config)
                 else:
                     client_kwargs["config"] = retry_config
+            if self._tls_ca_bundle is not None:
+                client_kwargs = opts.setdefault("client_kwargs", {})
+                client_kwargs.setdefault("verify", self._tls_ca_bundle)
             opts.setdefault("anon", False)
             self._fs_instance = s3fs.S3FileSystem(**opts)
         return self._fs_instance
