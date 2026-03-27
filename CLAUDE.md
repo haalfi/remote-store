@@ -14,6 +14,21 @@ Spec-Driven Development (SDD).
 5. **Run it, don't just type-check it**: verify behavior, not signatures. Reproduce bugs before claiming fixes. Test what matters, not just what type-checks.
 6. **Be critical, not agreeable**: challenge assumptions, question completeness, flag what's missing. Especially in reviews: a rubber-stamp is worse than no review. Ask what's untested, what could break, what's absent from the checklist.
 
+## Audits
+
+1. **Report only.** Present findings with evidence. Do not fix anything.
+2. **User decides next steps** — what to fix, whether to create backlog items or an audit doc.
+
+## Bug-fix protocol
+
+Strict order — no skipping:
+
+1. Backlog entry (`sdd/BACKLOG.md`)
+2. CHANGELOG entry (`[Unreleased]`)
+3. Failing test that reproduces the bug
+4. Fix (make the test pass)
+5. Commit all together (or mark `[~]`)
+
 ## Backlog (mandatory)
 
 - See `sdd/BACKLOG.md` for workflow rules, ID prefixes, and active items.
