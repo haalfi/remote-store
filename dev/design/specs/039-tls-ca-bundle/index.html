@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/contributing/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/039-tls-ca-bundle/">
       
       
-        <link rel="prev" href="../design/research/research-v1-communication-plan/">
+        <link rel="prev" href="../038-nonrecursive-folder-info/">
       
       
-        <link rel="next" href="../further-reading/">
+        <link rel="next" href="../../adrs/">
       
       
         
       
       
-      <link rel="icon" href="../assets/logo.png">
+      <link rel="icon" href="../../../assets/logo.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Contributing - remote-store</title>
+        <title>039: TLS CA Bundle Specification - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../css/custom.css">
+      <link rel="stylesheet" href="../../../css/custom.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#contributing-to-remote-store" class="md-skip">
+        <a href="#tls-ca-bundle-specification" class="md-skip">
           Skip to content
         </a>
       
@@ -102,9 +102,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../assets/logo.png" alt="logo">
+  <img src="../../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Contributing
+              039: TLS CA Bundle Specification
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../../.." class="md-tabs__link">
         
   
   
@@ -249,7 +249,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../getting-started/" class="md-tabs__link">
+        <a href="../../../getting-started/" class="md-tabs__link">
           
   
   
@@ -269,7 +269,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../backends/" class="md-tabs__link">
+        <a href="../../../backends/" class="md-tabs__link">
           
   
   
@@ -289,7 +289,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../api/" class="md-tabs__link">
+        <a href="../../../api/" class="md-tabs__link">
           
   
   
@@ -305,11 +305,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../../architecture/" class="md-tabs__link">
           
   
   
@@ -325,11 +327,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../../contributing/" class="md-tabs__link">
         
   
   
@@ -348,7 +348,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../further-reading/" class="md-tabs__link">
+      <a href="../../../further-reading/" class="md-tabs__link">
         
   
   
@@ -367,7 +367,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../development-story/" class="md-tabs__link">
+      <a href="../../../development-story/" class="md-tabs__link">
         
   
   
@@ -408,9 +408,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../assets/logo.png" alt="logo">
+  <img src="../../../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -437,7 +437,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -514,7 +514,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/" class="md-nav__link">
+      <a href="../../../getting-started/" class="md-nav__link">
         
   
   
@@ -557,7 +557,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../examples/" class="md-nav__link ">
+            <a href="../../../examples/" class="md-nav__link ">
               
   
   
@@ -599,7 +599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/quickstart/" class="md-nav__link">
+      <a href="../../../examples/quickstart/" class="md-nav__link">
         
   
   
@@ -627,7 +627,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/file-operations/" class="md-nav__link">
+      <a href="../../../examples/file-operations/" class="md-nav__link">
         
   
   
@@ -655,7 +655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/streaming-io/" class="md-nav__link">
+      <a href="../../../examples/streaming-io/" class="md-nav__link">
         
   
   
@@ -683,7 +683,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/atomic-writes/" class="md-nav__link">
+      <a href="../../../examples/atomic-writes/" class="md-nav__link">
         
   
   
@@ -711,7 +711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/configuration/" class="md-nav__link">
+      <a href="../../../examples/configuration/" class="md-nav__link">
         
   
   
@@ -739,7 +739,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/config-loaders/" class="md-nav__link">
+      <a href="../../../examples/config-loaders/" class="md-nav__link">
         
   
   
@@ -767,7 +767,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/error-handling/" class="md-nav__link">
+      <a href="../../../examples/error-handling/" class="md-nav__link">
         
   
   
@@ -795,7 +795,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/capabilities-and-errors/" class="md-nav__link">
+      <a href="../../../examples/capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -823,7 +823,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/path-model/" class="md-nav__link">
+      <a href="../../../examples/path-model/" class="md-nav__link">
         
   
   
@@ -851,7 +851,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/memory-backend/" class="md-nav__link">
+      <a href="../../../examples/memory-backend/" class="md-nav__link">
         
   
   
@@ -879,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/store-child/" class="md-nav__link">
+      <a href="../../../examples/store-child/" class="md-nav__link">
         
   
   
@@ -907,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/s3-backend/" class="md-nav__link">
+      <a href="../../../examples/s3-backend/" class="md-nav__link">
         
   
   
@@ -935,7 +935,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../../examples/s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -963,7 +963,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/s3-listing-strategies/" class="md-nav__link">
+      <a href="../../../examples/s3-listing-strategies/" class="md-nav__link">
         
   
   
@@ -991,7 +991,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/sftp-backend/" class="md-nav__link">
+      <a href="../../../examples/sftp-backend/" class="md-nav__link">
         
   
   
@@ -1019,7 +1019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/azure-backend/" class="md-nav__link">
+      <a href="../../../examples/azure-backend/" class="md-nav__link">
         
   
   
@@ -1047,7 +1047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/http-backend/" class="md-nav__link">
+      <a href="../../../examples/http-backend/" class="md-nav__link">
         
   
   
@@ -1075,7 +1075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/batch-operations/" class="md-nav__link">
+      <a href="../../../examples/batch-operations/" class="md-nav__link">
         
   
   
@@ -1103,7 +1103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/transfer-operations/" class="md-nav__link">
+      <a href="../../../examples/transfer-operations/" class="md-nav__link">
         
   
   
@@ -1131,7 +1131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../examples/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1159,7 +1159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/caching/" class="md-nav__link">
+      <a href="../../../examples/caching/" class="md-nav__link">
         
   
   
@@ -1187,7 +1187,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/observe-hooks/" class="md-nav__link">
+      <a href="../../../examples/observe-hooks/" class="md-nav__link">
         
   
   
@@ -1215,7 +1215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/otel-tracing/" class="md-nav__link">
+      <a href="../../../examples/otel-tracing/" class="md-nav__link">
         
   
   
@@ -1243,7 +1243,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../examples/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1271,7 +1271,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/dagster-io-manager/" class="md-nav__link">
+      <a href="../../../examples/dagster-io-manager/" class="md-nav__link">
         
   
   
@@ -1299,7 +1299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/retry-policy/" class="md-nav__link">
+      <a href="../../../examples/retry-policy/" class="md-nav__link">
         
   
   
@@ -1327,7 +1327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/health-check/" class="md-nav__link">
+      <a href="../../../examples/health-check/" class="md-nav__link">
         
   
   
@@ -1355,7 +1355,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/medallion-dagster/" class="md-nav__link">
+      <a href="../../../examples/medallion-dagster/" class="md-nav__link">
         
   
   
@@ -1463,7 +1463,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../backends/" class="md-nav__link ">
+            <a href="../../../backends/" class="md-nav__link ">
               
   
   
@@ -1505,7 +1505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/local/" class="md-nav__link">
+      <a href="../../../backends/local/" class="md-nav__link">
         
   
   
@@ -1533,7 +1533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/memory/" class="md-nav__link">
+      <a href="../../../backends/memory/" class="md-nav__link">
         
   
   
@@ -1561,7 +1561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/http/" class="md-nav__link">
+      <a href="../../../backends/http/" class="md-nav__link">
         
   
   
@@ -1589,7 +1589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/s3/" class="md-nav__link">
+      <a href="../../../backends/s3/" class="md-nav__link">
         
   
   
@@ -1617,7 +1617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -1645,7 +1645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/sftp/" class="md-nav__link">
+      <a href="../../../backends/sftp/" class="md-nav__link">
         
   
   
@@ -1673,7 +1673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/azure/" class="md-nav__link">
+      <a href="../../../backends/azure/" class="md-nav__link">
         
   
   
@@ -1759,7 +1759,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../extensions/" class="md-nav__link">
+      <a href="../../../extensions/" class="md-nav__link">
         
   
   
@@ -1787,7 +1787,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1815,7 +1815,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../batch-operations/" class="md-nav__link">
+      <a href="../../../batch-operations/" class="md-nav__link">
         
   
   
@@ -1843,7 +1843,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1871,7 +1871,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../transfer-operations/" class="md-nav__link">
+      <a href="../../../transfer-operations/" class="md-nav__link">
         
   
   
@@ -1899,7 +1899,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observe/" class="md-nav__link">
+      <a href="../../../observe/" class="md-nav__link">
         
   
   
@@ -1927,7 +1927,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cache/" class="md-nav__link">
+      <a href="../../../cache/" class="md-nav__link">
         
   
   
@@ -1955,7 +1955,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dagster/" class="md-nav__link">
+      <a href="../../../dagster/" class="md-nav__link">
         
   
   
@@ -1983,7 +1983,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../retry/" class="md-nav__link">
+      <a href="../../../retry/" class="md-nav__link">
         
   
   
@@ -2019,7 +2019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../health-check/" class="md-nav__link">
+      <a href="../../../health-check/" class="md-nav__link">
         
   
   
@@ -2047,7 +2047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../data-lake-patterns/" class="md-nav__link">
+      <a href="../../../data-lake-patterns/" class="md-nav__link">
         
   
   
@@ -2075,7 +2075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../troubleshooting/" class="md-nav__link">
+      <a href="../../../troubleshooting/" class="md-nav__link">
         
   
   
@@ -2103,7 +2103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../choosing-a-backend/" class="md-nav__link">
+      <a href="../../../choosing-a-backend/" class="md-nav__link">
         
   
   
@@ -2131,7 +2131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../custom-backend-guide/" class="md-nav__link">
+      <a href="../../../custom-backend-guide/" class="md-nav__link">
         
   
   
@@ -2159,7 +2159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../migration/" class="md-nav__link">
+      <a href="../../../migration/" class="md-nav__link">
         
   
   
@@ -2259,7 +2259,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../api/" class="md-nav__link ">
+            <a href="../../../api/" class="md-nav__link ">
               
   
   
@@ -2301,7 +2301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/store/" class="md-nav__link">
+      <a href="../../../api/store/" class="md-nav__link">
         
   
   
@@ -2329,7 +2329,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/proxy/" class="md-nav__link">
+      <a href="../../../api/proxy/" class="md-nav__link">
         
   
   
@@ -2357,7 +2357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/registry/" class="md-nav__link">
+      <a href="../../../api/registry/" class="md-nav__link">
         
   
   
@@ -2385,7 +2385,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backend/" class="md-nav__link">
+      <a href="../../../api/backend/" class="md-nav__link">
         
   
   
@@ -2413,7 +2413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/sftp-utils/" class="md-nav__link">
+      <a href="../../../api/sftp-utils/" class="md-nav__link">
         
   
   
@@ -2441,7 +2441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/config/" class="md-nav__link">
+      <a href="../../../api/config/" class="md-nav__link">
         
   
   
@@ -2469,7 +2469,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/models/" class="md-nav__link">
+      <a href="../../../api/models/" class="md-nav__link">
         
   
   
@@ -2497,7 +2497,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/path/" class="md-nav__link">
+      <a href="../../../api/path/" class="md-nav__link">
         
   
   
@@ -2525,7 +2525,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/capabilities/" class="md-nav__link">
+      <a href="../../../api/capabilities/" class="md-nav__link">
         
   
   
@@ -2553,7 +2553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/errors/" class="md-nav__link">
+      <a href="../../../api/errors/" class="md-nav__link">
         
   
   
@@ -2596,7 +2596,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../api/backends/" class="md-nav__link ">
+            <a href="../../../api/backends/" class="md-nav__link ">
               
   
   
@@ -2638,7 +2638,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/local/" class="md-nav__link">
+      <a href="../../../api/backends/local/" class="md-nav__link">
         
   
   
@@ -2666,7 +2666,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/memory/" class="md-nav__link">
+      <a href="../../../api/backends/memory/" class="md-nav__link">
         
   
   
@@ -2694,7 +2694,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/http/" class="md-nav__link">
+      <a href="../../../api/backends/http/" class="md-nav__link">
         
   
   
@@ -2722,7 +2722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/s3/" class="md-nav__link">
+      <a href="../../../api/backends/s3/" class="md-nav__link">
         
   
   
@@ -2750,7 +2750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../api/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -2778,7 +2778,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/sftp/" class="md-nav__link">
+      <a href="../../../api/backends/sftp/" class="md-nav__link">
         
   
   
@@ -2806,7 +2806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/backends/azure/" class="md-nav__link">
+      <a href="../../../api/backends/azure/" class="md-nav__link">
         
   
   
@@ -2857,7 +2857,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../api/extensions/" class="md-nav__link ">
+            <a href="../../../api/extensions/" class="md-nav__link ">
               
   
   
@@ -2899,7 +2899,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/arrow/" class="md-nav__link">
+      <a href="../../../api/extensions/arrow/" class="md-nav__link">
         
   
   
@@ -2927,7 +2927,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/batch/" class="md-nav__link">
+      <a href="../../../api/extensions/batch/" class="md-nav__link">
         
   
   
@@ -2955,7 +2955,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/cache/" class="md-nav__link">
+      <a href="../../../api/extensions/cache/" class="md-nav__link">
         
   
   
@@ -2983,7 +2983,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/dagster/" class="md-nav__link">
+      <a href="../../../api/extensions/dagster/" class="md-nav__link">
         
   
   
@@ -3011,7 +3011,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/glob/" class="md-nav__link">
+      <a href="../../../api/extensions/glob/" class="md-nav__link">
         
   
   
@@ -3039,7 +3039,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/integrity/" class="md-nav__link">
+      <a href="../../../api/extensions/integrity/" class="md-nav__link">
         
   
   
@@ -3067,7 +3067,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/observe/" class="md-nav__link">
+      <a href="../../../api/extensions/observe/" class="md-nav__link">
         
   
   
@@ -3095,7 +3095,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/otel/" class="md-nav__link">
+      <a href="../../../api/extensions/otel/" class="md-nav__link">
         
   
   
@@ -3123,7 +3123,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/partition/" class="md-nav__link">
+      <a href="../../../api/extensions/partition/" class="md-nav__link">
         
   
   
@@ -3151,7 +3151,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/pydantic/" class="md-nav__link">
+      <a href="../../../api/extensions/pydantic/" class="md-nav__link">
         
   
   
@@ -3179,7 +3179,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/seekable/" class="md-nav__link">
+      <a href="../../../api/extensions/seekable/" class="md-nav__link">
         
   
   
@@ -3207,7 +3207,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/streams/" class="md-nav__link">
+      <a href="../../../api/extensions/streams/" class="md-nav__link">
         
   
   
@@ -3235,7 +3235,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/transfer/" class="md-nav__link">
+      <a href="../../../api/extensions/transfer/" class="md-nav__link">
         
   
   
@@ -3263,7 +3263,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/yaml/" class="md-nav__link">
+      <a href="../../../api/extensions/yaml/" class="md-nav__link">
         
   
   
@@ -3307,7 +3307,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../capabilities-matrix/" class="md-nav__link">
+      <a href="../../../capabilities-matrix/" class="md-nav__link">
         
   
   
@@ -3335,7 +3335,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../changelog/" class="md-nav__link">
+      <a href="../../../changelog/" class="md-nav__link">
         
   
   
@@ -3367,24 +3367,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -3402,7 +3407,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3420,7 +3425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/" class="md-nav__link">
+      <a href="../../../architecture/" class="md-nav__link">
         
   
   
@@ -3448,7 +3453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../performance/" class="md-nav__link">
+      <a href="../../../performance/" class="md-nav__link">
         
   
   
@@ -3476,7 +3481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../concurrency/" class="md-nav__link">
+      <a href="../../../concurrency/" class="md-nav__link">
         
   
   
@@ -3504,7 +3509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../security-model/" class="md-nav__link">
+      <a href="../../../security-model/" class="md-nav__link">
         
   
   
@@ -3529,6 +3534,8 @@
                 
   
   
+    
+  
   
   
     
@@ -3539,15 +3546,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -3571,7 +3578,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3589,7 +3596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/design-spec/" class="md-nav__link">
+      <a href="../../design-spec/" class="md-nav__link">
         
   
   
@@ -3617,7 +3624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/process/" class="md-nav__link">
+      <a href="../../process/" class="md-nav__link">
         
   
   
@@ -3642,6 +3649,8 @@
                 
   
   
+    
+  
   
   
     
@@ -3652,15 +3661,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_3" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/specs/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -3684,7 +3693,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_5_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3702,7 +3711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/001-store-api/" class="md-nav__link">
+      <a href="../001-store-api/" class="md-nav__link">
         
   
   
@@ -3730,7 +3739,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/002-registry-config/" class="md-nav__link">
+      <a href="../002-registry-config/" class="md-nav__link">
         
   
   
@@ -3758,7 +3767,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -3786,7 +3795,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/004-path-model/" class="md-nav__link">
+      <a href="../004-path-model/" class="md-nav__link">
         
   
   
@@ -3814,7 +3823,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/005-error-model/" class="md-nav__link">
+      <a href="../005-error-model/" class="md-nav__link">
         
   
   
@@ -3842,7 +3851,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/006-streaming-io/" class="md-nav__link">
+      <a href="../006-streaming-io/" class="md-nav__link">
         
   
   
@@ -3870,7 +3879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/007-atomic-writes/" class="md-nav__link">
+      <a href="../007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -3898,7 +3907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/008-s3-backend/" class="md-nav__link">
+      <a href="../008-s3-backend/" class="md-nav__link">
         
   
   
@@ -3926,7 +3935,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/009-sftp-backend/" class="md-nav__link">
+      <a href="../009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -3954,7 +3963,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/010-native-path-resolution/" class="md-nav__link">
+      <a href="../010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -3982,7 +3991,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -4010,7 +4019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/012-azure-backend/" class="md-nav__link">
+      <a href="../012-azure-backend/" class="md-nav__link">
         
   
   
@@ -4038,7 +4047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/013-memory-backend/" class="md-nav__link">
+      <a href="../013-memory-backend/" class="md-nav__link">
         
   
   
@@ -4066,7 +4075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -4094,7 +4103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/015-store-child/" class="md-nav__link">
+      <a href="../015-store-child/" class="md-nav__link">
         
   
   
@@ -4122,7 +4131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/016-ext-batch/" class="md-nav__link">
+      <a href="../016-ext-batch/" class="md-nav__link">
         
   
   
@@ -4150,7 +4159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/017-ext-transfer/" class="md-nav__link">
+      <a href="../017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -4178,7 +4187,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/018-glob/" class="md-nav__link">
+      <a href="../018-glob/" class="md-nav__link">
         
   
   
@@ -4206,7 +4215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/019-ext-observe/" class="md-nav__link">
+      <a href="../019-ext-observe/" class="md-nav__link">
         
   
   
@@ -4234,7 +4243,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/020-credential-hygiene/" class="md-nav__link">
+      <a href="../020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -4262,7 +4271,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/021-config-loaders/" class="md-nav__link">
+      <a href="../021-config-loaders/" class="md-nav__link">
         
   
   
@@ -4290,7 +4299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -4318,7 +4327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/023-ext-cache/" class="md-nav__link">
+      <a href="../023-ext-cache/" class="md-nav__link">
         
   
   
@@ -4346,7 +4355,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/024-ext-partition/" class="md-nav__link">
+      <a href="../024-ext-partition/" class="md-nav__link">
         
   
   
@@ -4374,7 +4383,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/025-retry-policy/" class="md-nav__link">
+      <a href="../025-retry-policy/" class="md-nav__link">
         
   
   
@@ -4402,7 +4411,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/026-health-check/" class="md-nav__link">
+      <a href="../026-health-check/" class="md-nav__link">
         
   
   
@@ -4430,7 +4439,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/027-iter-children/" class="md-nav__link">
+      <a href="../027-iter-children/" class="md-nav__link">
         
   
   
@@ -4458,7 +4467,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/028-read-text/" class="md-nav__link">
+      <a href="../028-read-text/" class="md-nav__link">
         
   
   
@@ -4486,7 +4495,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/029-async-store-backend-api/" class="md-nav__link">
+      <a href="../029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -4514,7 +4523,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/030-write-text/" class="md-nav__link">
+      <a href="../030-write-text/" class="md-nav__link">
         
   
   
@@ -4542,7 +4551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/031-ext-dagster/" class="md-nav__link">
+      <a href="../031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -4570,7 +4579,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/032-http-backend/" class="md-nav__link">
+      <a href="../032-http-backend/" class="md-nav__link">
         
   
   
@@ -4598,7 +4607,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/033-ext-streams/" class="md-nav__link">
+      <a href="../033-ext-streams/" class="md-nav__link">
         
   
   
@@ -4626,7 +4635,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/034-ext-integrity/" class="md-nav__link">
+      <a href="../034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -4654,7 +4663,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/035-content-digest/" class="md-nav__link">
+      <a href="../035-content-digest/" class="md-nav__link">
         
   
   
@@ -4682,7 +4691,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/036-seekable-read/" class="md-nav__link">
+      <a href="../036-seekable-read/" class="md-nav__link">
         
   
   
@@ -4710,7 +4719,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/037-depth-limited-listing/" class="md-nav__link">
+      <a href="../037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -4738,7 +4747,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/specs/038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -4763,10 +4772,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../design/specs/039-tls-ca-bundle/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    039: TLS CA Bundle Specification
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4782,6 +4818,243 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parameter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tls-001-tls_ca_bundle-on-s3backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS-001: tls_ca_bundle on S3Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tls-002-tls_ca_bundle-on-s3pyarrowbackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS-002: tls_ca_bundle on S3PyArrowBackend
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variable-fallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variable Fallback
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Environment Variable Fallback">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tls-003-env-var-fallback-chain-for-s3-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS-003: Env var fallback chain for S3 backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Validation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tls-004-early-path-validation-at-construction-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS-004: Early path validation at construction time
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#injection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Injection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Injection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tls-005-s3backend-verify-injection-into-s3fs-client_kwargs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS-005: S3Backend verify injection into s3fs client_kwargs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tls-006-s3pyarrowbackend-tls_ca_file_path-injection-into-pyarrow-s3filesystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS-006: S3PyArrowBackend tls_ca_file_path injection into PyArrow S3FileSystem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tls-007-s3pyarrowbackend-verify-injection-into-s3fs-side" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS-007: S3PyArrowBackend verify injection into s3fs side
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-2-deferred" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2 (Deferred)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 2 (Deferred)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tls-008-tls_ca_bundle-on-azurebackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS-008: tls_ca_bundle on AzureBackend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tls-009-env-var-fallback-chain-for-azure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS-009: Env var fallback chain for Azure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tls-010-azure-connection_verify-injection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS-010: Azure connection_verify injection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-testing-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Testing Note
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4817,7 +5090,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/adrs/" class="md-nav__link ">
+            <a href="../../adrs/" class="md-nav__link ">
               
   
   
@@ -4859,7 +5132,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -4887,7 +5160,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -4915,7 +5188,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -4943,7 +5216,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -4971,7 +5244,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -4999,7 +5272,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -5027,7 +5300,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -5055,7 +5328,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -5083,7 +5356,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5111,7 +5384,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -5139,7 +5412,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -5167,7 +5440,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5195,7 +5468,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -5223,7 +5496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -5251,7 +5524,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -5279,7 +5552,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5307,7 +5580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -5358,7 +5631,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/rfcs/" class="md-nav__link ">
+            <a href="../../rfcs/" class="md-nav__link ">
               
   
   
@@ -5400,7 +5673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -5428,7 +5701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -5456,7 +5729,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -5484,7 +5757,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -5512,7 +5785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
         
   
   
@@ -5540,7 +5813,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
         
   
   
@@ -5568,7 +5841,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
         
   
   
@@ -5619,7 +5892,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../design/research/" class="md-nav__link ">
+            <a href="../../research/" class="md-nav__link ">
               
   
   
@@ -5661,7 +5934,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-async-store-api/" class="md-nav__link">
+      <a href="../../research/research-async-store-api/" class="md-nav__link">
         
   
   
@@ -5689,7 +5962,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -5717,7 +5990,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../../research/research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -5745,7 +6018,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-dagster-extension/" class="md-nav__link">
+      <a href="../../research/research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -5773,7 +6046,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-depth-limited-listing/" class="md-nav__link">
+      <a href="../../research/research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -5801,7 +6074,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -5829,7 +6102,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-example-testing/" class="md-nav__link">
+      <a href="../../research/research-example-testing/" class="md-nav__link">
         
   
   
@@ -5857,7 +6130,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -5885,7 +6158,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -5913,7 +6186,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-health-check/" class="md-nav__link">
+      <a href="../../research/research-health-check/" class="md-nav__link">
         
   
   
@@ -5941,7 +6214,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -5969,7 +6242,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -5997,7 +6270,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -6025,7 +6298,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-retry-policy/" class="md-nav__link">
+      <a href="../../research/research-retry-policy/" class="md-nav__link">
         
   
   
@@ -6053,7 +6326,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-seekable-read/" class="md-nav__link">
+      <a href="../../research/research-seekable-read/" class="md-nav__link">
         
   
   
@@ -6081,7 +6354,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../../research/research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -6109,7 +6382,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -6137,7 +6410,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-store-config/" class="md-nav__link">
+      <a href="../../research/research-store-config/" class="md-nav__link">
         
   
   
@@ -6165,7 +6438,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -6193,7 +6466,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design/research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -6241,37 +6514,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Contributing
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../contributing/" class="md-nav__link">
         
   
   
@@ -6287,403 +6533,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#authoritative-document-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Authoritative Document Format
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Authoritative Document Format">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#principle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Principle
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Structure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cross-check" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cross-check
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exclusions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Exclusions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#spec-first-workflow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Spec-First Workflow
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#repository-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Repository Structure
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#adding-a-new-backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Adding a New Backend
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#adding-an-extension" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Adding an Extension
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Adding an Extension">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#export-patterns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Export patterns
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#third-party-extensions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Third-Party Extensions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#development-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Development Setup
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#commit-signing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Commit Signing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Commit Signing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#setup-ssh-signing-one-time" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Setup (SSH signing, one-time)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ssh-agent-avoid-passphrase-prompts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SSH agent (avoid passphrase prompts)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#code-style" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Code Style
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#test-requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Test Requirements
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples-and-notebooks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples and Notebooks
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#versioning" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Versioning
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Versioning">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#when-to-bump" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When to bump
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#stability-tiers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Stability tiers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-to-bump" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How to bump
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consistency-checklists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consistency Checklists
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Consistency Checklists">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#release" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Release
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Release">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#phase-0-pre-flight" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 0: Pre-flight
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-1-content-freeze" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 1: Content freeze
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-2-version-bump-on-a-release-branch" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 2: Version bump (on a release branch)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-3-validate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 3: Validate
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-4-ship" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 4: Ship
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-5-post-release-verification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 5: Post-release verification
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -6695,7 +6544,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../further-reading/" class="md-nav__link">
+      <a href="../../../further-reading/" class="md-nav__link">
         
   
   
@@ -6722,7 +6571,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../development-story/" class="md-nav__link">
+      <a href="../../../development-story/" class="md-nav__link">
         
   
   
@@ -6769,22 +6618,33 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#authoritative-document-format" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Authoritative Document Format
+        Overview
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Authoritative Document Format">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parameter">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#principle" class="md-nav__link">
+  <a href="#tls-001-tls_ca_bundle-on-s3backend" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Principle
+        TLS-001: tls_ca_bundle on S3Backend
       
     </span>
   </a>
@@ -6792,43 +6652,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#structure" class="md-nav__link">
+  <a href="#tls-002-tls_ca_bundle-on-s3pyarrowbackend" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Structure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cross-check" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cross-check
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exclusions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Exclusions
+        TLS-002: tls_ca_bundle on S3PyArrowBackend
       
     </span>
   </a>
@@ -6841,55 +6668,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#spec-first-workflow" class="md-nav__link">
+  <a href="#environment-variable-fallback" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Spec-First Workflow
+        Environment Variable Fallback
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#repository-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Repository Structure
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#adding-a-new-backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Adding a New Backend
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#adding-an-extension" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Adding an Extension
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Adding an Extension">
+    <nav class="md-nav" aria-label="Environment Variable Fallback">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#export-patterns" class="md-nav__link">
+  <a href="#tls-003-env-var-fallback-chain-for-s3-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Export patterns
+        TLS-003: Env var fallback chain for S3 backends
       
     </span>
   </a>
@@ -6902,55 +6696,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#third-party-extensions" class="md-nav__link">
+  <a href="#validation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Third-Party Extensions
+        Validation
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#development-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Development Setup
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#commit-signing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Commit Signing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Commit Signing">
+    <nav class="md-nav" aria-label="Validation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#setup-ssh-signing-one-time" class="md-nav__link">
+  <a href="#tls-004-early-path-validation-at-construction-time" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Setup (SSH signing, one-time)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ssh-agent-avoid-passphrase-prompts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SSH agent (avoid passphrase prompts)
+        TLS-004: Early path validation at construction time
       
     </span>
   </a>
@@ -6963,55 +6724,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#code-style" class="md-nav__link">
+  <a href="#injection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Code Style
+        Injection
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#test-requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Test Requirements
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples-and-notebooks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples and Notebooks
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#versioning" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Versioning
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Versioning">
+    <nav class="md-nav" aria-label="Injection">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#when-to-bump" class="md-nav__link">
+  <a href="#tls-005-s3backend-verify-injection-into-s3fs-client_kwargs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When to bump
+        TLS-005: S3Backend verify injection into s3fs client_kwargs
       
     </span>
   </a>
@@ -7019,10 +6747,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#stability-tiers" class="md-nav__link">
+  <a href="#tls-006-s3pyarrowbackend-tls_ca_file_path-injection-into-pyarrow-s3filesystem" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Stability tiers
+        TLS-006: S3PyArrowBackend tls_ca_file_path injection into PyArrow S3FileSystem
       
     </span>
   </a>
@@ -7030,10 +6758,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-to-bump" class="md-nav__link">
+  <a href="#tls-007-s3pyarrowbackend-verify-injection-into-s3fs-side" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How to bump
+        TLS-007: S3PyArrowBackend verify injection into s3fs side
       
     </span>
   </a>
@@ -7046,34 +6774,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#consistency-checklists" class="md-nav__link">
+  <a href="#phase-2-deferred" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Consistency Checklists
+        Phase 2 (Deferred)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Consistency Checklists">
+    <nav class="md-nav" aria-label="Phase 2 (Deferred)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#release" class="md-nav__link">
+  <a href="#tls-008-tls_ca_bundle-on-azurebackend" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Release
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Release">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#phase-0-pre-flight" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 0: Pre-flight
+        TLS-008: tls_ca_bundle on AzureBackend
       
     </span>
   </a>
@@ -7081,10 +6797,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#phase-1-content-freeze" class="md-nav__link">
+  <a href="#tls-009-env-var-fallback-chain-for-azure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 1: Content freeze
+        TLS-009: Env var fallback chain for Azure
       
     </span>
   </a>
@@ -7092,43 +6808,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#phase-2-version-bump-on-a-release-branch" class="md-nav__link">
+  <a href="#tls-010-azure-connection_verify-injection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 2: Version bump (on a release branch)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-3-validate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 3: Validate
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-4-ship" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 4: Ship
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-5-post-release-verification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 5: Post-release verification
+        TLS-010: Azure connection_verify injection
       
     </span>
   </a>
@@ -7139,9 +6822,15 @@
     </nav>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#manual-testing-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Testing Note
+      
+    </span>
+  </a>
   
 </li>
       
@@ -7162,315 +6851,103 @@
 
 
 
-<h1 id="contributing-to-remote-store">Contributing to Remote Store<a class="headerlink" href="#contributing-to-remote-store" title="Permanent link">&para;</a></h1>
-<p>Scope: contributor workflow, development setup, release process, and consistency checklists for <code>remote-store</code>.</p>
-<p>This project follows <strong>Spec-Driven Development (SDD)</strong>: every feature starts as a specification before any code is written. See <a href="../design/process/"><code>sdd/000-process.md</code></a> for the full methodology.</p>
-<h2 id="authoritative-document-format">Authoritative Document Format<a class="headerlink" href="#authoritative-document-format" title="Permanent link">&para;</a></h2>
-<p>Internal process and reference documents follow a fixed structure.</p>
-<h3 id="principle">Principle<a class="headerlink" href="#principle" title="Permanent link">&para;</a></h3>
-<p>Meaningful minimum. Each document covers one concern, states clear principles, and stops. No detailed instructions for every situation.</p>
-<h3 id="structure">Structure<a class="headerlink" href="#structure" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Intent &amp; Scope</strong>: What this document governs and who it is for. Max 5–10 lines. A reader must know: "this is THE source for topic X."</li>
-<li><strong>Rules</strong>: Numbered, mandatory constraints.</li>
-<li><strong>Guides</strong> <em>(optional)</em>: Heuristics, examples, lookup tables. Useful but not binding.</li>
-</ol>
-<p>Sections 1 and 2 alone must be sufficient to understand the document's purpose and obligations.</p>
-<h3 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h3>
-<p>Applies to root-level process documents in <code>sdd/</code> (000-process.md, DESIGN.md, DOCUMENTATION.md, CLAUDE-REFERENCE.md). Does not apply to specs, ADRs, RFCs, research, audits, BACKLOG.md, README, CHANGELOG, DEVELOPMENT_STORY, CLAUDE.md, or CONTRIBUTING.md (which follow their own formats).</p>
-<h3 id="cross-check">Cross-check<a class="headerlink" href="#cross-check" title="Permanent link">&para;</a></h3>
-<p>Every sentence and section must pass this test: <em>"this would force different behavior in situation X."</em> If it does not, it is decoration — rewrite as a rule or remove.</p>
-<h3 id="exclusions">Exclusions<a class="headerlink" href="#exclusions" title="Permanent link">&para;</a></h3>
-<p>Authoritative documents must not contain:</p>
-<ol>
-<li>Explanation or rationale (put in ADRs, specs, research docs, or <code>DEVELOPMENT_STORY.md</code>)</li>
-<li>History or changelog-style notes</li>
-<li>Meta-commentary about the document itself</li>
-</ol>
-<h2 id="spec-first-workflow">Spec-First Workflow<a class="headerlink" href="#spec-first-workflow" title="Permanent link">&para;</a></h2>
-<p>The full SDD pipeline is described in <a href="../design/process/"><code>sdd/000-process.md</code></a>. For external contributions, start here:</p>
-<ol>
-<li><strong>Propose</strong>: Open a PR with an RFC in <code>sdd/rfcs/</code> (see <a href="../design/rfcs/rfc-template/"><code>rfc-template.md</code></a>). No code yet.</li>
-<li><strong>Review</strong>: Maintainers and community review for design fit and completeness.</li>
-<li><strong>Accept</strong>: The RFC graduates to a spec in <code>sdd/specs/</code>. It now defines the contract.</li>
-<li><strong>Implement</strong>: Open a follow-up PR with tests (referencing spec IDs) and implementation.</li>
-</ol>
-<h2 id="repository-structure">Repository Structure<a class="headerlink" href="#repository-structure" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>sdd/
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  000-process.md              # How specs work in this repo
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  specs/                      # Accepted specifications (source of truth)
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  adrs/                       # Architecture Decision Records
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  rfcs/                       # Proposals under discussion
-</code></pre></div>
-<p>Browse <code>sdd/specs/</code> for the full list of specifications. Each spec file is
-numbered and named after the feature it describes (e.g. <code>008-s3-backend.md</code>).</p>
-<p>For spec format and ID prefixes, see <a href="../design/process/"><code>sdd/000-process.md</code></a> § Spec format.</p>
-<h2 id="adding-a-new-backend">Adding a New Backend<a class="headerlink" href="#adding-a-new-backend" title="Permanent link">&para;</a></h2>
-<p>See <a href="../custom-backend-guide/">Build Your Own Backend</a> for a full
-walkthrough of the <code>Backend</code> contract, error mapping, and capabilities.</p>
-<ol>
-<li>Write a spec in <code>sdd/specs/</code> or as an addendum in <code>sdd/specs/backends/&lt;name&gt;.md</code></li>
-<li>Implement <code>Backend</code> ABC in <code>src/remote_store/backends/_&lt;name&gt;.py</code></li>
-<li>Add a conformance fixture in <code>tests/backends/conftest.py</code></li>
-<li>The entire conformance suite (<code>tests/backends/test_conformance.py</code>) runs automatically</li>
-<li>Add user-facing guide in <code>guides/backends/&lt;name&gt;.md</code> and register in <code>mkdocs.yml</code> nav</li>
-<li>Update <code>guides/backends/index.md</code> (Supported Backends table)</li>
-<li>Update <code>README.md</code> (Supported Backends table + Installation extras)</li>
-<li>Add backend config example to <code>examples/configuration.py</code></li>
-<li>If the backend needs an extra, add it to <code>pyproject.toml</code> <code>[project.optional-dependencies]</code></li>
-</ol>
-<h2 id="adding-an-extension">Adding an Extension<a class="headerlink" href="#adding-an-extension" title="Permanent link">&para;</a></h2>
-<p>Extensions live in <code>src/remote_store/ext/</code> and follow the contract in <a href="../design/adrs/0008-extension-architecture/">ADR-0008</a>. Full checklist:</p>
-<ol>
-<li>Write an RFC in <code>sdd/rfcs/</code>, get it accepted as a spec in <code>sdd/specs/</code></li>
-<li>Implement in <code>src/remote_store/ext/&lt;name&gt;.py</code> — define <code>__all__</code></li>
-<li>Use only the public <code>Store</code> / <code>Backend</code> API (never <code>_backend</code>). Use <code>unwrap()</code> for native access</li>
-<li>Do not own Store lifecycle — never call <code>store.close()</code> or use <code>with store:</code></li>
-<li>Let <code>CapabilityNotSupported</code> propagate — do not catch and suppress it</li>
-<li>Add tests in <code>tests/test_&lt;name&gt;.py</code> with <code>@pytest.mark.spec("ID")</code></li>
-<li>Write a user guide in <code>guides/&lt;name&gt;.md</code></li>
-<li>Add an <code>include-markdown</code> wrapper in <code>docs-src/&lt;name&gt;.md</code></li>
-<li>Add the page to <code>docs-src/_nav.yml</code></li>
-<li>Add a runnable example in <code>examples/</code></li>
-<li>Add an example docs wrapper in <code>docs-src/examples/&lt;name&gt;.md</code> and add it to <code>docs-src/examples/_nav.yml</code></li>
-<li>Update <code>CHANGELOG.md</code> and <code>sdd/BACKLOG.md</code> (or <code>sdd/BACKLOG-DONE.md</code>) in the same commit</li>
-</ol>
-<h3 id="export-patterns">Export patterns<a class="headerlink" href="#export-patterns" title="Permanent link">&para;</a></h3>
-<p><strong>Pure Python (no extra dependencies)</strong> — export unconditionally from <code>remote_store.__init__</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># In remote_store/__init__.py:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">Foo</span><span class="o">,</span><span class="w"> </span><span class="nn">bar</span>
-</code></pre></div>
-<p><strong>Optional dependency</strong> — two guards are needed:</p>
-<ol>
-<li>In the extension module, raise a helpful error if the dependency is missing:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># In ext/&lt;name&gt;.py:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">some_lib</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">except</span> <span class="ne">ModuleNotFoundError</span> <span class="k">as</span> <span class="n">_exc</span><span class="p">:</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">raise</span> <span class="ne">ModuleNotFoundError</span><span class="p">(</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="s2">&quot;some_lib is required for the &lt;name&gt; extension. &quot;</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="s2">&quot;Install it with: pip install &#39;remote-store[&lt;name&gt;]&#39;&quot;</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">_exc</span>
-</code></pre></div>
-<ol>
-<li>In <code>remote_store/__init__.py</code>, conditionally re-export with a silent guard:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">Foo</span><span class="o">,</span><span class="w"> </span><span class="nn">bar</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">__all__</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;Foo&quot;</span><span class="p">,</span> <span class="s2">&quot;bar&quot;</span><span class="p">]</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">pass</span>
-</code></pre></div>
-<p>Add the optional dependency as an extra in <code>pyproject.toml [project.optional-dependencies]</code>.</p>
-<h2 id="third-party-extensions">Third-Party Extensions<a class="headerlink" href="#third-party-extensions" title="Permanent link">&para;</a></h2>
-<p>External packages should use the naming convention <code>remote-store-&lt;name&gt;</code> and:</p>
-<ul>
-<li>Use only the public <code>Store</code> / <code>Backend</code> API</li>
-<li>Use <code>register_backend()</code> for backend registration (if applicable)</li>
-<li>Use <code>unwrap()</code> for native handle access</li>
-<li>For backend extensions: reuse the conformance test suite by importing and parameterizing it</li>
-</ul>
-<h2 id="development-setup">Development Setup<a class="headerlink" href="#development-setup" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Clone and enter the repo</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/haalfi/remote-store.git
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nb">cd</span><span class="w"> </span>remote-store
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># Create a virtual environment</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nb">source</span><span class="w"> </span>.venv/bin/activate<span class="w">  </span><span class="c1"># Windows: .venv\Scripts\activate</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># Install with dev dependencies</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev]&quot;</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="c1"># Verify everything works</span>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>hatch<span class="w"> </span>run<span class="w"> </span>all<span class="w">    </span><span class="c1"># or run individual steps:</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>hatch<span class="w"> </span>run<span class="w"> </span>lint
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>hatch<span class="w"> </span>run<span class="w"> </span>typecheck
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>hatch<span class="w"> </span>run<span class="w"> </span>test-cov
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>hatch<span class="w"> </span>run<span class="w"> </span>examples
-</code></pre></div>
-<p>All dev scripts are defined in <code>pyproject.toml</code> under <code>[tool.hatch.envs.default.scripts]</code>. Run <code>hatch run</code> to see available commands.</p>
-<h2 id="commit-signing">Commit Signing<a class="headerlink" href="#commit-signing" title="Permanent link">&para;</a></h2>
-<p>All commits should be signed for supply chain transparency. GitHub Vigilant
-Mode is enabled on the repository — unsigned commits show as "Unverified".</p>
-<h3 id="setup-ssh-signing-one-time">Setup (SSH signing, one-time)<a class="headerlink" href="#setup-ssh-signing-one-time" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Tell Git to use SSH for signing</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>gpg.format<span class="w"> </span>ssh
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>user.signingkey<span class="w"> </span>~/.ssh/&lt;your-key&gt;.pub
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>commit.gpgSign<span class="w"> </span><span class="nb">true</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>tag.gpgSign<span class="w"> </span><span class="nb">true</span>
-</code></pre></div>
-<p>Then upload your public key to GitHub as a <strong>Signing Key</strong> (not Authentication):
-Settings &gt; SSH and GPG keys &gt; New SSH key &gt; Key type: <strong>Signing Key</strong>.</p>
-<h3 id="ssh-agent-avoid-passphrase-prompts">SSH agent (avoid passphrase prompts)<a class="headerlink" href="#ssh-agent-avoid-passphrase-prompts" title="Permanent link">&para;</a></h3>
-<p>If your key has a passphrase, start the SSH agent so signing happens silently:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>ssh-agent<span class="w"> </span>-s<span class="k">)</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>ssh-add<span class="w"> </span>~/.ssh/&lt;your-key&gt;
-</code></pre></div>
-<p>On Windows, you can also enable the OpenSSH Authentication Agent service
-(via <code>Set-Service ssh-agent -StartupType Automatic</code> in an elevated PowerShell)
-for persistence across sessions.</p>
-<p>Verify with <code>echo "test" | git commit-tree HEAD^{tree} -S</code> — a commit hash without passphrase prompt means signing works.</p>
-<h2 id="code-style">Code Style<a class="headerlink" href="#code-style" title="Permanent link">&para;</a></h2>
-<p>See <a href="../design/design-spec/"><code>sdd/DESIGN.md</code></a> for the full code style conventions.</p>
-<ul>
-<li><strong>Formatter/linter:</strong> ruff (line-length 120)</li>
-<li><strong>Type checking:</strong> mypy strict mode</li>
-<li><strong>Tests:</strong> pytest with <code>@pytest.mark.spec("ID")</code> markers for spec traceability</li>
-<li><strong>Coverage:</strong> Target &gt;= 95%</li>
-</ul>
-<h2 id="test-requirements">Test Requirements<a class="headerlink" href="#test-requirements" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Every spec section must have at least one test with <code>@pytest.mark.spec("ID")</code></li>
-<li>Run <code>pytest -m spec</code> to verify all spec-derived tests pass</li>
-<li>Run <code>pytest --cov=remote_store</code> for coverage reports</li>
-</ul>
-<h2 id="examples-and-notebooks">Examples and Notebooks<a class="headerlink" href="#examples-and-notebooks" title="Permanent link">&para;</a></h2>
-<p>The <code>examples/</code> directory contains runnable Python scripts that are validated in CI. Example scripts must remain self-contained and use <code>tempfile.TemporaryDirectory</code> for cleanup.</p>
-<p>Jupyter notebooks in <code>examples/notebooks/</code> are validated in CI via
-<code>hatch run notebooks</code> (code cells executed with <code>exec()</code>, no Jupyter needed).
-Visual output is not checked — the runner validates that cells execute without
-errors.</p>
-<h2 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permanent link">&para;</a></h2>
-<p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes. The public API surface is everything in <code>remote_store.__init__.__all__</code>.</p>
-<h3 id="when-to-bump">When to bump<a class="headerlink" href="#when-to-bump" title="Permanent link">&para;</a></h3>
+<h1 id="tls-ca-bundle-specification">TLS CA Bundle Specification<a class="headerlink" href="#tls-ca-bundle-specification" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Dedicated <code>tls_ca_bundle</code> parameter for S3 backends, replacing nested <code>client_options</code> workarounds for custom CA certificates. Supports explicit paths and environment variable fallback chains. Early path validation at construction time.</p>
+<p>Phase 1 covers <code>S3Backend</code> and <code>S3PyArrowBackend</code>. Phase 2 (Azure) is deferred.</p>
+<hr />
+<h2 id="parameter">Parameter<a class="headerlink" href="#parameter" title="Permanent link">&para;</a></h2>
+<h3 id="tls-001-tls_ca_bundle-on-s3backend">TLS-001: <code>tls_ca_bundle</code> on <code>S3Backend</code><a class="headerlink" href="#tls-001-tls_ca_bundle-on-s3backend" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>S3Backend</code> accepts an optional <code>tls_ca_bundle: str | None</code> keyword argument after <code>region_name</code> and before <code>client_options</code>.
+<strong>Default:</strong> <code>None</code> (use SDK defaults).
+<strong>Value:</strong> Filesystem path to a PEM-format CA bundle file.</p>
+<h3 id="tls-002-tls_ca_bundle-on-s3pyarrowbackend">TLS-002: <code>tls_ca_bundle</code> on <code>S3PyArrowBackend</code><a class="headerlink" href="#tls-002-tls_ca_bundle-on-s3pyarrowbackend" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>S3PyArrowBackend</code> accepts the same <code>tls_ca_bundle: str | None</code> keyword argument with identical semantics.</p>
+<hr />
+<h2 id="environment-variable-fallback">Environment Variable Fallback<a class="headerlink" href="#environment-variable-fallback" title="Permanent link">&para;</a></h2>
+<h3 id="tls-003-env-var-fallback-chain-for-s3-backends">TLS-003: Env var fallback chain for S3 backends<a class="headerlink" href="#tls-003-env-var-fallback-chain-for-s3-backends" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> When <code>tls_ca_bundle</code> is <code>None</code>, the following environment variables are checked in order. The first non-empty value wins:</p>
 <table>
 <thead>
 <tr>
-<th>Change type</th>
-<th>Bump</th>
-<th>Examples</th>
+<th>Priority</th>
+<th>Env var</th>
+<th>Rationale</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>New public API, feature, or backend</td>
-<td><strong>minor</strong> (<code>0.X.0</code>)</td>
-<td><code>Store.to_key()</code>, new backend, new config loader</td>
+<td>1</td>
+<td><code>AWS_CA_BUNDLE</code></td>
+<td>boto3 standard</td>
 </tr>
 <tr>
-<td>Bug fix, internal refactor</td>
-<td><strong>patch</strong> (<code>0.0.X</code>)</td>
-<td>Fix round-trip bug, update retry logic</td>
+<td>2</td>
+<td><code>REQUESTS_CA_BUNDLE</code></td>
+<td>requests (underlies botocore)</td>
 </tr>
 <tr>
-<td>Breaking API change (pre-1.0)</td>
-<td><strong>minor</strong> (<code>0.X.0</code>)</td>
-<td>Remove method, rename parameter</td>
-</tr>
-<tr>
-<td>Breaking API change (post-1.0)</td>
-<td><strong>major</strong> (<code>X.0.0</code>)</td>
-<td>—</td>
-</tr>
-<tr>
-<td>CI, docs, metadata-only</td>
-<td><strong>no bump</strong></td>
-<td>Add classifier, update README</td>
+<td>3</td>
+<td><code>SSL_CERT_FILE</code></td>
+<td>OpenSSL standard, broadest fallback</td>
 </tr>
 </tbody>
 </table>
-<h3 id="stability-tiers">Stability tiers<a class="headerlink" href="#stability-tiers" title="Permanent link">&para;</a></h3>
+<p><strong>Postconditions:</strong>
+- Resolution happens once at construction time (not per-request).
+- Empty string env vars are treated as unset.
+- If all sources are unset/empty, the resolved value is <code>None</code> (SDK defaults apply).</p>
+<hr />
+<h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
+<h3 id="tls-004-early-path-validation-at-construction-time">TLS-004: Early path validation at construction time<a class="headerlink" href="#tls-004-early-path-validation-at-construction-time" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> If the resolved CA bundle path (from explicit param or env var) is not <code>None</code>, the path is validated at construction time.
+<strong>Postconditions:</strong>
+- <code>Path.is_file()</code> must return <code>True</code> (directories are rejected).
+- A <code>ValueError</code> is raised with a message that includes the path if validation fails.
+- Validation is eager: a missing cert is a config error, not a transient network issue.</p>
+<hr />
+<h2 id="injection">Injection<a class="headerlink" href="#injection" title="Permanent link">&para;</a></h2>
+<h3 id="tls-005-s3backend-verify-injection-into-s3fs-client_kwargs">TLS-005: S3Backend <code>verify</code> injection into s3fs <code>client_kwargs</code><a class="headerlink" href="#tls-005-s3backend-verify-injection-into-s3fs-client_kwargs" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> When <code>_tls_ca_bundle</code> is not <code>None</code>, <code>S3Backend</code> injects <code>verify</code> into <code>client_kwargs</code> via <code>setdefault</code>.
+<strong>Postconditions:</strong>
+- An explicit <code>client_options.client_kwargs.verify</code> is NOT overridden (backward compat).
+- The value is the resolved filesystem path string.</p>
+<h3 id="tls-006-s3pyarrowbackend-tls_ca_file_path-injection-into-pyarrow-s3filesystem">TLS-006: S3PyArrowBackend <code>tls_ca_file_path</code> injection into PyArrow S3FileSystem<a class="headerlink" href="#tls-006-s3pyarrowbackend-tls_ca_file_path-injection-into-pyarrow-s3filesystem" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> When <code>_tls_ca_bundle</code> is not <code>None</code>, <code>S3PyArrowBackend</code> injects <code>tls_ca_file_path</code> into the PyArrow <code>S3FileSystem</code> constructor kwargs via <code>setdefault</code>.</p>
+<h3 id="tls-007-s3pyarrowbackend-verify-injection-into-s3fs-side">TLS-007: S3PyArrowBackend <code>verify</code> injection into s3fs side<a class="headerlink" href="#tls-007-s3pyarrowbackend-verify-injection-into-s3fs-side" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> When <code>_tls_ca_bundle</code> is not <code>None</code>, <code>S3PyArrowBackend</code> injects <code>verify</code> into the s3fs <code>client_kwargs</code> via <code>setdefault</code>, same as TLS-005.</p>
+<hr />
+<h2 id="phase-2-deferred">Phase 2 (Deferred)<a class="headerlink" href="#phase-2-deferred" title="Permanent link">&para;</a></h2>
+<h3 id="tls-008-tls_ca_bundle-on-azurebackend">TLS-008: <code>tls_ca_bundle</code> on <code>AzureBackend</code><a class="headerlink" href="#tls-008-tls_ca_bundle-on-azurebackend" title="Permanent link">&para;</a></h3>
+<p>Deferred until demand materializes. Same parameter design, different env var chain.</p>
+<h3 id="tls-009-env-var-fallback-chain-for-azure">TLS-009: Env var fallback chain for Azure<a class="headerlink" href="#tls-009-env-var-fallback-chain-for-azure" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Label</th>
-<th>Meaning</th>
+<th>Priority</th>
+<th>Env var</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Alpha</strong> (pre-0.11)</td>
-<td>API may change freely between releases</td>
+<td>1</td>
+<td><code>AZURE_CA_CERTIFICATE_PATH</code></td>
 </tr>
 <tr>
-<td><strong>Beta</strong> (0.11+)</td>
-<td>Core API (<code>Store</code>, <code>Registry</code>, <code>Backend</code>, models, errors) is stable. Breaking changes are documented in CHANGELOG and avoid gratuitous churn. Extensions (<code>ext.*</code>) may evolve more freely.</td>
+<td>2</td>
+<td><code>REQUESTS_CA_BUNDLE</code></td>
 </tr>
 <tr>
-<td><strong>Stable</strong> (1.0+)</td>
-<td>Full SemVer: breaking changes require a major bump</td>
+<td>3</td>
+<td><code>SSL_CERT_FILE</code></td>
 </tr>
 </tbody>
 </table>
-<h3 id="how-to-bump">How to bump<a class="headerlink" href="#how-to-bump" title="Permanent link">&para;</a></h3>
-<p>Version is managed with <a href="https://github.com/callowayproject/bump-my-version"><code>bump-my-version</code></a>. It modifies <code>pyproject.toml</code>, <code>src/remote_store/__init__.py</code>, and <code>CITATION.cff</code> in-place without committing or tagging (configured in <code>pyproject.toml</code>). The release checklist below handles the commit and tag lifecycle.</p>
-<p>Quick reference for the command syntax:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w">   </span><span class="c1"># 0.4.1 → 0.4.2</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w">   </span><span class="c1"># 0.4.1 → 0.5.0</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w">   </span><span class="c1"># 0.4.1 → 1.0.0</span>
-</code></pre></div>
-<h2 id="consistency-checklists">Consistency Checklists<a class="headerlink" href="#consistency-checklists" title="Permanent link">&para;</a></h2>
-<p>Documentation, examples, and metadata live in many places. Use these to keep them in sync.</p>
-<ul>
-<li><strong>New backend</strong>: see § Adding a New Backend above.</li>
-<li><strong>New extension</strong>: see § Adding an Extension above (12-step checklist).</li>
-<li><strong>New Store method / cross-reference validation</strong>: see the ripple-check table in <code>sdd/CLAUDE-REFERENCE.md</code>.</li>
-<li><strong>Pre-PR validation</strong>: run <code>hatch run all</code>, verify CHANGELOG and BACKLOG are updated, then check the ripple-check table in <code>sdd/CLAUDE-REFERENCE.md</code>.</li>
-</ul>
-<h3 id="release">Release<a class="headerlink" href="#release" title="Permanent link">&para;</a></h3>
-<h4 id="phase-0-pre-flight">Phase 0: Pre-flight<a class="headerlink" href="#phase-0-pre-flight" title="Permanent link">&para;</a></h4>
-<ul>
-<li>[ ] Master is clean: <code>git status</code> shows no uncommitted changes</li>
-<li>[ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)</li>
-<li>[ ] <code>hatch run all</code> passes <strong>locally</strong> (lint + format-check + typecheck + test-cov + examples). Local runs without Docker backends are stricter than CI for coverage — CI has Azurite which inflates Azure backend coverage, potentially masking gaps in new code</li>
-<li>[ ] No open <code>[~]</code> items shipping in this release in <code>sdd/BACKLOG.md</code> — complete and move to <code>BACKLOG-DONE.md</code>, or defer (<code>[ ]</code>)</li>
-<li>[ ] <code>[Unreleased]</code> section in CHANGELOG.md is non-empty</li>
-<li>[ ] Decide bump level (patch / minor / major) per the table above</li>
-</ul>
-<h4 id="phase-1-content-freeze">Phase 1: Content freeze<a class="headerlink" href="#phase-1-content-freeze" title="Permanent link">&para;</a></h4>
-<ul>
-<li>[ ] CHANGELOG.md <code>[Unreleased]</code> is complete — every user-facing change listed with its backlog ID</li>
-<li>[ ] <code>sdd/BACKLOG-DONE.md</code>: all shipping items moved here, marked <code>[x]</code> with version (e.g. <code>(v0.8.0)</code>)</li>
-<li>[ ] README.md: backends table, installation extras, API table, badges are current</li>
-<li>[ ] Specs vs code: spot-check shipped features match their specs (<code>pytest -m spec</code> as proxy)</li>
-<li>[ ] Examples: <code>hatch run examples</code> passes; manually review notebooks if API surface changed</li>
-<li>[ ] Guides: new/changed backend guides are accurate</li>
-<li>[ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)</li>
-</ul>
-<h4 id="phase-2-version-bump-on-a-release-branch">Phase 2: Version bump (on a release branch)<a class="headerlink" href="#phase-2-version-bump-on-a-release-branch" title="Permanent link">&para;</a></h4>
-<ul>
-<li>[ ] Create release branch: <code>git checkout -b release-vX.Y.Z</code></li>
-<li>[ ] CHANGELOG.md: rename <code>[Unreleased]</code> to <code>[X.Y.Z] - YYYY-MM-DD</code>, add fresh empty <code>[Unreleased]</code> above</li>
-<li>[ ] Update <code>date-released</code> in <code>CITATION.cff</code> to today (bump-my-version only updates <code>version:</code>, not this field)</li>
-<li>[ ] Tagline consistent: <code>pyproject.toml</code> = README.md = <code>docs-src/index.md</code> = <code>mkdocs.yml</code> = <code>CITATION.cff</code></li>
-<li>[ ] Keywords consistent: <code>pyproject.toml</code> = <code>CITATION.cff</code></li>
-<li>[ ] Conda recipe: update <code>context.version</code> in <code>packaging/conda-forge/recipe.yaml</code> to X.Y.Z</li>
-<li>[ ] <code>bump-my-version bump patch|minor|major</code> (modifies version in <code>pyproject.toml</code>, <code>__init__.py</code>, <code>CITATION.cff</code>)</li>
-<li>[ ] Review and commit: <code>git diff</code> to verify, then <code>git add pyproject.toml src/remote_store/__init__.py CITATION.cff CHANGELOG.md packaging/conda-forge/recipe.yaml &amp;&amp; git commit -m "Release vX.Y.Z"</code></li>
-</ul>
-<h4 id="phase-3-validate">Phase 3: Validate<a class="headerlink" href="#phase-3-validate" title="Permanent link">&para;</a></h4>
-<ul>
-<li>[ ] <code>hatch run all</code> passes (lint + format-check + typecheck + test-cov + examples)</li>
-<li>[ ] <code>mkdocs build --strict</code> passes</li>
-<li>[ ] <code>python -m build &amp;&amp; twine check dist/*</code> — package builds cleanly</li>
-<li>[ ] <code>pip install dist/*.whl &amp;&amp; python -c "import remote_store; print(remote_store.__version__)"</code> — version matches</li>
-<li>[ ] Conda recipe: version in <code>packaging/conda-forge/recipe.yaml</code> matches release version</li>
-</ul>
-<h4 id="phase-4-ship">Phase 4: Ship<a class="headerlink" href="#phase-4-ship" title="Permanent link">&para;</a></h4>
-<ul>
-<li>[ ] Push branch, open PR, wait for CI green</li>
-<li>[ ] Request PR review — wait for approval before merging</li>
-<li>[ ] Merge PR to master</li>
-<li>[ ] Wait for CI to pass on the merge commit (multi-platform source of truth)</li>
-<li>[ ] Verify HEAD is the merge commit: <code>git log --oneline -1</code></li>
-<li>[ ] Tag the merge commit: <code>git tag vX.Y.Z</code> (or <code>git tag vX.Y.Z &lt;sha&gt;</code> if master advanced)</li>
-<li>[ ] Push the tag: <code>git push origin vX.Y.Z</code></li>
-<li>[ ] Create GitHub Release from the tag — this triggers both <code>publish.yml</code> (PyPI) and versioned docs deploy</li>
-<li>[ ] Watch <code>publish.yml</code> — confirm it completes successfully</li>
-<li>[ ] Delete the release branch: <code>git push origin --delete release-vX.Y.Z</code></li>
-</ul>
-<h4 id="phase-5-post-release-verification">Phase 5: Post-release verification<a class="headerlink" href="#phase-5-post-release-verification" title="Permanent link">&para;</a></h4>
-<ul>
-<li>[ ] PyPI: <code>pip install remote-store==X.Y.Z</code> in a fresh venv, verify version and README renders on pypi.org</li>
-<li>[ ] GitHub Pages: check version switcher shows new version as "latest"</li>
-<li>[ ] ReadTheDocs: check https://docs.remotestore.dev/stable/ shows the new version (RTD automation rule activates tag-based builds; <code>stable</code> is the default version)</li>
-<li>[ ] Conda recipe: fetch sha256 from PyPI (<code>curl -s https://pypi.org/pypi/remote-store/X.Y.Z/json | python -c "import sys,json; d=json.load(sys.stdin); print([f['digests']['sha256'] for f in d['urls'] if f['filename'].endswith('.tar.gz')][0])"</code>) and update <code>source.sha256</code> in <code>packaging/conda-forge/recipe.yaml</code></li>
-<li>[ ] Commit recipe sha256 update via a branch and PR (branch protection requires PRs even for metadata-only changes)</li>
-<li>[ ] Conda-forge: if feedstock exists, verify bot opened a version-bump PR</li>
-<li>[ ] Announce if applicable (tracking issues, users)</li>
-</ul>
+<h3 id="tls-010-azure-connection_verify-injection">TLS-010: Azure <code>connection_verify</code> injection<a class="headerlink" href="#tls-010-azure-connection_verify-injection" title="Permanent link">&para;</a></h3>
+<p>Inject into <code>BlobServiceClient</code> / <code>DataLakeServiceClient</code> constructor options.</p>
+<hr />
+<h2 id="manual-testing-note">Manual Testing Note<a class="headerlink" href="#manual-testing-note" title="Permanent link">&para;</a></h2>
+<p>Integration testing actual TLS with custom CA is impractical with moto. For real verification, use MinIO with a self-signed certificate and a custom CA bundle file.</p>
 
 
 
@@ -7526,10 +7003,10 @@ errors.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

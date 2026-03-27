@@ -5857,6 +5857,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/039-tls-ca-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    039: TLS CA Bundle Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8505,6 +8533,13 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong>TLS CA bundle support for S3 backends</strong> (ID-118): New <code>tls_ca_bundle</code>
+  parameter on <code>S3Backend</code> and <code>S3PyArrowBackend</code> replaces nested
+  <code>client_options={"client_kwargs": {"verify": path}}</code>. Falls back to
+  <code>AWS_CA_BUNDLE</code> / <code>REQUESTS_CA_BUNDLE</code> / <code>SSL_CERT_FILE</code> env vars.
+  Early path validation at construction time. Spec 039.</p>
+</li>
 <li>
 <p><strong>S3 endpoint URL normalization</strong> (ID-117): <code>S3Backend</code> and
   <code>S3PyArrowBackend</code> now accept bare <code>host:port</code> values for <code>endpoint_url</code>

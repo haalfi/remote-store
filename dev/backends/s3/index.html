@@ -1689,6 +1689,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#custom-tls-certificates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom TLS Certificates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#file-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4984,6 +4995,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/specs/039-tls-ca-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    039: TLS CA Bundle Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6575,6 +6614,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#custom-tls-certificates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom TLS Certificates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#file-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6795,12 +6845,67 @@
 <td>Custom endpoint for S3-compatible services</td>
 </tr>
 <tr>
+<td><code>tls_ca_bundle</code></td>
+<td><code>str</code></td>
+<td>Path to a PEM CA bundle file for custom/self-signed certificates</td>
+</tr>
+<tr>
 <td><code>client_options</code></td>
 <td><code>dict</code></td>
 <td>Additional options passed to s3fs</td>
 </tr>
 </tbody>
 </table>
+<h2 id="custom-tls-certificates">Custom TLS Certificates<a class="headerlink" href="#custom-tls-certificates" title="Permanent link">&para;</a></h2>
+<p>Use <code>tls_ca_bundle</code> when connecting to S3-compatible services with custom or
+self-signed certificates (e.g., on-premises MinIO):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">endpoint_url</span><span class="o">=</span><span class="s2">&quot;https://minio.internal:9000&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">tls_ca_bundle</span><span class="o">=</span><span class="s2">&quot;/etc/ssl/certs/internal-ca.pem&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">)</span>
+</code></pre></div>
+<p>Or via config:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">backends</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">minio</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-bucket</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="nt">endpoint_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://minio.internal:9000</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="nt">tls_ca_bundle</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/ssl/certs/internal-ca.pem</span>
+</code></pre></div>
+<p>If <code>tls_ca_bundle</code> is not set, the following environment variables are checked
+in order (first non-empty value wins):</p>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Env var</th>
+<th>Standard</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>AWS_CA_BUNDLE</code></td>
+<td>boto3</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>REQUESTS_CA_BUNDLE</code></td>
+<td>requests</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>SSL_CERT_FILE</code></td>
+<td>OpenSSL</td>
+</tr>
+</tbody>
+</table>
+<p>The path is validated at construction time — a <code>ValueError</code> is raised
+immediately if the file does not exist.</p>
+<p>This replaces the previous workaround of passing
+<code>client_options={"client_kwargs": {"verify": "/path/to/ca.pem"}}</code>.</p>
 <h2 id="file-metadata">File Metadata<a class="headerlink" href="#file-metadata" title="Permanent link">&para;</a></h2>
 <p><code>get_file_info()</code> and <code>list_files()</code> return <code>FileInfo</code> objects with the following fields populated by the S3 backend:</p>
 <table>
@@ -6828,9 +6933,9 @@
 <p>S3 listing behavior differs sharply between shallow and recursive traversals. Understanding these trade-offs is critical for large buckets.</p>
 <h3 id="shallow-listing-non-recursive">Shallow Listing (Non-Recursive)<a class="headerlink" href="#shallow-listing-non-recursive" title="Permanent link">&para;</a></h3>
 <p>Use <code>list_files(path, recursive=False)</code> or <code>iter_children(path)</code> to list only direct children:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># List direct children only</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">):</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># Files and folders one level deep</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># List direct children only</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">):</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># Files and folders one level deep</span>
 </code></pre></div>
 <p><strong>Characteristics:</strong>
 - Single S3 <code>ListObjectsV2</code> API call (or paginated requests if &gt;1000 entries)
@@ -6839,9 +6944,9 @@
 - Suitable for folder-first navigation (e.g., building a file browser UI)</p>
 <h3 id="recursive-listing-flat-stream">Recursive Listing (Flat Stream)<a class="headerlink" href="#recursive-listing-flat-stream" title="Permanent link">&para;</a></h3>
 <p>Use <code>list_files(path, recursive=True)</code> to fetch all files under a prefix:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Stream all files under a prefix, regardless of depth</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">for</span> <span class="n">file_info</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file_info</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Stream all files under a prefix, regardless of depth</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">for</span> <span class="n">file_info</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file_info</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Why flat streaming wins:</strong>
 - Internally uses S3's <code>ListObjectsV2</code> pagination with a prefix, not delimiter-based folder traversal
@@ -6849,34 +6954,34 @@
 - O(n) cost where n = total objects in the prefix tree
 - Avoids the O(n_folders) × (API calls + parsing overhead) of delimiter-based iteration</p>
 <p><strong>If you need all objects under a prefix, use <code>recursive=True</code>:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># ✓ Single flat stream (optimal)</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># ✓ Single flat stream (optimal)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Do not implement folder-by-folder traversal:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># ❌ This makes one API call per folder level</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">traverse_folders</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">list_folders</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>  <span class="c1"># Calls ListObjectsV2 with delimiter=/</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="k">yield from</span> <span class="n">list_files</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="k">yield from</span> <span class="n">traverse_folders</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span>  <span class="c1"># Recursive calls per subfolder</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># ❌ This makes one API call per folder level</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">traverse_folders</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">list_folders</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>  <span class="c1"># Calls ListObjectsV2 with delimiter=/</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>        <span class="k">yield from</span> <span class="n">list_files</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>        <span class="k">yield from</span> <span class="n">traverse_folders</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span>  <span class="c1"># Recursive calls per subfolder</span>
 </code></pre></div>
 <p>The traversal approach costs O(n_folders) API calls, even with few total files.</p>
 <h3 id="streaming-over-parallelization">Streaming Over Parallelization<a class="headerlink" href="#streaming-over-parallelization" title="Permanent link">&para;</a></h3>
 <p>For large buckets, use a <strong>single sequential flat stream</strong>, not parallel folder traversal:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># ✓ Single flat stream (optimal for large buckets)</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># ✓ Single flat stream (optimal for large buckets)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Why not parallelize folder traversal:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># ❌ Avoid parallel folder enumeration</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadPoolExecutor</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">parallel_traverse</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">executor</span><span class="p">):</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="c1"># Spawning threads per folder creates:</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="c1"># - O(n_folders) concurrent requests (thundering herd)</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="c1"># - Earlier rate-limiting hits (S3 per-partition limits)</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="c1"># - Thread pool overhead</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="c1"># - Loss of connection pooling benefits</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># ❌ Avoid parallel folder enumeration</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadPoolExecutor</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">parallel_traverse</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">executor</span><span class="p">):</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="c1"># Spawning threads per folder creates:</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="c1"># - O(n_folders) concurrent requests (thundering herd)</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="c1"># - Earlier rate-limiting hits (S3 per-partition limits)</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="c1"># - Thread pool overhead</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="c1"># - Loss of connection pooling benefits</span>
 </code></pre></div>
 <p><strong>Flat streams are superior:</strong>
 - Single sequential <code>ListObjectsV2</code> respects S3's request pipelining
@@ -6895,20 +7000,20 @@
 <h3 id="data-lake-pattern-few-root-folders-deep-nesting">Data Lake Pattern (Few Root Folders, Deep Nesting)<a class="headerlink" href="#data-lake-pattern-few-root-folders-deep-nesting" title="Permanent link">&para;</a></h3>
 <p>If you have few root-level folders (e.g., <code>/bronze</code>, <code>/silver</code>, <code>/gold</code>) with deeply nested structures:</p>
 <p><strong>To explore the structure:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># ✓ Shallow listing to see root tiers</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_folders</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">):</span>  <span class="c1"># bronze/, silver/, gold/</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">folder</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># ✓ Shallow listing to see root tiers</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_folders</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">):</span>  <span class="c1"># bronze/, silver/, gold/</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">folder</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong>To process a specific tier incrementally:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># ✓ Depth-limited listing to explore one branch without full recursion</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="c1"># Gets files up to 3 levels deep under bronze/</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># ✓ Depth-limited listing to explore one branch without full recursion</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="c1"># Gets files up to 3 levels deep under bronze/</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong>Only if you need all files across all depths:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># ✓ Full recursive listing (streaming, memory-efficient despite size)</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># ✓ Full recursive listing (streaming, memory-efficient despite size)</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong>Characteristics:</strong>
 - <code>max_depth=0</code>: Direct children only (equivalent to non-recursive)
@@ -6951,7 +7056,7 @@
 
 
 <a href="#remote_store.backends.S3Backend" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">endpoint_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">region_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">client_options</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">retry</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            RetryPolicy
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">endpoint_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../api/config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">region_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">tls_ca_bundle</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">client_options</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">retry</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            RetryPolicy
 
 
   
@@ -7016,6 +7121,17 @@
           –
           <div class="doc-md-description">
             <p>AWS region name.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>tls_ca_bundle</code></b>
+              (<code><span title="str">str</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Path to a PEM CA bundle file.  Falls back to
+<code>AWS_CA_BUNDLE</code> / <code>REQUESTS_CA_BUNDLE</code> / <code>SSL_CERT_FILE</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
