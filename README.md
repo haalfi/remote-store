@@ -163,6 +163,7 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 | S3 (PyArrow) | `remote-store[s3-pyarrow]` | `pyarrow` + `s3fs` | Yes | Yes | — (copy+delete) |
 | SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | — | Yes** |
 | Azure Blob / ADLS | `remote-store[azure]` | `azure-storage-file-datalake` | Yes | Yes | HNS: Yes / non-HNS: — |
+| SQL Blob (SQLite, PostgreSQL, ...) | `remote-store[sql]` | `sqlalchemy` | Yes | Yes | Yes |
 
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Via `posix_rename` on most OpenSSH servers; falls back to copy+delete.

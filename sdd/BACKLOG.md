@@ -85,7 +85,7 @@ Items graduate through the SDD pipeline:
   - Enables principled cache keys (`hash(plan)`) and debuggability
   - Next: spec after ID-119 spike validates the pattern
 
-- [ ] **ID-119 — SQLAlchemy backends (research complete)**
+- [~] **ID-119 — SQLAlchemy backends (research complete, v1 in progress)**
   Two concrete backends sharing `_SQLAlchemyBaseBackend`:
   - `SQLBlobBackend` (v1) — KV blob store, `(key TEXT PK, data BLOB, ...)`,
     full read-write. SQLite specialization (blobopen, WAL, PRAGMA tuning).
