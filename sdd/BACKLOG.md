@@ -47,12 +47,6 @@ Items graduate through the SDD pipeline:
 
 ### S3 Backend DX & Performance
 
-- [ ] **ID-113 — Documentation: S3 listing strategies and performance**
-  One flat `ListObjectsV2` stream beats O(n_folders) delimiter-based `ls()`
-  calls. Parallelize-BFS instinct is wrong for large buckets. Add performance
-  guide section with examples and benchmark data.
-  - Scope: docs + examples; no code change
-
 - [ ] **ID-114 — PyArrow-style bucket path support (research)**
   PyArrow convention: `"bucket/prefix"` embeds bucket in path. Current
   `S3Backend` requires split (`bucket=...`, `path=...`). Research feasibility

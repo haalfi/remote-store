@@ -53,6 +53,14 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Docs & DX
 
+- [x] **ID-113 — Documentation: S3 listing strategies and performance**
+  Comprehensive guide added to `guides/backends/s3.md` explaining shallow vs.
+  recursive listing trade-offs, why flat `ListObjectsV2` streams beat
+  delimiter-based folder iteration, and why parallelization is wrong for large
+  buckets. Includes performance data from benchmark suite and practical examples.
+  New example file `examples/s3_listing_strategies.py` demonstrates shallow,
+  recursive, and filtered listing patterns.
+
 - [x] **BUG-004 — Snippet indentation leaks into docs code blocks**
   pymdownx.snippets extracts named regions verbatim; regions inside
   function bodies carry 4–8 spaces of indentation into rendered docs.
