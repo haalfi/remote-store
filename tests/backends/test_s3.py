@@ -123,6 +123,8 @@ class TestS3Construction:
             pytest.param("http://localhost:9000", "http://localhost:9000", id="http-scheme"),
             pytest.param("https://s3.amazonaws.com", "https://s3.amazonaws.com", id="https-scheme"),
             pytest.param("  http://x:9000  ", "http://x:9000", id="whitespace-stripped"),
+            pytest.param("HTTP://host:9000", "HTTP://host:9000", id="uppercase-http"),
+            pytest.param("HTTPS://host:9000", "HTTPS://host:9000", id="uppercase-https"),
         ],
     )
     def test_endpoint_url_normalization(self, raw: str | None, expected: str | None) -> None:

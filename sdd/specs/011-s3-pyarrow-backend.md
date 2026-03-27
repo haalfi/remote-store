@@ -175,6 +175,6 @@ S3PyArrowBackend(
 - `None` → `None` (unchanged).
 - Empty or whitespace-only → `None`.
 - Bare `host:port` or hostname → prefixed with `https://`.
-- URLs with an existing `http://` or `https://` scheme → whitespace-stripped, otherwise unchanged.
+- URLs with an existing `http://` or `https://` scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.
 
 **Postconditions:** After construction, `self._endpoint_url` always contains a scheme prefix or is `None`.

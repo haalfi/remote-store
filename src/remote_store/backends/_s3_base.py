@@ -35,7 +35,9 @@ def _normalize_endpoint_url(url: str | None) -> str | None:
     url = url.strip()
     if not url:
         return None
-    if url.startswith("http://") or url.startswith("https://"):
+    # Case-insensitive scheme check per RFC 3986 § 3.1
+    lower = url[:8].lower()
+    if lower.startswith("http://") or lower.startswith("https://"):
         return url
     return f"https://{url}"
 
