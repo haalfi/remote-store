@@ -56,13 +56,11 @@ Items graduate through the SDD pipeline:
 
 ### S3 & Azure Configuration
 
-- [~] **ID-118 — Certificate bundle handling (S3 + Azure)**
-  **Phase 1 (S3): Done.** `tls_ca_bundle: str | None` parameter on both
-  `S3Backend` and `S3PyArrowBackend`. Env var fallback chain, early path
-  validation, `setdefault` injection. Spec 039.
-  - **Phase 2 (Azure):** Extend to AzureBackend if demand materializes.
-    Primarily benefits Azure Stack Hub / on-premises deployments.
-    Wrap `ClientOptions(ca_cert=...)`, check `AZURE_CA_CERTIFICATE_PATH`.
+- [ ] **ID-118b — TLS CA bundle for Azure (Phase 2)**
+  Extend `tls_ca_bundle` to `AzureBackend` if demand materializes.
+  Primarily benefits Azure Stack Hub / on-premises deployments.
+  Wrap `ClientOptions(ca_cert=...)`, check `AZURE_CA_CERTIFICATE_PATH`.
+  S3 Phase 1 shipped — see BACKLOG-DONE.md.
 
 ### New Backends
 

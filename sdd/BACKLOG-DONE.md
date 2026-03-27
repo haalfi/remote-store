@@ -101,6 +101,13 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## API Surface
 
+- [x] **ID-118 — Certificate bundle handling (S3, Phase 1)**
+  Dedicated `tls_ca_bundle: str | None` parameter on `S3Backend` and
+  `S3PyArrowBackend`. Env var fallback chain (`AWS_CA_BUNDLE` >
+  `REQUESTS_CA_BUNDLE` > `SSL_CERT_FILE`), early path validation,
+  `setdefault` injection for backward compat. Spec 039.
+  Phase 2 (Azure) deferred as ID-118b.
+
 - [x] **ID-112 — Non-recursive `get_folder_info` optimization**
   Added `max_depth` parameter to `Store.get_folder_info()`. When set,
   aggregates stats using `list_files(max_depth=N)` at the Store level
