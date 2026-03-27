@@ -281,6 +281,9 @@ _EXAMPLE_SEE_ALSO: dict[str, list[tuple[str, str, str]]] = {
     "backends/s3_pyarrow_backend.py": [
         ("S3-PyArrow Backend", "../backends/s3-pyarrow.md", "backend guide"),
     ],
+    "backends/s3_listing_strategies.py": [
+        ("S3 Backend", "../backends/s3.md", "listing strategies and performance"),
+    ],
     "backends/sftp_backend.py": [
         ("SFTP Backend", "../backends/sftp.md", "backend guide"),
     ],
@@ -399,6 +402,7 @@ _CORE_EXAMPLES = [
 _BACKEND_EXAMPLES = [
     "backends/s3_backend",
     "backends/s3_pyarrow_backend",
+    "backends/s3_listing_strategies",
     "backends/sftp_backend",
     "backends/azure_backend",
     "http_backend",
