@@ -4355,6 +4355,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3-025-endpoint-url-normalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3-025: Endpoint URL Normalization
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7155,6 +7166,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3-025-endpoint-url-normalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3-025: Endpoint URL Normalization
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7198,7 +7220,7 @@
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n">RetryPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># see spec 025</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
 </code></pre></div>
-<strong>Postconditions:</strong> The backend stores configuration but does not connect to S3 during construction (see S3-004).</p>
+<strong>Postconditions:</strong> The backend stores configuration but does not connect to S3 during construction (see S3-004). The <code>endpoint_url</code> is normalized per S3-025.</p>
 <h3 id="s3-002-backend-name">S3-002: Backend Name<a class="headerlink" href="#s3-002-backend-name" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>name</code> property returns <code>"s3"</code>.</p>
 <h3 id="s3-003-capability-declaration">S3-003: Capability Declaration<a class="headerlink" href="#s3-003-capability-declaration" title="Permanent link">&para;</a></h3>
@@ -7321,6 +7343,14 @@ lowercase-normalized in <code>ContentDigest</code>).
   base64 decoding the value fails.
 - <code>FileInfo.digest</code> from listing paths (<code>list_files</code>, <code>iter_children</code>) is always <code>None</code>
   — the extra request is only issued by <code>get_file_info</code>.</p>
+<h3 id="s3-025-endpoint-url-normalization">S3-025: Endpoint URL Normalization<a class="headerlink" href="#s3-025-endpoint-url-normalization" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>endpoint_url</code> is normalized at construction time so that bare <code>host:port</code> values are usable.
+<strong>Rules:</strong>
+- <code>None</code> → <code>None</code> (unchanged).
+- Empty or whitespace-only → <code>None</code>.
+- Bare <code>host:port</code> or hostname → prefixed with <code>https://</code>.
+- URLs with an existing <code>http://</code> or <code>https://</code> scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.</p>
+<p><strong>Postconditions:</strong> After construction, <code>self._endpoint_url</code> always contains a scheme prefix or is <code>None</code>.</p>
 
 
 

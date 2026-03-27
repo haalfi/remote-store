@@ -4417,6 +4417,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3pa-023-endpoint-url-normalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3PA-023: Endpoint URL Normalization
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7111,6 +7122,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3pa-023-endpoint-url-normalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3PA-023: Endpoint URL Normalization
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7154,7 +7176,7 @@
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n">RetryPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># see spec 025</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
 </code></pre></div>
-<strong>Postconditions:</strong> The backend stores configuration but does not connect to S3 during construction (see S3PA-004). Constructor arguments are translated to each library's conventions internally.</p>
+<strong>Postconditions:</strong> The backend stores configuration but does not connect to S3 during construction (see S3PA-004). The <code>endpoint_url</code> is normalized per S3PA-023. Constructor arguments are translated to each library's conventions internally.</p>
 <h3 id="s3pa-002-backend-name">S3PA-002: Backend Name<a class="headerlink" href="#s3pa-002-backend-name" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>name</code> property returns <code>"s3-pyarrow"</code>.</p>
 <h3 id="s3pa-003-capability-declaration">S3PA-003: Capability Declaration<a class="headerlink" href="#s3pa-003-capability-declaration" title="Permanent link">&para;</a></h3>
@@ -7258,6 +7280,14 @@
 <h3 id="s3pa-022-client-options-passthrough">S3PA-022: Client Options Passthrough<a class="headerlink" href="#s3pa-022-client-options-passthrough" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Same as S3-021. The <code>client_options</code> dict is merged into the s3fs configuration.
 <strong>Postconditions:</strong> <code>client_options</code> applies to s3fs only. PyArrow configuration is derived from the explicit constructor parameters.</p>
+<h3 id="s3pa-023-endpoint-url-normalization">S3PA-023: Endpoint URL Normalization<a class="headerlink" href="#s3pa-023-endpoint-url-normalization" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Same as S3-025. <code>endpoint_url</code> is normalized at construction time so that bare <code>host:port</code> values are usable.
+<strong>Rules:</strong>
+- <code>None</code> → <code>None</code> (unchanged).
+- Empty or whitespace-only → <code>None</code>.
+- Bare <code>host:port</code> or hostname → prefixed with <code>https://</code>.
+- URLs with an existing <code>http://</code> or <code>https://</code> scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.</p>
+<p><strong>Postconditions:</strong> After construction, <code>self._endpoint_url</code> always contains a scheme prefix or is <code>None</code>.</p>
 
 
 
