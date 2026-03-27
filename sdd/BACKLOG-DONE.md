@@ -73,6 +73,12 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## API Surface
 
+- [x] **ID-112 — Non-recursive `get_folder_info` optimization**
+  Added `max_depth` parameter to `Store.get_folder_info()`. When set,
+  aggregates stats using `list_files(max_depth=N)` at the Store level
+  instead of the backend's full recursive traversal. `CachedStore` and
+  `ObservedStore` forward the parameter. No Backend ABC change. Spec 038.
+
 - [x] **ID-107b — `Backend.list_files(max_depth=N)` native optimization**
   Added optional `max_depth` kwarg to `Backend.list_files()` ABC. Native depth
   limiting in Local (`os.walk()` depth counter), SFTP (recursive call depth

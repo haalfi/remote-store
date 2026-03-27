@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath, NotFound
-from remote_store._models import FolderEntry
+from remote_store._models import FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 
 log = logging.getLogger(__name__)
@@ -19,10 +19,11 @@ T = TypeVar("T")
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from datetime import datetime
     from types import TracebackType
 
     from remote_store._backend import Backend
-    from remote_store._models import FileInfo, FolderInfo
+    from remote_store._models import FileInfo
     from remote_store._types import WritableContent
 
 
@@ -596,23 +597,70 @@ class Store:
         info = self._backend.get_file_info(self._require_file_path(path))
         return self._rebase_file_info(info)
 
-    def get_folder_info(self, path: str) -> FolderInfo:
+    def get_folder_info(
+        self,
+        path: str,
+        *,
+        max_depth: int | None = None,
+    ) -> FolderInfo:
         """Return a ``FolderInfo`` with aggregated size and file count for a folder.
 
         Args:
             path: Store-relative folder path.
+            max_depth: Maximum folder depth to aggregate.  ``0`` means
+                files directly in *path* only; ``1`` adds files in its
+                immediate subfolders, and so on.  ``None`` (default)
+                performs a full recursive traversal via the backend.
 
         Returns:
             ``FolderInfo``.
 
         Raises:
             NotFound: If the folder does not exist.
+            ValueError: If *max_depth* is negative.
         """
+        if max_depth is not None and max_depth < 0:
+            msg = f"max_depth must be >= 0, got {max_depth}"
+            raise ValueError(msg)
         _bk = self._backend.name
-        log.debug("get_folder_info path=%r", path, extra={"op": "get_folder_info", "path": path, "backend": _bk})
-        self._backend.capabilities.require(Capability.METADATA, backend=_bk)
-        info = self._backend.get_folder_info(self._full_path(path))
-        return self._rebase_folder_info(info)
+        log.debug(
+            "get_folder_info path=%r max_depth=%r",
+            path,
+            max_depth,
+            extra={"op": "get_folder_info", "path": path, "backend": _bk},
+        )
+
+        if max_depth is None:
+            # Full recursive traversal via backend
+            self._backend.capabilities.require(Capability.METADATA, backend=_bk)
+            info = self._backend.get_folder_info(self._full_path(path))
+            return self._rebase_folder_info(info)
+
+        # Depth-limited aggregation at the Store level
+        self._backend.capabilities.require(Capability.LIST, backend=_bk)
+        if not self._backend.is_folder(self._full_path(path)):
+            raise NotFound(
+                f"Folder not found: {path}",
+                path=path,
+                backend=_bk,
+            )
+
+        file_count = 0
+        total_size = 0
+        latest_modified: datetime | None = None
+        for fi in self.list_files(path, max_depth=max_depth):
+            file_count += 1
+            total_size += fi.size
+            if fi.modified_at is not None and (latest_modified is None or fi.modified_at > latest_modified):
+                latest_modified = fi.modified_at
+
+        rpath = RemotePath.from_backend_path(path) if path and path != "." else RemotePath.ROOT
+        return FolderInfo(
+            path=rpath,
+            file_count=file_count,
+            total_size=total_size,
+            modified_at=latest_modified,
+        )
 
     # endregion
 

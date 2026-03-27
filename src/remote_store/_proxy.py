@@ -185,8 +185,8 @@ class ProxyStore(Store):
     def get_file_info(self, path: str) -> FileInfo:
         return self._inner.get_file_info(path)
 
-    def get_folder_info(self, path: str) -> FolderInfo:
-        return self._inner.get_folder_info(path)
+    def get_folder_info(self, path: str, *, max_depth: int | None = None) -> FolderInfo:
+        return self._inner.get_folder_info(path, max_depth=max_depth)
 
     # endregion
 

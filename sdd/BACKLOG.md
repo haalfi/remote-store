@@ -47,14 +47,6 @@ Items graduate through the SDD pipeline:
 
 ### S3 Backend DX & Performance
 
-- [ ] **ID-112 — Non-recursive `get_folder_info` optimization**
-  Current `get_folder_info()` uses `s3fs.find()` for full recursive traversal.
-  For bucket-wide aggregation, this rescans the same objects repeatedly
-  (catastrophic for 250k+ files). A non-recursive mode using cheap `ls()`
-  for direct-children stats only would avoid this.
-  - Implementation: Store-level helper using `list_files()` / `list_folders()`,
-    consistent with ID-107/108 Store-param pattern — no ABC change
-
 - [ ] **ID-113 — Documentation: S3 listing strategies and performance**
   One flat `ListObjectsV2` stream beats O(n_folders) delimiter-based `ls()`
   calls. Parallelize-BFS instinct is wrong for large buckets. Add performance
