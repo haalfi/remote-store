@@ -25,8 +25,14 @@ import sys
 import time
 from typing import TYPE_CHECKING, Iterator
 
-from remote_store import BackendConfig, Registry, RegistryConfig, StoreProfile
-from remote_store._models import FileInfo, FolderEntry
+from remote_store import (
+    BackendConfig,
+    FileInfo,
+    FolderEntry,
+    Registry,
+    RegistryConfig,
+    StoreProfile,
+)
 
 if TYPE_CHECKING:
     from remote_store import Store
