@@ -6,16 +6,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-### Documentation
-
-- **S3 listing strategies and performance** (ID-113): New comprehensive guide in
-  `guides/backends/s3.md` explaining shallow vs. recursive listing, why flat
-  `ListObjectsV2` streams beat delimiter-based folder iteration, and why
-  parallelization is wrong for large buckets. Includes performance data and
-  examples showing when to use each approach. New example file
-  `examples/s3_listing_strategies.py` demonstrates shallow, recursive, and
-  filtered listing patterns.
-
 ### Changed
 
 - **Performance messaging rewrite** (ID-104): README and performance guide now
@@ -118,6 +108,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **Snippet indentation in docs code blocks** (BUG-004): named snippet
   regions inside function bodies rendered with extra leading whitespace.
   Fixed via pymdownx.snippets `dedent_subsections` option.
+
+### Documentation
+
+- **S3 listing strategies and performance** (ID-113): New comprehensive guide in
+  `guides/backends/s3.md` explaining shallow vs. recursive listing, why flat
+  `ListObjectsV2` streams beat delimiter-based folder iteration, and why
+  parallelization is wrong for large buckets. Includes performance data and
+  examples showing when to use each approach. New example file
+  `examples/backends/s3_listing_strategies.py` demonstrates shallow, recursive,
+  and filtered listing patterns.
 
 ## [0.19.0] - 2026-03-23
 
