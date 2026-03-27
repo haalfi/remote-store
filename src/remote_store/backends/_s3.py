@@ -22,7 +22,7 @@ from remote_store._models import ContentDigest, FileInfo
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
 from remote_store.backends._fileinfo import _clean_etag, _name_from_path, _normalize_modified
-from remote_store.backends._s3_base import _S3Base
+from remote_store.backends._s3_base import _normalize_endpoint_url, _S3Base
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -62,7 +62,7 @@ class S3Backend(_S3Base):
         if not bucket or not bucket.strip():
             raise ValueError("bucket must be a non-empty string")
         self._bucket = bucket
-        self._endpoint_url = endpoint_url
+        self._endpoint_url = _normalize_endpoint_url(endpoint_url)
         self._key = _reveal(key)
         self._secret = _reveal(secret)
         self._region_name = region_name

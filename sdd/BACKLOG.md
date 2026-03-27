@@ -56,13 +56,6 @@ Items graduate through the SDD pipeline:
 
 ### S3 & Azure Configuration
 
-- [ ] **ID-117 — S3Backend endpoint URL normalization**
-  Accept bare `host:port` formats (e.g., `"localhost:9000"`) and auto-normalize
-  to `https://host:port`. Reduces migration friction from PyArrow's
-  `endpoint_override` which accepted bare endpoints. URLs with existing schemes
-  returned unchanged.
-  - S3Backend-specific — no ABC impact
-
 - [ ] **ID-118 — Certificate bundle handling (S3 + Azure)**
   **Phase 1 (S3):** Dedicated `tls_ca_bundle: str | None` parameter replacing
   nested `client_options={"client_kwargs": {"verify": path}}`. Auto-read

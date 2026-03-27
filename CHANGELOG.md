@@ -24,6 +24,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **S3 endpoint URL normalization** (ID-117): `S3Backend` and
+  `S3PyArrowBackend` now accept bare `host:port` values for `endpoint_url`
+  and auto-prefix them with `https://`. Reduces migration friction from
+  PyArrow's `endpoint_override` which accepted bare endpoints. URLs with
+  existing schemes are unchanged. Spec S3-025 / S3PA-023.
+
 - **Non-recursive `get_folder_info`** (ID-112):
   `Store.get_folder_info(path, max_depth=N)` controls traversal depth for
   folder statistics. `max_depth=0` aggregates only direct children;

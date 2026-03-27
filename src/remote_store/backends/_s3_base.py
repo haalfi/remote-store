@@ -23,6 +23,23 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
+def _normalize_endpoint_url(url: str | None) -> str | None:
+    """Normalize endpoint URL: bare ``host:port`` becomes ``https://host:port``.
+
+    URLs with an existing ``http://`` or ``https://`` scheme are returned
+    unchanged (after stripping whitespace).  Bare hostnames or ``host:port``
+    strings are prefixed with ``https://``.
+    """
+    if url is None:
+        return None
+    url = url.strip()
+    if not url:
+        return None
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    return f"https://{url}"
+
+
 class _S3Base(Backend):
     """Internal base for S3 backends that share an s3fs control path.
 

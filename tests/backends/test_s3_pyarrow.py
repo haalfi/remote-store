@@ -109,6 +109,27 @@ class TestS3PyArrowConstruction:
         with pytest.raises(ValueError, match="bucket"):
             S3PyArrowBackend(bucket=bucket)
 
+    @pytest.mark.spec("S3PA-023")
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            pytest.param(None, None, id="none"),
+            pytest.param("", None, id="empty"),
+            pytest.param("   ", None, id="whitespace"),
+            pytest.param("localhost:9000", "https://localhost:9000", id="bare-host-port"),
+            pytest.param("my-host.example.com:443", "https://my-host.example.com:443", id="fqdn-port"),
+            pytest.param("http://localhost:9000", "http://localhost:9000", id="http-scheme"),
+            pytest.param("https://s3.amazonaws.com", "https://s3.amazonaws.com", id="https-scheme"),
+            pytest.param("  http://x:9000  ", "http://x:9000", id="whitespace-stripped"),
+        ],
+    )
+    def test_endpoint_url_normalization(self, raw: str | None, expected: str | None) -> None:
+        """Bare host:port is auto-prefixed with https://."""
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        backend = S3PyArrowBackend(bucket="b", key="k", secret="s", endpoint_url=raw)
+        assert backend._endpoint_url == expected
+
     @pytest.mark.spec("S3PA-022")
     def test_client_options_accepted(self) -> None:
         """client_options are accepted without error at construction."""
