@@ -23,10 +23,13 @@ from __future__ import annotations
 import os
 import sys
 import time
-from typing import Iterator
+from typing import TYPE_CHECKING, Iterator
 
 from remote_store import BackendConfig, Registry, RegistryConfig, StoreProfile
 from remote_store._models import FileInfo, FolderEntry
+
+if TYPE_CHECKING:
+    from remote_store import Store
 
 BUCKET = os.environ.get("RS_S3_BUCKET", "")
 
@@ -55,7 +58,7 @@ def setup_registry() -> Registry:
     return Registry(config)
 
 
-def setup_sample_data(store_profile):
+def setup_sample_data(store_profile: Store) -> None:
     """Create sample directory structure for demonstration."""
     print("📝 Setting up sample data...")
 
@@ -87,7 +90,7 @@ def setup_sample_data(store_profile):
     print(f"  ✓ Created {len(files)} files\n")
 
 
-def demo_shallow_listing(store_profile):
+def demo_shallow_listing(store_profile: Store) -> None:
     """Shallow listing: list only direct children."""
     print("1️⃣  SHALLOW LISTING (direct children only)")
     print("   Code: store.iter_children(path)")
@@ -110,7 +113,7 @@ def demo_shallow_listing(store_profile):
     print()
 
 
-def demo_recursive_listing(store_profile):
+def demo_recursive_listing(store_profile: Store) -> None:
     """Recursive listing: flat stream of all files."""
     print("2️⃣  RECURSIVE LISTING (flat stream, all files)")
     print("   Code: store.list_files(path, recursive=True)")
@@ -127,7 +130,7 @@ def demo_recursive_listing(store_profile):
     print(f"\n   Total: {count} files, {total_size} bytes\n")
 
 
-def demo_filtering_on_stream(store_profile):
+def demo_filtering_on_stream(store_profile: Store) -> None:
     """Filter files while streaming (memory-efficient)."""
     print("3️⃣  FILTERING ON STREAM (memory-efficient)")
     print("   Process files without loading entire listing into memory\n")
@@ -140,19 +143,19 @@ def demo_filtering_on_stream(store_profile):
     print()
 
 
-def demo_performance_comparison(store_profile):
+def demo_performance_comparison(store_profile: Store) -> None:
     """Compare shallow vs recursive listing performance."""
     print("4️⃣  PERFORMANCE CHARACTERISTICS")
     print("   (These would be more dramatic with 1000s of files)\n")
 
     # Shallow listing
     start = time.perf_counter()
-    shallow_entries = list(store_profile.iter_children("level1"))
+    list(store_profile.iter_children("level1"))
     shallow_time = (time.perf_counter() - start) * 1000
 
     # Recursive listing
     start = time.perf_counter()
-    recursive_files = list(store_profile.list_files("level1", recursive=True))
+    list(store_profile.list_files("level1", recursive=True))
     recursive_time = (time.perf_counter() - start) * 1000
 
     print(f"   Shallow (direct children):  {shallow_time:.2f}ms")
@@ -160,7 +163,7 @@ def demo_performance_comparison(store_profile):
     print(f"   Ratio: {recursive_time / shallow_time:.1f}x (flat cost amortized over N files)\n")
 
 
-def demo_antipattern(store_profile):
+def demo_antipattern(store_profile: Store) -> None:
     """Show what NOT to do: manual folder traversal."""
     print("5️⃣  ANTI-PATTERN: Manual Folder Traversal (❌ DON'T DO THIS)")
     print("   Pseudocode:\n")
@@ -184,7 +187,7 @@ def demo_antipattern(store_profile):
     print("   ✓ Instead use: list_files(path, recursive=True)\n")
 
 
-def cleanup(store_profile):
+def cleanup(store_profile: Store) -> None:
     """Delete all demo files."""
     print("🧹 Cleaning up...")
     for file_info in store_profile.list_files("", recursive=True):
