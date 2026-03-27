@@ -963,6 +963,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../examples/s3-listing-strategies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    S3 Listing Strategies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../examples/sftp-backend/" class="md-nav__link">
         
   
@@ -1668,6 +1696,89 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#listing-strategies-and-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing Strategies and Performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Listing Strategies and Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#shallow-listing-non-recursive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shallow Listing (Non-Recursive)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recursive-listing-flat-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recursive Listing (Flat Stream)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#streaming-over-parallelization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming Over Parallelization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-lake-pattern-few-root-folders-deep-nesting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Lake Pattern (Few Root Folders, Deep Nesting)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -6475,6 +6586,89 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#listing-strategies-and-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing Strategies and Performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Listing Strategies and Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#shallow-listing-non-recursive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shallow Listing (Non-Recursive)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recursive-listing-flat-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recursive Listing (Flat Stream)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#streaming-over-parallelization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming Over Parallelization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-lake-pattern-few-root-folders-deep-nesting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Lake Pattern (Few Root Folders, Deep Nesting)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6630,6 +6824,107 @@
 </tr>
 </tbody>
 </table>
+<h2 id="listing-strategies-and-performance">Listing Strategies and Performance<a class="headerlink" href="#listing-strategies-and-performance" title="Permanent link">&para;</a></h2>
+<p>S3 listing behavior differs sharply between shallow and recursive traversals. Understanding these trade-offs is critical for large buckets.</p>
+<h3 id="shallow-listing-non-recursive">Shallow Listing (Non-Recursive)<a class="headerlink" href="#shallow-listing-non-recursive" title="Permanent link">&para;</a></h3>
+<p>Use <code>list_files(path, recursive=False)</code> or <code>iter_children(path)</code> to list only direct children:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># List direct children only</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">):</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># Files and folders one level deep</span>
+</code></pre></div>
+<p><strong>Characteristics:</strong>
+- Single S3 <code>ListObjectsV2</code> API call (or paginated requests if &gt;1000 entries)
+- O(n) cost where n = direct children count
+- <strong>Flat cost per call</strong>, not dependent on bucket size
+- Suitable for folder-first navigation (e.g., building a file browser UI)</p>
+<h3 id="recursive-listing-flat-stream">Recursive Listing (Flat Stream)<a class="headerlink" href="#recursive-listing-flat-stream" title="Permanent link">&para;</a></h3>
+<p>Use <code>list_files(path, recursive=True)</code> to fetch all files under a prefix:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Stream all files under a prefix, regardless of depth</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">for</span> <span class="n">file_info</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file_info</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Why flat streaming wins:</strong>
+- Internally uses S3's <code>ListObjectsV2</code> pagination with a prefix, not delimiter-based folder traversal
+- Single logical stream; S3 SDK handles pagination transparently
+- O(n) cost where n = total objects in the prefix tree
+- Avoids the O(n_folders) × (API calls + parsing overhead) of delimiter-based iteration</p>
+<p><strong>If you need all objects under a prefix, use <code>recursive=True</code>:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># ✓ Single flat stream (optimal)</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Do not implement folder-by-folder traversal:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># ❌ This makes one API call per folder level</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">traverse_folders</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">list_folders</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>  <span class="c1"># Calls ListObjectsV2 with delimiter=/</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="k">yield from</span> <span class="n">list_files</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="k">yield from</span> <span class="n">traverse_folders</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span>  <span class="c1"># Recursive calls per subfolder</span>
+</code></pre></div>
+<p>The traversal approach costs O(n_folders) API calls, even with few total files.</p>
+<h3 id="streaming-over-parallelization">Streaming Over Parallelization<a class="headerlink" href="#streaming-over-parallelization" title="Permanent link">&para;</a></h3>
+<p>For large buckets, use a <strong>single sequential flat stream</strong>, not parallel folder traversal:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># ✓ Single flat stream (optimal for large buckets)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Why not parallelize folder traversal:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># ❌ Avoid parallel folder enumeration</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadPoolExecutor</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">parallel_traverse</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">executor</span><span class="p">):</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="c1"># Spawning threads per folder creates:</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="c1"># - O(n_folders) concurrent requests (thundering herd)</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="c1"># - Earlier rate-limiting hits (S3 per-partition limits)</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="c1"># - Thread pool overhead</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="c1"># - Loss of connection pooling benefits</span>
+</code></pre></div>
+<p><strong>Flat streams are superior:</strong>
+- Single sequential <code>ListObjectsV2</code> respects S3's request pipelining
+- Reuses pooled connections across paginated responses
+- No thread overhead for what is already a streaming operation
+- More predictable latency and throughput</p>
+<p>On large buckets with thousands of folders, a flat stream is <strong>orders of magnitude faster</strong> than parallel traversal.</p>
+<h3 id="performance-data">Performance Data<a class="headerlink" href="#performance-data" title="Permanent link">&para;</a></h3>
+<p>From the benchmark suite (<a href="../../performance/#comparative-results">performance guide</a>):</p>
+<ul>
+<li><strong>List 50 files</strong>: 0.22 ms (S3 backend) — dominated by S3 API latency, not file count</li>
+<li><strong>Connection pooling</strong>: Successive calls reuse connections; amortized cost decreases with list size</li>
+<li><strong>Under real network latency</strong> (50–100 ms RTT): The fixed S3 API round-trip dominates; flat streams to large counts are nearly as fast as shallow lists of 50 files</li>
+</ul>
+<p>For larger list benchmarks, run <code>hatch run bench-standard</code> (includes 1000 and 10000 file lists).</p>
+<h3 id="data-lake-pattern-few-root-folders-deep-nesting">Data Lake Pattern (Few Root Folders, Deep Nesting)<a class="headerlink" href="#data-lake-pattern-few-root-folders-deep-nesting" title="Permanent link">&para;</a></h3>
+<p>If you have few root-level folders (e.g., <code>/bronze</code>, <code>/silver</code>, <code>/gold</code>) with deeply nested structures:</p>
+<p><strong>To explore the structure:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># ✓ Shallow listing to see root tiers</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_folders</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">):</span>  <span class="c1"># bronze/, silver/, gold/</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">folder</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</code></pre></div></p>
+<p><strong>To process a specific tier incrementally:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># ✓ Depth-limited listing to explore one branch without full recursion</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="c1"># Gets files up to 3 levels deep under bronze/</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</code></pre></div></p>
+<p><strong>Only if you need all files across all depths:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># ✓ Full recursive listing (streaming, memory-efficient despite size)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</code></pre></div></p>
+<p><strong>Characteristics:</strong>
+- <code>max_depth=0</code>: Direct children only (equivalent to non-recursive)
+- <code>max_depth=1</code>: One level of nesting
+- <code>max_depth=None</code> (default): Defers to <code>recursive</code> parameter (non-recursive by default)
+- Cost on S3: Full recursive <code>ListObjectsV2</code> listing (O(n_total) API cost); client-side depth filter reduces the yielded result set. Local/SFTP/Memory backends prune natively.
+- Streaming, memory-efficient (unlike loading entire tree)</p>
+<p><strong>Use case:</strong> Incremental exploration, tier-by-tier processing, or when you know the data structure depth in advance.</p>
+<h3 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Shallow listing (non-recursive):</strong> Interactive UI, folder browsers, or when you only need direct children.</li>
+<li><strong>Depth-limited listing (max_depth=N):</strong> Data lake patterns with known structure depth. Explore incrementally without full recursion.</li>
+<li><strong>Recursive listing (full tree):</strong> Data processing, backups, or scanning entire prefix. Streaming operation, memory-efficient despite size.</li>
+<li><strong>Pattern matching:</strong> Use <code>glob(pattern)</code> (internally uses flat stream with filtering) rather than custom folder traversal.</li>
+<li><strong>Note:</strong> Do not parallelize any listing — single flat streams are already optimal.</li>
+</ul>
 <h2 id="caveats">Caveats<a class="headerlink" href="#caveats" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong><code>move()</code> is not atomic.</strong> S3 has no native rename operation. <code>move()</code> is implemented as copy + delete. If the process crashes between the two steps, both source and destination will exist.</li>
@@ -6640,7 +6935,9 @@
 <ul>
 <li><a href="../../capabilities-matrix/">Capabilities matrix</a></li>
 <li><a href="../../api/store/">API reference</a></li>
-<li><a href="https://github.com/haalfi/remote-store/blob/master/examples/backends/s3_backend.py">Example script</a></li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/examples/backends/s3_backend.py">S3 backend example</a></li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/examples/backends/s3_listing_strategies.py">S3 listing strategies example</a> — demonstrates shallow, recursive, and filtering techniques</li>
+<li><a href="../../performance/">Performance guide</a> — benchmark data and overhead analysis</li>
 </ul>
 <h2 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
 
