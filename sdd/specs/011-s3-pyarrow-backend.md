@@ -24,6 +24,7 @@ S3PyArrowBackend(
     key: str | None = None,
     secret: str | None = None,
     region_name: str | None = None,
+    tls_ca_bundle: str | None = None,  # see spec 039
     client_options: dict[str, Any] | None = None,
     retry: RetryPolicy | None = None,  # see spec 025
 )

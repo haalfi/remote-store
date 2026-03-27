@@ -46,7 +46,26 @@ Same constructor signature as the S3 backend:
 | `secret` | `str` | AWS secret access key |
 | `region_name` | `str` | AWS region name |
 | `endpoint_url` | `str` | Custom endpoint for S3-compatible services |
+| `tls_ca_bundle` | `str` | Path to a PEM CA bundle file for custom/self-signed certificates |
 | `client_options` | `dict` | Additional options passed to s3fs (control-path) |
+
+## Custom TLS Certificates
+
+Use `tls_ca_bundle` when connecting to S3-compatible services with custom or
+self-signed certificates. The parameter applies to both the PyArrow data path
+(`tls_ca_file_path`) and the s3fs control path (`client_kwargs.verify`).
+
+```python
+backend = S3PyArrowBackend(
+    bucket="my-bucket",
+    endpoint_url="https://minio.internal:9000",
+    tls_ca_bundle="/etc/ssl/certs/internal-ca.pem",
+)
+```
+
+If not set, falls back to env vars: `AWS_CA_BUNDLE` > `REQUESTS_CA_BUNDLE` >
+`SSL_CERT_FILE`. See the [S3 backend guide](s3.md#custom-tls-certificates) for
+the full fallback chain and config examples.
 
 ## When to use S3-PyArrow vs S3
 

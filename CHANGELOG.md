@@ -24,6 +24,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **TLS CA bundle support for S3 backends** (ID-118): New `tls_ca_bundle`
+  parameter on `S3Backend` and `S3PyArrowBackend` replaces nested
+  `client_options={"client_kwargs": {"verify": path}}`. Falls back to
+  `AWS_CA_BUNDLE` / `REQUESTS_CA_BUNDLE` / `SSL_CERT_FILE` env vars.
+  Early path validation at construction time. Spec 039.
+
 - **S3 endpoint URL normalization** (ID-117): `S3Backend` and
   `S3PyArrowBackend` now accept bare `host:port` values for `endpoint_url`
   and auto-prefix them with `https://`. Reduces migration friction from
