@@ -47,6 +47,12 @@ def demo(store):
     folder_info = store.get_folder_info("docs")
     print(f"docs/ - {folder_info.file_count} files, {folder_info.total_size} bytes total")
 
+    # --- Depth-limited folder info (direct children only) ---
+    shallow = store.get_folder_info("", max_depth=0)
+    print(f"root (depth 0) - {shallow.file_count} files, {shallow.total_size} bytes")
+    full = store.get_folder_info("")
+    print(f"root (full)    - {full.file_count} files, {full.total_size} bytes")
+
     # --- is_file / is_folder ---
     print(f"\nis_file('docs/readme.txt'):  {store.is_file('docs/readme.txt')}")
     print(f"is_folder('docs'):           {store.is_folder('docs')}")
