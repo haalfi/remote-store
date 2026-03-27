@@ -11,19 +11,9 @@ Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC form
 3. **Specs are authoritative**: if code and spec disagree, the code is wrong.
 4. **ADRs are immutable**: supersede, don't edit.
 5. **IDs are stable**: once assigned, a section ID never changes meaning. Deprecated sections are marked `[DEPRECATED]`, not removed.
-6. **Workflow**: every feature follows this pipeline:
-
-```text
-1. SPEC      → Write sdd/specs/NNN-<topic>.md defining contracts, invariants, error behavior
-2. TEST      → Write tests derived from the spec, each referencing its section ID
-3. IMPLEMENT → Write code to satisfy the tests (and thus the spec)
-4. VALIDATE  → Verify spec ↔ test ↔ code traceability
-5. DOCS      → Write or update examples, guides, docstrings, CHANGELOG
-```
-
-Operational items (CI config, docs, dependency pins) skip the spec step: tracked and closed directly in the backlog. Backlog items track *what* needs doing; the RFC or spec tracks *how*.
-
-7. **Bug-fix workflow** — strict order: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec.
+6. **Workflows**:
+   - **Features**: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.
+   - **Bug fixes**: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec.
 
 ## Guides
 

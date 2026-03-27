@@ -37,7 +37,11 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-*(none)*
+- [~] **BK-001 — Audit workflow and bug-fix protocol**
+  Add process guardrails: `/audit` skill (scope-first, report-only),
+  bug-fix protocol (backlog → changelog → failing test → fix),
+  ripple-check row, process rule.
+  - PR: #288
 
 ---
 
