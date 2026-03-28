@@ -32,13 +32,13 @@ class _Urllib3StreamAdapter(io.RawIOBase):
 
     def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
         try:
-            return self._raw.readinto(b)  # type: ignore[union-attr,arg-type]
+            return self._raw.readinto(b)  # type: ignore[arg-type]
         except urllib3.exceptions.HTTPError as exc:
             raise OSError(str(exc)) from exc
 
-    def read(self, size: int = -1) -> bytes:  # type: ignore[override]
+    def read(self, size: int = -1) -> bytes:
         try:
-            return self._raw.read(amt=size if size >= 0 else None)  # type: ignore[return-value]
+            return self._raw.read(amt=size if size >= 0 else None)
         except urllib3.exceptions.HTTPError as exc:
             raise OSError(str(exc)) from exc
 

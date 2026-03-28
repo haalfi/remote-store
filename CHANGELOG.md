@@ -6,6 +6,17 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- **Replaced mypy `ignore_missing_imports` overrides with proper type stubs**
+  (BK-015): Removed 8 `[[tool.mypy.overrides]]` entries that suppressed
+  import errors for packages shipping `py.typed` or having PyPI stubs
+  (`pydantic`, `pydantic_settings`, `tomli`, `tomllib`, `ruamel.yaml`,
+  `requests`, `urllib3`, `httpx`). Added `types-requests` to dev
+  dependencies. Cleaned up now-unnecessary `# type: ignore` comments in
+  `_http_requests.py` and `_http_httpx.py`. Mypy now sees real types
+  instead of `Any` for these imports.
+
 ### Changed
 
 - **Performance messaging rewrite** (ID-104): README and performance guide now

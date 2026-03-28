@@ -6,6 +6,12 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Process
 
+- [x] **BK-015 — Replace mypy `ignore_missing_imports` overrides with proper type stubs**
+  Added `types-requests` stub, removed overrides for `requests`, `urllib3`,
+  `pydantic`, `pydantic_settings`, `tomli`, `tomllib`, `httpx`, `ruamel.yaml`.
+  Cleaned up now-unnecessary `type: ignore` comments in HTTP transport modules.
+  Keep: `dagster` (no `py.typed`, no stubs). PR #293.
+
 - [x] **BK-001 — Audit workflow and bug-fix protocol**
   Added `/audit` skill (scope-first, report-only), bug-fix protocol
   (backlog → changelog → failing test → fix), ripple-check row,
