@@ -50,7 +50,7 @@ hatch run docs-build        # build docs (strict mode)
 hatch run all               # lint + format-check + typecheck + test-cov + examples + notebooks
 ```
 
-- Compound commands (`&&`, `||`, `;`) blocked by hook — split into separate Bash tool calls.
+- **No `&&`, `||`, or `;`.** Split into separate Bash tool calls for auto-approval.
 
 ## Branching
 
