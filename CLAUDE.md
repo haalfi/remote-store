@@ -69,10 +69,10 @@ See `sdd/DESIGN.md` for the full code style rules. Key points:
 ## GitHub operations
 
 **Primary:** `github-pat` MCP server (fine-grained PAT, read+write).
-**Fallback:** MCP_DOCKER (read-only locally — writes return 404/403).
+**Fallback:** `MCP_DOCKER` (Docker OAuth token — writes return 404/403 in local CLI; may work on claude.ai). Use for reads only.
 **Last resort:** `gh` CLI — needed for thread resolution (`gh api graphql`).
 
-Use `github-pat` if available; fall back to `MCP_DOCKER`, then `gh`.
+Priority: try `github-pat` first for all operations (read and write). Fall back to `MCP_DOCKER` for reads, then `gh` CLI.
 
 PR workflows are codified as skills: `/pr`, `/review-pr`, `/fix-pr`. Use those instead of ad-hoc `gh` commands.
 

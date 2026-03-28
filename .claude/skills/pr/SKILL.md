@@ -8,8 +8,8 @@ argument-hint: "[base branch]"
 Create a PR from the current branch. Base: `$ARGUMENTS` (default: `master`).
 Repo: `haalfi/remote-store`.
 
-For all GitHub API calls in this skill, use `github-pat` if available, otherwise fall back to `MCP_DOCKER`.
-See CLAUDE.md § GitHub operations for details.
+For all GitHub API calls in this skill: use `github-pat` first (read+write), fall back to `MCP_DOCKER` for reads only.
+See CLAUDE.md § GitHub operations for the full priority chain.
 
 ## Steps
 

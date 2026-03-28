@@ -11,9 +11,9 @@ PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
 
 Check out the PR's head branch. Rebase onto master if behind (`git rebase master`) — parallel PRs may have merged since this branch was created.
 
-For all GitHub API calls in this skill (reading PR data, resolving threads, pushing):
-use `github-pat` if available, otherwise fall back to `MCP_DOCKER`.
-See CLAUDE.md § GitHub operations for details.
+For all GitHub API calls in this skill (reading PR data, posting comments, resolving threads):
+use `github-pat` if available (read+write), otherwise fall back to `MCP_DOCKER` (reads only).
+See CLAUDE.md § GitHub operations for the full priority chain.
 
 Use `pull_request_read` with `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: $ARGUMENTS`.
 
