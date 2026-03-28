@@ -7,3 +7,13 @@ IPC.
 ::: remote_store.backends.SQLQueryBackend
     options:
       show_bases: false
+
+## Serialization
+
+::: remote_store.backends.ResultSerializer
+    options:
+      show_bases: false
+
+::: remote_store.backends.ArrowSerializer
+    options:
+      show_bases: false

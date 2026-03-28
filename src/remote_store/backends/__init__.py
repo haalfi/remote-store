@@ -42,8 +42,8 @@ except ImportError:  # pragma: no cover
     pass
 
 try:
-    from remote_store.backends._sqlalchemy import SQLQueryBackend
+    from remote_store.backends._sqlalchemy import ArrowSerializer, ResultSerializer, SQLQueryBackend
 
-    __all__ = [*__all__, "SQLQueryBackend"]
+    __all__ = [*__all__, "ArrowSerializer", "ResultSerializer", "SQLQueryBackend"]
 except ImportError:  # pragma: no cover
     pass
