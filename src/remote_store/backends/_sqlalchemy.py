@@ -447,7 +447,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             query = sa.select(*agg_cols).where(t.c.key.like(prefix + "%")) if prefix else sa.select(*agg_cols)
 
             row = conn.execute(query).first()
-            assert row is not None
+            # Aggregate queries (COUNT, SUM, MAX) always return exactly one row,
+            # even on an empty table — row is guaranteed non-None.
+            if row is None:  # pragma: no cover
+                raise RemoteStoreError("Unexpected empty aggregate result", path=path, backend=self.name)
 
             file_count = row[0]
             total_size = row[1] or 0
@@ -710,16 +713,5 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 i += 1
         result = "".join(like)
         return None if result == "%" else result
-
-    def _row_field(self, row: Any, field_name: str) -> Any:
-        """Extract a field value from an info row by column position."""
-        # Columns are: key, size, modified_at, [content_type], [digest], [extra]
-        idx = 3
-        for col_name in ("content_type", "digest", "extra"):
-            if col_name in self._optional_columns:
-                if col_name == field_name:
-                    return row[idx] if idx < len(row) else None
-                idx += 1
-        return None
 
     # endregion

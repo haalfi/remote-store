@@ -142,10 +142,13 @@ and returns the blob as `bytes`. Raises `NotFound` if no row matches.
 
 ### SQL-BLOB-022: write()
 
-**Invariant:** Uses `INSERT ... ON CONFLICT(key) DO UPDATE` when
-`overwrite=True`. Uses plain `INSERT` when `overwrite=False` (raises
-`AlreadyExists` on conflict). Sets `size = len(data)` and
-`modified_at = now()`.
+**Invariant:** Within a transaction, checks existence via
+`SELECT 1 WHERE key = :key`. If the key exists: raises `AlreadyExists` when
+`overwrite=False`, otherwise executes `UPDATE`. If the key does not exist:
+executes `INSERT`. Sets `size = len(data)` and `modified_at = now()`.
+
+This check-then-act pattern (vs `ON CONFLICT ... DO UPDATE`) is more portable
+across SQL dialects.
 
 **max_blob_size guard:** If `max_blob_size` is set and content exceeds it,
 raises `ValueError` before executing the SQL.

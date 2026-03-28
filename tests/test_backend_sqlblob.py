@@ -249,6 +249,13 @@ def test_write_atomic(backend: SQLBlobBackend) -> None:
 
 
 @pytest.mark.spec("SQL-BLOB-023")
+def test_write_atomic_overwrite(backend: SQLBlobBackend) -> None:
+    backend.write_atomic("f.txt", b"first")
+    backend.write_atomic("f.txt", b"second", overwrite=True)
+    assert backend.read_bytes("f.txt") == b"second"
+
+
+@pytest.mark.spec("SQL-BLOB-023")
 def test_open_atomic_success(backend: SQLBlobBackend) -> None:
     with backend.open_atomic("f.txt") as f:
         f.write(b"buffered")
