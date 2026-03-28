@@ -430,7 +430,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         with self._map_errors(path), self._engine.connect() as conn:
             t = self._table
 
-            agg_cols: list[Any] = [sa.func.count()]
+            agg_cols: list[sa.ColumnElement[Any]] = [sa.func.count()]
             if "size" in self._optional_columns:
                 agg_cols.append(sa.func.coalesce(sa.func.sum(t.c.size), 0))
             else:
@@ -584,10 +584,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
         return segments
 
-    def _select_info_columns(self) -> list[Any]:
+    def _select_info_columns(self) -> list[sa.ColumnElement[Any]]:
         """Return the columns to select for building FileInfo."""
         t = self._table
-        cols: list[Any] = [t.c.key]
+        cols: list[sa.ColumnElement[Any]] = [t.c.key]
 
         if "size" in self._optional_columns:
             cols.append(t.c.size)

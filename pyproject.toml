@@ -227,6 +227,7 @@ packages = ["src/remote_store"]
 [tool.mypy]
 strict = true
 namespace_packages = true
+plugins = ["sqlalchemy.ext.mypy.plugin"]
 
 # tomllib is stdlib from 3.11+; on 3.10 it doesn't exist and tomli is used instead.
 [[tool.mypy.overrides]]
@@ -249,18 +250,10 @@ warn_unused_ignores = false
 
 # Dagster does not ship py.typed and has no third-party stubs on PyPI.
 [[tool.mypy.overrides]]
-module = "sqlalchemy.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
 module = "dagster.*"
 ignore_missing_imports = true
 
 # ext/dagster.py uses `# type: ignore[import-untyped]` on dagster imports.
-[[tool.mypy.overrides]]
-module = "remote_store.backends._sqlalchemy"
-warn_unused_ignores = false
-
 [[tool.mypy.overrides]]
 module = "remote_store.ext.dagster"
 warn_unused_ignores = false
