@@ -15,35 +15,8 @@ co-location, portable single-file archives.
 
 **Dependencies:** `sqlalchemy>=2.0` (optional extra: `sql`).
 
----
-
-## Architecture
-
-### SQL-ARCH-001: Two-Layer Design
-
-```
-_SQLAlchemyBaseBackend(Backend)  — engine lifecycle, health, error mapping
-└── SQLBlobBackend               — KV blob store, full Backend contract
-```
-
-`_SQLAlchemyBaseBackend` is not public API. Only `SQLBlobBackend` is exported.
-
-### SQL-ARCH-002: Engine Lifecycle — Owned vs Borrowed
-
-**Invariant:** The base accepts exactly one of `url: str` or `engine: Engine`.
-
-- `url` provided → creates and **owns** the engine. `close()` calls
-  `engine.dispose()`.
-- `engine` provided → **borrows** it. `close()` is a no-op. The caller
-  manages the engine's lifecycle.
-
-This lets web apps share their connection pool while standalone scripts
-get automatic cleanup.
-
-### SQL-ARCH-003: SQLite Detection
-
-**Invariant:** When `engine.dialect.name == "sqlite"`, the backend enables
-SQLite-specific optimizations (WAL mode, PRAGMAs, `blobopen()` streaming).
+**Architecture:** Two-class design with shared base — see
+[ADR-0018](../adrs/0018-sqlalchemy-two-class-architecture.md).
 
 ---
 
