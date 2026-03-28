@@ -37,7 +37,7 @@ class _HttpxStreamAdapter(io.RawIOBase):
     def _next_chunk(self) -> bytes:
         """Get the next chunk, converting httpx errors to OSError."""
         try:
-            return next(self._iter)  # type: ignore[no-any-return]
+            return next(self._iter)
         except StopIteration:
             raise
         except httpx.StreamError as exc:
@@ -49,10 +49,10 @@ class _HttpxStreamAdapter(io.RawIOBase):
         if not data:
             return 0
         view = memoryview(b)[: len(data)]
-        view[:] = data  # type: ignore[index]
+        view[:] = data
         return len(data)
 
-    def read(self, size: int = -1) -> bytes:  # type: ignore[override]
+    def read(self, size: int = -1) -> bytes:
         """Read up to *size* bytes (all remaining if *size* < 0)."""
         if size < 0:
             chunks = [self._buf]

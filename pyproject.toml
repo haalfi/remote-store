@@ -102,6 +102,7 @@ dev = [
   "paramiko>=2.2",
   "tenacity>=4.0",
   "types-paramiko",
+  "types-requests>=2.31",
   "azure-storage-file-datalake>=12.16.0",
   "azure-identity>=1.0.0",
   "opentelemetry-api>=1.28.0",
@@ -134,6 +135,7 @@ dependencies = [
   "tenacity>=4.0",
   "pyarrow>=14.0.0",
   "types-paramiko",
+  "types-requests>=2.31",
   "azure-storage-file-datalake>=12.16.0",
   "azure-identity>=1.0.0",
   "opentelemetry-api>=1.28.0",
@@ -224,39 +226,11 @@ strict = true
 namespace_packages = true
 
 [[tool.mypy.overrides]]
-module = "pydantic.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "pydantic_settings.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "tomli"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "tomllib"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = ["ruamel", "ruamel.yaml"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
 module = "remote_store._config"
 warn_unused_ignores = false
 
 [[tool.mypy.overrides]]
 module = "remote_store.ext.yaml"
-warn_unused_ignores = false
-
-[[tool.mypy.overrides]]
-module = ["requests.*", "httpx", "httpx.*", "urllib3", "urllib3.*"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = ["remote_store.backends._http_requests", "remote_store.backends._http_httpx"]
 warn_unused_ignores = false
 
 [[tool.mypy.overrides]]

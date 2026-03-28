@@ -37,7 +37,17 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-*(none)*
+### Developer Tooling
+
+- [x] **BK-015 — Replace mypy `ignore_missing_imports` overrides with proper type stubs**
+  Most `[[tool.mypy.overrides]]` entries in `pyproject.toml` suppressed
+  `ignore_missing_imports` for packages that ship `py.typed` or have
+  PyPI stubs. This hid real type errors behind `Any`.
+  - Done: added `types-requests` stub, removed overrides for `requests`,
+    `urllib3`, `pydantic`, `pydantic_settings`, `tomli`, `tomllib`, `httpx`,
+    `ruamel.yaml`. Cleaned up now-unnecessary `type: ignore` comments in
+    `_http_requests.py` and `_http_httpx.py`.
+  - Keep: `dagster` (no `py.typed`, no stubs).
 
 ---
 
