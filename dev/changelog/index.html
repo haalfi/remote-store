@@ -3522,6 +3522,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#internal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3562,7 +3573,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal" class="md-nav__link">
+  <a href="#internal_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -7660,6 +7671,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#internal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7700,7 +7722,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal" class="md-nav__link">
+  <a href="#internal_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -8849,6 +8871,15 @@
   and filtered listing patterns.</p>
 </li>
 </ul>
+<h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Test coverage and ResourceWarning fixes</strong>: SQLBlob test fixtures now
+  dispose engines on teardown (ResourceWarning eliminated). ProxyStore
+  delegation coverage 68% → 100% (new <code>test_proxy.py</code>). SQLAlchemy backend
+  coverage 90% → 99% (<code>_glob_to_like</code>, optional columns, health check).
+  <code>/pr</code> skill now gates on <code>hatch run test-cov</code> (95% threshold) before
+  creating PRs.</li>
+</ul>
 <h2 id="0190-2026-03-23">[0.19.0] - 2026-03-23<a class="headerlink" href="#0190-2026-03-23" title="Permanent link">&para;</a></h2>
 <h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
 <ul>
@@ -8886,7 +8917,7 @@
   API paths in docs, completed extensions table, fixed Sphinx-style remnants.</p>
 </li>
 </ul>
-<h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
+<h3 id="internal_1">Internal<a class="headerlink" href="#internal_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
 <p><strong>S3 backend code deduplication</strong> (BK-011): extracted <code>_S3Base</code> base class,
