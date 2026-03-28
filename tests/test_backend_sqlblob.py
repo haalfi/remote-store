@@ -535,8 +535,8 @@ class TestGlob:
     def test_star(self, populated: SQLBlobBackend) -> None:
         files = list(populated.glob("a/*.txt"))
         names = {f.name for f in files}
-        # SQLite GLOB * matches any chars including /
-        assert names == {"1.txt", "2.txt", "deep.txt"}
+        # GLOB-014: * matches [^/]* — direct children only
+        assert names == {"1.txt", "2.txt"}
 
     def test_double_star(self, populated: SQLBlobBackend) -> None:
         files = list(populated.glob("a/**"))

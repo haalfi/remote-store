@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import abc
 import contextlib
-import fnmatch
 import io
 import json
 import logging
@@ -21,6 +20,7 @@ from remote_store._errors import (
     NotFound,
     RemoteStoreError,
 )
+from remote_store._glob import pattern_to_regex
 from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 
@@ -552,23 +552,23 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         cols = self._select_info_columns()
+        rx = pattern_to_regex(pattern)
         with self._map_errors(), self._engine.connect() as conn:
             t = self._table
             query = sa.select(*cols)
 
             if self._is_sqlite:
-                # SQLite supports native GLOB (case-sensitive, * = any, ? = single)
+                # SQLite GLOB for SQL-side narrowing, then regex to enforce
+                # GLOB-014 semantics (* = [^/]*, ? = [^/]).
                 query = query.where(t.c.key.op("GLOB")(pattern))
-                rows = conn.execute(query).fetchall()
-                yield from (self._row_to_file_info(row) for row in rows)
             else:
-                # Other dialects: convert glob to LIKE for SQL-side filtering,
-                # then refine with fnmatch in Python for edge cases.
+                # Other dialects: LIKE for SQL-side narrowing.
                 like_pattern = self._glob_to_like(pattern)
                 if like_pattern is not None:
                     query = query.where(t.c.key.like(like_pattern))
-                rows = conn.execute(query).fetchall()
-                yield from (self._row_to_file_info(row) for row in rows if fnmatch.fnmatch(row[0], pattern))
+
+            rows = conn.execute(query).fetchall()
+            yield from (self._row_to_file_info(row) for row in rows if rx.match(row[0]))
 
     # endregion
 

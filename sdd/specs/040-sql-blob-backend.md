@@ -227,10 +227,15 @@ count is 0 and path is not empty string.
 
 ### SQL-BLOB-033: glob()
 
-**Invariant:** Convert glob patterns to SQL:
-- SQLite: use native `GLOB` operator (case-sensitive, `*` = any, `?` = single).
-- Other dialects: convert `*` → `%`, `?` → `_`, use `LIKE`.
-- `**` patterns: match any depth (`%` in LIKE).
+**Invariant:** Two-stage filtering — SQL-side narrowing, then client-side
+regex to enforce GLOB-014 semantics (`*` = `[^/]*`, `?` = `[^/]`):
+
+1. **SQL narrowing:**
+   - SQLite: native `GLOB` operator (over-matches — `*` and `?` match `/`).
+   - Other dialects: convert `*`/`**` → `%`, `?` → `_`, use `LIKE`.
+2. **Client-side regex:** `pattern_to_regex(pattern)` from `_glob.py` filters
+   the SQL result set to enforce GLOB-014 semantics, ensuring `*` and `?` do
+   not match path separators.
 
 Return `FileInfo` for all matching keys.
 
