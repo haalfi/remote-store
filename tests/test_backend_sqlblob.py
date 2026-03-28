@@ -5,6 +5,10 @@ from __future__ import annotations
 import io
 import pathlib
 import threading
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 import pytest
 import sqlalchemy as sa
@@ -25,9 +29,11 @@ from remote_store.backends._sqlalchemy import SQLBlobBackend
 
 
 @pytest.fixture
-def backend(tmp_path: object) -> SQLBlobBackend:
-    """Fresh SQLite backend for each test."""
-    return SQLBlobBackend(url="sqlite:///:memory:")
+def backend() -> Iterator[SQLBlobBackend]:
+    """Fresh SQLite backend for each test, engine disposed on teardown."""
+    b = SQLBlobBackend(url="sqlite:///:memory:")
+    yield b
+    b.close()
 
 
 @pytest.fixture
@@ -40,6 +46,33 @@ def populated(backend: SQLBlobBackend) -> SQLBlobBackend:
     return backend
 
 
+@pytest.fixture
+def minimal_engine() -> Iterator[sa.Engine]:
+    """Engine with a minimal (key, data) table — no optional columns."""
+    engine = sa.create_engine("sqlite:///:memory:")
+    metadata = sa.MetaData()
+    sa.Table(
+        "minimal",
+        metadata,
+        sa.Column("key", sa.Text, primary_key=True),
+        sa.Column("data", sa.LargeBinary, nullable=False),
+    )
+    metadata.create_all(engine)
+    yield engine
+    engine.dispose()
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _insert_raw(backend: SQLBlobBackend, key: str, **cols: object) -> None:
+    """Insert a row directly via SQL, bypassing backend.write()."""
+    with backend._engine.begin() as conn:
+        conn.execute(backend._table.insert().values(key=key, **cols))
+
+
 # ---------------------------------------------------------------------------
 # Construction & properties
 # ---------------------------------------------------------------------------
@@ -50,34 +83,39 @@ class TestConstruction:
     def test_url_creates_backend(self) -> None:
         b = SQLBlobBackend(url="sqlite:///:memory:")
         assert b.name == "sql-blob"
+        b.close()
 
     def test_engine_creates_backend(self) -> None:
         engine = sa.create_engine("sqlite:///:memory:")
         b = SQLBlobBackend(engine=engine)
         assert b.name == "sql-blob"
+        b.close()
+        engine.dispose()
+
+    @pytest.mark.parametrize(
+        ("kwargs", "match"),
+        [
+            ({"url": "sqlite:///:memory:", "table_name": ""}, "table_name"),
+            ({"url": "sqlite:///:memory:", "max_blob_size": 0}, "max_blob_size"),
+            ({"url": "sqlite:///:memory:", "max_blob_size": -1}, "max_blob_size"),
+            ({}, "Exactly one"),
+        ],
+        ids=["empty_table_name", "zero_blob_size", "negative_blob_size", "no_url_no_engine"],
+    )
+    def test_construction_invalid(self, kwargs: dict[str, object], match: str) -> None:
+        with pytest.raises(ValueError, match=match):
+            SQLBlobBackend(**kwargs)  # type: ignore[arg-type]
 
     def test_both_url_and_engine_raises(self) -> None:
         engine = sa.create_engine("sqlite:///:memory:")
         with pytest.raises(ValueError, match="Exactly one"):
             SQLBlobBackend(url="sqlite:///:memory:", engine=engine)
-
-    def test_neither_url_nor_engine_raises(self) -> None:
-        with pytest.raises(ValueError, match="Exactly one"):
-            SQLBlobBackend()
-
-    def test_empty_table_name_raises(self) -> None:
-        with pytest.raises(ValueError, match="table_name"):
-            SQLBlobBackend(url="sqlite:///:memory:", table_name="")
-
-    def test_invalid_max_blob_size_raises(self) -> None:
-        with pytest.raises(ValueError, match="max_blob_size"):
-            SQLBlobBackend(url="sqlite:///:memory:", max_blob_size=0)
-        with pytest.raises(ValueError, match="max_blob_size"):
-            SQLBlobBackend(url="sqlite:///:memory:", max_blob_size=-1)
+        engine.dispose()
 
     def test_custom_table_name(self) -> None:
         b = SQLBlobBackend(url="sqlite:///:memory:", table_name="my_table")
         assert "my_table" in repr(b)
+        b.close()
 
 
 @pytest.mark.spec("SQL-BLOB-002")
@@ -123,38 +161,24 @@ class TestExistingTable:
         b = SQLBlobBackend(engine=engine, table_name="custom", create_table=False)
         b.write("test.txt", b"hello")
         assert b.read_bytes("test.txt") == b"hello"
+        b.close()
+        engine.dispose()
 
-    def test_create_table_false_minimal_schema(self) -> None:
-        engine = sa.create_engine("sqlite:///:memory:")
-        metadata = sa.MetaData()
-        sa.Table(
-            "minimal",
-            metadata,
-            sa.Column("key", sa.Text, primary_key=True),
-            sa.Column("data", sa.LargeBinary, nullable=False),
-        )
-        metadata.create_all(engine)
-        b = SQLBlobBackend(engine=engine, table_name="minimal", create_table=False)
+    def test_create_table_false_minimal_schema(self, minimal_engine: sa.Engine) -> None:
+        b = SQLBlobBackend(engine=minimal_engine, table_name="minimal", create_table=False)
         b.write("test.txt", b"hello")
         assert b.read_bytes("test.txt") == b"hello"
+        b.close()
 
-    def test_create_table_false_minimal_modified_at_fallback(self) -> None:
-        """SQL-BLOB-012: missing modified_at → datetime.min."""
-        engine = sa.create_engine("sqlite:///:memory:")
-        metadata = sa.MetaData()
-        sa.Table(
-            "minimal",
-            metadata,
-            sa.Column("key", sa.Text, primary_key=True),
-            sa.Column("data", sa.LargeBinary, nullable=False),
-        )
-        metadata.create_all(engine)
-        b = SQLBlobBackend(engine=engine, table_name="minimal", create_table=False)
-        b.write("test.txt", b"hello")
-        info = b.get_file_info("test.txt")
+    def test_create_table_false_minimal_modified_at_fallback(self, minimal_engine: sa.Engine) -> None:
+        """SQL-BLOB-012: missing modified_at -> datetime.min."""
         from datetime import datetime, timezone
 
+        b = SQLBlobBackend(engine=minimal_engine, table_name="minimal", create_table=False)
+        b.write("test.txt", b"hello")
+        info = b.get_file_info("test.txt")
         assert info.modified_at == datetime.min.replace(tzinfo=timezone.utc)
+        b.close()
 
     def test_create_table_false_missing_columns_raises(self) -> None:
         engine = sa.create_engine("sqlite:///:memory:")
@@ -168,6 +192,7 @@ class TestExistingTable:
         metadata.create_all(engine)
         with pytest.raises(ValueError, match="'key' and 'data'"):
             SQLBlobBackend(engine=engine, table_name="bad", create_table=False)
+        engine.dispose()
 
 
 # ---------------------------------------------------------------------------
@@ -231,10 +256,13 @@ def test_write_binaryio(backend: SQLBlobBackend) -> None:
 @pytest.mark.spec("SQL-BLOB-022")
 def test_write_max_blob_size() -> None:
     b = SQLBlobBackend(url="sqlite:///:memory:", max_blob_size=10)
-    with pytest.raises(ValueError, match="max_blob_size"):
-        b.write("f.txt", b"x" * 11)
-    # Under limit should work
-    b.write("f.txt", b"x" * 10)
+    try:
+        with pytest.raises(ValueError, match="max_blob_size"):
+            b.write("f.txt", b"x" * 11)
+        # Under limit should work
+        b.write("f.txt", b"x" * 10)
+    finally:
+        b.close()
 
 
 # ---------------------------------------------------------------------------
@@ -604,6 +632,7 @@ def test_close_borrowed_engine_noop() -> None:
     # Engine still usable since it's borrowed
     with engine.connect() as conn:
         conn.execute(sa.text("SELECT 1"))
+    engine.dispose()
 
 
 @pytest.mark.spec("SQL-BLOB-042")
@@ -751,3 +780,121 @@ def test_concurrent_writes(tmp_path: object) -> None:
     for i in range(20):
         assert b.read_bytes(f"file_{i}.txt") == f"data_{i}".encode()
     b.close()
+
+
+# ---------------------------------------------------------------------------
+# Coverage: optional columns, digest, extra, glob_to_like
+# ---------------------------------------------------------------------------
+
+
+class TestOptionalColumns:
+    """Test metadata handling with optional columns (content_type, digest, extra)."""
+
+    def test_write_with_metadata_columns(self, backend: SQLBlobBackend) -> None:
+        """Direct SQL insert with content_type, digest, extra to exercise _row_to_file_info."""
+        _insert_raw(
+            backend,
+            "meta.txt",
+            data=b"hello",
+            size=5,
+            modified_at=1000000.0,
+            content_type="text/plain",
+            digest="sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+            extra='{"custom": "value"}',
+        )
+        info = backend.get_file_info("meta.txt")
+        assert info.content_type == "text/plain"
+        assert info.digest is not None
+        assert info.digest.algorithm == "sha256"
+        assert info.extra == {"custom": "value"}
+
+    def test_invalid_digest_format(self, backend: SQLBlobBackend) -> None:
+        """Invalid digest hex → digest is None (warning logged)."""
+        _insert_raw(
+            backend,
+            "bad_digest.txt",
+            data=b"data",
+            size=4,
+            modified_at=1000000.0,
+            digest="not-a-valid:!!!",
+        )
+        info = backend.get_file_info("bad_digest.txt")
+        assert info.digest is None
+
+    def test_invalid_extra_json(self, backend: SQLBlobBackend) -> None:
+        """Malformed JSON in extra column is silently ignored."""
+        _insert_raw(
+            backend,
+            "bad_extra.txt",
+            data=b"data",
+            size=4,
+            modified_at=1000000.0,
+            extra="not valid json{{{",
+        )
+        info = backend.get_file_info("bad_extra.txt")
+        assert info.extra == {}
+
+
+class TestMinimalSchemaFolderInfo:
+    """Test get_folder_info on minimal schema (no size, no modified_at columns)."""
+
+    def test_folder_info_minimal_schema(self, minimal_engine: sa.Engine) -> None:
+        b = SQLBlobBackend(engine=minimal_engine, table_name="minimal", create_table=False)
+        b.write("a/1.txt", b"one")
+        b.write("a/2.txt", b"two")
+        info = b.get_folder_info("a")
+        assert info.file_count == 2
+        assert info.total_size >= 0  # computed from length(data)
+        assert info.modified_at is None
+        b.close()
+
+
+class TestGlobToLike:
+    """Unit tests for the _glob_to_like static method."""
+
+    @pytest.mark.parametrize(
+        ("pattern", "expected"),
+        [
+            ("data/*.txt", "data/%.txt"),
+            ("file?.txt", "file_.txt"),
+            ("**/*.txt", "%/%.txt"),
+            ("*", None),
+            ("100%.txt", "100\\%.txt"),
+            ("file_name.txt", "file\\_name.txt"),
+            ("file[abc].txt", "file_.txt"),
+            ("path/to/file.txt", "path/to/file.txt"),
+        ],
+        ids=[
+            "simple_star",
+            "question_mark",
+            "double_star",
+            "bare_star_none",
+            "escape_percent",
+            "escape_underscore",
+            "char_class",
+            "literal_chars",
+        ],
+    )
+    def test_glob_to_like(self, pattern: str, expected: str | None) -> None:
+        assert SQLBlobBackend._glob_to_like(pattern) == expected
+
+    def test_unclosed_bracket(self) -> None:
+        result = SQLBlobBackend._glob_to_like("file[abc.txt")
+        assert "[" in result
+
+
+class TestHealthCheckFailure:
+    """Test check_health when the database is unreachable."""
+
+    def test_check_health_failure(self) -> None:
+        from unittest.mock import patch
+
+        from remote_store._errors import BackendUnavailable
+
+        b = SQLBlobBackend(url="sqlite:///:memory:")
+        with (
+            patch.object(b._engine, "connect", side_effect=sa.exc.SQLAlchemyError("mock failure")),
+            pytest.raises(BackendUnavailable, match="health check failed"),
+        ):
+            b.check_health()
+        b.close()

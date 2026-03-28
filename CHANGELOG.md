@@ -155,6 +155,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `examples/backends/s3_listing_strategies.py` demonstrates shallow, recursive,
   and filtered listing patterns.
 
+### Internal
+
+- **Test coverage and ResourceWarning fixes**: SQLBlob test fixtures now
+  dispose engines on teardown (ResourceWarning eliminated). ProxyStore
+  delegation coverage 68% → 100% (new `test_proxy.py`). SQLAlchemy backend
+  coverage 90% → 99% (`_glob_to_like`, optional columns, health check).
+  `/pr` skill now gates on `hatch run test-cov` (95% threshold) before
+  creating PRs.
+
 ## [0.19.0] - 2026-03-23
 
 ### Changed

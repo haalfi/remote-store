@@ -1,0 +1,248 @@
+"""Tests for ProxyStore — delegation and child propagation coverage."""
+
+from __future__ import annotations
+
+import pytest
+
+from remote_store import Store
+from remote_store._capabilities import Capability
+from remote_store._proxy import ProxyStore
+from remote_store.backends._local import LocalBackend
+
+pytestmark = pytest.mark.os_sensitive
+
+# ---------------------------------------------------------------------------
+# Minimal concrete subclass for testing
+# ---------------------------------------------------------------------------
+
+
+class _TestProxy(ProxyStore):
+    """Minimal ProxyStore subclass that implements _wrap_child."""
+
+    def _wrap_child(self, inner_child: Store) -> _TestProxy:
+        return _TestProxy(inner_child)
+
+
+@pytest.fixture
+def inner(tmp_path: object) -> Store:
+    backend = LocalBackend(str(tmp_path))
+    s = Store(backend)
+    s.write("hello.txt", b"hello world")
+    s.write("dir/sub.txt", b"sub content")
+    return s
+
+
+@pytest.fixture
+def proxy(inner: Store) -> _TestProxy:
+    return _TestProxy(inner)
+
+
+# ---------------------------------------------------------------------------
+# Construction & properties
+# ---------------------------------------------------------------------------
+
+
+class TestProxyConstruction:
+    def test_inner_property(self, proxy: _TestProxy, inner: Store) -> None:
+        assert proxy.inner is inner
+
+    def test_backend_is_shared(self, proxy: _TestProxy, inner: Store) -> None:
+        assert proxy._backend is inner._backend
+
+    def test_does_not_own_backend(self, proxy: _TestProxy) -> None:
+        assert proxy._owns_backend is False
+
+
+class TestWrapChild:
+    def test_base_wrap_child_raises(self, inner: Store) -> None:
+        base = ProxyStore.__new__(ProxyStore)
+        base._inner = inner
+        base._backend = inner._backend
+        base._root = inner._root
+        base._owns_backend = False
+        with pytest.raises(NotImplementedError):
+            base._wrap_child(inner)
+
+
+# ---------------------------------------------------------------------------
+# Delegation — reading
+# ---------------------------------------------------------------------------
+
+
+class TestReadDelegation:
+    def test_read(self, proxy: _TestProxy) -> None:
+        stream = proxy.read("hello.txt")
+        assert stream.read() == b"hello world"
+        stream.close()
+
+    def test_read_bytes(self, proxy: _TestProxy) -> None:
+        assert proxy.read_bytes("hello.txt") == b"hello world"
+
+    def test_read_seekable(self, proxy: _TestProxy) -> None:
+        stream = proxy.read_seekable("hello.txt")
+        assert stream.read() == b"hello world"
+        stream.seek(0)
+        assert stream.read() == b"hello world"
+        stream.close()
+
+    def test_read_text(self, proxy: _TestProxy) -> None:
+        assert proxy.read_text("hello.txt") == "hello world"
+
+
+# ---------------------------------------------------------------------------
+# Delegation — writing
+# ---------------------------------------------------------------------------
+
+
+class TestWriteDelegation:
+    def test_write(self, proxy: _TestProxy) -> None:
+        proxy.write("new.txt", b"new content")
+        assert proxy.read_bytes("new.txt") == b"new content"
+
+    def test_write_text(self, proxy: _TestProxy) -> None:
+        proxy.write_text("text.txt", "text content")
+        assert proxy.read_text("text.txt") == "text content"
+
+    def test_write_atomic(self, proxy: _TestProxy) -> None:
+        proxy.write_atomic("atomic.txt", b"atomic content")
+        assert proxy.read_bytes("atomic.txt") == b"atomic content"
+
+    def test_open_atomic(self, proxy: _TestProxy) -> None:
+        with proxy.open_atomic("opened.txt") as f:
+            f.write(b"opened content")
+        assert proxy.read_bytes("opened.txt") == b"opened content"
+
+
+# ---------------------------------------------------------------------------
+# Delegation — deleting
+# ---------------------------------------------------------------------------
+
+
+class TestDeleteDelegation:
+    def test_delete(self, proxy: _TestProxy) -> None:
+        proxy.write("del.txt", b"data")
+        proxy.delete("del.txt")
+        assert not proxy.exists("del.txt")
+
+    def test_delete_folder(self, proxy: _TestProxy) -> None:
+        proxy.delete_folder("dir", recursive=True)
+        assert not proxy.exists("dir/sub.txt")
+
+
+# ---------------------------------------------------------------------------
+# Delegation — listing and iteration
+# ---------------------------------------------------------------------------
+
+
+class TestListDelegation:
+    def test_list_files(self, proxy: _TestProxy) -> None:
+        files = list(proxy.list_files("", recursive=True))
+        assert len(files) >= 2
+
+    def test_list_folders(self, proxy: _TestProxy) -> None:
+        folders = list(proxy.list_folders(""))
+        names = {f.name for f in folders}
+        assert "dir" in names
+
+    def test_iter_children(self, proxy: _TestProxy) -> None:
+        children = list(proxy.iter_children(""))
+        assert len(children) >= 2
+
+    def test_glob(self, proxy: _TestProxy) -> None:
+        files = list(proxy.glob("**/*.txt"))
+        assert len(files) >= 2
+
+
+# ---------------------------------------------------------------------------
+# Delegation — file operations
+# ---------------------------------------------------------------------------
+
+
+class TestFileOpsDelegation:
+    def test_move(self, proxy: _TestProxy) -> None:
+        proxy.write("src.txt", b"data")
+        proxy.move("src.txt", "dst.txt")
+        assert proxy.exists("dst.txt")
+        assert not proxy.exists("src.txt")
+
+    def test_copy(self, proxy: _TestProxy) -> None:
+        proxy.copy("hello.txt", "copy.txt")
+        assert proxy.read_bytes("copy.txt") == b"hello world"
+
+
+# ---------------------------------------------------------------------------
+# Delegation — metadata
+# ---------------------------------------------------------------------------
+
+
+class TestMetadataDelegation:
+    def test_exists(self, proxy: _TestProxy) -> None:
+        assert proxy.exists("hello.txt") is True
+        assert proxy.exists("nope.txt") is False
+
+    def test_is_file(self, proxy: _TestProxy) -> None:
+        assert proxy.is_file("hello.txt") is True
+        assert proxy.is_file("dir") is False
+
+    def test_is_folder(self, proxy: _TestProxy) -> None:
+        assert proxy.is_folder("dir") is True
+
+    def test_get_file_info(self, proxy: _TestProxy) -> None:
+        info = proxy.get_file_info("hello.txt")
+        assert info.size == 11
+
+    def test_get_folder_info(self, proxy: _TestProxy) -> None:
+        info = proxy.get_folder_info("")
+        assert info.file_count >= 2
+
+
+# ---------------------------------------------------------------------------
+# Delegation — lifecycle
+# ---------------------------------------------------------------------------
+
+
+class TestLifecycleDelegation:
+    def test_ping(self, proxy: _TestProxy) -> None:
+        proxy.ping()  # should not raise
+
+    def test_close(self, proxy: _TestProxy) -> None:
+        proxy.close()  # should not raise
+
+
+# ---------------------------------------------------------------------------
+# Delegation — interop
+# ---------------------------------------------------------------------------
+
+
+class TestInteropDelegation:
+    def test_unwrap_delegates(self, proxy: _TestProxy) -> None:
+        from remote_store._errors import CapabilityNotSupported
+
+        with pytest.raises(CapabilityNotSupported):
+            proxy.unwrap(str)
+
+    def test_native_path(self, proxy: _TestProxy) -> None:
+        path = proxy.native_path("hello.txt")
+        assert isinstance(path, str)
+
+    def test_to_key(self, proxy: _TestProxy) -> None:
+        key = proxy.to_key("hello.txt")
+        assert key == "hello.txt"
+
+    def test_supports(self, proxy: _TestProxy) -> None:
+        assert proxy.supports(Capability.READ) is True
+
+
+# ---------------------------------------------------------------------------
+# child() propagation
+# ---------------------------------------------------------------------------
+
+
+class TestChildPropagation:
+    def test_child_returns_proxy(self, proxy: _TestProxy) -> None:
+        child = proxy.child("dir")
+        assert isinstance(child, _TestProxy)
+
+    def test_child_reads_inner_data(self, proxy: _TestProxy) -> None:
+        child = proxy.child("dir")
+        assert child.read_bytes("sub.txt") == b"sub content"
