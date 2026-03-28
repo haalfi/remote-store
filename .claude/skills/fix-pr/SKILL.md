@@ -11,7 +11,11 @@ PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
 
 Check out the PR's head branch. Rebase onto master if behind (`git rebase master`) — parallel PRs may have merged since this branch was created.
 
-Use MCP_DOCKER `pull_request_read` (`owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: $ARGUMENTS`).
+For all GitHub API calls in this skill (reading PR data, resolving threads, pushing):
+use `github-pat` if available, otherwise fall back to `MCP_DOCKER`.
+See CLAUDE.md § GitHub operations for details.
+
+Use `pull_request_read` with `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: $ARGUMENTS`.
 
 If `gh` CLI is authenticated, also fetch thread IDs for resolution in Step 4:
 
