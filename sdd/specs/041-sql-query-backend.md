@@ -75,7 +75,9 @@ Credential-bearing URL components are never included.
 
 **Invariant:** The `"sql-query"` backend type is registered in
 `_register_builtin_backends()` behind a `try/except ImportError` guard.
-The guard checks for both `sqlalchemy` and `pyarrow`.
+The registration guard checks for `sqlalchemy` (required for import).
+`pyarrow` is checked eagerly at construction time (`__init__`) with a
+clear error message directing users to install `remote-store[sql-query]`.
 
 ---
 

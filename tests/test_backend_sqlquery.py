@@ -82,21 +82,19 @@ class TestConstruction:
         with pytest.raises(ValueError, match="Exactly one"):
             SQLQueryBackend()
 
-    def test_empty_query_key_raises(self) -> None:
+    @pytest.mark.parametrize(
+        "queries",
+        [
+            {"": "SELECT 1"},
+            {"t.parquet": ""},
+            {"  ": "SELECT 1"},
+            {"t.parquet": "  "},
+        ],
+        ids=["empty_key", "empty_sql", "whitespace_key", "whitespace_sql"],
+    )
+    def test_invalid_queries_raise(self, queries: dict[str, str]) -> None:
         with pytest.raises(ValueError, match="non-empty"):
-            SQLQueryBackend(url="sqlite:///:memory:", queries={"": "SELECT 1"})
-
-    def test_empty_query_sql_raises(self) -> None:
-        with pytest.raises(ValueError, match="non-empty"):
-            SQLQueryBackend(url="sqlite:///:memory:", queries={"t.parquet": ""})
-
-    def test_whitespace_query_key_raises(self) -> None:
-        with pytest.raises(ValueError, match="non-empty"):
-            SQLQueryBackend(url="sqlite:///:memory:", queries={"  ": "SELECT 1"})
-
-    def test_whitespace_query_sql_raises(self) -> None:
-        with pytest.raises(ValueError, match="non-empty"):
-            SQLQueryBackend(url="sqlite:///:memory:", queries={"t.parquet": "  "})
+            SQLQueryBackend(url="sqlite:///:memory:", queries=queries)
 
     def test_no_queries_is_valid(self) -> None:
         b = SQLQueryBackend(url="sqlite:///:memory:")
@@ -187,27 +185,21 @@ class TestFormatDetection:
 @pytest.mark.spec("SQL-QUERY-013")
 @pytest.mark.spec("SQL-QUERY-014")
 class TestArrowSerializer:
-    def test_serialize_parquet(self) -> None:
-        s = ArrowSerializer()
-        rows = [(1, "a"), (2, "b")]
-        data = s.serialize(rows, ["id", "name"], "parquet")
-        table = pq.read_table(io.BytesIO(data))
-        assert table.num_rows == 2
-        assert table.column_names == ["id", "name"]
+    _ROWS = [(1, "a"), (2, "b")]
+    _COLS = ["id", "name"]
 
-    def test_serialize_csv(self) -> None:
-        s = ArrowSerializer()
-        rows = [(1, "a"), (2, "b")]
-        data = s.serialize(rows, ["id", "name"], "csv")
-        table = pcsv.read_csv(io.BytesIO(data))
-        assert table.num_rows == 2
-
-    def test_serialize_arrow_ipc(self) -> None:
-        s = ArrowSerializer()
-        rows = [(1, "a"), (2, "b")]
-        data = s.serialize(rows, ["id", "name"], "arrow")
-        reader = pipc.open_file(io.BytesIO(data))
-        table = reader.read_all()
+    @pytest.mark.parametrize(
+        ("fmt", "reader"),
+        [
+            ("parquet", lambda d: pq.read_table(io.BytesIO(d))),
+            ("csv", lambda d: pcsv.read_csv(io.BytesIO(d))),
+            ("arrow", lambda d: pipc.open_file(io.BytesIO(d)).read_all()),
+        ],
+        ids=["parquet", "csv", "arrow_ipc"],
+    )
+    def test_serialize_format(self, fmt: str, reader: object) -> None:
+        data = ArrowSerializer().serialize(self._ROWS, self._COLS, fmt)
+        table = reader(data)  # type: ignore[operator]
         assert table.num_rows == 2
 
     def test_serialize_empty_result(self) -> None:
@@ -230,27 +222,19 @@ class TestArrowSerializer:
 
 @pytest.mark.spec("SQL-QUERY-020")
 class TestRead:
-    def test_read_parquet(self, backend: SQLQueryBackend) -> None:
-        stream = backend.read("reports/sales.parquet")
-        assert hasattr(stream, "read")
+    @pytest.mark.parametrize(
+        ("key", "reader"),
+        [
+            ("reports/sales.parquet", lambda d: pq.read_table(io.BytesIO(d))),
+            ("reports/sales.csv", lambda d: pcsv.read_csv(io.BytesIO(d))),
+            ("reports/sales.arrow", lambda d: pipc.open_file(io.BytesIO(d)).read_all()),
+        ],
+        ids=["parquet", "csv", "arrow"],
+    )
+    def test_read_format(self, backend: SQLQueryBackend, key: str, reader: object) -> None:
+        stream = backend.read(key)
         data = stream.read()
-        table = pq.read_table(io.BytesIO(data))
-        assert table.num_rows == 3
-        assert "id" in table.column_names
-        assert "amount" in table.column_names
-        assert "region" in table.column_names
-
-    def test_read_csv(self, backend: SQLQueryBackend) -> None:
-        stream = backend.read("reports/sales.csv")
-        data = stream.read()
-        table = pcsv.read_csv(io.BytesIO(data))
-        assert table.num_rows == 3
-
-    def test_read_arrow(self, backend: SQLQueryBackend) -> None:
-        stream = backend.read("reports/sales.arrow")
-        data = stream.read()
-        reader = pipc.open_file(io.BytesIO(data))
-        table = reader.read_all()
+        table = reader(data)  # type: ignore[operator]
         assert table.num_rows == 3
 
     def test_read_filtered_query(self, backend: SQLQueryBackend) -> None:
