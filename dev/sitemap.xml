@@ -185,6 +185,10 @@
          <lastmod>2026-03-28</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/api/backends/sql-blob/</loc>
+         <lastmod>2026-03-28</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/</loc>
          <lastmod>2026-03-28</lastmod>
     </url>
@@ -277,6 +281,10 @@
          <lastmod>2026-03-28</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/backends/sql-blob/</loc>
+         <lastmod>2026-03-28</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/design/</loc>
          <lastmod>2026-03-28</lastmod>
     </url>
@@ -358,6 +366,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0017-seekable-read-on-store-api/</loc>
+         <lastmod>2026-03-28</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0018-sqlalchemy-two-class-architecture/</loc>
          <lastmod>2026-03-28</lastmod>
     </url>
     <url>
@@ -641,6 +653,10 @@
          <lastmod>2026-03-28</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/specs/040-sql-blob-backend/</loc>
+         <lastmod>2026-03-28</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/examples/</loc>
          <lastmod>2026-03-28</lastmod>
     </url>
@@ -742,6 +758,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/sftp-backend/</loc>
+         <lastmod>2026-03-28</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/examples/sql-blob-backend/</loc>
          <lastmod>2026-03-28</lastmod>
     </url>
     <url>
