@@ -131,10 +131,9 @@ documents SQL-specific behavior only.
 
 **Invariant:** `read(path)` returns a seekable `BinaryIO`.
 
-**SQLite 3.11+ optimization:** Uses `connection.connection.blobopen()` wrapped
-in a `BufferedReader` for streaming reads without full materialization.
-Falls back to `SELECT data FROM t WHERE key = :key` → `BytesIO` on Python
-3.10 or non-SQLite dialects.
+**Implementation:** `SELECT data FROM t WHERE key = :key` → wraps the result
+in `BufferedReader(BytesIO(data))`. Full materialization on every read.
+Raises `NotFound` if no row matches.
 
 ### SQL-BLOB-021: read_bytes()
 

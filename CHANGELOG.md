@@ -38,8 +38,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **SQLBlobBackend — SQL key-value blob storage** (ID-119 v1): New
   `SQLBlobBackend` backed by SQLAlchemy. Uses a SQL table as key-value store
   with full Backend contract (all 10 capabilities). SQLite optimizations:
-  WAL mode, `PRAGMA synchronous=NORMAL`, `blobopen()` streaming on Python
-  3.11+. Supports owned or borrowed engines, custom table names, existing
+  WAL mode, `PRAGMA synchronous=NORMAL`. Supports owned or borrowed
+  engines, custom table names, existing
   table introspection (`create_table=False`), and `max_blob_size` guard.
   Optional extra: `pip install remote-store[sql]`. Spec 040.
 
