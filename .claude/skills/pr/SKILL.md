@@ -26,7 +26,7 @@ Repo: `haalfi/remote-store`.
    - [ ] ...
    ```
 
-4. **Create PR** using MCP_DOCKER `create_pull_request`:
+4. **Create PR** using `create_pull_request` (prefer `github-pat`, fall back to `MCP_DOCKER`):
    - `owner: "haalfi"`, `repo: "remote-store"`
    - `head:` current branch, `base:` master (or `$ARGUMENTS`)
    - `title:` and `body:` from step 3

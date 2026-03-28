@@ -68,8 +68,10 @@ See `sdd/DESIGN.md` for the full code style rules. Key points:
 
 ## GitHub operations
 
-**Primary:** MCP_DOCKER tools (work without GITHUB_TOKEN, including on claude.ai/code).
-**Fallback:** `gh` CLI — only needed for thread resolution (`gh api graphql`), which MCP can't do.
+**Primary:** `github-pat` MCP server when available (local, has write access).
+**Fallback:** MCP_DOCKER (read-only locally due to Docker OAuth scope; may have write access on claude.ai/code).
+**Last resort:** `gh` CLI — needed for thread resolution (`gh api graphql`), which MCP can't do.
+Skills use "prefer `github-pat`, fall back to `MCP_DOCKER`" pattern so they work in both environments.
 
 PR workflows are codified as skills: `/pr`, `/review-pr`, `/fix-pr`. Use those instead of ad-hoc `gh` commands.
 

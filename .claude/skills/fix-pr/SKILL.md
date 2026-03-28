@@ -11,7 +11,7 @@ PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
 
 Check out the PR's head branch. Rebase onto master if behind (`git rebase master`) — parallel PRs may have merged since this branch was created.
 
-Use MCP_DOCKER `pull_request_read` (`owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: $ARGUMENTS`).
+Use `pull_request_read` (prefer `github-pat`, fall back to `MCP_DOCKER`) with `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: $ARGUMENTS`.
 
 If `gh` CLI is authenticated, also fetch thread IDs for resolution in Step 4:
 
