@@ -44,6 +44,14 @@ _ALL_CAPABILITIES = CapabilitySet(set(Capability))
 log = logging.getLogger(__name__)
 
 
+def _set_sqlite_pragmas(dbapi_conn: Any, _connection_record: Any) -> None:
+    """Set SQLite PRAGMAs on every new raw DBAPI connection."""
+    cursor = dbapi_conn.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.close()
+
+
 # ---------------------------------------------------------------------------
 # Base class (shared with future SQLQueryBackend)
 # ---------------------------------------------------------------------------
@@ -75,14 +83,9 @@ class _SQLAlchemyBaseBackend(Backend, abc.ABC):
             self._configure_sqlite()
 
     def _configure_sqlite(self) -> None:
-        """Set SQLite PRAGMAs on every new connection."""
-
-        @event.listens_for(self._engine, "connect")
-        def _set_sqlite_pragmas(dbapi_conn: Any, _connection_record: Any) -> None:
-            cursor = dbapi_conn.cursor()
-            cursor.execute("PRAGMA journal_mode=WAL")
-            cursor.execute("PRAGMA synchronous=NORMAL")
-            cursor.close()
+        """Set SQLite PRAGMAs on every new connection (idempotent)."""
+        if not event.contains(self._engine, "connect", _set_sqlite_pragmas):
+            event.listen(self._engine, "connect", _set_sqlite_pragmas)
 
     def check_health(self) -> None:
         """Verify database connectivity via ``SELECT 1``."""
@@ -505,10 +508,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         with self._map_errors(src), self._engine.begin() as conn:
             t = self._table
 
-            # Read source
-            cols = self._select_info_columns()
-            src_row = conn.execute(sa.select(*cols).where(t.c.key == src)).first()
-            if src_row is None:
+            # Check source exists
+            if conn.execute(sa.select(sa.literal(1)).where(t.c.key == src)).first() is None:
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
 
             # Check destination
@@ -516,24 +517,34 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             if dst_exists and not overwrite:
                 raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
 
-            # Build values from source row
-            src_data = conn.execute(sa.select(t.c.data).where(t.c.key == src)).first()
-            assert src_data is not None
-            values: dict[str, Any] = {"key": dst, "data": src_data[0]}
-            if "size" in self._optional_columns:
-                values["size"] = src_row[1] if len(src_row) > 1 else len(src_data[0])
-            if "modified_at" in self._optional_columns:
-                values["modified_at"] = now
-            if "content_type" in self._optional_columns:
-                values["content_type"] = self._row_field(src_row, "content_type")
-            if "digest" in self._optional_columns:
-                values["digest"] = self._row_field(src_row, "digest")
-            if "extra" in self._optional_columns:
-                values["extra"] = self._row_field(src_row, "extra")
-
             if dst_exists:
                 conn.execute(t.delete().where(t.c.key == dst))
-            conn.execute(t.insert().values(**values))
+
+            # Single INSERT ... SELECT — no blob data transferred through Python
+            col_names: list[str] = ["key", "data"]
+            select_cols: list[sa.ColumnElement[Any]] = [sa.literal(dst).label("key"), t.c.data]
+            if "size" in self._optional_columns:
+                col_names.append("size")
+                select_cols.append(t.c.size)
+            if "modified_at" in self._optional_columns:
+                col_names.append("modified_at")
+                select_cols.append(sa.literal(now).label("modified_at"))
+            if "content_type" in self._optional_columns:
+                col_names.append("content_type")
+                select_cols.append(t.c.content_type)
+            if "digest" in self._optional_columns:
+                col_names.append("digest")
+                select_cols.append(t.c.digest)
+            if "extra" in self._optional_columns:
+                col_names.append("extra")
+                select_cols.append(t.c.extra)
+
+            conn.execute(
+                t.insert().from_select(
+                    col_names,
+                    sa.select(*select_cols).where(t.c.key == src),
+                )
+            )
 
     # endregion
 
@@ -542,14 +553,26 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         cols = self._select_info_columns()
         with self._map_errors(), self._engine.connect() as conn:
-            rows = conn.execute(sa.select(*cols)).fetchall()
+            t = self._table
+            query = sa.select(*cols)
 
-        results: list[FileInfo] = []
-        for row in rows:
-            key = row[0]
-            if fnmatch.fnmatch(key, pattern):
-                results.append(self._row_to_file_info(row))
-        yield from results
+            if self._is_sqlite:
+                # SQLite supports native GLOB (case-sensitive, * = any, ? = single)
+                query = query.where(t.c.key.op("GLOB")(pattern))
+                rows = conn.execute(query).fetchall()
+                yield from (self._row_to_file_info(row) for row in rows)
+            else:
+                # Other dialects: convert glob to LIKE for SQL-side filtering,
+                # then refine with fnmatch in Python for edge cases.
+                like_pattern = self._glob_to_like(pattern)
+                if like_pattern is not None:
+                    query = query.where(t.c.key.like(like_pattern))
+                rows = conn.execute(query).fetchall()
+                yield from (
+                    self._row_to_file_info(row)
+                    for row in rows
+                    if fnmatch.fnmatch(row[0], pattern)
+                )
 
     # endregion
 
@@ -597,7 +620,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         if "modified_at" in self._optional_columns:
             cols.append(t.c.modified_at)
         else:
-            cols.append(sa.literal(0.0).label("modified_at"))
+            cols.append(sa.literal(None).label("modified_at"))
 
         if "content_type" in self._optional_columns:
             cols.append(t.c.content_type)
@@ -612,8 +635,12 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         """Convert a database row to FileInfo."""
         key = row[0]
         size = row[1] or 0
-        modified_ts = row[2] or 0.0
-        modified_at = datetime.fromtimestamp(modified_ts, tz=timezone.utc)
+        modified_ts = row[2]
+        modified_at = (
+            datetime.fromtimestamp(modified_ts, tz=timezone.utc)
+            if modified_ts is not None
+            else datetime.min.replace(tzinfo=timezone.utc)
+        )
 
         content_type: str | None = None
         digest_obj: ContentDigest | None = None
@@ -646,6 +673,45 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             digest=digest_obj,
             extra=extra,
         )
+
+    @staticmethod
+    def _glob_to_like(pattern: str) -> str | None:
+        """Convert a glob pattern to a SQL LIKE pattern.
+
+        Returns ``None`` when the pattern cannot be meaningfully narrowed
+        (e.g. a bare ``*``), signalling the caller to skip the WHERE clause.
+        """
+        like: list[str] = []
+        i = 0
+        while i < len(pattern):
+            ch = pattern[i]
+            if ch == "*":
+                # Collapse consecutive * (including **)
+                while i < len(pattern) and pattern[i] == "*":
+                    i += 1
+                like.append("%")
+            elif ch == "?":
+                like.append("_")
+                i += 1
+            elif ch in ("%", "_"):
+                # Escape SQL LIKE metacharacters that appear literally
+                like.append("\\" + ch)
+                i += 1
+            elif ch == "[":
+                # Character classes — not convertible to LIKE; use wildcard
+                end = pattern.find("]", i + 1)
+                if end == -1:
+                    like.append(ch)
+                else:
+                    like.append("_")
+                    i = end + 1
+                    continue
+                i += 1
+            else:
+                like.append(ch)
+                i += 1
+        result = "".join(like)
+        return None if result == "%" else result
 
     def _row_field(self, row: Any, field_name: str) -> Any:
         """Extract a field value from an info row by column position."""

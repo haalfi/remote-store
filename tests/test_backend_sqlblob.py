@@ -138,6 +138,24 @@ class TestExistingTable:
         b.write("test.txt", b"hello")
         assert b.read_bytes("test.txt") == b"hello"
 
+    def test_create_table_false_minimal_modified_at_fallback(self) -> None:
+        """SQL-BLOB-012: missing modified_at → datetime.min."""
+        engine = sa.create_engine("sqlite:///:memory:")
+        metadata = sa.MetaData()
+        sa.Table(
+            "minimal",
+            metadata,
+            sa.Column("key", sa.Text, primary_key=True),
+            sa.Column("data", sa.LargeBinary, nullable=False),
+        )
+        metadata.create_all(engine)
+        b = SQLBlobBackend(engine=engine, table_name="minimal", create_table=False)
+        b.write("test.txt", b"hello")
+        info = b.get_file_info("test.txt")
+        from datetime import datetime, timezone
+
+        assert info.modified_at == datetime.min.replace(tzinfo=timezone.utc)
+
     def test_create_table_false_missing_columns_raises(self) -> None:
         engine = sa.create_engine("sqlite:///:memory:")
         metadata = sa.MetaData()
@@ -517,14 +535,14 @@ class TestGlob:
     def test_star(self, populated: SQLBlobBackend) -> None:
         files = list(populated.glob("a/*.txt"))
         names = {f.name for f in files}
-        # fnmatch treats * as matching everything including /
+        # SQLite GLOB * matches any chars including /
         assert names == {"1.txt", "2.txt", "deep.txt"}
 
     def test_double_star(self, populated: SQLBlobBackend) -> None:
         files = list(populated.glob("a/**"))
         names = {f.name for f in files}
-        # fnmatch.fnmatch doesn't handle ** like pathlib; it matches any chars
         assert "1.txt" in names
+        assert "deep.txt" in names
 
     def test_question_mark(self, populated: SQLBlobBackend) -> None:
         files = list(populated.glob("a/?.txt"))
@@ -533,6 +551,20 @@ class TestGlob:
 
     def test_no_match(self, populated: SQLBlobBackend) -> None:
         files = list(populated.glob("z/*.nope"))
+        assert files == []
+
+    def test_glob_sql_side_filtering(self, populated: SQLBlobBackend) -> None:
+        """Verify SQL-side filtering returns correct results for various patterns."""
+        # Exact prefix with wildcard
+        files = list(populated.glob("c/*"))
+        assert {f.name for f in files} == {"3.txt"}
+
+        # Deep recursive pattern
+        files = list(populated.glob("a/b/*"))
+        assert {f.name for f in files} == {"deep.txt"}
+
+        # Pattern that matches nothing
+        files = list(populated.glob("nonexistent/*"))
         assert files == []
 
 
