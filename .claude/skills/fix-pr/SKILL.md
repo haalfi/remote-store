@@ -46,7 +46,15 @@ No gh? Skip thread IDs — tell user thread resolution will be manual.
 
 ## Step 2: Triage
 
-Build work list from unresolved comments. Skip resolved, outdated, and bot comments. For each actionable item note: file, line, category (Bug/Spec/Test/Consistency/Ripple/Security), what to change. List unclear/debatable comments as "Skipped" with reason.
+Build work list from **all three sources**:
+
+1. **Inline threads** (`get_review_comments`): skip resolved, outdated, and bot comments.
+2. **Review bodies** (`get_reviews`): extract actionable items (bugs, spec gaps, test gaps, dead code, etc.) from the review summary text. These have no resolution state — always scan them.
+3. **General comments** (`get_comments`): extract actionable items. Also no resolution state.
+
+For each actionable item note: file, line, category (Bug/Spec/Test/Consistency/Ripple/Security), what to change.
+
+**Be critical.** Verify each claim against the code — comments can be wrong or already fixed. Skip bad suggestions with a reason, don't blindly apply them.
 
 ## Step 3: Fix
 
