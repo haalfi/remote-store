@@ -625,6 +625,68 @@ def test_sqlite_wal_mode(tmp_path: object) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Registration
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("SQL-BLOB-005")
+def test_registration() -> None:
+    """sql-blob is registered in the backend registry."""
+    from remote_store._registry import _BACKEND_FACTORIES, _register_builtin_backends
+
+    _register_builtin_backends()
+    assert _BACKEND_FACTORIES.get("sql-blob") is SQLBlobBackend
+
+
+# ---------------------------------------------------------------------------
+# Schema
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("SQL-BLOB-010")
+def test_default_schema(backend: SQLBlobBackend) -> None:
+    """Default table has all expected columns."""
+    col_names = {c.name for c in backend._table.columns}
+    assert col_names == {"key", "data", "size", "modified_at", "content_type", "digest", "extra"}
+
+
+# ---------------------------------------------------------------------------
+# Error mapping
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("SQL-BLOB-050")
+class TestErrorMapping:
+    def test_integrity_error_raises_already_exists(self, backend: SQLBlobBackend) -> None:
+        backend.write("dup.txt", b"first")
+        with pytest.raises(AlreadyExists):
+            backend.write("dup.txt", b"second")
+
+    def test_not_found_on_missing_read(self, backend: SQLBlobBackend) -> None:
+        with pytest.raises(NotFound):
+            backend.read_bytes("missing.txt")
+
+    def test_not_found_on_missing_delete(self, backend: SQLBlobBackend) -> None:
+        with pytest.raises(NotFound):
+            backend.delete("missing.txt")
+
+
+# ---------------------------------------------------------------------------
+# Prefix matching
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+def test_prefix_matching_no_false_positives(backend: SQLBlobBackend) -> None:
+    """Prefix 'data/' must not match 'dataset/file.txt'."""
+    backend.write("data/file.txt", b"yes")
+    backend.write("dataset/file.txt", b"no")
+    files = list(backend.list_files("data"))
+    assert {f.name for f in files} == {"file.txt"}
+    assert not backend.is_folder("dat")
+
+
+# ---------------------------------------------------------------------------
 # Path validation
 # ---------------------------------------------------------------------------
 
@@ -661,6 +723,9 @@ def test_concurrent_writes(tmp_path: object) -> None:
     """Multiple threads writing different keys concurrently."""
     db_path = pathlib.Path(str(tmp_path)) / "concurrent.db"
     b = SQLBlobBackend(url=f"sqlite:///{db_path}")
+    engine = b.unwrap(type(b._engine))
+    with engine.connect() as conn:
+        assert conn.execute(sa.text("PRAGMA journal_mode")).scalar() == "wal"
     errors: list[Exception] = []
 
     def writer(i: int) -> None:

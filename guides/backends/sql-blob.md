@@ -99,7 +99,7 @@ Set `create_table=False` to use a pre-existing table. Minimum required columns: 
 All 10 capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `GLOB`, `SEEKABLE_READ`.
 
 - `write_atomic()` delegates to `write()` — single SQL statements are inherently atomic.
-- `glob()` uses `fnmatch` pattern matching against stored keys.
+- `glob()` uses SQL-side narrowing (SQLite `GLOB` or `LIKE`) then client-side regex to enforce standard glob semantics (GLOB-014).
 
 ## SQLite Optimizations
 
@@ -108,7 +108,7 @@ When using SQLite, the backend automatically:
 - Enables **WAL mode** (`PRAGMA journal_mode=WAL`) for better concurrent read performance.
 - Sets **`PRAGMA synchronous=NORMAL`** for improved write throughput.
 
-These are set on every new connection via SQLAlchemy event listeners.
+These are set on every new connection via SQLAlchemy event listeners. If you pass a shared engine that already has `pool_events.connect` listeners, they will coexist — the backend guards against duplicate registration.
 
 ## Folder Semantics
 

@@ -651,8 +651,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             idx += 1
             if digest_raw and ":" in digest_raw:
                 algo, val = digest_raw.split(":", 1)
-                with contextlib.suppress(ValueError):
+                try:
                     digest_obj = ContentDigest(algorithm=algo, value=val)
+                except ValueError:
+                    log.warning("Invalid digest %r for key %r", digest_raw, key)
         if "extra" in self._optional_columns:
             extra_raw = row[idx] if idx < len(row) else None
             if extra_raw:
