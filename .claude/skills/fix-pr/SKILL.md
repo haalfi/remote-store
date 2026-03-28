@@ -16,7 +16,10 @@ use `github-pat` first (read+write), fall back to `MCP_DOCKER` for reads only.
 When both servers expose the same tool name, always prefer `github-pat`.
 See CLAUDE.md § GitHub operations for the full priority chain.
 
-Use `pull_request_read` with `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: $ARGUMENTS`.
+Fetch **all three** comment types using `pull_request_read` with `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: $ARGUMENTS`:
+1. `get_review_comments` — inline thread comments on specific lines
+2. `get_comments` — general PR comments (not attached to code)
+3. `get_reviews` — review body comments (summary text submitted with a review)
 
 If `gh` CLI is authenticated, also fetch thread IDs for resolution in Step 4:
 
