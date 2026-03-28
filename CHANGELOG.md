@@ -6,6 +6,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **`SQLQueryBackend` — read-only SQL query materializer** (ID-119 v2): Maps
+  path keys to SQL queries and serializes results to Parquet, CSV, or Arrow
+  IPC based on the key's file extension. Explicit query mappings via `queries`
+  dict; `strict=True` default (view/convention discovery deferred).
+  `ResultSerializer` protocol with built-in `ArrowSerializer`. New optional
+  extra: `pip install remote-store[sql-query]`. Spec 041.
+
 ### Fixed
 
 - **Replaced mypy `ignore_missing_imports` overrides with proper type stubs**

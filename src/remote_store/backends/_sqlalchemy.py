@@ -1,4 +1,4 @@
-"""SQLAlchemy blob backend — key-value store in any SQL database."""
+"""SQLAlchemy backends — blob store and query materializer."""
 
 from __future__ import annotations
 
@@ -8,13 +8,14 @@ import io
 import json
 import logging
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, cast, runtime_checkable
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
+    CapabilityNotSupported,
     DirectoryNotEmpty,
     InvalidPath,
     NotFound,
@@ -25,7 +26,7 @@ from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInf
 from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Sequence
 
     from remote_store._types import WritableContent
 
@@ -34,12 +35,15 @@ try:
     from sqlalchemy import Engine, event
 except ImportError as _imp_err:  # pragma: no cover
     raise ImportError(
-        "SQLBlobBackend requires the 'sqlalchemy' package. Install it with: pip install remote-store[sql]"
+        "SQLAlchemy backends require the 'sqlalchemy' package. Install with: pip install remote-store[sql]"
     ) from _imp_err
 
 T = TypeVar("T")
 
 _ALL_CAPABILITIES = CapabilitySet(set(Capability))
+_QUERY_CAPABILITIES = CapabilitySet(
+    {Capability.READ, Capability.LIST, Capability.METADATA, Capability.GLOB, Capability.SEEKABLE_READ}
+)
 
 log = logging.getLogger(__name__)
 
@@ -119,6 +123,88 @@ class _SQLAlchemyBaseBackend(Backend, abc.ABC):
             raise BackendUnavailable(f"Database operation failed: {exc}", path=path, backend=self.name) from exc
         except sa.exc.SQLAlchemyError as exc:
             raise RemoteStoreError(f"Database error: {exc}", path=path, backend=self.name) from exc
+
+    def _validate_path(self, path: str, *, allow_empty: bool = False) -> list[str]:
+        """Validate and split a path. Returns segments."""
+        if "\0" in path:
+            raise InvalidPath("Path contains null byte", path=path, backend=self.name)
+        if path.startswith("/"):
+            raise InvalidPath("Absolute paths are not allowed", path=path, backend=self.name)
+
+        segments: list[str] = []
+        for seg in path.split("/"):
+            if seg == "" or seg == ".":
+                continue
+            if seg == "..":
+                raise InvalidPath("Path contains '..' segment", path=path, backend=self.name)
+            segments.append(seg)
+
+        if not segments and not allow_empty:
+            raise InvalidPath("Path must not be empty for file operations", path=path, backend=self.name)
+
+        return segments
+
+
+# ---------------------------------------------------------------------------
+# ResultSerializer protocol
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class ResultSerializer(Protocol):
+    """Converts SQL result rows to bytes in a specific format."""
+
+    def serialize(self, rows: Sequence[Any], columns: Sequence[str], format: str) -> bytes:
+        """Serialize rows with given column names to the specified format.
+
+        Args:
+            rows: Sequence of row tuples from SQL execution.
+            columns: Column name list.
+            format: Target format (``"parquet"``, ``"csv"``, ``"arrow"``).
+
+        Returns:
+            Serialized bytes.
+        """
+        ...
+
+
+class ArrowSerializer:
+    """Serializes SQL result sets via PyArrow.
+
+    Converts rows + columns to a ``pyarrow.Table``, then writes to the
+    requested format. Imports ``pyarrow`` lazily so that ``SQLBlobBackend``
+    remains importable without it.
+    """
+
+    def serialize(self, rows: Sequence[Any], columns: Sequence[str], format: str) -> bytes:
+        """Serialize rows to Parquet, CSV, or Arrow IPC."""
+        import pyarrow as pa  # type: ignore[import-untyped]  # noqa: PLC0415
+        import pyarrow.csv as pcsv  # type: ignore[import-untyped]  # noqa: PLC0415
+        import pyarrow.ipc as pipc  # type: ignore[import-untyped]  # noqa: PLC0415
+        import pyarrow.parquet as pq  # type: ignore[import-untyped]  # noqa: PLC0415
+
+        # Build Arrow table from rows
+        if rows:
+            col_arrays = list(zip(*rows, strict=True))
+            arrays = [pa.array(col) for col in col_arrays]
+        else:
+            arrays = [pa.array([], type=pa.string()) for _ in columns]
+        table = pa.table(dict(zip(columns, arrays, strict=True)))
+
+        buf = io.BytesIO()
+        if format == "parquet":
+            pq.write_table(table, buf)
+        elif format == "csv":
+            pcsv.write_csv(table, buf)
+        elif format in ("arrow", "ipc"):
+            writer = pipc.new_file(buf, table.schema)
+            writer.write_table(table)
+            writer.close()
+        else:
+            msg = f"Unsupported serialization format: {format!r}"
+            raise ValueError(msg)
+
+        return buf.getvalue()
 
 
 # ---------------------------------------------------------------------------
@@ -585,27 +671,6 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
     # region: private helpers
 
-    @staticmethod
-    def _validate_path(path: str, *, allow_empty: bool = False) -> list[str]:
-        """Validate and split a path. Returns segments."""
-        if "\0" in path:
-            raise InvalidPath("Path contains null byte", path=path, backend="sql-blob")
-        if path.startswith("/"):
-            raise InvalidPath("Absolute paths are not allowed", path=path, backend="sql-blob")
-
-        segments: list[str] = []
-        for seg in path.split("/"):
-            if seg == "" or seg == ".":
-                continue
-            if seg == "..":
-                raise InvalidPath("Path contains '..' segment", path=path, backend="sql-blob")
-            segments.append(seg)
-
-        if not segments and not allow_empty:
-            raise InvalidPath("Path must not be empty for file operations", path=path, backend="sql-blob")
-
-        return segments
-
     def _select_info_columns(self) -> list[sa.ColumnElement[Any]]:
         """Return the columns to select for building FileInfo."""
         t = self._table
@@ -713,5 +778,301 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 i += 1
         result = "".join(like)
         return None if result == "%" else result
+
+    # endregion
+
+
+# ---------------------------------------------------------------------------
+# SQLQueryBackend
+# ---------------------------------------------------------------------------
+
+_SUPPORTED_FORMATS: dict[str, str] = {
+    ".parquet": "parquet",
+    ".csv": "csv",
+    ".arrow": "arrow",
+    ".ipc": "arrow",
+}
+
+_EPOCH_MIN = datetime.min.replace(tzinfo=timezone.utc)
+
+
+class SQLQueryBackend(_SQLAlchemyBaseBackend):
+    """Read-only SQL query materializer implementing a subset of the Backend contract.
+
+    Maps path keys to SQL queries. On ``read()``, executes the query and
+    serializes the result set to the format implied by the key's file
+    extension (Parquet, CSV, or Arrow IPC).
+
+    Capabilities: ``READ``, ``LIST``, ``METADATA``, ``GLOB``,
+    ``SEEKABLE_READ``.
+    """
+
+    def __init__(
+        self,
+        url: str | None = None,
+        *,
+        engine: Engine | None = None,
+        queries: dict[str, str] | None = None,
+        strict: bool = True,
+        serializer: ResultSerializer | None = None,
+    ) -> None:
+        if not strict:
+            msg = "View/convention discovery (strict=False) is not yet implemented"
+            raise NotImplementedError(msg)
+
+        super().__init__(url=url, engine=engine)
+
+        self._queries: dict[str, str] = {}
+        if queries:
+            for key, sql in queries.items():
+                if not key or not key.strip():
+                    msg = "Query key must be a non-empty string"
+                    raise ValueError(msg)
+                if not sql or not sql.strip():
+                    msg = f"SQL query for key {key!r} must be a non-empty string"
+                    raise ValueError(msg)
+                self._queries[key] = sql
+
+        self._strict = strict
+        self._serializer: ResultSerializer = serializer or ArrowSerializer()
+
+    # region: properties
+
+    @property
+    def name(self) -> str:
+        return "sql-query"
+
+    @property
+    def capabilities(self) -> CapabilitySet:
+        return _QUERY_CAPABILITIES
+
+    # endregion
+
+    # region: key resolution
+
+    def _resolve_key(self, path: str) -> str:
+        """Resolve a path to a SQL query string."""
+        if path in self._queries:
+            return self._queries[path]
+        raise NotFound(f"No query registered for key: {path}", path=path, backend=self.name)
+
+    @staticmethod
+    def _detect_format(path: str) -> str:
+        """Detect serialization format from file extension."""
+        dot_idx = path.rfind(".")
+        ext = "" if dot_idx == -1 else path[dot_idx:].lower()
+        fmt = _SUPPORTED_FORMATS.get(ext)
+        if fmt is None:
+            supported = ", ".join(sorted(_SUPPORTED_FORMATS.keys()))
+            raise InvalidPath(
+                f"Unsupported format {ext!r} for key {path!r}. Supported: {supported}",
+                path=path,
+                backend="sql-query",
+            )
+        return fmt
+
+    # endregion
+
+    # region: public methods — existence
+
+    def exists(self, path: str) -> bool:
+        self._validate_path(path, allow_empty=True)
+        if not path:
+            return True
+        # Check file (exact key match)
+        if path in self._queries:
+            return True
+        # Check virtual folder
+        prefix = path + "/"
+        return any(k.startswith(prefix) for k in self._queries)
+
+    def is_file(self, path: str) -> bool:
+        self._validate_path(path, allow_empty=True)
+        if not path:
+            return False
+        return path in self._queries
+
+    def is_folder(self, path: str) -> bool:
+        self._validate_path(path, allow_empty=True)
+        if not path:
+            return True
+        prefix = path + "/"
+        return any(k.startswith(prefix) for k in self._queries)
+
+    # endregion
+
+    # region: public methods — reading
+
+    def read(self, path: str) -> BinaryIO:
+        self._validate_path(path)
+        sql = self._resolve_key(path)
+        fmt = self._detect_format(path)
+        with self._map_errors(path), self._engine.connect() as conn:
+            result = conn.execute(sa.text(sql))
+            columns = list(result.keys())
+            rows = result.fetchall()
+        data = self._serializer.serialize(rows, columns, fmt)
+        return io.BufferedReader(cast("io.RawIOBase", io.BytesIO(data)))
+
+    def read_bytes(self, path: str) -> bytes:
+        self._validate_path(path)
+        sql = self._resolve_key(path)
+        fmt = self._detect_format(path)
+        with self._map_errors(path), self._engine.connect() as conn:
+            result = conn.execute(sa.text(sql))
+            columns = list(result.keys())
+            rows = result.fetchall()
+        return self._serializer.serialize(rows, columns, fmt)
+
+    # endregion
+
+    # region: public methods — unsupported (read-only backend)
+
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+        raise CapabilityNotSupported("SQL query backend is read-only", capability="write", backend=self.name)
+
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+        raise CapabilityNotSupported("SQL query backend is read-only", capability="atomic_write", backend=self.name)
+
+    def open_atomic(self, path: str, *, overwrite: bool = False) -> contextlib.AbstractContextManager[BinaryIO]:
+        raise CapabilityNotSupported("SQL query backend is read-only", capability="atomic_write", backend=self.name)
+
+    def delete(self, path: str, *, missing_ok: bool = False) -> None:
+        raise CapabilityNotSupported("SQL query backend is read-only", capability="delete", backend=self.name)
+
+    def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
+        raise CapabilityNotSupported("SQL query backend is read-only", capability="delete", backend=self.name)
+
+    def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        raise CapabilityNotSupported("SQL query backend is read-only", capability="move", backend=self.name)
+
+    def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        raise CapabilityNotSupported("SQL query backend is read-only", capability="copy", backend=self.name)
+
+    # endregion
+
+    # region: public methods — listing
+
+    def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+    ) -> Iterator[FileInfo]:
+        self._validate_path(path, allow_empty=True)
+        prefix = (path + "/") if path else ""
+
+        for key in sorted(self._queries):
+            if prefix and not key.startswith(prefix):
+                continue
+            suffix = key[len(prefix) :]
+
+            if not recursive and max_depth is None:
+                if "/" in suffix:
+                    continue
+            elif max_depth is not None:
+                depth = suffix.count("/")
+                if depth > max_depth:
+                    continue
+
+            yield self._key_to_file_info(key)
+
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
+        self._validate_path(path, allow_empty=True)
+        prefix = (path + "/") if path else ""
+
+        seen: set[str] = set()
+        for key in sorted(self._queries):
+            if prefix and not key.startswith(prefix):
+                continue
+            suffix = key[len(prefix) :]
+            if "/" in suffix:
+                folder_name = suffix.split("/", 1)[0]
+                if folder_name not in seen:
+                    seen.add(folder_name)
+                    folder_path = f"{prefix}{folder_name}"
+                    yield FolderEntry(path=RemotePath(folder_path), name=folder_name)
+
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
+        self._validate_path(path, allow_empty=True)
+        prefix = (path + "/") if path else ""
+
+        seen_folders: set[str] = set()
+        for key in sorted(self._queries):
+            if prefix and not key.startswith(prefix):
+                continue
+            suffix = key[len(prefix) :]
+            if "/" in suffix:
+                folder_name = suffix.split("/", 1)[0]
+                if folder_name not in seen_folders:
+                    seen_folders.add(folder_name)
+                    folder_path = f"{prefix}{folder_name}"
+                    yield FolderEntry(path=RemotePath(folder_path), name=folder_name)
+            else:
+                yield self._key_to_file_info(key)
+
+    # endregion
+
+    # region: public methods — metadata
+
+    def get_file_info(self, path: str) -> FileInfo:
+        self._validate_path(path)
+        if path not in self._queries:
+            raise NotFound(f"No query registered for key: {path}", path=path, backend=self.name)
+        return self._key_to_file_info(path)
+
+    def get_folder_info(self, path: str) -> FolderInfo:
+        self._validate_path(path, allow_empty=True)
+        prefix = (path + "/") if path else ""
+
+        file_count = 0
+        for key in self._queries:
+            if not prefix or key.startswith(prefix):
+                file_count += 1
+
+        if file_count == 0 and path:
+            raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
+
+        return FolderInfo(
+            path=RemotePath.from_backend_path(path) if path and path != "." else RemotePath.ROOT,
+            file_count=file_count,
+            total_size=0,
+            modified_at=None,
+        )
+
+    # endregion
+
+    # region: public methods — glob
+
+    def glob(self, pattern: str) -> Iterator[FileInfo]:
+        rx = pattern_to_regex(pattern)
+        for key in sorted(self._queries):
+            if rx.match(key):
+                yield self._key_to_file_info(key)
+
+    # endregion
+
+    # region: dunder methods
+
+    def __repr__(self) -> str:
+        dialect = self._engine.dialect.name
+        return f"SQLQueryBackend(dialect={dialect!r}, keys={len(self._queries)}, strict={self._strict!r})"
+
+    # endregion
+
+    # region: private helpers
+
+    @staticmethod
+    def _key_to_file_info(key: str) -> FileInfo:
+        """Build a FileInfo for a registered key (sentinel metadata)."""
+        rpath = RemotePath(key)
+        return FileInfo(
+            path=rpath,
+            name=rpath.name,
+            size=0,
+            modified_at=_EPOCH_MIN,
+            extra={"materialized": False},
+        )
 
     # endregion

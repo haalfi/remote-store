@@ -40,3 +40,10 @@ try:
     __all__ = [*__all__, "SQLBlobBackend"]
 except ImportError:  # pragma: no cover
     pass
+
+try:
+    from remote_store.backends._sqlalchemy import SQLQueryBackend
+
+    __all__ = [*__all__, "SQLQueryBackend"]
+except ImportError:  # pragma: no cover
+    pass

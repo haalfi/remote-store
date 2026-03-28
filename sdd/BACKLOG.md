@@ -75,7 +75,9 @@ Items graduate through the SDD pipeline:
 
 ### New Backends
 
-- [ ] **ID-121 — `resolve()` → `ResolutionPlan` introspection API**
+- [x] **ID-119 — SQLAlchemy backends** → moved to [BACKLOG-DONE.md](BACKLOG-DONE.md)
+
+- [ ] **ID-120 — `resolve()` → `ResolutionPlan` introspection API**
   Unified introspection across all backends. `Store.resolve(key)` returns a
   `ResolutionPlan` dataclass (`kind`, `backend`, `key`, `details`). Replaces
   ad-hoc `resolve_query()` / `resolve_tier()` / `explain()` methods.
@@ -83,24 +85,14 @@ Items graduate through the SDD pipeline:
   - Default implementation on `Backend` returns plan with `kind=backend.name`
   - SQLAlchemy + CompositeStore override with meaningful details
   - Enables principled cache keys (`hash(plan)`) and debuggability
-  - Next: spec after ID-119 spike validates the pattern
+  - Next: spec now that ID-119 validates the pattern
 
-- [~] **ID-119 — SQLAlchemy backends (research complete, v1 in progress)**
-  Two concrete backends sharing `_SQLAlchemyBaseBackend`:
-  - `SQLBlobBackend` (v1) — KV blob store, `(key TEXT PK, data BLOB, ...)`,
-    full read-write. SQLite specialization (blobopen, WAL, PRAGMA tuning).
-  - `SQLQueryBackend` (v2) — read-only query materializer, maps path keys to SQL
-    queries via `ResultSerializer` protocol, extension-based output format.
-  - [Research](research/research-sqlalchemy-backend.md)
-  - Dependencies: `sqlalchemy` (required), `pyarrow` (SQLQueryBackend), `adbc` (v3)
-  - Next: spike `SQLBlobBackend` with SQLite, then draft spec
-
-- [ ] **ID-120 — CompositeStore (research complete)**
+- [ ] **ID-121 — CompositeStore (research complete)**
   `CompositeStore(Store)` — core Store subclass (not extension) that composes
   multiple stores into one. Deterministic fallthrough resolution for reads, union
   LIST (deduplicated), writes to primary tier only.
-  - [Research](research/research-sqlalchemy-backend.md#52-compositestore-id-120)
-  - Depends on: unified `resolve()` → `ResolutionPlan` (ID-121); at least two
+  - [Research](research/research-sqlalchemy-backend.md#52-compositestore-id-121)
+  - Depends on: unified `resolve()` → `ResolutionPlan` (ID-120); at least two
     working backends to be useful; pairs well with ID-119
   - Next: design as separate spec — backend-agnostic, useful independently
 
@@ -149,14 +141,18 @@ Items graduate through the SDD pipeline:
   `_SUCCESS` markers, and atomic-commit semantics. Composes `Store`, `ext.arrow`,
   and `ext.partition`.
   - [RFC-0008](rfcs/rfc-0008-parquet-dataset-storage.md) (Draft)
-  - Next: finalize RFC, write spec `041-ext-parquet.md`, implement
+  - Depended on by: ID-083 (Dagster v2 `RemoteStoreIOManager` dispatches to
+    `ParquetDatasetStore` for dataset-type assets)
+  - Next: finalize RFC, write spec `042-ext-parquet.md`, implement
 
 - [ ] **ID-083 — Dagster extension v2: ConfigurableResource + IOManagerFactory**
   Follow-up to [ID-075](BACKLOG-DONE.md#post-v0170).
   Remaining features deferred from v1:
   - `DagsterStoreResource` (`ConfigurableResource`)
-  - `RemoteStoreIOManager` (`ConfigurableIOManagerFactory`)
+  - `RemoteStoreIOManager` (`ConfigurableIOManagerFactory`) — dispatches to
+    `ParquetDatasetStore` for dataset-type assets (PDS-009)
   - `teardown_after_execution()`
+  - Depends on: ID-122 (`ext.parquet`)
 
   [Research](research/research-dagster-extension.md),
   [showcase architecture](research/research-medallion-dagster-showcase.md).
