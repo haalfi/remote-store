@@ -164,11 +164,12 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 | SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | — | Yes** |
 | Azure Blob / ADLS | `remote-store[azure]` | `azure-storage-file-datalake` | Yes | Yes | HNS: Yes / non-HNS: — |
 | SQL Blob (SQLite, PostgreSQL, ...) | `remote-store[sql]` | `sqlalchemy` | Yes | Yes | Yes |
+| SQL Query (read-only) | `remote-store[sql-query]` | `sqlalchemy` + `pyarrow` | -- | -- | -- |
 
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Via `posix_rename` on most OpenSSH servers; falls back to copy+delete.
 
-All backends except HTTP support read, write, delete, list, copy, move, and metadata. The HTTP backend is read-only (`{READ, METADATA}`). Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback `ext.glob.glob_files()`. Seekable reads are available on all backends via `Store.read_seekable()` — zero-overhead on seekable backends, HTTP Range reader on Azure, spool fallback on HTTP. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
+All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only (`{READ, METADATA}`). SQL Query is read-only (`{READ, LIST, METADATA, GLOB, SEEKABLE_READ}`) — it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback `ext.glob.glob_files()`. Seekable reads are available on all backends via `Store.read_seekable()` — zero-overhead on seekable backends, HTTP Range reader on Azure, spool fallback on HTTP. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
 
 ## Store API
 

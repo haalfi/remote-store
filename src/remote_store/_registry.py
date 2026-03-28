@@ -74,6 +74,14 @@ def _register_builtin_backends() -> None:
         except ImportError:  # pragma: no cover
             pass
 
+    if "sql-query" not in _BACKEND_FACTORIES:
+        try:
+            from remote_store.backends._sqlalchemy import SQLQueryBackend
+
+            register_backend("sql-query", SQLQueryBackend)
+        except ImportError:  # pragma: no cover
+            pass
+
     if "s3-pyarrow" not in _BACKEND_FACTORIES:
         try:
             from remote_store.backends._s3_pyarrow import S3PyArrowBackend

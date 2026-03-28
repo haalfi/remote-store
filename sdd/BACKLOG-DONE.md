@@ -4,6 +4,16 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## New Backends
+
+- [x] **ID-119 — SQLAlchemy backends**
+  Two concrete backends sharing `_SQLAlchemyBaseBackend`:
+  - `SQLBlobBackend` (v1) — KV blob store, full read-write. PR #292.
+  - `SQLQueryBackend` (v2) — read-only query materializer, explicit query
+    mappings via `ResultSerializer` protocol. Spec 041.
+  - [Research](research/research-sqlalchemy-backend.md)
+  - Future: view/convention discovery (`strict=False`), ADBC fast path (v3).
+
 ## Process
 
 - [x] **BK-015 — Replace mypy `ignore_missing_imports` overrides with proper type stubs**
