@@ -430,7 +430,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         with self._map_errors(path), self._engine.connect() as conn:
             t = self._table
 
-            agg_cols = [sa.func.count()]
+            agg_cols: list[Any] = [sa.func.count()]
             if "size" in self._optional_columns:
                 agg_cols.append(sa.func.coalesce(sa.func.sum(t.c.size), 0))
             else:
