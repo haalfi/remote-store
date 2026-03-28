@@ -144,6 +144,13 @@ Items graduate through the SDD pipeline:
     - Implementation Phase 2: native async backends.
     - Implementation Phase 3: async extensions.
 
+- [ ] **ID-122 — Parquet Dataset Storage extension (`ext.parquet`)**
+  `ParquetDatasetStore` — high-level Parquet dataset read/write with manifests,
+  `_SUCCESS` markers, and atomic-commit semantics. Composes `Store`, `ext.arrow`,
+  and `ext.partition`.
+  - [RFC-0008](rfcs/rfc-0008-parquet-dataset-storage.md) (Draft)
+  - Next: finalize RFC, write spec `041-ext-parquet.md`, implement
+
 - [ ] **ID-083 — Dagster extension v2: ConfigurableResource + IOManagerFactory**
   Follow-up to [ID-075](BACKLOG-DONE.md#post-v0170).
   Remaining features deferred from v1:

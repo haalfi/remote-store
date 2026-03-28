@@ -142,6 +142,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Documentation
 
+- **RFC-0008: Parquet Dataset Storage extension** (ID-122): Draft RFC proposing
+  `ParquetDatasetStore` — high-level Parquet dataset read/write with manifests,
+  `_SUCCESS` markers, and atomic-commit semantics on top of existing Store
+  primitives.
+
 - **S3 listing strategies and performance** (ID-113): New comprehensive guide in
   `guides/backends/s3.md` explaining shallow vs. recursive listing, why flat
   `ListObjectsV2` streams beat delimiter-based folder iteration, and why
