@@ -225,22 +225,31 @@ packages = ["src/remote_store"]
 strict = true
 namespace_packages = true
 
+# tomllib is stdlib from 3.11+; on 3.10 it doesn't exist and tomli is used instead.
 [[tool.mypy.overrides]]
 module = "tomllib"
 ignore_missing_imports = true
 
+# _config.py uses `import tomli as tomllib  # type: ignore[no-redef]` in a try/except
+# fallback — the ignore is valid only on 3.11+ where tomllib exists. Suppress the
+# "unused ignore" warning so both 3.10 and 3.11+ pass.
 [[tool.mypy.overrides]]
 module = "remote_store._config"
 warn_unused_ignores = false
 
+# ext/yaml.py imports pyyaml with `# type: ignore[import-untyped]` — pyyaml has no
+# py.typed marker and no stubs. The ignore is needed but flagged as unused when
+# pyyaml isn't installed and ruamel.yaml is used instead.
 [[tool.mypy.overrides]]
 module = "remote_store.ext.yaml"
 warn_unused_ignores = false
 
+# Dagster does not ship py.typed and has no third-party stubs on PyPI.
 [[tool.mypy.overrides]]
 module = "dagster.*"
 ignore_missing_imports = true
 
+# ext/dagster.py uses `# type: ignore[import-untyped]` on dagster imports.
 [[tool.mypy.overrides]]
 module = "remote_store.ext.dagster"
 warn_unused_ignores = false
