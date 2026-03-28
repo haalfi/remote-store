@@ -51,6 +51,7 @@ hatch run all               # lint + format-check + typecheck + test-cov + examp
 ```
 
 - **No `&&`, `||`, or `;`.** Split into separate Bash tool calls for auto-approval.
+- **No heredoc in git commits.** `git commit -m "$(cat <<'EOF'...)"` breaks the `Bash(git:*)` auto-approve pattern. Use multiple `-m` flags instead.
 
 ## Branching
 
@@ -69,12 +70,13 @@ See `sdd/DESIGN.md` for the full code style rules. Key points:
 ## GitHub operations
 
 **Primary:** `github-pat` MCP server (fine-grained PAT, read+write).
-**Fallback:** MCP_DOCKER (read-only locally — writes return 404/403).
+**Fallback:** `MCP_DOCKER` (Docker OAuth token — writes return 404/403 in local CLI; may work on claude.ai). Use for reads only.
 **Last resort:** `gh` CLI — needed for thread resolution (`gh api graphql`).
 
-Use `github-pat` if available; fall back to `MCP_DOCKER`, then `gh`.
+Priority: try `github-pat` first for all operations (read and write). Fall back to `MCP_DOCKER` for reads, then `gh` CLI.
 
 PR workflows are codified as skills: `/pr`, `/review-pr`, `/fix-pr`. Use those instead of ad-hoc `gh` commands.
+Use `/review-pr` for PR reviews, not the built-in `/review` CLI command.
 
 For lookup tables, detailed procedures, and repo layout see `sdd/CLAUDE-REFERENCE.md`.
 
