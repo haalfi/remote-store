@@ -39,6 +39,17 @@ Items graduate through the SDD pipeline:
 
 ### Developer Tooling
 
+- [ ] **BK-016 — Eliminate avoidable `# type: ignore` comments in src/**
+  ~9 `type: ignore` comments can likely be removed with better typing:
+  - `ext/cache.py` (6× `no-any-return`): cache `get()` returns `object`;
+    narrowing with `TypeVar` or `@overload` could eliminate the ignores.
+  - `_stream.py` (3× `no-any-return`): `RawIOBase.readinto`/`read`/`readline`
+    return `T | None`; explicit `None` guards or `assert` could replace ignores.
+  - `_path.py:21` (`misc`): `Final[str]` on a frozen-style class; may be
+    resolvable with a different typing pattern.
+  Not in scope: `import-untyped` (untyped third-party libs) and `override`
+  (intentional `RawIOBase` signature narrowing) — those are genuinely needed.
+
 - [x] **BK-015 — Replace mypy `ignore_missing_imports` overrides with proper type stubs**
   Most `[[tool.mypy.overrides]]` entries in `pyproject.toml` suppressed
   `ignore_missing_imports` for packages that ship `py.typed` or have
