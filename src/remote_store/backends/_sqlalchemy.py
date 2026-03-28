@@ -568,11 +568,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 if like_pattern is not None:
                     query = query.where(t.c.key.like(like_pattern))
                 rows = conn.execute(query).fetchall()
-                yield from (
-                    self._row_to_file_info(row)
-                    for row in rows
-                    if fnmatch.fnmatch(row[0], pattern)
-                )
+                yield from (self._row_to_file_info(row) for row in rows if fnmatch.fnmatch(row[0], pattern))
 
     # endregion
 
