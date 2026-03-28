@@ -17,10 +17,14 @@ See CLAUDE.md § GitHub operations for the full priority chain.
 1. **Pre-check:** Verify not on master, working tree clean, branch pushed to remote.
    Push with `-u` if needed.
 
-2. **Gather context:** `git log master..HEAD --oneline` and `git diff master...HEAD`
+2. **Coverage gate:** Run `hatch run test-cov` (requires 95%).
+   If it fails, stop and report which files are below threshold.
+   Do **not** create the PR until coverage passes.
+
+3. **Gather context:** `git log master..HEAD --oneline` and `git diff master...HEAD`
    to understand all changes (not just the latest commit).
 
-3. **Draft PR:** Title (<70 chars) + body. Body format:
+4. **Draft PR:** Title (<70 chars) + body. Body format:
 
    ```
    ## Summary
@@ -30,12 +34,12 @@ See CLAUDE.md § GitHub operations for the full priority chain.
    - [ ] ...
    ```
 
-4. **Create PR** using `create_pull_request`:
+5. **Create PR** using `create_pull_request`:
    - `owner: "haalfi"`, `repo: "remote-store"`
    - `head:` current branch, `base:` master (or `$ARGUMENTS`)
-   - `title:` and `body:` from step 3
+   - `title:` and `body:` from step 4
 
-5. **Report** the PR URL.
+6. **Report** the PR URL.
 
 ## Rules
 
