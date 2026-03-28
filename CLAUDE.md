@@ -68,13 +68,11 @@ See `sdd/DESIGN.md` for the full code style rules. Key points:
 
 ## GitHub operations
 
-**Primary:** `github-pat` MCP server when available (fine-grained PAT, full read+write).
-**Fallback:** MCP_DOCKER (Docker Desktop's internal OAuth token lacks write permissions —
-`create_pull_request` returns 404, `add_issue_comment` returns 403. Read operations work.
-Docker Desktop UI does not persist the PAT configuration switch, so this cannot be fixed there.)
-**Last resort:** `gh` CLI — needed for thread resolution (`gh api graphql`), which MCP can't do.
+**Primary:** `github-pat` MCP server (fine-grained PAT, read+write).
+**Fallback:** MCP_DOCKER (read-only locally — writes return 404/403).
+**Last resort:** `gh` CLI — needed for thread resolution (`gh api graphql`).
 
-**Fallback pattern:** use `github-pat` if available; if unavailable or returns auth errors, use `MCP_DOCKER`; if that also fails, use `gh` CLI.
+Use `github-pat` if available; fall back to `MCP_DOCKER`, then `gh`.
 
 PR workflows are codified as skills: `/pr`, `/review-pr`, `/fix-pr`. Use those instead of ad-hoc `gh` commands.
 
