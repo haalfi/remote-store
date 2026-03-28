@@ -9,6 +9,8 @@ from remote_store._capabilities import Capability
 from remote_store._proxy import ProxyStore
 from remote_store.backends._local import LocalBackend
 
+pytestmark = pytest.mark.os_sensitive
+
 # ---------------------------------------------------------------------------
 # Minimal concrete subclass for testing
 # ---------------------------------------------------------------------------

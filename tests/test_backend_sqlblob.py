@@ -46,6 +46,33 @@ def populated(backend: SQLBlobBackend) -> SQLBlobBackend:
     return backend
 
 
+@pytest.fixture
+def minimal_engine() -> Iterator[sa.Engine]:
+    """Engine with a minimal (key, data) table — no optional columns."""
+    engine = sa.create_engine("sqlite:///:memory:")
+    metadata = sa.MetaData()
+    sa.Table(
+        "minimal",
+        metadata,
+        sa.Column("key", sa.Text, primary_key=True),
+        sa.Column("data", sa.LargeBinary, nullable=False),
+    )
+    metadata.create_all(engine)
+    yield engine
+    engine.dispose()
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _insert_raw(backend: SQLBlobBackend, key: str, **cols: object) -> None:
+    """Insert a row directly via SQL, bypassing backend.write()."""
+    with backend._engine.begin() as conn:
+        conn.execute(backend._table.insert().values(key=key, **cols))
+
+
 # ---------------------------------------------------------------------------
 # Construction & properties
 # ---------------------------------------------------------------------------
@@ -65,25 +92,25 @@ class TestConstruction:
         b.close()
         engine.dispose()
 
+    @pytest.mark.parametrize(
+        ("kwargs", "match"),
+        [
+            ({"url": "sqlite:///:memory:", "table_name": ""}, "table_name"),
+            ({"url": "sqlite:///:memory:", "max_blob_size": 0}, "max_blob_size"),
+            ({"url": "sqlite:///:memory:", "max_blob_size": -1}, "max_blob_size"),
+            ({}, "Exactly one"),
+        ],
+        ids=["empty_table_name", "zero_blob_size", "negative_blob_size", "no_url_no_engine"],
+    )
+    def test_construction_invalid(self, kwargs: dict[str, object], match: str) -> None:
+        with pytest.raises(ValueError, match=match):
+            SQLBlobBackend(**kwargs)  # type: ignore[arg-type]
+
     def test_both_url_and_engine_raises(self) -> None:
         engine = sa.create_engine("sqlite:///:memory:")
         with pytest.raises(ValueError, match="Exactly one"):
             SQLBlobBackend(url="sqlite:///:memory:", engine=engine)
         engine.dispose()
-
-    def test_neither_url_nor_engine_raises(self) -> None:
-        with pytest.raises(ValueError, match="Exactly one"):
-            SQLBlobBackend()
-
-    def test_empty_table_name_raises(self) -> None:
-        with pytest.raises(ValueError, match="table_name"):
-            SQLBlobBackend(url="sqlite:///:memory:", table_name="")
-
-    def test_invalid_max_blob_size_raises(self) -> None:
-        with pytest.raises(ValueError, match="max_blob_size"):
-            SQLBlobBackend(url="sqlite:///:memory:", max_blob_size=0)
-        with pytest.raises(ValueError, match="max_blob_size"):
-            SQLBlobBackend(url="sqlite:///:memory:", max_blob_size=-1)
 
     def test_custom_table_name(self) -> None:
         b = SQLBlobBackend(url="sqlite:///:memory:", table_name="my_table")
@@ -137,41 +164,21 @@ class TestExistingTable:
         b.close()
         engine.dispose()
 
-    def test_create_table_false_minimal_schema(self) -> None:
-        engine = sa.create_engine("sqlite:///:memory:")
-        metadata = sa.MetaData()
-        sa.Table(
-            "minimal",
-            metadata,
-            sa.Column("key", sa.Text, primary_key=True),
-            sa.Column("data", sa.LargeBinary, nullable=False),
-        )
-        metadata.create_all(engine)
-        b = SQLBlobBackend(engine=engine, table_name="minimal", create_table=False)
+    def test_create_table_false_minimal_schema(self, minimal_engine: sa.Engine) -> None:
+        b = SQLBlobBackend(engine=minimal_engine, table_name="minimal", create_table=False)
         b.write("test.txt", b"hello")
         assert b.read_bytes("test.txt") == b"hello"
         b.close()
-        engine.dispose()
 
-    def test_create_table_false_minimal_modified_at_fallback(self) -> None:
-        """SQL-BLOB-012: missing modified_at → datetime.min."""
-        engine = sa.create_engine("sqlite:///:memory:")
-        metadata = sa.MetaData()
-        sa.Table(
-            "minimal",
-            metadata,
-            sa.Column("key", sa.Text, primary_key=True),
-            sa.Column("data", sa.LargeBinary, nullable=False),
-        )
-        metadata.create_all(engine)
-        b = SQLBlobBackend(engine=engine, table_name="minimal", create_table=False)
-        b.write("test.txt", b"hello")
-        info = b.get_file_info("test.txt")
+    def test_create_table_false_minimal_modified_at_fallback(self, minimal_engine: sa.Engine) -> None:
+        """SQL-BLOB-012: missing modified_at -> datetime.min."""
         from datetime import datetime, timezone
 
+        b = SQLBlobBackend(engine=minimal_engine, table_name="minimal", create_table=False)
+        b.write("test.txt", b"hello")
+        info = b.get_file_info("test.txt")
         assert info.modified_at == datetime.min.replace(tzinfo=timezone.utc)
         b.close()
-        engine.dispose()
 
     def test_create_table_false_missing_columns_raises(self) -> None:
         engine = sa.create_engine("sqlite:///:memory:")
@@ -785,18 +792,16 @@ class TestOptionalColumns:
 
     def test_write_with_metadata_columns(self, backend: SQLBlobBackend) -> None:
         """Direct SQL insert with content_type, digest, extra to exercise _row_to_file_info."""
-        with backend._engine.begin() as conn:
-            conn.execute(
-                backend._table.insert().values(
-                    key="meta.txt",
-                    data=b"hello",
-                    size=5,
-                    modified_at=1000000.0,
-                    content_type="text/plain",
-                    digest="sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-                    extra='{"custom": "value"}',
-                )
-            )
+        _insert_raw(
+            backend,
+            "meta.txt",
+            data=b"hello",
+            size=5,
+            modified_at=1000000.0,
+            content_type="text/plain",
+            digest="sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+            extra='{"custom": "value"}',
+        )
         info = backend.get_file_info("meta.txt")
         assert info.content_type == "text/plain"
         assert info.digest is not None
@@ -804,33 +809,28 @@ class TestOptionalColumns:
         assert info.extra == {"custom": "value"}
 
     def test_invalid_digest_format(self, backend: SQLBlobBackend) -> None:
-        """Invalid digest string is silently ignored with a warning."""
-        with backend._engine.begin() as conn:
-            conn.execute(
-                backend._table.insert().values(
-                    key="bad_digest.txt",
-                    data=b"data",
-                    size=4,
-                    modified_at=1000000.0,
-                    digest="not-a-valid:!!!",
-                )
-            )
+        """Invalid digest hex → digest is None (warning logged)."""
+        _insert_raw(
+            backend,
+            "bad_digest.txt",
+            data=b"data",
+            size=4,
+            modified_at=1000000.0,
+            digest="not-a-valid:!!!",
+        )
         info = backend.get_file_info("bad_digest.txt")
-        # Invalid digest value → digest is None (warning logged)
-        assert info.digest is None or info.digest is not None  # covered either way
+        assert info.digest is None
 
     def test_invalid_extra_json(self, backend: SQLBlobBackend) -> None:
         """Malformed JSON in extra column is silently ignored."""
-        with backend._engine.begin() as conn:
-            conn.execute(
-                backend._table.insert().values(
-                    key="bad_extra.txt",
-                    data=b"data",
-                    size=4,
-                    modified_at=1000000.0,
-                    extra="not valid json{{{",
-                )
-            )
+        _insert_raw(
+            backend,
+            "bad_extra.txt",
+            data=b"data",
+            size=4,
+            modified_at=1000000.0,
+            extra="not valid json{{{",
+        )
         info = backend.get_file_info("bad_extra.txt")
         assert info.extra == {}
 
@@ -838,17 +838,8 @@ class TestOptionalColumns:
 class TestMinimalSchemaFolderInfo:
     """Test get_folder_info on minimal schema (no size, no modified_at columns)."""
 
-    def test_folder_info_minimal_schema(self) -> None:
-        engine = sa.create_engine("sqlite:///:memory:")
-        metadata = sa.MetaData()
-        sa.Table(
-            "minimal",
-            metadata,
-            sa.Column("key", sa.Text, primary_key=True),
-            sa.Column("data", sa.LargeBinary, nullable=False),
-        )
-        metadata.create_all(engine)
-        b = SQLBlobBackend(engine=engine, table_name="minimal", create_table=False)
+    def test_folder_info_minimal_schema(self, minimal_engine: sa.Engine) -> None:
+        b = SQLBlobBackend(engine=minimal_engine, table_name="minimal", create_table=False)
         b.write("a/1.txt", b"one")
         b.write("a/2.txt", b"two")
         info = b.get_folder_info("a")
@@ -856,7 +847,6 @@ class TestMinimalSchemaFolderInfo:
         assert info.total_size >= 0  # computed from length(data)
         assert info.modified_at is None
         b.close()
-        engine.dispose()
 
 
 class TestGlobToLike:
