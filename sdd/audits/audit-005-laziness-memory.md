@@ -104,10 +104,13 @@ if self._max_content_size is None or len(result) <= self._max_content_size:
 return result
 ```
 
-The full byte content occupies memory at the point of the size check. For files
-that exceed `max_content_size`, the bytes are loaded, checked, and discarded —
-defeating the purpose of the limit as a memory guard. A pre-flight `get_file_info`
-size check would skip the read entirely for known-large files.
+The full byte content is already in memory at the point of the size check. For
+files that exceed `max_content_size`, the bytes are loaded, the cache-set is
+skipped, and the transient double-reference (caller + cache candidate) is
+discarded — but the read itself cannot be avoided because `read_bytes` must
+return the content regardless. A pre-flight `get_file_info` size check would
+skip the wasted cache-set attempt and avoid the transient double-reference, but
+not the read itself.
 
 ---
 

@@ -72,7 +72,7 @@ Items graduate through the SDD pipeline:
     existing `max_content_size` guard on `read_bytes`. Skip caching when result
     tuple would exceed the limit.
   - M-2: `ext/cache.py` — pre-flight `get_file_info` size check in `read_bytes`
-    before calling `_inner.read_bytes()` when `max_content_size` is set.
+    to skip the wasted cache-set attempt when `max_content_size` is set.
   - M-3/M-4/M-5: `backends/_memory.py` — `list_files`, `list_folders`,
     `iter_children` all build full lists under `_lock` then yield outside.
     Snapshot `node.children` under lock (cheap), release lock, build/yield
@@ -83,7 +83,7 @@ Items graduate through the SDD pipeline:
   **Low (optional / polish):**
   - L-1: `ext/cache.py` — `MemoryCache.size()` rebuilds dict on every call;
     consider a separate `_size: int` counter maintained on set/delete.
-  - L-2/L-3: `ext/batch.py` — document `list()` materialisation in public API
+  - L-2: `ext/batch.py` — document `list()` materialisation in public API
     docstrings; no code change required unless a streaming concurrent executor
     is added.
   - L-3: `backends/_sqlalchemy.py` — defer `sqlalchemy` import to `__init__`
