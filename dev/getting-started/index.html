@@ -1901,6 +1901,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/sql-query/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3049,6 +3077,34 @@
     
   
     SQLBlobBackend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/backends/sql-query/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQLQueryBackend
   
 
     
@@ -5050,6 +5106,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/041-sql-query-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    041: SQL Query Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6979,11 +7063,19 @@ use a Registry with declarative config:</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 </tr>
+<tr>
+<td>SQL Query (read-only)</td>
+<td><code>remote-store[sql-query]</code></td>
+<td><code>sqlalchemy</code> + <code>pyarrow</code></td>
+<td style="text-align: center;">--</td>
+<td style="text-align: center;">--</td>
+<td style="text-align: center;">--</td>
+</tr>
 </tbody>
 </table>
 <p>* Same-filesystem only; cross-filesystem falls back to copy+delete.
 ** Via <code>posix_rename</code> on most OpenSSH servers; falls back to copy+delete.</p>
-<p>All backends except HTTP support read, write, delete, list, copy, move, and metadata. The HTTP backend is read-only (<code>{READ, METADATA}</code>). Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback <code>ext.glob.glob_files()</code>. Seekable reads are available on all backends via <code>Store.read_seekable()</code> — zero-overhead on seekable backends, HTTP Range reader on Azure, spool fallback on HTTP. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
+<p>All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only (<code>{READ, METADATA}</code>). SQL Query is read-only (<code>{READ, LIST, METADATA, GLOB, SEEKABLE_READ}</code>) — it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback <code>ext.glob.glob_files()</code>. Seekable reads are available on all backends via <code>Store.read_seekable()</code> — zero-overhead on seekable backends, HTTP Range reader on Azure, spool fallback on HTTP. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
 <h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
 <p>The Store provides 28 methods across read/write, browsing, management, and utility. Key highlights:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>             <span class="c1"># → str</span>

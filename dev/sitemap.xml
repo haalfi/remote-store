@@ -189,6 +189,10 @@
          <lastmod>2026-03-28</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/api/backends/sql-query/</loc>
+         <lastmod>2026-03-28</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/</loc>
          <lastmod>2026-03-28</lastmod>
     </url>
@@ -282,6 +286,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/backends/sql-blob/</loc>
+         <lastmod>2026-03-28</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/backends/sql-query/</loc>
          <lastmod>2026-03-28</lastmod>
     </url>
     <url>
@@ -658,6 +666,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/040-sql-blob-backend/</loc>
+         <lastmod>2026-03-28</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/specs/041-sql-query-backend/</loc>
          <lastmod>2026-03-28</lastmod>
     </url>
     <url>

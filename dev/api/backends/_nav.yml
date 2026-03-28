@@ -6,3 +6,4 @@
 - SFTPBackend: sftp.md
 - AzureBackend: azure.md
 - SQLBlobBackend: sql-blob.md
+- SQLQueryBackend: sql-query.md
