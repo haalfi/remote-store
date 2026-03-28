@@ -73,6 +73,7 @@ class TestReadDelegation:
     def test_read(self, proxy: _TestProxy) -> None:
         stream = proxy.read("hello.txt")
         assert stream.read() == b"hello world"
+        stream.close()
 
     def test_read_bytes(self, proxy: _TestProxy) -> None:
         assert proxy.read_bytes("hello.txt") == b"hello world"
@@ -82,6 +83,7 @@ class TestReadDelegation:
         assert stream.read() == b"hello world"
         stream.seek(0)
         assert stream.read() == b"hello world"
+        stream.close()
 
     def test_read_text(self, proxy: _TestProxy) -> None:
         assert proxy.read_text("hello.txt") == "hello world"
