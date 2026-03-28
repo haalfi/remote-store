@@ -6810,6 +6810,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: RFC-0008: Parquet Dataset Storage Extension
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8805,13 +8833,21 @@
 </ul>
 <h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>S3 listing strategies and performance</strong> (ID-113): New comprehensive guide in
+<li>
+<p><strong>RFC-0008: Parquet Dataset Storage extension</strong> (ID-122): Draft RFC proposing
+  <code>ParquetDatasetStore</code> — high-level Parquet dataset read/write with manifests,
+  <code>_SUCCESS</code> markers, and atomic-commit semantics on top of existing Store
+  primitives.</p>
+</li>
+<li>
+<p><strong>S3 listing strategies and performance</strong> (ID-113): New comprehensive guide in
   <code>guides/backends/s3.md</code> explaining shallow vs. recursive listing, why flat
   <code>ListObjectsV2</code> streams beat delimiter-based folder iteration, and why
   parallelization is wrong for large buckets. Includes performance data and
   examples showing when to use each approach. New example file
   <code>examples/backends/s3_listing_strategies.py</code> demonstrates shallow, recursive,
-  and filtered listing patterns.</li>
+  and filtered listing patterns.</p>
+</li>
 </ul>
 <h2 id="0190-2026-03-23">[0.19.0] - 2026-03-23<a class="headerlink" href="#0190-2026-03-23" title="Permanent link">&para;</a></h2>
 <h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
