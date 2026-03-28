@@ -33,6 +33,7 @@ Strict order — no skipping:
 
 - See `sdd/BACKLOG.md` for workflow rules, ID prefixes, and active items.
   Completed items are in `sdd/BACKLOG-DONE.md`.
+- **Completing work:** done → move item to `BACKLOG-DONE.md` (same commit). Partially done → split: ship done part to `BACKLOG-DONE.md`, create new ID here for remainder, link both.
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
 ## Dev commands
@@ -49,7 +50,7 @@ hatch run docs-build        # build docs (strict mode)
 hatch run all               # lint + format-check + typecheck + test-cov + examples + notebooks
 ```
 
-- **No `&&`, `||`, or `;`.** Split into separate Bash tool calls.
+- **No `&&`, `||`, or `;`.** Split into separate Bash tool calls for auto-approval.
 
 ## Branching
 
@@ -65,35 +66,12 @@ See `sdd/DESIGN.md` for the full code style rules. Key points:
 - New features require a spec in `sdd/specs/`. Ops changes (CI, docs) skip specs.
 - Run `hatch run lint` before committing.
 
-## GitHub CLI (`gh`): restricted usage
+## GitHub operations
 
-The `gh` CLI is installed via a SessionStart hook (`.claude/setup-gh.sh`).
-It requires a `GITHUB_TOKEN` environment variable with PR read/write scope.
+**Primary:** MCP_DOCKER tools (work without GITHUB_TOKEN, including on claude.ai/code).
+**Fallback:** `gh` CLI — only needed for thread resolution (`gh api graphql`), which MCP can't do.
 
-**Allowed operations** (only when the user explicitly asks):
-
-- `gh pr view`: read PR metadata
-- `gh pr diff`: read PR diffs
-- `gh pr review`: submit a review with comments
-- `gh api`: post review comments on specific lines
-
-All other `gh` operations (creating/closing/merging PRs, pushing code, commenting on issues, etc.) require explicit user request. If you believe one would be beneficial, ask the user and wait for confirmation before proceeding.
-
-## Resolving PR review threads
-
-The MCP `get_review_comments` tool does **not** return GraphQL node IDs needed to resolve threads. Use this two-step workaround with `gh api graphql`:
-
-1. **Fetch thread IDs**:
-
-```bash
-gh api graphql -f query='{ repository(owner:"haalfi", name:"remote-store") { pullRequest(number:NUMBER) { reviewThreads(last:100) { nodes { id isResolved } } } } }'
-```
-
-2. **Resolve** each unresolved thread by passing its `PRRT_...` ID:
-
-```bash
-gh api graphql -f query='mutation { resolveReviewThread(input:{threadId:"PRRT_..._ID"}) { thread { isResolved } } }'
-```
+PR workflows are codified as skills: `/pr`, `/review-pr`, `/fix-pr`. Use those instead of ad-hoc `gh` commands.
 
 For lookup tables, detailed procedures, and repo layout see `sdd/CLAUDE-REFERENCE.md`.
 
