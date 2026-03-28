@@ -14,7 +14,9 @@ PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
 
 ## Step 1: Gather context
 
-Use `pull_request_read` (prefer `github-pat`, fall back to `MCP_DOCKER`) with `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: $ARGUMENTS`. Read every changed file **in full** — you need surrounding context.
+For all GitHub API calls in this skill, use `github-pat` if available, otherwise fall back to `MCP_DOCKER`. See CLAUDE.md § GitHub operations for details.
+
+Use `pull_request_read` with `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: $ARGUMENTS`. Read every changed file **in full** — you need surrounding context.
 
 ## Step 2: Analyze
 
@@ -26,7 +28,7 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 
 ## Step 3: Post review
 
-Use `pull_request_review_write` (prefer `github-pat`, fall back to `MCP_DOCKER`):
+Use `pull_request_review_write`:
 - `event: "COMMENT"` — never APPROVE or REQUEST_CHANGES
 - `comments:` array with `path`, `line`, `body`
 
