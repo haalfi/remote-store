@@ -226,6 +226,10 @@ strict = true
 namespace_packages = true
 
 [[tool.mypy.overrides]]
+module = "tomllib"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 module = "remote_store._config"
 warn_unused_ignores = false
 
