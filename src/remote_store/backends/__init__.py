@@ -33,3 +33,10 @@ try:
     __all__ = [*__all__, "AzureBackend"]
 except ImportError:  # pragma: no cover
     pass
+
+try:
+    from remote_store.backends._sqlalchemy import SQLBlobBackend
+
+    __all__ = [*__all__, "SQLBlobBackend"]
+except ImportError:  # pragma: no cover
+    pass

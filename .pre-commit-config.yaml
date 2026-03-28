@@ -9,9 +9,10 @@ repos:
     rev: v1.19.1
     hooks:
       - id: mypy
-        additional_dependencies: [s3fs, paramiko, tenacity, types-paramiko, pyarrow, azure-storage-file-datalake, azure-identity, opentelemetry-api]
+        additional_dependencies: [s3fs, paramiko, tenacity, types-paramiko, types-requests, pyarrow, azure-storage-file-datalake, azure-identity, opentelemetry-api, sqlalchemy, httpx, tomli]
         args: [--config-file=pyproject.toml]
         files: ^src/
+        stages: [pre-push]
   - repo: local
     hooks:
       - id: no-unicode-in-print

@@ -61,6 +61,7 @@ toml = ["tomli>=1.1.0; python_version < '3.11'"]
 yaml = ["pyyaml>=5.1"]
 pydantic = ["pydantic-settings>=2.0.0"]
 dagster = ["dagster>=1.9"]
+sql = ["sqlalchemy>=2.0"]
 requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
 httpx = ["httpx>=0.24.0"]
 
@@ -120,6 +121,7 @@ dev = [
   "pytest-httpserver>=1.0.0",
   "requests>=2.25.0",
   "httpx>=0.24.0",
+  "sqlalchemy>=2.0",
 ]
 
 [tool.hatch.envs.default]
@@ -162,6 +164,7 @@ dependencies = [
   "requests>=2.25.0",
   "httpx>=0.24.0",
   "matplotlib>=3.8",
+  "sqlalchemy>=2.0",
 ]
 
 [tool.hatch.envs.default.scripts]
@@ -224,6 +227,7 @@ packages = ["src/remote_store"]
 [tool.mypy]
 strict = true
 namespace_packages = true
+plugins = ["sqlalchemy.ext.mypy.plugin"]
 
 # tomllib is stdlib from 3.11+; on 3.10 it doesn't exist and tomli is used instead.
 [[tool.mypy.overrides]]
