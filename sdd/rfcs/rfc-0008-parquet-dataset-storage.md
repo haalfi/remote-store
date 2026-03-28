@@ -140,8 +140,12 @@ class DatasetManifest:
 
 - Serialized as JSON. One canonical schema — no per-caller variation.
 - `schema_hash` computed as SHA-256 of `table.schema.to_string()` (text
-  representation, stable across PyArrow versions — unlike `serialize()` whose
-  IPC binary format may change).
+  representation, more stable than `serialize()` whose IPC binary format may
+  change). **Scope: same-version verification** — intended for detecting
+  corruption or schema drift within a pipeline run, not for cross-version
+  portability. If cross-version hash stability is needed in the future, the
+  spec should pin a deterministic canonical form (e.g., sorted field names +
+  type strings).
 - `metadata` is an escape hatch for pipeline-specific fields (report IDs,
   source system identifiers, etc.) without polluting the core schema.
 - `_SUCCESS` is an empty file written *after* manifest, signaling completion.
@@ -179,15 +183,17 @@ writes.
 2. Read and parse `{dataset_key}/manifest.json` → `DatasetManifest`.
 3. Verify all parts listed in `manifest.parts` exist → raise
    `DatasetIncomplete` if any part is missing (fail-fast, no partial reads).
-4. Read each part via PyArrow.
+4. Read each part via `pq.read_table(..., columns=columns)` — column
+   projection is applied at read time to avoid deserializing unused columns.
 5. Concatenate into a single `pa.Table`.
-6. Optionally apply column projection (`columns` parameter).
 
 ### Dataset deletion
 
 `delete_dataset(dataset_key)` removes all files under `{dataset_key}/`
-(parts, manifest, `_SUCCESS`) via `store.delete_folder(dataset_key)`. This is
-a thin convenience — callers can also call `store.delete_folder()` directly.
+(parts, manifest, `_SUCCESS`) via
+`store.delete_folder(dataset_key, recursive=True)`. The `recursive=True` flag
+is required because the dataset directory always contains files. This is a
+thin convenience — callers can also call `store.delete_folder()` directly.
 
 ### Integration with `ext.dagster`
 
@@ -216,7 +222,11 @@ Spec `041-ext-parquet.md` with IDs:
 - `PDS-005`: Single-file vs multi-part layout rules
 - `PDS-006`: Column projection on read
 - `PDS-007`: `dataset_exists` — checks for `_SUCCESS`
-- `PDS-008`: Error conditions (`DatasetIncomplete`, `ManifestCorrupted`)
+- `PDS-008`: Error conditions (`DatasetIncomplete`, `ManifestCorrupted`) —
+  both inherit from `RemoteStoreError` directly (per `sdd/specs/005-error-model.md`).
+  `DatasetIncomplete` signals missing `_SUCCESS` or parts (not `NotFound`,
+  because some files may exist — the dataset is structurally incomplete).
+  `ManifestCorrupted` signals unparseable or invalid manifest JSON.
 - `PDS-009`: Integration with `ext.dagster` serializer
 - `PDS-010`: `delete_dataset` — removes dataset files via `delete_folder`
 - `PDS-011`: Overwrite semantics (delete-then-write)
