@@ -57,7 +57,8 @@ format.
 ### Module location
 
 `remote_store/ext/parquet.py` — optional dependency on `pyarrow`.
-Install: `pip install "remote-store[parquet]"` (or `[arrow]` if we bundle it).
+Install: `pip install "remote-store[arrow]"` (reuses the existing `[arrow]` extra
+which already includes `pyarrow>=12.0.0`; no new install extra needed).
 
 ### Core class: `ParquetDatasetStore`
 
@@ -79,9 +80,12 @@ class ParquetDatasetStore:
         table: pa.Table,
         dataset_key: str,
         *,
+        overwrite: bool = False,
         run_id: str | None = None,
         metadata: dict[str, str] | None = None,
     ) -> DatasetManifest: ...
+
+    def delete_dataset(self, dataset_key: str) -> None: ...
 
     def read_dataset(
         self,
@@ -101,10 +105,19 @@ class ParquetDatasetStore:
   `manifest.json`, writes `_SUCCESS`, and returns the manifest. When
   `max_rows_per_file` is set, the table is split into multiple
   `part-NNNNN.parquet` files; otherwise a single `data.parquet` is written.
+  **Calling `write_dataset` for a `dataset_key` that already exists raises
+  `AlreadyExists` by default.** Pass `overwrite=True` to replace the dataset
+  (deletes old files before writing new ones).
 - `read_dataset` checks for `_SUCCESS`, reads `manifest.json`, resolves the
   listed parts, reads and concatenates them into a single `pa.Table`.
-- Uses `store.write_atomic()` for each file to prevent partial writes from
-  being visible.
+  **On read, verifies that every part listed in the manifest exists before
+  reading.** Raises `DatasetIncomplete` if any part is missing.
+- **Write path:** Each Parquet file is serialized to an in-memory buffer
+  (`pq.write_table` → `io.BytesIO`), then written via `store.write_atomic()`.
+  This ensures per-file atomicity but requires full materialization of each
+  part. For true streaming writes to backends that support it, callers can use
+  the `ext.arrow` PyArrow filesystem adapter directly and then call
+  `write_manifest()` separately (a future convenience method).
 - The `dataset_key` is a `/`-separated path (e.g., `silver/orders`,
   `bronze/events/2026-03-28`). The `Store`'s `root_path` acts as the
   namespace — `ParquetDatasetStore` does not embed it.
@@ -118,7 +131,7 @@ class DatasetManifest:
     dataset_key: str
     parts: list[str]          # relative filenames: ["data.parquet"] or ["part-00000.parquet", ...]
     row_count: int
-    schema_hash: str           # SHA-256 of serialized Arrow schema
+    schema_hash: str           # SHA-256 of schema.to_string() (text, version-stable)
     compression: str
     created_at_utc: str        # ISO 8601
     run_id: str | None = None  # pipeline run identifier (Dagster run_id, Airflow run_id, etc.)
@@ -126,7 +139,9 @@ class DatasetManifest:
 ```
 
 - Serialized as JSON. One canonical schema — no per-caller variation.
-- `schema_hash` computed deterministically from `table.schema.serialize()`.
+- `schema_hash` computed as SHA-256 of `table.schema.to_string()` (text
+  representation, stable across PyArrow versions — unlike `serialize()` whose
+  IPC binary format may change).
 - `metadata` is an escape hatch for pipeline-specific fields (report IDs,
   source system identifiers, etc.) without polluting the core schema.
 - `_SUCCESS` is an empty file written *after* manifest, signaling completion.
@@ -140,22 +155,39 @@ class DatasetManifest:
 └── _SUCCESS
 ```
 
-1. Write Parquet file(s) via `store.write_atomic()`.
-2. Write `manifest.json` via `store.write_atomic()`.
-3. Write `_SUCCESS` (empty) via `store.write()`.
+1. If `overwrite=True` and `_SUCCESS` exists, delete existing dataset files.
+2. Serialize each Parquet part to bytes (`pq.write_table` → `io.BytesIO`),
+   then write via `store.write_atomic()`.
+3. Write `manifest.json` via `store.write_atomic()`.
+4. Write `_SUCCESS` (empty) via `store.write()`.
 
-Steps 1–3 are not transactional across files (S3 has no multi-object
+Steps 2–4 are not transactional across files (S3 has no multi-object
 transactions). The `_SUCCESS` marker is the commit signal — readers that check
 for it are protected from partial writes. This is the same contract used by
 Hadoop, Spark, and Hive.
+
+**Concurrency note:** Concurrent writers to the same `dataset_key` are not
+safe. The non-transactional write sequence means writer A's `_SUCCESS` could
+become visible while writer B's parts are half-written. Callers must
+coordinate externally (e.g., pipeline-level locking, unique `dataset_key` per
+run). This is consistent with Spark/Hive behavior for non-transactional
+writes.
 
 ### Read sequence
 
 1. Check `{dataset_key}/_SUCCESS` exists → raise `DatasetIncomplete` if missing.
 2. Read and parse `{dataset_key}/manifest.json` → `DatasetManifest`.
-3. Read each part listed in `manifest.parts` via PyArrow.
-4. Concatenate into a single `pa.Table`.
-5. Optionally apply column projection (`columns` parameter).
+3. Verify all parts listed in `manifest.parts` exist → raise
+   `DatasetIncomplete` if any part is missing (fail-fast, no partial reads).
+4. Read each part via PyArrow.
+5. Concatenate into a single `pa.Table`.
+6. Optionally apply column projection (`columns` parameter).
+
+### Dataset deletion
+
+`delete_dataset(dataset_key)` removes all files under `{dataset_key}/`
+(parts, manifest, `_SUCCESS`) via `store.delete_folder(dataset_key)`. This is
+a thin convenience — callers can also call `store.delete_folder()` directly.
 
 ### Integration with `ext.dagster`
 
@@ -175,17 +207,19 @@ ds.write_dataset(table, "orders", run_id="dagster-abc123")
 
 ### New spec sections (proposed)
 
-Spec `0XX-ext-parquet.md` with IDs:
+Spec `041-ext-parquet.md` with IDs:
 
 - `PDS-001`: `ParquetDatasetStore` constructor and defaults
-- `PDS-002`: `write_dataset` — file layout, atomic writes, manifest, `_SUCCESS`
-- `PDS-003`: `read_dataset` — `_SUCCESS` check, manifest resolution, concatenation
-- `PDS-004`: `DatasetManifest` — schema, serialization, `schema_hash` computation
+- `PDS-002`: `write_dataset` — file layout, serialize-then-write-atomic, manifest, `_SUCCESS`
+- `PDS-003`: `read_dataset` — `_SUCCESS` check, manifest-parts verification, concatenation
+- `PDS-004`: `DatasetManifest` — schema, serialization, `schema_hash` via `to_string()`
 - `PDS-005`: Single-file vs multi-part layout rules
 - `PDS-006`: Column projection on read
 - `PDS-007`: `dataset_exists` — checks for `_SUCCESS`
 - `PDS-008`: Error conditions (`DatasetIncomplete`, `ManifestCorrupted`)
 - `PDS-009`: Integration with `ext.dagster` serializer
+- `PDS-010`: `delete_dataset` — removes dataset files via `delete_folder`
+- `PDS-011`: Overwrite semantics (delete-then-write)
 
 ## Alternatives Considered
 
@@ -200,7 +234,7 @@ However:
    immutable snapshots (daily extracts, report outputs) that never need
    UPDATE, MERGE, or time travel.
 3. **Not the library's role.** remote-store's documented boundary is "portable,
-   testable, observable storage I/O" (see `guides/data-lake-patterns.md`).
+   testable, observable storage I/O" (see `docs-src/data-lake-patterns.md`).
    Full table format semantics belong above the storage layer.
 
 A `ParquetDatasetStore` occupies the middle ground: more structure than raw
@@ -255,9 +289,12 @@ revisited in a future RFC.
   `DatasetIncomplete` to `ext.parquet`. Not re-exported from `__init__`
   (per ADR-0013).
 - **Backwards compatibility:** Non-breaking. New optional extension.
-- **Performance:** Streaming writes via PyArrow avoid full in-memory
-  materialization for large tables (unlike the current `ParquetSerializer`).
-  Multi-part support enables parallel reads (future optimization).
+- **Performance:** The default write path serializes each part to bytes via
+  `pq.write_table` and writes via `store.write_atomic()`, which requires
+  per-part in-memory materialization. For large tables, `max_rows_per_file`
+  limits per-part memory usage. True streaming writes (no materialization) are
+  possible via the `ext.arrow` PyArrow filesystem adapter for backends that
+  support it. Multi-part support enables parallel reads (future optimization).
 - **Testing:** Conformance tests against `MemoryBackend` (unit) and
   `S3Backend` / `LocalBackend` (integration). Tests for single-file and
   multi-part layouts, manifest roundtrip, `_SUCCESS` contract, and error
@@ -283,18 +320,17 @@ revisited in a future RFC.
    `ParquetDatasetStore`. Should this RFC block on or coordinate with that
    work?
 
-5. **Cleanup / retention.** Should `ParquetDatasetStore` include a
-   `delete_dataset(dataset_key)` method? Or should callers use
-   `store.delete_folder()` directly?
+*Resolved:* `delete_dataset` is included in the proposal (see above).
+Overwrite semantics are specified via the `overwrite` parameter.
 
 ## References
 
 - Store API: `sdd/specs/001-store-api.md`
 - Atomic writes: `sdd/specs/007-atomic-writes.md`
-- PyArrow filesystem adapter: `sdd/specs/013-pyarrow-filesystem-adapter.md`,
+- PyArrow filesystem adapter: `sdd/specs/014-pyarrow-filesystem-adapter.md`,
   RFC-0002
 - Dagster IO manager: `sdd/specs/031-ext-dagster.md`
 - Partition helpers: `ext.partition` module
-- Data lake patterns guide: `guides/data-lake-patterns.md`
+- Data lake patterns guide: `docs-src/data-lake-patterns.md`
 - Scope boundary: "remote-store owns portable, testable, observable storage
   I/O. Everything above the storage layer belongs to purpose-built tools."
