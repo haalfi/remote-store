@@ -15,35 +15,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `ResultSerializer` protocol with built-in `ArrowSerializer`. New optional
   extra: `pip install remote-store[sql-query]`. Spec 041.
 
-### Fixed
-
-- **Replaced mypy `ignore_missing_imports` overrides with proper type stubs**
-  (BK-015): Removed 8 `[[tool.mypy.overrides]]` entries that suppressed
-  import errors for packages shipping `py.typed` or having PyPI stubs
-  (`pydantic`, `pydantic_settings`, `tomli`, `tomllib`, `ruamel.yaml`,
-  `requests`, `urllib3`, `httpx`). Added `types-requests` to dev
-  dependencies. Cleaned up now-unnecessary `# type: ignore` comments in
-  `_http_requests.py` and `_http_httpx.py`. Mypy now sees real types
-  instead of `Any` for these imports.
-
-### Changed
-
-- **Performance messaging rewrite** (ID-104): README and performance guide now
-  present overhead as measured values in ms (with percentages in brackets)
-  instead of judgmental language. Users see the numbers and decide for
-  themselves.
-
-- **Seekable read promoted to Store API** (ID-100, ID-102): New
-  `Store.read_seekable()` method — always returns a seekable stream,
-  backend-optimized. On seekable backends (Local, S3, SFTP) it's
-  zero-overhead passthrough. On Azure it returns `_AzureRangeReader`
-  (HTTP Range requests per read — ideal for PyArrow column pruning).
-  On HTTP it spools to `SpooledTemporaryFile`. Replaces
-  `ext.seekable.seekable_read()` (removed, never released).
-  ADR-0017 supersedes ADR-0016. Spec 036 revised.
-
-### Added
-
 - **SQLBlobBackend — SQL key-value blob storage** (ID-119 v1): New
   `SQLBlobBackend` backed by SQLAlchemy. Uses a SQL table as key-value store
   with full Backend contract (all 10 capabilities). SQLite optimizations:
@@ -134,6 +105,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **Replaced mypy `ignore_missing_imports` overrides with proper type stubs**
+  (BK-015): Removed 8 `[[tool.mypy.overrides]]` entries that suppressed
+  import errors for packages shipping `py.typed` or having PyPI stubs
+  (`pydantic`, `pydantic_settings`, `tomli`, `tomllib`, `ruamel.yaml`,
+  `requests`, `urllib3`, `httpx`). Added `types-requests` to dev
+  dependencies. Cleaned up now-unnecessary `# type: ignore` comments in
+  `_http_requests.py` and `_http_httpx.py`. Mypy now sees real types
+  instead of `Any` for these imports.
+
 - **SFTP TOFU host key persistence** (BUG-005): `TRUST_ON_FIRST_USE` now
   persists accepted host keys to disk on disconnect, creating the known_hosts
   file and parent directories if absent. Inline keys (code/config/env) are
@@ -148,6 +128,22 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **Snippet indentation in docs code blocks** (BUG-004): named snippet
   regions inside function bodies rendered with extra leading whitespace.
   Fixed via pymdownx.snippets `dedent_subsections` option.
+
+### Changed
+
+- **Performance messaging rewrite** (ID-104): README and performance guide now
+  present overhead as measured values in ms (with percentages in brackets)
+  instead of judgmental language. Users see the numbers and decide for
+  themselves.
+
+- **Seekable read promoted to Store API** (ID-100, ID-102): New
+  `Store.read_seekable()` method — always returns a seekable stream,
+  backend-optimized. On seekable backends (Local, S3, SFTP) it's
+  zero-overhead passthrough. On Azure it returns `_AzureRangeReader`
+  (HTTP Range requests per read — ideal for PyArrow column pruning).
+  On HTTP it spools to `SpooledTemporaryFile`. Replaces
+  `ext.seekable.seekable_read()` (removed, never released).
+  ADR-0017 supersedes ADR-0016. Spec 036 revised.
 
 ### Documentation
 

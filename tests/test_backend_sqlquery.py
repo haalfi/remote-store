@@ -144,6 +144,15 @@ class TestStrictMode:
             SQLQueryBackend(url="sqlite:///:memory:", strict=False)
 
 
+@pytest.mark.spec("SQL-QUERY-005")
+class TestRegistration:
+    def test_sql_query_registered(self) -> None:
+        from remote_store._registry import _BACKEND_FACTORIES, _register_builtin_backends
+
+        _register_builtin_backends()
+        assert _BACKEND_FACTORIES.get("sql-query") is SQLQueryBackend
+
+
 # ---------------------------------------------------------------------------
 # Format detection
 # ---------------------------------------------------------------------------
@@ -151,25 +160,23 @@ class TestStrictMode:
 
 @pytest.mark.spec("SQL-QUERY-012")
 class TestFormatDetection:
-    def test_parquet_extension(self) -> None:
-        assert SQLQueryBackend._detect_format("data.parquet") == "parquet"
+    @pytest.mark.parametrize(
+        ("path", "expected"),
+        [
+            ("data.parquet", "parquet"),
+            ("data.csv", "csv"),
+            ("data.arrow", "arrow"),
+            ("data.ipc", "arrow"),
+        ],
+        ids=["parquet", "csv", "arrow", "ipc"],
+    )
+    def test_supported_extensions(self, backend: SQLQueryBackend, path: str, expected: str) -> None:
+        assert backend._detect_format(path) == expected
 
-    def test_csv_extension(self) -> None:
-        assert SQLQueryBackend._detect_format("data.csv") == "csv"
-
-    def test_arrow_extension(self) -> None:
-        assert SQLQueryBackend._detect_format("data.arrow") == "arrow"
-
-    def test_ipc_extension(self) -> None:
-        assert SQLQueryBackend._detect_format("data.ipc") == "arrow"
-
-    def test_unknown_extension_raises(self) -> None:
+    @pytest.mark.parametrize("path", ["data.xlsx", "data"], ids=["unknown_ext", "no_ext"])
+    def test_unsupported_extension_raises(self, backend: SQLQueryBackend, path: str) -> None:
         with pytest.raises(InvalidPath, match="Unsupported format"):
-            SQLQueryBackend._detect_format("data.xlsx")
-
-    def test_no_extension_raises(self) -> None:
-        with pytest.raises(InvalidPath, match="Unsupported format"):
-            SQLQueryBackend._detect_format("data")
+            backend._detect_format(path)
 
 
 # ---------------------------------------------------------------------------
@@ -296,47 +303,50 @@ class TestReadBytes:
 
 @pytest.mark.spec("SQL-QUERY-042")
 class TestExists:
-    def test_file_exists(self, backend: SQLQueryBackend) -> None:
-        assert backend.exists("reports/sales.parquet") is True
-
-    def test_file_not_exists(self, backend: SQLQueryBackend) -> None:
-        assert backend.exists("nonexistent.parquet") is False
-
-    def test_folder_exists(self, backend: SQLQueryBackend) -> None:
-        assert backend.exists("reports") is True
-
-    def test_folder_not_exists(self, backend: SQLQueryBackend) -> None:
-        assert backend.exists("missing") is False
-
-    def test_root_exists(self, backend: SQLQueryBackend) -> None:
-        assert backend.exists("") is True
+    @pytest.mark.parametrize(
+        ("path", "expected"),
+        [
+            ("reports/sales.parquet", True),
+            ("nonexistent.parquet", False),
+            ("reports", True),
+            ("missing", False),
+            ("", True),
+        ],
+        ids=["file", "file_missing", "folder", "folder_missing", "root"],
+    )
+    def test_exists(self, backend: SQLQueryBackend, path: str, expected: bool) -> None:
+        assert backend.exists(path) is expected
 
 
 @pytest.mark.spec("SQL-QUERY-043")
 class TestIsFile:
-    def test_is_file_true(self, backend: SQLQueryBackend) -> None:
-        assert backend.is_file("reports/sales.parquet") is True
-
-    def test_is_file_false_for_folder(self, backend: SQLQueryBackend) -> None:
-        assert backend.is_file("reports") is False
-
-    def test_is_file_false_for_root(self, backend: SQLQueryBackend) -> None:
-        assert backend.is_file("") is False
+    @pytest.mark.parametrize(
+        ("path", "expected"),
+        [
+            ("reports/sales.parquet", True),
+            ("reports", False),
+            ("", False),
+        ],
+        ids=["file", "folder", "root"],
+    )
+    def test_is_file(self, backend: SQLQueryBackend, path: str, expected: bool) -> None:
+        assert backend.is_file(path) is expected
 
 
 @pytest.mark.spec("SQL-QUERY-044")
 class TestIsFolder:
-    def test_is_folder_for_prefix(self, backend: SQLQueryBackend) -> None:
-        assert backend.is_folder("reports") is True
-
-    def test_is_folder_for_root(self, backend: SQLQueryBackend) -> None:
-        assert backend.is_folder("") is True
-
-    def test_is_folder_false_for_file(self, backend: SQLQueryBackend) -> None:
-        assert backend.is_folder("reports/sales.parquet") is False
-
-    def test_is_folder_false_for_missing(self, backend: SQLQueryBackend) -> None:
-        assert backend.is_folder("nonexistent") is False
+    @pytest.mark.parametrize(
+        ("path", "expected"),
+        [
+            ("reports", True),
+            ("", True),
+            ("reports/sales.parquet", False),
+            ("nonexistent", False),
+        ],
+        ids=["prefix", "root", "file", "missing"],
+    )
+    def test_is_folder(self, backend: SQLQueryBackend, path: str, expected: bool) -> None:
+        assert backend.is_folder(path) is expected
 
 
 # ---------------------------------------------------------------------------
@@ -396,6 +406,7 @@ class TestListFolders:
         assert len(folders) == 0
 
 
+@pytest.mark.spec("SQL-QUERY-030")
 class TestIterChildren:
     def test_iter_children_root(self, backend: SQLQueryBackend) -> None:
         children = list(backend.iter_children(""))
@@ -482,33 +493,22 @@ class TestGlob:
 
 @pytest.mark.spec("SQL-QUERY-050")
 class TestUnsupportedOps:
-    def test_write_raises(self, backend: SQLQueryBackend) -> None:
+    @pytest.mark.parametrize(
+        ("method", "args"),
+        [
+            ("write", ("x.parquet", b"data")),
+            ("write_atomic", ("x.parquet", b"data")),
+            ("open_atomic", ("x.parquet",)),
+            ("delete", ("x.parquet",)),
+            ("delete_folder", ("reports",)),
+            ("move", ("a.parquet", "b.parquet")),
+            ("copy", ("a.parquet", "b.parquet")),
+        ],
+        ids=["write", "write_atomic", "open_atomic", "delete", "delete_folder", "move", "copy"],
+    )
+    def test_unsupported_op(self, backend: SQLQueryBackend, method: str, args: tuple[object, ...]) -> None:
         with pytest.raises(CapabilityNotSupported, match="read-only"):
-            backend.write("x.parquet", b"data")
-
-    def test_write_atomic_raises(self, backend: SQLQueryBackend) -> None:
-        with pytest.raises(CapabilityNotSupported, match="read-only"):
-            backend.write_atomic("x.parquet", b"data")
-
-    def test_open_atomic_raises(self, backend: SQLQueryBackend) -> None:
-        with pytest.raises(CapabilityNotSupported, match="read-only"):
-            backend.open_atomic("x.parquet")
-
-    def test_delete_raises(self, backend: SQLQueryBackend) -> None:
-        with pytest.raises(CapabilityNotSupported, match="read-only"):
-            backend.delete("x.parquet")
-
-    def test_delete_folder_raises(self, backend: SQLQueryBackend) -> None:
-        with pytest.raises(CapabilityNotSupported, match="read-only"):
-            backend.delete_folder("reports")
-
-    def test_move_raises(self, backend: SQLQueryBackend) -> None:
-        with pytest.raises(CapabilityNotSupported, match="read-only"):
-            backend.move("a.parquet", "b.parquet")
-
-    def test_copy_raises(self, backend: SQLQueryBackend) -> None:
-        with pytest.raises(CapabilityNotSupported, match="read-only"):
-            backend.copy("a.parquet", "b.parquet")
+            getattr(backend, method)(*args)
 
 
 # ---------------------------------------------------------------------------
@@ -540,17 +540,18 @@ class TestErrorMapping:
 
 @pytest.mark.spec("SQL-QUERY-080")
 class TestPathValidation:
-    def test_null_byte_raises(self, backend: SQLQueryBackend) -> None:
-        with pytest.raises(InvalidPath, match="null byte"):
-            backend.read("test\x00.parquet")
-
-    def test_absolute_path_raises(self, backend: SQLQueryBackend) -> None:
-        with pytest.raises(InvalidPath, match="Absolute"):
-            backend.read("/test.parquet")
-
-    def test_dotdot_raises(self, backend: SQLQueryBackend) -> None:
-        with pytest.raises(InvalidPath, match="\\.\\."):
-            backend.read("../test.parquet")
+    @pytest.mark.parametrize(
+        ("path", "match"),
+        [
+            ("test\x00.parquet", "null byte"),
+            ("/test.parquet", "Absolute"),
+            ("../test.parquet", "\\.\\."),
+        ],
+        ids=["null_byte", "absolute", "dotdot"],
+    )
+    def test_invalid_path(self, backend: SQLQueryBackend, path: str, match: str) -> None:
+        with pytest.raises(InvalidPath, match=match):
+            backend.read(path)
 
 
 # ---------------------------------------------------------------------------

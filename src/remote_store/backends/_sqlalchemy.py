@@ -820,6 +820,13 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
             msg = "View/convention discovery (strict=False) is not yet implemented"
             raise NotImplementedError(msg)
 
+        try:
+            import pyarrow  # noqa: F401, PLC0415
+        except ImportError as exc:  # pragma: no cover
+            raise ImportError(
+                "SQLQueryBackend requires 'pyarrow'. Install with: pip install remote-store[sql-query]"
+            ) from exc
+
         super().__init__(url=url, engine=engine)
 
         self._queries: dict[str, str] = {}
@@ -856,8 +863,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
             return self._queries[path]
         raise NotFound(f"No query registered for key: {path}", path=path, backend=self.name)
 
-    @staticmethod
-    def _detect_format(path: str) -> str:
+    def _detect_format(self, path: str) -> str:
         """Detect serialization format from file extension."""
         dot_idx = path.rfind(".")
         ext = "" if dot_idx == -1 else path[dot_idx:].lower()
@@ -867,7 +873,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
             raise InvalidPath(
                 f"Unsupported format {ext!r} for key {path!r}. Supported: {supported}",
                 path=path,
-                backend="sql-query",
+                backend=self.name,
             )
         return fmt
 
