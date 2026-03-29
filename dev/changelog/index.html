@@ -6661,6 +6661,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0019-multi-agent-orchestration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0019: Multi-Agent Orchestration Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -9027,6 +9055,12 @@
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong>Multi-agent orchestration skill</strong> (BK-125): <code>/orchestrate</code> skill delegating
+  to 4 domain experts (Store &amp; Backend, Extension, Testing, Documentation) via
+  Claude Code Agent tool. Two modes: implementation and review. ADR-0019
+  documents the architecture decision.</p>
+</li>
+<li>
 <p><strong>Testing standards guide</strong> (BK-124a): New <code>sdd/TESTING.md</code> codifying 8 test
   quality rules from research-testing-best-practices. Companion to DESIGN.md
   § 11 (style). Includes Testing Expert quick reference for BK-125.</p>
@@ -9034,7 +9068,7 @@
 <li>
 <p><strong>RFC-0009: Multi-agent orchestration</strong> (BK-125): Draft RFC proposing
   orchestrator + 4 subject matter experts for complex multi-concern tasks.
-  Claude Code native (Task tool) approach. No code change — process only.</p>
+  Claude Code native (Agent tool) approach. No code change — process only.</p>
 </li>
 <li>
 <p><strong>Test coverage and ResourceWarning fixes</strong>: SQLBlob test fixtures now
