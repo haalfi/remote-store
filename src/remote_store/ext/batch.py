@@ -133,6 +133,7 @@ def _run_batch_concurrent(
     *,
     max_workers: int | None,
 ) -> BatchResult:
+    # Materialise upfront — futures need random access by key.
     items_list = list(items)
     succeeded: list[str] = []
     failed: dict[str, RemoteStoreError] = {}
@@ -279,6 +280,7 @@ def _batch_exists_concurrent(
     max_workers: int | None,
 ) -> dict[str, bool]:
     """Concurrent implementation of batch_exists."""
+    # Materialise upfront — futures need random access by path.
     paths_list = list(paths)
     result: dict[str, bool] = {}
     executor = ThreadPoolExecutor(max_workers=max_workers)
