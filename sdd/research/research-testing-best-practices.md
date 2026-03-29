@@ -201,7 +201,54 @@ His four pillars of a good test:
 Most of our anti-patterns violate pillar 2 (private attribute access,
 implementation-coupled mocks) or pillar 1 (no assertions, isinstance-only).
 
-### 3.2 How Major Python Projects Test
+**Important nuance:** Khorikov's "the number of classes is irrelevant"
+applies to *what you test* (a unit of behavior may span classes). It does
+**not** mean the volume of test code is irrelevant. Pillar 4
+(maintainability) directly addresses this -- and our own history proves it.
+
+### 3.2 Test Code Economy: Less Code, Same Coverage, Better Signal
+
+BK-014 demonstrated that **test code bloat is itself an anti-pattern**.
+Reducing ~17,800 to ~16,300 lines (-8.6%) with zero coverage loss and
+identical pass/skip counts proved that the removed code was pure maintenance
+burden -- it tested nothing that wasn't already tested.
+
+**Why bloated test suites are dangerous:**
+
+1. **Distraction.** When reviewing a 900-line test file, the 30 meaningful
+   tests are buried among 50 trivial ones. Reviewers miss real issues.
+2. **False confidence.** "We have 1,866 tests" sounds impressive, but if
+   400 of them are single-method classes that duplicate parametrizable
+   logic, the actual *distinct behavioral coverage* is lower than it
+   appears.
+3. **Maintenance drag.** Every refactoring requires updating more test
+   code. When tests outnumber production code (our ratio is ~1.3:1 by
+   lines), the tail wags the dog.
+4. **Anti-pattern camouflage.** A no-assertion test hiding in a 50-test
+   class is easy to miss. In a tight, parametrized suite it would stand
+   out immediately.
+
+**Techniques that reduce test code without reducing coverage:**
+
+| Technique | Reduction | Example |
+|-----------|-----------|---------|
+| Parametrize similar tests | 3-10 tests -> 1 | `@pytest.mark.parametrize("op", ["move", "copy"])` |
+| Merge single-method classes | N classes -> 1 | Combine `TestMoveOp` + `TestCopyOp` into `TestFileOps` |
+| Extract shared fixtures | N inline setups -> 1 | `@pytest.fixture` in `conftest.py` |
+| Remove tests subsumed by others | Delete | If `test_write_and_read` already covers write, `test_write_exists` adds nothing |
+| Replace copy-paste with base classes | 2 files -> 1 + mixin | BK-011: `_S3Base` for S3/S3-PyArrow shared tests |
+
+**The goal is not fewer tests, it's fewer lines per tested behavior.** A
+parametrized test with 8 cases in 15 lines is strictly better than 8
+separate test methods in 80 lines -- same coverage, one-eighth the
+maintenance surface.
+
+Jay Fields (*Working Effectively with Unit Tests*) makes this explicit:
+
+> It's acceptable to delete tests that don't provide value. Tests are an
+> investment; if the return is negative, cut your losses.
+
+### 3.4 How Major Python Projects Test
 
 | Project | Key Strategy | Mocking Approach |
 |---------|-------------|-----------------|
@@ -215,7 +262,7 @@ implementation-coupled mocks) or pillar 1 (no assertions, isinstance-only).
 (dependency injection, adapter pattern, functional core) to make code
 testable without mocks.
 
-### 3.3 Hynek Schlawack: "Don't Mock What You Don't Own"
+### 3.5 Hynek Schlawack: "Don't Mock What You Don't Own"
 
 Key principles from [hynek.me](https://hynek.me/articles/what-to-mock-in-5-mins/):
 
@@ -230,7 +277,7 @@ His talk "Design Pressure" (PyCon US 2025) extends this: if you need many
 mocks, your code has a design problem. Push I/O to the edges ("Functional
 Core, Imperative Shell") and the core becomes trivially testable.
 
-### 3.4 Ned Batchelder: Coverage Is Necessary But Not Sufficient
+### 3.6 Ned Batchelder: Coverage Is Necessary But Not Sufficient
 
 From his [blog](https://nedbatchelder.com/blog/tag/coverage.html) and talks:
 
@@ -242,7 +289,7 @@ From his [blog](https://nedbatchelder.com/blog/tag/coverage.html) and talks:
 it doesn't prevent tests with no assertions from inflating the number. We
 need quality metrics alongside quantity metrics.
 
-### 3.5 Property-Based Testing (Hypothesis)
+### 3.7 Property-Based Testing (Hypothesis)
 
 Hypothesis generates random inputs and checks invariant properties:
 
@@ -265,7 +312,7 @@ def test_write_read_roundtrip(data: bytes) -> None:
 Hillel Wayne's insight: **Contracts + Property-Based Testing = Integration
 Tests**. Define invariants as contracts, let Hypothesis find violations.
 
-### 3.6 Mutation Testing
+### 3.8 Mutation Testing
 
 Mutation testing answers: "If a bug were introduced, would my tests catch it?"
 
@@ -290,7 +337,7 @@ Consider running mutmut on a weekly CI schedule (it's too slow for every PR).
 
 ## 4. Proposed Testing Rules for remote-store
 
-### 4.1 The Seven Rules
+### 4.1 The Eight Rules
 
 These rules should be added to `sdd/DESIGN.md` section 11 (Test Style) and
 enforced in code review:
@@ -322,7 +369,14 @@ Use `MemoryBackend` or in-memory SQLite over mocked backends. Use
 `pytest-httpserver` over mocked HTTP clients. Reserve mocks for external
 services that can't be run locally.
 
-**Rule 7: Tests must survive refactoring.**
+**Rule 7: Maximize behavioral coverage per line of test code.**
+Parametrize similar tests instead of writing separate methods. Merge
+single-method test classes. Delete tests subsumed by others. Three
+parametrized cases in 10 lines beat three methods in 30 lines -- same
+coverage, one-third the maintenance surface. (See BK-014: -8.6% test
+code, zero coverage loss.)
+
+**Rule 8: Tests must survive refactoring.**
 If renaming a private method or changing internal data structures would
 break a test without changing behavior, the test is coupled to
 implementation. Fix the test.
@@ -372,7 +426,9 @@ Add to the CLAUDE.md `## Code conventions` or a new `## Testing` section:
 4. **Always use `spec=` with MagicMock.** Unconstrained mocks are banned.
 5. **Don't mock what you don't own.** Mock at our boundaries, not third-party APIs.
 6. **Prefer real dependencies.** `MemoryBackend` > `MagicMock(spec=Backend)`.
-7. **Tests must survive refactoring.** If renaming a private method breaks a
+7. **Maximize coverage per line of test code.** Parametrize, don't copy-paste.
+   Delete tests subsumed by others. Less test code = less maintenance drag.
+8. **Tests must survive refactoring.** If renaming a private method breaks a
    test, the test is wrong.
 
 See `sdd/research/research-testing-best-practices.md` for rationale and examples.
