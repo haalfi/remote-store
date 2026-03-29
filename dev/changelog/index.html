@@ -9049,6 +9049,13 @@
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong><code>MemoryCache.size()</code> no longer rebuilds dict</strong> (BK-127 L-1): Replaced dict
+  comprehension with <code>sum()</code> generator — avoids transient 2× memory spike on
+  large caches. Trade-off: <code>size()</code> no longer evicts expired entries as a
+  side-effect; they remain in <code>_data</code> until the next <code>get()</code>, <code>clear_prefix()</code>,
+  or <code>clear_prefixes()</code> call.</p>
+</li>
+<li>
 <p><strong>Replaced mypy <code>ignore_missing_imports</code> overrides with proper type stubs</strong>
   (BK-015): Removed 8 <code>[[tool.mypy.overrides]]</code> entries that suppressed
   import errors for packages shipping <code>py.typed</code> or having PyPI stubs
@@ -9136,6 +9143,10 @@
 </ul>
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
+<li>Document <code>list()</code> materialisation in concurrent batch helpers (BK-127 L-2).</li>
+<li>
+<p>Clarify module-level sqlalchemy import rationale (BK-127 L-3).</p>
+</li>
 <li>
 <p><strong>Ruff PT rules enabled</strong> (BK-124b): <code>flake8-pytest-style</code> enforced in
   <code>pyproject.toml</code>. 152 auto-fixed, 13 <code>match=</code> added to <code>pytest.raises</code>,
