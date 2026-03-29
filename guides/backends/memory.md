@@ -58,7 +58,10 @@ This matches `LocalBackend` semantics exactly.
 
 ## Thread Safety
 
-All operations are serialized under a single lock. The lock is never held during caller consumption of returned data (streams, iterators).
+All operations are thread-safe. Mutations are serialized under a lock.
+Listing operations (`list_files`, `list_folders`, `iter_children`)
+snapshot the internal state under the lock and then build results
+lazily outside it, reducing lock contention for concurrent workloads.
 
 ## Testing with MemoryBackend
 

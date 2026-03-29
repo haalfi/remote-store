@@ -112,14 +112,21 @@ class _S3Base(Backend):
         recursive: bool = False,
         max_depth: int | None = None,
     ) -> Iterator[FileInfo]:
+        from collections import deque
+
         try:
             s3_path = self._s3_path(path)
             if recursive:
-                results: dict[str, Any] = self._s3fs.find(s3_path, detail=True)
-                for s3_key, info in results.items():
-                    if info.get("type") == "file":
-                        rel = self.to_key(s3_key)
-                        yield self._info_to_fileinfo(info, rel)
+                queue: deque[str] = deque([s3_path])
+                while queue:
+                    current = queue.popleft()
+                    dir_entries: list[dict[str, Any]] = self._s3fs.ls(current, detail=True)
+                    for info in dir_entries:
+                        if info.get("type") == "file":
+                            rel = self.to_key(info["name"])
+                            yield self._info_to_fileinfo(info, rel)
+                        elif info.get("type") == "directory":
+                            queue.append(info["name"])
             else:
                 entries: list[dict[str, Any]] = self._s3fs.ls(s3_path, detail=True)
                 for info in entries:
@@ -192,26 +199,33 @@ class _S3Base(Backend):
         # S3 folders are virtual (prefix-based).  An empty folder is simply a
         # prefix with no objects, so exists() already returns False for truly
         # non-existent prefixes.
+        from collections import deque
+
         with self._s3fs_errors(path):
             s3_path = self._s3_path(path)
             if not self._s3fs.exists(s3_path):
                 raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
-            results: dict[str, Any] = self._s3fs.find(s3_path, detail=True)
             file_count = 0
             total_size = 0
             latest_modified: datetime | None = None
-            for _key, info in results.items():
-                if info.get("type") == "file":
-                    file_count += 1
-                    total_size += info.get("size", 0) or 0
-                    modified = info.get("LastModified", info.get("last_modified"))
-                    if isinstance(modified, str):  # pragma: no cover -- moto returns datetime
-                        modified = datetime.fromisoformat(modified)
-                    if modified is not None:
-                        if modified.tzinfo is None:  # pragma: no cover -- moto includes tzinfo
-                            modified = modified.replace(tzinfo=timezone.utc)
-                        if latest_modified is None or modified > latest_modified:
-                            latest_modified = modified
+            queue: deque[str] = deque([s3_path])
+            while queue:
+                current = queue.popleft()
+                entries: list[dict[str, Any]] = self._s3fs.ls(current, detail=True)
+                for info in entries:
+                    if info.get("type") == "directory":
+                        queue.append(info["name"])
+                    elif info.get("type") == "file":
+                        file_count += 1
+                        total_size += info.get("size", 0) or 0
+                        modified = info.get("LastModified", info.get("last_modified"))
+                        if isinstance(modified, str):  # pragma: no cover -- moto returns datetime
+                            modified = datetime.fromisoformat(modified)
+                        if modified is not None:
+                            if modified.tzinfo is None:  # pragma: no cover -- moto includes tzinfo
+                                modified = modified.replace(tzinfo=timezone.utc)
+                            if latest_modified is None or modified > latest_modified:
+                                latest_modified = modified
             return FolderInfo(
                 path=RemotePath.from_backend_path(path),
                 file_count=file_count,

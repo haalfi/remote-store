@@ -8,7 +8,7 @@ import logging
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, BinaryIO, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -117,7 +117,18 @@ class MemoryBackend(Backend):
         if not segments:
             raise InvalidPath("Path must not be empty for file operations", path=path, backend="memory")
 
-        raw = content if isinstance(content, bytes) else content.read()
+        # Build bytearray without a second copy: for streams, accumulate
+        # chunks directly into the target bytearray instead of reading all
+        # bytes first and then copying into a new bytearray.
+        if isinstance(content, bytes):
+            raw = bytearray(content)
+        else:
+            raw = bytearray()
+            while True:
+                chunk = content.read(65536)
+                if not chunk:
+                    break
+                raw.extend(chunk)
 
         with self._lock:
             parent = self._ensure_parents(segments)
@@ -137,7 +148,7 @@ class MemoryBackend(Backend):
                 existing.modified_at = datetime.now(timezone.utc)
             else:
                 parent.children[leaf] = _FileEntry(
-                    data=bytearray(raw),
+                    data=raw,
                     modified_at=datetime.now(timezone.utc),
                 )
                 self._file_count += 1
@@ -222,13 +233,23 @@ class MemoryBackend(Backend):
             if not isinstance(node, _DirNode):
                 return
             prefix = "/".join(segments) if segments else ""
-            results = self._collect_files(
-                node,
-                prefix,
-                recursive=recursive,
-                max_depth=max_depth,
-            )
-        yield from results
+            if recursive:
+                snapshot = self._snapshot_subtree(node)
+            else:
+                children_snap = dict(node.children)
+        if recursive:
+            yield from self._collect_files_from_snapshot(snapshot, prefix, max_depth=max_depth)
+        else:
+            for name, child in children_snap.items():
+                if isinstance(child, _FileEntry):
+                    child_path = f"{prefix}/{name}" if prefix else name
+                    yield FileInfo(
+                        path=RemotePath(child_path),
+                        name=name,
+                        size=len(child.data),
+                        modified_at=child.modified_at,
+                        content_type=child.content_type,
+                    )
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         segments = self._split_path(path)
@@ -237,15 +258,13 @@ class MemoryBackend(Backend):
             if not isinstance(node, _DirNode):
                 return
             prefix = "/".join(segments) if segments else ""
-            results = [
-                FolderEntry(
+            children_snapshot = dict(node.children)
+        for name, child in children_snapshot.items():
+            if isinstance(child, _DirNode):
+                yield FolderEntry(
                     path=RemotePath(f"{prefix}/{name}" if prefix else name),
                     name=name,
                 )
-                for name, child in node.children.items()
-                if isinstance(child, _DirNode)
-            ]
-        yield from results
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         segments = self._split_path(path)
@@ -254,23 +273,20 @@ class MemoryBackend(Backend):
             if not isinstance(node, _DirNode):
                 return
             prefix = "/".join(segments) if segments else ""
-            results: list[FileInfo | FolderEntry] = []
-            for name, child in node.children.items():
-                if isinstance(child, _FileEntry):
-                    child_path = f"{prefix}/{name}" if prefix else name
-                    results.append(
-                        FileInfo(
-                            path=RemotePath(child_path),
-                            name=name,
-                            size=len(child.data),
-                            modified_at=child.modified_at,
-                            content_type=child.content_type,
-                        )
-                    )
-                elif isinstance(child, _DirNode):
-                    child_path = f"{prefix}/{name}" if prefix else name
-                    results.append(FolderEntry(path=RemotePath(child_path), name=name))
-        yield from results
+            children_snapshot = dict(node.children)
+        for name, child in children_snapshot.items():
+            if isinstance(child, _FileEntry):
+                child_path = f"{prefix}/{name}" if prefix else name
+                yield FileInfo(
+                    path=RemotePath(child_path),
+                    name=name,
+                    size=len(child.data),
+                    modified_at=child.modified_at,
+                    content_type=child.content_type,
+                )
+            elif isinstance(child, _DirNode):
+                child_path = f"{prefix}/{name}" if prefix else name
+                yield FolderEntry(path=RemotePath(child_path), name=name)
 
     def get_file_info(self, path: str) -> FileInfo:
         segments = self._split_path(path)
@@ -482,38 +498,50 @@ class MemoryBackend(Backend):
         return files, folders
 
     @staticmethod
-    def _collect_files(
-        node: _DirNode,
+    def _snapshot_subtree(node: _DirNode) -> dict[str, _FileEntry | dict[str, Any]]:
+        """Deep-copy the tree structure under *node* for lock-free iteration.
+
+        Returns a nested dict where leaves are ``_FileEntry`` references
+        (shared, not copied) and directories are plain dicts mirroring the
+        ``children`` structure.  This is cheap -- only the dict objects are
+        duplicated, not file data.
+        """
+        result: dict[str, Any] = {}
+        for name, child in node.children.items():
+            if isinstance(child, _FileEntry):
+                result[name] = child
+            elif isinstance(child, _DirNode):
+                result[name] = MemoryBackend._snapshot_subtree(child)
+        return result
+
+    @staticmethod
+    def _collect_files_from_snapshot(
+        snapshot: dict[str, Any],
         prefix: str,
         *,
-        recursive: bool,
         max_depth: int | None = None,
-    ) -> list[FileInfo]:
-        """Collect FileInfo objects from a directory node (under lock).
+    ) -> Iterator[FileInfo]:
+        """Yield FileInfo objects from a snapshot dict (outside lock).
 
         Uses iterative DFS for consistency with ``_count_subtree`` and
         ``get_folder_info``, avoiding recursion-limit concerns on deep trees.
         """
-        results: list[FileInfo] = []
-        stack: list[tuple[_DirNode, str, int]] = [(node, prefix, 0)]
+        stack: list[tuple[dict[str, Any], str, int]] = [(snapshot, prefix, 0)]
         while stack:
             current, cur_prefix, depth = stack.pop()
-            for name, child in current.children.items():
+            for name, child in current.items():
                 child_path = f"{cur_prefix}/{name}" if cur_prefix else name
                 if isinstance(child, _FileEntry):
-                    results.append(
-                        FileInfo(
-                            path=RemotePath(child_path),
-                            name=name,
-                            size=len(child.data),
-                            modified_at=child.modified_at,
-                            content_type=child.content_type,
-                        )
+                    yield FileInfo(
+                        path=RemotePath(child_path),
+                        name=name,
+                        size=len(child.data),
+                        modified_at=child.modified_at,
+                        content_type=child.content_type,
                     )
-                elif recursive and isinstance(child, _DirNode):
+                elif isinstance(child, dict):
                     if max_depth is not None and depth >= max_depth:
                         continue
                     stack.append((child, child_path, depth + 1))
-        return results
 
     # endregion

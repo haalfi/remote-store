@@ -856,3 +856,71 @@ class TestS3Glob:
 
 
 # endregion
+
+
+# region: Paginated Listing (BK-123 H-1/H-2)
+class TestS3PaginatedListing:
+    """BK-123 H-1/H-2: recursive listing uses BFS via ls() instead of s3fs.find()."""
+
+    @pytest.mark.spec("BK-123")
+    def test_list_files_recursive_nested_dirs(self, s3_backend: Backend) -> None:
+        """list_files(recursive=True) returns files across nested directories."""
+        s3_backend.write("a/1.txt", b"one")
+        s3_backend.write("a/b/2.txt", b"two")
+        s3_backend.write("a/b/c/3.txt", b"three")
+        files = list(s3_backend.list_files("a", recursive=True))
+        names = {f.name for f in files}
+        assert names == {"1.txt", "2.txt", "3.txt"}
+        # Verify paths are fully qualified relative keys
+        paths = {str(f.path) for f in files}
+        assert "a/1.txt" in paths
+        assert "a/b/2.txt" in paths
+        assert "a/b/c/3.txt" in paths
+
+    @pytest.mark.spec("BK-123")
+    def test_get_folder_info_aggregates_nested(self, s3_backend: Backend) -> None:
+        """get_folder_info aggregates count, size, modified across nested dirs."""
+        s3_backend.write("nest/x.txt", b"xx")
+        s3_backend.write("nest/sub/y.txt", b"yyyy")
+        s3_backend.write("nest/sub/deep/z.txt", b"zzzzzz")
+        info = s3_backend.get_folder_info("nest")
+        assert info.file_count == 3
+        assert info.total_size == 2 + 4 + 6
+        assert info.modified_at is not None
+
+    @pytest.mark.spec("BK-123")
+    def test_find_not_called_for_recursive_list(self, s3_backend: Backend) -> None:
+        """Verify _s3fs.find is NOT used for recursive listing (BFS via ls instead)."""
+        from remote_store.backends._s3 import S3Backend
+
+        assert isinstance(s3_backend, S3Backend)
+        s3_backend.write("chk/a.txt", b"a")
+        s3_backend.write("chk/b/c.txt", b"c")
+
+        with patch.object(
+            s3_backend._s3fs,
+            "find",
+            side_effect=AssertionError("find() should not be called"),
+        ):
+            files = list(s3_backend.list_files("chk", recursive=True))
+        assert len(files) == 2
+
+    @pytest.mark.spec("BK-123")
+    def test_find_not_called_for_get_folder_info(self, s3_backend: Backend) -> None:
+        """Verify _s3fs.find is NOT used for get_folder_info (BFS via ls instead)."""
+        from remote_store.backends._s3 import S3Backend
+
+        assert isinstance(s3_backend, S3Backend)
+        s3_backend.write("fi2/a.txt", b"aaa")
+
+        with patch.object(
+            s3_backend._s3fs,
+            "find",
+            side_effect=AssertionError("find() should not be called"),
+        ):
+            info = s3_backend.get_folder_info("fi2")
+        assert info.file_count == 1
+        assert info.total_size == 3
+
+
+# endregion

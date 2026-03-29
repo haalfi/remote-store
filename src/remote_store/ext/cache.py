@@ -225,6 +225,7 @@ class CachedStore(ProxyStore):
     _cache: CacheBackend
     _ttl: float
     _max_content_size: int | None
+    _max_listing_size: int | None
     _max_entries: int | None
     _hits: int
     _misses: int
@@ -235,6 +236,7 @@ class CachedStore(ProxyStore):
         *,
         ttl: float,
         max_content_size: int | None,
+        max_listing_size: int | None,
         max_entries: int | None,
         cache_backend: CacheBackend | None,
     ) -> None:
@@ -242,6 +244,7 @@ class CachedStore(ProxyStore):
         self._cache = cache_backend if cache_backend is not None else MemoryCache(max_entries=max_entries)
         self._ttl = ttl
         self._max_content_size = max_content_size
+        self._max_listing_size = max_listing_size
         self._max_entries = max_entries
         self._hits = 0
         self._misses = 0
@@ -344,8 +347,18 @@ class CachedStore(ProxyStore):
         cached = self._cache_get(key)
         if cached is not _MISSING:
             return cached  # type: ignore[no-any-return]
+        # Pre-flight: skip caching if file size is known to exceed limit.
+        # Uses self._cache.get() directly to avoid polluting hit/miss stats.
+        skip_cache = False
+        if self._max_content_size is not None:
+            try:
+                fi = self._cache.get(("get_file_info", path))
+                if fi.size > self._max_content_size:
+                    skip_cache = True
+            except KeyError:
+                pass
         result = self._inner.read_bytes(path)
-        if self._max_content_size is None or len(result) <= self._max_content_size:
+        if not skip_cache and (self._max_content_size is None or len(result) <= self._max_content_size):
             self._cache.set(key, result, self._ttl)
         return result
 
@@ -373,7 +386,8 @@ class CachedStore(ProxyStore):
         if cached is not _MISSING:
             return iter(cached)
         result = tuple(self._inner.iter_children(path))
-        self._cache.set(key, result, self._ttl)
+        if self._max_listing_size is None or len(result) <= self._max_listing_size:
+            self._cache.set(key, result, self._ttl)
         return iter(result)
 
     def list_files(
@@ -393,7 +407,8 @@ class CachedStore(ProxyStore):
         if cached is not _MISSING:
             return iter(cached)
         result = tuple(self._inner.list_files(path, recursive=recursive, pattern=pattern, max_depth=max_depth))
-        self._cache.set(key, result, self._ttl)
+        if self._max_listing_size is None or len(result) <= self._max_listing_size:
+            self._cache.set(key, result, self._ttl)
         return iter(result)
 
     def list_folders(self, path: str, *, max_depth: int | None = None) -> Iterator[FolderEntry]:
@@ -403,7 +418,8 @@ class CachedStore(ProxyStore):
         if cached is not _MISSING:
             return iter(cached)
         result = tuple(self._inner.list_folders(path, max_depth=max_depth))
-        self._cache.set(key, result, self._ttl)
+        if self._max_listing_size is None or len(result) <= self._max_listing_size:
+            self._cache.set(key, result, self._ttl)
         return iter(result)
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
@@ -412,7 +428,8 @@ class CachedStore(ProxyStore):
         if cached is not _MISSING:
             return iter(cached)
         result = tuple(self._inner.glob(pattern))
-        self._cache.set(key, result, self._ttl)
+        if self._max_listing_size is None or len(result) <= self._max_listing_size:
+            self._cache.set(key, result, self._ttl)
         return iter(result)
 
     # endregion
@@ -427,6 +444,7 @@ class CachedStore(ProxyStore):
             inner_child,
             ttl=self._ttl,
             max_content_size=self._max_content_size,
+            max_listing_size=self._max_listing_size,
             max_entries=self._max_entries,
             cache_backend=None,
         )
@@ -488,6 +506,7 @@ def cache(
     *,
     ttl: float = 300.0,
     max_content_size: int | None = None,
+    max_listing_size: int | None = None,
     max_entries: int | None = None,
     cache_backend: CacheBackend | None = None,
 ) -> CachedStore:
@@ -499,6 +518,10 @@ def cache(
         max_content_size: Maximum byte length for ``read_bytes`` caching.
             Files larger than this are returned without caching. ``None`` means
             unlimited.
+        max_listing_size: Maximum number of items in a listing result
+            (``iter_children``, ``list_files``, ``list_folders``, ``glob``)
+            for caching. Listings with more items than this are returned
+            without caching. ``None`` means unlimited.
         max_entries: Maximum number of cache entries. When exceeded, the
             least-recently-used entry is evicted. ``None`` means no limit.
             Ignored when *cache_backend* is provided.
@@ -514,10 +537,14 @@ def cache(
     if max_content_size is not None and max_content_size <= 0:
         msg = f"max_content_size must be positive, got {max_content_size}"
         raise ValueError(msg)
+    if max_listing_size is not None and max_listing_size <= 0:
+        msg = f"max_listing_size must be positive, got {max_listing_size}"
+        raise ValueError(msg)
     return CachedStore(
         store,
         ttl=ttl,
         max_content_size=max_content_size,
+        max_listing_size=max_listing_size,
         max_entries=max_entries,
         cache_backend=cache_backend,
     )

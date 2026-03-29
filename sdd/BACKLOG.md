@@ -39,41 +39,18 @@ Items graduate through the SDD pipeline:
 
 ### Performance & Memory
 
-- [ ] **BK-123 — Address laziness & memory findings from audit-005**
+- [~] **BK-123 — Address laziness & memory findings from audit-005**
   Follow-up to [audit-005](audits/audit-005-laziness-memory.md) (2026-03-28).
-  11 findings across High / Medium / Low. Suggested work order:
+  High + Medium findings (H-1, H-2, M-1..M-6) shipped. Low deferred to BK-127.
 
-  **High (most impact):**
-  - H-1/H-2: `backends/_s3_base.py` — replace `_s3fs.find()` (full dict) with
-    a paginated/streaming approach in both `list_files(recursive=True)` and
-    `get_folder_info`. Options: `s3fs.walk()`, manual paginated `ls()` loop, or
-    AWS `list_objects_v2` with `ContinuationToken` directly.
-
-  **Medium:**
-  - M-1: `ext/cache.py` — add `max_listing_size: int | None` guard to
-    `iter_children`, `list_files`, `list_folders`, `glob` — parallel to the
-    existing `max_content_size` guard on `read_bytes`. Skip caching when result
-    tuple would exceed the limit.
-  - M-2: `ext/cache.py` — pre-flight `get_file_info` size check in `read_bytes`
-    to skip the wasted cache-set attempt when `max_content_size` is set.
-  - M-3/M-4/M-5: `backends/_memory.py` — `list_files`, `list_folders`,
-    `iter_children` all build full lists under `_lock` then yield outside.
-    Snapshot `node.children` under lock (cheap), release lock, build/yield
-    lazily. Eliminates lock contention for long-running iterations.
-  - M-6: `backends/_memory.py` — `write()` double-copy: accumulate stream
-    into a `bytearray` via chunked `read()` to halve peak memory.
-
-  **Low (optional / polish):**
+- [ ] **BK-127 — Audit-005 low-priority polish (L-1, L-2, L-3)**
+  Remainder of BK-123. From [audit-005](audits/audit-005-laziness-memory.md):
   - L-1: `ext/cache.py` — `MemoryCache.size()` rebuilds dict on every call;
-    consider a separate `_size: int` counter maintained on set/delete.
-  - L-2: `ext/batch.py` — document `list()` materialisation in public API
-    docstrings; no code change required unless a streaming concurrent executor
-    is added.
+    replace with `sum()` generator expression to avoid transient 2x memory.
+  - L-2: `ext/batch.py` — document `list()` materialisation in concurrent
+    batch method docstrings.
   - L-3: `backends/_sqlalchemy.py` — defer `sqlalchemy` import to `__init__`
-    body (minor consistency issue only).
-
-  Each fix must follow the bug-fix protocol (backlog → changelog → failing test
-  → fix). Split into sub-items or a single PR depending on scope at the time.
+    body (minor consistency issue only; already guarded — skip or comment-only).
 
 ### Testing
 

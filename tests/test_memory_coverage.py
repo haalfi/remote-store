@@ -215,3 +215,122 @@ def test_move_source_parent_is_file(mb: MemoryBackend) -> None:
     mb.write("x", b"file")
     with pytest.raises(NotFound, match="Source not found"):
         mb.move("x/child", "dst")
+
+
+# ---------------------------------------------------------------------------
+# BK-123 M-3/M-4/M-5: listing correctness after lock-reduction refactor
+# ---------------------------------------------------------------------------
+
+
+class TestMemoryListingCorrectness:
+    """BK-123 M-3/M-4/M-5: listing methods return correct results after refactor."""
+
+    @pytest.mark.spec("BK-123")
+    def test_list_files_non_recursive(self, mb: MemoryBackend) -> None:
+        mb.write("top.txt", b"t")
+        mb.write("sub/nested.txt", b"n")
+        files = list(mb.list_files(""))
+        names = {f.name for f in files}
+        assert names == {"top.txt"}
+
+    @pytest.mark.spec("BK-123")
+    def test_list_files_recursive(self, mb: MemoryBackend) -> None:
+        mb.write("a/1.txt", b"one")
+        mb.write("a/b/2.txt", b"two")
+        mb.write("a/b/c/3.txt", b"three")
+        files = list(mb.list_files("a", recursive=True))
+        names = {f.name for f in files}
+        assert names == {"1.txt", "2.txt", "3.txt"}
+
+    @pytest.mark.spec("BK-123")
+    def test_list_folders(self, mb: MemoryBackend) -> None:
+        mb.write("d1/a.txt", b"a")
+        mb.write("d2/b.txt", b"b")
+        mb.write("root.txt", b"r")
+        folders = list(mb.list_folders(""))
+        names = {f.name for f in folders}
+        assert names == {"d1", "d2"}
+
+    @pytest.mark.spec("BK-123")
+    def test_iter_children_mixed(self, mb: MemoryBackend) -> None:
+        mb.write("file.txt", b"f")
+        mb.write("dir/child.txt", b"c")
+        children = list(mb.iter_children(""))
+        names = {c.name for c in children}
+        assert names == {"file.txt", "dir"}
+        assert len(children) == 2
+
+    @pytest.mark.spec("BK-123")
+    def test_list_files_empty_dir(self, mb: MemoryBackend) -> None:
+        """Listing a non-existent path yields nothing (no error)."""
+        files = list(mb.list_files("nonexistent"))
+        assert files == []
+
+    @pytest.mark.spec("BK-123")
+    def test_concurrent_write_and_listing_no_deadlock(self, mb: MemoryBackend) -> None:
+        """Concurrent writes + listings must not deadlock."""
+        import concurrent.futures
+
+        mb.write("init.txt", b"seed")
+
+        errors: list[Exception] = []
+
+        def writer(idx: int) -> None:
+            try:
+                for i in range(20):
+                    mb.write(f"w{idx}_{i}.txt", f"data-{i}".encode(), overwrite=True)
+            except Exception as exc:
+                errors.append(exc)
+
+        def reader() -> None:
+            try:
+                for _ in range(20):
+                    list(mb.list_files("", recursive=True))
+                    list(mb.list_folders(""))
+                    list(mb.iter_children(""))
+            except Exception as exc:
+                errors.append(exc)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+            futures = [pool.submit(writer, i) for i in range(3)]
+            futures += [pool.submit(reader) for _ in range(3)]
+            # 10-second timeout to detect deadlocks
+            concurrent.futures.wait(futures, timeout=10)
+            for f in futures:
+                if not f.done():
+                    pytest.fail("Deadlock detected: thread did not complete within 10s")
+        assert not errors, f"Concurrent operations raised: {errors}"
+
+
+# ---------------------------------------------------------------------------
+# BK-123 M-6: write with stream (double-copy elimination)
+# ---------------------------------------------------------------------------
+
+
+class TestMemoryWriteStream:
+    """BK-123 M-6: write with BinaryIO stream produces correct content."""
+
+    @pytest.mark.spec("BK-123")
+    def test_write_bytesio_stream(self, mb: MemoryBackend) -> None:
+        mb.write("stream.txt", io.BytesIO(b"streamed-content"))
+        assert mb.read_bytes("stream.txt") == b"streamed-content"
+
+    @pytest.mark.spec("BK-123")
+    def test_write_large_stream_chunked(self, mb: MemoryBackend) -> None:
+        """Large stream content is read in chunks and assembled correctly."""
+        large_data = b"x" * 200_000
+        mb.write("large.bin", io.BytesIO(large_data))
+        result = mb.read_bytes("large.bin")
+        assert len(result) == 200_000
+        assert result == large_data
+
+    @pytest.mark.spec("BK-123")
+    def test_overwrite_with_stream(self, mb: MemoryBackend) -> None:
+        mb.write("f.txt", b"original")
+        mb.write("f.txt", io.BytesIO(b"replaced"), overwrite=True)
+        assert mb.read_bytes("f.txt") == b"replaced"
+
+    @pytest.mark.spec("BK-123")
+    def test_write_empty_stream(self, mb: MemoryBackend) -> None:
+        mb.write("empty.txt", io.BytesIO(b""))
+        assert mb.read_bytes("empty.txt") == b""

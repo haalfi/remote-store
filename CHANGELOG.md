@@ -8,6 +8,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`max_listing_size` parameter for `cache()`** (BK-123 M-1): Skips caching
+  listing results (`list_files`, `list_folders`, `iter_children`, `glob`) that
+  exceed the given item count. Complements the existing `max_content_size` guard
+  for `read_bytes`.
+
 - **`SQLQueryBackend` — read-only SQL query materializer** (ID-119 v2): Maps
   path keys to SQL queries and serializes results to Parquet, CSV, or Arrow
   IPC based on the key's file extension. Explicit query mappings via `queries`
@@ -130,6 +135,22 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Fixed via pymdownx.snippets `dedent_subsections` option.
 
 ### Changed
+
+- **S3 recursive listing memory optimization** (BK-123 H-1/H-2):
+  `list_files(recursive=True)` and `get_folder_info` now use paginated
+  per-directory `ls()` calls instead of `find()`, reducing peak memory from
+  O(total objects) to O(widest directory).
+
+- **MemoryBackend listing lock reduction** (BK-123 M-3/M-4/M-5): `list_files`,
+  `list_folders`, and `iter_children` now snapshot state under lock and build
+  results lazily outside it, reducing lock contention during long iterations.
+
+- **MemoryBackend write memory optimization** (BK-123 M-6): Stream writes
+  accumulate directly into a `bytearray` via chunked reads, halving peak memory.
+
+- **CachedStore pre-flight size check** (BK-123 M-2): `read_bytes` checks
+  cached `get_file_info` size before reading to skip caching oversized files
+  earlier. Zero extra backend calls.
 
 - **Performance messaging rewrite** (ID-104): README and performance guide now
   present overhead as measured values in ms (with percentages in brackets)
