@@ -3,120 +3,63 @@
 ## Intent & Scope
 
 Authoritative source for test **quality** rules in `tests/`. Companion to
-[DESIGN.md](DESIGN.md) section 11, which covers test **style** (class grouping,
-spec markers, naming). This document covers what makes a test *meaningful*.
-
-Applies to all new and modified tests. Existing violations are tracked
-separately (BK-124b). Derived from
+[DESIGN.md](DESIGN.md) § 11 (test style). Derived from
 [research-testing-best-practices](research/research-testing-best-practices.md).
 
 ## Rules
 
-### 1. Every test must have at least one meaningful assertion [CI-enforced]
+1. **Every test must have at least one meaningful assertion** [CI-enforced]
+   — "no crash" is not a test. Public API methods need a failure-path test too
+   (`pytest.raises` with `match=`).
 
-"No crash" is not a test. If the method returns void, assert a post-condition
-proving the system reached the expected state. Every public API method should
-also have at least one failure-path test (`pytest.raises` with `match=`).
+2. **Assert behavior, not types** [review-enforced]
+   — `isinstance` may accompany behavioral assertions but never as the sole check.
 
-### 2. Assert behavior, not types [review-enforced]
+3. **Never assert on private attributes** [review-enforced]
+   — verify through observable behavior. Exception: `# internal: no public observable`.
 
-Replace `assert isinstance(x, FileInfo)` with assertions on `x.path`, `x.size`,
-or `x.name`. The type is already guaranteed by the type checker. `isinstance`
-may appear alongside behavioral assertions, but never as the sole check.
+4. **Always use `spec=` with `MagicMock`** [CI-enforced]
+   — `MagicMock()` without `spec` is banned; use `spec=RealClass` or `create_autospec`.
 
-### 3. Never assert on private attributes [review-enforced]
+5. **Don't mock what you don't own** [review-enforced]
+   — mock at our boundary (Backend ABC, wrapper, protocol), never third-party internals.
 
-`assert obj._field == x` is banned in new tests. If you need to verify internal
-state, either expose it through a public API or verify it through observable
-behavior. Exception: if no public observable exists, annotate with
-`# internal: no public observable` and justify in the PR.
+6. **Prefer real dependencies over mocks** [review-enforced]
+   — `MemoryBackend`, in-memory SQLite, `pytest-httpserver` before reaching for mocks.
 
-### 4. Always use `spec=` (or `spec_set=`) with `MagicMock` [CI-enforced]
+7. **Maximize behavioral coverage per line of test code** [review-enforced]
+   — parametrize over copy-paste; delete tests subsumed by others (verify via coverage).
 
-`MagicMock()` without `spec` is banned. Use `MagicMock(spec=RealClass)` or
-`create_autospec(RealClass)` to constrain mocks to real interfaces. This
-prevents tests from passing when the real class changes its API.
-
-### 5. Don't mock what you don't own [review-enforced]
-
-Never `patch("boto3.client")` or `patch("paramiko.SFTPClient")`. Mock at our
-own boundary: the Backend ABC, a wrapper function, or a protocol. Third-party
-behavior changes silently; mocking their internals hides the breakage.
-
-### 6. Prefer real dependencies over mocks [review-enforced]
-
-Use `MemoryBackend` or in-memory SQLite over mocked backends. Use
-`pytest-httpserver` over mocked HTTP clients. Reserve mocks for external
-services that cannot be run locally.
-
-### 7. Maximize behavioral coverage per line of test code [review-enforced]
-
-Parametrize similar tests instead of writing separate methods. Merge
-single-method test classes. Delete tests subsumed by others. When removing a
-test, verify via coverage that the deleted path is still exercised. Three
-parametrized cases in 10 lines beat three methods in 30 lines.
-
-### 8. Tests must survive refactoring [review-enforced]
-
-If renaming a private method or changing internal data structures would break a
-test without changing behavior, the test is coupled to implementation. Fix the
-test, not the production code.
+8. **Tests must survive refactoring** [review-enforced]
+   — if renaming a private method breaks the test, the test is wrong.
 
 ## Guides
 
-### Good vs bad examples
-
-**Rule 2 -- Assert behavior, not types:**
+### Examples (bad → good)
 
 ```python
-# Bad: type check only
-info = store.get_file_info("data.csv")
-assert isinstance(info, FileInfo)
+# Rule 2 — assert behavior, not types
+assert isinstance(info, FileInfo)           # bad
+assert info.path == "data.csv"              # good
 
-# Good: behavioral assertions
-info = store.get_file_info("data.csv")
-assert info.path == "data.csv"
-assert info.size > 0
+# Rule 3 — no private attributes
+assert store._ttl == 60                     # bad
+assert backend.read_count == 1              # good (observable)
+
+# Rule 4 — always use spec=
+backend = MagicMock()                       # bad
+backend = MagicMock(spec=Backend)           # good
 ```
 
-**Rule 3 -- No private attributes:**
+### Testing Expert quick reference (BK-125)
 
-```python
-# Bad: coupled to internals
-store = CachedStore(backend, ttl=60)
-assert store._ttl == 60
-
-# Good: verify through observable behavior
-store = CachedStore(backend, ttl=60)
-store.read_bytes("key")           # cold read
-store.read_bytes("key")           # warm read (cache hit)
-assert backend.read_count == 1    # only one backend call
-```
-
-**Rule 4 -- Always use `spec=`:**
-
-```python
-# Bad: accepts any call, even misspelled methods
-backend = MagicMock()
-backend.raed_bytes("key")  # typo passes silently
-
-# Good: constrained to real interface
-backend = MagicMock(spec=Backend)
-backend.raed_bytes("key")  # AttributeError — caught immediately
-```
-
-### Testing Expert quick reference
-
-Lookup table for the BK-125 Testing Expert agent. Each rule maps to a
-concrete check the expert should perform when writing or reviewing tests.
-
-| Rule | What to check | How |
-|------|--------------|-----|
-| 1 | Test has `assert` or `pytest.raises` | AST / grep |
-| 2 | No `isinstance`-only assertions | Review: sole `isinstance` without behavioral follow-up |
-| 3 | No `._private` in assertions | Grep for `\._[a-z]` in `assert` lines |
-| 4 | `MagicMock(` always has `spec=` | Grep for `MagicMock(` without `spec` |
-| 5 | No `patch("third_party.` | Review: patches target our code, not third-party |
-| 6 | Mocks justified | Review: could a real backend or fixture replace the mock? |
-| 7 | No duplicate test shapes | Review: 3+ similar methods should be parametrized |
-| 8 | No private-method coupling | Review: would renaming an internal break this test? |
+| Rule | Check | Method |
+|------|-------|--------|
+| 1 | Has `assert` or `pytest.raises` | grep |
+| 2 | No sole `isinstance` assertion | review |
+| 3 | No `._private` in assertions | grep `\._[a-z]` in assert lines |
+| 4 | `MagicMock(` has `spec=` | grep |
+| 5 | Patches target our code | review |
+| 6 | Mock could be a real dependency | review |
+| 7 | 3+ similar methods → parametrize | review |
+| 8 | Renaming internal breaks test? | review |
