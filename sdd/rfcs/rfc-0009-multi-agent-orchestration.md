@@ -32,7 +32,7 @@ remote-store has grown to ~2MB across 41 source files, 55 test files, and 72 doc
 |------|-------|--------------|-----------------|
 | **Orchestrator** (meta-role) | Break down task, delegate, post-implementation ripple-checks & CHANGELOG, compile results | Task decomposition, SDD enforcement, cross-file consistency | Mandatory: CLAUDE.md, BACKLOG, ripple-check table |
 | **Store & Backend Expert** | `src/remote_store/` + `src/remote_store/backends/` — Store API, Backend ABC, error mapping, capabilities | Store core logic, backend architecture, error handling, capability invariants | Specs 001 (Store API), 003 (Backend ABC), 005 (error model), backend-specific specs |
-| **Extension Expert** | `src/remote_store/ext/` — extension implementation, public API contract | Extension API design, Store contract usage, ADR-0008 pattern | Specs 024–041 (extensions and additions), ADR-0008 (architecture), DESIGN.md |
+| **Extension Expert** | `src/remote_store/ext/` — extension implementation, public API contract | Extension API design, Store contract usage, ADR-0008 pattern | Specs 024 (partition), 031 (dagster), 033 (streams), 034 (integrity); ADR-0008 (architecture), DESIGN.md |
 | **Testing Expert** | `tests/` — test design, coverage targets, edge cases, conformance fixtures | Pytest patterns, spec traceability, coverage rigor | Specs (all via @pytest.mark.spec), DESIGN.md (conventions) |
 | **Documentation Expert** | `docs-src/`, `guides/`, docstrings — user guides, API reference, navigation | Diátaxis structure, docstring format, mkdocs nav | DESIGN.md, DOCUMENTATION.md, example docstrings |
 
@@ -115,7 +115,7 @@ All experts and the orchestrator enforce these rules:
 - **Public API:** No change
 - **Backwards compatibility:** Non-breaking (internal orchestration only)
 - **Performance:** Faster task completion (parallelism) for complex features
-- **Testing:** New tests for orchestrator (e.g., ripple-check verification, spec compliance)
+- **Testing:** No automated tests — validation is manual via trial runs on a real backlog item
 - **Docs:** New guide in DEVELOPMENT_STORY.md or sdd/000-process.md on using orchestrator
 
 ## Open Questions
@@ -136,7 +136,7 @@ All experts and the orchestrator enforce these rules:
 - **Documentation standards:** `sdd/DOCUMENTATION.md`, `CONTRIBUTING.md` (authoritative document format)
 - **Expert domain specs:**
   - **Store & Backend:** `sdd/specs/001-store-api.md`, `sdd/specs/003-backend-adapter-contract.md`, `sdd/specs/005-error-model.md`, backend-specific specs
-  - **Extension:** `sdd/specs/024-ext-partition.md` through `sdd/specs/041-sql-query-backend.md`, `sdd/adrs/0008-extension-architecture.md`
+  - **Extension:** `sdd/specs/024-ext-partition.md`, `031-ext-dagster.md`, `033-ext-streams.md`, `034-ext-integrity.md`; `sdd/adrs/0008-extension-architecture.md`
   - **Testing:** `sdd/DESIGN.md` (test conventions), `@pytest.mark.spec("ID")` traceability
   - **Documentation:** `sdd/DOCUMENTATION.md` (Diátaxis structure), docstring examples in codebase
 - **In-progress work:** `sdd/BACKLOG.md` (ID-013 async, ID-018 conda-forge, BK-123 memory audit)
