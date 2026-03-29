@@ -58,118 +58,23 @@ These recur because they are **not mechanically prevented**. A code reviewer
 
 ## 2. Current Anti-Patterns in Our Codebase
 
-### 2.1 Tests with No Assertions (~35 instances)
+Detailed audit of recurring anti-patterns with file-path evidence. Each
+category maps to a proposed rule in section 4.1.
 
-```python
-# BAD: tests/test_ping.py
-def test_default_check_health_is_noop(self) -> None:
-    MemoryBackend().check_health()  # No assertion!
+- **No assertions (~35 instances):** Tests that call a method but never
+  assert on the outcome. Examples: `test_ping.py`, `test_proxy.py:205`,
+  `test_config.py:82`. Mutation testing would flag all of these. → Rule 1.
+- **`isinstance` as primary assertion (~100+ instances):** Verifies type,
+  not behavior. A `FileInfo` with wrong path/size/timestamp passes
+  `isinstance`. Examples: `test_store.py:136`, `test_sftp.py:130`. → Rule 2.
+- **Private attribute access (~100+ instances):** `assert obj._field == x`
+  couples tests to internals. Examples: `test_registry.py:61` (`_backends`),
+  `test_cache.py:151` (`_ttl`), `test_arrow.py:75` (`_store`). → Rule 3.
+- **Unconstrained mocks (~100+ instances):** `MagicMock()` without `spec=`
+  accepts any call. Examples: `test_azure.py` (multiple),
+  `test_depth_listing.py:276`. → Rule 4.
 
-# BAD: tests/test_proxy.py:205
-def test_ping(self, proxy: _TestProxy) -> None:
-    proxy.ping()  # No assertion!
-
-# BAD: tests/test_config.py:82
-def test_registry_config_validate_passes() -> None:
-    _valid_rc().validate()  # No assertion!
-```
-
-**Why it matters:** These tests pass even if the method silently corrupts
-state, returns wrong values, or skips all work. They provide zero regression
-safety. A mutation testing tool would flag every one of these as surviving
-mutants.
-
-**Fix pattern:**
-```python
-# GOOD: Verify the method actually did something
-def test_ping_succeeds(self, proxy: _TestProxy) -> None:
-    proxy.ping()  # Should not raise
-    assert proxy.exists("hello.txt")  # Store is still functional
-
-# GOOD: For void methods that should not raise, be explicit
-def test_validate_accepts_valid_config() -> None:
-    rc = _valid_rc()
-    rc.validate()  # No exception = success
-    assert rc.stores  # Config is usable after validation
-```
-
-### 2.2 isinstance as Primary Assertion (~100+ instances)
-
-```python
-# BAD: tests/test_store.py:136
-files = list(store.list_files("lf"))
-assert len(files) == 2
-assert all(isinstance(f, FileInfo) for f in files)  # Type, not content
-
-# BAD: tests/backends/test_sftp.py:130
-assert isinstance(sftp_backend, SFTPBackend)  # Always true if we got here
-```
-
-**Why it matters:** `isinstance` checks tell you the constructor returned
-the right class, not that the object works. A `FileInfo` with wrong path,
-wrong size, and wrong timestamp passes `isinstance` just fine.
-
-**Fix pattern:**
-```python
-# GOOD: Assert behavioral properties
-files = list(store.list_files("lf"))
-assert {f.name for f in files} == {"a.txt", "b.txt"}
-assert all(f.size > 0 for f in files)
-```
-
-### 2.3 Private Attribute Access (~100+ instances)
-
-```python
-# BAD: tests/test_registry.py:61
-assert len(reg._backends) == 0  # Coupled to internal dict
-
-# BAD: tests/test_cache.py:151
-assert cache(store, ttl=60.0)._ttl == 300.0  # Inspecting private field
-
-# BAD: tests/test_arrow.py:75
-assert h._store is store  # Internal wiring, not behavior
-```
-
-**Why it matters:** Any internal refactoring (rename `_backends` to
-`_stores`, change `_ttl` storage format) breaks these tests even when
-behavior is unchanged. This is the "Inspector" anti-pattern -- tests that
-know too much about internals.
-
-**Fix pattern:**
-```python
-# GOOD: Test through public API
-reg.get_store("main")
-assert "main" in reg.list_stores()  # Behavioral check
-
-# GOOD: Verify TTL effect, not TTL storage
-cached = cache(store, ttl=60.0)
-# Write, wait, verify cache behavior -- not internal field value
-```
-
-### 2.4 Unconstrained Mocks
-
-```python
-# BAD: tests/backends/test_azure.py (multiple locations)
-mock = MagicMock()  # Accepts literally any call
-mock.get_blob_properties.return_value = MagicMock()  # Mock returning mock
-
-# BAD: tests/test_depth_listing.py:276
-backend._sftp = MagicMock()  # Replace internals with unspecified mock
-```
-
-**Why it matters:** `MagicMock()` without `spec=` accepts any attribute
-access and any method call with any signature. If the real Azure SDK changes
-its API, these tests keep passing. The mock and the real object can silently
-diverge.
-
-**Fix pattern:**
-```python
-# GOOD: Use spec= to constrain mock to real interface
-mock = MagicMock(spec=BlobServiceClient)
-# Now mock.nonexistent_method() raises AttributeError
-```
-
-### 2.5 Summary Statistics
+### Summary Statistics
 
 | Anti-Pattern | Count | Severity |
 |-------------|-------|----------|
@@ -208,45 +113,19 @@ applies to *what you test* (a unit of behavior may span classes). It does
 
 ### 3.2 Test Code Economy: Less Code, Same Coverage, Better Signal
 
-BK-014 demonstrated that **test code bloat is itself an anti-pattern**.
-Reducing ~17,800 to ~16,300 lines (-8.6%) with zero coverage loss and
-identical pass/skip counts proved that the removed code was pure maintenance
-burden -- it tested nothing that wasn't already tested.
-
 **Why bloated test suites are dangerous:**
 
-1. **Distraction.** When reviewing a 900-line test file, the 30 meaningful
-   tests are buried among 50 trivial ones. Reviewers miss real issues.
-2. **False confidence.** "We have 1,866 tests" sounds impressive, but if
-   400 of them are single-method classes that duplicate parametrizable
-   logic, the actual *distinct behavioral coverage* is lower than it
-   appears.
-3. **Maintenance drag.** Every refactoring requires updating more test
-   code. When tests outnumber production code (our ratio is ~1.3:1 by
-   lines), the tail wags the dog.
-4. **Anti-pattern camouflage.** A no-assertion test hiding in a 50-test
-   class is easy to miss. In a tight, parametrized suite it would stand
-   out immediately.
+1. **Distraction.** Meaningful tests buried among trivial ones; reviewers miss real issues.
+2. **False confidence.** High test count masks low distinct behavioral coverage.
+3. **Maintenance drag.** At ~1.3:1 test-to-production line ratio, refactoring costs double.
+4. **Anti-pattern camouflage.** No-assertion tests hide in large classes but stand out in tight parametrized suites.
 
-**Techniques that reduce test code without reducing coverage:**
-
-| Technique | Reduction | Example |
-|-----------|-----------|---------|
-| Parametrize similar tests | 3-10 tests -> 1 | `@pytest.mark.parametrize("op", ["move", "copy"])` |
-| Merge single-method classes | N classes -> 1 | Combine `TestMoveOp` + `TestCopyOp` into `TestFileOps` |
-| Extract shared fixtures | N inline setups -> 1 | `@pytest.fixture` in `conftest.py` |
-| Remove tests subsumed by others | Delete | If `test_write_and_read` already covers write, `test_write_exists` adds nothing |
-| Replace copy-paste with base classes | 2 files -> 1 + mixin | BK-011: `_S3Base` for S3/S3-PyArrow shared tests |
-
-**The goal is not fewer tests, it's fewer lines per tested behavior.** A
-parametrized test with 8 cases in 15 lines is strictly better than 8
-separate test methods in 80 lines -- same coverage, one-eighth the
-maintenance surface.
-
-Jay Fields (*Working Effectively with Unit Tests*) makes this explicit:
+Jay Fields (*Working Effectively with Unit Tests*):
 
 > It's acceptable to delete tests that don't provide value. Tests are an
 > investment; if the return is negative, cut your losses.
+
+BK-014 validated this: -8.6% test code, zero coverage loss (see section 1.2).
 
 ### 3.3 How Major Python Projects Test
 
@@ -291,93 +170,34 @@ need quality metrics alongside quantity metrics.
 
 ### 3.6 Property-Based Testing (Hypothesis)
 
-Hypothesis generates random inputs and checks invariant properties:
-
-```python
-from hypothesis import given, strategies as st
-
-@given(st.binary())
-def test_write_read_roundtrip(data: bytes) -> None:
-    store = Store(MemoryBackend())
-    store.write("test.bin", data)
-    assert store.read_bytes("test.bin") == data
-```
-
-**Where it fits for us:**
-- Round-trip properties: `write(path, data)` then `read_bytes(path) == data`
-- Path normalization: `RemotePath(str(RemotePath(x))) == RemotePath(x)`
-- Serialization: `Config.from_dict(config.to_dict()) == config`
-- Batch operations: `batch_delete(files).succeeded | batch_delete(files).failed == files`
-
+Hypothesis generates random inputs and checks invariant properties.
 Hillel Wayne's insight: **Contracts + Property-Based Testing = Integration
-Tests**. Define invariants as contracts, let Hypothesis find violations.
+Tests** -- define invariants as contracts, let Hypothesis find violations.
 
-### 3.7 Mutation Testing
+Candidate invariants for remote-store: write/read round-trip, path
+normalization idempotency, config serialization round-trip, batch operation
+completeness. Implementation details belong in the PR that adds these tests.
+
+### 3.7 Mutation Testing (mutmut)
 
 Mutation testing answers: "If a bug were introduced, would my tests catch it?"
-
-**mutmut** (the leading Python tool) systematically mutates production code
-and re-runs tests. Surviving mutants = potential undetected bugs.
-
-```toml
-# pyproject.toml
-[tool.mutmut]
-paths_to_mutate = "src/"
-runner = "python -m pytest"
-tests_dir = "tests/"
-```
-
-**Our "no assertion" tests would be flagged immediately** -- every mutant in
-the tested function survives because nothing checks the output.
-
-Mutation scores above 80% indicate strong fault-detection capability.
-Consider running mutmut on a weekly CI schedule (it's too slow for every PR).
+**mutmut** systematically mutates production code and re-runs tests.
+Surviving mutants = potential undetected bugs. Our "no assertion" tests
+would be flagged immediately -- every mutant survives because nothing checks
+the output. Too slow for per-PR CI; run on a weekly schedule.
 
 ### 3.8 Testing Retry and Concurrency Behavior
 
 Two known gaps (M-14 concurrency, M-17 retry) require specific patterns:
 
-**Retry testing: controlled failure injection.**
-Don't test retries with real timeouts or flaky network conditions. Instead,
-build a deterministic fake that fails N times, then succeeds:
+- **Retry testing:** Controlled failure injection -- a deterministic fake
+  that fails N times then succeeds. Assert attempt count + final outcome,
+  never wall-clock time.
+- **Concurrency testing:** Invariant assertions under contention --
+  `ThreadPoolExecutor` with deterministic checks for no lost writes, no
+  partial reads, no duplicate entries, no deadlocks (timeout on the test).
 
-```python
-class FailNThenSucceed:
-    """Fake that raises on the first N calls, then returns normally."""
-    def __init__(self, n: int, exc: Exception) -> None:
-        self._remaining = n
-        self._exc = exc
-
-    def __call__(self, *args, **kwargs):
-        if self._remaining > 0:
-            self._remaining -= 1
-            raise self._exc
-        return "ok"
-
-def test_retry_succeeds_after_transient_failures():
-    fake = FailNThenSucceed(2, ConnectionError("transient"))
-    result = retry_with_backoff(fake, max_retries=3)
-    assert result == "ok"
-    assert fake._remaining == 0  # all failures consumed
-```
-
-Assert **attempt count + final outcome**, never wall-clock time.
-
-**Concurrency testing: invariant assertions under contention.**
-Use `ThreadPoolExecutor` with deterministic assertions on invariants:
-
-```python
-def test_no_lost_writes_under_contention(store: Store):
-    """10 threads write distinct keys; all 10 must be readable."""
-    keys = [f"key_{i}.txt" for i in range(10)]
-    with ThreadPoolExecutor(max_workers=10) as pool:
-        list(pool.map(lambda k: store.write(k, k.encode()), keys))
-    for k in keys:
-        assert store.read_bytes(k) == k.encode()
-```
-
-Invariants to test: no lost writes, no partial reads, no duplicate entries,
-no deadlocks (use a timeout on the test itself).
+Full code examples belong in the PR that implements these tests.
 
 ---
 
@@ -479,32 +299,9 @@ Add to the PR template as a reviewer aid:
 
 ### 4.5 CLAUDE.md Additions
 
-Add to the CLAUDE.md `## Code conventions` or a new `## Testing` section:
-
-```markdown
-## Testing rules
-
-**CI-enforced (automated):**
-1. **Every test must assert something meaningful.** "No crash" is not a test.
-   Every public API needs at least one failure-path test.
-4. **Always use `spec=` with MagicMock.** Unconstrained mocks are banned.
-
-**Review-enforced (human/AI review):**
-2. **Assert behavior, not types.** No `isinstance` as the sole assertion.
-3. **Never assert on private attributes** (`._field`). Test through public API.
-   Exception only with `# internal: no public observable` + PR justification.
-5. **Don't mock what you don't own.** Mock at our boundaries, not third-party APIs.
-6. **Prefer real dependencies.** `MemoryBackend` > `MagicMock(spec=Backend)`.
-7. **Maximize coverage per line of test code.** Parametrize, don't copy-paste.
-   Delete tests subsumed by others. Less test code = less maintenance drag.
-8. **Tests must survive refactoring.** If renaming a private method breaks a
-   test, the test is wrong.
-
-See `sdd/research/research-testing-best-practices.md` for rationale and examples.
-```
-
-This gives Claude (and human contributors) explicit, checkable rules rather
-than relying on judgment calls that drift over time.
+Add a `## Testing rules` section to CLAUDE.md summarizing the 8 rules above
+with CI/review enforcement tags. See section 4.1 for the full text. The
+actual CLAUDE.md edit will be reviewed in its own implementation PR.
 
 ---
 
@@ -546,22 +343,15 @@ than relying on judgment calls that drift over time.
 ## 6. References
 
 ### Books
-- Vladimir Khorikov, *Unit Testing: Principles, Practices, and Patterns* ([Manning](https://www.manning.com/books/unit-testing))
-- Jay Fields, *Working Effectively with Unit Tests* ([Leanpub](https://leanpub.com/wewut))
-- Harry Percival, *Test-Driven Development with Python* ([Obey the Testing Goat](https://www.obeythetestinggoat.com/))
-- Harry Percival & Bob Gregory, *Architecture Patterns with Python* (O'Reilly)
+- Vladimir Khorikov, *Unit Testing: Principles, Practices, and Patterns* ([Manning](https://www.manning.com/books/unit-testing)) — cited in §3.1
+- Jay Fields, *Working Effectively with Unit Tests* ([Leanpub](https://leanpub.com/wewut)) — cited in §3.2
 
 ### Articles & Talks
-- Hynek Schlawack, ["Don't Mock What You Don't Own" in 5 Minutes](https://hynek.me/articles/what-to-mock-in-5-mins/)
-- Hynek Schlawack, ["Why You Should Document Your Tests"](https://hynek.me/articles/document-your-tests/)
-- Hynek Schlawack, ["Design Pressure"](https://hynek.me/talks/design-pressure/) (PyCon US 2025)
-- Ned Batchelder, ["Flaws in Coverage Measurement"](https://nedbatchelder.com/blog/200710/flaws_in_coverage_measurement.html)
-- Ned Batchelder, ["Getting Started Testing: pytest edition"](https://nedbatchelder.com/text/test3)
-- Codepipes, ["Software Testing Anti-Patterns"](https://blog.codepipes.com/testing/software-testing-antipatterns.html)
-- Hillel Wayne, ["Property Tests + Contracts = Integration Tests"](https://www.hillelwayne.com/post/pbt-contracts/)
-- Yegor256, ["Unit Testing Anti-Patterns -- Full List"](https://www.yegor256.com/2018/12/11/unit-testing-anti-patterns.html)
-- Randy Coulman, ["Tautological Tests"](https://randycoulman.com/blog/2016/12/20/tautological-tests/)
-- Google Testing Blog, ["Test Behavior, Not Implementation"](https://testing.googleblog.com/2013/08/testing-on-toilet-test-behavior-not.html)
+- Hynek Schlawack, ["Don't Mock What You Don't Own" in 5 Minutes](https://hynek.me/articles/what-to-mock-in-5-mins/) — cited in §3.4
+- Hynek Schlawack, ["Design Pressure"](https://hynek.me/talks/design-pressure/) (PyCon US 2025) — cited in §3.4
+- Ned Batchelder, ["Flaws in Coverage Measurement"](https://nedbatchelder.com/blog/200710/flaws_in_coverage_measurement.html) — cited in §3.5
+- Hillel Wayne, ["Property Tests + Contracts = Integration Tests"](https://www.hillelwayne.com/post/pbt-contracts/) — cited in §3.6
+- Google Testing Blog, ["Test Behavior, Not Implementation"](https://testing.googleblog.com/2013/08/testing-on-toilet-test-behavior-not.html) — cited in §3.1
 
 ### Tools
 | Tool | Purpose | Link |
