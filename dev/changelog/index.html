@@ -9144,6 +9144,27 @@
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong>CI test quality gates</strong> (BK-126): AST-based assertion checker
+  (<code>scripts/check_test_assertions.py</code>) and MagicMock spec checker
+  (<code>scripts/check_mock_spec.py</code>) now run in CI lint job. Rules 1 and 4 from
+  <code>sdd/TESTING.md</code> are machine-enforced.</p>
+</li>
+<li>
+<p><strong>MagicMock <code>spec=</code> migration</strong> (BK-126): All 67 unconstrained
+  <code>MagicMock()</code> calls now use <code>spec=</code> with the correct class, preventing
+  mocks from silently accepting invalid attribute access.</p>
+</li>
+<li>
+<p><strong>Assertion migration</strong> (BK-126): 87 test functions that lacked explicit
+  <code>assert</code> or <code>pytest.raises</code> now have meaningful post-condition assertions.</p>
+</li>
+<li>
+<p><strong>pytest-gremlins integration</strong> (BK-126): Added <code>pytest-gremlins&gt;=1.5</code> for
+  mutation testing. New hatch scripts: <code>check-test-quality</code>, <code>mutate</code>,
+  <code>mutate-report</code>, <code>test-cov-branch</code> (branch coverage diagnostic). No CI
+  threshold yet.</p>
+</li>
+<li>
 <p><strong>Eliminate avoidable <code>type: ignore</code> comments</strong> (BK-016): Replaced 9
   <code>no-any-return</code> suppressions with <code>cast()</code> in <code>ext/cache.py</code> (6) and
   <code>_stream.py</code> (3). 1 <code>misc</code> in <code>_path.py</code> kept (mypy <code>Final</code> on <code>__slots__</code>

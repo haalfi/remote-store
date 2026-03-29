@@ -6793,10 +6793,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#37-mutation-testing-mutmut" class="md-nav__link">
+  <a href="#37-mutation-testing-pytest-gremlins" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.7 Mutation Testing (mutmut)
+        3.7 Mutation Testing (pytest-gremlins)
       
     </span>
   </a>
@@ -7326,10 +7326,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#37-mutation-testing-mutmut" class="md-nav__link">
+  <a href="#37-mutation-testing-pytest-gremlins" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.7 Mutation Testing (mutmut)
+        3.7 Mutation Testing (pytest-gremlins)
       
     </span>
   </a>
@@ -7798,12 +7798,59 @@ Tests</strong> -- define invariants as contracts, let Hypothesis find violations
 <p>Candidate invariants for remote-store: write/read round-trip, path
 normalization idempotency, config serialization round-trip, batch operation
 completeness. Implementation details belong in the PR that adds these tests.</p>
-<h3 id="37-mutation-testing-mutmut">3.7 Mutation Testing (mutmut)<a class="headerlink" href="#37-mutation-testing-mutmut" title="Permanent link">&para;</a></h3>
+<h3 id="37-mutation-testing-pytest-gremlins">3.7 Mutation Testing (pytest-gremlins)<a class="headerlink" href="#37-mutation-testing-pytest-gremlins" title="Permanent link">&para;</a></h3>
 <p>Mutation testing answers: "If a bug were introduced, would my tests catch it?"
-<strong>mutmut</strong> systematically mutates production code and re-runs tests.
-Surviving mutants = potential undetected bugs. Our "no assertion" tests
-would be flagged immediately -- every mutant survives because nothing checks
-the output. Too slow for per-PR CI; run on a weekly schedule.</p>
+A mutation testing tool systematically mutates production code and re-runs
+tests. Surviving mutants = potential undetected bugs. Our "no assertion"
+tests would be flagged immediately -- every mutant survives because nothing
+checks the output. Too slow for per-PR CI; run on a weekly schedule.</p>
+<p><strong>Tool choice: pytest-gremlins</strong> (v1.5+) selected over mutmut after
+evaluation. Key advantages:</p>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>pytest-gremlins</th>
+<th>mutmut</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Integration</td>
+<td>Native pytest plugin (<code>pytest --gremlins</code>)</td>
+<td>Separate CLI</td>
+</tr>
+<tr>
+<td>Test selection</td>
+<td>Coverage-guided (only runs tests covering mutated line)</td>
+<td>Runs all tests per mutant</td>
+</tr>
+<tr>
+<td>Caching</td>
+<td>Incremental (content hash, skips unchanged code)</td>
+<td>File-based</td>
+</tr>
+<tr>
+<td>Speed</td>
+<td>3.7-13.8x faster in benchmarks</td>
+<td>Baseline</td>
+</tr>
+<tr>
+<td>Regression guard</td>
+<td>Pardon system (<code>--gremlin-max-pardons-pct</code>)</td>
+<td>Manual</td>
+</tr>
+<tr>
+<td>Parallelism</td>
+<td>Built-in multi-core</td>
+<td>Requires <code>--runners</code> flag</td>
+</tr>
+</tbody>
+</table>
+<p>mutmut would work but adds friction: separate CLI, no coverage-guided
+selection, slower I/O-bound mutations. pytest-gremlins fits our
+all-pytest workflow and keeps weekly CI budgets reasonable for ~12K
+source lines.</p>
 <h3 id="38-testing-retry-and-concurrency-behavior">3.8 Testing Retry and Concurrency Behavior<a class="headerlink" href="#38-testing-retry-and-concurrency-behavior" title="Permanent link">&para;</a></h3>
 <p>Two known gaps (M-14 concurrency, M-17 retry) require specific patterns:</p>
 <ul>
@@ -7907,7 +7954,7 @@ implementation. Fix the test.</p>
 <td>Low (pip)</td>
 </tr>
 <tr>
-<td><code>mutmut</code> baseline run (diagnostic, not blocking)</td>
+<td><code>pytest-gremlins</code> baseline run (diagnostic, not blocking)</td>
 <td>Assertion quality</td>
 <td><strong>2</strong></td>
 <td>Medium</td>
@@ -7919,7 +7966,7 @@ implementation. Fix the test.</p>
 <td>Low (pip)</td>
 </tr>
 <tr>
-<td><code>mutmut</code> weekly with threshold</td>
+<td><code>pytest-gremlins</code> weekly with threshold</td>
 <td>Assertion quality gate</td>
 <td><strong>3</strong></td>
 <td>Medium</td>
@@ -7959,12 +8006,12 @@ actual CLAUDE.md edit will be reviewed in its own implementation PR.</p>
 <li>[ ] Replace private attribute assertions in <code>test_registry.py</code>,
   <code>test_cache.py</code>, <code>test_proxy.py</code> with public API checks</li>
 <li>[ ] Add <code>diff-cover</code> to PR CI (fail-under=90 for new code)</li>
-<li>[ ] Run <code>mutmut</code> baseline (diagnostic only, establish starting score)</li>
+<li>[ ] Run <code>pytest-gremlins</code> baseline (diagnostic only, establish starting score)</li>
 <li>[ ] Add concurrency test suite for thread-safety claims (M-14)</li>
 </ul>
 <h3 id="phase-3-advanced-quality-measures-future">Phase 3: Advanced Quality Measures (Future)<a class="headerlink" href="#phase-3-advanced-quality-measures-future" title="Permanent link">&para;</a></h3>
 <ul>
-<li>[ ] Add <code>mutmut</code> to weekly CI schedule with threshold gate</li>
+<li>[ ] Add <code>pytest-gremlins</code> to weekly CI schedule with threshold gate</li>
 <li>[ ] Add <code>pytest-smell --ci</code> to lint step</li>
 <li>[ ] Add retry testing with controlled failure injection fakes (M-17)</li>
 <li>[ ] Explore Hypothesis for round-trip and path normalization properties
@@ -8003,8 +8050,13 @@ actual CLAUDE.md edit will be reviewed in its own implementation PR.</p>
 <td><a href="https://github.com/HypothesisWorks/hypothesis">github.com/HypothesisWorks/hypothesis</a></td>
 </tr>
 <tr>
+<td>pytest-gremlins</td>
+<td>Mutation testing (selected)</td>
+<td><a href="https://pypi.org/project/pytest-gremlins/">pypi.org/project/pytest-gremlins</a></td>
+</tr>
+<tr>
 <td>mutmut</td>
-<td>Mutation testing</td>
+<td>Mutation testing (considered)</td>
 <td><a href="https://github.com/boxed/mutmut">github.com/boxed/mutmut</a></td>
 </tr>
 <tr>

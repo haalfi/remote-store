@@ -6984,7 +6984,7 @@
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
-<p><strong>Every test must have at least one meaningful assertion</strong> [CI-enforced — pending]
+<p><strong>Every test must have at least one meaningful assertion</strong> [CI-enforced]
    — "no crash" is not a test. Public API methods need a failure-path test too
    (<code>pytest.raises</code> with <code>match=</code>).</p>
 </li>
@@ -6997,7 +6997,7 @@
    — verify through observable behavior. Exception: <code># internal: no public observable</code>.</p>
 </li>
 <li>
-<p><strong>Always use <code>spec=</code> with <code>MagicMock</code></strong> [CI-enforced — pending]
+<p><strong>Always use <code>spec=</code> with <code>MagicMock</code></strong> [CI-enforced]
    — <code>MagicMock()</code> without <code>spec</code> is banned; use <code>spec=RealClass</code> or <code>create_autospec</code>.</p>
 </li>
 <li>
