@@ -9143,7 +9143,15 @@
 </ul>
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Document <code>list()</code> materialisation in concurrent batch helpers (BK-127 L-2).</li>
+<li>
+<p><strong>Eliminate avoidable <code>type: ignore</code> comments</strong> (BK-016): Replaced 9
+  <code>no-any-return</code> suppressions with <code>cast()</code> in <code>ext/cache.py</code> (6) and
+  <code>_stream.py</code> (3). 1 <code>misc</code> in <code>_path.py</code> kept (mypy <code>Final</code> on <code>__slots__</code>
+  limitation).</p>
+</li>
+<li>
+<p>Document <code>list()</code> materialisation in concurrent batch helpers (BK-127 L-2).</p>
+</li>
 <li>
 <p>Clarify module-level sqlalchemy import rationale (BK-127 L-3).</p>
 </li>
