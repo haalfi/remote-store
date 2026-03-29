@@ -203,10 +203,12 @@ class TestMetadataDelegation:
 
 class TestLifecycleDelegation:
     def test_ping(self, proxy: _TestProxy) -> None:
-        proxy.ping()  # should not raise
+        result = proxy.ping()
+        assert result is None
 
     def test_close(self, proxy: _TestProxy) -> None:
-        proxy.close()  # should not raise
+        result = proxy.close()
+        assert result is None
 
 
 # ---------------------------------------------------------------------------

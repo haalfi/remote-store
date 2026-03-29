@@ -31,6 +31,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Process
 
+- [x] **BK-126 — CI assertion/mock checks + existing test migration**
+  CI enforcement of Testing Rules 1 and 4: AST-based assertion checker
+  (`scripts/check_test_assertions.py`) and MagicMock spec checker
+  (`scripts/check_mock_spec.py`) wired into CI lint job. Migration: added
+  `spec=` to all 67 unconstrained `MagicMock()` calls, added meaningful
+  assertions to 87 test functions. Added `pytest-gremlins>=1.5` for mutation
+  testing (diagnostic, no CI threshold yet). Hatch scripts:
+  `check-test-quality`, `mutate`, `mutate-report`, `test-cov-branch`
+  (branch coverage diagnostic). Remainder of BK-124b.
+
 - [x] **BK-128 — Orchestrate skill v2: iterative convergence model**
   Redesign `/orchestrate` from single-pass parallel to iterative convergence.
   Three complexity modes (Simple, Standard, Complex). Plan refinement with

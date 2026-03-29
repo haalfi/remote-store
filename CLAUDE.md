@@ -45,6 +45,9 @@ hatch run test              # pytest, 95% coverage required
 hatch run lint              # ruff check + format
 hatch run typecheck         # mypy strict on src/
 hatch run notebooks         # execute tutorial notebooks (no Jupyter needed)
+hatch run check-test-quality # assertion + mock-spec CI checks
+hatch run mutate            # pytest-gremlins mutation testing (diagnostic)
+hatch run mutate-report     # mutation testing with HTML report
 hatch run docs              # serve docs locally
 hatch run docs-build        # build docs (strict mode)
 hatch run all               # lint + format-check + typecheck + test-cov + examples + notebooks

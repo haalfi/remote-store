@@ -325,7 +325,8 @@ def test_delete_not_found(backend: SQLBlobBackend) -> None:
 
 @pytest.mark.spec("SQL-BLOB-024")
 def test_delete_missing_ok(backend: SQLBlobBackend) -> None:
-    backend.delete("missing.txt", missing_ok=True)  # No error
+    result = backend.delete("missing.txt", missing_ok=True)
+    assert result is None
 
 
 @pytest.mark.spec("SQL-BLOB-025")
@@ -350,7 +351,8 @@ def test_delete_folder_not_found(backend: SQLBlobBackend) -> None:
 
 @pytest.mark.spec("SQL-BLOB-025")
 def test_delete_folder_missing_ok(backend: SQLBlobBackend) -> None:
-    backend.delete_folder("nonexistent", missing_ok=True)  # No error
+    result = backend.delete_folder("nonexistent", missing_ok=True)
+    assert result is None
 
 
 # ---------------------------------------------------------------------------
@@ -610,7 +612,8 @@ class TestGlob:
 
 @pytest.mark.spec("SQL-BLOB-040")
 def test_check_health(backend: SQLBlobBackend) -> None:
-    backend.check_health()  # Should not raise
+    result = backend.check_health()
+    assert result is None
 
 
 @pytest.mark.spec("SQL-BLOB-041")
@@ -628,7 +631,8 @@ def test_close_borrowed_engine_noop() -> None:
     engine = sa.create_engine("sqlite:///:memory:")
     b = SQLBlobBackend(engine=engine)
     b.write("f.txt", b"data")
-    b.close()
+    result = b.close()
+    assert result is None
     # Engine still usable since it's borrowed
     with engine.connect() as conn:
         conn.execute(sa.text("SELECT 1"))
@@ -747,7 +751,8 @@ class TestPathValidation:
 
     def test_empty_path_for_folder_op(self, backend: SQLBlobBackend) -> None:
         # Should NOT raise — empty path = root for folder ops
-        backend.is_folder("")
+        result = backend.is_folder("")
+        assert isinstance(result, bool)
 
 
 # ---------------------------------------------------------------------------

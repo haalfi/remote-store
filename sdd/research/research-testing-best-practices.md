@@ -178,13 +178,30 @@ Candidate invariants for remote-store: write/read round-trip, path
 normalization idempotency, config serialization round-trip, batch operation
 completeness. Implementation details belong in the PR that adds these tests.
 
-### 3.7 Mutation Testing (mutmut)
+### 3.7 Mutation Testing (pytest-gremlins)
 
 Mutation testing answers: "If a bug were introduced, would my tests catch it?"
-**mutmut** systematically mutates production code and re-runs tests.
-Surviving mutants = potential undetected bugs. Our "no assertion" tests
-would be flagged immediately -- every mutant survives because nothing checks
-the output. Too slow for per-PR CI; run on a weekly schedule.
+A mutation testing tool systematically mutates production code and re-runs
+tests. Surviving mutants = potential undetected bugs. Our "no assertion"
+tests would be flagged immediately -- every mutant survives because nothing
+checks the output. Too slow for per-PR CI; run on a weekly schedule.
+
+**Tool choice: pytest-gremlins** (v1.5+) selected over mutmut after
+evaluation. Key advantages:
+
+| Factor | pytest-gremlins | mutmut |
+|--------|----------------|--------|
+| Integration | Native pytest plugin (`pytest --gremlins`) | Separate CLI |
+| Test selection | Coverage-guided (only runs tests covering mutated line) | Runs all tests per mutant |
+| Caching | Incremental (content hash, skips unchanged code) | File-based |
+| Speed | 3.7-13.8x faster in benchmarks | Baseline |
+| Regression guard | Pardon system (`--gremlin-max-pardons-pct`) | Manual |
+| Parallelism | Built-in multi-core | Requires `--runners` flag |
+
+mutmut would work but adds friction: separate CLI, no coverage-guided
+selection, slower I/O-bound mutations. pytest-gremlins fits our
+all-pytest workflow and keeps weekly CI budgets reasonable for ~12K
+source lines.
 
 ### 3.8 Testing Retry and Concurrency Behavior
 
@@ -280,9 +297,9 @@ Key PT rules that catch our recurring issues:
 | Grep: `MagicMock(` without `spec=` or `autospec=` | Rule 4 | **1** | Low (grep) |
 | `--cov-branch` | Coverage quality | **1** | Low (flag) |
 | `diff-cover --fail-under=90` | New code without tests | **2** | Low (pip) |
-| `mutmut` baseline run (diagnostic, not blocking) | Assertion quality | **2** | Medium |
+| `pytest-gremlins` baseline run (diagnostic, not blocking) | Assertion quality | **2** | Medium |
 | `pytest-smell --ci` | 17 types of test smells | **3** | Low (pip) |
-| `mutmut` weekly with threshold | Assertion quality gate | **3** | Medium |
+| `pytest-gremlins` weekly with threshold | Assertion quality gate | **3** | Medium |
 
 ### 4.4 PR Review Checklist
 
@@ -325,12 +342,12 @@ actual CLAUDE.md edit will be reviewed in its own implementation PR.
 - [ ] Replace private attribute assertions in `test_registry.py`,
   `test_cache.py`, `test_proxy.py` with public API checks
 - [ ] Add `diff-cover` to PR CI (fail-under=90 for new code)
-- [ ] Run `mutmut` baseline (diagnostic only, establish starting score)
+- [ ] Run `pytest-gremlins` baseline (diagnostic only, establish starting score)
 - [ ] Add concurrency test suite for thread-safety claims (M-14)
 
 ### Phase 3: Advanced Quality Measures (Future)
 
-- [ ] Add `mutmut` to weekly CI schedule with threshold gate
+- [ ] Add `pytest-gremlins` to weekly CI schedule with threshold gate
 - [ ] Add `pytest-smell --ci` to lint step
 - [ ] Add retry testing with controlled failure injection fakes (M-17)
 - [ ] Explore Hypothesis for round-trip and path normalization properties
@@ -357,7 +374,8 @@ actual CLAUDE.md edit will be reviewed in its own implementation PR.
 | Tool | Purpose | Link |
 |------|---------|------|
 | Hypothesis | Property-based testing | [github.com/HypothesisWorks/hypothesis](https://github.com/HypothesisWorks/hypothesis) |
-| mutmut | Mutation testing | [github.com/boxed/mutmut](https://github.com/boxed/mutmut) |
+| pytest-gremlins | Mutation testing (selected) | [pypi.org/project/pytest-gremlins](https://pypi.org/project/pytest-gremlins/) |
+| mutmut | Mutation testing (considered) | [github.com/boxed/mutmut](https://github.com/boxed/mutmut) |
 | pytest-smell | Test smell detection | [pypi.org/project/pytest-smell](https://pypi.org/project/pytest-smell/) |
 | diff-cover | Delta coverage on PRs | [pypi.org/project/diff-cover](https://pypi.org/project/diff-cover/) |
 | Ruff PT rules | Test style linting | [docs.astral.sh/ruff/rules/#flake8-pytest-style-pt](https://docs.astral.sh/ruff/rules/#flake8-pytest-style-pt) |

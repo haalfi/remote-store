@@ -78,7 +78,8 @@ class TestStoreBehavior:
         assert store.exists("sub/a.txt")
 
     def test_close(self, mem_backend: MemoryBackend) -> None:
-        Store(backend=mem_backend, root_path="data").close()
+        result = Store(backend=mem_backend, root_path="data").close()
+        assert result is None
 
     def test_context_manager(self, mem_backend: MemoryBackend) -> None:
         with Store(backend=mem_backend, root_path="data") as store:

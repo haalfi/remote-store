@@ -80,7 +80,8 @@ def test_registry_config_fields() -> None:
 
 @pytest.mark.spec("CFG-004")
 def test_registry_config_validate_passes() -> None:
-    _valid_rc().validate()
+    result = _valid_rc().validate()
+    assert result is None
 
 
 @pytest.mark.spec("CFG-004")
@@ -469,7 +470,8 @@ class TestFromToml:
 @pytest.mark.spec("CFG-012")
 def test_unknown_key_warns() -> None:
     with pytest.warns(UserWarning, match="Unknown top-level config keys"):
-        RegistryConfig.from_dict({"backends": {}, "stores": {}, "backend": {"typo": True}})
+        result = RegistryConfig.from_dict({"backends": {}, "stores": {}, "backend": {"typo": True}})
+    assert result is not None
 
 
 @pytest.mark.spec("CFG-012")
@@ -479,7 +481,8 @@ def test_no_unknown_key_warning(data: dict[str, Any]) -> None:
 
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        RegistryConfig.from_dict(data)
+        result = RegistryConfig.from_dict(data)
+    assert result is not None
 
 
 # ---------------------------------------------------------------------------

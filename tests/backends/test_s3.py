@@ -328,7 +328,8 @@ class TestS3Operations:
 
     @pytest.mark.spec("S3-011")
     def test_delete_folder_recursive_missing_ok(self, s3_backend: Backend) -> None:
-        s3_backend.delete_folder("ghost", recursive=True, missing_ok=True)
+        result = s3_backend.delete_folder("ghost", recursive=True, missing_ok=True)
+        assert result is None
 
     @pytest.mark.spec("S3-012")
     def test_delete_folder_non_recursive_not_found(self, s3_backend: Backend) -> None:
@@ -487,12 +488,14 @@ class TestS3Lifecycle:
 
     @pytest.mark.spec("S3-019")
     def test_close_is_callable(self, s3_backend: Backend) -> None:
-        s3_backend.close()
+        result = s3_backend.close()
+        assert result is None
 
     @pytest.mark.spec("S3-019")
     def test_close_idempotent(self, s3_backend: Backend) -> None:
         s3_backend.close()
-        s3_backend.close()
+        result = s3_backend.close()
+        assert result is None
 
     @pytest.mark.spec("S3-020")
     def test_unwrap_s3fs(self, s3_backend: Backend) -> None:
@@ -638,7 +641,8 @@ class TestS3Delete:
         assert s3_backend.exists("del.txt") is False
 
     def test_delete_missing_ok(self, s3_backend: Backend) -> None:
-        s3_backend.delete("nope.txt", missing_ok=True)
+        result = s3_backend.delete("nope.txt", missing_ok=True)
+        assert result is None
 
     def test_delete_missing_raises(self, s3_backend: Backend) -> None:
         with pytest.raises(NotFound):

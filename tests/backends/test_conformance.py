@@ -469,7 +469,8 @@ class TestBackendLifecycle:
 
     @pytest.mark.spec("BE-020")
     def test_close_is_callable(self, backend: Backend) -> None:
-        backend.close()
+        result = backend.close()
+        assert result is None
 
 
 class TestBackendToKey:

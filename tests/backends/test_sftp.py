@@ -225,7 +225,8 @@ class TestSFTPDeleteFolder:
 
     @pytest.mark.spec("SFTP-016")
     def test_delete_folder_recursive_missing_ok(self, sftp_backend: Backend) -> None:
-        sftp_backend.delete_folder("ghost", recursive=True, missing_ok=True)
+        result = sftp_backend.delete_folder("ghost", recursive=True, missing_ok=True)
+        assert result is None
 
     @pytest.mark.spec("SFTP-017")
     def test_delete_folder_non_recursive_not_found(self, sftp_backend: Backend) -> None:
@@ -441,12 +442,14 @@ class TestSFTPLifecycle:
 
     @pytest.mark.spec("SFTP-025")
     def test_close_is_callable(self, sftp_backend: Backend) -> None:
-        sftp_backend.close()
+        result = sftp_backend.close()
+        assert result is None
 
     @pytest.mark.spec("SFTP-027")
     def test_close_idempotent(self, sftp_backend: Backend) -> None:
         sftp_backend.close()
-        sftp_backend.close()
+        result = sftp_backend.close()
+        assert result is None
 
     @pytest.mark.spec("SFTP-026")
     def test_unwrap_sftp_client(self, sftp_backend: Backend) -> None:
@@ -1104,7 +1107,8 @@ class TestSFTPTofuPersistence:
                 host_keys_path=keys_path,
                 connect_kwargs={"allow_agent": False, "look_for_keys": False},
             )
-            strict_backend.exists("nonexistent.txt")
+            result = strict_backend.exists("nonexistent.txt")
+            assert result is False  # file doesn't exist; verifiable by strict policy
             strict_backend.close()
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
@@ -1213,7 +1217,8 @@ class TestSFTPTofuPersistence:
             # Mock save_host_keys to reliably fail on all platforms
             # (os.chmod is a no-op for owner on Windows)
             with patch.object(backend._ssh_client, "save_host_keys", side_effect=OSError("boom")):
-                backend.close()
+                result = backend.close()
+            assert result is None  # save failure suppressed
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
 

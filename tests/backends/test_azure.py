@@ -16,6 +16,22 @@ import pytest
 
 pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-datalake not installed")
 
+from azure.storage.blob import (  # noqa: E402
+    BlobClient,
+    BlobProperties,
+    BlobServiceClient,
+    ContainerClient,
+    ContentSettings,
+    StorageStreamDownloader,
+)
+from azure.storage.filedatalake import (  # noqa: E402
+    DataLakeDirectoryClient,
+    DataLakeFileClient,
+    DataLakeServiceClient,
+    FileSystemClient,
+    PathProperties,
+)
+
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
 from remote_store._errors import (  # noqa: E402
     AlreadyExists,
@@ -75,8 +91,6 @@ def azure_backend() -> Iterator[Backend]:
     """Create an AzureBackend against Azurite."""
     if not _azurite_reachable():
         pytest.skip("Azurite not reachable")
-
-    from azure.storage.blob import BlobServiceClient
 
     container = f"test-az-{uuid.uuid4().hex[:8]}"
     service = BlobServiceClient.from_connection_string(_AZURITE_CONN_STR)
@@ -279,7 +293,7 @@ class TestAzureHNSDetection:
     )
     def test_hns_detection(self, ret: Any, side_eff: Any, expected: bool) -> None:
         backend = _make_backend()
-        mock_client = MagicMock()
+        mock_client = MagicMock(spec=BlobServiceClient)
         if side_eff is not None:
             mock_client.get_account_information.side_effect = side_eff
         else:
@@ -290,12 +304,13 @@ class TestAzureHNSDetection:
     @pytest.mark.spec("AZ-006")
     def test_hns_result_cached(self) -> None:
         backend = _make_backend()
-        mock_client = MagicMock()
+        mock_client = MagicMock(spec=BlobServiceClient)
         mock_client.get_account_information.return_value = {"is_hns_enabled": True}
         backend._blob_service_instance = mock_client
-        _ = backend._hns
-        _ = backend._hns
+        first = backend._hns
+        second = backend._hns
         mock_client.get_account_information.assert_called_once()
+        assert first is second is True
 
 
 # =============================================================================
@@ -496,13 +511,15 @@ class TestAzureLifecycle:
     def test_close_without_connection(self) -> None:
         """close() before any connection is safe."""
         backend = _make_backend()
-        backend.close()
+        result = backend.close()
+        assert result is None
 
     @pytest.mark.spec("AZ-029")
     def test_close_idempotent(self) -> None:
         backend = _make_backend()
         backend.close()
-        backend.close()
+        result = backend.close()
+        assert result is None
 
 
 # =============================================================================
@@ -518,11 +535,11 @@ class TestAzureHNSPaths:
         backend = _make_backend()
         backend._hns_enabled = True
         # Mock blob service (still used for some operations)
-        backend._blob_service_instance = MagicMock()
-        backend._cc_instance = MagicMock()
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+        backend._cc_instance = MagicMock(spec=ContainerClient)
         # Mock datalake service
-        backend._datalake_service_instance = MagicMock()
-        backend._fs_instance = MagicMock()
+        backend._datalake_service_instance = MagicMock(spec=DataLakeServiceClient)
+        backend._fs_instance = MagicMock(spec=FileSystemClient)
         return backend
 
     def test_exists_checks_directory_on_hns(self) -> None:
@@ -530,11 +547,11 @@ class TestAzureHNSPaths:
 
         backend = self._make_hns_backend()
         # Blob doesn't exist
-        bc = MagicMock()
+        bc = MagicMock(spec=BlobClient)
         bc.get_blob_properties.side_effect = ResourceNotFoundError("not found")
         backend._cc_instance.get_blob_client.return_value = bc
         # Directory exists
-        dc = MagicMock()
+        dc = MagicMock(spec=DataLakeDirectoryClient)
         backend._fs_instance.get_directory_client.return_value = dc
         assert backend.exists("my-dir") is True
         dc.get_directory_properties.assert_called_once()
@@ -543,17 +560,17 @@ class TestAzureHNSPaths:
         from azure.core.exceptions import ResourceNotFoundError
 
         backend = self._make_hns_backend()
-        bc = MagicMock()
+        bc = MagicMock(spec=BlobClient)
         bc.get_blob_properties.side_effect = ResourceNotFoundError("not found")
         backend._cc_instance.get_blob_client.return_value = bc
-        dc = MagicMock()
+        dc = MagicMock(spec=DataLakeDirectoryClient)
         dc.get_directory_properties.side_effect = Exception("not found")
         backend._fs_instance.get_directory_client.return_value = dc
         assert backend.exists("missing") is False
 
     def test_is_folder_uses_directory_client_on_hns(self) -> None:
         backend = self._make_hns_backend()
-        dc = MagicMock()
+        dc = MagicMock(spec=DataLakeDirectoryClient)
         backend._fs_instance.get_directory_client.return_value = dc
         assert backend.is_folder("my-dir") is True
         dc.get_directory_properties.assert_called_once()
@@ -561,51 +578,54 @@ class TestAzureHNSPaths:
     def test_move_uses_rename_on_hns(self) -> None:
         backend = self._make_hns_backend()
         # src blob exists
-        src_bc = MagicMock()
-        dst_bc = MagicMock()
+        src_bc = MagicMock(spec=BlobClient)
+        dst_bc = MagicMock(spec=BlobClient)
         from azure.core.exceptions import ResourceNotFoundError
 
         dst_bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         backend._cc_instance.get_blob_client.side_effect = [src_bc, dst_bc]
         # Mock the file client for rename
-        fc = MagicMock()
+        fc = MagicMock(spec=DataLakeFileClient)
         backend._fs_instance.get_file_client.return_value = fc
-        backend.move("src.txt", "dst.txt")
+        result = backend.move("src.txt", "dst.txt")
         fc.rename_file.assert_called_once_with("test/dst.txt")
+        assert result is None
 
     def test_write_atomic_uses_temp_and_rename_on_hns(self) -> None:
         from azure.core.exceptions import ResourceNotFoundError
 
         backend = self._make_hns_backend()
         backend._max_concurrency = 4
-        bc = MagicMock()
+        bc = MagicMock(spec=BlobClient)
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         backend._cc_instance.get_blob_client.return_value = bc
-        tmp_fc = MagicMock()
+        tmp_fc = MagicMock(spec=DataLakeFileClient)
         backend._fs_instance.get_file_client.return_value = tmp_fc
-        backend.write_atomic("dir/file.txt", b"content")
+        result = backend.write_atomic("dir/file.txt", b"content")
         tmp_fc.upload_data.assert_called_once_with(b"content", overwrite=True, max_concurrency=4)
         tmp_fc.rename_file.assert_called_once()
+        assert result is None
 
     def test_delete_folder_uses_directory_client_on_hns(self) -> None:
         backend = self._make_hns_backend()
-        dc = MagicMock()
+        dc = MagicMock(spec=DataLakeDirectoryClient)
         backend._fs_instance.get_directory_client.return_value = dc
         backend._fs_instance.get_paths.return_value = []  # empty folder
-        backend.delete_folder("my-dir", recursive=False)
+        result = backend.delete_folder("my-dir", recursive=False)
         dc.delete_directory.assert_called_once()
+        assert result is None
 
     def test_delete_folder_hns_non_recursive_non_empty_raises(self) -> None:
         backend = self._make_hns_backend()
-        dc = MagicMock()
+        dc = MagicMock(spec=DataLakeDirectoryClient)
         backend._fs_instance.get_directory_client.return_value = dc
-        backend._fs_instance.get_paths.return_value = [MagicMock()]  # has children
+        backend._fs_instance.get_paths.return_value = [MagicMock(spec=PathProperties)]  # has children
         with pytest.raises(DirectoryNotEmpty):
             backend.delete_folder("my-dir", recursive=False)
 
     def test_list_files_uses_get_paths_on_hns(self) -> None:
         backend = self._make_hns_backend()
-        mock_path = MagicMock()
+        mock_path = MagicMock(spec=PathProperties)
         mock_path.is_directory = False
         mock_path.name = "dir/file.txt"
         mock_path.size = 42
@@ -617,7 +637,7 @@ class TestAzureHNSPaths:
 
     def test_list_folders_uses_get_paths_on_hns(self) -> None:
         backend = self._make_hns_backend()
-        mock_path = MagicMock()
+        mock_path = MagicMock(spec=PathProperties)
         mock_path.is_directory = True
         mock_path.name = "parent/sub"
         backend._fs_instance.get_paths.return_value = [mock_path]
@@ -626,7 +646,7 @@ class TestAzureHNSPaths:
 
     def test_get_folder_info_checks_directory_on_hns(self) -> None:
         backend = self._make_hns_backend()
-        dc = MagicMock()
+        dc = MagicMock(spec=DataLakeDirectoryClient)
         backend._fs_instance.get_directory_client.return_value = dc
         backend._cc_instance.list_blobs.return_value = []  # empty dir
         info = backend.get_folder_info("my-dir")
@@ -648,42 +668,45 @@ class TestAzureMaxConcurrency:
 
         backend = _make_backend(max_concurrency=4)
         backend._hns_enabled = False
-        backend._blob_service_instance = MagicMock()
-        backend._cc_instance = MagicMock()
-        bc = MagicMock()
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+        backend._cc_instance = MagicMock(spec=ContainerClient)
+        bc = MagicMock(spec=BlobClient)
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         backend._cc_instance.get_blob_client.return_value = bc
-        backend.write("file.txt", b"data")
+        result = backend.write("file.txt", b"data")
         bc.upload_blob.assert_called_once_with(b"data", overwrite=True, max_concurrency=4)
+        assert result is None
 
     def test_max_concurrency_threaded_to_download(self) -> None:
         """AZ-033: max_concurrency kwarg reaches download_blob."""
         backend = _make_backend(max_concurrency=4)
         backend._hns_enabled = False
-        backend._blob_service_instance = MagicMock()
-        backend._cc_instance = MagicMock()
-        bc = MagicMock()
-        downloader = MagicMock()
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+        backend._cc_instance = MagicMock(spec=ContainerClient)
+        bc = MagicMock(spec=BlobClient)
+        downloader = MagicMock(spec=StorageStreamDownloader)
         downloader.chunks.return_value = iter([b"data"])
         bc.download_blob.return_value = downloader
         backend._cc_instance.get_blob_client.return_value = bc
         stream = backend.read("file.txt")
         bc.download_blob.assert_called_once_with(max_concurrency=4)
+        assert stream is not None
         stream.close()
 
     def test_max_concurrency_threaded_to_read_bytes(self) -> None:
         """AZ-033: max_concurrency kwarg reaches download_blob in read_bytes."""
         backend = _make_backend(max_concurrency=8)
         backend._hns_enabled = False
-        backend._blob_service_instance = MagicMock()
-        backend._cc_instance = MagicMock()
-        bc = MagicMock()
-        downloader = MagicMock()
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+        backend._cc_instance = MagicMock(spec=ContainerClient)
+        bc = MagicMock(spec=BlobClient)
+        downloader = MagicMock(spec=StorageStreamDownloader)
         downloader.readall.return_value = b"data"
         bc.download_blob.return_value = downloader
         backend._cc_instance.get_blob_client.return_value = bc
-        backend.read_bytes("file.txt")
+        result = backend.read_bytes("file.txt")
         bc.download_blob.assert_called_once_with(max_concurrency=8)
+        assert result == b"data"
 
     def test_max_concurrency_threaded_to_open_atomic_hns(self) -> None:
         """AZ-033: max_concurrency kwarg reaches upload_data in open_atomic HNS path."""
@@ -691,14 +714,14 @@ class TestAzureMaxConcurrency:
 
         backend = _make_backend(max_concurrency=4)
         backend._hns_enabled = True
-        backend._blob_service_instance = MagicMock()
-        backend._cc_instance = MagicMock()
-        backend._datalake_service_instance = MagicMock()
-        backend._fs_instance = MagicMock()
-        bc = MagicMock()
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+        backend._cc_instance = MagicMock(spec=ContainerClient)
+        backend._datalake_service_instance = MagicMock(spec=DataLakeServiceClient)
+        backend._fs_instance = MagicMock(spec=FileSystemClient)
+        bc = MagicMock(spec=BlobClient)
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         backend._cc_instance.get_blob_client.return_value = bc
-        tmp_fc = MagicMock()
+        tmp_fc = MagicMock(spec=DataLakeFileClient)
         backend._fs_instance.get_file_client.return_value = tmp_fc
         with backend.open_atomic("dir/file.txt", overwrite=True) as f:
             f.write(b"content")
@@ -774,7 +797,8 @@ class TestAzureIntegration:
         assert azure_backend.exists("del.txt") is False
 
     def test_delete_missing_ok(self, azure_backend: Backend) -> None:
-        azure_backend.delete("nope.txt", missing_ok=True)
+        result = azure_backend.delete("nope.txt", missing_ok=True)
+        assert result is None
 
     def test_delete_missing_raises(self, azure_backend: Backend) -> None:
         with pytest.raises(NotFound):
@@ -909,7 +933,6 @@ class TestAzureIntegration:
 
     @_needs_azurite
     def test_unwrap_filesystem_client(self, azure_backend: Backend) -> None:
-        from azure.storage.filedatalake import FileSystemClient
 
         fs = azure_backend.unwrap(FileSystemClient)
         assert isinstance(fs, FileSystemClient)
@@ -1011,9 +1034,9 @@ class TestAzureETagAndDigest:
         md5_hex = hashlib.md5(content).hexdigest()
         md5_bytes = bytes.fromhex(md5_hex)
 
-        mock_settings = MagicMock()
+        mock_settings = MagicMock(spec=ContentSettings)
         mock_settings.content_md5 = md5_bytes
-        mock_props = MagicMock()
+        mock_props = MagicMock(spec=BlobProperties)
         mock_props.etag = '"abc123"'
         mock_props.content_settings = mock_settings
         mock_props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
@@ -1032,9 +1055,9 @@ class TestAzureETagAndDigest:
         """Blob properties without Content-MD5 yield digest=None."""
         from datetime import datetime, timezone
 
-        mock_settings = MagicMock()
+        mock_settings = MagicMock(spec=ContentSettings)
         mock_settings.content_md5 = None
-        mock_props = MagicMock()
+        mock_props = MagicMock(spec=BlobProperties)
         mock_props.etag = '"abc123"'
         mock_props.content_settings = mock_settings
         mock_props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
@@ -1051,7 +1074,7 @@ class TestAzureETagAndDigest:
         """Blob properties where content_settings is None yield digest=None."""
         from datetime import datetime, timezone
 
-        mock_props = MagicMock()
+        mock_props = MagicMock(spec=BlobProperties)
         mock_props.etag = '"abc123"'
         mock_props.content_settings = None
         mock_props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
@@ -1068,9 +1091,9 @@ class TestAzureETagAndDigest:
         """Raw Azure ETag (double-quoted) is stripped and lowercased in FileInfo.etag."""
         from datetime import datetime, timezone
 
-        mock_settings = MagicMock()
+        mock_settings = MagicMock(spec=ContentSettings)
         mock_settings.content_md5 = None
-        mock_props = MagicMock()
+        mock_props = MagicMock(spec=BlobProperties)
         mock_props.etag = '"0X8D4BCC2E4835CD0"'
         mock_props.content_settings = mock_settings
         mock_props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)

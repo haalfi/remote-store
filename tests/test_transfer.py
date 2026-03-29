@@ -80,7 +80,7 @@ class TestUpload:
     def test_missing_local_file(self, tmp_path: Path, mock_write: bool) -> None:
         dst = _store()
         if mock_write:
-            dst.write = MagicMock()  # type: ignore[assignment]
+            dst.write = MagicMock(spec=Store.write)  # type: ignore[assignment]
         with pytest.raises(FileNotFoundError):
             upload(dst, tmp_path / "nope.txt", "remote.txt")
         if mock_write:
@@ -142,7 +142,7 @@ class TestDownload:
             download(src, "file.txt", local, overwrite=True)
             assert local.read_bytes() == b"remote-data"
         elif scenario == "guard":
-            src.read = MagicMock()  # type: ignore[assignment]
+            src.read = MagicMock(spec=Store.read)  # type: ignore[assignment]
             with pytest.raises(FileExistsError):
                 download(src, "file.txt", local, overwrite=False)
             src.read.assert_not_called()
@@ -165,7 +165,7 @@ class TestDownload:
     def test_stream_cleanup(self, tmp_path: Path, scenario: str) -> None:
         src = _store("file.txt", data=b"data")
         stream = src.read("file.txt")
-        src.read = MagicMock(return_value=stream)  # type: ignore[assignment]
+        src.read = MagicMock(spec=Store.read, return_value=stream)  # type: ignore[assignment]
         if scenario == "error":
             with pytest.raises(FileNotFoundError):
                 download(src, "file.txt", tmp_path / "no_such_dir" / "file.txt", overwrite=True)
@@ -238,7 +238,7 @@ class TestTransfer:
                 transfer(src, "file.txt", _restricted({Capability.WRITE}), "file.txt")
         else:
             stream = src.read("file.txt")
-            src.read = MagicMock(return_value=stream)  # type: ignore[assignment]
+            src.read = MagicMock(spec=Store.read, return_value=stream)  # type: ignore[assignment]
             transfer(src, "file.txt", _store(), "file.txt")
             assert stream.closed
 

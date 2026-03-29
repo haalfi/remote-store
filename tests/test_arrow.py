@@ -671,8 +671,10 @@ class TestMutationOps:
 
     @pytest.mark.spec("PA-014")
     def test_create_dir_noop(self, fs: Any, store: Store) -> None:
-        fs.create_dir("newdir")
-        fs.create_dir("newdir/sub", recursive=True)
+        result1 = fs.create_dir("newdir")
+        result2 = fs.create_dir("newdir/sub", recursive=True)
+        assert result1 is None
+        assert result2 is None
 
     @pytest.mark.spec("PA-015")
     def test_delete_dir(self, fs: Any, store: Store) -> None:
@@ -707,7 +709,8 @@ class TestMutationOps:
 
     @pytest.mark.spec("PA-015")
     def test_delete_dir_contents_missing_dir_ok(self, handler: StoreFileSystemHandler) -> None:
-        handler.delete_dir_contents("nonexistent", missing_dir_ok=True)
+        result = handler.delete_dir_contents("nonexistent", missing_dir_ok=True)
+        assert result is None
 
     @pytest.mark.spec("PA-015")
     def test_delete_dir_contents_missing_raises(self, handler: StoreFileSystemHandler) -> None:
@@ -807,6 +810,7 @@ class TestIntegration:
         df.to_parquet("pandas_test.parquet", engine="pyarrow", filesystem=result_fs)
         result = pd.read_parquet("pandas_test.parquet", engine="pyarrow", filesystem=result_fs)
         pd.testing.assert_frame_equal(df, result)
+        assert len(result) == 2
 
     @pytest.mark.spec("PA-025")
     def test_dataset_discovery(self, local_store: Store) -> None:

@@ -167,28 +167,33 @@ class TestChecksumComputation:
 
 
 class TestContextManagers:
-    @staticmethod
-    def _check_closes(cls, make_inner, action, **kwargs) -> None:
-        inner = make_inner()
-        with cls(inner, **kwargs) as s:
-            action(s)
-        assert inner.closed
-
     @pytest.mark.spec("STR-001")
     def test_progress_reader_closes(self) -> None:
-        self._check_closes(ProgressReader, lambda: _src(b"data"), lambda s: s.read(), callback=lambda _: None)
+        inner = _src(b"data")
+        with ProgressReader(inner, callback=lambda _: None) as s:
+            s.read()
+        assert inner.closed
 
     @pytest.mark.spec("STR-002")
     def test_progress_writer_closes(self) -> None:
-        self._check_closes(ProgressWriter, io.BytesIO, lambda s: s.write(b"data"), callback=lambda _: None)
+        inner = io.BytesIO()
+        with ProgressWriter(inner, callback=lambda _: None) as s:
+            s.write(b"data")
+        assert inner.closed
 
     @pytest.mark.spec("STR-003")
     def test_checksum_reader_closes(self) -> None:
-        self._check_closes(ChecksumReader, lambda: _src(b"data"), lambda s: s.read())
+        inner = _src(b"data")
+        with ChecksumReader(inner) as s:
+            s.read()
+        assert inner.closed
 
     @pytest.mark.spec("STR-004")
     def test_checksum_writer_closes(self) -> None:
-        self._check_closes(ChecksumWriter, io.BytesIO, lambda s: s.write(b"data"))
+        inner = io.BytesIO()
+        with ChecksumWriter(inner) as s:
+            s.write(b"data")
+        assert inner.closed
 
 
 # ---------------------------------------------------------------------------

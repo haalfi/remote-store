@@ -189,6 +189,23 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **CI test quality gates** (BK-126): AST-based assertion checker
+  (`scripts/check_test_assertions.py`) and MagicMock spec checker
+  (`scripts/check_mock_spec.py`) now run in CI lint job. Rules 1 and 4 from
+  `sdd/TESTING.md` are machine-enforced.
+
+- **MagicMock `spec=` migration** (BK-126): All 67 unconstrained
+  `MagicMock()` calls now use `spec=` with the correct class, preventing
+  mocks from silently accepting invalid attribute access.
+
+- **Assertion migration** (BK-126): 87 test functions that lacked explicit
+  `assert` or `pytest.raises` now have meaningful post-condition assertions.
+
+- **pytest-gremlins integration** (BK-126): Added `pytest-gremlins>=1.5` for
+  mutation testing. New hatch scripts: `check-test-quality`, `mutate`,
+  `mutate-report`, `test-cov-branch` (branch coverage diagnostic). No CI
+  threshold yet.
+
 - **Eliminate avoidable `type: ignore` comments** (BK-016): Replaced 9
   `no-any-return` suppressions with `cast()` in `ext/cache.py` (6) and
   `_stream.py` (3). 1 `misc` in `_path.py` kept (mypy `Final` on `__slots__`

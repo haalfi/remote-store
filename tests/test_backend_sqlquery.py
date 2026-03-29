@@ -546,7 +546,8 @@ class TestPathValidation:
 @pytest.mark.spec("SQL-QUERY-060")
 class TestHealthCheck:
     def test_check_health(self, backend: SQLQueryBackend) -> None:
-        backend.check_health()  # should not raise
+        result = backend.check_health()
+        assert result is None
 
 
 @pytest.mark.spec("SQL-QUERY-062")

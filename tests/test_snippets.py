@@ -20,7 +20,8 @@ class TestHomepageSnippets:
     def test_homepage_demo(self) -> None:
         from examples.snippets.homepage import demo
 
-        demo()
+        result = demo()
+        assert result is None
 
 
 class TestCoreOperationsSnippets:
@@ -30,4 +31,5 @@ class TestCoreOperationsSnippets:
     def test_core_operations_demo(self) -> None:
         from examples.snippets.core_operations import demo
 
-        demo()
+        result = demo()
+        assert result is None

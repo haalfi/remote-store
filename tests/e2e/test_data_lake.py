@@ -468,18 +468,22 @@ class TestDataLakeMedallion:
     def test_memory_baseline(self, memory_lake: Store) -> None:
         """Baseline: full pipeline on MemoryBackend (always runs)."""
         self._run_pipeline(memory_lake)
+        assert {"bronze", "silver", "gold"} <= {f.name for f in memory_lake.list_folders("")}
 
     @minio_skip
     def test_s3_minio(self, s3_lake: Store) -> None:
         """Full pipeline on S3Backend via MinIO Docker."""
         self._run_pipeline(s3_lake)
+        assert {"bronze", "silver", "gold"} <= {f.name for f in s3_lake.list_folders("")}
 
     @s3_pyarrow_skip
     def test_s3_pyarrow_minio(self, s3_pyarrow_lake: Store) -> None:
         """Full pipeline on S3PyArrowBackend via MinIO Docker."""
         self._run_pipeline(s3_pyarrow_lake)
+        assert {"bronze", "silver", "gold"} <= {f.name for f in s3_pyarrow_lake.list_folders("")}
 
     @azurite_skip
     def test_azurite(self, azurite_lake: Store) -> None:
         """Full pipeline on AzureBackend via Azurite Docker."""
         self._run_pipeline(azurite_lake)
+        assert {"bronze", "silver", "gold"} <= {f.name for f in azurite_lake.list_folders("")}
