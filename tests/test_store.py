@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
     from pathlib import Path
 
 from remote_store._capabilities import Capability
@@ -20,7 +19,7 @@ from remote_store.backends._memory import MemoryBackend
 
 
 @pytest.fixture
-def store() -> Iterator[Store]:
+def store() -> Store:
     return Store(backend=MemoryBackend(), root_path="data")
 
 
