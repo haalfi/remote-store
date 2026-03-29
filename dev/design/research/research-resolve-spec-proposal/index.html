@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/012-azure-backend/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-resolve-spec-proposal/">
       
       
-        <link rel="prev" href="../011-s3-pyarrow-backend/">
+        <link rel="prev" href="../research-readonly-http-backend/">
       
       
-        <link rel="next" href="../013-memory-backend/">
+        <link rel="next" href="../research-retry-policy/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>012: Azure Backend Specification - remote-store</title>
+        <title>`resolve()` Specification Proposal - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#azure-backend-specification" class="md-skip">
+        <a href="#research-resolve-specification-proposal" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              012: Azure Backend Specification
+              `resolve()` Specification Proposal
             
           </span>
         </div>
@@ -3789,8 +3789,6 @@
                 
   
   
-    
-  
   
   
     
@@ -3801,15 +3799,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -3833,7 +3831,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3851,7 +3849,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -3879,7 +3877,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -3907,7 +3905,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -3935,7 +3933,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -3963,7 +3961,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../005-error-model/" class="md-nav__link">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -3991,7 +3989,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -4019,7 +4017,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -4047,7 +4045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../008-s3-backend/" class="md-nav__link">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -4075,7 +4073,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -4103,7 +4101,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -4131,7 +4129,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -4156,37 +4154,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    012: Azure Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -4202,547 +4173,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Construction
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Construction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-001-constructor-parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-001: Constructor Parameters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-002-backend-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-004-lazy-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-005: Construction Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#hns-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HNS Detection
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="HNS Detection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-006-adaptive-behavior-based-on-hierarchical-namespace" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-006: Adaptive Behavior Based on Hierarchical Namespace
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#azure-storage-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Azure Storage Model
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Azure Storage Model">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-007-container-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-007: Container Scope
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-008-directory-semantics-hns-enabled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-008: Directory Semantics (HNS Enabled)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-009-virtual-folder-semantics-no-hns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-009: Virtual Folder Semantics (No HNS)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-010-write-does-not-create-folder-markers-no-hns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-010: Write Does Not Create Folder Markers (No HNS)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-011-path-encoding" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-011: Path Encoding
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#path-inspection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Path Inspection
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Path Inspection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-012-exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-012: exists()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-013-is_file-and-is_folder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-013: is_file() and is_folder()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-014-atomic-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-014: Atomic Write
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-015-delete_folder-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-015: delete_folder Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-016-delete_folder-non-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-016: delete_folder Non-Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-017-move" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-017: Move
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-018-copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-018: Copy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-019-glob" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-019: Glob
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-020-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-020: read()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-021-read_bytes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-021: read_bytes()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-022-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-022: write()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-023-get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-023: get_file_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-024-get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-024: get_folder_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-025-structured-error-classification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-025: Structured Error Classification
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-026-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-026: No Native Exception Leakage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-027-to_key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-027: to_key
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-028-error-context-manager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-028: Error Context Manager
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resource Management
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Resource Management">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-029-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-029: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-030-unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-030: unwrap()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-034-etag-and-content-md5-digest-population" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-034: ETag and Content-MD5 Digest Population
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-033-transfer-concurrency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-033: Transfer Concurrency
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-031-client-options-passthrough" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-031: Client Options Passthrough
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-032-default-credential-chain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-032: Default Credential Chain
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4755,7 +4185,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -4783,7 +4213,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -4811,7 +4241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -4839,7 +4269,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -4867,7 +4297,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -4895,7 +4325,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -4923,7 +4353,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -4951,7 +4381,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -4979,7 +4409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -5007,7 +4437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -5035,7 +4465,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -5063,7 +4493,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -5091,7 +4521,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../025-retry-policy/" class="md-nav__link">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -5119,7 +4549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../026-health-check/" class="md-nav__link">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -5147,7 +4577,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../027-iter-children/" class="md-nav__link">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -5175,7 +4605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../028-read-text/" class="md-nav__link">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -5203,7 +4633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5231,7 +4661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../030-write-text/" class="md-nav__link">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -5259,7 +4689,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../031-ext-dagster/" class="md-nav__link">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -5287,7 +4717,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../032-http-backend/" class="md-nav__link">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -5315,7 +4745,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../033-ext-streams/" class="md-nav__link">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -5343,7 +4773,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../034-ext-integrity/" class="md-nav__link">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -5371,7 +4801,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../035-content-digest/" class="md-nav__link">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -5399,7 +4829,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../036-seekable-read/" class="md-nav__link">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -5427,7 +4857,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../037-depth-limited-listing/" class="md-nav__link">
+      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -5455,7 +4885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -5483,7 +4913,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -5511,7 +4941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../040-sql-blob-backend/" class="md-nav__link">
+      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -5539,7 +4969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../041-sql-query-backend/" class="md-nav__link">
+      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -6486,6 +5916,8 @@
                 
   
   
+    
+  
   
   
     
@@ -6496,15 +5928,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_7" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -6528,7 +5960,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_5_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6546,7 +5978,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -6574,7 +6006,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -6602,7 +6034,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -6630,7 +6062,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-dagster-extension/" class="md-nav__link">
+      <a href="../research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -6658,7 +6090,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-depth-limited-listing/" class="md-nav__link">
+      <a href="../research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -6686,7 +6118,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -6714,7 +6146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
+      <a href="../research-example-testing/" class="md-nav__link">
         
   
   
@@ -6742,7 +6174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -6770,7 +6202,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -6798,7 +6230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
+      <a href="../research-health-check/" class="md-nav__link">
         
   
   
@@ -6826,7 +6258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -6854,7 +6286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -6882,7 +6314,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -6907,10 +6339,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../research/research-resolve-spec-proposal/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    `resolve()` Specification Proposal
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -6926,6 +6385,314 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Problem Statement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-prior-art" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Prior Art
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Prior Art">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-remote-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal (remote-store)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Design Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Specification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Specification">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-resolutionplan-dataclass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 ResolutionPlan Dataclass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-backendresolve-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Backend.resolve() Method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-storeresolve-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Store.resolve() Method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-proxystoreresolve-delegation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 ProxyStore.resolve() Delegation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-compositestore-resolution-id-121-future" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 CompositeStore Resolution (ID-121, Future)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-cache-key-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 Cache Key Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-capability-impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Capability Impact
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-migration-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Migration Path
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Migration Path">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-core-resolve-id-120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Core resolve() (ID-120)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-cache-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Cache integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-compositestore-id-121" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: CompositeStore (ID-121)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-resolution-algebra-future-uncommitted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Resolution algebra (future, uncommitted)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-spec-ids-proposed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Spec IDs (Proposed)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Open Questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-recommendation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. References
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. References">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -6938,7 +6705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
+      <a href="../research-retry-policy/" class="md-nav__link">
         
   
   
@@ -6966,7 +6733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-seekable-read/" class="md-nav__link">
+      <a href="../research-seekable-read/" class="md-nav__link">
         
   
   
@@ -6994,7 +6761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -7022,7 +6789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -7050,7 +6817,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
+      <a href="../research-store-config/" class="md-nav__link">
         
   
   
@@ -7078,7 +6845,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -7106,7 +6873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-testing-best-practices/" class="md-nav__link">
+      <a href="../research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -7134,7 +6901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -7286,10 +7053,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#1-problem-statement" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        1. Problem Statement
       
     </span>
   </a>
@@ -7297,22 +7064,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
+  <a href="#2-prior-art" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Construction
+        2. Prior Art
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Construction">
+    <nav class="md-nav" aria-label="2. Prior Art">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#az-001-constructor-parameters" class="md-nav__link">
+  <a href="#internal-remote-store" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-001: Constructor Parameters
+        Internal (remote-store)
       
     </span>
   </a>
@@ -7320,43 +7087,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#az-002-backend-name" class="md-nav__link">
+  <a href="#external" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-004-lazy-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-005: Construction Validation
+        External
       
     </span>
   </a>
@@ -7369,22 +7103,88 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hns-detection" class="md-nav__link">
+  <a href="#3-design-principles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        HNS Detection
+        3. Design Principles
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="HNS Detection">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Specification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Specification">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#az-006-adaptive-behavior-based-on-hierarchical-namespace" class="md-nav__link">
+  <a href="#41-resolutionplan-dataclass" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-006: Adaptive Behavior Based on Hierarchical Namespace
+        4.1 ResolutionPlan Dataclass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-backendresolve-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Backend.resolve() Method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-storeresolve-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Store.resolve() Method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-proxystoreresolve-delegation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 ProxyStore.resolve() Delegation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-compositestore-resolution-id-121-future" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 CompositeStore Resolution (ID-121, Future)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-cache-key-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 Cache Key Usage
       
     </span>
   </a>
@@ -7397,22 +7197,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#azure-storage-model" class="md-nav__link">
+  <a href="#5-capability-impact" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Azure Storage Model
+        5. Capability Impact
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Azure Storage Model">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-migration-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Migration Path
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Migration Path">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#az-007-container-scope" class="md-nav__link">
+  <a href="#phase-1-core-resolve-id-120" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-007: Container Scope
+        Phase 1: Core resolve() (ID-120)
       
     </span>
   </a>
@@ -7420,10 +7231,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#az-008-directory-semantics-hns-enabled" class="md-nav__link">
+  <a href="#phase-2-cache-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-008: Directory Semantics (HNS Enabled)
+        Phase 2: Cache integration
       
     </span>
   </a>
@@ -7431,10 +7242,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#az-009-virtual-folder-semantics-no-hns" class="md-nav__link">
+  <a href="#phase-3-compositestore-id-121" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-009: Virtual Folder Semantics (No HNS)
+        Phase 3: CompositeStore (ID-121)
       
     </span>
   </a>
@@ -7442,21 +7253,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#az-010-write-does-not-create-folder-markers-no-hns" class="md-nav__link">
+  <a href="#phase-4-resolution-algebra-future-uncommitted" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-010: Write Does Not Create Folder Markers (No HNS)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-011-path-encoding" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-011: Path Encoding
+        Phase 4: Resolution algebra (future, uncommitted)
       
     </span>
   </a>
@@ -7469,260 +7269,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#path-inspection" class="md-nav__link">
+  <a href="#7-spec-ids-proposed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Path Inspection
+        7. Spec IDs (Proposed)
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Path Inspection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-012-exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-012: exists()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-013-is_file-and-is_folder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-013: is_file() and is_folder()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
+  <a href="#8-open-questions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operations
+        8. Open Questions
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-014-atomic-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-014: Atomic Write
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-015-delete_folder-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-015: delete_folder Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-016-delete_folder-non-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-016: delete_folder Non-Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-017-move" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-017: Move
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-018-copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-018: Copy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-019-glob" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-019: Glob
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-020-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-020: read()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-021-read_bytes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-021: read_bytes()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-022-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-022: write()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-023-get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-023: get_file_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-024-get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-024: get_folder_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
+  <a href="#9-recommendation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error Mapping
+        9. Recommendation
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-025-structured-error-classification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-025: Structured Error Classification
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-026-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-026: No Native Exception Leakage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-027-to_key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-027: to_key
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-028-error-context-manager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-028: Error Context Manager
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
+  <a href="#10-references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resource Management
+        10. References
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Resource Management">
+    <nav class="md-nav" aria-label="10. References">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#az-029-close" class="md-nav__link">
+  <a href="#internal" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-029: close()
+        Internal
       
     </span>
   </a>
@@ -7730,71 +7325,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#az-030-unwrap" class="md-nav__link">
+  <a href="#external_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-030: unwrap()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-034-etag-and-content-md5-digest-population" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-034: ETag and Content-MD5 Digest Population
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-033-transfer-concurrency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-033: Transfer Concurrency
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-031-client-options-passthrough" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-031: Client Options Passthrough
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-032-default-credential-chain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-032: Default Credential Chain
+        External
       
     </span>
   </a>
@@ -7823,257 +7357,431 @@
 
 
 
-<h1 id="azure-backend-specification">Azure Backend Specification<a class="headerlink" href="#azure-backend-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>AzureBackend</code> implements the <code>Backend</code> ABC for Azure Storage using a dual-client architecture: <code>azure-storage-blob</code> (BlobServiceClient) for non-HNS accounts and <code>azure-storage-file-datalake</code> (DataLakeServiceClient) for HNS-only features. It targets ADLS Gen2 (Hierarchical Namespace) accounts as the primary use case, while remaining fully functional against plain Blob Storage accounts without HNS.</p>
-<p>Unlike the S3 backends (which use <code>s3fs</code>, an fsspec wrapper), this backend uses the Azure SDK directly. The dual-client design exists because the DFS wire protocol (used by <code>azure-storage-file-datalake</code>) is not supported by Azurite or plain Blob Storage accounts — only the Blob API works everywhere. HNS-only features (atomic rename, real directories) use the DataLake SDK; all other operations use the Blob SDK. See <a href="../../rfcs/rfc-0001-azure-backend/">RFC-0001</a> for the full rationale.</p>
-<p><strong>Dependencies:</strong> <code>azure-storage-file-datalake</code>, <code>azure-identity</code> (optional, for <code>DefaultAzureCredential</code>)
-<strong>Optional extra:</strong> <code>pip install "remote-store[azure]"</code></p>
+<h1 id="research-resolve-specification-proposal">Research: <code>resolve()</code> Specification Proposal<a class="headerlink" href="#research-resolve-specification-proposal" title="Permanent link">&para;</a></h1>
+<p><strong>Item ID:</strong> ID-120 (resolve -&gt; ResolutionPlan), ID-121 (CompositeStore)
+<strong>Date:</strong> 2026-03-29
+<strong>Status:</strong> Research complete — ready for spec drafting
+<strong>Depends on:</strong> ID-119 (SQLAlchemy backends, done)
+<strong>Sources:</strong> Internal research files, source code analysis, external prior art</p>
 <hr />
-<h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
-<h3 id="az-001-constructor-parameters">AZ-001: Constructor Parameters<a class="headerlink" href="#az-001-constructor-parameters" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AzureBackend</code> is constructed with a required <code>container</code> name and optional connection parameters.
-<strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">AzureBackend</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">container</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">account_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">account_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">account_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">sas_token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">connection_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">credential</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># e.g. DefaultAzureCredential()</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n">RetryPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># see spec 025</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">max_concurrency</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># see AZ-033</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
-</code></pre></div>
-<strong>Postconditions:</strong> The backend stores configuration but does not connect to Azure during construction (see AZ-004). At least one of <code>account_name</code>, <code>account_url</code>, or <code>connection_string</code> must be provided — otherwise <code>ValueError</code> is raised at construction time.</p>
-<h3 id="az-002-backend-name">AZ-002: Backend Name<a class="headerlink" href="#az-002-backend-name" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>name</code> property returns <code>"azure"</code>.</p>
-<h3 id="az-003-capability-declaration">AZ-003: Capability Declaration<a class="headerlink" href="#az-003-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AzureBackend</code> declares capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>GLOB</code>. Native glob via prefix-optimized listing (see <a href="../018-glob/">018-glob.md</a> GLOB-020).
-<strong>Rationale:</strong>
-- <code>ATOMIC_WRITE</code>: HNS accounts use temp file + atomic rename; non-HNS accounts use direct upload (Azure PUT is atomic, same as S3). See AZ-006 and AZ-014.
-- <code>MOVE</code>: HNS accounts use native atomic rename; non-HNS accounts use copy + delete. See AZ-006 and AZ-017.
-- <code>COPY</code>: Implemented via server-side copy (<code>start_copy_from_url</code>). See AZ-018.
-- <code>GLOB</code>: Native prefix-optimized glob since v0.12.0 (BK-002).</p>
-<h3 id="az-004-lazy-connection">AZ-004: Lazy Connection<a class="headerlink" href="#az-004-lazy-connection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. The <code>BlobServiceClient</code>, <code>DataLakeServiceClient</code> (HNS only), and HNS detection are deferred to first use.
-<strong>Rationale:</strong> Same as S3-004 — the backend may be created during application wiring before the network is available.</p>
-<h3 id="az-005-construction-validation">AZ-005: Construction Validation<a class="headerlink" href="#az-005-construction-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>container</code> must be a non-empty string. Passing an empty or whitespace-only container raises <code>ValueError</code> at construction time. At least one of <code>account_name</code>, <code>account_url</code>, or <code>connection_string</code> must be provided — otherwise <code>ValueError</code> at construction.
-<strong>Postconditions:</strong> No network validation of container existence at construction time. Invalid names are caught by Azure on first operation and mapped to the appropriate error.</p>
+<h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
+<p>remote-store backends each resolve keys to bytes through different strategies
+(filesystem paths, S3 objects, URLs, SQL queries, tiered fallthrough). Today
+this resolution is implicit — callers get bytes but cannot inspect <em>how</em> or
+<em>where</em> those bytes came from. <code>native_path()</code> exposes the resolved location
+as a string, but carries no metadata about the resolution strategy, backend
+identity, or backend-specific context.</p>
+<p>This gap creates three practical problems:</p>
+<ol>
+<li><strong>Debugging opacity</strong> — when a read fails or returns unexpected data in a
+   multi-backend setup, there is no way to ask "which backend handled this key
+   and how?"</li>
+<li><strong>Cache key fragility</strong> — <code>ext.cache</code> must construct cache keys from
+   <code>(backend_name, full_path)</code> tuples assembled ad-hoc, rather than from a
+   canonical resolution result whose identity fields yield a stable cache key.</li>
+<li><strong>Composition blindness</strong> — a <code>CompositeStore</code> (ID-121) that delegates
+   across tiers has no standard way to report which tier resolved a key, which
+   tiers were tried, or why resolution succeeded/failed.</li>
+</ol>
 <hr />
-<h2 id="hns-detection">HNS Detection<a class="headerlink" href="#hns-detection" title="Permanent link">&para;</a></h2>
-<h3 id="az-006-adaptive-behavior-based-on-hierarchical-namespace">AZ-006: Adaptive Behavior Based on Hierarchical Namespace<a class="headerlink" href="#az-006-adaptive-behavior-based-on-hierarchical-namespace" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> On first use, the backend calls <code>GetAccountInfo</code> to determine whether the storage account has Hierarchical Namespace (HNS) enabled. The result is cached for the lifetime of the backend instance.</p>
-<p><strong>Behavior matrix:</strong></p>
+<h2 id="2-prior-art">2. Prior Art<a class="headerlink" href="#2-prior-art" title="Permanent link">&para;</a></h2>
+<h3 id="internal-remote-store">Internal (remote-store)<a class="headerlink" href="#internal-remote-store" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>native_path(key) -&gt; str</code></strong> — exists on Backend, Store, ProxyStore. Returns
+  the backend-native location string. This is the "resolve to location"
+  primitive. ResolutionPlan generalizes it by adding metadata.</li>
+<li><strong><code>to_key(native_path) -&gt; str</code></strong> — inverse of <code>native_path()</code>. Strips
+  backend-specific prefix to recover the key.</li>
+<li><strong>Research: SQLAlchemy backends</strong> — introduced the "key -&gt; byte resolver"
+  framing and the original <code>ResolutionPlan</code> dataclass design.</li>
+</ul>
+<h3 id="external">External<a class="headerlink" href="#external" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Operation</th>
-<th>HNS enabled (ADLS Gen2)</th>
-<th>No HNS (plain Blob)</th>
+<th>System</th>
+<th>Resolution Model</th>
+<th>Key Insight</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>write_atomic</code></td>
-<td>Temp file + atomic rename</td>
-<td>Direct upload (PUT is atomic)</td>
+<td><strong>Apache Iceberg</strong></td>
+<td>Catalog -&gt; metadata file -&gt; manifest list -&gt; manifests -&gt; data files</td>
+<td>Multi-layer metadata tree; each layer adds detail</td>
 </tr>
 <tr>
-<td><code>move</code></td>
-<td>Atomic <code>rename_file</code></td>
-<td>Copy + delete</td>
+<td><strong>Delta Lake / Unity Catalog</strong></td>
+<td>Name -&gt; catalog lookup -&gt; storage location + access rules</td>
+<td>Name-based, not path-based; catalog as coordinator</td>
 </tr>
 <tr>
-<td><code>exists</code> / <code>is_file</code> / <code>is_folder</code></td>
-<td>Native path property check</td>
-<td>HEAD request + prefix check</td>
+<td><strong>Apache Hudi</strong></td>
+<td>Timeline + metadata table -&gt; committed data files per version</td>
+<td>Query-type-dependent resolution (snapshot, time-travel, incremental)</td>
 </tr>
 <tr>
-<td><code>list_files</code> / <code>list_folders</code></td>
-<td>Native directory listing</td>
-<td>Prefix-based listing</td>
-</tr>
-<tr>
-<td><code>delete_folder(recursive=True)</code></td>
-<td>Single recursive delete</td>
-<td>Iterate + delete each path</td>
+<td><strong>fsspec</strong></td>
+<td>Protocol string -&gt; registry lookup -&gt; filesystem class -&gt; instance</td>
+<td>Protocol-based dispatch; registry makes resolution inspectable</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Rationale:</strong> ADLS Gen2 has real directories and atomic rename — the backend should use these when available. Plain Blob Storage accounts are still supported by falling back to S3-equivalent semantics (virtual folders, copy+delete move, PUT atomicity).</p>
-<p><strong>Postconditions:</strong> The HNS check is performed at most once. If the check itself fails (e.g. permissions), the backend falls back to non-HNS behavior and logs a warning.</p>
+<p><strong>Industry convergence (2025-2026):</strong> All major data lakehouse formats are
+moving toward catalog-managed resolution where the catalog is the source of
+truth, not the filesystem. The pattern is universal: name/key -&gt; indirection
+layer -&gt; location + metadata + access rules.</p>
 <hr />
-<h2 id="azure-storage-model">Azure Storage Model<a class="headerlink" href="#azure-storage-model" title="Permanent link">&para;</a></h2>
-<h3 id="az-007-container-scope">AZ-007: Container Scope<a class="headerlink" href="#az-007-container-scope" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> All operations are scoped to a single Azure Storage container, analogous to S3Backend's bucket scope. Cross-container operations are not supported.</p>
-<h3 id="az-008-directory-semantics-hns-enabled">AZ-008: Directory Semantics (HNS Enabled)<a class="headerlink" href="#az-008-directory-semantics-hns-enabled" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When HNS is enabled, directories are real entities. <code>is_folder(path)</code> checks for the existence of a directory object. Empty directories persist after their contents are deleted.
-<strong>Postconditions:</strong> This matches SFTP behavior (SFTP-011, SFTP-013), not S3 behavior.</p>
-<h3 id="az-009-virtual-folder-semantics-no-hns">AZ-009: Virtual Folder Semantics (No HNS)<a class="headerlink" href="#az-009-virtual-folder-semantics-no-hns" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When HNS is not enabled, folder semantics match S3: "folders" are logical constructs derived from <code>/</code>-delimited path prefixes. A folder exists only as long as blobs exist under its prefix.
-<strong>Postconditions:</strong> Same as S3-006 through S3-009.</p>
-<h3 id="az-010-write-does-not-create-folder-markers-no-hns">AZ-010: Write Does Not Create Folder Markers (No HNS)<a class="headerlink" href="#az-010-write-does-not-create-folder-markers-no-hns" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> On non-HNS accounts, <code>write("a/b/c.txt", content)</code> creates only the blob with path <code>a/b/c.txt</code>. No folder marker blobs are created.
-<strong>Postconditions:</strong> Same as S3-008. Not applicable to HNS accounts where directories are managed natively by the service.</p>
-<h3 id="az-011-path-encoding">AZ-011: Path Encoding<a class="headerlink" href="#az-011-path-encoding" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Azure paths use <code>/</code> as separator. The backend normalizes paths by stripping leading <code>/</code> and collapsing double separators, consistent with the <code>RemotePath</code> model (PATH-001 through PATH-014).</p>
+<h2 id="3-design-principles">3. Design Principles<a class="headerlink" href="#3-design-principles" title="Permanent link">&para;</a></h2>
+<p>Derived from internal research + external prior art:</p>
+<ol>
+<li><strong>Indirection over direct paths</strong> — <code>resolve()</code> returns a metadata object,
+   not just a location string. The plan <em>is</em> the resolved identity.</li>
+<li><strong>Extensible details</strong> — each backend adds its own context via <code>details</code>.
+   No schema imposed on backend-specific information.</li>
+<li><strong>Immutable and cacheable</strong> — <code>ResolutionPlan</code> is a frozen dataclass, safe
+   for concurrent use. Cache keys derived from <code>(kind, backend, key,
+   native_path)</code> tuple, not <code>hash(plan)</code> directly (the <code>details</code> dict
+   prevents <code>__hash__</code>).</li>
+<li><strong>Composable</strong> — composite resolution (try tier A, then B) is expressible
+   as a <code>ResolutionPlan</code> whose details include the sub-plans.</li>
+<li><strong>Inspectable</strong> — callers branch on <code>kind</code> (a string discriminator) rather
+   than <code>isinstance</code> checks on backend types.</li>
+<li><strong>Backward-compatible</strong> — the default implementation returns a sensible
+   plan for any backend. No ABC signature change required.</li>
+</ol>
 <hr />
-<h2 id="path-inspection">Path Inspection<a class="headerlink" href="#path-inspection" title="Permanent link">&para;</a></h2>
-<h3 id="az-012-exists">AZ-012: exists()<a class="headerlink" href="#az-012-exists" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>exists(path)</code> first checks for a blob via <code>BlobClient.get_blob_properties()</code>, then checks for a directory via <code>DataLakeDirectoryClient.get_directory_properties()</code>. Returns <code>True</code> if either exists, <code>False</code> on <code>ResourceNotFoundError</code>.
-<strong>Invariant (no HNS):</strong> <code>exists(path)</code> issues a HEAD request for the blob via <code>BlobClient.get_blob_properties()</code>. Returns <code>True</code> if found, <code>False</code> on <code>ResourceNotFoundError</code>. Falls back to prefix check for folders.
-<strong>Postconditions:</strong> Never raises <code>NotFound</code> — returns <code>False</code> instead (per BE-004).</p>
-<h3 id="az-013-is_file-and-is_folder">AZ-013: is_file() and is_folder()<a class="headerlink" href="#az-013-is_file-and-is_folder" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>is_file(path)</code> calls <code>get_path_properties()</code> and checks the <code>is_directory</code> attribute — returns <code>True</code> when <code>is_directory</code> is <code>False</code>. <code>is_folder(path)</code> returns <code>True</code> when <code>is_directory</code> is <code>True</code>. Both return <code>False</code> for non-existent paths.
-<strong>Invariant (no HNS):</strong> <code>is_file(path)</code> issues a HEAD request for the blob — returns <code>True</code> if the blob exists. <code>is_folder(path)</code> returns <code>True</code> if any blobs exist with prefix <code>{path}/</code> (same as S3-007).
-<strong>Postconditions:</strong> Both return <code>False</code> for non-existent paths — never raise (per BE-005).</p>
+<h2 id="4-specification">4. Specification<a class="headerlink" href="#4-specification" title="Permanent link">&para;</a></h2>
+<h3 id="41-resolutionplan-dataclass">4.1 <code>ResolutionPlan</code> Dataclass<a class="headerlink" href="#41-resolutionplan-dataclass" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">ResolutionPlan</span><span class="p">:</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Result of resolving a key through a backend.</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="sd">    Describes how a key maps to its storage location and provides</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">    backend-specific context for debugging, caching, and composition.</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolution strategy identifier.</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="sd">    Standard values:</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="sd">    - ``&quot;local&quot;`` — local filesystem path</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="sd">    - ``&quot;s3&quot;`` — S3 object</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="sd">    - ``&quot;s3_pyarrow&quot;`` — S3 via PyArrow filesystem</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="sd">    - ``&quot;azure&quot;`` — Azure Blob Storage object</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="sd">    - ``&quot;sftp&quot;`` — SFTP remote path</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="sd">    - ``&quot;http&quot;`` — HTTP/HTTPS URL (read-only)</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="sd">    - ``&quot;memory&quot;`` — in-memory store (``native_path`` equals ``key``; no</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="sd">      additional location information for in-memory backends)</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="sd">    - ``&quot;sql_blob&quot;`` — SQL row-based blob storage</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="sd">    - ``&quot;sql_query&quot;`` — SQL query -&gt; serialized result</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="sd">    - ``&quot;composite&quot;`` — resolved through tier composition</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="sd">    Custom backends use their own ``kind`` strings.</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Human-readable backend identifier (e.g. ``&quot;s3&quot;``, ``&quot;postgresql&quot;``,</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="sd">    ``&quot;composite&quot;``). Typically ``Backend.name`` or a user-assigned name.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;The resolved key (after Store root-path rebasing).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>    <span class="n">native_path</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;The backend-native location (same as ``Backend.native_path()`` output).</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="sd">    Included for convenience — avoids a second call after resolution.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>    <span class="n">details</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Backend-specific resolution context. Examples:</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>
+<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="sd">    - Local: ``{&quot;root&quot;: &quot;/data&quot;, &quot;absolute_path&quot;: &quot;/data/sales/q1.parquet&quot;}``</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a><span class="sd">    - S3: ``{&quot;bucket&quot;: &quot;prod&quot;, &quot;object_key&quot;: &quot;sales/q1.parquet&quot;, &quot;region&quot;: &quot;us-east-1&quot;}``</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="sd">    - HTTP: ``{&quot;url&quot;: &quot;https://api.example.com/sales/q1.parquet&quot;, &quot;method&quot;: &quot;GET&quot;}``</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a><span class="sd">    - SQL query: ``{&quot;query&quot;: &quot;SELECT ...&quot;, &quot;format&quot;: &quot;parquet&quot;, &quot;source&quot;: &quot;explicit&quot;}``</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="sd">    - SQL blob: ``{&quot;table&quot;: &quot;remote_store_objects&quot;, &quot;key_column&quot;: &quot;path&quot;}``</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="sd">    - Composite: ``{&quot;resolved_tier&quot;: &quot;warm&quot;, &quot;tried&quot;: [&quot;hot&quot;, &quot;warm&quot;],</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a><span class="sd">                    &quot;tier_plan&quot;: &lt;ResolutionPlan from warm tier&gt;}``</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a><span class="sd">    **Serialization note:** ``details`` values should be JSON-serializable</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="sd">    primitives for logging/OTel compatibility. Nested ``ResolutionPlan`` in</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a><span class="sd">    ``details`` (e.g. ``tier_plan`` in composite resolution) is allowed but</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a><span class="sd">    requires a custom serializer. Consider a ``CompositeResolutionPlan``</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a><span class="sd">    subclass with a typed ``tier_plan`` field in a future version.</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a><span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+<h3 id="42-backendresolve-method">4.2 <code>Backend.resolve()</code> Method<a class="headerlink" href="#42-backendresolve-method" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Backend</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="c1"># ... existing methods ...</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve a backend-relative path to a ResolutionPlan.</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="sd">        The default implementation returns a plan with ``kind=self.name``</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="sd">        and minimal details. Backends override to add meaningful context.</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="sd">        Args:</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="sd">            path: Backend-relative path (not store-relative key).</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">            Frozen ResolutionPlan describing how this path resolves.</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>        <span class="k">return</span> <span class="n">ResolutionPlan</span><span class="p">(</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>            <span class="n">kind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>            <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>            <span class="n">key</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>            <span class="n">native_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">native_path</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>            <span class="n">details</span><span class="o">=</span><span class="p">{},</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>        <span class="p">)</span>
+</code></pre></div>
+<p><strong>Override examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># S3Backend</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">return</span> <span class="n">ResolutionPlan</span><span class="p">(</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="n">key</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="n">native_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">native_path</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="n">details</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>            <span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bucket</span><span class="p">,</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>            <span class="s2">&quot;object_key&quot;</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>            <span class="s2">&quot;endpoint_url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_endpoint_url</span><span class="p">,</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        <span class="p">},</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="p">)</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="c1"># SQLQueryBackend</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">query_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_query</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="k">return</span> <span class="n">ResolutionPlan</span><span class="p">(</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>        <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;sql_query&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>        <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>        <span class="n">key</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>        <span class="n">native_path</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">://</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>        <span class="n">details</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>            <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">query_config</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>            <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">query_config</span><span class="o">.</span><span class="n">query</span><span class="p">,</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>            <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="n">query_config</span><span class="o">.</span><span class="n">format</span><span class="p">,</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>        <span class="p">},</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>    <span class="p">)</span>
+</code></pre></div>
+<h3 id="43-storeresolve-method">4.3 <code>Store.resolve()</code> Method<a class="headerlink" href="#43-storeresolve-method" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Store</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve a store-relative key to a ResolutionPlan.</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="sd">        Rebases the key to the backend&#39;s path space, then delegates</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="sd">        to the backend&#39;s resolve() method.</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="sd">        Args:</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="sd">            key: Store-relative key.</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="sd">            Frozen ResolutionPlan with the resolved key (store-relative).</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="n">full_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_full_path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="n">plan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backend</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">full_path</span><span class="p">)</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>        <span class="c1"># Return plan with store-relative key (not backend-relative path)</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        <span class="k">return</span> <span class="n">ResolutionPlan</span><span class="p">(</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>            <span class="n">kind</span><span class="o">=</span><span class="n">plan</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>            <span class="n">backend</span><span class="o">=</span><span class="n">plan</span><span class="o">.</span><span class="n">backend</span><span class="p">,</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>            <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>            <span class="n">native_path</span><span class="o">=</span><span class="n">plan</span><span class="o">.</span><span class="n">native_path</span><span class="p">,</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>            <span class="n">details</span><span class="o">=</span><span class="n">plan</span><span class="o">.</span><span class="n">details</span><span class="p">,</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>        <span class="p">)</span>
+</code></pre></div>
+<p><strong>Invariant:</strong> <code>store.native_path(plan.key) == plan.native_path</code> — this is the
+implicit contract that makes the design coherent. The plan's <code>native_path</code> always
+agrees with what the store would return for that key.</p>
+<h3 id="44-proxystoreresolve-delegation">4.4 <code>ProxyStore.resolve()</code> Delegation<a class="headerlink" href="#44-proxystoreresolve-delegation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ProxyStore</span><span class="p">(</span><span class="n">Store</span><span class="p">):</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</code></pre></div>
+<p><code>ext.observe</code> wraps with observation callback. <code>ext.cache</code> can derive a
+cache key from the plan's fields (see §4.6).</p>
+<p><strong>Note:</strong> <code>resolve()</code> is expected to be cheap (no I/O for most backends). For
+CompositeStore (where tier matching may involve I/O), the cache should store
+the plan itself rather than calling <code>resolve()</code> on every lookup.</p>
+<h3 id="45-compositestore-resolution-id-121-future">4.5 CompositeStore Resolution (ID-121, Future)<a class="headerlink" href="#45-compositestore-resolution-id-121-future" title="Permanent link">&para;</a></h3>
+<p>CompositeStore overrides <code>resolve()</code> to report tier-based resolution.
+<code>tier.matches(key)</code> is pattern-based (no I/O) — it checks whether the key
+matches a tier's configured pattern, not whether the key exists in that tier's
+storage. <code>NotFoundError</code> from <code>resolve()</code> means "no pattern matched any tier",
+not "key doesn't exist in storage".</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CompositeStore</span><span class="p">(</span><span class="n">Store</span><span class="p">):</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="n">tried</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="k">for</span> <span class="n">tier</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tiers</span><span class="p">:</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>            <span class="n">tried</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tier</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>            <span class="k">if</span> <span class="n">tier</span><span class="o">.</span><span class="n">matches</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>                <span class="n">tier_plan</span> <span class="o">=</span> <span class="n">tier</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>                <span class="k">return</span> <span class="n">ResolutionPlan</span><span class="p">(</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>                    <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;composite&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>                    <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;composite&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>                    <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>                    <span class="n">native_path</span><span class="o">=</span><span class="n">tier_plan</span><span class="o">.</span><span class="n">native_path</span><span class="p">,</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>                    <span class="n">details</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>                        <span class="s2">&quot;resolved_tier&quot;</span><span class="p">:</span> <span class="n">tier</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>                        <span class="s2">&quot;tried&quot;</span><span class="p">:</span> <span class="n">tried</span><span class="p">,</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>                        <span class="s2">&quot;tier_plan&quot;</span><span class="p">:</span> <span class="n">tier_plan</span><span class="p">,</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>                    <span class="p">},</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>                <span class="p">)</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>        <span class="k">raise</span> <span class="n">NotFoundError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Note:</strong> The nested <code>tier_plan</code> in <code>details</code> is a <code>ResolutionPlan</code> object, not a
+JSON-serializable primitive. See the serialization note in §4.1 <code>details</code> docstring
+for implications and future direction.</p>
+<h3 id="46-cache-key-usage">4.6 Cache Key Usage<a class="headerlink" href="#46-cache-key-usage" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># ext/cache.py — principled cache keys</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">_cache_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">plan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">plan</span><span class="o">.</span><span class="n">kind</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">plan</span><span class="o">.</span><span class="n">backend</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">plan</span><span class="o">.</span><span class="n">native_path</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+<p>This replaces ad-hoc <code>(backend_name, full_path)</code> tuple construction and is
+correct across all backend types including SQL and composite. Note: we derive
+the cache key from specific fields rather than <code>hash(plan)</code> because the
+<code>details</code> dict makes <code>ResolutionPlan</code> unhashable.</p>
 <hr />
-<h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
-<h3 id="az-014-atomic-write">AZ-014: Atomic Write<a class="headerlink" href="#az-014-atomic-write" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>write_atomic</code> writes to a temporary file <code>.~tmp.&lt;name&gt;.&lt;uuid8&gt;</code> in the same directory as the target, then renames atomically to the target via <code>rename_file</code>.
-<strong>Cleanup:</strong> If the rename fails, the backend attempts to delete the temporary file. If cleanup also fails (e.g. connection lost), the orphan temp file remains — this is an inherent limitation of simulated atomicity over a network. Temp files are identifiable by their <code>.~tmp.</code> prefix for manual cleanup.
-<strong>Invariant (no HNS):</strong> <code>write_atomic</code> is implemented identically to <code>write</code> — as a direct upload. Azure PUT is atomic at the blob level (same rationale as S3-010).
-<strong>Postconditions:</strong> Satisfies AW-001: no partial content is ever visible.</p>
-<h3 id="az-015-delete_folder-recursive">AZ-015: delete_folder Recursive<a class="headerlink" href="#az-015-delete_folder-recursive" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>delete_folder(path, recursive=True)</code> calls the ADLS Gen2 recursive delete API (single call).
-<strong>Invariant (no HNS):</strong> <code>delete_folder(path, recursive=True)</code> lists and deletes all blobs with prefix <code>{path}/</code>.
-<strong>Raises:</strong> <code>NotFound</code> if no directory/blobs exist under the path and <code>missing_ok=False</code>.</p>
-<h3 id="az-016-delete_folder-non-recursive">AZ-016: delete_folder Non-Recursive<a class="headerlink" href="#az-016-delete_folder-non-recursive" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>delete_folder(path, recursive=False)</code> succeeds only if the directory/prefix is empty.
-<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist and <code>missing_ok=False</code>. Raises a non-empty error if children exist.
-<strong>Postconditions:</strong> Consistent with local filesystem and SFTP semantics.</p>
-<h3 id="az-017-move">AZ-017: Move<a class="headerlink" href="#az-017-move" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>move(src, dst)</code> uses ADLS Gen2's native <code>rename_file</code>, which is atomic.
-<strong>Invariant (no HNS):</strong> <code>move(src, dst)</code> is implemented as server-side copy + delete (same as S3-013). Not atomic — if copy succeeds but delete fails, both files exist.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.</p>
-<h3 id="az-018-copy">AZ-018: Copy<a class="headerlink" href="#az-018-copy" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>copy(src, dst)</code> uses Azure's server-side copy via <code>start_copy_from_url</code>. No data passes through the client.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.</p>
-<h3 id="az-019-glob">AZ-019: Glob<a class="headerlink" href="#az-019-glob" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>glob(pattern)</code> uses Azure's <code>list_paths</code> with a prefix filter derived from the non-wildcard prefix of the pattern. The wildcard portion is matched client-side using <code>fnmatch</code>.
-<strong>Example:</strong> <code>glob("data/2024/*.csv")</code> sends <code>list_paths(path="data/2024")</code> to the server, then filters results client-side against <code>*.csv</code>.
-<strong>Rationale:</strong> Azure (like S3) supports prefix-based listing but not full glob syntax server-side. The prefix optimization reduces the result set sent over the wire; <code>fnmatch</code> handles the rest locally.</p>
-<h3 id="az-020-read">AZ-020: read()<a class="headerlink" href="#az-020-read" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>read(path)</code> returns a <code>BinaryIO</code> stream via <code>_AzureBinaryIO</code>, a forward-only streaming adapter wrapping <code>StorageStreamDownloader.chunks()</code>. The raw adapter is wrapped in <code>io.BufferedReader</code> for efficient buffered reads.
-<strong>Postconditions:</strong> Data is streamed on demand — the full file is not loaded into memory. The stream is forward-only (not seekable). Callers that require seekability should use <code>read_bytes()</code> + <code>BytesIO</code>.
-<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
-<h3 id="az-021-read_bytes">AZ-021: read_bytes()<a class="headerlink" href="#az-021-read_bytes" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>read_bytes(path)</code> returns the full file content as <code>bytes</code>. Implemented as <code>read(path).read()</code> or via <code>download_file().readall()</code> directly.
-<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
-<h3 id="az-022-write">AZ-022: write()<a class="headerlink" href="#az-022-write" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write(path, content, overwrite=False)</code> uploads content via <code>BlobClient.upload_blob()</code> (Blob SDK).
-<strong>Preconditions:</strong> <code>content</code> is <code>bytes</code> or <code>BinaryIO</code>.
-<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. Existence check uses <code>ResourceNotFoundError</code> (not broad exception catch) to avoid swallowing auth/network errors.
-<strong>Postconditions (HNS):</strong> Intermediate directories are created automatically by the ADLS Gen2 service.
-<strong>Postconditions (no HNS):</strong> No intermediate directory creation needed (flat blob namespace).</p>
-<h3 id="az-023-get_file_info">AZ-023: get_file_info()<a class="headerlink" href="#az-023-get_file_info" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>get_file_info(path)</code> returns a <code>FileInfo</code> populated from <code>BlobClient.get_blob_properties()</code>.
-<strong>Mapped fields:</strong>
-- <code>path</code>: the store-relative key
-- <code>name</code>: filename component of the path
-- <code>size</code>: from <code>content_length</code> (or <code>size</code> for HNS path objects)
-- <code>modified_at</code>: from <code>last_modified</code> (UTC datetime)
-- <code>etag</code>: see AZ-034
-- <code>digest</code>: see AZ-034</p>
-<p><strong>Note:</strong> <code>content_type</code> is not included in <code>FileInfo</code>.</p>
-<p><strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
-<h3 id="az-024-get_folder_info">AZ-024: get_folder_info()<a class="headerlink" href="#az-024-get_folder_info" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>get_folder_info(path)</code> returns a <code>FolderInfo</code>.
-<strong>Invariant (HNS):</strong> Uses <code>get_path_properties()</code> on the directory object.
-<strong>Invariant (no HNS):</strong> Checks for the existence of blobs under the prefix <code>{path}/</code>.
-<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist.</p>
+<h2 id="5-capability-impact">5. Capability Impact<a class="headerlink" href="#5-capability-impact" title="Permanent link">&para;</a></h2>
+<p><code>resolve()</code> is <strong>not</strong> a capability — it is a universal introspection method
+available on every Backend and Store. No capability check required. This
+follows the pattern of <code>native_path()</code> and <code>to_key()</code>, which are also
+universal and not gated by capabilities.</p>
 <hr />
-<h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<h3 id="az-025-structured-error-classification">AZ-025: Structured Error Classification<a class="headerlink" href="#az-025-structured-error-classification" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Azure SDK exceptions are mapped to <code>remote_store</code> errors using structured attributes (<code>status_code</code>, <code>error_code</code>), not string matching.</p>
+<h2 id="6-migration-path">6. Migration Path<a class="headerlink" href="#6-migration-path" title="Permanent link">&para;</a></h2>
+<h3 id="phase-1-core-resolve-id-120">Phase 1: Core <code>resolve()</code> (ID-120)<a class="headerlink" href="#phase-1-core-resolve-id-120" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Add <code>ResolutionPlan</code> to <code>remote_store._resolution</code> (new module)</li>
+<li>Add default <code>Backend.resolve()</code> returning minimal plan</li>
+<li>Add <code>Store.resolve()</code> with key rebasing</li>
+<li>Add <code>ProxyStore.resolve()</code> delegation</li>
+<li>Override in existing backends: Local, S3, S3PyArrow, Azure, SFTP, HTTP, Memory</li>
+<li>Override in SQLAlchemy backends (already designed)</li>
+<li>Export from <code>remote_store.__init__</code></li>
+</ol>
+<h3 id="phase-2-cache-integration">Phase 2: Cache integration<a class="headerlink" href="#phase-2-cache-integration" title="Permanent link">&para;</a></h3>
+<ol>
+<li><code>ext.cache</code> derives cache keys from plan fields (see §4.6)</li>
+<li>Backward-compatible: existing cache keys still work during transition</li>
+</ol>
+<h3 id="phase-3-compositestore-id-121">Phase 3: CompositeStore (ID-121)<a class="headerlink" href="#phase-3-compositestore-id-121" title="Permanent link">&para;</a></h3>
+<ol>
+<li><code>CompositeStore</code> with tier-based <code>resolve()</code> override</li>
+<li>Fallthrough and pattern-match modes</li>
+<li><code>ext.observe</code> integration for resolution event callbacks</li>
+</ol>
+<h3 id="phase-4-resolution-algebra-future-uncommitted">Phase 4: Resolution algebra (future, uncommitted)<a class="headerlink" href="#phase-4-resolution-algebra-future-uncommitted" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Parallel, shadow, quorum read strategies</li>
+<li>All expressible as <code>ResolutionPlan</code> compositions</li>
+<li>No new abstraction needed — just new strategy options on CompositeStore</li>
+</ul>
+<hr />
+<h2 id="7-spec-ids-proposed">7. Spec IDs (Proposed)<a class="headerlink" href="#7-spec-ids-proposed" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Azure SDK exception / code</th>
-<th>remote_store error</th>
+<th>ID</th>
+<th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>ResourceNotFoundError</code>; <code>status_code=404</code>; error codes <code>BlobNotFound</code>, <code>PathNotFound</code>, <code>FilesystemNotFound</code>, <code>ContainerNotFound</code></td>
-<td><code>NotFound</code></td>
+<td>RES-010</td>
+<td><code>ResolutionPlan</code> dataclass definition, fields, frozen invariant</td>
 </tr>
 <tr>
-<td><code>status_code=403</code>; error codes <code>AuthorizationFailure</code>, <code>AuthorizationPermissionMismatch</code>, <code>InsufficientAccountPermissions</code></td>
-<td><code>PermissionDenied</code></td>
+<td>RES-020</td>
+<td><code>Backend.resolve()</code> default implementation</td>
 </tr>
 <tr>
-<td><code>ResourceExistsError</code>; <code>status_code=409</code>; error codes <code>PathAlreadyExists</code>, <code>BlobAlreadyExists</code>, <code>ContainerAlreadyExists</code></td>
-<td><code>AlreadyExists</code></td>
+<td>RES-030</td>
+<td><code>Store.resolve()</code> key rebasing</td>
 </tr>
 <tr>
-<td><code>ServiceRequestError</code>, <code>ServiceResponseError</code> (connection / DNS / timeout)</td>
-<td><code>BackendUnavailable</code></td>
+<td>RES-040</td>
+<td><code>ProxyStore.resolve()</code> delegation</td>
 </tr>
 <tr>
-<td><code>ClientAuthenticationError</code></td>
-<td><code>PermissionDenied</code></td>
+<td>RES-050..RES-090</td>
+<td>Per-backend <code>resolve()</code> overrides (one per backend)</td>
+</tr>
+<tr>
+<td>RES-100</td>
+<td>Cache key derivation from <code>ResolutionPlan</code> fields (not <code>__hash__</code>)</td>
+</tr>
+<tr>
+<td>RES-110</td>
+<td><code>CompositeStore.resolve()</code> tier reporting</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Rationale:</strong> The Azure SDK provides <code>HttpResponseError</code> with <code>status_code</code> and <code>error_code</code> attributes, enabling reliable classification. This is a significant improvement over the S3 backends' fragile string-matching pattern (<code>"404" in msg.lower()</code>).</p>
-<h3 id="az-026-no-native-exception-leakage">AZ-026: No Native Exception Leakage<a class="headerlink" href="#az-026-no-native-exception-leakage" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No <code>azure-storage-file-datalake</code>, <code>azure-core</code>, or <code>azure-identity</code> exceptions propagate to callers. All are mapped to <code>remote_store</code> error types per BE-021.
-<strong>Postconditions:</strong> <code>backend</code> attribute is set to <code>"azure"</code> on all mapped errors.</p>
-<h3 id="az-027-to_key">AZ-027: to_key<a class="headerlink" href="#az-027-to_key" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AzureBackend.to_key(native_path)</code> strips the <code>{container}/</code> prefix from native paths.
-<strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">&quot;my-container&quot;</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;myaccount&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;my-container/data/file.txt&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; &quot;data/file.txt&quot;</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;data/file.txt&quot;</span><span class="p">)</span>               <span class="c1"># -&gt; &quot;data/file.txt&quot; (no prefix, unchanged)</span>
-</code></pre></div>
-<strong>Postconditions:</strong> Pure, deterministic, total (never raises). Same contract as NPR-004.</p>
-<h3 id="az-028-error-context-manager">AZ-028: Error Context Manager<a class="headerlink" href="#az-028-error-context-manager" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> A single <code>_errors(path)</code> context manager catches all Azure SDK exceptions and maps them per AZ-025.
-<strong>Rationale:</strong> Unlike S3PyArrowBackend's dual error contexts (one for PyArrow, one for s3fs), this backend uses a single SDK, so a single error context suffices.</p>
 <hr />
-<h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
-<h3 id="az-029-close">AZ-029: close()<a class="headerlink" href="#az-029-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>close()</code> closes the underlying <code>BlobServiceClient</code>, <code>ContainerClient</code>, and (if HNS) <code>FileSystemClient</code> and <code>DataLakeServiceClient</code>. Resets all cached instances and HNS detection state.
-<strong>Postconditions:</strong> Safe to call multiple times. Note: because lazy properties re-initialize on next use, the backend is technically reusable after <code>close()</code>. This is consistent with S3Backend's behavior.</p>
-<h3 id="az-030-unwrap">AZ-030: unwrap()<a class="headerlink" href="#az-030-unwrap" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>unwrap(FileSystemClient)</code> returns the underlying <code>azure.storage.filedatalake.FileSystemClient</code>.
-<strong>Raises:</strong> <code>CapabilityNotSupported</code> for any other type hint.
-<strong>Rationale:</strong> Escape hatch for users who need Azure-specific features (per ADR-0003).</p>
+<h2 id="8-open-questions">8. Open Questions<a class="headerlink" href="#8-open-questions" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p><strong>Should <code>details</code> be typed per-kind?</strong> Current design: <code>dict[str, Any]</code>.
+   Alternative: <code>TypedDict</code> subclasses per kind. Recommendation: keep <code>dict</code>
+   for v1 (simpler, extensible), consider typed details in v2 if patterns
+   stabilize. <strong>Hashability note:</strong> the <code>dict</code> field makes <code>ResolutionPlan</code>
+   unhashable despite <code>frozen=True</code>. Cache keys must be derived from specific
+   fields (see §4.6), not from <code>hash(plan)</code>.</p>
+</li>
+<li>
+<p><strong>Should <code>resolve()</code> check existence?</strong> Current design: no — <code>resolve()</code>
+   is a pure name-to-plan mapping. Existence checking is <code>exists()</code>. This
+   matches Iceberg (catalog lookup doesn't check file existence) and Delta
+   (name resolution doesn't verify storage). Recommendation: keep <code>resolve()</code>
+   as pure resolution, no I/O. <strong>CompositeStore nuance:</strong>
+   <code>CompositeStore.resolve()</code> uses <code>tier.matches(key)</code> which is pattern-based
+   (no I/O). <code>NotFoundError</code> means "no tier pattern matched", not "key doesn't
+   exist in storage". This is consistent with the no-I/O principle.</p>
+</li>
+<li>
+<p><strong>Should <code>native_path</code> be in the plan?</strong> It duplicates <code>Backend.native_path()</code>
+   output. But including it avoids a second call and makes the plan
+   self-contained. Recommendation: include it (convenience &gt; minimal surface).</p>
+</li>
+<li>
+<p><strong>CompositeStore: resolve vs read resolution</strong> — <code>resolve()</code> reports which
+   tier <em>would</em> handle a key. <code>read()</code> actually tries tiers. These may
+   diverge if a tier's <code>exists()</code> is stale. Recommendation: document that
+   <code>resolve()</code> is a best-effort prediction, not a guarantee of <code>read()</code>
+   success.</p>
+</li>
+</ol>
 <hr />
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<h3 id="az-034-etag-and-content-md5-digest-population">AZ-034: ETag and Content-MD5 Digest Population<a class="headerlink" href="#az-034-etag-and-content-md5-digest-population" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>_props_to_fileinfo</code> populates <code>FileInfo.etag</code> and <code>FileInfo.digest</code> from blob properties.</p>
-<p><strong>ETag (<code>FileInfo.etag</code>):</strong>
-- Source: <code>BlobProperties.etag</code> (always present for existing blobs).
-- Azure returns it double-quoted (e.g. <code>'"0x8D4BCC2E4835CD0"'</code>); the backend strips the outer quotes and lowercases before storing.
-- Populated for all operations that call <code>_props_to_fileinfo</code>: <code>get_file_info</code>, <code>list_files</code>, <code>iter_children</code>.</p>
-<p><strong>Digest (<code>FileInfo.digest</code>):</strong>
-- Source: <code>BlobProperties.content_settings.content_md5</code> — a <code>bytes</code> object when set, <code>None</code> when absent.
-- Azure does not auto-compute Content-MD5; it is set explicitly by the client at upload time. Blobs uploaded without Content-MD5 yield <code>digest=None</code>.
-- When present: converted to lowercase hex and stored as <code>ContentDigest("md5", hex_value)</code>.</p>
-<p><strong>Postconditions:</strong>
-- <code>FileInfo.etag</code> is a non-empty lowercase string for all existing blobs.
-- <code>FileInfo.digest</code> is a <code>ContentDigest("md5", …)</code> when Content-MD5 is set, <code>None</code> otherwise.</p>
+<h2 id="9-recommendation">9. Recommendation<a class="headerlink" href="#9-recommendation" title="Permanent link">&para;</a></h2>
+<p><strong>Proceed to spec drafting for Phase 1 (ID-120: core <code>resolve()</code>).</strong></p>
+<p>The design is validated by:
+- Internal research (SQLAlchemy backend research, middleware architecture)
+- External prior art (Iceberg, Delta/Unity, Hudi, fsspec)
+- Existing codebase (<code>native_path()</code> as foundation, ProxyStore delegation)
+- Industry convergence toward catalog-managed, metadata-rich resolution</p>
+<p>The specification is minimal (one frozen dataclass + one method with a default),
+backward-compatible (no ABC change, default for all existing backends), and
+extensible (open <code>details</code> dict, composable plans for CompositeStore).</p>
+<p>Phase 1 can ship independently. CompositeStore (ID-121) builds on it but is a
+separate spec with separate timeline.</p>
 <hr />
-<h3 id="az-033-transfer-concurrency">AZ-033: Transfer Concurrency<a class="headerlink" href="#az-033-transfer-concurrency" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AzureBackend</code> accepts a <code>max_concurrency: int = 1</code> constructor parameter that controls the number of parallel connections used for blob uploads and downloads. The value is threaded through to <code>BlobClient.upload_blob()</code>, <code>BlobClient.download_blob()</code>, and <code>DataLakeFileClient.upload_data()</code> (HNS atomic writes).
-<strong>Preconditions:</strong> <code>max_concurrency</code> must be &gt;= 1; <code>ValueError</code> is raised at construction time otherwise.
-<strong>Default:</strong> <code>1</code> (sequential transfer, matching prior behavior). Users opt in to parallelism for large-file workloads.
-<strong>Rationale:</strong> The Azure SDK natively supports parallel block uploads and parallel chunk downloads. Exposing this parameter lets users improve throughput for large files without changing application code. SFTP has no equivalent (Paramiko is sequential); S3 concurrency is controlled at the <code>s3fs</code>/<code>aiobotocore</code> level.</p>
-<hr />
-<h3 id="az-031-client-options-passthrough">AZ-031: Client Options Passthrough<a class="headerlink" href="#az-031-client-options-passthrough" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>client_options</code> dict is merged into both the <code>BlobServiceClient</code> and <code>DataLakeServiceClient</code> configurations, allowing advanced settings (custom timeouts, retry policies, proxies, API version overrides, etc.).
-<strong>Postconditions:</strong> Explicit constructor parameters (<code>account_key</code>, <code>sas_token</code>, <code>credential</code>, etc.) take precedence over keys in <code>client_options</code>.</p>
-<h3 id="az-032-default-credential-chain">AZ-032: Default Credential Chain<a class="headerlink" href="#az-032-default-credential-chain" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When no explicit credential is provided (<code>account_key</code>, <code>sas_token</code>, <code>connection_string</code>, and <code>credential</code> are all <code>None</code>), the backend attempts to use <code>DefaultAzureCredential</code> from <code>azure-identity</code>.
-<strong>Raises:</strong> <code>BackendUnavailable</code> if <code>azure-identity</code> is not installed and no explicit credential is provided.
-<strong>Rationale:</strong> Follows the principle of least surprise for Azure users. <code>DefaultAzureCredential</code> automatically resolves environment variables, managed identity, Azure CLI login, and other credential sources.</p>
+<h2 id="10-references">10. References<a class="headerlink" href="#10-references" title="Permanent link">&para;</a></h2>
+<h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="../research-sqlalchemy-backend/#5-resolution-model--composite-store">SQLAlchemy backend research § 5</a> — original ResolutionPlan design</li>
+<li><a href="../research-store-config/">Store config research</a> — Registry multi-backend composition</li>
+<li><code>sdd/BACKLOG.md</code> — ID-120, ID-121 descriptions</li>
+</ul>
+<h3 id="external_1">External<a class="headerlink" href="#external_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://iceberg.apache.org/spec/">Apache Iceberg Spec</a> — catalog-based table resolution</li>
+<li><a href="https://docs.delta.io/">Delta Lake Documentation</a> — name-based resolution, catalog as coordinator</li>
+<li><a href="https://hudi.apache.org/tech-specs/">Apache Hudi Tech Spec</a> — timeline + metadata table resolution</li>
+<li><a href="https://filesystem-spec.readthedocs.io/">fsspec</a> — protocol-based filesystem dispatch</li>
+<li><a href="https://www.unitycatalog.io/">Unity Catalog</a> — three-level namespace, OpenAPI spec</li>
+<li><a href="https://iceberg.apache.org/spec/">Iceberg REST Catalog</a> — language-agnostic catalog API</li>
+</ul>
 
 
 
