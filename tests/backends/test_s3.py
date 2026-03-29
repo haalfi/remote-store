@@ -945,3 +945,50 @@ class TestS3PaginatedListing:
 
 
 # endregion
+
+
+# region: Resolution (RES-051)
+class TestS3Resolve:
+    """RES-051: S3Backend.resolve() returns kind='s3' with bucket, object_key, endpoint_url."""
+
+    @pytest.mark.spec("RES-051")
+    def test_kind_is_s3(self, s3_backend: Backend) -> None:
+        plan = s3_backend.resolve("file.txt")
+        assert plan.kind == "s3"
+
+    @pytest.mark.spec("RES-051")
+    def test_details_has_bucket(self, s3_backend: Backend) -> None:
+        plan = s3_backend.resolve("file.txt")
+        assert "bucket" in plan.details
+        assert isinstance(plan.details["bucket"], str)
+        assert len(plan.details["bucket"]) > 0
+
+    @pytest.mark.spec("RES-051")
+    def test_details_has_object_key(self, s3_backend: Backend) -> None:
+        plan = s3_backend.resolve("dir/file.txt")
+        assert "object_key" in plan.details
+        assert plan.details["object_key"] == "dir/file.txt"
+
+    @pytest.mark.spec("RES-051")
+    def test_details_has_endpoint_url(self, s3_backend: Backend) -> None:
+        plan = s3_backend.resolve("file.txt")
+        assert "endpoint_url" in plan.details
+
+    @pytest.mark.spec("RES-051")
+    def test_endpoint_url_strips_userinfo(self) -> None:
+        """Endpoint URL with embedded credentials has userinfo removed."""
+        from remote_store.backends._s3 import S3Backend
+
+        backend = S3Backend(
+            bucket="test-bucket",
+            key="k",
+            secret="s",
+            endpoint_url="http://user:pass@localhost:9000",
+        )
+        plan = backend.resolve("file.txt")
+        assert "user" not in plan.details["endpoint_url"]
+        assert "pass" not in plan.details["endpoint_url"]
+        assert "localhost:9000" in plan.details["endpoint_url"]
+
+
+# endregion

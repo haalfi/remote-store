@@ -45,6 +45,13 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
+- [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
+  `ext.cache` derives cache keys from `ResolutionPlan` fields instead of
+  ad-hoc `(operation, path)` tuples. Only valuable once `CompositeStore`
+  (ID-121) exists — single-backend cache keys are already correct.
+  - Spec: RES-100 (proposed in [043](specs/043-resolution-plan.md))
+  - Depends on: ID-121 (CompositeStore)
+
 ### S3 Backend DX & Performance
 
 - [ ] **ID-114 — PyArrow-style bucket path support (research)**
@@ -63,17 +70,6 @@ Items graduate through the SDD pipeline:
   S3 Phase 1 shipped — see BACKLOG-DONE.md.
 
 ### New Backends
-
-- [ ] **ID-120 — `resolve()` → `ResolutionPlan` introspection API**
-  Unified introspection across all backends. `Store.resolve(key)` returns a
-  `ResolutionPlan` dataclass (`kind`, `backend`, `key`, `details`). Replaces
-  ad-hoc `resolve_query()` / `resolve_tier()` / `explain()` methods.
-  - [Research (original)](research/research-sqlalchemy-backend.md#51-resolutionplan--unified-introspection)
-  - [Research (proposal)](research/research-resolve-spec-proposal.md)
-  - Default implementation on `Backend` returns plan with `kind=backend.name`
-  - SQLAlchemy + CompositeStore override with meaningful details
-  - Cache keys from plan fields (not `hash(plan)` — details dict is unhashable)
-  - Next: spec now that ID-119 validates the pattern
 
 - [ ] **ID-121 — CompositeStore (research complete)**
   `CompositeStore(Store)` — core Store subclass (not extension) that composes

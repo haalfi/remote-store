@@ -20,6 +20,7 @@ from remote_store._path import RemotePath
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
 _ALL_CAPABILITIES = CapabilitySet(set(Capability))
@@ -82,6 +83,29 @@ class LocalBackend(Backend):
         if path:
             return f"{root_str}/{path}"
         return root_str
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` with local filesystem details.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            Plan with ``kind="local"`` and ``details`` containing
+            ``root`` and ``absolute_path``.
+        """
+        from remote_store._resolution import ResolutionPlan as _RP
+
+        return _RP(
+            kind="local",
+            backend=self.name,
+            key=path,
+            native_path=self.native_path(path),
+            details={
+                "root": str(self._root),
+                "absolute_path": str(self._root / path) if path else str(self._root),
+            },
+        )
 
     def exists(self, path: str) -> bool:
         return self._resolve(path).exists()

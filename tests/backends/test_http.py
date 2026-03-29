@@ -990,3 +990,27 @@ class TestHttpxStreaming:
         assert buf == b"readi"
         stream.close()
         b.close()
+
+
+class TestHttpResolve:
+    """RES-055: ReadOnlyHttpBackend.resolve() returns kind='http' with url and method."""
+
+    @pytest.mark.spec("RES-055")
+    def test_kind_is_http(self) -> None:
+        b = ReadOnlyHttpBackend(base_url="http://example.com/files/", http_client="urllib")
+        plan = b.resolve("data.csv")
+        assert plan.kind == "http"
+
+    @pytest.mark.spec("RES-055")
+    def test_details_has_url(self) -> None:
+        b = ReadOnlyHttpBackend(base_url="http://example.com/files/", http_client="urllib")
+        plan = b.resolve("data.csv")
+        assert "url" in plan.details
+        assert "data.csv" in plan.details["url"]
+
+    @pytest.mark.spec("RES-055")
+    def test_details_has_method(self) -> None:
+        b = ReadOnlyHttpBackend(base_url="http://example.com/files/", http_client="urllib")
+        plan = b.resolve("data.csv")
+        assert "method" in plan.details
+        assert plan.details["method"] == "GET"

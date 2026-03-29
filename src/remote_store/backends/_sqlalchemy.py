@@ -28,6 +28,7 @@ from remote_store._path import RemotePath
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
 
+    from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
 # Module-level import (unlike _sftp/_s3/_azure which defer to __init__/method
@@ -278,6 +279,30 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     @property
     def capabilities(self) -> CapabilitySet:
         return _ALL_CAPABILITIES
+
+    # endregion
+
+    # region: interop
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` with SQL blob details.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            Plan with ``kind="sql-blob"`` and ``details`` containing
+            ``table_name``.
+        """
+        from remote_store._resolution import ResolutionPlan as _RP
+
+        return _RP(
+            kind="sql-blob",
+            backend=self.name,
+            key=path,
+            native_path=self.native_path(path),
+            details={"table_name": self._table_name},
+        )
 
     # endregion
 
@@ -855,6 +880,37 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
     @property
     def capabilities(self) -> CapabilitySet:
         return _QUERY_CAPABILITIES
+
+    # endregion
+
+    # region: interop
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` with SQL query details.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            Plan with ``kind="sql-query"`` and ``details`` containing
+            ``source`` and ``format``.
+        """
+        from remote_store._resolution import ResolutionPlan as _RP
+
+        dot_idx = path.rfind(".")
+        ext = "" if dot_idx == -1 else path[dot_idx:].lower()
+        fmt = _SUPPORTED_FORMATS.get(ext, "unknown")
+
+        return _RP(
+            kind="sql-query",
+            backend=self.name,
+            key=path,
+            native_path=self.native_path(path),
+            details={
+                "source": "explicit",
+                "format": fmt,
+            },
+        )
 
     # endregion
 

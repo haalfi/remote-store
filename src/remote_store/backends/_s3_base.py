@@ -25,6 +25,8 @@ from remote_store.backends._fileinfo import _clean_etag, _name_from_path, _norma
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from remote_store._resolution import ResolutionPlan
+
 
 def _normalize_endpoint_url(url: str | None) -> str | None:
     """Normalize endpoint URL: bare ``host:port`` becomes ``https://host:port``.
@@ -77,6 +79,7 @@ class _S3Base(Backend):
 
     # Set by subclass __init__
     _bucket: str
+    _endpoint_url: str | None
 
     # region: abstract property
 
@@ -101,6 +104,31 @@ class _S3Base(Backend):
         if native_path.startswith(prefix):
             return native_path[len(prefix) :]
         return native_path
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` with S3-specific details.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            Plan with ``kind=self.name`` and ``details`` containing
+            ``bucket``, ``object_key``, and ``endpoint_url``.
+        """
+        from remote_store._resolution import ResolutionPlan as _RP
+        from remote_store._resolution import _strip_userinfo
+
+        return _RP(
+            kind=self.name,
+            backend=self.name,
+            key=path,
+            native_path=self.native_path(path),
+            details={
+                "bucket": self._bucket,
+                "object_key": path,
+                "endpoint_url": _strip_userinfo(self._endpoint_url),
+            },
+        )
 
     # endregion
 

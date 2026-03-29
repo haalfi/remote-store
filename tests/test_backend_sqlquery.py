@@ -555,3 +555,29 @@ class TestUnwrap:
     def test_unwrap_engine(self, backend: SQLQueryBackend) -> None:
         engine = backend.unwrap(sa.Engine)
         assert isinstance(engine, sa.Engine)
+
+
+class TestSQLQueryResolve:
+    """RES-058: SQLQueryBackend.resolve() returns kind='sql-query' with source and format."""
+
+    @pytest.mark.spec("RES-058")
+    def test_kind_is_sql_query(self, backend: SQLQueryBackend) -> None:
+        plan = backend.resolve("reports/sales.parquet")
+        assert plan.kind == "sql-query"
+
+    @pytest.mark.spec("RES-058")
+    def test_details_has_source(self, backend: SQLQueryBackend) -> None:
+        plan = backend.resolve("reports/sales.parquet")
+        assert "source" in plan.details
+        assert plan.details["source"] == "explicit"
+
+    @pytest.mark.spec("RES-058")
+    def test_details_has_format(self, backend: SQLQueryBackend) -> None:
+        plan = backend.resolve("reports/sales.parquet")
+        assert "format" in plan.details
+        assert plan.details["format"] == "parquet"
+
+    @pytest.mark.spec("RES-058")
+    def test_csv_format(self, backend: SQLQueryBackend) -> None:
+        plan = backend.resolve("reports/sales.csv")
+        assert plan.details["format"] == "csv"

@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 
     from remote_store._capabilities import Capability
     from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._resolution import ResolutionPlan
     from remote_store._store import Store
     from remote_store._types import WritableContent
 
@@ -131,6 +132,7 @@ _OP_HOOK_MAP: dict[str, str] = {
     "exists": "on_list",
     "is_file": "on_list",
     "is_folder": "on_list",
+    "resolve": "on_list",
     "ping": "on_ping",
 }
 
@@ -268,6 +270,16 @@ class ObservedStore(ProxyStore):
     def native_path(self, key: str) -> str:
         with self._observe_op("native_path", key, {}):
             return self._inner.native_path(key)
+
+    def resolve(self, key: str) -> ResolutionPlan:
+        """Resolve a key to a ``ResolutionPlan``, emitting observation events.
+
+        Event metadata is intentionally empty to prevent sensitive
+        ``details`` from flowing through observation callbacks.
+        """
+        with self._observe_op("resolve", key, {}):
+            plan = self._inner.resolve(key)
+        return plan
 
     def supports(self, capability: Capability) -> bool:
         with self._observe_op("supports", "", {"capability": capability.name}):
@@ -410,7 +422,8 @@ def observe(
         on_copy: Fires after copy.
         on_move: Fires after move.
         on_list: Fires after list_files/list_folders/iter_children/glob/
-            get_file_info/get_folder_info/exists/is_file/is_folder.
+            get_file_info/get_folder_info/exists/is_file/is_folder/
+            resolve.
         on_ping: Fires after ping.
         on_error: Fires on any operation that raises an exception.
         on_any: Fires after every operation (catch-all).

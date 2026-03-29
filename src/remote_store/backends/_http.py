@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
     from remote_store._config import RetryPolicy
     from remote_store._models import FolderEntry, FolderInfo
+    from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -414,6 +415,31 @@ class ReadOnlyHttpBackend(Backend):
         if not path:
             return self._base_url
         return self._base_url + urllib.parse.quote(path, safe="/")
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` with HTTP-specific details.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            Plan with ``kind="http"`` and ``details`` containing
+            ``url`` and ``method``.
+        """
+        from remote_store._resolution import ResolutionPlan as _RP
+        from remote_store._resolution import _strip_userinfo
+
+        url = self.native_path(path)
+        return _RP(
+            kind="http",
+            backend=self.name,
+            key=path,
+            native_path=url,
+            details={
+                "url": _strip_userinfo(url),
+                "method": "GET",
+            },
+        )
 
     def to_key(self, native_path: str) -> str:
         """Strip base_url prefix to get a backend-relative key."""

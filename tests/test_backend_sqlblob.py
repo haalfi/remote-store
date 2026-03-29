@@ -903,3 +903,18 @@ class TestHealthCheckFailure:
         ):
             b.check_health()
         b.close()
+
+
+class TestSQLBlobResolve:
+    """RES-057: SQLBlobBackend.resolve() returns kind='sql-blob' with table_name."""
+
+    @pytest.mark.spec("RES-057")
+    def test_kind_is_sql_blob(self, backend: SQLBlobBackend) -> None:
+        plan = backend.resolve("file.txt")
+        assert plan.kind == "sql-blob"
+
+    @pytest.mark.spec("RES-057")
+    def test_details_has_table_name(self, backend: SQLBlobBackend) -> None:
+        plan = backend.resolve("file.txt")
+        assert "table_name" in plan.details
+        assert isinstance(plan.details["table_name"], str)

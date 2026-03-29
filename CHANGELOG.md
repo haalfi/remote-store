@@ -8,6 +8,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`resolve()` introspection API** (ID-120): `Store.resolve(key)` returns a
+  frozen `ResolutionPlan` dataclass describing how a key maps to its storage
+  location, backend identity, and backend-specific context. Available on all
+  backends with no I/O. Enables debugging ("which backend handled this key?"),
+  principled cache key derivation, and future composite store composition.
+  Spec 043.
+
 - **`max_listing_size` parameter for `cache()`** (BK-123 M-1): Skips caching
   listing results (`list_files`, `list_folders`, `iter_children`, `glob`) that
   exceed the given item count. Complements the existing `max_content_size` guard

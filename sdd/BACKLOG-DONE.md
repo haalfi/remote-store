@@ -19,6 +19,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   guard, pre-flight size check, chunked write. PR #314.
   Low-priority remainder tracked as BK-127.
 
+## API Surface
+
+- [x] **ID-120 — `resolve()` → `ResolutionPlan` introspection API**
+  `Store.resolve(key)` returns a frozen `ResolutionPlan` dataclass describing
+  how a key maps to its storage location. Available on all 9 backends with no
+  I/O. `details` wrapped in `MappingProxyType` for immutability. Security:
+  no credentials in details, userinfo stripped from URLs.
+  [Spec 043](specs/043-resolution-plan.md),
+  [Research](research/research-resolve-spec-proposal.md).
+  Phase 2 (cache key derivation) and Phase 3 (CompositeStore) deferred.
+
 ## New Backends
 
 - [x] **ID-119 — SQLAlchemy backends**

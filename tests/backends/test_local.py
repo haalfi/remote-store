@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -51,3 +52,29 @@ class TestLocalBackendCapabilities:
     def test_supports_all_capabilities(self, local_backend: LocalBackend) -> None:
         for cap in Capability:
             assert local_backend.capabilities.supports(cap), f"Missing: {cap.name}"
+
+
+class TestLocalBackendResolve:
+    """RES-050: LocalBackend.resolve() returns kind='local' with root and absolute_path."""
+
+    @pytest.mark.spec("RES-050")
+    def test_kind_is_local(self, local_backend: LocalBackend) -> None:
+        plan = local_backend.resolve("file.txt")
+        assert plan.kind == "local"
+
+    @pytest.mark.spec("RES-050")
+    def test_details_has_root(self, local_backend: LocalBackend) -> None:
+        plan = local_backend.resolve("file.txt")
+        assert "root" in plan.details
+
+    @pytest.mark.spec("RES-050")
+    def test_details_has_absolute_path(self, local_backend: LocalBackend) -> None:
+        plan = local_backend.resolve("file.txt")
+        assert "absolute_path" in plan.details
+        assert "file.txt" in plan.details["absolute_path"]
+
+    @pytest.mark.spec("RES-050")
+    def test_details_root_matches_backend(self, local_backend: LocalBackend) -> None:
+        plan = local_backend.resolve("file.txt")
+        # root in details matches the backend's native root (Path normalizes separators)
+        assert Path(plan.details["root"]) == Path(local_backend.native_path(""))

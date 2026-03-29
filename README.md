@@ -173,7 +173,7 @@ All backends except HTTP and SQL Query support read, write, delete, list, copy, 
 
 ## Store API
 
-The Store provides 28 methods across read/write, browsing, management, and utility. Key highlights:
+The Store provides 29 methods across read/write, browsing, management, and utility. Key highlights:
 
 ```python
 store.read_text("path/to/file.txt")             # → str
@@ -191,6 +191,7 @@ store.delete("path/to/file.txt")                # delete
 
 store.child("subfolder")                        # scoped child store
 store.supports(Capability.ATOMIC_WRITE)         # runtime capability check
+store.resolve("path/to/file.txt")               # resolution plan (introspection)
 store.ping()                                    # health check
 ```
 
@@ -233,7 +234,7 @@ There are several excellent Python libraries for file I/O across backends. Here 
 
 | | fsspec | smart_open | cloudpathlib | obstore | **remote-store** |
 |---|---|---|---|---|---|
-| API surface | ~56 methods | `open()` only | pathlib-style | ~10 methods | 28 methods |
+| API surface | ~56 methods | `open()` only | pathlib-style | ~10 methods | 29 methods |
 | Backends | 30+ filesystems | S3, GCS, Az, SFTP | S3, GCS, Azure | S3, GCS, Azure | Local, S3, SFTP, Az, Memory |
 | SFTP | via sshfs | Yes | — | — | Built-in |
 | Streaming I/O | Yes | Yes | — (downloads) | Bytes-oriented | Yes (BinaryIO) |

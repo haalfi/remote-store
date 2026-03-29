@@ -36,6 +36,7 @@ from remote_store._stream import _ErrorMappingStream
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -246,6 +247,30 @@ class SFTPBackend(Backend):
                 return f"/{path}"
             return f"{self._base_path}/{path}"
         return self._base_path
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` with SFTP-specific details.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            Plan with ``kind="sftp"`` and ``details`` containing
+            ``host``, ``port``, and ``base_path``.
+        """
+        from remote_store._resolution import ResolutionPlan as _RP
+
+        return _RP(
+            kind="sftp",
+            backend=self.name,
+            key=path,
+            native_path=self.native_path(path),
+            details={
+                "host": self._host,
+                "port": self._port,
+                "base_path": self._base_path,
+            },
+        )
 
     def exists(self, path: str) -> bool:
         with self._errors(path):
