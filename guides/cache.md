@@ -89,6 +89,13 @@ Both limits can be combined:
 cached = cache(store, ttl=300, max_content_size=1_048_576, max_listing_size=500)
 ```
 
+To limit the total number of cache entries regardless of type, use
+`max_entries`. When exceeded, the least-recently-used entry is evicted:
+
+```python
+cached = cache(store, ttl=300, max_entries=1000)
+```
+
 ## Cache Statistics
 
 ```python

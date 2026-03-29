@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import abc
 import os
+from collections import deque
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -112,15 +113,16 @@ class _S3Base(Backend):
         recursive: bool = False,
         max_depth: int | None = None,
     ) -> Iterator[FileInfo]:
-        from collections import deque
-
         try:
             s3_path = self._s3_path(path)
             if recursive:
                 queue: deque[str] = deque([s3_path])
                 while queue:
                     current = queue.popleft()
-                    dir_entries: list[dict[str, Any]] = self._s3fs.ls(current, detail=True)
+                    try:
+                        dir_entries: list[dict[str, Any]] = self._s3fs.ls(current, detail=True)
+                    except FileNotFoundError:
+                        continue  # directory deleted mid-traversal
                     for info in dir_entries:
                         if info.get("type") == "file":
                             rel = self.to_key(info["name"])
@@ -199,8 +201,6 @@ class _S3Base(Backend):
         # S3 folders are virtual (prefix-based).  An empty folder is simply a
         # prefix with no objects, so exists() already returns False for truly
         # non-existent prefixes.
-        from collections import deque
-
         with self._s3fs_errors(path):
             s3_path = self._s3_path(path)
             if not self._s3fs.exists(s3_path):
@@ -211,7 +211,10 @@ class _S3Base(Backend):
             queue: deque[str] = deque([s3_path])
             while queue:
                 current = queue.popleft()
-                entries: list[dict[str, Any]] = self._s3fs.ls(current, detail=True)
+                try:
+                    entries: list[dict[str, Any]] = self._s3fs.ls(current, detail=True)
+                except FileNotFoundError:
+                    continue  # directory deleted mid-traversal
                 for info in entries:
                     if info.get("type") == "directory":
                         queue.append(info["name"])

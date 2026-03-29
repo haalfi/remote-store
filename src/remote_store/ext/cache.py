@@ -309,7 +309,12 @@ class CachedStore(ProxyStore):
     # region: dunder methods
 
     def __repr__(self) -> str:
-        return f"CachedStore(inner={self._inner!r}, ttl={self._ttl})"
+        parts = [f"inner={self._inner!r}", f"ttl={self._ttl}"]
+        if self._max_content_size is not None:
+            parts.append(f"max_content_size={self._max_content_size}")
+        if self._max_listing_size is not None:
+            parts.append(f"max_listing_size={self._max_listing_size}")
+        return f"CachedStore({', '.join(parts)})"
 
     # endregion
 
@@ -355,7 +360,7 @@ class CachedStore(ProxyStore):
                 fi = self._cache.get(("get_file_info", path))
                 if fi.size > self._max_content_size:
                     skip_cache = True
-            except KeyError:
+            except (KeyError, AttributeError):
                 pass
         result = self._inner.read_bytes(path)
         if not skip_cache and (self._max_content_size is None or len(result) <= self._max_content_size):
@@ -530,6 +535,10 @@ def cache(
 
     Returns:
         A ``CachedStore`` proxy.
+
+    Raises:
+        ValueError: If *ttl*, *max_content_size*, or *max_listing_size*
+            is not positive when set.
     """
     if ttl <= 0:
         msg = f"ttl must be positive, got {ttl}"

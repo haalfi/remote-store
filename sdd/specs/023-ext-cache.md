@@ -145,10 +145,10 @@ class CacheStats:
 | `is_folder(path)` | `("is_folder", path)` | `bool` |
 | `read_bytes(path)` | `("read_bytes", path)` | `bytes` |
 | `get_file_info(path)` | `("get_file_info", path)` | `FileInfo` |
-| `get_folder_info(path)` | `("get_folder_info", path)` | `FolderInfo` |
+| `get_folder_info(path, max_depth)` | `("get_folder_info", path, str(max_depth))` | `FolderInfo` |
 | `iter_children(path)` | `("iter_children", path)` | `tuple[FileInfo \| FolderEntry, ...]` |
-| `list_files(path, recursive, pattern)` | `("list_files", path, recursive, pattern)` | `tuple[FileInfo, ...]` |
-| `list_folders(path)` | `("list_folders", path)` | `tuple[FolderEntry, ...]` |
+| `list_files(path, recursive, pattern, max_depth)` | `("list_files", path, recursive_key, pattern_key, depth_key)` | `tuple[FileInfo, ...]` |
+| `list_folders(path, max_depth)` | `("list_folders", path, depth_key)` | `tuple[FolderEntry, ...]` |
 | `glob(pattern)` | `("glob", pattern)` | `tuple[FileInfo, ...]` |
 
 **Postconditions:**

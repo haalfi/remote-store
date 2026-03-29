@@ -922,5 +922,22 @@ class TestS3PaginatedListing:
         assert info.file_count == 1
         assert info.total_size == 3
 
+    @pytest.mark.spec("BK-123")
+    def test_find_not_called_for_list_folders(self, s3_backend: Backend) -> None:
+        """Verify _s3fs.find is NOT used for list_folders."""
+        from remote_store.backends._s3 import S3Backend
+
+        assert isinstance(s3_backend, S3Backend)
+        s3_backend.write("lf/sub/a.txt", b"a")
+
+        with patch.object(
+            s3_backend._s3fs,
+            "find",
+            side_effect=AssertionError("find() should not be called"),
+        ):
+            folders = list(s3_backend.list_folders("lf"))
+        assert len(folders) == 1
+        assert folders[0].name == "sub"
+
 
 # endregion

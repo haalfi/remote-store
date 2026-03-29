@@ -39,10 +39,6 @@ Items graduate through the SDD pipeline:
 
 ### Performance & Memory
 
-- [~] **BK-123 — Address laziness & memory findings from audit-005**
-  Follow-up to [audit-005](audits/audit-005-laziness-memory.md) (2026-03-28).
-  High + Medium findings (H-1, H-2, M-1..M-6) shipped. Low deferred to BK-127.
-
 - [ ] **BK-127 — Audit-005 low-priority polish (L-1, L-2, L-3)**
   Remainder of BK-123. From [audit-005](audits/audit-005-laziness-memory.md):
   - L-1: `ext/cache.py` — `MemoryCache.size()` rebuilds dict on every call;

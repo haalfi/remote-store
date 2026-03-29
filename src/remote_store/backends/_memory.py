@@ -253,22 +253,20 @@ class MemoryBackend(Backend):
                 snapshot = self._snapshot_subtree(node)
             else:
                 children_snap = {
-                    name: _FileSnapshot(child) if isinstance(child, _FileEntry) else child
-                    for name, child in node.children.items()
+                    name: _FileSnapshot(child) for name, child in node.children.items() if isinstance(child, _FileEntry)
                 }
         if recursive:
             yield from self._collect_files_from_snapshot(snapshot, prefix, max_depth=max_depth)
         else:
             for name, child in children_snap.items():
-                if isinstance(child, _FileSnapshot):
-                    child_path = f"{prefix}/{name}" if prefix else name
-                    yield FileInfo(
-                        path=RemotePath(child_path),
-                        name=name,
-                        size=child.size,
-                        modified_at=child.modified_at,
-                        content_type=child.content_type,
-                    )
+                child_path = f"{prefix}/{name}" if prefix else name
+                yield FileInfo(
+                    path=RemotePath(child_path),
+                    name=name,
+                    size=child.size,
+                    modified_at=child.modified_at,
+                    content_type=child.content_type,
+                )
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         segments = self._split_path(path)

@@ -690,20 +690,23 @@ class TestListingSizeGuard:
             assert cs.stats.hits == 0
 
     @pytest.mark.spec("BK-123")
-    def test_max_listing_size_zero_raises(self) -> None:
-        """max_listing_size=0 raises ValueError."""
-        backend = MemoryBackend()
-        s = Store(backend)
-        with pytest.raises(ValueError, match="max_listing_size must be positive"):
-            cache(s, ttl=60.0, max_listing_size=0)
+    def test_listing_at_exact_limit_is_cached(self, big_store: Store) -> None:
+        """Listing with item count == max_listing_size IS cached (boundary)."""
+        # big_store has 6 files (5 root + 1 nested)
+        cs = cache(big_store, ttl=60.0, max_listing_size=6)
+        list(cs.list_files("", recursive=True))
+        list(cs.list_files("", recursive=True))
+        assert cs.stats.misses == 1
+        assert cs.stats.hits == 1
 
     @pytest.mark.spec("BK-123")
-    def test_max_listing_size_negative_raises(self) -> None:
-        """max_listing_size=-1 raises ValueError."""
+    @pytest.mark.parametrize("value", [0, -1], ids=["zero", "negative"])
+    def test_max_listing_size_invalid_raises(self, value: int) -> None:
+        """max_listing_size <= 0 raises ValueError."""
         backend = MemoryBackend()
         s = Store(backend)
         with pytest.raises(ValueError, match="max_listing_size must be positive"):
-            cache(s, ttl=60.0, max_listing_size=-1)
+            cache(s, ttl=60.0, max_listing_size=value)
 
 
 class TestPreFlightSizeCheck:

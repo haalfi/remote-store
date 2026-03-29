@@ -4,6 +4,15 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Performance & Memory
+
+- [x] **BK-123 — Address laziness & memory findings from audit-005**
+  Follow-up to [audit-005](audits/audit-005-laziness-memory.md) (2026-03-28).
+  Shipped High + Medium findings (H-1, H-2, M-1..M-6). S3 paginated
+  listing, MemoryBackend snapshot-under-lock, cache `max_listing_size`
+  guard, pre-flight size check, chunked write. PR #314.
+  Low-priority remainder tracked as BK-127.
+
 ## New Backends
 
 - [x] **ID-119 — SQLAlchemy backends**
