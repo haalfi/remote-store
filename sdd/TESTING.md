@@ -8,7 +8,7 @@ Authoritative source for test **quality** rules in `tests/`. Companion to
 
 ## Rules
 
-1. **Every test must have at least one meaningful assertion** [CI-enforced]
+1. **Every test must have at least one meaningful assertion** [CI-enforced — pending BK-124b]
    — "no crash" is not a test. Public API methods need a failure-path test too
    (`pytest.raises` with `match=`).
 
@@ -18,7 +18,7 @@ Authoritative source for test **quality** rules in `tests/`. Companion to
 3. **Never assert on private attributes** [review-enforced]
    — verify through observable behavior. Exception: `# internal: no public observable`.
 
-4. **Always use `spec=` with `MagicMock`** [CI-enforced]
+4. **Always use `spec=` with `MagicMock`** [CI-enforced — pending BK-124b]
    — `MagicMock()` without `spec` is banned; use `spec=RealClass` or `create_autospec`.
 
 5. **Don't mock what you don't own** [review-enforced]
@@ -32,22 +32,6 @@ Authoritative source for test **quality** rules in `tests/`. Companion to
 
 8. **Tests must survive refactoring** [review-enforced]
    — if renaming a private method breaks the test, the test is wrong.
-
-### Test code economy
-
-Bloated suites bury meaningful tests, inflate coverage without behavioral
-signal, and double refactoring cost. Delete tests that don't provide value
-(BK-014: -8.6% code, zero coverage loss).
-
-### Ruff PT rules
-
-Mechanical enforcement via `flake8-pytest-style` (BK-124b enables these):
-
-| Rule | What it catches |
-|------|----------------|
-| PT011 | `pytest.raises()` without `match=` — prevents lazy exception checks |
-| PT018 | Composite assertions — should use multiple `assert` statements |
-| PT006/PT007 | Inconsistent `@pytest.mark.parametrize` style |
 
 ## Guides
 
@@ -79,3 +63,17 @@ backend = MagicMock(spec=Backend)           # good
 | 6 | Mock could be a real dependency | review |
 | 7 | 3+ similar methods → parametrize | review |
 | 8 | Renaming internal breaks test? | review |
+
+### Test code economy
+
+Bloated suites bury meaningful tests, inflate coverage without behavioral
+signal, and double refactoring cost. Delete tests that don't provide value
+(BK-014: -8.6% code, zero coverage loss).
+
+### Ruff PT rules (BK-124b)
+
+| Rule | What it catches |
+|------|----------------|
+| PT011 | `pytest.raises()` without `match=` |
+| PT018 | Composite assertions — use multiple `assert` statements |
+| PT006/PT007 | Inconsistent `@pytest.mark.parametrize` style |
