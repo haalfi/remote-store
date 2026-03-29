@@ -24,7 +24,7 @@ This gap creates three practical problems:
    and how?"
 2. **Cache key fragility** — `ext.cache` must construct cache keys from
    `(backend_name, full_path)` tuples assembled ad-hoc, rather than from a
-   canonical, hashable resolution result.
+   canonical resolution result whose identity fields yield a stable cache key.
 3. **Composition blindness** — a `CompositeStore` (ID-121) that delegates
    across tiers has no standard way to report which tier resolved a key, which
    tiers were tried, or why resolution succeeded/failed.
@@ -67,16 +67,16 @@ Derived from internal research + external prior art:
    not just a location string. The plan *is* the resolved identity.
 2. **Extensible details** — each backend adds its own context via `details`.
    No schema imposed on backend-specific information.
-3. **Immutable and cacheable** — `ResolutionPlan` is a frozen dataclass.
-   Cache keys derived from `(kind, backend, key, native_path)` tuple, not
-   `hash(plan)` directly (the `details` dict prevents `__hash__`).
+3. **Immutable and cacheable** — `ResolutionPlan` is a frozen dataclass, safe
+   for concurrent use. Cache keys derived from `(kind, backend, key,
+   native_path)` tuple, not `hash(plan)` directly (the `details` dict
+   prevents `__hash__`).
 4. **Composable** — composite resolution (try tier A, then B) is expressible
    as a `ResolutionPlan` whose details include the sub-plans.
 5. **Inspectable** — callers branch on `kind` (a string discriminator) rather
    than `isinstance` checks on backend types.
 6. **Backward-compatible** — the default implementation returns a sensible
    plan for any backend. No ABC signature change required.
-7. **Immutable** — frozen dataclass, safe for concurrent use.
 
 ---
 
