@@ -33,6 +33,25 @@ Authoritative source for test **quality** rules in `tests/`. Companion to
 8. **Tests must survive refactoring** [review-enforced]
    — if renaming a private method breaks the test, the test is wrong.
 
+### Test code economy
+
+Bloated test suites are dangerous: meaningful tests get buried among trivial
+ones, high test counts mask low behavioral coverage, and refactoring costs
+double at a 1.3:1 test-to-production line ratio. Anti-patterns hide in large
+classes but stand out in tight parametrized suites. Deleting tests that don't
+provide value is acceptable — BK-014 proved it (-8.6% test code, zero coverage
+loss).
+
+### Ruff PT rules
+
+Mechanical enforcement via `flake8-pytest-style` (BK-124b enables these):
+
+| Rule | What it catches |
+|------|----------------|
+| PT011 | `pytest.raises()` without `match=` — prevents lazy exception checks |
+| PT018 | Composite assertions — should use multiple `assert` statements |
+| PT006/PT007 | Inconsistent `@pytest.mark.parametrize` style |
+
 ## Guides
 
 ### Examples (bad → good)
