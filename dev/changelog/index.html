@@ -8901,6 +8901,12 @@
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong><code>max_listing_size</code> parameter for <code>cache()</code></strong> (BK-123 M-1): Skips caching
+  listing results (<code>list_files</code>, <code>list_folders</code>, <code>iter_children</code>, <code>glob</code>) that
+  exceed the given item count. Complements the existing <code>max_content_size</code> guard
+  for <code>read_bytes</code>.</p>
+</li>
+<li>
 <p><strong><code>SQLQueryBackend</code> — read-only SQL query materializer</strong> (ID-119 v2): Maps
   path keys to SQL queries and serializes results to Parquet, CSV, or Arrow
   IPC based on the key's file extension. Explicit query mappings via <code>queries</code>
@@ -9045,6 +9051,26 @@
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong>S3 recursive listing memory optimization</strong> (BK-123 H-1/H-2):
+  <code>list_files(recursive=True)</code> and <code>get_folder_info</code> now use paginated
+  per-directory <code>ls()</code> calls instead of <code>find()</code>, reducing peak memory from
+  O(total objects) to O(widest directory).</p>
+</li>
+<li>
+<p><strong>MemoryBackend listing lock reduction</strong> (BK-123 M-3/M-4/M-5): <code>list_files</code>,
+  <code>list_folders</code>, and <code>iter_children</code> now snapshot state under lock and build
+  results lazily outside it, reducing lock contention during long iterations.</p>
+</li>
+<li>
+<p><strong>MemoryBackend write memory optimization</strong> (BK-123 M-6): Stream writes
+  accumulate directly into a <code>bytearray</code> via chunked reads, halving peak memory.</p>
+</li>
+<li>
+<p><strong>CachedStore pre-flight size check</strong> (BK-123 M-2): <code>read_bytes</code> checks
+  cached <code>get_file_info</code> size before reading to skip caching oversized files
+  earlier. Zero extra backend calls.</p>
+</li>
 <li>
 <p><strong>Performance messaging rewrite</strong> (ID-104): README and performance guide now
   present overhead as measured values in ms (with percentages in brackets)

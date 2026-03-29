@@ -7389,9 +7389,10 @@ the expiry timestamp from <code>time.monotonic()</code>.</p>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">ttl</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">300.0</span><span class="p">,</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">max_content_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">max_entries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">cache_backend</span><span class="p">:</span> <span class="n">CacheBackend</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CachedStore</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">max_listing_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">max_entries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">cache_backend</span><span class="p">:</span> <span class="n">CacheBackend</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CachedStore</span><span class="p">:</span> <span class="o">...</span>
 </code></pre></div>
 <p><strong>Parameters:</strong>
 - <code>store</code>: The Store to wrap.
@@ -7399,6 +7400,10 @@ the expiry timestamp from <code>time.monotonic()</code>.</p>
   Must be positive; <code>ValueError</code> on <code>&lt;= 0</code>.
 - <code>max_content_size</code>: Maximum byte length for <code>read_bytes</code> caching.
   Files larger than this are returned without caching. <code>None</code> means
+  unlimited. Must be positive when set; <code>ValueError</code> on <code>&lt;= 0</code>.
+- <code>max_listing_size</code>: Maximum item count for listing caches
+  (<code>iter_children</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>). Listings
+  with more items than this are returned without caching. <code>None</code> means
   unlimited. Must be positive when set; <code>ValueError</code> on <code>&lt;= 0</code>.
 - <code>max_entries</code>: Maximum number of cache entries for the default
   <code>MemoryCache</code>. Least-recently-used entries are evicted when exceeded.
@@ -7474,8 +7479,8 @@ pattern (ADR-0010).</p>
 <td><code>FileInfo</code></td>
 </tr>
 <tr>
-<td><code>get_folder_info(path)</code></td>
-<td><code>("get_folder_info", path)</code></td>
+<td><code>get_folder_info(path, max_depth)</code></td>
+<td><code>("get_folder_info", path, str(max_depth))</code></td>
 <td><code>FolderInfo</code></td>
 </tr>
 <tr>
@@ -7484,13 +7489,13 @@ pattern (ADR-0010).</p>
 <td><code>tuple[FileInfo \| FolderEntry, ...]</code></td>
 </tr>
 <tr>
-<td><code>list_files(path, recursive, pattern)</code></td>
-<td><code>("list_files", path, recursive, pattern)</code></td>
+<td><code>list_files(path, recursive, pattern, max_depth)</code></td>
+<td><code>("list_files", path, recursive_key, pattern_key, depth_key)</code></td>
 <td><code>tuple[FileInfo, ...]</code></td>
 </tr>
 <tr>
-<td><code>list_folders(path)</code></td>
-<td><code>("list_folders", path)</code></td>
+<td><code>list_folders(path, max_depth)</code></td>
+<td><code>("list_folders", path, depth_key)</code></td>
 <td><code>tuple[FolderEntry, ...]</code></td>
 </tr>
 <tr>
@@ -7507,7 +7512,10 @@ pattern (ADR-0010).</p>
 - Only successful results are cached. Exceptions (e.g., <code>NotFound</code>) are
   never cached -- subsequent calls retry the backend.
 - <code>read_bytes</code>: if <code>max_content_size</code> is set and <code>len(result) &gt;
-  max_content_size</code>, the result is returned but not cached.</p>
+  max_content_size</code>, the result is returned but not cached.
+- Listing methods (<code>iter_children</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>):
+  if <code>max_listing_size</code> is set and <code>len(result) &gt; max_listing_size</code>, the
+  result is returned but not cached.</p>
 <h3 id="cache-007-non-cached-operations">CACHE-007: Non-Cached Operations<a class="headerlink" href="#cache-007-non-cached-operations" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The following operations always delegate directly to the
 inner store without caching:</p>

@@ -7070,22 +7070,22 @@ round-trips for read-heavy and metadata-heavy workloads.</p>
 <tr>
 <td><code>list_files()</code></td>
 <td>Yes</td>
-<td>Materialized on first call</td>
+<td>Materialized on first call; subject to <code>max_listing_size</code></td>
 </tr>
 <tr>
 <td><code>list_folders()</code></td>
 <td>Yes</td>
-<td>Materialized on first call</td>
+<td>Materialized on first call; subject to <code>max_listing_size</code></td>
 </tr>
 <tr>
 <td><code>iter_children()</code></td>
 <td>Yes</td>
-<td>Materialized on first call</td>
+<td>Materialized on first call; subject to <code>max_listing_size</code></td>
 </tr>
 <tr>
 <td><code>glob()</code></td>
 <td>Yes</td>
-<td>Materialized on first call</td>
+<td>Materialized on first call; subject to <code>max_listing_size</code></td>
 </tr>
 <tr>
 <td><code>read()</code></td>
@@ -7116,16 +7116,30 @@ large files, set <code>max_content_size</code> to prevent memory pressure:</p>
 </code></pre></div>
 <p>Files larger than the limit are still returned correctly — they just
 bypass the cache.</p>
+<p>Similarly, listing operations (<code>list_files</code>, <code>list_folders</code>,
+<code>iter_children</code>, <code>glob</code>) cache their full result set. For stores with
+very large directories, set <code>max_listing_size</code> to skip caching listings
+that exceed a given item count:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Cache listings up to 500 items; larger ones bypass the cache</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">cached</span> <span class="o">=</span> <span class="n">cache</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">max_listing_size</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+</code></pre></div>
+<p>Both limits can be combined:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">cached</span> <span class="o">=</span> <span class="n">cache</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">max_content_size</span><span class="o">=</span><span class="mi">1_048_576</span><span class="p">,</span> <span class="n">max_listing_size</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+</code></pre></div>
+<p>To limit the total number of cache entries regardless of type, use
+<code>max_entries</code>. When exceeded, the least-recently-used entry is evicted:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">cached</span> <span class="o">=</span> <span class="n">cache</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">max_entries</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+</code></pre></div>
 <h2 id="cache-statistics">Cache Statistics<a class="headerlink" href="#cache-statistics" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">cached</span><span class="o">.</span><span class="n">stats</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hits: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">hits</span><span class="si">}</span><span class="s2">, Misses: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">misses</span><span class="si">}</span><span class="s2">, Size: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">cached</span><span class="o">.</span><span class="n">stats</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hits: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">hits</span><span class="si">}</span><span class="s2">, Misses: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">misses</span><span class="si">}</span><span class="s2">, Size: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="manual-invalidation">Manual Invalidation<a class="headerlink" href="#manual-invalidation" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Invalidate a specific path</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">cached</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">&quot;config.json&quot;</span><span class="p">)</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Clear the entire cache</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">cached</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Invalidate a specific path</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">cached</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">&quot;config.json&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Clear the entire cache</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">cached</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="stale-data">Stale Data<a class="headerlink" href="#stale-data" title="Permanent link">&para;</a></h2>
 <p>The cache cannot detect writes made by other processes or other Store
@@ -7139,13 +7153,13 @@ mutations, either:</p>
 <h2 id="composing-with-observability">Composing with Observability<a class="headerlink" href="#composing-with-observability" title="Permanent link">&para;</a></h2>
 <p><code>CachedStore</code> composes with <code>ObservedStore</code>. The ordering determines
 what gets observed:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">observe</span><span class="p">,</span> <span class="n">cache</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Observe only cache misses (actual backend calls)</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">cached</span> <span class="o">=</span> <span class="n">cache</span><span class="p">(</span><span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">on_read</span><span class="o">=</span><span class="n">my_hook</span><span class="p">),</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># Observe all reads including cache hits</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">cache</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">),</span> <span class="n">on_read</span><span class="o">=</span><span class="n">my_hook</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">observe</span><span class="p">,</span> <span class="n">cache</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># Observe only cache misses (actual backend calls)</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">cached</span> <span class="o">=</span> <span class="n">cache</span><span class="p">(</span><span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">on_read</span><span class="o">=</span><span class="n">my_hook</span><span class="p">),</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="c1"># Observe all reads including cache hits</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">cache</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">),</span> <span class="n">on_read</span><span class="o">=</span><span class="n">my_hook</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="thread-safety">Thread Safety<a class="headerlink" href="#thread-safety" title="Permanent link">&para;</a></h2>
 <p><code>CachedStore</code> and <code>MemoryCache</code> are thread-safe. They work correctly

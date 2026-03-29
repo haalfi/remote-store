@@ -7077,7 +7077,11 @@
 </ul>
 <p>This matches <code>LocalBackend</code> semantics exactly.</p>
 <h2 id="thread-safety">Thread Safety<a class="headerlink" href="#thread-safety" title="Permanent link">&para;</a></h2>
-<p>All operations are serialized under a single lock. The lock is never held during caller consumption of returned data (streams, iterators).</p>
+<p>All operations are thread-safe. Mutations are serialized under a lock.
+The lock is never held while you iterate results — listing operations
+(<code>list_files</code>, <code>list_folders</code>, <code>iter_children</code>) snapshot state under the
+lock and build results lazily outside it, reducing lock contention for
+concurrent workloads.</p>
 <h2 id="testing-with-memorybackend">Testing with MemoryBackend<a class="headerlink" href="#testing-with-memorybackend" title="Permanent link">&para;</a></h2>
 <p>Replace <code>LocalBackend</code> + <code>tempfile.TemporaryDirectory</code> in your tests:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
