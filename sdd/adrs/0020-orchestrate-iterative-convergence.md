@@ -38,7 +38,7 @@ mode selection to avoid unnecessary overhead.
 |------|------|------|
 | **Simple** | Trivial plan, clear scope | Plan → Execute → Review (1×) → Finish |
 | **Standard** | Multi-domain, clear requirements | Plan → Refine (1×) → Execute → Consolidate → Review (1–2×) → Finish |
-| **Complex** | Ambiguity, tight coupling, unknowns | Full flow, user breaks ties at any gate |
+| **Complex** | Ambiguity, tight coupling, unknowns | Same as Standard, but user confirms before Execute and before each Review round |
 
 The orchestrator selects the mode during planning. The user can override.
 

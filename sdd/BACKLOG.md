@@ -61,14 +61,6 @@ Items graduate through the SDD pipeline:
 
 ### Developer Tooling
 
-- [ ] **BK-128 — Orchestrate skill v2: iterative convergence model**
-  Redesign `/orchestrate` from single-pass parallel to iterative convergence.
-  Three complexity modes (Simple, Standard, Complex). Adds plan refinement
-  with experts (1 round), consolidation step, review loop (max 2 rounds),
-  user as tie-breaker. New ADR-0020 supersedes ADR-0019.
-  Learnings from BK-123 first run: no cross-validation, no inter-expert
-  communication, tightly coupled changes need sequential mode.
-
 - [ ] **BK-016 — Eliminate avoidable `# type: ignore` comments in src/**
   ~9 `type: ignore` comments can likely be removed with better typing:
   - `ext/cache.py` (6× `no-any-return`): cache `get()` returns `object`;

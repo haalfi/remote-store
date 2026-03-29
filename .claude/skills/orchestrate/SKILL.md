@@ -31,9 +31,14 @@ Before spawning experts, decide and document:
 |------|------|------------|
 | **Simple** | Trivial plan, clear scope | Plan → Execute → Review (1×) → Finish |
 | **Standard** | Multi-domain, clear requirements | Plan → Refine → Execute → Consolidate → Review (1–2×) → Finish |
-| **Complex** | Ambiguity, tight coupling, unknowns | Full flow, user breaks ties at any gate |
+| **Complex** | Ambiguity, tight coupling, unknowns | Same as Standard, but user confirms before Execute and before each Review round |
 
 Select mode based on scope and coupling. User can override.
+
+**Complex mode gates:** Before spawning experts in Step 4 (Execute) and
+before each review round in Step 6, present the plan/findings to the user
+and wait for confirmation. This prevents wasted expert cycles when the
+direction is uncertain.
 
 ### Expert activation rules
 
@@ -64,7 +69,8 @@ Each expert gets the (refined) plan plus their domain-specific prompt below.
 
 **Feature/refactor:** Spawn all experts using multiple Agent tool calls.
 
-**Bug fix (TDD):** Sequential — Testing Expert goes first:
+**Bug fix (TDD):** Sequential — Testing Expert goes first. This follows the
+bug-fix protocol in CLAUDE.md (backlog → changelog → failing test → fix):
 1. Spawn **Testing Expert only** — write a failing test that clearly reproduces
    the bug, conforming to the full testing guide (`sdd/TESTING.md`).
 2. Verify the test fails for the right reason.

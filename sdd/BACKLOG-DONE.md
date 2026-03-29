@@ -26,6 +26,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Process
 
+- [x] **BK-128 — Orchestrate skill v2: iterative convergence model**
+  Redesign `/orchestrate` from single-pass parallel to iterative convergence.
+  Three complexity modes (Simple, Standard, Complex). Plan refinement with
+  experts (1 round), consolidation step, review loop (max 2 rounds), user as
+  tie-breaker. ADR-0020 supersedes ADR-0019. Based on BK-123 learnings.
+
 - [x] **BK-125 — Multi-agent orchestration for complex tasks**
   `/orchestrate` skill: orchestrator + 4 domain experts (Store & Backend,
   Extension, Testing, Documentation) via Claude Code Agent tool. Parallel
