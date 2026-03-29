@@ -47,14 +47,14 @@ def _populate(store: Store) -> None:
         store.write(path, data)
 
 
-@pytest.fixture()
+@pytest.fixture
 def local_store(tmp_path: Path) -> Store:
     """Return a LocalBackend-based Store (has GLOB) backed by tmp_path."""
     backend = LocalBackend(root=str(tmp_path))
     return Store(backend=backend, root_path="data")
 
 
-@pytest.fixture()
+@pytest.fixture
 def mem_store() -> Store:
     """Return a populated MemoryBackend-based Store (no GLOB)."""
     store = Store(backend=MemoryBackend(), root_path="data")
@@ -62,7 +62,7 @@ def mem_store() -> Store:
     return store
 
 
-@pytest.fixture()
+@pytest.fixture
 def pop_local(local_store: Store) -> Store:
     """Return a populated LocalBackend-based Store."""
     _populate(local_store)
@@ -79,7 +79,7 @@ class TestListFilesPattern:
 
     @pytest.mark.spec("GLOB-001")
     @pytest.mark.parametrize(
-        "folder,pattern,recursive,expected",
+        ("folder", "pattern", "recursive", "expected"),
         [
             pytest.param("", "*.csv", False, ["report.csv"], id="csv"),
             pytest.param("", "report.*", False, ["report.csv", "report.txt"], id="report_star"),
@@ -107,7 +107,7 @@ class TestListFilesPattern:
 
     @pytest.mark.spec("GLOB-001")
     @pytest.mark.parametrize(
-        "files,pattern,expected",
+        ("files", "pattern", "expected"),
         [
             pytest.param(
                 {"a1.txt": b"x", "a2.txt": b"y", "abc.txt": b"z"}, "a?.txt", ["a1.txt", "a2.txt"], id="question_mark"
@@ -157,7 +157,7 @@ class TestTier2NativeGlob:
 
     @pytest.mark.spec("GLOB-005")
     @pytest.mark.parametrize(
-        "pattern,expected",
+        ("pattern", "expected"),
         [
             pytest.param("*.csv", ["report.csv"], id="star_csv"),
             pytest.param("**/*.log", ["logs/app.log", "logs/archive/old.log", "logs/error.log"], id="recursive_log"),
@@ -208,7 +208,7 @@ class TestGlobFiles:
 
     @pytest.mark.spec("GLOB-010")
     @pytest.mark.parametrize(
-        "pattern,expected",
+        ("pattern", "expected"),
         [
             pytest.param("*.csv", ["report.csv"], id="star_csv"),
             pytest.param("**/*.md", ["docs/guide.md", "docs/readme.md"], id="recursive_md"),
@@ -220,7 +220,7 @@ class TestGlobFiles:
 
     @pytest.mark.spec("GLOB-011")
     @pytest.mark.parametrize(
-        "pattern,expected",
+        ("pattern", "expected"),
         [
             pytest.param("*.csv", ["report.csv"], id="star_csv"),
             pytest.param("*.txt", ["report.txt"], id="star_txt"),
@@ -238,7 +238,7 @@ class TestGlobFiles:
 
     @pytest.mark.spec("GLOB-011")
     @pytest.mark.parametrize(
-        "pattern,count",
+        ("pattern", "count"),
         [
             pytest.param("**/*", 8, id="double_star_all"),
             pytest.param("**", 8, id="bare_double_star"),
@@ -268,7 +268,7 @@ class TestGlobFiles:
 
     @pytest.mark.spec("GLOB-007")
     @pytest.mark.parametrize(
-        "child_path,pattern,expected",
+        ("child_path", "pattern", "expected"),
         [
             pytest.param("docs", "*.md", ["guide.md", "readme.md"], id="child_docs"),
             pytest.param("logs", "**/*.log", ["app.log", "archive/old.log", "error.log"], id="child_logs_recursive"),
@@ -289,7 +289,7 @@ class TestGlobFiles:
 
 @pytest.mark.spec("GLOB-012")
 @pytest.mark.parametrize(
-    "pattern,expected",
+    ("pattern", "expected"),
     [
         pytest.param("data/2024/*.csv", "data/2024", id="data/2024/*.csv"),
         pytest.param("**/*.csv", "", id="**/*.csv"),
@@ -304,7 +304,7 @@ def test_extract_prefix(pattern: str, expected: str) -> None:
 
 @pytest.mark.spec("GLOB-013")
 @pytest.mark.parametrize(
-    "pattern,expected",
+    ("pattern", "expected"),
     [
         pytest.param("**/*.csv", True, id="**/*.csv"),
         pytest.param("*.csv", False, id="*.csv"),
@@ -319,7 +319,7 @@ def test_needs_recursive(pattern: str, expected: bool) -> None:
 
 @pytest.mark.spec("GLOB-014")
 @pytest.mark.parametrize(
-    "pattern,should_match,should_not_match",
+    ("pattern", "should_match", "should_not_match"),
     [
         pytest.param("*.csv", ["report.csv", ".csv"], ["dir/report.csv"], id="*.csv"),
         pytest.param("**/*.csv", ["report.csv", "dir/report.csv", "a/b/c/report.csv"], [], id="**/*.csv"),

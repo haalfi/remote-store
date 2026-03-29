@@ -70,7 +70,7 @@ def _needs_azurite(func_or_class):  # type: ignore[no-untyped-def]
     return decorated
 
 
-@pytest.fixture()
+@pytest.fixture
 def azure_backend() -> Iterator[Backend]:
     """Create an AzureBackend against Azurite."""
     if not _azurite_reachable():
@@ -247,7 +247,7 @@ class TestAzurePathNormalization:
 
     @pytest.mark.spec("AZ-011")
     @pytest.mark.parametrize(
-        "inp, expected",
+        ("inp", "expected"),
         [
             pytest.param("/a/b/c.txt", "a/b/c.txt", id="strips-leading-slash"),
             pytest.param("a//b///c.txt", "a/b/c.txt", id="collapses-double-separators"),
@@ -270,7 +270,7 @@ class TestAzureHNSDetection:
 
     @pytest.mark.spec("AZ-006")
     @pytest.mark.parametrize(
-        "ret, side_eff, expected",
+        ("ret", "side_eff", "expected"),
         [
             pytest.param({"is_hns_enabled": True}, None, True, id="hns-enabled"),
             pytest.param({"is_hns_enabled": False}, None, False, id="hns-disabled"),
@@ -322,7 +322,7 @@ class TestAzureErrorMapping:
 
     @pytest.mark.spec("AZ-025")
     @pytest.mark.parametrize(
-        "exc_factory, expected_type",
+        ("exc_factory", "expected_type"),
         [
             pytest.param(lambda: _azure_exc("ResourceNotFoundError", "not found"), NotFound, id="resource-not-found"),
             pytest.param(lambda: _azure_exc("ResourceExistsError", "exists"), AlreadyExists, id="resource-exists"),
@@ -349,7 +349,7 @@ class TestAzureErrorMapping:
 
     @pytest.mark.spec("AZ-025")
     @pytest.mark.parametrize(
-        "status, expected_type",
+        ("status", "expected_type"),
         [
             pytest.param(403, PermissionDenied, id="http-403"),
             pytest.param(404, NotFound, id="http-404"),
@@ -429,7 +429,7 @@ class TestAzureCredentialResolution:
 
     @pytest.mark.spec("AZ-032")
     @pytest.mark.parametrize(
-        "kw, expected",
+        ("kw", "expected"),
         [
             pytest.param({"account_key": "mykey"}, "mykey", id="account-key"),
             pytest.param({"account_key": None, "sas_token": "mysas"}, "mysas", id="sas-token"),
@@ -457,7 +457,7 @@ class TestAzureToKey:
 
     @pytest.mark.spec("AZ-027")
     @pytest.mark.parametrize(
-        "inp, expected",
+        ("inp", "expected"),
         [
             pytest.param("my-container/data/file.txt", "data/file.txt", id="strips-container-prefix"),
             pytest.param("data/file.txt", "data/file.txt", id="no-prefix-unchanged"),

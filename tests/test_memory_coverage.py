@@ -22,7 +22,7 @@ def mb() -> MemoryBackend:
 
 @pytest.mark.spec("MEM-DS-005")
 @pytest.mark.parametrize(
-    "path,match",
+    ("path", "match"),
     [
         pytest.param("a/\0b", "null byte", id="null_byte"),
         pytest.param("/root/file", "Absolute", id="absolute"),
@@ -90,7 +90,7 @@ def test_delete_folder_empty_path_rejected(mb: MemoryBackend) -> None:
 
 @pytest.mark.spec("MEM-012")
 @pytest.mark.parametrize(
-    "label,data,expected",
+    ("label", "data", "expected"),
     [
         pytest.param("directory", b"overwrite-dir", None, id="over_directory"),
         pytest.param("binaryio", io.BytesIO(b"streamed"), b"streamed", id="binaryio"),
@@ -113,7 +113,7 @@ def test_write_special_cases(mb: MemoryBackend, label: str, data: bytes, expecte
 
 @pytest.mark.spec("MEM-014")
 @pytest.mark.parametrize(
-    "missing_ok,expect_raise",
+    ("missing_ok", "expect_raise"),
     [
         pytest.param(False, True, id="raises"),
         pytest.param(True, False, id="missing_ok"),
@@ -162,7 +162,7 @@ def test_get_folder_info_with_nested_subdirectories(mb: MemoryBackend) -> None:
 
 
 @pytest.mark.parametrize(
-    "op,src,dst,match",
+    ("op", "src", "dst", "match"),
     [
         pytest.param("move", "", "dst", "Source path must not be empty", id="move_empty_src"),
         pytest.param("move", "src", "", "Destination path must not be empty", id="move_empty_dst"),
@@ -197,7 +197,7 @@ def test_move_same_path_exists(mb: MemoryBackend) -> None:
 
 @pytest.mark.spec("MEM-016")
 @pytest.mark.parametrize(
-    "setup,path",
+    ("setup", "path"),
     [
         pytest.param(None, "missing", id="not_found"),
         pytest.param(("a/b/c", b"data"), "a/b", id="is_directory"),

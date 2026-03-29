@@ -183,7 +183,7 @@ class TestErrorMappingStreamErrors:
     """OSError remapping, programming error propagation, close swallowing."""
 
     @pytest.mark.parametrize(
-        ("action",),
+        "action",
         [
             pytest.param(lambda s: s.read(), id="read"),
             pytest.param(lambda s: s.readinto(bytearray(10)), id="readinto"),
@@ -206,7 +206,7 @@ class TestErrorMappingStreamErrors:
         assert isinstance(exc_info.value.__cause__, OSError)
 
     @pytest.mark.parametrize(
-        ("action",),
+        "action",
         [
             pytest.param(lambda s: s.read(), id="read"),
             pytest.param(lambda s: s.readinto(bytearray(10)), id="readinto"),

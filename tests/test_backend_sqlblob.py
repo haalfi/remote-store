@@ -292,7 +292,7 @@ def test_open_atomic_success(backend: SQLBlobBackend) -> None:
 
 @pytest.mark.spec("SQL-BLOB-023")
 def test_open_atomic_exception_discards(backend: SQLBlobBackend) -> None:
-    with pytest.raises(RuntimeError), backend.open_atomic("f.txt") as f:
+    with pytest.raises(RuntimeError, match="abort"), backend.open_atomic("f.txt") as f:  # noqa: PT012
         f.write(b"partial")
         raise RuntimeError("abort")
     assert not backend.exists("f.txt")

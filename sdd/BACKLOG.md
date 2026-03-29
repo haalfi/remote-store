@@ -77,17 +77,12 @@ Items graduate through the SDD pipeline:
 
 ### Testing
 
-- [ ] **BK-124b — Enforce testing rules from TESTING.md**
-  Remaining work after BK-124a (rules codified in `sdd/TESTING.md`).
-  Ruff PT enforcement, CI checks (assertion/mock grep), `diff-cover`,
-  existing test migration (fix ~35 no-assertion tests, add `spec=` to
-  ~67 `MagicMock` calls, replace private-attribute assertions).
-  See [research](research/research-testing-best-practices.md) §§ 4.2–5.
-
-### Process & Orchestration
-
-- [x] **BK-125 — Multi-agent orchestration for complex tasks**
-  → moved to [BACKLOG-DONE.md](BACKLOG-DONE.md)
+- [ ] **BK-126 — CI assertion/mock checks + existing test migration**
+  Remainder of BK-124b. CI checks: AST grep for tests without `assert` or
+  `pytest.raises` (Rule 1), grep for `MagicMock(` without `spec=` (Rule 4).
+  Existing test migration: fix ~35 no-assertion tests, add `spec=` to ~67
+  `MagicMock` calls, replace private-attribute assertions.
+  See [research](research/research-testing-best-practices.md) §§ 4.3–5.
 
 ### Developer Tooling
 
@@ -126,8 +121,6 @@ Items graduate through the SDD pipeline:
   S3 Phase 1 shipped — see BACKLOG-DONE.md.
 
 ### New Backends
-
-- [x] **ID-119 — SQLAlchemy backends** → moved to [BACKLOG-DONE.md](BACKLOG-DONE.md)
 
 - [ ] **ID-120 — `resolve()` → `ResolutionPlan` introspection API**
   Unified introspection across all backends. `Store.resolve(key)` returns a

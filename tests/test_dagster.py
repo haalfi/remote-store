@@ -21,7 +21,7 @@ from remote_store.ext.dagster import (
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture()
+@pytest.fixture
 def store() -> Store:
     """Fresh MemoryBackend-backed Store for each test."""
     return Store(backend=MemoryBackend())

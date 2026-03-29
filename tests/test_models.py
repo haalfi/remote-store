@@ -13,12 +13,12 @@ from remote_store._path import RemotePath
 NOW = datetime(2024, 1, 1, tzinfo=timezone.utc)
 
 
-@pytest.fixture()
+@pytest.fixture
 def file_info() -> FileInfo:
     return FileInfo(path=RemotePath("a.txt"), name="a.txt", size=100, modified_at=NOW)
 
 
-@pytest.fixture()
+@pytest.fixture
 def folder_info() -> FolderInfo:
     return FolderInfo(path=RemotePath("data"), file_count=5, total_size=1000)
 
@@ -107,7 +107,7 @@ class TestFolderInfoFields:
 
     @pytest.mark.spec("MOD-008")
     @pytest.mark.parametrize(
-        "path, expected",
+        ("path", "expected"),
         [
             pytest.param("a/b/c", "c", id="nested"),
             pytest.param("data", "data", id="single-component"),
@@ -200,7 +200,7 @@ class TestContentDigest:
 
     @pytest.mark.spec("CDG-001")
     @pytest.mark.parametrize(
-        "algo_in, val_in, algo_out, val_out",
+        ("algo_in", "val_in", "algo_out", "val_out"),
         [
             pytest.param("SHA256", "ABCD1234", "sha256", "abcd1234", id="lowercase"),
             pytest.param(" sha256 ", " abcd1234 ", "sha256", "abcd1234", id="whitespace"),
@@ -219,7 +219,7 @@ class TestContentDigest:
 
     @pytest.mark.spec("CDG-003")
     @pytest.mark.parametrize(
-        "algo, val, match",
+        ("algo", "val", "match"),
         [
             pytest.param("", "abcd1234", "algorithm must not be empty", id="empty-algo"),
             pytest.param("   ", "abcd1234", "algorithm must not be empty", id="ws-algo"),

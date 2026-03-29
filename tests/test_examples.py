@@ -29,7 +29,7 @@ from remote_store.backends import MemoryBackend
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture()
+@pytest.fixture
 def memory_store():
     """Fresh MemoryBackend-backed Store for each test."""
     backend = MemoryBackend()
@@ -38,7 +38,7 @@ def memory_store():
     store.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def two_stores():
     """Two isolated memory stores sharing one backend (for transfer tests)."""
     config = RegistryConfig(
@@ -77,7 +77,7 @@ def _verify_hello_store(tmp_path, subdir):
 class TestQuickstart:
     @pytest.mark.spec("STORE-008")
     @pytest.mark.parametrize(
-        "demo_func, subdir",
+        ("demo_func", "subdir"),
         [
             pytest.param("demo_direct", "direct", id="direct"),
             pytest.param("demo_registry", "registry", id="registry"),

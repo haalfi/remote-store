@@ -23,7 +23,7 @@ from remote_store.ext.otel import otel_hooks, otel_observe
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture()
+@pytest.fixture
 def otel_env() -> dict[str, Any]:
     """Return a dict with span_exporter, metric_reader, tracer, meter."""
     span_exporter = InMemorySpanExporter()

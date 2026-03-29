@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
     from pathlib import Path
 
 from remote_store._capabilities import Capability
@@ -20,8 +19,8 @@ from remote_store.backends._memory import MemoryBackend
 
 
 @pytest.fixture
-def store() -> Iterator[Store]:
-    yield Store(backend=MemoryBackend(), root_path="data")
+def store() -> Store:
+    return Store(backend=MemoryBackend(), root_path="data")
 
 
 class TestStoreBasics:
@@ -417,7 +416,7 @@ class TestStoreNativePath:
 
     @pytest.mark.spec("STORE-015")
     @pytest.mark.parametrize(
-        "root_path, child, key, expected",
+        ("root_path", "child", "key", "expected"),
         [
             pytest.param("data", None, "file.txt", "data/file.txt", id="with-root"),
             pytest.param("", None, "file.txt", "file.txt", id="no-root"),
@@ -449,7 +448,7 @@ class TestStoreReadText:
 
     @pytest.mark.spec("RTXT-001")
     @pytest.mark.parametrize(
-        "errors, check",
+        ("errors", "check"),
         [
             pytest.param("strict", "raises", id="strict-raises"),
             pytest.param("replace", "contains-replacement", id="replace"),

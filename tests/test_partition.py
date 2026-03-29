@@ -33,7 +33,7 @@ class TestPartitionPath:
 
     @pytest.mark.spec("PART-005")
     @pytest.mark.parametrize(
-        "filename,match",
+        ("filename", "match"),
         [
             pytest.param("", "non-empty", id="empty"),
             pytest.param("dir/file.parquet", "/", id="slash"),
@@ -45,7 +45,7 @@ class TestPartitionPath:
 
     @pytest.mark.spec("PART-006")
     @pytest.mark.parametrize(
-        "kwargs,match",
+        ("kwargs", "match"),
         [
             pytest.param({"year": ""}, "non-empty", id="empty_value"),
             pytest.param({"key": "a=b"}, "must not contain '='", id="equals_in_value"),
@@ -71,7 +71,7 @@ class TestParsePartition:
 
     @pytest.mark.spec("PART-008")
     @pytest.mark.parametrize(
-        "path,expected_parts,expected_file",
+        ("path", "expected_parts", "expected_file"),
         [
             pytest.param("a=b=c", {}, "a=b=c", id="multiple_equals_is_filename"),
             pytest.param("=value/data.csv", {}, "=value/data.csv", id="empty_key_is_filename"),
@@ -85,7 +85,7 @@ class TestParsePartition:
 
     @pytest.mark.spec("PART-009")
     @pytest.mark.parametrize(
-        "path,expected_parts,expected_file",
+        ("path", "expected_parts", "expected_file"),
         [
             pytest.param(
                 "year=2026/subdir/region=us/data.csv",
@@ -116,7 +116,7 @@ class TestParsePartition:
 class TestRoundTrip:
     @pytest.mark.spec("PART-011")
     @pytest.mark.parametrize(
-        "filename,kwargs,expected_parts",
+        ("filename", "kwargs", "expected_parts"),
         [
             pytest.param("data.parquet", {"year": "2026"}, {"year": "2026"}, id="single"),
             pytest.param(

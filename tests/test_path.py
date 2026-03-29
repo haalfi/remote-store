@@ -42,7 +42,7 @@ class TestRemotePathNormalization:
 
     @pytest.mark.spec("PATH-004")
     @pytest.mark.parametrize(
-        "raw, expected",
+        ("raw", "expected"),
         [
             pytest.param("/a/b/", "a/b", id="both"),
             pytest.param("/file.txt", "file.txt", id="leading"),
@@ -57,7 +57,7 @@ class TestRemotePathNormalization:
 
     @pytest.mark.spec("PATH-006")
     @pytest.mark.parametrize(
-        "raw, expected",
+        ("raw", "expected"),
         [
             pytest.param("a/./b", "a/b", id="single-dot"),
             pytest.param("./a/./b/.", "a/b", id="multiple-dots"),
@@ -94,7 +94,7 @@ class TestRemotePathProperties:
 
     @pytest.mark.spec("PATH-009")
     @pytest.mark.parametrize(
-        "raw, expected",
+        ("raw", "expected"),
         [
             pytest.param("a/b/c.txt", "c.txt", id="nested"),
             pytest.param("file.txt", "file.txt", id="single"),
@@ -105,7 +105,7 @@ class TestRemotePathProperties:
 
     @pytest.mark.spec("PATH-010")
     @pytest.mark.parametrize(
-        "raw, expected",
+        ("raw", "expected"),
         [
             pytest.param("a/b/c", RemotePath("a/b"), id="nested-parent"),
             pytest.param("file.txt", None, id="single-no-parent"),
@@ -116,7 +116,7 @@ class TestRemotePathProperties:
 
     @pytest.mark.spec("PATH-011")
     @pytest.mark.parametrize(
-        "raw, expected",
+        ("raw", "expected"),
         [
             pytest.param("a/b/c", ("a", "b", "c"), id="multi"),
             pytest.param("file.txt", ("file.txt",), id="single"),
@@ -127,7 +127,7 @@ class TestRemotePathProperties:
 
     @pytest.mark.spec("PATH-014")
     @pytest.mark.parametrize(
-        "raw, expected",
+        ("raw", "expected"),
         [
             pytest.param("file.tar.gz", ".gz", id="multi-ext"),
             pytest.param("noext", "", id="no-ext"),
@@ -144,7 +144,7 @@ class TestRemotePathJoin:
 
     @pytest.mark.spec("PATH-012")
     @pytest.mark.parametrize(
-        "right, expected",
+        ("right", "expected"),
         [
             pytest.param("b", "a/b", id="simple"),
             pytest.param("b/c", "a/b/c", id="nested"),
@@ -188,7 +188,7 @@ class TestRemotePathRoot:
 
     @pytest.mark.spec("PATH-015")
     @pytest.mark.parametrize(
-        "right, expected",
+        ("right", "expected"),
         [
             pytest.param("a", RemotePath("a"), id="simple"),
             pytest.param("a/b", RemotePath("a/b"), id="nested"),
@@ -212,7 +212,7 @@ class TestRemotePathRoot:
 
     @pytest.mark.spec("PATH-015")
     @pytest.mark.parametrize(
-        "raw, expected",
+        ("raw", "expected"),
         [
             pytest.param("", RemotePath.ROOT, id="empty-returns-root"),
             pytest.param("a/b", RemotePath("a/b"), id="nonempty-returns-path"),
