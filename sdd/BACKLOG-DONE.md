@@ -16,6 +16,14 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Process
 
+- [x] **BK-124a — Codify testing rules in `sdd/TESTING.md`**
+  8 testing quality rules extracted from
+  [research-testing-best-practices](research/research-testing-best-practices.md)
+  and formalized as an authoritative process doc. Enforcement tags
+  (`[CI-enforced]` / `[review-enforced]`), good-vs-bad examples, and
+  Testing Expert quick reference table for BK-125. Cross-referenced from
+  DESIGN.md § 11 and CLAUDE-REFERENCE.md.
+
 - [x] **BK-015 — Replace mypy `ignore_missing_imports` overrides with proper type stubs**
   Added `types-requests` stub, removed overrides for `requests`, `urllib3`,
   `pydantic`, `pydantic_settings`, `tomli`, `tomllib`, `httpx`, `ruamel.yaml`.

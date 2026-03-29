@@ -77,12 +77,12 @@ Items graduate through the SDD pipeline:
 
 ### Testing
 
-- [ ] **BK-124 — Adopt testing rules and guardrails from research-testing-best-practices**
-  Follow-up to [research](research/research-testing-best-practices.md) (PR #304).
-  8 proposed rules, Ruff PT enforcement, CI checks, phased adoption plan.
-  Scope and priorities to be decided when work begins — the research doc is
-  a proposal, not a commitment. Multi-agent orchestration work (PR #305)
-  may influence which rules and enforcement mechanisms are adopted.
+- [ ] **BK-124b — Enforce testing rules from TESTING.md**
+  Remaining work after BK-124a (rules codified in `sdd/TESTING.md`).
+  Ruff PT enforcement, CI checks (assertion/mock grep), `diff-cover`,
+  existing test migration (fix ~35 no-assertion tests, add `spec=` to
+  ~67 `MagicMock` calls, replace private-attribute assertions).
+  See [research](research/research-testing-best-practices.md) §§ 4.2–5.
 
 ### Process & Orchestration
 
