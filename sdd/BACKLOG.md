@@ -121,15 +121,6 @@ Items graduate through the SDD pipeline:
     - Implementation Phase 2: native async backends.
     - Implementation Phase 3: async extensions.
 
-- [ ] **ID-122 — Parquet Dataset Storage extension (`ext.parquet`)**
-  `ParquetDatasetStore` — high-level Parquet dataset read/write with manifests,
-  `_SUCCESS` markers, and atomic-commit semantics. Composes `Store`, `ext.arrow`,
-  and `ext.partition`.
-  - [RFC-0008](rfcs/rfc-0008-parquet-dataset-storage.md) (Draft)
-  - Depended on by: ID-083 (Dagster v2 `RemoteStoreIOManager` dispatches to
-    `ParquetDatasetStore` for dataset-type assets)
-  - Next: finalize RFC, write spec `042-ext-parquet.md`, implement
-
 - [ ] **ID-083 — Dagster extension v2: ConfigurableResource + IOManagerFactory**
   Follow-up to [ID-075](BACKLOG-DONE.md#post-v0170).
   Remaining features deferred from v1:
@@ -137,7 +128,7 @@ Items graduate through the SDD pipeline:
   - `RemoteStoreIOManager` (`ConfigurableIOManagerFactory`) — dispatches to
     `ParquetDatasetStore` for dataset-type assets (PDS-009)
   - `teardown_after_execution()`
-  - Depends on: ID-122 (`ext.parquet`)
+  - Depends on: ID-122 (`ext.parquet`) — shipped
 
   [Research](research/research-dagster-extension.md),
   [showcase architecture](research/research-medallion-dagster-showcase.md).

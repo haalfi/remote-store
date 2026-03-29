@@ -12,6 +12,7 @@
         - Transfer Operations: transfer-operations.md
         - Observability Hooks: observe.md
         - Caching: cache.md
+        - Parquet Datasets: parquet-datasets.md
         - Dagster IO Manager: dagster.md
         - Retry Policy: retry.md
     - Health Check: health-check.md

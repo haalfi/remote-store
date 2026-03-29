@@ -96,3 +96,28 @@ store.write("folder/file.txt", b"data")
 with pytest.raises(DirectoryNotEmpty):
     store.delete_folder("folder", recursive=False)
 ```
+
+## ERR-011: DatasetIncomplete (extension)
+
+**Location:** `remote_store.ext.parquet.DatasetIncomplete` — lives in the extension, not core (extension-specific errors stay with the extension per ADR-0013 principles).
+
+**Invariant:** Raised when a dataset is structurally incomplete — missing `_SUCCESS` marker or parts listed in the manifest. Not `NotFound`: some files may exist but the dataset is not in a readable state.
+**Postconditions:** `path` attribute is set to the dataset key.
+**Example:**
+```python
+# Dataset folder exists but _SUCCESS is missing
+with pytest.raises(DatasetIncomplete, match="missing _SUCCESS"):
+    pds.read_dataset("orders")
+```
+
+## ERR-012: ManifestCorrupted (extension)
+
+**Location:** `remote_store.ext.parquet.ManifestCorrupted` — lives in the extension, not core.
+
+**Invariant:** Raised when a manifest file exists but cannot be parsed or is structurally invalid.
+**Postconditions:** `path` attribute is set to the dataset key. Optional `reason: str` carries the specific parse failure detail.
+**Example:**
+```python
+with pytest.raises(ManifestCorrupted, match="invalid JSON"):
+    pds.read_manifest("orders")
+```

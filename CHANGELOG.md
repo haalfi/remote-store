@@ -8,6 +8,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **Parquet Dataset Storage extension (`ext.parquet`)** (ID-122):
+  `ParquetDatasetStore` — high-level Parquet dataset read/write with manifest
+  metadata, `_SUCCESS` completion markers, and atomic-commit semantics. Supports
+  single-file and multi-part layouts, column projection on read, and
+  overwrite semantics. Extension-specific errors: `DatasetIncomplete`,
+  `ManifestCorrupted` (import from `remote_store.ext.parquet`). Spec 042.
+
 - **`resolve()` introspection API** (ID-120): `Store.resolve(key)` returns a
   frozen `ResolutionPlan` dataclass describing how a key maps to its storage
   location, backend identity, and backend-specific context. Available on all
