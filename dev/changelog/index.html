@@ -9055,6 +9055,11 @@
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong>Ruff PT rules enabled</strong> (BK-124b): <code>flake8-pytest-style</code> enforced in
+  <code>pyproject.toml</code>. 152 auto-fixed, 13 <code>match=</code> added to <code>pytest.raises</code>,
+  9 intentional PT012 suppressed. Ruff PT section in TESTING.md marked enabled.</p>
+</li>
+<li>
 <p><strong>Multi-agent orchestration skill</strong> (BK-125): <code>/orchestrate</code> skill delegating
   to 4 domain experts (Store &amp; Backend, Extension, Testing, Documentation) via
   Claude Code Agent tool. Two modes: implementation and review. ADR-0019

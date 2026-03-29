@@ -3863,10 +3863,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ruff-pt-rules-bk-124b" class="md-nav__link">
+  <a href="#ruff-pt-rules-enabled" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ruff PT rules (BK-124b)
+        Ruff PT rules (enabled)
       
     </span>
   </a>
@@ -6885,10 +6885,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ruff-pt-rules-bk-124b" class="md-nav__link">
+  <a href="#ruff-pt-rules-enabled" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ruff PT rules (BK-124b)
+        Ruff PT rules (enabled)
       
     </span>
   </a>
@@ -6928,7 +6928,7 @@
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
-<p><strong>Every test must have at least one meaningful assertion</strong> [CI-enforced — pending BK-124b]
+<p><strong>Every test must have at least one meaningful assertion</strong> [CI-enforced — pending]
    — "no crash" is not a test. Public API methods need a failure-path test too
    (<code>pytest.raises</code> with <code>match=</code>).</p>
 </li>
@@ -6941,7 +6941,7 @@
    — verify through observable behavior. Exception: <code># internal: no public observable</code>.</p>
 </li>
 <li>
-<p><strong>Always use <code>spec=</code> with <code>MagicMock</code></strong> [CI-enforced — pending BK-124b]
+<p><strong>Always use <code>spec=</code> with <code>MagicMock</code></strong> [CI-enforced — pending]
    — <code>MagicMock()</code> without <code>spec</code> is banned; use <code>spec=RealClass</code> or <code>create_autospec</code>.</p>
 </li>
 <li>
@@ -7031,7 +7031,7 @@
 <p>Bloated suites bury meaningful tests, inflate coverage without behavioral
 signal, and double refactoring cost. Delete tests that don't provide value
 (BK-014: -8.6% code, zero coverage loss).</p>
-<h3 id="ruff-pt-rules-bk-124b">Ruff PT rules (BK-124b)<a class="headerlink" href="#ruff-pt-rules-bk-124b" title="Permanent link">&para;</a></h3>
+<h3 id="ruff-pt-rules-enabled">Ruff PT rules (enabled)<a class="headerlink" href="#ruff-pt-rules-enabled" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
