@@ -45,6 +45,13 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
+- [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
+  `ext.cache` derives cache keys from `ResolutionPlan` fields instead of
+  ad-hoc `(operation, path)` tuples. Only valuable once `CompositeStore`
+  (ID-121) exists — single-backend cache keys are already correct.
+  - Spec: RES-100 (proposed in [043](specs/043-resolution-plan.md))
+  - Depends on: ID-121 (CompositeStore)
+
 ### S3 Backend DX & Performance
 
 - [ ] **ID-114 — PyArrow-style bucket path support (research)**

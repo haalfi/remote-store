@@ -436,7 +436,7 @@ class ReadOnlyHttpBackend(Backend):
             key=path,
             native_path=url,
             details={
-                "url": _strip_userinfo(url) or url,
+                "url": _strip_userinfo(url),
                 "method": "GET",
             },
         )
