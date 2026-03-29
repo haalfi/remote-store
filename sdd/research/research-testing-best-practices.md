@@ -333,6 +333,52 @@ the tested function survives because nothing checks the output.
 Mutation scores above 80% indicate strong fault-detection capability.
 Consider running mutmut on a weekly CI schedule (it's too slow for every PR).
 
+### 3.9 Testing Retry and Concurrency Behavior
+
+Two known gaps (M-14 concurrency, M-17 retry) require specific patterns:
+
+**Retry testing: controlled failure injection.**
+Don't test retries with real timeouts or flaky network conditions. Instead,
+build a deterministic fake that fails N times, then succeeds:
+
+```python
+class FailNThenSucceed:
+    """Fake that raises on the first N calls, then returns normally."""
+    def __init__(self, n: int, exc: Exception) -> None:
+        self._remaining = n
+        self._exc = exc
+
+    def __call__(self, *args, **kwargs):
+        if self._remaining > 0:
+            self._remaining -= 1
+            raise self._exc
+        return "ok"
+
+def test_retry_succeeds_after_transient_failures():
+    fake = FailNThenSucceed(2, ConnectionError("transient"))
+    result = retry_with_backoff(fake, max_retries=3)
+    assert result == "ok"
+    assert fake._remaining == 0  # all failures consumed
+```
+
+Assert **attempt count + final outcome**, never wall-clock time.
+
+**Concurrency testing: invariant assertions under contention.**
+Use `ThreadPoolExecutor` with deterministic assertions on invariants:
+
+```python
+def test_no_lost_writes_under_contention(store: Store):
+    """10 threads write distinct keys; all 10 must be readable."""
+    keys = [f"key_{i}.txt" for i in range(10)]
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        list(pool.map(lambda k: store.write(k, k.encode()), keys))
+    for k in keys:
+        assert store.read_bytes(k) == k.encode()
+```
+
+Invariants to test: no lost writes, no partial reads, no duplicate entries,
+no deadlocks (use a timeout on the test itself).
+
 ---
 
 ## 4. Proposed Testing Rules for remote-store
@@ -342,41 +388,44 @@ Consider running mutmut on a weekly CI schedule (it's too slow for every PR).
 These rules should be added to `sdd/DESIGN.md` section 11 (Test Style) and
 enforced in code review:
 
-**Rule 1: Every test must have at least one meaningful assertion.**
+**Rule 1: Every test must have at least one meaningful assertion.** [CI-enforced]
 "No crash" is not a test. If the method returns void and the point is that
 it doesn't raise, add a post-condition assertion proving the system is in
-the expected state.
+the expected state. Every public API method should also have at least one
+failure-path test (`pytest.raises` with `match=`).
 
-**Rule 2: Assert behavior, not types.**
+**Rule 2: Assert behavior, not types.** [review-enforced]
 Replace `assert isinstance(x, FileInfo)` with assertions on `x.path`,
 `x.size`, or `x.name`. The type is already guaranteed by the type checker.
 
-**Rule 3: Never assert on private attributes.**
+**Rule 3: Never assert on private attributes.** [review-enforced]
 If you need to verify internal state, either (a) expose it through a public
 API, or (b) verify it through observable behavior. `assert obj._field == x`
-is banned in new tests.
+is banned in new tests. Exception: if no public observable exists, annotate
+with `# internal: no public observable` and justify in the PR.
 
-**Rule 4: Always use `spec=` (or `spec_set=`) with MagicMock.**
+**Rule 4: Always use `spec=` (or `spec_set=`) with MagicMock.** [CI-enforced]
 `MagicMock()` without spec is banned. Use `MagicMock(spec=RealClass)` or
 `create_autospec(RealClass)` to constrain mocks to real interfaces.
 
-**Rule 5: Don't mock what you don't own.**
+**Rule 5: Don't mock what you don't own.** [review-enforced]
 Never `patch("boto3.client")` or `patch("paramiko.SFTPClient")`. Instead,
 mock at our own boundary (the Backend ABC or a wrapper function).
 
-**Rule 6: Prefer real dependencies over mocks.**
+**Rule 6: Prefer real dependencies over mocks.** [review-enforced]
 Use `MemoryBackend` or in-memory SQLite over mocked backends. Use
 `pytest-httpserver` over mocked HTTP clients. Reserve mocks for external
 services that can't be run locally.
 
-**Rule 7: Maximize behavioral coverage per line of test code.**
+**Rule 7: Maximize behavioral coverage per line of test code.** [review-enforced]
 Parametrize similar tests instead of writing separate methods. Merge
 single-method test classes. Delete tests subsumed by others. Three
 parametrized cases in 10 lines beat three methods in 30 lines -- same
 coverage, one-third the maintenance surface. (See BK-014: -8.6% test
-code, zero coverage loss.)
+code, zero coverage loss.) When removing a test, verify via coverage that
+the deleted path is still exercised by remaining tests.
 
-**Rule 8: Tests must survive refactoring.**
+**Rule 8: Tests must survive refactoring.** [review-enforced]
 If renaming a private method or changing internal data structures would
 break a test without changing behavior, the test is coupled to
 implementation. Fix the test.
@@ -403,15 +452,30 @@ Key PT rules that catch our recurring issues:
 - **PT018**: Composite assertions should use multiple `assert` statements
 - **PT006/PT007**: Consistent parametrize style
 
-### 4.3 Custom Lint / CI Checks (Future)
+### 4.3 CI-Enforced Checks
 
-| Check | What It Catches | Effort |
-|-------|----------------|--------|
-| `pytest-smell --ci` | 17 types of test smells | Low (pip install + CI step) |
-| `mutmut` weekly run | Tests with no real assertions | Medium (slow, schedule-only) |
-| `--cov-branch` | Missing branch coverage | Low (flag change) |
-| `diff-cover --fail-under=90` | New code without tests | Low (pip install + CI step) |
-| Custom ruff plugin or grep | `MagicMock()` without `spec=` | Low (grep in CI) |
+| Check | Rule | Phase | Effort |
+|-------|------|-------|--------|
+| AST check: test has no `assert` and no `pytest.raises` | Rule 1 | **1** | Low (script) |
+| Grep: `MagicMock(` without `spec=` or `autospec=` | Rule 4 | **1** | Low (grep) |
+| `--cov-branch` | Coverage quality | **1** | Low (flag) |
+| `diff-cover --fail-under=90` | New code without tests | **2** | Low (pip) |
+| `mutmut` baseline run (diagnostic, not blocking) | Assertion quality | **2** | Medium |
+| `pytest-smell --ci` | 17 types of test smells | **3** | Low (pip) |
+| `mutmut` weekly with threshold | Assertion quality gate | **3** | Medium |
+
+### 4.4 PR Review Checklist
+
+Add to the PR template as a reviewer aid:
+
+```markdown
+### Test review
+- [ ] Every new test has at least one `assert` or `pytest.raises`
+- [ ] Assertions are behavioral (not `isinstance`-only, not type-only)
+- [ ] No new `._private` attribute access in assertions (or justified)
+- [ ] Mocks use `spec=` or `create_autospec`
+- [ ] Failure path covered for new/changed public API methods
+```
 
 ### 4.4 CLAUDE.md Additions
 
@@ -420,10 +484,15 @@ Add to the CLAUDE.md `## Code conventions` or a new `## Testing` section:
 ```markdown
 ## Testing rules
 
+**CI-enforced (automated):**
 1. **Every test must assert something meaningful.** "No crash" is not a test.
+   Every public API needs at least one failure-path test.
+4. **Always use `spec=` with MagicMock.** Unconstrained mocks are banned.
+
+**Review-enforced (human/AI review):**
 2. **Assert behavior, not types.** No `isinstance` as the sole assertion.
 3. **Never assert on private attributes** (`._field`). Test through public API.
-4. **Always use `spec=` with MagicMock.** Unconstrained mocks are banned.
+   Exception only with `# internal: no public observable` + PR justification.
 5. **Don't mock what you don't own.** Mock at our boundaries, not third-party APIs.
 6. **Prefer real dependencies.** `MemoryBackend` > `MagicMock(spec=Backend)`.
 7. **Maximize coverage per line of test code.** Parametrize, don't copy-paste.
@@ -443,26 +512,32 @@ than relying on judgment calls that drift over time.
 
 ### Phase 1: Prevent New Anti-Patterns (Immediate)
 
-- [ ] Add the 7 testing rules to `sdd/DESIGN.md` section 11
-- [ ] Add testing rules summary to `CLAUDE.md`
+- [ ] Add the 8 testing rules to `sdd/DESIGN.md` section 11
+- [ ] Add testing rules summary (with CI/review tags) to `CLAUDE.md`
 - [ ] Enable Ruff `PT` rules in `pyproject.toml`
 - [ ] Switch coverage to branch mode (`--cov-branch`)
-- [ ] Add CI grep check: fail if `MagicMock()` appears without `spec=`
+- [ ] Add CI check: fail if test function has no `assert` and no `pytest.raises`
+- [ ] Add CI grep check: fail if `MagicMock(` appears without `spec=`
+- [ ] Add PR review checklist to PR template (section 4.4)
 
-### Phase 2: Fix Existing Anti-Patterns (Next Sprint)
+### Phase 2: Fix Existing Anti-Patterns + Diagnostics (Next Sprint)
 
 - [ ] Fix all ~35 "no assertion" tests (add meaningful post-conditions)
 - [ ] Replace top ~20 `isinstance`-only assertions with behavioral checks
 - [ ] Add `spec=` to all existing `MagicMock()` calls
 - [ ] Replace private attribute assertions in `test_registry.py`,
   `test_cache.py`, `test_proxy.py` with public API checks
+- [ ] Add `diff-cover` to PR CI (fail-under=90 for new code)
+- [ ] Run `mutmut` baseline (diagnostic only, establish starting score)
+- [ ] Add concurrency test suite for thread-safety claims (M-14)
 
 ### Phase 3: Advanced Quality Measures (Future)
 
-- [ ] Add `mutmut` to weekly CI schedule, establish baseline mutation score
-- [ ] Add `diff-cover` to PR CI (fail-under=90 for new code)
+- [ ] Add `mutmut` to weekly CI schedule with threshold gate
 - [ ] Add `pytest-smell --ci` to lint step
+- [ ] Add retry testing with controlled failure injection fakes (M-17)
 - [ ] Explore Hypothesis for round-trip and path normalization properties
+  (provide 2-3 canonical examples in-repo)
 - [ ] Create a `TestingBackend` (controlled fake) to replace mock injection
   in tests like `test_registry.py:119`
 
