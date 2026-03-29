@@ -35,12 +35,9 @@ Authoritative source for test **quality** rules in `tests/`. Companion to
 
 ### Test code economy
 
-Bloated test suites are dangerous: meaningful tests get buried among trivial
-ones, high test counts mask low behavioral coverage, and refactoring costs
-double at a 1.3:1 test-to-production line ratio. Anti-patterns hide in large
-classes but stand out in tight parametrized suites. Deleting tests that don't
-provide value is acceptable — BK-014 proved it (-8.6% test code, zero coverage
-loss).
+Bloated suites bury meaningful tests, inflate coverage without behavioral
+signal, and double refactoring cost. Delete tests that don't provide value
+(BK-014: -8.6% code, zero coverage loss).
 
 ### Ruff PT rules
 
