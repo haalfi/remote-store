@@ -6,29 +6,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-### Changed
-
-- **Branch coverage diagnostic** (BK-126): `hatch run test-cov-branch` added
-  for branch-level coverage measurement (diagnostic, not gated).
-
-### Internal
-
-- **CI test quality gates** (BK-126): AST-based assertion checker
-  (`scripts/check_test_assertions.py`) and MagicMock spec checker
-  (`scripts/check_mock_spec.py`) now run in CI lint job. Rules 1 and 4 from
-  `sdd/TESTING.md` are machine-enforced.
-
-- **MagicMock `spec=` migration** (BK-126): All 67 unconstrained
-  `MagicMock()` calls now use `spec=` with the correct class, preventing
-  mocks from silently accepting invalid attribute access.
-
-- **Assertion migration** (BK-126): 87 test functions that lacked explicit
-  `assert` or `pytest.raises` now have meaningful post-condition assertions.
-
-- **pytest-gremlins integration** (BK-126): Added `pytest-gremlins>=1.5` for
-  mutation testing. New hatch scripts: `mutate`, `mutate-report`. Diagnostic
-  only (no CI threshold yet).
-
 ### Added
 
 - **`max_listing_size` parameter for `cache()`** (BK-123 M-1): Skips caching
@@ -211,6 +188,22 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   and filtered listing patterns.
 
 ### Internal
+
+- **CI test quality gates** (BK-126): AST-based assertion checker
+  (`scripts/check_test_assertions.py`) and MagicMock spec checker
+  (`scripts/check_mock_spec.py`) now run in CI lint job. Rules 1 and 4 from
+  `sdd/TESTING.md` are machine-enforced.
+
+- **MagicMock `spec=` migration** (BK-126): All 67 unconstrained
+  `MagicMock()` calls now use `spec=` with the correct class, preventing
+  mocks from silently accepting invalid attribute access.
+
+- **Assertion migration** (BK-126): 87 test functions that lacked explicit
+  `assert` or `pytest.raises` now have meaningful post-condition assertions.
+
+- **pytest-gremlins integration** (BK-126): Added `pytest-gremlins>=1.5` for
+  mutation testing. New hatch scripts: `mutate`, `mutate-report`,
+  `test-cov-branch` (branch coverage diagnostic). No CI threshold yet.
 
 - **Eliminate avoidable `type: ignore` comments** (BK-016): Replaced 9
   `no-any-return` suppressions with `cast()` in `ext/cache.py` (6) and

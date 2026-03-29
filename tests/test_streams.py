@@ -167,13 +167,6 @@ class TestChecksumComputation:
 
 
 class TestContextManagers:
-    @staticmethod
-    def _check_closes(cls, make_inner, action, **kwargs) -> None:
-        inner = make_inner()
-        with cls(inner, **kwargs) as s:
-            action(s)
-        assert inner.closed
-
     @pytest.mark.spec("STR-001")
     def test_progress_reader_closes(self) -> None:
         inner = _src(b"data")

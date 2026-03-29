@@ -1,50 +1,65 @@
 #!/usr/bin/env python3
-"""Grep check: every MagicMock() call must use spec= or spec_set=.
+"""AST check: every MagicMock() / Mock() call must use spec= or spec_set=.
 
 CI enforcement for Testing Rule 4 (see sdd/TESTING.md).
-Also catches Mock() without spec. create_autospec() is always OK.
+create_autospec() is always OK.
 Exit code 0 = no violations; 1 = violations found.
 """
 
 from __future__ import annotations
 
-import re
+import ast
 import sys
 from pathlib import Path
 
-# Matches MagicMock( or Mock( — but NOT create_autospec(
-_MOCK_CALL = re.compile(r"\b(?:Magic)?Mock\(")
-# Matches spec= or spec_set= anywhere on the same line
-_HAS_SPEC = re.compile(r"\bspec(?:_set)?\s*=")
-# Skip comment-only lines
-_COMMENT = re.compile(r"^\s*#")
+_MOCK_NAMES = {"MagicMock", "Mock"}
+
+
+class _MockSpecVisitor(ast.NodeVisitor):
+    """Walk AST looking for Mock/MagicMock calls without spec=."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self.violations: list[str] = []
+
+    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
+        if self._is_unspec_mock(node):
+            src = ast.get_source_segment(self._source, node) or ""
+            self.violations.append(f"{self.path}:{node.lineno}: {src.split(chr(10))[0]}")
+        self.generic_visit(node)
+
+    def check(self, source: str) -> list[str]:
+        self._source = source
+        tree = ast.parse(source, filename=str(self.path))
+        self.visit(tree)
+        return self.violations
+
+    @staticmethod
+    def _is_unspec_mock(node: ast.Call) -> bool:
+        """Return True if this is a Mock/MagicMock call without spec=."""
+        func = node.func
+
+        # Direct call: MagicMock(...) or Mock(...)
+        if isinstance(func, ast.Name) and func.id in _MOCK_NAMES:
+            return not _has_spec_kwarg(node)
+
+        # Qualified call: mock.MagicMock(...) or unittest.mock.Mock(...)
+        if isinstance(func, ast.Attribute) and func.attr in _MOCK_NAMES:
+            return not _has_spec_kwarg(node)
+
+        return False
+
+
+def _has_spec_kwarg(node: ast.Call) -> bool:
+    """Check if a Call node has spec=, spec_set=, or wraps= keyword."""
+    return any(kw.arg in {"spec", "spec_set", "wraps"} for kw in node.keywords)
 
 
 def _check_file(path: Path) -> list[str]:
     """Return list of violation messages for a single file."""
-    violations: list[str] = []
-    lines = path.read_text(encoding="utf-8").splitlines()
-
-    for lineno, line in enumerate(lines, start=1):
-        if _COMMENT.match(line):
-            continue
-        if not _MOCK_CALL.search(line):
-            continue
-        # Allow lines that have spec= or spec_set=
-        if _HAS_SPEC.search(line):
-            continue
-        # Allow create_autospec on the same line
-        if "create_autospec" in line:
-            continue
-        # Allow MagicMock used as a type annotation or spec target
-        # e.g. spec=MagicMock or isinstance(..., MagicMock)
-        stripped = line.strip()
-        if stripped.startswith("spec") or "isinstance" in stripped:
-            continue
-
-        violations.append(f"{path}:{lineno}: {stripped}")
-
-    return violations
+    source = path.read_text(encoding="utf-8")
+    visitor = _MockSpecVisitor(path)
+    return visitor.check(source)
 
 
 def main(directories: list[str] | None = None) -> int:

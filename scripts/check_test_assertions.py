@@ -23,18 +23,19 @@ class _AssertionVisitor(ast.NodeVisitor):
 
     def visit_With(self, node: ast.With) -> None:  # noqa: N802
         for item in node.items:
-            if self._is_pytest_raises(item.context_expr):
+            if self._is_pytest_assertion_cm(item.context_expr):
                 self.found = True
                 return
         self.generic_visit(node)
 
-    def _is_pytest_raises(self, node: ast.expr) -> bool:
-        """Match ``pytest.raises(...)``."""
+    @staticmethod
+    def _is_pytest_assertion_cm(node: ast.expr) -> bool:
+        """Match ``pytest.raises(...)`` and ``pytest.warns(...)``."""
         if isinstance(node, ast.Call):
             func = node.func
             if (
                 isinstance(func, ast.Attribute)
-                and func.attr == "raises"
+                and func.attr in {"raises", "warns"}
                 and isinstance(func.value, ast.Name)
                 and func.value.id == "pytest"
             ):
