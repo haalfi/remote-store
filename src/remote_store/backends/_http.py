@@ -427,7 +427,7 @@ class ReadOnlyHttpBackend(Backend):
             ``url`` and ``method``.
         """
         from remote_store._resolution import ResolutionPlan as _RP
-        from remote_store.backends._s3_base import _strip_userinfo
+        from remote_store._resolution import _strip_userinfo
 
         url = self.native_path(path)
         return _RP(

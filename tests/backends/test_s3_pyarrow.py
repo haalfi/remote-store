@@ -815,5 +815,10 @@ class TestS3PyArrowResolve:
         assert "object_key" in plan.details
         assert plan.details["object_key"] == "dir/file.txt"
 
+    @pytest.mark.spec("RES-052")
+    def test_details_has_endpoint_url(self, s3pa_backend: Backend) -> None:
+        plan = s3pa_backend.resolve("file.txt")
+        assert "endpoint_url" in plan.details
+
 
 # endregion

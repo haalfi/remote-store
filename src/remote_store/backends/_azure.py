@@ -237,6 +237,7 @@ class AzureBackend(Backend):
             ``container`` and ``account_url``.
         """
         from remote_store._resolution import ResolutionPlan as _RP
+        from remote_store._resolution import _strip_userinfo
 
         return _RP(
             kind="azure",
@@ -245,7 +246,7 @@ class AzureBackend(Backend):
             native_path=self.native_path(path),
             details={
                 "container": self._container,
-                "account_url": self._account_url,
+                "account_url": _strip_userinfo(self._account_url),
             },
         )
 

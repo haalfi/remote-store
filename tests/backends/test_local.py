@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -75,6 +76,5 @@ class TestLocalBackendResolve:
     @pytest.mark.spec("RES-050")
     def test_details_root_matches_backend(self, local_backend: LocalBackend) -> None:
         plan = local_backend.resolve("file.txt")
-        # root in details should be the backend's configured root
-        assert plan.details["root"] is not None
-        assert len(plan.details["root"]) > 0
+        # root in details matches the backend's native root (Path normalizes separators)
+        assert Path(plan.details["root"]) == Path(local_backend.native_path(""))

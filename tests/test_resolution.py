@@ -100,6 +100,7 @@ class TestResolutionPlanDataclass:
         )
         assert isinstance(plan.details, MappingProxyType)
         assert isinstance(plan.details, Mapping)
+        assert plan.details["a"] == 1
 
     @pytest.mark.spec("RES-010")
     def test_repr_readable(self) -> None:

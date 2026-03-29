@@ -47,22 +47,6 @@ def _normalize_endpoint_url(url: str | None) -> str | None:
     return f"https://{url}"
 
 
-def _strip_userinfo(url: str | None) -> str | None:
-    """Remove userinfo (``user:pass@``) from a URL per RFC 3986."""
-    if url is None:
-        return None
-    import urllib.parse
-
-    parsed = urllib.parse.urlparse(url)
-    if not parsed.username:
-        return url
-    # Rebuild without userinfo
-    netloc = parsed.hostname or ""
-    if parsed.port:
-        netloc = f"{netloc}:{parsed.port}"
-    return urllib.parse.urlunparse(parsed._replace(netloc=netloc))
-
-
 _S3_CA_ENV_VARS: tuple[str, ...] = ("AWS_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE")
 
 
@@ -132,6 +116,7 @@ class _S3Base(Backend):
             ``bucket``, ``object_key``, and ``endpoint_url``.
         """
         from remote_store._resolution import ResolutionPlan as _RP
+        from remote_store._resolution import _strip_userinfo
 
         return _RP(
             kind=self.name,

@@ -627,84 +627,60 @@ class TestBackendNativePath:
 class TestBackendResolveDefault:
     """RES-020: Backend.resolve() default implementation returns a ResolutionPlan."""
 
+    _PATHS = [
+        pytest.param("simple.txt", id="simple"),
+        pytest.param("dir/sub/file.txt", id="nested"),
+        pytest.param("", id="empty"),
+    ]
+
     @pytest.mark.spec("RES-020")
-    @pytest.mark.parametrize(
-        "path",
-        [
-            pytest.param("simple.txt", id="simple"),
-            pytest.param("dir/sub/file.txt", id="nested"),
-        ],
-    )
+    @pytest.mark.parametrize("path", _PATHS)
     def test_returns_resolution_plan(self, backend: Backend, path: str) -> None:
         from remote_store._resolution import ResolutionPlan
 
         plan = backend.resolve(path)
         assert isinstance(plan, ResolutionPlan)
+        assert plan.key == path
 
     @pytest.mark.spec("RES-020")
-    @pytest.mark.parametrize(
-        "path",
-        [
-            pytest.param("simple.txt", id="simple"),
-            pytest.param("dir/sub/file.txt", id="nested"),
-        ],
-    )
+    @pytest.mark.parametrize("path", _PATHS)
     def test_kind_is_non_empty_string(self, backend: Backend, path: str) -> None:
         plan = backend.resolve(path)
-        assert isinstance(plan.kind, str)
-        assert len(plan.kind) > 0
+        assert plan.kind == backend.name
 
     @pytest.mark.spec("RES-020")
-    @pytest.mark.parametrize(
-        "path",
-        [
-            pytest.param("simple.txt", id="simple"),
-            pytest.param("dir/sub/file.txt", id="nested"),
-        ],
-    )
+    @pytest.mark.parametrize("path", _PATHS)
     def test_backend_is_non_empty_string(self, backend: Backend, path: str) -> None:
         plan = backend.resolve(path)
-        assert isinstance(plan.backend, str)
-        assert len(plan.backend) > 0
+        assert plan.backend == backend.name
 
     @pytest.mark.spec("RES-020")
-    @pytest.mark.parametrize(
-        "path",
-        [
-            pytest.param("simple.txt", id="simple"),
-            pytest.param("dir/sub/file.txt", id="nested"),
-        ],
-    )
+    @pytest.mark.parametrize("path", _PATHS)
     def test_native_path_is_string(self, backend: Backend, path: str) -> None:
         plan = backend.resolve(path)
-        assert isinstance(plan.native_path, str)
+        assert plan.native_path == backend.native_path(path)
 
 
 class TestBackendResolveUniversalContract:
     """RES-025: Universal contract for Backend.resolve()."""
 
+    _PATHS = [
+        pytest.param("simple.txt", id="simple"),
+        pytest.param("dir/sub/file.txt", id="nested"),
+        pytest.param("", id="empty"),
+    ]
+
     @pytest.mark.spec("RES-025")
-    @pytest.mark.parametrize(
-        "path",
-        [
-            pytest.param("simple.txt", id="simple"),
-            pytest.param("dir/sub/file.txt", id="nested"),
-        ],
-    )
+    @pytest.mark.parametrize("path", _PATHS)
     def test_native_path_matches_backend(self, backend: Backend, path: str) -> None:
         plan = backend.resolve(path)
         assert plan.native_path == backend.native_path(path)
 
     @pytest.mark.spec("RES-025")
-    @pytest.mark.parametrize(
-        "path",
-        [
-            pytest.param("simple.txt", id="simple"),
-            pytest.param("dir/sub/file.txt", id="nested"),
-        ],
-    )
+    @pytest.mark.parametrize("path", _PATHS)
     def test_details_is_mapping(self, backend: Backend, path: str) -> None:
         from collections.abc import Mapping
 
         plan = backend.resolve(path)
         assert isinstance(plan.details, Mapping)
+        assert plan.kind == backend.name
