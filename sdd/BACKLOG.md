@@ -37,26 +37,9 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-### Developer Tooling
-
-- [ ] **BK-016 — Eliminate avoidable `# type: ignore` comments in src/**
-  ~9 `type: ignore` comments can likely be removed with better typing:
-  - `ext/cache.py` (6× `no-any-return`): cache `get()` returns `object`;
-    narrowing with `TypeVar` or `@overload` could eliminate the ignores.
-  - `_stream.py` (3× `no-any-return`): `RawIOBase.readinto`/`read`/`readline`
-    return `T | None`; explicit `None` guards or `assert` could replace ignores.
-  - `_path.py:21` (`misc`): `Final[str]` on a frozen-style class; may be
-    resolvable with a different typing pattern.
-  Not in scope: `import-untyped` (untyped third-party libs) and `override`
-  (intentional `RawIOBase` signature narrowing) — those are genuinely needed.
-
----
-
-## Ideas
-
 ### Performance & Memory
 
-- [ ] **ID-123 — Address laziness & memory findings from audit-005**
+- [ ] **BK-123 — Address laziness & memory findings from audit-005**
   Follow-up to [audit-005](audits/audit-005-laziness-memory.md) (2026-03-28).
   11 findings across High / Medium / Low. Suggested work order:
 
@@ -91,6 +74,23 @@ Items graduate through the SDD pipeline:
 
   Each fix must follow the bug-fix protocol (backlog → changelog → failing test
   → fix). Split into sub-items or a single PR depending on scope at the time.
+
+### Developer Tooling
+
+- [ ] **BK-016 — Eliminate avoidable `# type: ignore` comments in src/**
+  ~9 `type: ignore` comments can likely be removed with better typing:
+  - `ext/cache.py` (6× `no-any-return`): cache `get()` returns `object`;
+    narrowing with `TypeVar` or `@overload` could eliminate the ignores.
+  - `_stream.py` (3× `no-any-return`): `RawIOBase.readinto`/`read`/`readline`
+    return `T | None`; explicit `None` guards or `assert` could replace ignores.
+  - `_path.py:21` (`misc`): `Final[str]` on a frozen-style class; may be
+    resolvable with a different typing pattern.
+  Not in scope: `import-untyped` (untyped third-party libs) and `override`
+  (intentional `RawIOBase` signature narrowing) — those are genuinely needed.
+
+---
+
+## Ideas
 
 ### API Surface Enhancements
 
