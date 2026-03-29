@@ -23,7 +23,7 @@ import dataclasses
 import logging
 import threading
 import time
-from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, cast, runtime_checkable
 
 from remote_store._proxy import ProxyStore
 from remote_store.ext._helpers import _deprecated_alias
@@ -322,7 +322,7 @@ class CachedStore(ProxyStore):
         key = ("exists", path)
         cached = self._cache_get(key)
         if cached is not _MISSING:
-            return cached  # type: ignore[no-any-return]
+            return cast("bool", cached)
         result = self._inner.exists(path)
         self._cache.set(key, result, self._ttl)
         return result
@@ -331,7 +331,7 @@ class CachedStore(ProxyStore):
         key = ("is_file", path)
         cached = self._cache_get(key)
         if cached is not _MISSING:
-            return cached  # type: ignore[no-any-return]
+            return cast("bool", cached)
         result = self._inner.is_file(path)
         self._cache.set(key, result, self._ttl)
         return result
@@ -340,7 +340,7 @@ class CachedStore(ProxyStore):
         key = ("is_folder", path)
         cached = self._cache_get(key)
         if cached is not _MISSING:
-            return cached  # type: ignore[no-any-return]
+            return cast("bool", cached)
         result = self._inner.is_folder(path)
         self._cache.set(key, result, self._ttl)
         return result
@@ -349,7 +349,7 @@ class CachedStore(ProxyStore):
         key = ("read_bytes", path)
         cached = self._cache_get(key)
         if cached is not _MISSING:
-            return cached  # type: ignore[no-any-return]
+            return cast("bytes", cached)
         # Pre-flight: skip caching if file size is known to exceed limit.
         # Uses self._cache.get() directly to avoid polluting hit/miss stats.
         skip_cache = False
@@ -369,7 +369,7 @@ class CachedStore(ProxyStore):
         key = ("get_file_info", path)
         cached = self._cache_get(key)
         if cached is not _MISSING:
-            return cached  # type: ignore[no-any-return]
+            return cast("FileInfo", cached)
         result = self._inner.get_file_info(path)
         self._cache.set(key, result, self._ttl)
         return result
@@ -378,7 +378,7 @@ class CachedStore(ProxyStore):
         key = ("get_folder_info", path, str(max_depth))
         cached = self._cache_get(key)
         if cached is not _MISSING:
-            return cached  # type: ignore[no-any-return]
+            return cast("FolderInfo", cached)
         result = self._inner.get_folder_info(path, max_depth=max_depth)
         self._cache.set(key, result, self._ttl)
         return result

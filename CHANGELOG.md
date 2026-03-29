@@ -189,6 +189,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Eliminate avoidable `type: ignore` comments** (BK-016): Replaced 9
+  `no-any-return` suppressions with `cast()` in `ext/cache.py` (6) and
+  `_stream.py` (3). 1 `misc` in `_path.py` kept (mypy `Final` on `__slots__`
+  limitation).
+
 - Document `list()` materialisation in concurrent batch helpers (BK-127 L-2).
 - Clarify module-level sqlalchemy import rationale (BK-127 L-3).
 

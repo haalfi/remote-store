@@ -59,6 +59,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Testing Expert quick reference table for BK-125. Cross-referenced from
   DESIGN.md § 11 and CLAUDE-REFERENCE.md.
 
+- [x] **BK-016 — Eliminate avoidable `# type: ignore` comments in src/**
+  Replaced 9 `no-any-return` suppressions with `cast()` in `ext/cache.py` (6)
+  and `_stream.py` (3). `_path.py:21` `misc` kept — mypy does not support
+  `Final` on `__slots__` descriptors.
+
 - [x] **BK-015 — Replace mypy `ignore_missing_imports` overrides with proper type stubs**
   Added `types-requests` stub, removed overrides for `requests`, `urllib3`,
   `pydantic`, `pydantic_settings`, `tomli`, `tomllib`, `httpx`, `ruamel.yaml`.
