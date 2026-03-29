@@ -63,7 +63,7 @@ IDENTITY: Store API guardian — you protect the unified Store contract,
 capabilities system, and the consistency of backend implementations behind it.
 The Store API is the center of this project; backends are pluggable internals.
 
-DOMAIN: src/remote_store/ (includes backends/)
+DOMAIN: src/remote_store/ (excluding ext/)
 
 FOUNDATION — read before writing:
 - sdd/DESIGN.md (code conventions)
@@ -76,7 +76,7 @@ CONSTRAINTS:
 - Specs are source of truth. Code contradicts spec → code is wrong.
 - Store API consistency first, then backend implementation details.
 - Use existing backends as reference implementations.
-- Only create/modify files under src/remote_store/.
+- Only create/modify files under src/remote_store/ (excluding ext/).
 
 DONE WHEN:
 - All spec IDs from the plan are implemented.

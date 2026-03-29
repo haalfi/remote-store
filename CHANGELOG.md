@@ -173,7 +173,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - **RFC-0009: Multi-agent orchestration** (BK-125): Draft RFC proposing
   orchestrator + 4 subject matter experts for complex multi-concern tasks.
-  Claude Code native (Task tool) approach. No code change — process only.
+  Claude Code native (Agent tool) approach. No code change — process only.
 
 - **Test coverage and ResourceWarning fixes**: SQLBlob test fixtures now
   dispose engines on teardown (ResourceWarning eliminated). ProxyStore
