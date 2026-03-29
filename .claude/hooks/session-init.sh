@@ -30,6 +30,16 @@ else
   echo "gh CLI: not available — use MCP_DOCKER for GitHub ops"
 fi
 
+# --- Install hatch if needed ---
+if ! command -v hatch &>/dev/null; then
+  pip install hatch >/dev/null 2>&1
+  if command -v hatch &>/dev/null; then
+    echo "hatch: installed"
+  else
+    echo "hatch: install failed — gate hooks will not work"
+  fi
+fi
+
 # --- Install gh on Linux containers if needed ---
 if ! command -v gh &>/dev/null && [ "$(uname -s 2>/dev/null)" = "Linux" ]; then
   curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \

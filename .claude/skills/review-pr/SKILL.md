@@ -7,7 +7,7 @@ argument-hint: "[PR number]"
 allowed-tools: Read, Grep, Glob, mcp__github-pat__pull_request_read, mcp__github-pat__list_commits, mcp__github-pat__get_file_contents, mcp__github-pat__pull_request_review_write, mcp__github-pat__add_comment_to_pending_review, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
 ---
 
-**Read-only.** Do not modify any code, files, or repository state. Only Read/Grep/Glob for analysis, MCP tools to read PR and post review.
+**STRICT READ-ONLY.** You MUST NOT use Edit, Write, NotebookEdit, or Bash tools. You MUST NOT modify any code, files, or repository state — no edits, no git commands, no fixes, no "quick cleanups". Your only job is to analyze and post review comments. If you find something broken, report it in a review comment — do not fix it.
 
 PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
 
