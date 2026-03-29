@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 
-class _AssertionVisitor(ast.NodeVisitor):
+class _AssertVisitor(ast.NodeVisitor):
     """Walk a function body looking for assert statements or pytest.raises."""
 
     def __init__(self) -> None:
@@ -55,7 +55,7 @@ def _check_file(path: Path) -> list[str]:
         if not node.name.startswith("test_"):
             continue
 
-        visitor = _AssertionVisitor()
+        visitor = _AssertVisitor()
         for child in ast.walk(node):
             visitor.visit(child)
 

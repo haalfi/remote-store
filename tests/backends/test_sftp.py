@@ -1108,7 +1108,7 @@ class TestSFTPTofuPersistence:
                 connect_kwargs={"allow_agent": False, "look_for_keys": False},
             )
             result = strict_backend.exists("nonexistent.txt")
-            assert result is not None  # verifiable by strict policy
+            assert result is False  # file doesn't exist; verifiable by strict policy
             strict_backend.close()
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
