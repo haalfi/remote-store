@@ -8,6 +8,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **RFC-0009: Multi-agent orchestration** (ID-125): Draft RFC proposing
+  orchestrator + 4 subject matter experts for complex multi-concern tasks.
+  Claude Code native (Task tool) approach. No code change — process only.
+
 - **`SQLQueryBackend` — read-only SQL query materializer** (ID-119 v2): Maps
   path keys to SQL queries and serializes results to Parquet, CSV, or Arrow
   IPC based on the key's file extension. Explicit query mappings via `queries`

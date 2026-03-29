@@ -205,6 +205,14 @@ Items graduate through the SDD pipeline:
   [Research](research/research-dagster-extension.md),
   [showcase architecture](research/research-medallion-dagster-showcase.md).
 
+### Process & Orchestration
+
+- [ ] **ID-125 — Multi-agent orchestration for complex tasks**
+  RFC-0009: orchestrator + 4 subject matter experts (Backend, Extension,
+  Testing, Documentation) via Claude Code Task tool. Parallelize independent
+  concerns while preserving SDD discipline.
+  [RFC](rfcs/rfc-0009-multi-agent-orchestration.md).
+
 ### Documentation & Developer Experience
 
 - [ ] **ID-066 — PR preview deployments**
