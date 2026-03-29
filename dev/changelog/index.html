@@ -6922,6 +6922,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: RFC-0009: Multi-Agent Orchestration for Complex Tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8970,12 +8998,19 @@
 </ul>
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Test coverage and ResourceWarning fixes</strong>: SQLBlob test fixtures now
+<li>
+<p><strong>RFC-0009: Multi-agent orchestration</strong> (BK-125): Draft RFC proposing
+  orchestrator + 4 subject matter experts for complex multi-concern tasks.
+  Claude Code native (Task tool) approach. No code change — process only.</p>
+</li>
+<li>
+<p><strong>Test coverage and ResourceWarning fixes</strong>: SQLBlob test fixtures now
   dispose engines on teardown (ResourceWarning eliminated). ProxyStore
   delegation coverage 68% → 100% (new <code>test_proxy.py</code>). SQLAlchemy backend
   coverage 90% → 99% (<code>_glob_to_like</code>, optional columns, health check).
   <code>/pr</code> skill now gates on <code>hatch run test-cov</code> (95% threshold) before
-  creating PRs.</li>
+  creating PRs.</p>
+</li>
 </ul>
 <h2 id="0190-2026-03-23">[0.19.0] - 2026-03-23<a class="headerlink" href="#0190-2026-03-23" title="Permanent link">&para;</a></h2>
 <h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
