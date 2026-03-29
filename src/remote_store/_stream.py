@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import io
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -46,7 +46,7 @@ class _ErrorMappingStream(io.RawIOBase):
 
     def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
         try:
-            return self._inner.readinto(b)  # type: ignore[no-any-return]
+            return cast("int", self._inner.readinto(b))
         except OSError as exc:
             raise self._mapper(exc, self._path) from exc
 
@@ -56,14 +56,14 @@ class _ErrorMappingStream(io.RawIOBase):
     def read(self, size: int = -1) -> bytes | None:
         try:
             data = self._inner.read(size)
-            return data  # type: ignore[no-any-return]
+            return cast("bytes | None", data)
         except OSError as exc:
             raise self._mapper(exc, self._path) from exc
 
     def readline(self, size: int = -1) -> bytes:  # type: ignore[override]
         try:
             data = self._inner.readline(size)
-            return data  # type: ignore[no-any-return]
+            return cast("bytes", data)
         except OSError as exc:
             raise self._mapper(exc, self._path) from exc
 
