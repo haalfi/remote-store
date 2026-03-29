@@ -93,7 +93,7 @@ def read_dataset(
 **Invariant:** Frozen dataclass with canonical JSON serialization.
 
 **Fields:**
-- `key: str`
+- `dataset_key: str`
 - `parts: list[str]` — relative filenames only
 - `row_count: int`
 - `schema_hash: str` — first 16 hex chars of SHA-256 of `schema.to_string()`

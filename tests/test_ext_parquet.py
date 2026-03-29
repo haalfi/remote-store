@@ -16,6 +16,8 @@ from remote_store._capabilities import Capability, CapabilitySet
 from remote_store.backends import LocalBackend, MemoryBackend
 from remote_store.ext.parquet import DatasetIncomplete, DatasetManifest, ManifestCorrupted, ParquetDatasetStore
 
+pytestmark = pytest.mark.os_sensitive
+
 if TYPE_CHECKING:
     from pathlib import Path
 
