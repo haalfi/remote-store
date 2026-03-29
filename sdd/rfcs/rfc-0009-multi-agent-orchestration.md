@@ -6,7 +6,7 @@ Draft — awaiting community feedback
 
 ## Summary
 
-Introduce a multi-agent orchestration pattern to handle complex, multi-concern tasks (backend implementation, testing, documentation, spec review, ripple-checks) in parallel. A coordinator agent spawns specialized experts (Spec Reviewer, Backend Impl, Testing, Documentation, Ripple-Check Auditor) to decompose work while preserving SDD discipline and preventing hallucination.
+Introduce a multi-agent orchestration pattern to handle complex, multi-concern tasks (backend implementation, testing, documentation) in parallel. An orchestrator breaks down the task and delegates to 4 subject matter experts (Backend, Extension, Testing, Documentation), each with mandatory SDD foundation but focused on their domain. Post-implementation ripple-checks and CHANGELOG updates are orchestrator tasks, not separate experts.
 
 ## Motivation
 
@@ -24,103 +24,66 @@ remote-store has grown to ~2MB across 41 source files, 55 test files, and 72 doc
 - Hallucination (agents inventing design instead of reading specs)
 - Context switching overhead (large task = many file reads, many context windows)
 
-**Motivation:** Parallelize independent concerns via specialized agents, each with a narrow scope and clear system prompt, while an orchestrator enforces SDD discipline.
+**Motivation:** Parallelize independent concerns via subject matter experts (backend implementation, testing, documentation), each with mandatory SDD foundation but focused on their domain. An orchestrator breaks down the task, delegates to experts, and handles post-implementation tasks (ripple-checks, CHANGELOG, BACKLOG movement).
 
 ## Proposal
 
-### Seven Specialist Roles
+### Four Subject Matter Experts + Orchestrator Role
 
-| Role | Scope | Key Inputs | Risk Mitigation |
-|------|-------|-----------|-----------------|
-| **Orchestrator** | Break down task, delegate, synthesize, verify SDD | Task, CLAUDE.md, BACKLOG | Prevents duplicate work; enforces ripple-checks |
-| **Spec Reviewer** | Validate proposals, check completeness, find gaps | RFC, specs, DESIGN.md | Incomplete specs; missing spec-code traceability |
-| **Backend Impl Expert** | Backend ABC impl, error mapping, capabilities contract | Spec, CLAUDE-REFERENCE.md | Incomplete error handling; missed capability invariants |
-| **Testing Expert** | Test design, coverage targets, edge cases, conformance | Spec, code, examples | Low coverage; untested error paths |
-| **Doc Specialist** | User guides, docstrings, API docs, navigation | Spec, code, guides/, docs-src/ | Stale docs; missing navigation |
-| **Ripple-Check Auditor** | Cross-file dependency verification (CLAUDE-REFERENCE.md) | Changed files, ripple-check table | **Critical:** forgotten README, pyproject.toml, exports |
-| **Async/Perf Specialist** | ID-013 async API, ID-123 memory/perf findings | Research docs, specs, benchmarks | Incomplete async surface; missed optimizations |
+| Role | Scope | Domain Focus | SDD Foundation |
+|------|-------|--------------|-----------------|
+| **Orchestrator** (meta-role) | Break down task, delegate, post-implementation ripple-checks & CHANGELOG, compile results | Task decomposition, SDD enforcement, cross-file consistency | Mandatory: CLAUDE.md, BACKLOG, ripple-check table |
+| **Backend Expert** | `src/remote_store/` + `src/remote_store/backends/` — ABC contract, error mapping, capabilities | Backend architecture, error handling, capability invariants | Specs 003 (Backend ABC), 005 (error model), backends specs |
+| **Extension Expert** | `src/remote_store/ext/` — extension implementation, public API contract | Extension API design, Store contract usage, ADR-0008 pattern | Specs 024-043 (extensions), ADR-0008 (architecture), DESIGN.md |
+| **Testing Expert** | `tests/` — test design, coverage targets, edge cases, conformance fixtures | Pytest patterns, spec traceability, coverage rigor | Specs (all via @pytest.mark.spec), DESIGN.md (conventions) |
+| **Documentation Expert** | `docs-src/`, `guides/`, docstrings — user guides, API reference, navigation | Diátaxis structure, docstring format, mkdocs nav | DESIGN.md, DOCUMENTATION.md, example docstrings |
 
-### Two Implementation Approaches
+### Implementation Approach: Claude Code Native (KISS)
 
-#### Approach A: Claude Code Native (Recommended MVP)
+#### Primary: Approach A — Claude Code Native
 
-Use Claude Code's built-in `Task` tool. Orchestrator prompt spawns subagents automatically.
+Use Claude Code's built-in `Task` tool. Orchestrator (main Claude Code session) breaks down the task and delegates to subagents via the Task tool.
 
 **Advantages:**
-- Native to Claude Code — no custom Python needed
-- Automatic parallelism (independent tasks run in parallel)
-- Simple integration with CLAUDE.md workflow
-- Subagents inherit branch context automatically
+- ✅ Native to Claude Code — no custom Python needed (KISS principle)
+- ✅ Automatic parallelism (independent experts work in parallel)
+- ✅ Seamless integration with CLAUDE.md workflow
+- ✅ Subagents inherit branch, git context automatically
+- ✅ Simple to reason about and maintain
 
-**Disadvantages:**
-- Less fine-grained model selection
-- Context per subagent limited (2000-line read default)
-- Harder to enforce "read spec first" discipline
+**How it works:**
+1. Orchestrator reads BACKLOG + specs + ripple-check table
+2. Spawns Task subagents:
+   - Backend Expert → implement `src/remote_store/backends/_new_backend.py`
+   - Testing Expert → write `tests/test_new_backend.py`
+   - Documentation Expert → write `guides/new-backend.md` + docstrings
+3. Experts execute in parallel
+4. Orchestrator collects results → compiles PR + runs ripple-checks → commits + pushes
 
-**Best for:** MVP phase, simpler tasks (single backend, small feature)
+**Optional Future:** Custom Python orchestrator (if parallelism needs become critical and cost optimization is required) — but not the initial approach.
 
-#### Approach B: Custom Python Orchestrator (Future Scaling)
+### SDD Discipline: Orchestrator Responsibilities
 
-Custom orchestration script using `anthropic` SDK + `ThreadPoolExecutor`.
+The orchestrator enforces these invariants before and after expert execution:
 
-```python
-from concurrent.futures import ThreadPoolExecutor
-from anthropic import Anthropic
+**Before delegating to experts:**
+1. Read `BACKLOG.md` — is this item logged? ID and status?
+2. Read relevant specs (`sdd/specs/`) — do they cover this task?
+3. Consult `CLAUDE-REFERENCE.md` ripple-check table — which files will be affected?
+4. Scope each expert: no expert touches a file outside their domain
 
-EXPERTS = {
-    "spec_reviewer": "Validate RFC/spec, check completeness",
-    "backend_impl": "Implement Backend ABC, error mapping",
-    "test_designer": "Write pytest suite, coverage targets",
-    "doc_writer": "Guides, docstrings, mkdocs nav",
-    "ripple_auditor": "Cross-file checks",
-}
+**After experts complete:**
+1. Compile all outputs (code, tests, docs)
+2. Run ripple-check auditing (verify CLAUDE-REFERENCE.md table completeness)
+3. Update `CHANGELOG.md` (`[Unreleased]` section)
+4. Move `BACKLOG.md` item to `BACKLOG-DONE.md` or split if partially done
+5. Verify all changes pass `hatch run all` (lint + typecheck + test + coverage)
 
-def orchestrate(task: str, files_to_read: list[str]) -> str:
-    # Dispatch experts in parallel
-    with ThreadPoolExecutor() as pool:
-        results = {
-            role: pool.submit(call_expert, role, EXPERTS[role], task, files_to_read)
-            for role in EXPERTS
-        }
-
-    # Compile & verify consistency
-    outputs = {role: f.result() for role, f in results.items()}
-    final = synthesize(task, outputs)
-    return final
-```
-
-**Advantages:**
-- Cheaper models per task (Haiku for narrow tasks, Sonnet for orchestration)
-- Strict control: "read file X first" enforced in system prompt
-- Easy SDD checklist enforcement per expert
-- Scales to large teams / complex workflows
-
-**Disadvantages:**
-- Requires custom Python code
-- More setup and maintenance
-- Subagents don't inherit branch context (manual handling)
-
-**Best for:** Production phase, recurring backlog work (ID-013, ID-123)
-
-### SDD Discipline: Non-Negotiable Invariants
-
-Every orchestrator MUST enforce:
-
-1. ✅ **Spec-first:** Spec exists (or is drafted) before code begins
-2. ✅ **Ripple-check auditor always runs** before commit (prevents forgotten README, exports, deps)
-3. ✅ **BACKLOG entry exists** before implementation (bug-fix protocol)
-4. ✅ **CHANGELOG updated** in same commit as code
-5. ✅ **No hallucination:** All design traces to a spec; agents flag contradictions
-
-**Orchestrator pre-execution checklist:**
-
-```
-BEFORE DELEGATING:
-1. Read BACKLOG.md — is this item logged? ID and status?
-2. Read relevant specs (sdd/specs/) — do they cover this task?
-3. Consult CLAUDE-REFERENCE.md ripple-check table — which files affected?
-4. Scope subagents — no expert touches a file outside ripple-check list
-```
+**Experts (all domains) MUST:**
+- Read the spec first, before writing code/tests/docs
+- Flag any spec contradictions or gaps immediately
+- Follow DESIGN.md conventions for their domain (code style, test markers, docstring format)
+- Do not invent behavior — all design traces to a spec
 
 ### Hallucination Mitigation
 
@@ -144,38 +107,40 @@ Output format:
 [IMPLEMENTATION]: Your contribution
 ```
 
-### Phased Rollout
+### First Test Case: New Backend Implementation
 
-#### Phase 1: Spec Review (Immediate, Low Risk)
+**Trigger:** User asks to implement a new backend (e.g., add GCS backend)
 
-**Trigger:** RFC or spec amendment proposed
-**Experts:** Spec Reviewer only
-**Scope:** Read RFC, validate against SDD, list gaps
-**Output:** Annotated RFC + gap list (no code changes)
+**Orchestrator workflow:**
+1. Pre-check: BACKLOG entry exists, spec drafted
+2. Spawn 4 experts in parallel (Task tool):
+   - **Backend Expert** → `src/remote_store/backends/_gcs.py` (ABC impl, error mapping, capabilities)
+   - **Testing Expert** → `tests/test_gcs_conformance.py` (conformance fixtures, coverage)
+   - **Documentation Expert** → `guides/backends/gcs.md` (user guide, docstrings)
+3. Orchestrator post-processing:
+   - Ripple-check: README backends table, `pyproject.toml` extras, examples, auto-registration
+   - CHANGELOG + BACKLOG updates
+4. Compile PR, push, report
 
-#### Phase 2: Single Backend Implementation (MVP)
-
-**Trigger:** User asks to implement a new backend
-**Experts:** Backend Impl, Testing, Doc Specialist, Ripple-Check Auditor
-**Orchestration:** Claude Code native (Task tool)
-**Scope:** New backend only (e.g., add GCS backend)
-
-#### Phase 3: Major Feature (Complex Multi-Phase)
-
-**Trigger:** Complex feature (ID-013 async API, ID-123 memory findings)
-**Experts:** All roles
-**Orchestration:** Custom Python orchestrator
-**Scope:** Multi-phase, large ripple (touches Store, Backend ABC, extensions)
+**Success criteria:**
+- All 4 experts work in parallel (no blocking)
+- Code passes `hatch run all` (95% coverage)
+- Ripple-checks 100% complete (no forgotten updates)
+- PR ready to merge with no follow-ups
 
 ## Alternatives Considered
 
 1. **No orchestration** — Continue single-agent workflow
-   - **Rejected:** Scales poorly as backlog grows; ID-013 and ID-123 are already blocked by context overhead
+   - **Rejected:** Scales poorly as backlog grows; ID-013 and ID-123 are already context-constrained
 
-2. **Orchestrator without strict SDD enforcement**
-   - **Rejected:** Risk of hallucinated specs, incomplete ripple-checks; violates CLAUDE.md principle "specs are source of truth"
+2. **Seven specialist experts** (Spec Reviewer, Backend, Extension, Testing, Doc, Ripple Auditor, Async/Perf)
+   - **Rejected:** Over-engineered; ripple-checks and audits are orchestrator tasks, not separate experts
 
-3. **Per-concern specialized sessions** (e.g., separate Claude Code session per role)
+3. **Custom Python orchestrator (ThreadPoolExecutor + Anthropic SDK)**
+   - **Considered:** Needed if cost optimization or fine-grained model selection becomes critical
+   - **Deferred:** Start with Claude Code native (KISS), optional future upgrade
+
+4. **Per-concern specialized sessions** (separate Claude Code session per role)
    - **Rejected:** No coordination; duplicate work; complex state management
 
 ## Impact
@@ -186,27 +151,36 @@ Output format:
 - **Testing:** New tests for orchestrator (e.g., ripple-check verification, spec compliance)
 - **Docs:** New guide in DEVELOPMENT_STORY.md or sdd/000-process.md on using orchestrator
 
-## Open Questions
+## Implementation Decision: What's Next?
 
-1. **Start with Approach A (Claude Code native) or Approach B (custom Python)?**
-   - Recommendation: Approach A for MVP (Phase 1–2), migrate to Approach B if backlog scales
+Agreed approach: **Claude Code native (KISS), 4 subject matter experts, orchestrator as meta-role**.
 
-2. **Which current backlog item is a good test case?**
-   - Candidates: ID-013 (async API, currently blocked), ID-018 (conda-forge, nearly done), or simpler backend addition
+**Ready to implement?**
 
-3. **Should orchestrator run automatically or on-demand?**
-   - On-demand (explicit `/orchestrate` command or user request) preferred initially
-   - Could add hook-based auto-triggering later
+1. **Immediate next step:** Test orchestration on a new backend addition (e.g., GCS backend)
+   - Low risk (isolated change), fast feedback, validates workflow
+   - Or: test on existing backlog item (ID-013, ID-123)?
 
-4. **Model selection:** Use cheaper Haiku for narrow expert tasks?
-   - Yes: reduces cost for routine work (e.g., conformance test generation)
-   - Orchestrator itself should use Sonnet/Opus (complex synthesis)
+2. **System prompt templates needed:**
+   - Orchestrator prompt (pre-check, delegate, post-process)
+   - Backend Expert prompt (src/remote_store/ + backends/)
+   - Extension Expert prompt (src/remote_store/ext/)
+   - Testing Expert prompt (tests/)
+   - Documentation Expert prompt (docs-src/, guides/)
+
+3. **Open:** Should orchestrator be a dedicated skill (e.g., `/orchestrate`), or ad-hoc prompt in main session?
+   - Recommendation: Start ad-hoc, formalize as skill if it becomes routine
 
 ## References
 
 - **SDD workflow:** `sdd/000-process.md`
-- **Ripple-check table:** `sdd/CLAUDE-REFERENCE.md` (§ "If you changed…")
-- **Code conventions:** `sdd/DESIGN.md`
-- **In-progress work:** `sdd/BACKLOG.md` (ID-013, ID-018, ID-123)
-- **Claude Code instructions:** `CLAUDE.md`
-- **Contributing:** `CONTRIBUTING.md` (spec-first workflow, release checklist)
+- **Ripple-check table:** `sdd/CLAUDE-REFERENCE.md` (§ "If you changed…") — orchestrator must verify post-implementation
+- **Code conventions:** `sdd/DESIGN.md` (experts follow domain-specific conventions)
+- **Documentation standards:** `sdd/DOCUMENTATION.md`, `CONTRIBUTING.md` (authoritative document format)
+- **Expert domain specs:**
+  - **Backend:** `sdd/specs/003-backend-adapter-contract.md`, `sdd/specs/005-error-model.md`, backend-specific specs
+  - **Extension:** `sdd/specs/024-041.md` (extensions), `sdd/adrs/0008-extension-architecture.md`
+  - **Testing:** `sdd/DESIGN.md` (test conventions), `@pytest.mark.spec("ID")` traceability
+  - **Documentation:** `sdd/DOCUMENTATION.md` (Diátaxis structure), docstring examples in codebase
+- **In-progress work:** `sdd/BACKLOG.md` (ID-013 async, ID-018 conda-forge, ID-123 memory audit)
+- **Claude Code instructions:** `CLAUDE.md` (ripple-checks, spec discipline, branch workflow)
