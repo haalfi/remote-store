@@ -70,9 +70,9 @@ category maps to a proposed rule in section 4.1.
 - **Private attribute access (~100+ instances):** `assert obj._field == x`
   couples tests to internals. Examples: `test_registry.py:61` (`_backends`),
   `test_cache.py:151` (`_ttl`), `test_arrow.py:75` (`_store`). → Rule 3.
-- **Unconstrained mocks (~100+ instances):** `MagicMock()` without `spec=`
-  accepts any call. Examples: `test_azure.py` (multiple),
-  `test_depth_listing.py:276`. → Rule 4.
+- **Unconstrained mocks (~67 instances):** `MagicMock()` without `spec=`
+  accepts any call (68 total, 1 with `spec=`). Examples: `test_azure.py`
+  (46), `test_ping.py` (11), `test_depth_listing.py` (4). → Rule 4.
 
 ### Summary Statistics
 
@@ -81,7 +81,7 @@ category maps to a proposed rule in section 4.1.
 | No assertions (void call only) | ~35 | High |
 | `isinstance` as primary assertion | ~100+ | Medium |
 | Private attribute access in assertions | ~100+ | Medium |
-| Unconstrained `MagicMock()` | ~100+ | Medium |
+| Unconstrained `MagicMock()` | ~67 | Medium |
 | Factory helpers duplicating constructors | ~6 | Low |
 
 ---
