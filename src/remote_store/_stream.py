@@ -56,7 +56,7 @@ class _ErrorMappingStream(io.RawIOBase):
     def read(self, size: int = -1) -> bytes | None:
         try:
             data = self._inner.read(size)
-            return cast("bytes", data)
+            return cast("bytes | None", data)
         except OSError as exc:
             raise self._mapper(exc, self._path) from exc
 
