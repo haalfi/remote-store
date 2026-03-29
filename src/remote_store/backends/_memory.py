@@ -8,7 +8,7 @@ import logging
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, BinaryIO, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -41,6 +41,22 @@ class _FileEntry:
 @dataclass(slots=True)
 class _DirNode:
     children: dict[str, _DirNode | _FileEntry] = field(default_factory=dict)
+
+
+class _FileSnapshot:
+    """Frozen copy of ``_FileEntry`` scalars for lock-free iteration.
+
+    Copies size, modified_at, and content_type at snapshot time so that
+    concurrent writes to the live ``_FileEntry`` cannot produce inconsistent
+    ``FileInfo`` objects (e.g. new size with old timestamp).
+    """
+
+    __slots__ = ("size", "modified_at", "content_type")
+
+    def __init__(self, entry: _FileEntry) -> None:
+        self.size = len(entry.data)
+        self.modified_at = entry.modified_at
+        self.content_type = entry.content_type
 
 
 class MemoryBackend(Backend):
@@ -117,7 +133,18 @@ class MemoryBackend(Backend):
         if not segments:
             raise InvalidPath("Path must not be empty for file operations", path=path, backend="memory")
 
-        raw = content if isinstance(content, bytes) else content.read()
+        # Build bytearray without a second copy: for streams, accumulate
+        # chunks directly into the target bytearray instead of reading all
+        # bytes first and then copying into a new bytearray.
+        if isinstance(content, bytes):
+            raw = bytearray(content)
+        else:
+            raw = bytearray()
+            while True:
+                chunk = content.read(65536)
+                if not chunk:
+                    break
+                raw.extend(chunk)
 
         with self._lock:
             parent = self._ensure_parents(segments)
@@ -137,7 +164,7 @@ class MemoryBackend(Backend):
                 existing.modified_at = datetime.now(timezone.utc)
             else:
                 parent.children[leaf] = _FileEntry(
-                    data=bytearray(raw),
+                    data=raw,
                     modified_at=datetime.now(timezone.utc),
                 )
                 self._file_count += 1
@@ -222,13 +249,24 @@ class MemoryBackend(Backend):
             if not isinstance(node, _DirNode):
                 return
             prefix = "/".join(segments) if segments else ""
-            results = self._collect_files(
-                node,
-                prefix,
-                recursive=recursive,
-                max_depth=max_depth,
-            )
-        yield from results
+            if recursive:
+                snapshot = self._snapshot_subtree(node)
+            else:
+                children_snap = {
+                    name: _FileSnapshot(child) for name, child in node.children.items() if isinstance(child, _FileEntry)
+                }
+        if recursive:
+            yield from self._collect_files_from_snapshot(snapshot, prefix, max_depth=max_depth)
+        else:
+            for name, child in children_snap.items():
+                child_path = f"{prefix}/{name}" if prefix else name
+                yield FileInfo(
+                    path=RemotePath(child_path),
+                    name=name,
+                    size=child.size,
+                    modified_at=child.modified_at,
+                    content_type=child.content_type,
+                )
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         segments = self._split_path(path)
@@ -237,15 +275,13 @@ class MemoryBackend(Backend):
             if not isinstance(node, _DirNode):
                 return
             prefix = "/".join(segments) if segments else ""
-            results = [
-                FolderEntry(
+            children_snapshot = dict(node.children)
+        for name, child in children_snapshot.items():
+            if isinstance(child, _DirNode):
+                yield FolderEntry(
                     path=RemotePath(f"{prefix}/{name}" if prefix else name),
                     name=name,
                 )
-                for name, child in node.children.items()
-                if isinstance(child, _DirNode)
-            ]
-        yield from results
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         segments = self._split_path(path)
@@ -254,23 +290,23 @@ class MemoryBackend(Backend):
             if not isinstance(node, _DirNode):
                 return
             prefix = "/".join(segments) if segments else ""
-            results: list[FileInfo | FolderEntry] = []
-            for name, child in node.children.items():
-                if isinstance(child, _FileEntry):
-                    child_path = f"{prefix}/{name}" if prefix else name
-                    results.append(
-                        FileInfo(
-                            path=RemotePath(child_path),
-                            name=name,
-                            size=len(child.data),
-                            modified_at=child.modified_at,
-                            content_type=child.content_type,
-                        )
-                    )
-                elif isinstance(child, _DirNode):
-                    child_path = f"{prefix}/{name}" if prefix else name
-                    results.append(FolderEntry(path=RemotePath(child_path), name=name))
-        yield from results
+            children_snapshot = {
+                name: _FileSnapshot(child) if isinstance(child, _FileEntry) else child
+                for name, child in node.children.items()
+            }
+        for name, child in children_snapshot.items():
+            if isinstance(child, _FileSnapshot):
+                child_path = f"{prefix}/{name}" if prefix else name
+                yield FileInfo(
+                    path=RemotePath(child_path),
+                    name=name,
+                    size=child.size,
+                    modified_at=child.modified_at,
+                    content_type=child.content_type,
+                )
+            elif isinstance(child, _DirNode):
+                child_path = f"{prefix}/{name}" if prefix else name
+                yield FolderEntry(path=RemotePath(child_path), name=name)
 
     def get_file_info(self, path: str) -> FileInfo:
         segments = self._split_path(path)
@@ -482,38 +518,58 @@ class MemoryBackend(Backend):
         return files, folders
 
     @staticmethod
-    def _collect_files(
-        node: _DirNode,
+    def _snapshot_subtree(node: _DirNode) -> dict[str, _FileSnapshot | dict[str, Any]]:
+        """Deep-copy the tree structure under *node* for lock-free iteration.
+
+        Returns a nested dict where file leaves are ``_FileSnapshot`` objects
+        (frozen scalar copies, not live references) and directories are plain
+        dicts mirroring the ``children`` structure.  Uses an iterative approach
+        to avoid recursion-limit concerns on deep trees.
+        """
+        root: dict[str, Any] = {}
+        # Stack of (source _DirNode children, target snapshot dict)
+        stack: list[tuple[dict[str, _DirNode | _FileEntry], dict[str, Any]]] = [
+            (node.children, root),
+        ]
+        while stack:
+            src_children, dst = stack.pop()
+            for name, child in src_children.items():
+                if isinstance(child, _FileEntry):
+                    dst[name] = _FileSnapshot(child)
+                elif isinstance(child, _DirNode):
+                    sub: dict[str, Any] = {}
+                    dst[name] = sub
+                    stack.append((child.children, sub))
+        return root
+
+    @staticmethod
+    def _collect_files_from_snapshot(
+        snapshot: dict[str, Any],
         prefix: str,
         *,
-        recursive: bool,
         max_depth: int | None = None,
-    ) -> list[FileInfo]:
-        """Collect FileInfo objects from a directory node (under lock).
+    ) -> Iterator[FileInfo]:
+        """Yield FileInfo objects from a snapshot dict (outside lock).
 
         Uses iterative DFS for consistency with ``_count_subtree`` and
         ``get_folder_info``, avoiding recursion-limit concerns on deep trees.
         """
-        results: list[FileInfo] = []
-        stack: list[tuple[_DirNode, str, int]] = [(node, prefix, 0)]
+        stack: list[tuple[dict[str, Any], str, int]] = [(snapshot, prefix, 0)]
         while stack:
             current, cur_prefix, depth = stack.pop()
-            for name, child in current.children.items():
+            for name, child in current.items():
                 child_path = f"{cur_prefix}/{name}" if cur_prefix else name
-                if isinstance(child, _FileEntry):
-                    results.append(
-                        FileInfo(
-                            path=RemotePath(child_path),
-                            name=name,
-                            size=len(child.data),
-                            modified_at=child.modified_at,
-                            content_type=child.content_type,
-                        )
+                if isinstance(child, _FileSnapshot):
+                    yield FileInfo(
+                        path=RemotePath(child_path),
+                        name=name,
+                        size=child.size,
+                        modified_at=child.modified_at,
+                        content_type=child.content_type,
                     )
-                elif recursive and isinstance(child, _DirNode):
+                elif isinstance(child, dict):
                     if max_depth is not None and depth >= max_depth:
                         continue
                     stack.append((child, child_path, depth + 1))
-        return results
 
     # endregion

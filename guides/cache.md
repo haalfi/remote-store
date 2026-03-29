@@ -38,10 +38,10 @@ data = cached.read_bytes("config.json")  # b'{"key": "new"}'
 | `read_bytes()` | Yes | Subject to `max_content_size` |
 | `get_file_info()` | Yes | |
 | `get_folder_info()` | Yes | |
-| `list_files()` | Yes | Materialized on first call |
-| `list_folders()` | Yes | Materialized on first call |
-| `iter_children()` | Yes | Materialized on first call |
-| `glob()` | Yes | Materialized on first call |
+| `list_files()` | Yes | Materialized on first call; subject to `max_listing_size` |
+| `list_folders()` | Yes | Materialized on first call; subject to `max_listing_size` |
+| `iter_children()` | Yes | Materialized on first call; subject to `max_listing_size` |
+| `glob()` | Yes | Materialized on first call; subject to `max_listing_size` |
 | `read()` | — | Returns `BinaryIO` stream |
 
 `read()` is deliberately not cached because it returns a `BinaryIO`
@@ -72,6 +72,29 @@ cached = cache(store, ttl=300, max_content_size=1_048_576)
 
 Files larger than the limit are still returned correctly — they just
 bypass the cache.
+
+Similarly, listing operations (`list_files`, `list_folders`,
+`iter_children`, `glob`) cache their full result set. For stores with
+very large directories, set `max_listing_size` to skip caching listings
+that exceed a given item count:
+
+```python
+# Cache listings up to 500 items; larger ones bypass the cache
+cached = cache(store, ttl=300, max_listing_size=500)
+```
+
+Both limits can be combined:
+
+```python
+cached = cache(store, ttl=300, max_content_size=1_048_576, max_listing_size=500)
+```
+
+To limit the total number of cache entries regardless of type, use
+`max_entries`. When exceeded, the least-recently-used entry is evicted:
+
+```python
+cached = cache(store, ttl=300, max_entries=1000)
+```
 
 ## Cache Statistics
 

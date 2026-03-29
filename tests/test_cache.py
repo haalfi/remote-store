@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import tempfile
 import time
 from typing import Any
 
@@ -274,7 +275,6 @@ class TestCachedReads:
 
     @pytest.mark.spec("CACHE-006")
     def test_glob_cached(self) -> None:
-        import tempfile
 
         from remote_store.backends._local import LocalBackend
 
@@ -601,3 +601,166 @@ class TestThreadSafety:
         cached.exists("b.txt")
         cached.clear_cache()
         assert cached.stats.size == 0
+
+
+class TestListingSizeGuard:
+    """BK-123 M-1: max_listing_size prevents caching large listings."""
+
+    @pytest.fixture
+    def big_store(self) -> Store:
+        """Store with 5 files for testing listing size limits."""
+        backend = MemoryBackend()
+        s = Store(backend)
+        for i in range(5):
+            s.write(f"file{i}.txt", f"data{i}".encode())
+        s.write("sub/nested.txt", b"nested")
+        return s
+
+    @pytest.mark.spec("BK-123")
+    def test_listing_exceeding_limit_not_cached(self, big_store: Store) -> None:
+        """Listing with items > max_listing_size is NOT cached."""
+        cs = cache(big_store, ttl=60.0, max_listing_size=2)
+        # 5 files at root level -- exceeds limit of 2
+        list(cs.list_files("", recursive=True))
+        list(cs.list_files("", recursive=True))
+        # Both calls should be misses (second call hits backend again)
+        assert cs.stats.misses == 2
+        assert cs.stats.hits == 0
+
+    @pytest.mark.spec("BK-123")
+    def test_listing_within_limit_is_cached(self, big_store: Store) -> None:
+        """Listing with items <= max_listing_size IS cached."""
+        cs = cache(big_store, ttl=60.0, max_listing_size=10)
+        list(cs.list_files("", recursive=True))
+        list(cs.list_files("", recursive=True))
+        assert cs.stats.misses == 1
+        assert cs.stats.hits == 1
+
+    @pytest.mark.spec("BK-123")
+    def test_default_none_always_caches(self, big_store: Store) -> None:
+        """max_listing_size=None (default) always caches."""
+        cs = cache(big_store, ttl=60.0)
+        list(cs.list_files("", recursive=True))
+        list(cs.list_files("", recursive=True))
+        assert cs.stats.hits == 1
+
+    @pytest.mark.spec("BK-123")
+    @pytest.mark.parametrize(
+        ("method", "args", "kwargs"),
+        [
+            pytest.param("list_files", ("",), {"recursive": True}, id="list_files"),
+            pytest.param("list_folders", ("",), {}, id="list_folders"),
+            pytest.param("iter_children", ("",), {}, id="iter_children"),
+        ],
+    )
+    def test_all_listing_methods_respect_guard(
+        self, method: str, args: tuple[Any, ...], kwargs: dict[str, Any]
+    ) -> None:
+        """All listing methods respect max_listing_size guard."""
+        backend = MemoryBackend()
+        s = Store(backend)
+        # Create structure: 3 folders + 3 files at root so every listing > 2
+        s.write("a.txt", b"a")
+        s.write("d1/x.txt", b"x")
+        s.write("d2/y.txt", b"y")
+        s.write("d3/z.txt", b"z")
+        cs = cache(s, ttl=60.0, max_listing_size=2)
+        list(getattr(cs, method)(*args, **kwargs))
+        list(getattr(cs, method)(*args, **kwargs))
+        # Result has 3+ items > limit of 2, so second call is a miss
+        assert cs.stats.misses == 2
+        assert cs.stats.hits == 0
+
+    @pytest.mark.spec("BK-123")
+    def test_glob_respects_listing_size_guard(self) -> None:
+        """glob() respects max_listing_size guard."""
+        from remote_store.backends._local import LocalBackend
+
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            inner = Store(backend)
+            inner.write("a.txt", b"a")
+            inner.write("b.txt", b"b")
+            inner.write("c.txt", b"c")
+            cs = cache(inner, ttl=60.0, max_listing_size=2)
+            list(cs.glob("*.txt"))
+            list(cs.glob("*.txt"))
+            # 3 matches > limit of 2
+            assert cs.stats.misses == 2
+            assert cs.stats.hits == 0
+
+    @pytest.mark.spec("BK-123")
+    def test_listing_at_exact_limit_is_cached(self, big_store: Store) -> None:
+        """Listing with item count == max_listing_size IS cached (boundary)."""
+        # big_store has 6 files (5 root + 1 nested)
+        cs = cache(big_store, ttl=60.0, max_listing_size=6)
+        list(cs.list_files("", recursive=True))
+        list(cs.list_files("", recursive=True))
+        assert cs.stats.misses == 1
+        assert cs.stats.hits == 1
+
+    @pytest.mark.spec("BK-123")
+    @pytest.mark.parametrize("value", [0, -1], ids=["zero", "negative"])
+    def test_max_listing_size_invalid_raises(self, value: int) -> None:
+        """max_listing_size <= 0 raises ValueError."""
+        backend = MemoryBackend()
+        s = Store(backend)
+        with pytest.raises(ValueError, match="max_listing_size must be positive"):
+            cache(s, ttl=60.0, max_listing_size=value)
+
+
+class TestPreFlightSizeCheck:
+    """BK-123 M-2: pre-flight size check skips content caching when file_info is cached."""
+
+    @pytest.mark.spec("BK-123")
+    def test_cached_file_info_skips_content_caching(self) -> None:
+        """When file_info is cached with size > max_content_size, read_bytes skips caching."""
+        backend = MemoryBackend()
+        s = Store(backend)
+        s.write("big.txt", b"x" * 100)
+        cs = cache(s, ttl=60.0, max_content_size=50)
+
+        # First: cache file_info (size=100, which exceeds max_content_size=50)
+        fi = cs.get_file_info("big.txt")
+        assert fi.size == 100
+        assert cs.stats.misses == 1
+
+        # Now read_bytes -- should read from backend but NOT cache the content
+        data = cs.read_bytes("big.txt")
+        assert data == b"x" * 100
+        assert cs.stats.misses == 2  # read_bytes is a miss
+
+        # Second read_bytes -- should be a miss again (content was not cached)
+        data2 = cs.read_bytes("big.txt")
+        assert data2 == b"x" * 100
+        assert cs.stats.misses == 3  # still a miss
+        assert cs.stats.hits == 0  # no hits for read_bytes
+
+    @pytest.mark.spec("BK-123")
+    def test_no_cached_file_info_still_checks_size(self) -> None:
+        """Without cached file_info, read_bytes still checks content size after fetch."""
+        backend = MemoryBackend()
+        s = Store(backend)
+        s.write("big.txt", b"x" * 100)
+        cs = cache(s, ttl=60.0, max_content_size=50)
+
+        # read_bytes without prior get_file_info -- no pre-flight info available
+        data = cs.read_bytes("big.txt")
+        assert data == b"x" * 100
+        # Content exceeds max_content_size, so it should not be cached
+        data2 = cs.read_bytes("big.txt")
+        assert data2 == b"x" * 100
+        assert cs.stats.hits == 0  # never cached
+
+    @pytest.mark.spec("BK-123")
+    def test_small_file_info_cached_content_still_cached(self) -> None:
+        """When file_info is cached with size <= max_content_size, content IS cached."""
+        backend = MemoryBackend()
+        s = Store(backend)
+        s.write("small.txt", b"hi")
+        cs = cache(s, ttl=60.0, max_content_size=50)
+
+        cs.get_file_info("small.txt")  # cache file_info (size=2)
+        cs.read_bytes("small.txt")  # should cache content (2 <= 50)
+        cs.read_bytes("small.txt")  # should be a hit
+        assert cs.stats.hits == 1

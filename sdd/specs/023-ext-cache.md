@@ -67,6 +67,7 @@ def cache(
     *,
     ttl: float = 300.0,
     max_content_size: int | None = None,
+    max_listing_size: int | None = None,
     max_entries: int | None = None,
     cache_backend: CacheBackend | None = None,
 ) -> CachedStore: ...
@@ -78,6 +79,10 @@ def cache(
   Must be positive; `ValueError` on `<= 0`.
 - `max_content_size`: Maximum byte length for `read_bytes` caching.
   Files larger than this are returned without caching. `None` means
+  unlimited. Must be positive when set; `ValueError` on `<= 0`.
+- `max_listing_size`: Maximum item count for listing caches
+  (`iter_children`, `list_files`, `list_folders`, `glob`). Listings
+  with more items than this are returned without caching. `None` means
   unlimited. Must be positive when set; `ValueError` on `<= 0`.
 - `max_entries`: Maximum number of cache entries for the default
   `MemoryCache`. Least-recently-used entries are evicted when exceeded.
@@ -140,10 +145,10 @@ class CacheStats:
 | `is_folder(path)` | `("is_folder", path)` | `bool` |
 | `read_bytes(path)` | `("read_bytes", path)` | `bytes` |
 | `get_file_info(path)` | `("get_file_info", path)` | `FileInfo` |
-| `get_folder_info(path)` | `("get_folder_info", path)` | `FolderInfo` |
+| `get_folder_info(path, max_depth)` | `("get_folder_info", path, str(max_depth))` | `FolderInfo` |
 | `iter_children(path)` | `("iter_children", path)` | `tuple[FileInfo \| FolderEntry, ...]` |
-| `list_files(path, recursive, pattern)` | `("list_files", path, recursive, pattern)` | `tuple[FileInfo, ...]` |
-| `list_folders(path)` | `("list_folders", path)` | `tuple[FolderEntry, ...]` |
+| `list_files(path, recursive, pattern, max_depth)` | `("list_files", path, recursive_key, pattern_key, depth_key)` | `tuple[FileInfo, ...]` |
+| `list_folders(path, max_depth)` | `("list_folders", path, depth_key)` | `tuple[FolderEntry, ...]` |
 | `glob(pattern)` | `("glob", pattern)` | `tuple[FileInfo, ...]` |
 
 **Postconditions:**
@@ -154,6 +159,9 @@ class CacheStats:
   never cached -- subsequent calls retry the backend.
 - `read_bytes`: if `max_content_size` is set and `len(result) >
   max_content_size`, the result is returned but not cached.
+- Listing methods (`iter_children`, `list_files`, `list_folders`, `glob`):
+  if `max_listing_size` is set and `len(result) > max_listing_size`, the
+  result is returned but not cached.
 
 ### CACHE-007: Non-Cached Operations
 
