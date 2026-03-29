@@ -6,17 +6,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-### Fixed
-
-- **`MemoryCache.size()` no longer rebuilds dict** (BK-127 L-1): Replaced dict
-  comprehension with `sum()` generator — avoids transient 2× memory spike on
-  large caches.
-
-### Internal
-
-- Document `list()` materialisation in concurrent batch helpers (BK-127 L-2).
-- Clarify module-level sqlalchemy import rationale (BK-127 L-3).
-
 ### Added
 
 - **`max_listing_size` parameter for `cache()`** (BK-123 M-1): Skips caching
@@ -121,6 +110,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **`MemoryCache.size()` no longer rebuilds dict** (BK-127 L-1): Replaced dict
+  comprehension with `sum()` generator — avoids transient 2× memory spike on
+  large caches. Trade-off: `size()` no longer evicts expired entries as a
+  side-effect; they remain in `_data` until the next `get()`, `clear_prefix()`,
+  or `clear_prefixes()` call.
+
 - **Replaced mypy `ignore_missing_imports` overrides with proper type stubs**
   (BK-015): Removed 8 `[[tool.mypy.overrides]]` entries that suppressed
   import errors for packages shipping `py.typed` or having PyPI stubs
@@ -193,6 +188,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   and filtered listing patterns.
 
 ### Internal
+
+- Document `list()` materialisation in concurrent batch helpers (BK-127 L-2).
+- Clarify module-level sqlalchemy import rationale (BK-127 L-3).
 
 - **Ruff PT rules enabled** (BK-124b): `flake8-pytest-style` enforced in
   `pyproject.toml`. 152 auto-fixed, 13 `match=` added to `pytest.raises`,
