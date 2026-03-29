@@ -201,9 +201,7 @@ class MemoryCache:
         """Return count of non-expired entries."""
         now = time.monotonic()
         with self._lock:
-            # Lazy cleanup during size check
-            self._data = {k: v for k, v in self._data.items() if v[1] > now}
-            return len(self._data)
+            return sum(1 for v in self._data.values() if v[1] > now)
 
 
 # ---------------------------------------------------------------------------

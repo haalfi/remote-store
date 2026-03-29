@@ -30,6 +30,9 @@ if TYPE_CHECKING:
 
     from remote_store._types import WritableContent
 
+# Module-level import (unlike _sftp/_s3/_azure which defer to __init__/method
+# bodies).  Acceptable because this module is already behind a try/except in
+# backends/__init__.py, so sqlalchemy is never loaded unless explicitly opted-in.
 try:
     import sqlalchemy as sa
     from sqlalchemy import Engine, event

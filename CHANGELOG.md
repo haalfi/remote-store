@@ -6,6 +6,17 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- **`MemoryCache.size()` no longer rebuilds dict** (BK-127 L-1): Replaced dict
+  comprehension with `sum()` generator — avoids transient 2× memory spike on
+  large caches.
+
+### Internal
+
+- Document `list()` materialisation in concurrent batch helpers (BK-127 L-2).
+- Clarify module-level sqlalchemy import rationale (BK-127 L-3).
+
 ### Added
 
 - **`max_listing_size` parameter for `cache()`** (BK-123 M-1): Skips caching

@@ -39,17 +39,6 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-### Performance & Memory
-
-- [ ] **BK-127 — Audit-005 low-priority polish (L-1, L-2, L-3)**
-  Remainder of BK-123. From [audit-005](audits/audit-005-laziness-memory.md):
-  - L-1: `ext/cache.py` — `MemoryCache.size()` rebuilds dict on every call;
-    replace with `sum()` generator expression to avoid transient 2x memory.
-  - L-2: `ext/batch.py` — document `list()` materialisation in concurrent
-    batch method docstrings.
-  - L-3: `backends/_sqlalchemy.py` — defer `sqlalchemy` import to `__init__`
-    body (minor consistency issue only; already guarded — skip or comment-only).
-
 ### Testing
 
 - [ ] **BK-126 — CI assertion/mock checks + existing test migration**
