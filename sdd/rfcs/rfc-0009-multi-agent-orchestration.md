@@ -33,7 +33,7 @@ remote-store has grown to ~2MB across 41 source files, 55 test files, and 72 doc
 | Role | Scope | Domain Focus | SDD Foundation |
 |------|-------|--------------|-----------------|
 | **Orchestrator** (meta-role) | Break down task, delegate, post-implementation ripple-checks & CHANGELOG, compile results | Task decomposition, SDD enforcement, cross-file consistency | Mandatory: CLAUDE.md, BACKLOG, ripple-check table |
-| **Backend Expert** | `src/remote_store/` + `src/remote_store/backends/` — ABC contract, error mapping, capabilities | Backend architecture, error handling, capability invariants | Specs 003 (Backend ABC), 005 (error model), backends specs |
+| **Store & Backend Expert** | `src/remote_store/` + `src/remote_store/backends/` — Store API, Backend ABC, error mapping, capabilities | Store core logic, backend architecture, error handling, capability invariants | Specs 001 (Store API), 003 (Backend ABC), 005 (error model), backends specs |
 | **Extension Expert** | `src/remote_store/ext/` — extension implementation, public API contract | Extension API design, Store contract usage, ADR-0008 pattern | Specs 024-043 (extensions), ADR-0008 (architecture), DESIGN.md |
 | **Testing Expert** | `tests/` — test design, coverage targets, edge cases, conformance fixtures | Pytest patterns, spec traceability, coverage rigor | Specs (all via @pytest.mark.spec), DESIGN.md (conventions) |
 | **Documentation Expert** | `docs-src/`, `guides/`, docstrings — user guides, API reference, navigation | Diátaxis structure, docstring format, mkdocs nav | DESIGN.md, DOCUMENTATION.md, example docstrings |
@@ -114,7 +114,7 @@ Output format:
 **Orchestrator workflow:**
 1. Pre-check: BACKLOG entry exists, spec drafted
 2. Spawn 4 experts in parallel (Task tool):
-   - **Backend Expert** → `src/remote_store/backends/_gcs.py` (ABC impl, error mapping, capabilities)
+   - **Store & Backend Expert** → `src/remote_store/backends/_gcs.py` (ABC impl, error mapping, capabilities)
    - **Testing Expert** → `tests/test_gcs_conformance.py` (conformance fixtures, coverage)
    - **Documentation Expert** → `guides/backends/gcs.md` (user guide, docstrings)
 3. Orchestrator post-processing:
@@ -163,7 +163,7 @@ Agreed approach: **Claude Code native (KISS), 4 subject matter experts, orchestr
 
 2. **System prompt templates needed:**
    - Orchestrator prompt (pre-check, delegate, post-process)
-   - Backend Expert prompt (src/remote_store/ + backends/)
+   - Store & Backend Expert prompt (src/remote_store/ + backends/)
    - Extension Expert prompt (src/remote_store/ext/)
    - Testing Expert prompt (tests/)
    - Documentation Expert prompt (docs-src/, guides/)
@@ -178,7 +178,7 @@ Agreed approach: **Claude Code native (KISS), 4 subject matter experts, orchestr
 - **Code conventions:** `sdd/DESIGN.md` (experts follow domain-specific conventions)
 - **Documentation standards:** `sdd/DOCUMENTATION.md`, `CONTRIBUTING.md` (authoritative document format)
 - **Expert domain specs:**
-  - **Backend:** `sdd/specs/003-backend-adapter-contract.md`, `sdd/specs/005-error-model.md`, backend-specific specs
+  - **Store & Backend:** `sdd/specs/001-store-api.md`, `sdd/specs/003-backend-adapter-contract.md`, `sdd/specs/005-error-model.md`, backend-specific specs
   - **Extension:** `sdd/specs/024-041.md` (extensions), `sdd/adrs/0008-extension-architecture.md`
   - **Testing:** `sdd/DESIGN.md` (test conventions), `@pytest.mark.spec("ID")` traceability
   - **Documentation:** `sdd/DOCUMENTATION.md` (Diátaxis structure), docstring examples in codebase
