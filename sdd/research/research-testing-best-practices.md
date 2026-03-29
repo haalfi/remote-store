@@ -248,7 +248,7 @@ Jay Fields (*Working Effectively with Unit Tests*) makes this explicit:
 > It's acceptable to delete tests that don't provide value. Tests are an
 > investment; if the return is negative, cut your losses.
 
-### 3.4 How Major Python Projects Test
+### 3.3 How Major Python Projects Test
 
 | Project | Key Strategy | Mocking Approach |
 |---------|-------------|-----------------|
@@ -262,7 +262,7 @@ Jay Fields (*Working Effectively with Unit Tests*) makes this explicit:
 (dependency injection, adapter pattern, functional core) to make code
 testable without mocks.
 
-### 3.5 Hynek Schlawack: "Don't Mock What You Don't Own"
+### 3.4 Hynek Schlawack: "Don't Mock What You Don't Own"
 
 Key principles from [hynek.me](https://hynek.me/articles/what-to-mock-in-5-mins/):
 
@@ -277,7 +277,7 @@ His talk "Design Pressure" (PyCon US 2025) extends this: if you need many
 mocks, your code has a design problem. Push I/O to the edges ("Functional
 Core, Imperative Shell") and the core becomes trivially testable.
 
-### 3.6 Ned Batchelder: Coverage Is Necessary But Not Sufficient
+### 3.5 Ned Batchelder: Coverage Is Necessary But Not Sufficient
 
 From his [blog](https://nedbatchelder.com/blog/tag/coverage.html) and talks:
 
@@ -289,7 +289,7 @@ From his [blog](https://nedbatchelder.com/blog/tag/coverage.html) and talks:
 it doesn't prevent tests with no assertions from inflating the number. We
 need quality metrics alongside quantity metrics.
 
-### 3.7 Property-Based Testing (Hypothesis)
+### 3.6 Property-Based Testing (Hypothesis)
 
 Hypothesis generates random inputs and checks invariant properties:
 
@@ -312,7 +312,7 @@ def test_write_read_roundtrip(data: bytes) -> None:
 Hillel Wayne's insight: **Contracts + Property-Based Testing = Integration
 Tests**. Define invariants as contracts, let Hypothesis find violations.
 
-### 3.8 Mutation Testing
+### 3.7 Mutation Testing
 
 Mutation testing answers: "If a bug were introduced, would my tests catch it?"
 
@@ -333,7 +333,7 @@ the tested function survives because nothing checks the output.
 Mutation scores above 80% indicate strong fault-detection capability.
 Consider running mutmut on a weekly CI schedule (it's too slow for every PR).
 
-### 3.9 Testing Retry and Concurrency Behavior
+### 3.8 Testing Retry and Concurrency Behavior
 
 Two known gaps (M-14 concurrency, M-17 retry) require specific patterns:
 
@@ -477,7 +477,7 @@ Add to the PR template as a reviewer aid:
 - [ ] Failure path covered for new/changed public API methods
 ```
 
-### 4.4 CLAUDE.md Additions
+### 4.5 CLAUDE.md Additions
 
 Add to the CLAUDE.md `## Code conventions` or a new `## Testing` section:
 
