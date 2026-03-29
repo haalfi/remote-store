@@ -123,7 +123,8 @@ class TestPydanticToRegistryConfig:
             extra_key: str = "unexpected"
 
         with pytest.warns(UserWarning, match="Unknown top-level config keys"):
-            from_pydantic(ExtraConfig())
+            result = from_pydantic(ExtraConfig())
+        assert result is not None
 
     @pytest.mark.spec("CFG-015")
     def test_store_options_preserved(self) -> None:
@@ -170,4 +171,5 @@ class TestPydanticBaseSettingsAndContract:
 
         model = SimpleConfig(backends={"mem": BackendEntry(type="memory")}, stores={})
         with pytest.warns(DeprecationWarning, match="use from_pydantic"):
-            pydantic_to_registry_config(model)
+            result = pydantic_to_registry_config(model)
+        assert result is not None

@@ -312,7 +312,8 @@ class TestHttpHealthCheck:
         """HTTP-013: check_health() sends HEAD to base_url."""
         httpserver.expect_request("/health/", method="HEAD").respond_with_data(b"", status=200)
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/health/"), http_client="urllib")
-        b.check_health()  # Should not raise
+        result = b.check_health()
+        assert result is None
 
     @pytest.mark.spec("BE-020")
     def test_check_health_failure(self, httpserver: HTTPServer) -> None:
@@ -362,7 +363,8 @@ class TestHttpLifecycle:
     def test_close_is_callable(self, backend: ReadOnlyHttpBackend) -> None:
         """HTTP-015: close() is callable and safe."""
         backend.close()
-        backend.close()  # Double-close is safe
+        result = backend.close()  # Double-close is safe
+        assert result is None
 
     def test_unwrap_urllib_transport(self, backend: ReadOnlyHttpBackend) -> None:
         """unwrap(UrllibTransport) returns the transport."""
@@ -655,7 +657,9 @@ class TestHttpErrorPaths:
 
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/stream/"), http_client="urllib")
         # Create a mock response whose body raises on read
-        broken_body = MagicMock()
+        import io
+
+        broken_body = MagicMock(spec=io.BytesIO)
         broken_body.read.side_effect = OSError("connection reset")
         mock_resp = HttpResponse(status=200, headers={}, body=broken_body)
         from unittest.mock import patch
@@ -772,7 +776,8 @@ class TestHeadFallback:
         httpserver.expect_request("/cdn/", method="GET").respond_with_data(b"\x00", status=200)
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/cdn/"), http_client="urllib")
         b._head_blocked = True
-        b.check_health()  # Should not raise, no HEAD handler needed
+        result = b.check_health()
+        assert result is None
 
     @pytest.mark.spec("HTTP-FALLBACK-001")
     def test_check_health_raises_when_both_fail(self, httpserver: HTTPServer) -> None:
@@ -869,6 +874,7 @@ class TestHttpTransportAutoDetection:
         """Explicit transport can be created (if installed)."""
         try:
             b = ReadOnlyHttpBackend(base_url="http://example.com/", http_client=client)
+            assert b is not None
             b.close()
         except ImportError:
             pytest.skip(f"{client} not installed")

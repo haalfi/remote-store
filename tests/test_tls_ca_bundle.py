@@ -61,13 +61,15 @@ class TestValidateTlsCaBundle:
 
     @pytest.mark.spec("TLS-004")
     def test_none_is_valid(self) -> None:
-        _validate_tls_ca_bundle(None)
+        result = _validate_tls_ca_bundle(None)
+        assert result is None
 
     @pytest.mark.spec("TLS-004")
     def test_valid_file_is_accepted(self, tmp_path: Path) -> None:
         cert = tmp_path / "ca.pem"
         cert.write_text("fake cert")
-        _validate_tls_ca_bundle(str(cert))
+        result = _validate_tls_ca_bundle(str(cert))
+        assert result is None
 
     @pytest.mark.spec("TLS-004")
     def test_nonexistent_path_raises(self) -> None:

@@ -88,6 +88,7 @@ class TestParquetSerializer:
         )
         result = mgr.load_input(in_ctx)
         pandas.testing.assert_frame_equal(result, df)
+        assert len(result) == 3
 
     @pytest.mark.spec("DAG-004")
     def test_serialize_arrow_table(self) -> None:
@@ -116,7 +117,9 @@ class TestParquetSerializer:
         table = pa.table([pa.array([10, 20])], names=["val"])
 
         # Mock a Polars-like DataFrame with to_arrow()
-        polars_like = mock.MagicMock()
+        import polars as pl
+
+        polars_like = mock.MagicMock(spec=pl.DataFrame)
         polars_like.to_arrow.return_value = table
         del polars_like.dtypes  # Ensure it doesn't match the pandas branch
 
@@ -151,7 +154,7 @@ class TestParquetSerializer:
 
         serializer = ParquetSerializer()
         sentinel = object()
-        mock_table = mock.MagicMock()
+        mock_table = mock.MagicMock(spec=pa.Table)
         mock_table.to_pandas.return_value = sentinel
         with mock.patch("pyarrow.parquet.read_table", return_value=mock_table):
             result = serializer.deserialize(parquet_bytes)
@@ -339,4 +342,5 @@ class TestDeprecatedAlias:
         from remote_store.ext.dagster import remote_store_io_manager
 
         with pytest.warns(DeprecationWarning, match="use dagster_io_manager"):
-            remote_store_io_manager(store)
+            result = remote_store_io_manager(store)
+        assert result is not None

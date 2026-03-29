@@ -58,7 +58,8 @@ class TestCapabilitySetRequire:
     @pytest.mark.spec("CAP-004")
     def test_require_passes(self) -> None:
         cs = CapabilitySet({Capability.READ})
-        cs.require(Capability.READ)
+        result = cs.require(Capability.READ)
+        assert result is None
 
     @pytest.mark.spec("CAP-004")
     def test_require_raises(self) -> None:

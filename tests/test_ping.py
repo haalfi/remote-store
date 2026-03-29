@@ -23,9 +23,11 @@ if TYPE_CHECKING:
 
 
 def _s3_backend(bucket: str, side_effect: Any = None) -> Any:
+    from s3fs import S3FileSystem
+
     from remote_store.backends._s3 import S3Backend
 
-    s3_mock = MagicMock()
+    s3_mock = MagicMock(spec=S3FileSystem)
     if side_effect is None:
         s3_mock.s3.head_bucket.return_value = {}
     else:
@@ -36,24 +38,28 @@ def _s3_backend(bucket: str, side_effect: Any = None) -> Any:
 
 
 def _sftp_backend(stat_side_effect: Any = None) -> Any:
+    from paramiko import SFTPAttributes, SFTPClient, SSHClient
+
     from remote_store.backends._sftp import SFTPBackend
 
-    sftp_mock = MagicMock()
+    sftp_mock = MagicMock(spec=SFTPClient)
     if stat_side_effect is not None:
         sftp_mock.stat.side_effect = stat_side_effect
     else:
-        sftp_mock.stat.return_value = MagicMock()
+        sftp_mock.stat.return_value = MagicMock(spec=SFTPAttributes)
     backend = SFTPBackend(host="example.com", username="user", password="pass")
     backend._sftp_client = sftp_mock
-    backend._ssh_client = MagicMock()
+    backend._ssh_client = MagicMock(spec=SSHClient)
     backend._ssh_client.get_transport.return_value.is_active.return_value = True
     return backend, sftp_mock
 
 
 def _azure_backend(side_effect: Any = None) -> Any:
+    from azure.storage.blob import ContainerClient
+
     from remote_store.backends._azure import AzureBackend
 
-    cc_mock = MagicMock()
+    cc_mock = MagicMock(spec=ContainerClient)
     if side_effect is not None:
         cc_mock.get_container_properties.side_effect = side_effect
     else:
@@ -75,31 +81,35 @@ def _azure_backend(side_effect: Any = None) -> Any:
 class TestStorePingAndDefaults:
     @pytest.mark.spec("PING-002")
     def test_default_check_health_is_noop(self) -> None:
-        MemoryBackend().check_health()  # should not raise
+        result = MemoryBackend().check_health()
+        assert result is None
 
     @pytest.mark.spec("PING-008")
     def test_memory_backend_always_healthy(self) -> None:
-        Store(MemoryBackend()).ping()  # should not raise
+        result = Store(MemoryBackend()).ping()
+        assert result is None
 
     @pytest.mark.spec("PING-001")
     def test_ping_delegates_to_check_health(self) -> None:
         backend = MemoryBackend()
-        backend.check_health = MagicMock()  # type: ignore[method-assign]
-        Store(backend).ping()
+        backend.check_health = MagicMock(spec=MemoryBackend.check_health)  # type: ignore[method-assign]
+        result = Store(backend).ping()
         backend.check_health.assert_called_once()
+        assert result is None
 
     @pytest.mark.spec("PING-001")
     def test_ping_propagates_exception(self) -> None:
         backend = MemoryBackend()
-        backend.check_health = MagicMock(  # type: ignore[method-assign]
-            side_effect=BackendUnavailable("down", backend="memory"),
-        )
+        mock_check = MagicMock(spec=MemoryBackend.check_health)
+        mock_check.side_effect = BackendUnavailable("down", backend="memory")
+        backend.check_health = mock_check  # type: ignore[method-assign]
         with pytest.raises(BackendUnavailable, match="down"):
             Store(backend).ping()
 
     @pytest.mark.spec("PING-001")
     def test_child_store_ping(self) -> None:
-        Store(MemoryBackend()).child("subdir").ping()  # should not raise
+        result = Store(MemoryBackend()).child("subdir").ping()
+        assert result is None
 
 
 # ---------------------------------------------------------------------------
@@ -110,7 +120,8 @@ class TestStorePingAndDefaults:
 class TestLocalCheckHealth:
     @pytest.mark.spec("PING-003")
     def test_healthy_local(self, tmp_path: Path) -> None:
-        LocalBackend(root=str(tmp_path)).check_health()
+        result = LocalBackend(root=str(tmp_path)).check_health()
+        assert result is None
 
     @pytest.mark.spec("PING-003")
     def test_local_missing_root(self, tmp_path: Path) -> None:
@@ -136,8 +147,9 @@ class TestS3CheckHealth:
     @pytest.mark.spec("PING-004")
     def test_s3_healthy(self) -> None:
         backend, s3_mock = _s3_backend("test-bucket")
-        backend.check_health()
+        result = backend.check_health()
         s3_mock.s3.head_bucket.assert_called_once_with(Bucket="test-bucket")
+        assert result is None
 
     @pytest.mark.spec("PING-004")
     @pytest.mark.parametrize(
@@ -168,13 +180,16 @@ class TestS3CheckHealth:
     ],
 )
 def test_s3_pyarrow_health(side_effect: Exception | None, expected: type[Exception] | None) -> None:
+    from pyarrow.fs import FileInfo as PyArrowFileInfo
+    from pyarrow.fs import S3FileSystem as PyArrowS3FileSystem
+
     from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
-    pa_mock = MagicMock()
+    pa_mock = MagicMock(spec=PyArrowS3FileSystem)
     if side_effect:
         pa_mock.get_file_info.side_effect = side_effect
     else:
-        pa_mock.get_file_info.return_value = MagicMock()
+        pa_mock.get_file_info.return_value = MagicMock(spec=PyArrowFileInfo)
     backend = S3PyArrowBackend(bucket="test-bucket")
     backend._pa_fs_instance = pa_mock
     if expected:
@@ -199,8 +214,10 @@ def test_sftp_healthy() -> None:
 
 @pytest.mark.spec("PING-006")
 def test_sftp_not_found() -> None:
+    from paramiko import SFTPAttributes
+
     err = OSError(errno.ENOENT, "No such file")
-    backend, _ = _sftp_backend(stat_side_effect=[MagicMock(), err])
+    backend, _ = _sftp_backend(stat_side_effect=[MagicMock(spec=SFTPAttributes), err])
     with pytest.raises(NotFound):
         backend.check_health()
 
@@ -208,8 +225,9 @@ def test_sftp_not_found() -> None:
 @pytest.mark.spec("PING-007")
 def test_azure_healthy() -> None:
     backend, cc_mock = _azure_backend()
-    backend.check_health()
+    result = backend.check_health()
     cc_mock.get_container_properties.assert_called_once()
+    assert result is None
 
 
 @pytest.mark.spec("PING-007")
@@ -250,9 +268,9 @@ class TestPingObserve:
 
         errors: list[Any] = []
         backend = MemoryBackend()
-        backend.check_health = MagicMock(  # type: ignore[method-assign]
-            side_effect=BackendUnavailable("down", backend="memory"),
-        )
+        mock_check = MagicMock(spec=MemoryBackend.check_health)
+        mock_check.side_effect = BackendUnavailable("down", backend="memory")
+        backend.check_health = mock_check  # type: ignore[method-assign]
         observed = observe(Store(backend), on_error=lambda e: errors.append(e))
         with pytest.raises(BackendUnavailable):
             observed.ping()

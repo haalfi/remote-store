@@ -88,6 +88,7 @@ class TestQuickstart:
 
         getattr(qs, demo_func)(str(tmp_path / subdir))
         _verify_hello_store(tmp_path, subdir)
+        assert (tmp_path / subdir).exists()
 
 
 # ---------------------------------------------------------------------------
@@ -386,7 +387,8 @@ class TestRetryPolicy:
     def test_demo(self):
         from examples.retry_policy import demo
 
-        demo()
+        result = demo()
+        assert result is None
 
 
 class TestHealthCheck:
@@ -394,7 +396,8 @@ class TestHealthCheck:
     def test_demo(self, memory_store: Store):
         from examples.health_check import demo
 
-        demo(memory_store)
+        result = demo(memory_store)
+        assert result is None
 
 
 # ---------------------------------------------------------------------------

@@ -8,7 +8,7 @@ Authoritative source for test **quality** rules in `tests/`. Companion to
 
 ## Rules
 
-1. **Every test must have at least one meaningful assertion** [CI-enforced — pending]
+1. **Every test must have at least one meaningful assertion** [CI-enforced]
    — "no crash" is not a test. Public API methods need a failure-path test too
    (`pytest.raises` with `match=`).
 
@@ -18,7 +18,7 @@ Authoritative source for test **quality** rules in `tests/`. Companion to
 3. **Never assert on private attributes** [review-enforced]
    — verify through observable behavior. Exception: `# internal: no public observable`.
 
-4. **Always use `spec=` with `MagicMock`** [CI-enforced — pending]
+4. **Always use `spec=` with `MagicMock`** [CI-enforced]
    — `MagicMock()` without `spec` is banned; use `spec=RealClass` or `create_autospec`.
 
 5. **Don't mock what you don't own** [review-enforced]

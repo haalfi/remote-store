@@ -66,7 +66,8 @@ class TestMemoryCache:
 
     @pytest.mark.spec("CACHE-002")
     def test_delete_missing_is_noop(self, mcache: MemoryCache) -> None:
-        mcache.delete(("missing",))  # should not raise
+        result = mcache.delete(("missing",))
+        assert result is None
 
     @pytest.mark.spec("CACHE-002")
     def test_clear(self, mcache: MemoryCache) -> None:
@@ -193,14 +194,16 @@ class TestFactory:
     @pytest.mark.spec("CACHE-015")
     def test_close_delegates(self, store: Store) -> None:
         cs = cache(store, ttl=60.0)
-        cs.close()  # should not raise
+        result = cs.close()
+        assert result is None
 
     def test_cached_store_warns(self, store: Store) -> None:
         """cached_store() emits DeprecationWarning."""
         from remote_store.ext.cache import cached_store
 
         with pytest.warns(DeprecationWarning, match="use cache"):
-            cached_store(store, ttl=60.0)
+            result = cached_store(store, ttl=60.0)
+        assert result is not None
 
 
 class TestCacheStats:

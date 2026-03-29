@@ -360,4 +360,5 @@ def test_double_star_non_segment_raises() -> None:
 @pytest.mark.spec("GLOB-014")
 def test_double_star_valid_segments() -> None:
     for pattern in ("**/error.log", "logs/**", "a/**/b.txt", "**"):
-        _pattern_to_regex(pattern)  # should not raise
+        result = _pattern_to_regex(pattern)
+        assert result is not None

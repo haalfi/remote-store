@@ -465,7 +465,8 @@ class TestS3PyArrowOperations:
 
     @pytest.mark.spec("S3PA-016")
     def test_delete_folder_recursive_missing_ok(self, s3pa_backend: Backend) -> None:
-        s3pa_backend.delete_folder("ghost", recursive=True, missing_ok=True)
+        result = s3pa_backend.delete_folder("ghost", recursive=True, missing_ok=True)
+        assert result is None
 
     @pytest.mark.spec("S3PA-016")
     def test_delete_folder_non_recursive_not_found(self, s3pa_backend: Backend) -> None:
@@ -583,12 +584,14 @@ class TestS3PyArrowLifecycle:
 
     @pytest.mark.spec("S3PA-020")
     def test_close_is_callable(self, s3pa_backend: Backend) -> None:
-        s3pa_backend.close()
+        result = s3pa_backend.close()
+        assert result is None
 
     @pytest.mark.spec("S3PA-020")
     def test_close_idempotent(self, s3pa_backend: Backend) -> None:
         s3pa_backend.close()
-        s3pa_backend.close()
+        result = s3pa_backend.close()
+        assert result is None
 
     @pytest.mark.spec("S3PA-021")
     def test_unwrap_pyarrow(self, s3pa_backend: Backend) -> None:
@@ -741,7 +744,8 @@ class TestS3PyArrowDelete:
         assert s3pa_backend.exists("del.txt") is False
 
     def test_delete_missing_ok(self, s3pa_backend: Backend) -> None:
-        s3pa_backend.delete("nope.txt", missing_ok=True)
+        result = s3pa_backend.delete("nope.txt", missing_ok=True)
+        assert result is None
 
     def test_delete_missing_raises(self, s3pa_backend: Backend) -> None:
         with pytest.raises(NotFound):

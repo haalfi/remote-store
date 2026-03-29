@@ -37,6 +37,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   experts (1 round), consolidation step, review loop (max 2 rounds), user as
   tie-breaker. ADR-0020 supersedes ADR-0019. Based on BK-123 learnings.
 
+- [x] **BK-126 — CI assertion/mock checks + existing test migration**
+  CI enforcement of Testing Rules 1 and 4: AST-based assertion checker
+  (`scripts/check_test_assertions.py`) and MagicMock spec checker
+  (`scripts/check_mock_spec.py`) wired into CI lint job. Migration: added
+  `spec=` to all 67 unconstrained `MagicMock()` calls, added meaningful
+  assertions to 87 test functions. Enabled `--cov-branch` for branch
+  coverage. Added `pytest-gremlins>=1.5` for mutation testing (diagnostic,
+  no CI threshold yet). Hatch scripts: `check-test-quality`, `mutate`,
+  `mutate-report`. Remainder of BK-124b.
+
 - [x] **BK-125 — Multi-agent orchestration for complex tasks**
   `/orchestrate` skill: orchestrator + 4 domain experts (Store & Backend,
   Extension, Testing, Documentation) via Claude Code Agent tool. Parallel

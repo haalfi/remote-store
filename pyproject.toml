@@ -168,6 +168,7 @@ dependencies = [
   "httpx>=0.24.0",
   "matplotlib>=3.8",
   "sqlalchemy>=2.0",
+  "pytest-gremlins>=1.5",
 ]
 
 [tool.hatch.envs.default.scripts]
@@ -177,6 +178,7 @@ format-check = "ruff format --check src/ tests/ examples/"
 typecheck = "mypy src/"
 test = "pytest"
 test-cov = "pytest --cov=remote_store --cov-report=term-missing --cov-report=xml --cov-fail-under=95"
+test-cov-branch = "pytest --cov=remote_store --cov-branch --cov-report=term-missing --cov-report=xml"
 # Core examples only — cloud backend examples (examples/backends/) need
 # real services and credentials, so they are excluded from `hatch run examples`.
 examples = [
@@ -219,6 +221,9 @@ bench-report-comparative-md = "python benchmarks/report.py --comparative --markd
 bench-report-user = "python benchmarks/report.py --user"
 bench-latency-matrix = "python benchmarks/run_latency_matrix.py"
 bench-charts = "python -m benchmarks.charts"
+check-test-quality = ["python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests"]
+mutate = "pytest --gremlins src/remote_store"
+mutate-report = "pytest --gremlins src/remote_store --gremlin-report=html"
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"

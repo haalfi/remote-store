@@ -39,15 +39,6 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-### Testing
-
-- [ ] **BK-126 — CI assertion/mock checks + existing test migration**
-  Remainder of BK-124b. CI checks: AST grep for tests without `assert` or
-  `pytest.raises` (Rule 1), grep for `MagicMock(` without `spec=` (Rule 4).
-  Existing test migration: fix ~35 no-assertion tests, add `spec=` to ~67
-  `MagicMock` calls, replace private-attribute assertions.
-  See [research](research/research-testing-best-practices.md) §§ 4.3–5.
-
 ---
 
 ## Ideas

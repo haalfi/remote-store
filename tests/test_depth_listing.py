@@ -275,7 +275,9 @@ class TestSFTPBackendNativeDepth:
     @staticmethod
     def _make_attr(filename: str, *, is_dir: bool = False) -> MagicMock:
         """Create a mock SFTPAttributes entry."""
-        attr = MagicMock()
+        from paramiko import SFTPAttributes
+
+        attr = MagicMock(spec=SFTPAttributes)
         attr.filename = filename
         mode = stat_module.S_IFDIR | 0o755 if is_dir else stat_module.S_IFREG | 0o644
         attr.st_mode = mode
@@ -313,8 +315,10 @@ class TestSFTPBackendNativeDepth:
                 raise OSError("not found")
             return tree[path]
 
-        backend._sftp = MagicMock()
-        backend._sftp.listdir_attr = MagicMock(side_effect=listdir_attr)
+        from paramiko import SFTPClient
+
+        backend._sftp = MagicMock(spec=SFTPClient)
+        backend._sftp.listdir_attr = MagicMock(spec=SFTPClient.listdir_attr, side_effect=listdir_attr)
         return backend
 
     @pytest.mark.spec("DEPTH-003")

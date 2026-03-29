@@ -113,7 +113,8 @@ class TestStoreFullAPI:
 
     @pytest.mark.spec("STORE-008")
     def test_delete_missing_ok(self, store: Store) -> None:
-        store.delete("nonexistent.txt", missing_ok=True)
+        result = store.delete("nonexistent.txt", missing_ok=True)
+        assert result is None
 
     @pytest.mark.spec("STORE-008")
     def test_delete_not_found(self, store: Store) -> None:
@@ -325,12 +326,16 @@ class TestGetFolderInfoRoot:
         """Store with root_path='' should return root FolderInfo."""
         s = Store(backend=MemoryBackend(), root_path="")
         s.write("a.txt", b"aaa")
-        _assert_root_folder_info(s.get_folder_info(""), count=1, size=3)
+        fi = s.get_folder_info("")
+        _assert_root_folder_info(fi, count=1, size=3)
+        assert fi.file_count == 1
 
     def test_store_get_folder_info_with_root(self, store: Store) -> None:
         """Store with root_path='data' — get_folder_info('') returns root."""
         store.write("r.txt", b"rr")
-        _assert_root_folder_info(store.get_folder_info(""), count=1, size=2)
+        fi = store.get_folder_info("")
+        _assert_root_folder_info(fi, count=1, size=2)
+        assert fi.file_count == 1
 
     def test_backend_get_folder_info_empty_string(self) -> None:
         """Backend.get_folder_info('') should not raise InvalidPath."""
