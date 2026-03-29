@@ -156,4 +156,4 @@ class TestRemotePathNormalization:
 
 Each test method carries a `@pytest.mark.spec("ID")` marker for traceability.
 
-For test **quality** rules (assertions, mocking, coverage), see [TESTING.md](TESTING.md).
+For test **quality** rules (assertions, mocking, coverage), see `sdd/TESTING.md`.

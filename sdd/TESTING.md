@@ -3,8 +3,8 @@
 ## Intent & Scope
 
 Authoritative source for test **quality** rules in `tests/`. Companion to
-[DESIGN.md](DESIGN.md) § 11 (test style). Derived from
-[research-testing-best-practices](research/research-testing-best-practices.md).
+`sdd/DESIGN.md` § 11 (test style). Derived from
+`sdd/research/research-testing-best-practices.md`.
 
 ## Rules
 
