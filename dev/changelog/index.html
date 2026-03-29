@@ -6092,6 +6092,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/043-resolution-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    043: Resolution Plan Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8928,6 +8956,14 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong><code>resolve()</code> introspection API</strong> (ID-120): <code>Store.resolve(key)</code> returns a
+  frozen <code>ResolutionPlan</code> dataclass describing how a key maps to its storage
+  location, backend identity, and backend-specific context. Available on all
+  backends with no I/O. Enables debugging ("which backend handled this key?"),
+  principled cache key derivation, and future composite store composition.
+  Spec 043.</p>
+</li>
 <li>
 <p><strong><code>max_listing_size</code> parameter for <code>cache()</code></strong> (BK-123 M-1): Skips caching
   listing results (<code>list_files</code>, <code>list_folders</code>, <code>iter_children</code>, <code>glob</code>) that

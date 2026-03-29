@@ -5162,6 +5162,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/043-resolution-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    043: Resolution Plan Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -7245,7 +7273,7 @@ use a Registry with declarative config:</p>
 ** Via <code>posix_rename</code> on most OpenSSH servers; falls back to copy+delete.</p>
 <p>All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only (<code>{READ, METADATA}</code>). SQL Query is read-only (<code>{READ, LIST, METADATA, GLOB, SEEKABLE_READ}</code>) — it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback <code>ext.glob.glob_files()</code>. Seekable reads are available on all backends via <code>Store.read_seekable()</code> — zero-overhead on seekable backends, HTTP Range reader on Azure, spool fallback on HTTP. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
 <h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
-<p>The Store provides 28 methods across read/write, browsing, management, and utility. Key highlights:</p>
+<p>The Store provides 29 methods across read/write, browsing, management, and utility. Key highlights:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>             <span class="c1"># → str</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>   <span class="c1"># write string</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;path/to/file.csv&quot;</span><span class="p">)</span>            <span class="c1"># → bytes</span>
@@ -7261,7 +7289,8 @@ use a Registry with declarative config:</p>
 <a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>
 <a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;subfolder&quot;</span><span class="p">)</span>                        <span class="c1"># scoped child store</span>
 <a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">ATOMIC_WRITE</span><span class="p">)</span>         <span class="c1"># runtime capability check</span>
-<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>                                    <span class="c1"># health check</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>               <span class="c1"># resolution plan (introspection)</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>                                    <span class="c1"># health check</span>
 </code></pre></div>
 <p>For the full method list, see the <a href="https://docs.remotestore.dev/stable/api/store/">API reference</a>. All write, move, and copy methods accept <code>overwrite=True</code> to replace existing files.</p>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
@@ -7357,7 +7386,7 @@ use a Registry with declarative config:</p>
 <td><code>open()</code> only</td>
 <td>pathlib-style</td>
 <td>~10 methods</td>
-<td>28 methods</td>
+<td>29 methods</td>
 </tr>
 <tr>
 <td>Backends</td>

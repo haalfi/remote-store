@@ -2692,6 +2692,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#remote_store.ResolutionPlan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;ResolutionPlan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5148,6 +5159,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/specs/043-resolution-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    043: Resolution Plan Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -7002,6 +7041,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#remote_store.ResolutionPlan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;ResolutionPlan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7531,10 +7581,119 @@ to avoid redundancy and keep <code>name</code> in sync with <code>path</code>.</
 
     </div>
 
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="remote_store.ResolutionPlan" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">ResolutionPlan</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#remote_store.ResolutionPlan" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ResolutionPlan</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">native_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">details</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">])</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Describes how a key maps to its storage location.</p>
+<p>Returned by <code>Backend.resolve()</code> and <code>Store.resolve()</code>. The plan
+captures the resolution strategy, backend identity, resolved key,
+native path, and backend-specific context -- all without performing
+any I/O.</p>
+<p><code>details</code> is wrapped in <code>types.MappingProxyType</code> via
+<code>__post_init__</code> to prevent accidental mutation at runtime.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>kind</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Resolution strategy identifier (e.g. <code>"local"</code>,
+<code>"s3"</code>, <code>"azure"</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>backend</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Human-readable backend identifier (typically
+<code>Backend.name</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>key</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The resolved key (store-relative after
+<code>Store.resolve()</code>, backend-relative after
+<code>Backend.resolve()</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>native_path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Backend-native location string (same as
+<code>Backend.native_path()</code> output).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>details</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Backend-specific resolution context.  Immutable at
+runtime.  Values should be JSON-serializable primitives.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
 </div><h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../getting-started/">Getting Started</a> — using FileInfo and metadata in Store operations</li>
 <li><a href="../../examples/file-operations/">File Operations example</a> — reading, writing, and inspecting files</li>
+<li><a href="../store/#introspection">Store.resolve()</a> — returns a ResolutionPlan for key introspection</li>
 </ul>
 
 
