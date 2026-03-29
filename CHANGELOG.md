@@ -8,7 +8,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
-- **RFC-0009: Multi-agent orchestration** (ID-125): Draft RFC proposing
+- **RFC-0009: Multi-agent orchestration** (BK-125): Draft RFC proposing
   orchestrator + 4 subject matter experts for complex multi-concern tasks.
   Claude Code native (Task tool) approach. No code change — process only.
 

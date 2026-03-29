@@ -84,6 +84,14 @@ Items graduate through the SDD pipeline:
   a proposal, not a commitment. Multi-agent orchestration work (PR #305)
   may influence which rules and enforcement mechanisms are adopted.
 
+### Process & Orchestration
+
+- [ ] **BK-125 — Multi-agent orchestration for complex tasks**
+  RFC-0009: orchestrator + 4 subject matter experts (Backend, Extension,
+  Testing, Documentation) via Claude Code Task tool. Parallelize independent
+  concerns while preserving SDD discipline.
+  [RFC](rfcs/rfc-0009-multi-agent-orchestration.md).
+
 ### Developer Tooling
 
 - [ ] **BK-016 — Eliminate avoidable `# type: ignore` comments in src/**
@@ -204,14 +212,6 @@ Items graduate through the SDD pipeline:
 
   [Research](research/research-dagster-extension.md),
   [showcase architecture](research/research-medallion-dagster-showcase.md).
-
-### Process & Orchestration
-
-- [ ] **ID-125 — Multi-agent orchestration for complex tasks**
-  RFC-0009: orchestrator + 4 subject matter experts (Backend, Extension,
-  Testing, Documentation) via Claude Code Task tool. Parallelize independent
-  concerns while preserving SDD discipline.
-  [RFC](rfcs/rfc-0009-multi-agent-orchestration.md).
 
 ### Documentation & Developer Experience
 
