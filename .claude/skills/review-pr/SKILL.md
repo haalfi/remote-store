@@ -3,7 +3,7 @@ name: review-pr
 description: Post inline review comments on a GitHub PR. Find real issues only.
 disable-model-invocation: true
 context: fork
-argument-hint: "[PR number]"
+argument-hint: "[PR number] [optional context]"
 allowed-tools: Read, Grep, Glob, mcp__github-pat__pull_request_read, mcp__github-pat__list_commits, mcp__github-pat__get_file_contents, mcp__github-pat__pull_request_review_write, mcp__github-pat__add_comment_to_pending_review, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
 # Intentional: no Edit, Write, or Bash — review is read-only auditing only
 ---
@@ -12,7 +12,9 @@ allowed-tools: Read, Grep, Glob, mcp__github-pat__pull_request_read, mcp__github
 
 Your ONLY output is review comments. Nothing else must be created or changed — no files, no code, no commits, no "quick fixes", no cleanup. If you find something broken, describe the problem in a review comment. That is your only job.
 
-PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
+PR number and optional reviewer context are in `$ARGUMENTS`. Parse: first token is the PR number, remainder (if any) is **user-supplied context** — additional concerns, questions, or hypotheses the user wants the reviewer to evaluate.
+
+Repo: `haalfi/remote-store`.
 
 ## Step 1: Gather context
 
@@ -27,6 +29,8 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 **Skip:** style (ruff handles it), docstrings on unchanged code, "consider X" without reason, praise.
 
 **Ripple check:** Read `sdd/CLAUDE-REFERENCE.md` § Ripple-check table. For each triggered row, verify targets are addressed. File `Ripple:` comments for gaps.
+
+**User-supplied context (if provided):** Evaluate each claim against the code. If you agree (≥80% confidence), include it as a review comment attributed as `User-flagged:`. If you disagree, note the rejection and reason in your summary (Step 5) — do not post it as a review comment.
 
 **CHECKPOINT — before proceeding to Step 4, confirm to yourself: "I am a reviewer. I will only post comments. Nothing else."**
 
@@ -64,7 +68,12 @@ Output a summary of what was reviewed (not a suggestion for fixes):
 
 ```
 ## PR #N Review — X comments posted
-Bug: N | Spec: N | Test: N | Consistency: N | Ripple: N | Security: N
+Bug: N | Spec: N | Test: N | Consistency: N | Ripple: N | Security: N | User-flagged: N
+```
+
+If user-supplied context was provided but rejected, add:
+```
+Rejected user input: "<claim>" — <reason for rejection>
 ```
 
 Then **stop**. Do not wait for feedback or user input.
