@@ -38,7 +38,7 @@ def store() -> Store:
 class TestChecksum:
     @pytest.mark.spec("INT-001")
     @pytest.mark.parametrize(
-        "algorithm,file,expected_algo,expected_hex",
+        ("algorithm", "file", "expected_algo", "expected_hex"),
         [
             pytest.param("sha256", "hello.txt", "sha256", HELLO_SHA256, id="sha256_default"),
             pytest.param("md5", "hello.txt", "md5", HELLO_MD5, id="md5"),
@@ -83,7 +83,7 @@ class TestChecksum:
 class TestVerifyAndVerifyHex:
     @pytest.mark.spec("INT-002")
     @pytest.mark.parametrize(
-        "expected,algorithm,result",
+        ("expected", "algorithm", "result"),
         [
             pytest.param(HELLO_SHA256, "sha256", True, id="matching"),
             pytest.param("0000", "sha256", False, id="not_matching"),
@@ -106,7 +106,7 @@ class TestVerifyAndVerifyHex:
 
     @pytest.mark.spec("INT-003")
     @pytest.mark.parametrize(
-        "algorithm,expected_hex,result",
+        ("algorithm", "expected_hex", "result"),
         [
             pytest.param("sha256", HELLO_SHA256, True, id="matching"),
             pytest.param("sha256", "0000", False, id="not_matching"),
@@ -131,7 +131,7 @@ class TestVerifyAndVerifyHex:
 class TestContentDigest:
     @pytest.mark.spec("INT-005")
     @pytest.mark.parametrize(
-        "algorithm,expected_algo,expected_hex",
+        ("algorithm", "expected_algo", "expected_hex"),
         [
             pytest.param("sha256", "sha256", HELLO_SHA256, id="sha256"),
             pytest.param("md5", "md5", HELLO_MD5, id="md5"),

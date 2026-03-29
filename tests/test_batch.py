@@ -35,12 +35,12 @@ def _fresh(files: tuple[str, ...] = ()) -> Store:
     return s
 
 
-@pytest.fixture()
+@pytest.fixture
 def store() -> Store:
     return _fresh()
 
 
-@pytest.fixture()
+@pytest.fixture
 def populated(store: Store) -> Store:
     for p in _FILES_ABC:
         store.write(p, b"data")
@@ -61,7 +61,7 @@ class TestBatchResult:
 
     @pytest.mark.spec("BATCH-001")
     @pytest.mark.parametrize(
-        "succeeded,failed,expected_all,expected_total",
+        ("succeeded", "failed", "expected_all", "expected_total"),
         [
             (("a", "b"), {}, True, 2),
             (("a",), {"b": NotFound("b")}, False, 2),
@@ -87,7 +87,7 @@ class TestBatchResult:
 
 
 @pytest.mark.parametrize(
-    "func,args,expected_type",
+    ("func", "args", "expected_type"),
     [
         pytest.param(batch_delete, [], BatchResult, id="delete"),
         pytest.param(batch_copy, [], BatchResult, id="copy"),
@@ -139,7 +139,7 @@ def test_copy_all(concurrent: bool) -> None:
 
 @pytest.mark.parametrize("concurrent", _CONCURRENT)
 @pytest.mark.parametrize(
-    "func_factory,expected_ok,expected_fail_key",
+    ("func_factory", "expected_ok", "expected_fail_key"),
     [
         pytest.param(
             lambda: (batch_delete, _fresh(("a.txt", "c.txt")), ["a.txt", "b.txt", "c.txt"]),
@@ -170,7 +170,7 @@ def test_error_continues(
 
 @pytest.mark.parametrize("concurrent", _CONCURRENT)
 @pytest.mark.parametrize(
-    "func,args",
+    ("func", "args"),
     [
         pytest.param(batch_delete, ["x.txt", "y.txt"], id="delete"),
         pytest.param(batch_copy, [("x.txt", "x2.txt"), ("y.txt", "y2.txt")], id="copy"),
@@ -249,7 +249,7 @@ def test_delete_missing_ok(concurrent: bool) -> None:
 
 @pytest.mark.parametrize("concurrent", _CONCURRENT)
 @pytest.mark.parametrize(
-    "func,args,check",
+    ("func", "args", "check"),
     [
         pytest.param(batch_delete, [], _EMPTY_BR, id="delete"),
         pytest.param(batch_copy, [], _EMPTY_BR, id="copy"),
@@ -268,7 +268,7 @@ def test_empty_paths(store: Store, func: Any, args: list[Any], check: Any, concu
 
 @pytest.mark.spec("BATCH-012")
 @pytest.mark.parametrize(
-    "overwrite,concurrent",
+    ("overwrite", "concurrent"),
     [
         pytest.param(False, False, id="no_overwrite"),
         pytest.param(True, False, id="overwrite"),
@@ -291,7 +291,7 @@ def test_copy_overwrite(overwrite: bool, concurrent: bool) -> None:
 
 @pytest.mark.spec("BATCH-015")
 @pytest.mark.parametrize(
-    "files,paths,expected",
+    ("files", "paths", "expected"),
     [
         (["a.txt", "b.txt"], ["a.txt", "b.txt", "c.txt"], {"a.txt": True, "b.txt": True, "c.txt": False}),
         (["x.txt"], ["x.txt"], {"x.txt": True}),
@@ -359,7 +359,7 @@ def test_child_store(concurrent: bool) -> None:
 
 @pytest.mark.spec("BATCH-019")
 @pytest.mark.parametrize(
-    "excluded_cap,call",
+    ("excluded_cap", "call"),
     [
         pytest.param(Capability.DELETE, lambda s: batch_delete(s, ["a.txt"]), id="delete"),
         pytest.param(Capability.DELETE, lambda s: batch_delete(s, ["a.txt"], stop_on_error=False), id="delete_no_stop"),
@@ -388,7 +388,7 @@ def test_capability_gating(excluded_cap: Capability, call: Any) -> None:
 
 @pytest.mark.spec("BATCH-021")
 @pytest.mark.parametrize(
-    "func,setup,args",
+    ("func", "setup", "args"),
     [
         pytest.param(batch_delete, ("a.txt", "b.txt"), ["a.txt", "b.txt"], id="delete"),
         pytest.param(batch_copy, ("a.txt",), [("a.txt", "a2.txt")], id="copy"),

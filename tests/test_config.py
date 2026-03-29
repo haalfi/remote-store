@@ -33,7 +33,7 @@ _SP = StoreProfile(backend="local", root_path="data", options={"key": "val"})
 
 @pytest.mark.spec("CFG-001")
 @pytest.mark.parametrize(
-    "field,expected", [("type", "s3"), ("options", {"bucket": "my-bucket"})], ids=["type", "options"]
+    ("field", "expected"), [("type", "s3"), ("options", {"bucket": "my-bucket"})], ids=["type", "options"]
 )
 def test_backend_config_fields(field: str, expected: Any) -> None:
     assert getattr(_BC, field) == expected
@@ -46,7 +46,7 @@ def test_backend_config_defaults() -> None:
 
 @pytest.mark.spec("CFG-002")
 @pytest.mark.parametrize(
-    "field,expected",
+    ("field", "expected"),
     [("backend", "local"), ("root_path", "data"), ("options", {"key": "val"})],
     ids=["backend", "root_path", "options"],
 )
@@ -55,7 +55,7 @@ def test_store_profile_fields(field: str, expected: Any) -> None:
 
 
 @pytest.mark.spec("CFG-002")
-@pytest.mark.parametrize("field,expected", [("root_path", ""), ("options", {})], ids=["root_path", "options"])
+@pytest.mark.parametrize(("field", "expected"), [("root_path", ""), ("options", {})], ids=["root_path", "options"])
 def test_store_profile_defaults(field: str, expected: Any) -> None:
     assert getattr(StoreProfile(backend="local"), field) == expected
 
@@ -123,7 +123,7 @@ def test_from_dict_minimal() -> None:
 
 @pytest.mark.spec("CFG-006")
 @pytest.mark.parametrize(
-    "factory,attr,value",
+    ("factory", "attr", "value"),
     [
         pytest.param(lambda: BackendConfig(type="local"), "type", "s3", id="BackendConfig"),
         pytest.param(lambda: StoreProfile(backend="local"), "backend", "s3", id="StoreProfile"),
@@ -148,13 +148,15 @@ class TestSecret:
         assert Secret("my-key").reveal() == "my-key"
 
     @pytest.mark.spec("SEC-001")
-    @pytest.mark.parametrize("func,expected", [(repr, "Secret('***')"), (str, "***")], ids=["repr", "str"])
+    @pytest.mark.parametrize(("func", "expected"), [(repr, "Secret('***')"), (str, "***")], ids=["repr", "str"])
     def test_masked_output(self, func: Any, expected: str) -> None:
         assert func(Secret("super-secret")) == expected
         assert "super-secret" not in func(Secret("super-secret"))
 
     @pytest.mark.spec("SEC-001")
-    @pytest.mark.parametrize("a,b,equal", [("abc", "abc", True), ("abc", "xyz", False)], ids=["same", "different"])
+    @pytest.mark.parametrize(
+        ("a", "b", "equal"), [("abc", "abc", True), ("abc", "xyz", False)], ids=["same", "different"]
+    )
     def test_eq(self, a: str, b: str, equal: bool) -> None:
         assert (Secret(a) == Secret(b)) is equal
 
@@ -169,7 +171,7 @@ class TestSecret:
         assert {a, b} == {a}
 
     @pytest.mark.spec("SEC-001")
-    @pytest.mark.parametrize("val,expected", [("x", True), ("", False)], ids=["truthy", "falsy"])
+    @pytest.mark.parametrize(("val", "expected"), [("x", True), ("", False)], ids=["truthy", "falsy"])
     def test_bool(self, val: str, expected: bool) -> None:
         assert bool(Secret(val)) is expected
 
@@ -193,7 +195,7 @@ class TestSecret:
 
     @pytest.mark.spec("SEC-002")
     @pytest.mark.parametrize(
-        "action,check",
+        ("action", "check"),
         [
             pytest.param(
                 lambda: pickle.loads(pickle.dumps(Secret("roundtrip"))),
@@ -220,12 +222,12 @@ class TestSecret:
         ],
     )
     def test_unsupported_operations(self, action: Any) -> None:
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="Secret"):
             action(Secret("abc"))
 
 
 @pytest.mark.parametrize(
-    "inp,expected",
+    ("inp", "expected"),
     [(Secret("x"), "x"), ("plain", "plain"), (None, None)],
     ids=["secret", "str", "none"],
 )
@@ -243,7 +245,7 @@ class TestFromDictSecretWrapping:
 
     @pytest.mark.spec("SEC-003")
     @pytest.mark.parametrize(
-        "backend_type,options,secret_keys,non_secret_keys",
+        ("backend_type", "options", "secret_keys", "non_secret_keys"),
         [
             ("s3", {"bucket": "b", "key": "AKID", "secret": "SK"}, ["key", "secret"], ["bucket"]),
             (
@@ -296,7 +298,7 @@ class TestFromDictSecretWrapping:
 
 @pytest.mark.spec("SEC-005")
 @pytest.mark.parametrize(
-    "policy_str,enum_name",
+    ("policy_str", "enum_name"),
     [
         pytest.param("auto", "AUTO_ADD", id="auto"),
         pytest.param("tofu", "TRUST_ON_FIRST_USE", id="tofu"),
@@ -342,7 +344,7 @@ class TestSecretRedactionFilter:
 
     @pytest.mark.spec("SEC-007")
     @pytest.mark.parametrize(
-        "msg,args,expected",
+        ("msg", "args", "expected"),
         [
             ("key=%s secret=%s", (Secret("AKID"), Secret("SK")), ("***", "***")),
             ("val=%s", ("plain",), ("plain",)),
@@ -530,7 +532,7 @@ class TestRetryPolicy:
 
     @pytest.mark.spec("RET-001")
     @pytest.mark.parametrize(
-        "field,expected",
+        ("field", "expected"),
         [
             ("max_attempts", 3),
             ("backoff_base", 1.0),
@@ -555,7 +557,7 @@ class TestRetryPolicy:
 
     @pytest.mark.spec("RET-002")
     @pytest.mark.parametrize(
-        "kwargs,match",
+        ("kwargs", "match"),
         [
             ({"max_attempts": 0}, "max_attempts must be >= 1"),
             ({"max_attempts": -1}, "max_attempts must be >= 1"),
@@ -597,7 +599,7 @@ class TestRetryPolicy:
 
 @pytest.mark.spec("RET-004")
 @pytest.mark.parametrize(
-    "retry_arg,check",
+    ("retry_arg", "check"),
     [
         pytest.param(None, lambda bc: bc.retry is None, id="default_none"),
         pytest.param(
@@ -653,7 +655,7 @@ class TestFromDictRetryParsing:
 
     @pytest.mark.spec("RET-006")
     def test_retry_invalid_field_raises_type_error(self) -> None:
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="unexpected keyword argument"):
             RegistryConfig.from_dict(
                 {
                     "backends": {
@@ -675,7 +677,7 @@ class TestFromDictRetryParsing:
 
 @pytest.mark.spec("RET-005")
 @pytest.mark.parametrize(
-    "retry_arg,expect_none",
+    ("retry_arg", "expect_none"),
     [
         pytest.param(RetryPolicy(max_attempts=7), False, id="with_retry"),
         pytest.param(None, True, id="no_retry"),
@@ -703,7 +705,7 @@ def test_registry_retry_passthrough(retry_arg: Any, expect_none: bool) -> None:
 
 @pytest.mark.spec("RET-010")
 @pytest.mark.parametrize(
-    "retry_arg,expect_none",
+    ("retry_arg", "expect_none"),
     [
         pytest.param(RetryPolicy(max_attempts=5), False, id="with_retry"),
         pytest.param(None, True, id="default_none"),
@@ -771,7 +773,7 @@ def _remote_store_module() -> Any:
     ],
 )
 def test_backend_rejects_retry(factory: Any) -> None:
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
         factory(RetryPolicy())
 
 
@@ -782,7 +784,7 @@ def test_backend_rejects_retry(factory: Any) -> None:
 
 @pytest.mark.spec("RET-012")
 @pytest.mark.parametrize(
-    "rp_kwargs,expected_backoff,expected_jitter",
+    ("rp_kwargs", "expected_backoff", "expected_jitter"),
     [
         pytest.param({"max_attempts": 5, "backoff_base": 2.0, "jitter": 3.0}, 2, 3, id="integer_values"),
         pytest.param({"max_attempts": 3, "backoff_base": 0.5, "jitter": 0.7}, 1, 1, id="fractional_rounds_up"),

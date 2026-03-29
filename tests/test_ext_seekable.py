@@ -21,7 +21,7 @@ from remote_store.backends._memory import MemoryBackend
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture()
+@pytest.fixture
 def store() -> Store:
     """MemoryBackend store -- seekable streams."""
     s = Store(backend=MemoryBackend())
@@ -59,7 +59,7 @@ class TestCapabilityDeclaration:
 
     @pytest.mark.spec("SEEK-001")
     @pytest.mark.parametrize(
-        "backend_mod,backend_cls,declares",
+        ("backend_mod", "backend_cls", "declares"),
         [
             pytest.param("remote_store.backends._local", "LocalBackend", True, id="local"),
             pytest.param("remote_store.backends._memory", "MemoryBackend", True, id="memory"),

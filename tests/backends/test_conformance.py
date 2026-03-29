@@ -218,7 +218,7 @@ class TestBackendOpenAtomic:
     @pytest.mark.spec("SAW-004")
     def test_open_atomic_exception_cleanup(self, backend: Backend) -> None:
         _require(backend, Capability.ATOMIC_WRITE)
-        with pytest.raises(RuntimeError), backend.open_atomic("oat_fail.txt") as f:
+        with pytest.raises(RuntimeError, match="boom"), backend.open_atomic("oat_fail.txt") as f:  # noqa: PT012
             f.write(b"partial")
             raise RuntimeError("boom")
         assert not backend.exists("oat_fail.txt")
@@ -254,14 +254,14 @@ class TestBackendDelete:
     @pytest.mark.spec("BE-012")
     @pytest.mark.spec("BE-013")
     @pytest.mark.parametrize(
-        "method, target",
+        ("method", "target"),
         [
             pytest.param("delete", "missing.txt", id="file"),
             pytest.param("delete_folder", "nodir", id="folder"),
         ],
     )
     @pytest.mark.parametrize(
-        "missing_ok, expect_error",
+        ("missing_ok", "expect_error"),
         [
             pytest.param(False, True, id="not_found_raises"),
             pytest.param(True, False, id="missing_ok_passes"),
@@ -288,7 +288,7 @@ class TestBackendListing:
 
     @pytest.mark.spec("BE-014")
     @pytest.mark.parametrize(
-        "prefix, seeds, recursive, expected_names",
+        ("prefix", "seeds", "recursive", "expected_names"),
         [
             pytest.param(
                 "lf",
@@ -352,7 +352,7 @@ class TestBackendIterChildren:
 
     @pytest.mark.spec("ITER-004")
     @pytest.mark.parametrize(
-        "prefix, file_path, expect_files, expect_folders",
+        ("prefix", "file_path", "expect_files", "expect_folders"),
         [
             pytest.param("icf", "icf/x.txt", {"x.txt"}, set(), id="only_files"),
             pytest.param("ico", "ico/sub/y.txt", set(), {"sub"}, id="only_folders"),
@@ -426,14 +426,14 @@ class TestBackendMoveCopy:
         assert backend.read_bytes("cp_src.txt") == b"data"
         assert backend.read_bytes("cp_dst.txt") == b"data"
 
-    @pytest.mark.parametrize("op, cap", _MOVE_COPY_PARAMS)
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
     def test_not_found(self, backend: Backend, op: str, cap: Capability) -> None:
         """BE-018/BE-019: move/copy raise NotFound for missing source."""
         _require(backend, cap)
         with pytest.raises(NotFound):
             _do_op(backend, op, "missing.txt", "dst.txt")
 
-    @pytest.mark.parametrize("op, cap", _MOVE_COPY_PARAMS)
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
     def test_already_exists(self, backend: Backend, op: str, cap: Capability) -> None:
         """BE-018/BE-019: move/copy raise AlreadyExists when overwrite=False."""
         _require(backend, cap, Capability.WRITE)
@@ -442,7 +442,7 @@ class TestBackendMoveCopy:
             _do_op(backend, op, f"{op}1.txt", f"{op}2.txt", overwrite=False)
 
     @pytest.mark.parametrize(
-        "op, cap, src_exists_after",
+        ("op", "cap", "src_exists_after"),
         [
             pytest.param("move", Capability.MOVE, False, id="move"),
             pytest.param("copy", Capability.COPY, True, id="copy"),
@@ -572,7 +572,7 @@ class TestBackendGlob:
 
     @pytest.mark.spec("GLOB-018")
     @pytest.mark.parametrize(
-        "seeds, pattern, expected",
+        ("seeds", "pattern", "expected"),
         [
             pytest.param(
                 {"g/a.txt": b"a", "g/b.csv": b"b"},

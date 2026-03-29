@@ -147,7 +147,7 @@ _ALL_HOOK_CASES = [
 
 
 @pytest.mark.spec("OBS-003")
-@pytest.mark.parametrize("hook,setup_files,call,expected_op", _ALL_HOOK_CASES)
+@pytest.mark.parametrize(("hook", "setup_files", "call", "expected_op"), _ALL_HOOK_CASES)
 def test_hook_fires_for_operation(
     hook: str,
     setup_files: list[str],
@@ -171,7 +171,7 @@ def test_hook_fires_for_operation(
 
 @pytest.mark.spec("OBS-003")
 @pytest.mark.parametrize(
-    "hook,op",
+    ("hook", "op"),
     [
         pytest.param("on_copy", "copy", id="copy"),
         pytest.param("on_move", "move", id="move"),
@@ -549,7 +549,7 @@ _PROXY_CASES = [
 ]
 
 
-@pytest.mark.parametrize("setup_files,call,expected_op", _PROXY_CASES)
+@pytest.mark.parametrize(("setup_files", "call", "expected_op"), _PROXY_CASES)
 def test_proxy_coverage(setup_files: list[str], call: Any, expected_op: str) -> None:
     store = _make_store()
     for f in setup_files:

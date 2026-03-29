@@ -37,7 +37,7 @@ class TestStoreOpenAtomicLocal:
 
     @pytest.mark.spec("SAW-003")
     @pytest.mark.parametrize(
-        "chunks,expected",
+        ("chunks", "expected"),
         [
             pytest.param([b"hello world"], b"hello world", id="single_write"),
             pytest.param([b"chunk1-", b"chunk2-", b"chunk3"], b"chunk1-chunk2-chunk3", id="multi_chunk"),
@@ -52,7 +52,7 @@ class TestStoreOpenAtomicLocal:
     @pytest.mark.spec("SAW-004")
     def test_exception_path_no_partial_file(self, local_store: Store) -> None:
         """On exception, target path is unchanged (no partial file)."""
-        with pytest.raises(RuntimeError, match="deliberate"), local_store.open_atomic("fail.txt") as f:
+        with pytest.raises(RuntimeError, match="deliberate"), local_store.open_atomic("fail.txt") as f:  # noqa: PT012
             f.write(b"partial data")
             raise RuntimeError("deliberate failure")
         assert local_store.exists("fail.txt") is False
@@ -61,7 +61,7 @@ class TestStoreOpenAtomicLocal:
     def test_exception_path_preserves_existing(self, local_store: Store) -> None:
         """On exception, existing file at target path is unchanged."""
         local_store.write("existing.txt", b"original")
-        with (
+        with (  # noqa: PT012
             pytest.raises(RuntimeError, match="deliberate"),
             local_store.open_atomic("existing.txt", overwrite=True) as f,
         ):
@@ -119,14 +119,14 @@ class TestStoreOpenAtomicMemory:
 
     @pytest.mark.spec("SAW-004")
     def test_exception_path(self, memory_store: Store) -> None:
-        with pytest.raises(RuntimeError), memory_store.open_atomic("fail.txt") as f:
+        with pytest.raises(RuntimeError, match="boom"), memory_store.open_atomic("fail.txt") as f:  # noqa: PT012
             f.write(b"partial")
             raise RuntimeError("boom")
         assert memory_store.exists("fail.txt") is False
 
     @pytest.mark.spec("SAW-006")
     @pytest.mark.parametrize(
-        "overwrite,expect_error",
+        ("overwrite", "expect_error"),
         [
             pytest.param(False, True, id="already_exists"),
             pytest.param(True, False, id="overwrite"),
@@ -170,7 +170,7 @@ class TestObserveOpenAtomic:
             on_error=error_events.append,
         )
         if raise_error:
-            with pytest.raises(RuntimeError), observed.open_atomic("fail.txt") as f:
+            with pytest.raises(RuntimeError, match="boom"), observed.open_atomic("fail.txt") as f:  # noqa: PT012
                 f.write(b"fail")
                 raise RuntimeError("boom")
             assert len(events) == 1

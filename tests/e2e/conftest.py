@@ -161,7 +161,7 @@ sftp_skip = pytest.mark.skipif(not _sftp_available(), reason="SFTP container not
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture()
+@pytest.fixture
 def memory_lake() -> Iterator[Store]:
     """In-memory lake store (baseline, always available)."""
     backend = MemoryBackend()
@@ -170,7 +170,7 @@ def memory_lake() -> Iterator[Store]:
     store.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def s3_lake() -> Iterator[Store]:
     """S3 lake store backed by MinIO Docker."""
     pytest.importorskip("s3fs")
@@ -207,7 +207,7 @@ def s3_lake() -> Iterator[Store]:
     client.delete_bucket(Bucket=bucket)
 
 
-@pytest.fixture()
+@pytest.fixture
 def s3_pyarrow_lake() -> Iterator[Store]:
     """S3-PyArrow lake store backed by MinIO Docker."""
     pytest.importorskip("pyarrow")
@@ -245,7 +245,7 @@ def s3_pyarrow_lake() -> Iterator[Store]:
     client.delete_bucket(Bucket=bucket)
 
 
-@pytest.fixture()
+@pytest.fixture
 def azurite_lake() -> Iterator[Store]:
     """Azure lake store backed by Azurite Docker."""
     pytest.importorskip("azure.storage.filedatalake")
@@ -270,7 +270,7 @@ def azurite_lake() -> Iterator[Store]:
     service.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def sftp_lake() -> Iterator[Store]:
     """SFTP lake store backed by atmoz/sftp Docker."""
     pytest.importorskip("paramiko")

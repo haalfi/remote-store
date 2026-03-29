@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     from remote_store._backend import Backend
 
 
-@pytest.fixture()
+@pytest.fixture
 def sftp_backend(sftp_server: tuple[int, str]) -> Iterator[Backend]:
     """Create an SFTPBackend against the in-process SFTP server."""
     port, host_key_entry = sftp_server
@@ -713,7 +713,7 @@ class TestSFTPHostKeyPolicyCoercion:
     )
     def test_host_key_policy_string_coercion(self, input_str: str, expected: HostKeyPolicy | None) -> None:
         if expected is None:
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError, match="invalid"):
                 SFTPBackend(host="dummy", host_key_policy=input_str)
         else:
             backend = SFTPBackend(host="dummy", host_key_policy=input_str)

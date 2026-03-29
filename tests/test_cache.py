@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 from typing import Any
 
@@ -12,7 +13,7 @@ from remote_store.backends._memory import MemoryBackend
 from remote_store.ext.cache import CachedStore, MemoryCache, cache
 
 
-@pytest.fixture()
+@pytest.fixture
 def store() -> Store:
     backend = MemoryBackend()
     s = Store(backend)
@@ -22,12 +23,12 @@ def store() -> Store:
     return s
 
 
-@pytest.fixture()
+@pytest.fixture
 def cached(store: Store) -> CachedStore:
     return cache(store, ttl=60.0)
 
 
-@pytest.fixture()
+@pytest.fixture
 def mcache() -> MemoryCache:
     return MemoryCache()
 
@@ -40,7 +41,7 @@ class TestMemoryCache:
 
     @pytest.mark.spec("CACHE-002")
     @pytest.mark.parametrize(
-        "setup, key",
+        ("setup", "key"),
         [
             pytest.param(None, ("missing",), id="missing"),
             pytest.param(("x", 42, 0.01), ("x",), id="expired"),
@@ -52,14 +53,14 @@ class TestMemoryCache:
         if setup is not None:
             mcache.set((setup[0],), setup[1], ttl=setup[2])
             time.sleep(0.02)
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError, match=re.escape(str(key))):
             mcache.get(key)
 
     @pytest.mark.spec("CACHE-002")
     def test_delete(self, mcache: MemoryCache) -> None:
         mcache.set(("x",), 42, ttl=10.0)
         mcache.delete(("x",))
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError, match="x"):
             mcache.get(("x",))
 
     @pytest.mark.spec("CACHE-002")
@@ -105,14 +106,14 @@ class TestMemoryCache:
         mc.set(("b",), 2, ttl=10.0)
         mc.set(("c",), 3, ttl=10.0)
         assert mc.size() == 2
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError, match="a"):
             mc.get(("a",))
         assert mc.get(("b",)) == 2
         assert mc.get(("c",)) == 3
 
     @pytest.mark.spec("CACHE-002")
     @pytest.mark.parametrize(
-        "refresh_op, expected_a",
+        ("refresh_op", "expected_a"),
         [
             pytest.param("get", 1, id="access-refreshes"),
             pytest.param("set", 10, id="set-refreshes"),
@@ -129,7 +130,7 @@ class TestMemoryCache:
         mc.set(("c",), 3, ttl=10.0)  # should evict ("b",)
         assert mc.get(("a",)) == expected_a
         assert mc.get(("c",)) == 3
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError, match="b"):
             mc.get(("b",))
 
     @pytest.mark.spec("CACHE-002")
@@ -157,7 +158,7 @@ class TestFactory:
 
     @pytest.mark.spec("CACHE-003")
     @pytest.mark.parametrize(
-        "kwarg, val, match",
+        ("kwarg", "val", "match"),
         [
             pytest.param("ttl", 0, "ttl must be positive", id="ttl-zero"),
             pytest.param("ttl", -1, "ttl must be positive", id="ttl-negative"),
@@ -218,7 +219,7 @@ class TestCacheStats:
 class TestCachedReads:
     @pytest.mark.spec("CACHE-006")
     @pytest.mark.parametrize(
-        "method, args, kwargs",
+        ("method", "args", "kwargs"),
         [
             pytest.param("exists", ("a.txt",), {}, id="exists-true"),
             pytest.param("exists", ("missing.txt",), {}, id="exists-false"),
@@ -240,7 +241,7 @@ class TestCachedReads:
 
     @pytest.mark.spec("CACHE-006")
     @pytest.mark.parametrize(
-        "method, args, kwargs",
+        ("method", "args", "kwargs"),
         [
             pytest.param("list_files", ("",), {"recursive": True}, id="list_files"),
             pytest.param("list_folders", ("",), {}, id="list_folders"),
@@ -291,7 +292,7 @@ class TestCachedReads:
 
     @pytest.mark.spec("CACHE-006")
     @pytest.mark.parametrize(
-        "call1_kwargs, call2_kwargs",
+        ("call1_kwargs", "call2_kwargs"),
         [
             pytest.param({"recursive": True}, {"recursive": False}, id="different-recursive"),
             pytest.param({"pattern": None}, {"pattern": "None"}, id="none-vs-string-none"),
@@ -315,7 +316,7 @@ class TestCachedReads:
 
     @pytest.mark.spec("CACHE-006")
     @pytest.mark.parametrize(
-        "max_size, expected_hits",
+        ("max_size", "expected_hits"),
         [
             pytest.param(3, 0, id="large-content-not-cached"),
             pytest.param(100, 1, id="small-content-cached"),
@@ -408,7 +409,7 @@ class TestNonCached:
 class TestInvalidation:
     @pytest.mark.spec("CACHE-008")
     @pytest.mark.parametrize(
-        "write_method, write_args, write_kwargs",
+        ("write_method", "write_args", "write_kwargs"),
         [
             pytest.param("write", (b"updated",), {"overwrite": True}, id="write"),
             pytest.param("write_atomic", (b"atomic-update",), {"overwrite": True}, id="write_atomic"),
@@ -465,7 +466,7 @@ class TestInvalidation:
     @pytest.mark.spec("CACHE-008")
     def test_open_atomic_no_invalidation_on_error(self, cached: CachedStore) -> None:
         assert cached.read_bytes("a.txt") == b"alpha"
-        with pytest.raises(RuntimeError, match="abort"), cached.open_atomic("a.txt", overwrite=True) as f:
+        with pytest.raises(RuntimeError, match="abort"), cached.open_atomic("a.txt", overwrite=True) as f:  # noqa: PT012
             f.write(b"will be discarded")
             raise RuntimeError("abort")
         assert cached.read_bytes("a.txt") == b"alpha"
@@ -513,7 +514,7 @@ class TestInvalidation:
 class TestDriftProtection:
     @pytest.mark.spec("CACHE-011")
     @pytest.mark.parametrize(
-        "attr_kind, filter_fn",
+        ("attr_kind", "filter_fn"),
         [
             pytest.param(
                 "methods",

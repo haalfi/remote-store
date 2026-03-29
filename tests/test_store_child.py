@@ -43,7 +43,7 @@ class TestChildBasics:
 
     @pytest.mark.spec("CHILD-002")
     @pytest.mark.parametrize(
-        "parent_root,subpath,expected",
+        ("parent_root", "subpath", "expected"),
         [
             pytest.param("data", "sub", "data/sub", id="appends_to_parent"),
             pytest.param("", "sub", "sub", id="empty_parent_root"),

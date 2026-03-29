@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 REGION = "us-east-1"
 
 
-@pytest.fixture()
+@pytest.fixture
 def s3pa_backend(moto_server: str) -> Iterator[Backend]:
     """Create an S3PyArrowBackend against moto's mock S3 service."""
     bucket = f"test-pa-{uuid.uuid4().hex[:8]}"

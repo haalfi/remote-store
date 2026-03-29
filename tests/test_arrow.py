@@ -76,7 +76,7 @@ class TestConstruction:
 
     @pytest.mark.spec("PA-001")
     @pytest.mark.parametrize(
-        "kwargs,mat_expected,spill_expected",
+        ("kwargs", "mat_expected", "spill_expected"),
         [
             pytest.param({}, 64 * 1024 * 1024, 64 * 1024 * 1024, id="defaults"),
             pytest.param(
@@ -117,7 +117,7 @@ class TestConstruction:
 class TestPathNormalization:
     @pytest.mark.spec("PA-006")
     @pytest.mark.parametrize(
-        "raw,expected",
+        ("raw", "expected"),
         [
             pytest.param("/foo/bar", "foo/bar", id="strip_leading_slash"),
             pytest.param("foo/bar/", "foo/bar", id="strip_trailing_slash"),
@@ -144,7 +144,7 @@ class TestPathNormalization:
 class TestGetFileInfo:
     @pytest.mark.spec("PA-007")
     @pytest.mark.parametrize(
-        "setup_files,query,expected_type,expected_size",
+        ("setup_files", "query", "expected_type", "expected_size"),
         [
             pytest.param({"test.txt": b"hello"}, "test.txt", pafs.FileType.File, 5, id="file_type"),
             pytest.param({"dir/file.txt": b"data"}, "dir", pafs.FileType.Directory, None, id="folder_type"),
@@ -258,7 +258,7 @@ class TestGetFileInfoSelector:
 
     @pytest.mark.spec("PA-008")
     @pytest.mark.parametrize(
-        "allow_not_found,expect_empty",
+        ("allow_not_found", "expect_empty"),
         [
             pytest.param(True, True, id="allow_not_found_true"),
             pytest.param(False, False, id="allow_not_found_false"),
@@ -354,7 +354,7 @@ class TestOpenInputStream:
 class TestOpenInputFile:
     @pytest.mark.spec("PA-010")
     @pytest.mark.parametrize(
-        "use_local,content,threshold,description",
+        ("use_local", "content", "threshold", "description"),
         [
             pytest.param(False, b"small data", 1024, "small_file_buffer_reader", id="small_file"),
             pytest.param(True, b"stream me", 0, "threshold_zero_streams", id="threshold_zero"),
@@ -562,7 +562,7 @@ class TestTier1NativeFastPath:
 class TestOpenOutputStream:
     @pytest.mark.spec("PA-011")
     @pytest.mark.parametrize(
-        "filename,write_data,expected",
+        ("filename", "write_data", "expected"),
         [
             pytest.param("output.txt", b"written via pyarrow", b"written via pyarrow", id="write_round_trip"),
             pytest.param("meta.txt", b"data", b"data", id="metadata_ignored"),
@@ -622,7 +622,7 @@ class TestStoreSink:
 
     @pytest.mark.spec("PA-016")
     @pytest.mark.parametrize(
-        "data,spill_threshold,filename",
+        ("data", "spill_threshold", "filename"),
         [
             pytest.param(b"x" * 100, 10, "spill.txt", id="spill_to_disk"),
             pytest.param(b"", 1024, "empty.txt", id="empty_write"),
@@ -684,7 +684,7 @@ class TestMutationOps:
 
     @pytest.mark.spec("PA-015")
     @pytest.mark.parametrize(
-        "method,args",
+        ("method", "args"),
         [
             pytest.param("delete_dir", ("",), id="delete_dir_root"),
             pytest.param("delete_root_dir_contents", (), id="delete_root_dir_contents"),
@@ -752,7 +752,7 @@ _ERROR_MAPPING_CASES = [
 
 class TestErrorMapping:
     @pytest.mark.spec("PA-019")
-    @pytest.mark.parametrize("exc,expected_type", _ERROR_MAPPING_CASES)
+    @pytest.mark.parametrize(("exc", "expected_type"), _ERROR_MAPPING_CASES)
     def test_error_mapping(self, exc: Exception, expected_type: type) -> None:
         with pytest.raises(expected_type), _map_errors():
             raise exc
@@ -837,7 +837,7 @@ class TestIntegration:
 
 class TestHandlerEquality:
     @pytest.mark.parametrize(
-        "same_store,expect_eq",
+        ("same_store", "expect_eq"),
         [
             pytest.param(True, True, id="same_store"),
             pytest.param(False, False, id="different_store"),

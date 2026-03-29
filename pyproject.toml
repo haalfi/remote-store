@@ -278,8 +278,15 @@ markers = [
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "SIM", "TCH"]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "TCH", "PT"]
 ignore = ["UP045"]
+
+[tool.ruff.lint.flake8-pytest-style]
+raises-require-match-for = [
+    "ValueError", "TypeError", "KeyError", "RuntimeError",
+    "NotFound", "AlreadyExists", "CapabilityNotSupported",
+    "BackendUnavailable", "PermissionDenied",
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["remote_store"]

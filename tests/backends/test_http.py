@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from werkzeug.wrappers import Request, Response
 
 
-@pytest.fixture()
+@pytest.fixture
 def httpserver_with_files(httpserver: HTTPServer) -> HTTPServer:
     """Pre-seed an HTTP server with test files."""
     # Override respond_nohandler to return 404 instead of 500
@@ -59,7 +59,7 @@ def httpserver_with_files(httpserver: HTTPServer) -> HTTPServer:
     return httpserver
 
 
-@pytest.fixture()
+@pytest.fixture
 def backend(httpserver_with_files: HTTPServer) -> ReadOnlyHttpBackend:
     """Create a ReadOnlyHttpBackend pointed at the test server."""
     return ReadOnlyHttpBackend(
@@ -179,7 +179,7 @@ class TestHttpErrorMapping:
     """HTTP-006: Error mapping from HTTP status codes."""
 
     @pytest.mark.parametrize(
-        "status, path, error_type",
+        ("status", "path", "error_type"),
         [
             pytest.param(401, "secret.txt", PermissionDenied, id="401-permission-denied"),
             pytest.param(403, "forbidden.txt", PermissionDenied, id="403-permission-denied"),
@@ -327,7 +327,7 @@ class TestHttpUnsupportedOperations:
     """HTTP-014: Write/delete/move/copy raise CapabilityNotSupported."""
 
     @pytest.mark.parametrize(
-        "method, args",
+        ("method", "args"),
         [
             pytest.param("write", ("x.txt", b"data"), id="write"),
             pytest.param("write_atomic", ("x.txt", b"data"), id="write_atomic"),
@@ -404,7 +404,7 @@ class TestHttpConstructor:
         assert b.native_path("") == "http://example.com/data/"
 
     @pytest.mark.parametrize(
-        "url, match",
+        ("url", "match"),
         [
             pytest.param("", "must not be empty", id="empty"),
             pytest.param("ftp://example.com/data/", "http or https scheme", id="ftp-scheme"),
@@ -827,7 +827,7 @@ class TestParseContentRangeTotal:
     """Unit tests for _parse_content_range_total."""
 
     @pytest.mark.parametrize(
-        "header, expected",
+        ("header", "expected"),
         [
             pytest.param("bytes 0-0/12345", 12345, id="standard-range"),
             pytest.param("bytes 0-0/*", None, id="unknown-total"),
@@ -846,7 +846,7 @@ class TestParseRetryAfter:
     """Unit tests for _parse_retry_after."""
 
     @pytest.mark.parametrize(
-        "header, expected",
+        ("header", "expected"),
         [
             pytest.param("120", 120.0, id="integer-seconds"),
             pytest.param(None, None, id="none"),

@@ -86,7 +86,7 @@ class TestStoreBehavior:
             assert store.exists("a.txt")
 
     @pytest.mark.parametrize(
-        "root,match",
+        ("root", "match"),
         [
             pytest.param("../escape", r"\.\.", id="dotdot"),
             pytest.param("bad\0path", "null", id="null_byte"),
@@ -101,7 +101,7 @@ class TestStoreBehavior:
         assert store._root == "a/b/c"
 
     @pytest.mark.parametrize(
-        "root_a,root_b,same_backend,expected",
+        ("root_a", "root_b", "same_backend", "expected"),
         [
             pytest.param("data", "data", True, True, id="same_root_same_backend"),
             pytest.param("data", "other", True, False, id="diff_root_same_backend"),
@@ -146,7 +146,7 @@ _EMPTY_PATH_CASES: list[tuple[str, str, bool]] = [
 
 
 @pytest.mark.parametrize(
-    "method,path,needs_setup",
+    ("method", "path", "needs_setup"),
     _EMPTY_PATH_CASES,
     ids=[f"{m}({p!r})" for m, p, _ in _EMPTY_PATH_CASES],
 )
@@ -155,7 +155,7 @@ def test_empty_path_rejected(method: str, path: str, needs_setup: bool) -> None:
     store = Store(backend=MemoryBackend(), root_path="data")
     if needs_setup:
         store.write("src.txt", b"data")
-    with pytest.raises(InvalidPath):
+    with pytest.raises(InvalidPath):  # noqa: PT012
         if method == "move_dst":
             store.move("src.txt", path)
         elif method == "copy_dst":
@@ -185,7 +185,7 @@ _CONFIG_ERROR_CASES = [
 ]
 
 
-@pytest.mark.parametrize("data,exc,match", _CONFIG_ERROR_CASES)
+@pytest.mark.parametrize(("data", "exc", "match"), _CONFIG_ERROR_CASES)
 def test_config_from_dict_errors(data: dict[str, Any], exc: type, match: str) -> None:
     with pytest.raises(exc, match=match):
         RegistryConfig.from_dict(data)
@@ -199,7 +199,7 @@ class TestErrorRepr:
     """Cover error __repr__ and __str__ branches."""
 
     @pytest.mark.parametrize(
-        "err,fragments",
+        ("err", "fragments"),
         [
             pytest.param(
                 RemoteStoreError("boom"),
@@ -268,7 +268,7 @@ class TestValueObjects:
     )
     def test_remotepath_immutability(self, action: str) -> None:
         p = RemotePath("a/b")
-        with pytest.raises(AttributeError, match="immutable"):
+        with pytest.raises(AttributeError, match="immutable"):  # noqa: PT012
             if action == "setattr":
                 p.foo = "bar"  # type: ignore[attr-defined]
             else:
@@ -432,7 +432,7 @@ _MASKING_SET_CASES = [
 ]
 
 
-@pytest.mark.parametrize("factory,raw_secrets,masked,visible", _MASKING_SET_CASES)
+@pytest.mark.parametrize(("factory", "raw_secrets", "masked", "visible"), _MASKING_SET_CASES)
 def test_backend_masks_set_secrets(
     factory: Any,
     raw_secrets: list[str],
@@ -460,7 +460,7 @@ _MASKING_UNSET_CASES = [
 ]
 
 
-@pytest.mark.parametrize("factory,expected", _MASKING_UNSET_CASES)
+@pytest.mark.parametrize(("factory", "expected"), _MASKING_UNSET_CASES)
 def test_backend_shows_none_for_unset_secrets(factory: Any, expected: list[str]) -> None:
     r = repr(factory())
     for e in expected:
@@ -504,7 +504,7 @@ _SECRET_CASES = [
 
 
 @pytest.mark.spec("SEC-004")
-@pytest.mark.parametrize("factory,checks", _SECRET_CASES)
+@pytest.mark.parametrize(("factory", "checks"), _SECRET_CASES)
 def test_backend_accepts_secret(factory: Any, checks: list[tuple[str, str]]) -> None:
     backend = factory()
     for attr, expected in checks:
@@ -590,7 +590,7 @@ _PERM_CASES = [
 ]
 
 
-@pytest.mark.parametrize("patch_target,needs_file,call", _PERM_CASES)
+@pytest.mark.parametrize(("patch_target", "needs_file", "call"), _PERM_CASES)
 def test_local_permission_errors(
     patch_target: str,
     needs_file: bool,
@@ -630,7 +630,7 @@ _CAPABILITY_GATING_CASES = [
 
 
 @pytest.mark.spec("STORE-006")
-@pytest.mark.parametrize("capability,call,expected_name", _CAPABILITY_GATING_CASES)
+@pytest.mark.parametrize(("capability", "call", "expected_name"), _CAPABILITY_GATING_CASES)
 def test_store_capability_gating(capability: Capability, call: Any, expected_name: str) -> None:
     """AF-012: Every Store method raises CapabilityNotSupported when the backend lacks it."""
     store = make_restricted_store(exclude={capability})

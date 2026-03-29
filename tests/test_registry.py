@@ -132,7 +132,7 @@ class TestRegistryCloseOnError:
                 raise RuntimeError("simulated close failure")
 
             backend.close = failing_close  # type: ignore[assignment]
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError, match="boom|simulated close failure"):
             reg.close()
         if not use_lambda:
             assert len(close_calls) == 1
@@ -189,7 +189,7 @@ class TestRegistryBackendFactory:
 
     @pytest.mark.spec("REG-008")
     @pytest.mark.parametrize(
-        "import_path,backend_key",
+        ("import_path", "backend_key"),
         [
             pytest.param("s3fs", "s3", id="s3"),
             pytest.param("paramiko", "sftp", id="sftp"),

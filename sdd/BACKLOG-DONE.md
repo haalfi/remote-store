@@ -22,6 +22,13 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   execution, two modes (implementation + review). ADR-0019 documents
   architecture. [RFC](rfcs/rfc-0009-multi-agent-orchestration.md).
 
+- [x] **BK-124b — Enforce testing rules from TESTING.md**
+  Enabled Ruff `PT` rules (`flake8-pytest-style`) in `pyproject.toml`.
+  Auto-fixed 152 violations (PT006 parametrize style, PT001 fixture parens,
+  PT022 useless yield). Added `match=` to 13 `pytest.raises` calls (PT011).
+  Suppressed 9 intentional PT012 violations (open_atomic exception tests).
+  Updated TESTING.md: CI-enforced tags no longer pending.
+
 - [x] **BK-124a — Codify testing rules in `sdd/TESTING.md`**
   8 testing quality rules extracted from
   [research-testing-best-practices](research/research-testing-best-practices.md)

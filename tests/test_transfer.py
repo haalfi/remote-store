@@ -307,7 +307,7 @@ def test_capability_gating(make_call: Any, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "content, check_readable",
+    ("content", "check_readable"),
     [pytest.param(b"data", True, id="delegates_attributes"), pytest.param(b"", False, id="empty_no_callback")],
 )
 def test_progress_reader(content: bytes, check_readable: bool) -> None:
