@@ -6,7 +6,7 @@ argument-hint: "[BACKLOG-ID] [optional: task description]"
 ---
 
 Orchestrate a complex task by delegating to 4 domain experts.
-See ADR-0019 for architecture rationale.
+See ADR-0020 for architecture rationale.
 
 Parse `$ARGUMENTS`: first token is the backlog ID (e.g., `BK-123`, `ID-120`),
 remainder is optional task description. Ask if missing.
@@ -18,15 +18,22 @@ remainder is optional task description. Ask if missing.
 3. Read `sdd/CLAUDE-REFERENCE.md` § ripple-check table — identify triggered rows
 4. Create feature branch: `git checkout -b <id>-<short-name>`
 
-## Step 2: Plan architecture
+## Step 2: Plan
 
 Before spawning experts, decide and document:
 - Class/function names, method signatures, file paths
 - Spec IDs that each expert will implement or reference
-- Which mode applies (see activation rules below)
+- Which **mode** applies (see below)
 
-This upfront plan lets experts work without conflicts. Share it
-with each expert in their task prompt.
+### Mode selection
+
+| Mode | When | Steps used |
+|------|------|------------|
+| **Simple** | Trivial plan, clear scope | Plan → Execute → Review (1×) → Finish |
+| **Standard** | Multi-domain, clear requirements | Plan → Refine → Execute → Consolidate → Review (1–2×) → Finish |
+| **Complex** | Ambiguity, tight coupling, unknowns | Full flow, user breaks ties at any gate |
+
+Select mode based on scope and coupling. User can override.
 
 ### Expert activation rules
 
@@ -37,10 +44,23 @@ For bug fixes scope is narrower, but every expert still evaluates.
 **SDD-only change (spec/RFC/ADR/process):** All 4 experts **review** (not
 implement) from their domain perspective.
 
-## Step 3: Spawn experts
+## Step 3: Refine (Standard and Complex only)
 
-Each expert gets the architecture plan from Step 2 plus their domain-specific
-prompt below.
+Spawn all 4 experts in **review mode** with the plan from Step 2. Each expert
+reviews the plan from their domain perspective and returns:
+- Gaps, risks, or contradictions they see
+- Suggestions for their domain scope
+- "No concerns" if the plan is sound for their domain
+
+**One round only.** The orchestrator integrates feedback and adjusts the plan.
+Any unresolved disagreements or open questions → escalate to user. Do not
+loop — if the user needs to decide, present the options and wait.
+
+**Simple mode:** Skip this step entirely.
+
+## Step 4: Execute
+
+Each expert gets the (refined) plan plus their domain-specific prompt below.
 
 **Feature/refactor:** Spawn all experts using multiple Agent tool calls.
 
@@ -50,9 +70,6 @@ prompt below.
 2. Verify the test fails for the right reason.
 3. Then spawn remaining experts (Store & Backend, Extension, Documentation)
    to fix the bug and assess impact.
-
-This follows the bug-fix protocol in CLAUDE.md: backlog → changelog → failing
-test → fix.
 
 ### Store & Backend Expert
 
@@ -70,7 +87,7 @@ FOUNDATION — read before writing:
 - Any specs and ADRs relevant to the task (orchestrator will list them,
   but read additional ones you discover are needed)
 
-TASK: [orchestrator fills this from Step 2]
+TASK: [orchestrator fills this from plan]
 
 CONSTRAINTS:
 - Specs are source of truth. Code contradicts spec → code is wrong.
@@ -192,9 +209,38 @@ OUTPUT: assessment, files created/modified (if any), nav changes,
 README/CHANGELOG recommendations for orchestrator.
 ```
 
-## Step 4: Post-process
+## Step 5: Consolidate (Standard and Complex only)
 
-After all experts complete:
+After all experts complete, collect and categorize results:
+
+| Status | Meaning | Action |
+|--------|---------|--------|
+| ✓ done | Expert completed all assigned work | No action needed |
+| ✗ blocked | Expert could not complete (dependency, conflict, ambiguity) | Clarify with that expert, re-execute their task |
+| ⚠ needs input | Expert needs a decision outside their domain | Escalate to user |
+
+For blocked experts: understand the blocker, provide the missing context,
+re-spawn that expert only. For needs-input: present the question to the user
+and wait.
+
+**Simple mode:** Skip this step — proceed directly to Review.
+
+## Step 6: Review
+
+Spawn all 4 experts in **review mode** — each reviews *all output from all
+experts*, not just their own domain. Each returns:
+- Issues found (with file, line, category)
+- "Clean — no issues" if nothing to report
+
+**Simple mode:** Single pass. If issues found, orchestrator fixes directly.
+
+**Standard/Complex mode:** If issues found:
+1. Route each issue to the responsible expert for fixing.
+2. Re-spawn affected experts with targeted fix tasks.
+3. Re-review (all 4 experts again). **Max 2 review rounds total.**
+4. If issues remain after 2 rounds → present to user for decision.
+
+## Step 7: Finish
 
 1. **Ripple-check audit**: Walk `sdd/CLAUDE-REFERENCE.md` table. For each
    triggered row, verify target files were updated. For domain-specific gaps
@@ -206,12 +252,10 @@ After all experts complete:
    BACKLOG-DONE.md. Partially done → split: done part to BACKLOG-DONE.md as
    `[x]`, new ID in BACKLOG.md for remainder.
 4. **Validate**: Run `hatch run all`. Fix failures (max 2 attempts — see Rules).
-
-## Step 5: Commit & report
-
-1. Stage all changes, commit with backlog ID prefix.
-2. Push feature branch (never master).
-3. Report: experts used, files changed, ripple-checks completed, validation status.
+5. Stage all changes, commit with backlog ID prefix.
+6. Push feature branch (never master).
+7. Report: mode used, experts spawned (count of rounds), files changed,
+   ripple-checks completed, validation status, deferred items (if any).
 
 ## Rules
 
@@ -222,3 +266,5 @@ After all experts complete:
 - The orchestrator handles cross-domain files (CHANGELOG, BACKLOG, README tables,
   pyproject.toml extras). Experts stay in their domain. The Documentation Expert
   assesses README/CHANGELOG impact but does not write to them.
+- **User breaks ties.** The orchestrator never overrides expert disagreements
+  autonomously — it presents the conflict and asks.

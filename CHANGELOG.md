@@ -192,6 +192,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Claude Code Agent tool. Two modes: implementation and review. ADR-0019
   documents the architecture decision.
 
+- **Orchestrate v2: iterative convergence model** (BK-128): Redesigned
+  `/orchestrate` from single-pass parallel to iterative convergence with three
+  complexity modes (Simple, Standard, Complex). Adds plan refinement with
+  experts (1 round), consolidation step, review loop (max 2 rounds), and
+  user as tie-breaker. ADR-0020 supersedes ADR-0019.
+
 - **Testing standards guide** (BK-124a): New `sdd/TESTING.md` codifying 8 test
   quality rules from research-testing-best-practices. Companion to DESIGN.md
   § 11 (style). Includes Testing Expert quick reference for BK-125.
