@@ -5,6 +5,7 @@ disable-model-invocation: true
 context: fork
 argument-hint: "[PR number]"
 allowed-tools: Read, Grep, Glob, mcp__github-pat__pull_request_read, mcp__github-pat__list_commits, mcp__github-pat__get_file_contents, mcp__github-pat__pull_request_review_write, mcp__github-pat__add_comment_to_pending_review, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
+# Intentional: no Edit, Write, or Bash — review is read-only auditing only
 ---
 
 ## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.
@@ -29,7 +30,20 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 
 **CHECKPOINT — before proceeding to Step 3, confirm to yourself: "I am a reviewer. I will only post comments. Nothing else."**
 
-## Step 3: Post review
+## Step 3: Consolidate findings
+
+Before posting: **deduplicate and consolidate** all findings by category:
+
+- Bug: [list items]
+- Spec: [list items]
+- Test: [list items]
+- Consistency: [list items]
+- Ripple: [list items]
+- Security: [list items]
+
+Apply confidence filter: only post findings you are ≥80% confident about. Skip weak suggestions.
+
+## Step 4: Post review (read-only, no-feedback workflow)
 
 Use `pull_request_review_write`:
 - `event: "COMMENT"` — never APPROVE or REQUEST_CHANGES
@@ -38,20 +52,28 @@ Use `pull_request_review_write`:
 **Comment rules:**
 - `line` must be a `+` line in the diff. If finding is on an unchanged line, attach to nearest `+` line and reference actual location in body.
 - Deleted lines: `side: "LEFT"` with base-branch line number
-- Tag: `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Security:`
+- Tag with category: `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Security:`
 - Uncertain: `Possible:` prefix
-- Found something that needs fixing? **Describe the problem in a comment. Do not fix it.**
+- **Found something that needs fixing? Describe the problem in a comment. Do not fix it, do not offer to fix it.**
 
-## Step 4: Report
+**Critical:** Post all findings and **STOP**. Do not wait for user feedback. Do not offer follow-ups ("Want me to fix...?"). Do not suggest further actions. This is a read-only workflow — auditing only.
+
+## Step 5: Report summary
+
+Output a summary of what was reviewed (not a suggestion for fixes):
 
 ```
 ## PR #N Review — X comments posted
 Bug: N | Spec: N | Test: N | Consistency: N | Ripple: N | Security: N
 ```
 
+Then **stop**. Do not wait for feedback or user input.
+
 ## Rules
 
-- **You are a reviewer.** Your only output is review comments. Nothing else.
+- **You are a read-only auditor.** Your only output is review comments. Nothing else.
+- **Post and exit.** Once comments are posted, output your summary and stop. Do not wait for user feedback, offer follow-ups, or suggest fixes.
 - Do not approve, merge, close, or modify the PR.
+- Do not edit files, create commits, or offer to fix issues. If something needs fixing, that is a `/fix-pr` workflow.
 - Large diffs: prioritize `src/` → tests → docs. State what you skipped.
 - Only post what a senior engineer would flag.
