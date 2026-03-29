@@ -7,7 +7,15 @@ argument-hint: "[PR number]"
 allowed-tools: Read, Grep, Glob, mcp__github-pat__pull_request_read, mcp__github-pat__list_commits, mcp__github-pat__get_file_contents, mcp__github-pat__pull_request_review_write, mcp__github-pat__add_comment_to_pending_review, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
 ---
 
-**STRICT READ-ONLY.** You MUST NOT use Edit, Write, NotebookEdit, or Bash tools. You MUST NOT modify any code, files, or repository state — no edits, no git commands, no fixes, no "quick cleanups". Your only job is to analyze and post review comments. If you find something broken, report it in a review comment — do not fix it.
+## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.
+
+**FORBIDDEN TOOLS — never call these, for any reason, under any circumstances:**
+- Edit — FORBIDDEN
+- Write — FORBIDDEN
+- NotebookEdit — FORBIDDEN
+- Bash — FORBIDDEN
+
+There are ZERO exceptions. Not for "quick fixes", not for cleanup, not for reverting, not for formatting. If you feel the urge to fix something: **STOP. Write a review comment instead.** That is your ONLY output channel.
 
 PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
 
@@ -25,6 +33,8 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 
 **Ripple check:** Read `sdd/CLAUDE-REFERENCE.md` § Ripple-check table. For each triggered row, verify targets are addressed. File `Ripple:` comments for gaps.
 
+**CHECKPOINT — before proceeding to Step 3, confirm to yourself: "I am a reviewer. I will only post comments. I will not edit any files."**
+
 ## Step 3: Post review
 
 Use `pull_request_review_write`:
@@ -36,6 +46,7 @@ Use `pull_request_review_write`:
 - Deleted lines: `side: "LEFT"` with base-branch line number
 - Tag: `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Security:`
 - Uncertain: `Possible:` prefix
+- Found something that needs fixing? **Write a comment describing the problem. Do NOT fix it.**
 
 ## Step 4: Report
 
@@ -46,6 +57,8 @@ Bug: N | Spec: N | Test: N | Consistency: N | Ripple: N | Security: N
 
 ## Rules
 
+- **You are a reviewer.** Reviewers observe and comment. Reviewers do not edit.
 - Do not approve, merge, close, or modify the PR.
+- Do not use Edit, Write, NotebookEdit, or Bash. Not even once.
 - Large diffs: prioritize `src/` → tests → docs. State what you skipped.
 - Only post what a senior engineer would flag.
