@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
     from remote_store._backend import Backend
     from remote_store._models import FileInfo
+    from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
 
@@ -737,6 +738,23 @@ class Store:
         ```
         """
         return self._backend.unwrap(type_hint)
+
+    def resolve(self, key: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` describing how *key* maps to storage.
+
+        Delegates to the backend's ``resolve()`` and rebases the key
+        so that ``plan.key`` is the store-relative key, not the
+        backend-relative path.
+
+        Args:
+            key: Store-relative path.  ``""`` resolves the store root.
+
+        Returns:
+            A frozen ``ResolutionPlan``.
+        """
+        full_path = self._full_path(key)
+        plan = self._backend.resolve(full_path)
+        return dataclasses.replace(plan, key=key)
 
     def native_path(self, key: str) -> str:
         """Convert a store-relative *key* to the backend's native path representation.

@@ -334,3 +334,22 @@ class TestMemoryWriteStream:
     def test_write_empty_stream(self, mb: MemoryBackend) -> None:
         mb.write("empty.txt", io.BytesIO(b""))
         assert mb.read_bytes("empty.txt") == b""
+
+
+# ---------------------------------------------------------------------------
+# RES-056: MemoryBackend.resolve()
+# ---------------------------------------------------------------------------
+
+
+class TestMemoryBackendResolve:
+    """RES-056: MemoryBackend uses default resolve(), kind='memory', empty details."""
+
+    @pytest.mark.spec("RES-056")
+    def test_kind_is_memory(self, mb: MemoryBackend) -> None:
+        plan = mb.resolve("file.txt")
+        assert plan.kind == "memory"
+
+    @pytest.mark.spec("RES-056")
+    def test_details_is_empty(self, mb: MemoryBackend) -> None:
+        plan = mb.resolve("file.txt")
+        assert len(plan.details) == 0

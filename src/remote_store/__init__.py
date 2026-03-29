@@ -26,6 +26,7 @@ from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInf
 from remote_store._path import RemotePath
 from remote_store._proxy import ProxyStore
 from remote_store._registry import Registry, register_backend
+from remote_store._resolution import ResolutionPlan
 from remote_store._store import Store
 from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_exists
 from remote_store.ext.cache import CacheBackend, CachedStore, CacheStats, MemoryCache, cache, cached_store
@@ -55,6 +56,7 @@ __all__ = [
     "register_backend",
     # Path & Models
     "RemotePath",
+    "ResolutionPlan",
     "ContentDigest",
     "FileInfo",
     "FolderEntry",

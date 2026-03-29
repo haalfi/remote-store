@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
     from remote_store._capabilities import Capability
     from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -207,6 +208,9 @@ class ProxyStore(Store):
 
     def native_path(self, key: str) -> str:
         return self._inner.native_path(key)
+
+    def resolve(self, key: str) -> ResolutionPlan:
+        return self._inner.resolve(key)
 
     def to_key(self, path: str) -> str:
         return self._inner.to_key(path)

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
     from remote_store._capabilities import CapabilitySet
     from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -369,6 +370,29 @@ class Backend(abc.ABC):
             Backend-native path usable with the native handle from ``unwrap()``.
         """
         return path
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` describing how *path* maps to storage.
+
+        Pure introspection -- no I/O is performed.  Backends override this
+        to populate ``details`` with backend-specific context.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            A frozen ``ResolutionPlan`` with ``kind``, ``backend``,
+            ``key``, ``native_path``, and ``details``.
+        """
+        from remote_store._resolution import ResolutionPlan as _RP
+
+        return _RP(
+            kind=self.name,
+            backend=self.name,
+            key=path,
+            native_path=self.native_path(path),
+            details={},
+        )
 
     def check_health(self) -> None:  # noqa: B027
         """Verify the backend is reachable and credentials are valid.

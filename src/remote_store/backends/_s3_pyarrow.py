@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from remote_store._models import FileInfo
+    from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -172,6 +173,31 @@ class S3PyArrowBackend(_S3Base):
 
     def native_path(self, path: str) -> str:
         return self._pa_path(path)
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` with S3-PyArrow-specific details.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            Plan with ``kind="s3-pyarrow"`` and ``details`` containing
+            ``bucket``, ``object_key``, and ``endpoint_url``.
+        """
+        from remote_store._resolution import ResolutionPlan as _RP
+        from remote_store.backends._s3 import _strip_userinfo
+
+        return _RP(
+            kind="s3-pyarrow",
+            backend=self.name,
+            key=path,
+            native_path=self.native_path(path),
+            details={
+                "bucket": self._bucket,
+                "object_key": path,
+                "endpoint_url": _strip_userinfo(self._endpoint_url),
+            },
+        )
 
     def exists(self, path: str) -> bool:
         with self._s3fs_errors(path):

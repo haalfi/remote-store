@@ -31,6 +31,7 @@ from remote_store._stream import _ErrorMappingStream
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -224,6 +225,29 @@ class AzureBackend(Backend):
         if path:
             return f"{self._container}/{path}"
         return self._container
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` with Azure-specific details.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            Plan with ``kind="azure"`` and ``details`` containing
+            ``container`` and ``account_url``.
+        """
+        from remote_store._resolution import ResolutionPlan as _RP
+
+        return _RP(
+            kind="azure",
+            backend=self.name,
+            key=path,
+            native_path=self.native_path(path),
+            details={
+                "container": self._container,
+                "account_url": self._account_url,
+            },
+        )
 
     def exists(self, path: str) -> bool:
         from azure.core.exceptions import ResourceNotFoundError

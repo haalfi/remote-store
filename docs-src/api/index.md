@@ -45,6 +45,7 @@ Complete reference for all public exports of `remote-store`.
 | Class | Description |
 |-------|-------------|
 | [RemotePath](path.md) | Validated, immutable path value object |
+| [ResolutionPlan](models.md#remote_store.ResolutionPlan) | Frozen introspection result from `resolve()` |
 | [ContentDigest](models.md#remote_store.ContentDigest) | Verified content digest with known algorithm |
 | [FileInfo](models.md#remote_store.FileInfo) | Metadata for a file (name, size, modified time) |
 | [FolderEntry](models.md#remote_store.FolderEntry) | Folder identity returned by listing operations |

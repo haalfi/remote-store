@@ -793,3 +793,27 @@ class TestS3PyArrowGlob:
 
 
 # endregion
+
+
+# region: Resolution (RES-052)
+class TestS3PyArrowResolve:
+    """RES-052: S3PyArrowBackend.resolve() returns kind='s3-pyarrow' with bucket, object_key."""
+
+    @pytest.mark.spec("RES-052")
+    def test_kind_is_s3_pyarrow(self, s3pa_backend: Backend) -> None:
+        plan = s3pa_backend.resolve("file.txt")
+        assert plan.kind == "s3-pyarrow"
+
+    @pytest.mark.spec("RES-052")
+    def test_details_has_bucket(self, s3pa_backend: Backend) -> None:
+        plan = s3pa_backend.resolve("file.txt")
+        assert "bucket" in plan.details
+
+    @pytest.mark.spec("RES-052")
+    def test_details_has_object_key(self, s3pa_backend: Backend) -> None:
+        plan = s3pa_backend.resolve("dir/file.txt")
+        assert "object_key" in plan.details
+        assert plan.details["object_key"] == "dir/file.txt"
+
+
+# endregion

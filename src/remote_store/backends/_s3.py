@@ -33,6 +33,7 @@ from remote_store.backends._s3_base import (
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -40,6 +41,22 @@ T = TypeVar("T")
 _ALL_CAPABILITIES = CapabilitySet(set(Capability))
 
 log = logging.getLogger(__name__)
+
+
+def _strip_userinfo(url: str | None) -> str | None:
+    """Remove userinfo (``user:pass@``) from a URL per RFC 3986."""
+    if url is None:
+        return None
+    import urllib.parse
+
+    parsed = urllib.parse.urlparse(url)
+    if not parsed.username:
+        return url
+    # Rebuild without userinfo
+    netloc = parsed.hostname or ""
+    if parsed.port:
+        netloc = f"{netloc}:{parsed.port}"
+    return urllib.parse.urlunparse(parsed._replace(netloc=netloc))
 
 
 class S3Backend(_S3Base):
@@ -109,6 +126,30 @@ class S3Backend(_S3Base):
         if path:
             return f"{self._bucket}/{path}"
         return self._bucket
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` with S3-specific details.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            Plan with ``kind="s3"`` and ``details`` containing
+            ``bucket``, ``object_key``, and ``endpoint_url``.
+        """
+        from remote_store._resolution import ResolutionPlan as _RP
+
+        return _RP(
+            kind="s3",
+            backend=self.name,
+            key=path,
+            native_path=self.native_path(path),
+            details={
+                "bucket": self._bucket,
+                "object_key": path,
+                "endpoint_url": _strip_userinfo(self._endpoint_url),
+            },
+        )
 
     def exists(self, path: str) -> bool:
         with self._s3fs_errors(path):

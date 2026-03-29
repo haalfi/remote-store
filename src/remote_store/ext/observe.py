@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 
     from remote_store._capabilities import Capability
     from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._resolution import ResolutionPlan
     from remote_store._store import Store
     from remote_store._types import WritableContent
 
@@ -131,6 +132,7 @@ _OP_HOOK_MAP: dict[str, str] = {
     "exists": "on_list",
     "is_file": "on_list",
     "is_folder": "on_list",
+    "resolve": "on_list",
     "ping": "on_ping",
 }
 
@@ -268,6 +270,17 @@ class ObservedStore(ProxyStore):
     def native_path(self, key: str) -> str:
         with self._observe_op("native_path", key, {}):
             return self._inner.native_path(key)
+
+    def resolve(self, key: str) -> ResolutionPlan:
+        """Resolve a key to a ``ResolutionPlan``, emitting observation events.
+
+        Only ``kind``, ``backend``, and ``key`` from the plan are included in
+        event metadata to prevent sensitive ``details`` from flowing through
+        callbacks.
+        """
+        with self._observe_op("resolve", key, {}):
+            plan = self._inner.resolve(key)
+        return plan
 
     def supports(self, capability: Capability) -> bool:
         with self._observe_op("supports", "", {"capability": capability.name}):

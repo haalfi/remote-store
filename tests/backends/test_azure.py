@@ -1107,3 +1107,30 @@ class TestAzureETagAndDigest:
 
 
 # endregion
+
+
+# =============================================================================
+# Resolution (RES-053)
+# =============================================================================
+
+
+class TestAzureResolve:
+    """RES-053: AzureBackend.resolve() returns kind='azure' with container and account_url."""
+
+    @pytest.mark.spec("RES-053")
+    def test_kind_is_azure(self) -> None:
+        backend = _make_backend()
+        plan = backend.resolve("file.txt")
+        assert plan.kind == "azure"
+
+    @pytest.mark.spec("RES-053")
+    def test_details_has_container(self) -> None:
+        backend = _make_backend()
+        plan = backend.resolve("file.txt")
+        assert "container" in plan.details
+
+    @pytest.mark.spec("RES-053")
+    def test_details_has_account_url(self) -> None:
+        backend = _make_backend()
+        plan = backend.resolve("file.txt")
+        assert "account_url" in plan.details

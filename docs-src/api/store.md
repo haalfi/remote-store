@@ -164,6 +164,21 @@
 
 ---
 
+## Introspection
+
+::: remote_store.Store.resolve
+    options:
+      show_root_heading: true
+      heading_level: 3
+
+!!! note
+    `resolve()` is a pure introspection method — it performs no I/O and is
+    never called implicitly by other Store methods. The returned
+    [`ResolutionPlan`](models.md) describes how a key maps to its storage
+    location.
+
+---
+
 ## Lifecycle
 
 ::: remote_store.Store.ping
@@ -231,7 +246,8 @@ relying on these in production.
 
 **Related types:** `WritableContent = BinaryIO | bytes`,
 [`FileInfo`](models.md), [`FolderInfo`](models.md),
-[`RemotePath`](path.md), [`Capability`](capabilities.md).
+[`ResolutionPlan`](models.md), [`RemotePath`](path.md),
+[`Capability`](capabilities.md).
 
 ## See also
 

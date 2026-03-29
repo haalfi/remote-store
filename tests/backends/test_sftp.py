@@ -1224,3 +1224,62 @@ class TestSFTPTofuPersistence:
 
 
 # endregion
+
+
+# region: Resolution (RES-054)
+class TestSFTPResolve:
+    """RES-054: SFTPBackend.resolve() returns kind='sftp' with host, port, base_path."""
+
+    @pytest.mark.spec("RES-054")
+    def test_kind_is_sftp(self) -> None:
+        backend = SFTPBackend(
+            host="example.com",
+            port=22,
+            username="u",
+            password="p",
+            host_key_policy=HostKeyPolicy.AUTO_ADD,
+        )
+        plan = backend.resolve("file.txt")
+        assert plan.kind == "sftp"
+
+    @pytest.mark.spec("RES-054")
+    def test_details_has_host(self) -> None:
+        backend = SFTPBackend(
+            host="example.com",
+            port=22,
+            username="u",
+            password="p",
+            host_key_policy=HostKeyPolicy.AUTO_ADD,
+        )
+        plan = backend.resolve("file.txt")
+        assert "host" in plan.details
+        assert plan.details["host"] == "example.com"
+
+    @pytest.mark.spec("RES-054")
+    def test_details_has_port(self) -> None:
+        backend = SFTPBackend(
+            host="example.com",
+            port=2222,
+            username="u",
+            password="p",
+            host_key_policy=HostKeyPolicy.AUTO_ADD,
+        )
+        plan = backend.resolve("file.txt")
+        assert "port" in plan.details
+        assert plan.details["port"] == 2222
+
+    @pytest.mark.spec("RES-054")
+    def test_details_has_base_path(self) -> None:
+        backend = SFTPBackend(
+            host="example.com",
+            port=22,
+            username="u",
+            password="p",
+            base_path="/data",
+            host_key_policy=HostKeyPolicy.AUTO_ADD,
+        )
+        plan = backend.resolve("file.txt")
+        assert "base_path" in plan.details
+
+
+# endregion
