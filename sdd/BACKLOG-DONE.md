@@ -16,6 +16,12 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Process
 
+- [x] **BK-125 — Multi-agent orchestration for complex tasks**
+  `/orchestrate` skill: orchestrator + 4 domain experts (Store & Backend,
+  Extension, Testing, Documentation) via Claude Code Agent tool. Parallel
+  execution, two modes (implementation + review). ADR-0019 documents
+  architecture. [RFC](rfcs/rfc-0009-multi-agent-orchestration.md).
+
 - [x] **BK-124a — Codify testing rules in `sdd/TESTING.md`**
   8 testing quality rules extracted from
   [research-testing-best-practices](research/research-testing-best-practices.md)

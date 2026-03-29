@@ -86,11 +86,8 @@ Items graduate through the SDD pipeline:
 
 ### Process & Orchestration
 
-- [ ] **BK-125 — Multi-agent orchestration for complex tasks**
-  RFC-0009: orchestrator + 4 subject matter experts (Backend, Extension,
-  Testing, Documentation) via Claude Code Task tool. Parallelize independent
-  concerns while preserving SDD discipline.
-  [RFC](rfcs/rfc-0009-multi-agent-orchestration.md).
+- [x] **BK-125 — Multi-agent orchestration for complex tasks**
+  → moved to [BACKLOG-DONE.md](BACKLOG-DONE.md)
 
 ### Developer Tooling
 
