@@ -1,0 +1,88 @@
+# ADR-0019: Multi-Agent Orchestration Architecture
+
+## Status
+
+Accepted
+
+## Context
+
+As remote-store grows (~41 source files, 55 test files, 72 doc files), complex
+tasks (new backends, cross-cutting features, spec-driven changes) require
+coordinating work across four concerns: implementation, extensions, testing,
+and documentation. A single agent juggling all concerns risks incomplete work,
+hallucination, and context switching overhead (RFC-0009).
+
+Three approaches were considered:
+
+**Option A — Single agent (status quo).** One Claude Code session handles
+everything sequentially. Works for small tasks but scales poorly: missed doc
+updates, incomplete ripple-checks, untested error paths.
+
+**Option B — Custom Python orchestrator.** `ThreadPoolExecutor` + Anthropic SDK.
+Full control over model selection, cost optimization, and parallelism. But adds
+infrastructure to maintain, breaks Claude Code integration (no git context
+inheritance), and violates KISS for a problem that has a native solution.
+
+**Option C — Claude Code native agents.** Orchestrator (main session) spawns
+domain experts via the Agent tool. Experts run in parallel with full repo
+access. Orchestrator aggregates results and handles cross-domain concerns.
+
+## Decision
+
+**Option C — Claude Code native agents** with the following architecture:
+
+```
+Task (user invokes /orchestrate)
+         ↓
+    Orchestrator
+    (pre-check, plan architecture)
+         ↓
+┌────────┬────────┬────────┬────────┐
+│Backend │  Ext   │ Test   │  Doc   │
+│Expert  │Expert  │Expert  │Expert  │
+└────────┴────────┴────────┴────────┘
+  (parallel, domain-scoped agents)
+         ↓
+    Orchestrator
+    (ripple-checks, CHANGELOG, BACKLOG, validate)
+```
+
+### Two modes
+
+- **Implementation mode** (code changes): experts write code/tests/docs within
+  their domain. Orchestrator handles cross-domain files.
+- **Review mode** (SDD-only changes): experts review from their domain
+  perspective but do not implement. Reports go to the orchestrator for
+  aggregation.
+
+### Expert activation
+
+All code changes activate all 4 experts. Each evaluates from their domain —
+the Extension expert always assesses downstream impact on `ext/` even when
+extension files aren't directly modified. For SDD-only changes, all 4 review.
+
+### Aggregation
+
+The orchestrator:
+1. Collects expert outputs (files changed, issues found, assessments)
+2. Runs ripple-check audit against `CLAUDE-REFERENCE.md`
+3. Fixes cross-domain gaps (README, pyproject.toml, nav files)
+4. Validates via `hatch run all`
+
+### Domain boundaries
+
+| Expert | Domain | Foundation |
+|--------|--------|-----------|
+| Store & Backend | `src/remote_store/`, `backends/` | DESIGN.md + relevant specs/ADRs |
+| Extension | `src/remote_store/ext/` | DESIGN.md + relevant specs/ADRs |
+| Testing | `tests/` | TESTING.md, DESIGN.md § 11 |
+| Documentation | `docs-src/`, `examples/`, `guides/`, docstrings, README.md, CHANGELOG.md | DOCUMENTATION.md, DESIGN.md § 4 |
+
+## Consequences
+
+- Complex tasks can be parallelized across 4 domain experts.
+- Each expert reads specs before writing — hallucination mitigation.
+- Extension impact is always evaluated, even for non-extension changes.
+- No custom infrastructure — uses Claude Code's native Agent tool.
+- Orchestrator is the single point of cross-domain consistency.
+- Overhead for simple tasks: the skill is optional, not mandatory.

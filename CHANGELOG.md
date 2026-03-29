@@ -162,6 +162,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Multi-agent orchestration skill** (BK-125): `/orchestrate` skill delegating
+  to 4 domain experts (Store & Backend, Extension, Testing, Documentation) via
+  Claude Code Agent tool. Two modes: implementation and review. ADR-0019
+  documents the architecture decision.
+
 - **Testing standards guide** (BK-124a): New `sdd/TESTING.md` codifying 8 test
   quality rules from research-testing-best-practices. Companion to DESIGN.md
   § 11 (style). Includes Testing Expert quick reference for BK-125.
