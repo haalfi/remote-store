@@ -27,7 +27,7 @@ Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
   `raises-require-match-for` config. Auto-fixed 152 violations (PT006, PT001,
   PT022). Added `match=` to 13 `pytest.raises` calls (PT011). Suppressed 9
   intentional PT012 violations (open_atomic exception tests).
-  Remainder: [BK-126](../sdd/BACKLOG.md) (CI assertion/mock checks, existing
+  Remainder: [BK-126](BACKLOG.md) (CI assertion/mock checks, existing
   test migration).
 
 - [x] **BK-124a — Codify testing rules in `sdd/TESTING.md`**

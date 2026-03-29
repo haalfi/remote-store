@@ -282,6 +282,8 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "TCH", "PT"]
 ignore = ["UP045"]
 
 [tool.ruff.lint.flake8-pytest-style]
+# Note: ruff PT011 only resolves builtin/stdlib names; custom exception names
+# below are documentation of intent, not enforced. See BK-126.
 raises-require-match-for = [
     "ValueError", "TypeError", "KeyError", "RuntimeError",
     "NotFound", "AlreadyExists", "CapabilityNotSupported",

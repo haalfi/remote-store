@@ -164,7 +164,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - **Ruff PT rules enabled** (BK-124b): `flake8-pytest-style` enforced in
   `pyproject.toml`. 152 auto-fixed, 13 `match=` added to `pytest.raises`,
-  9 intentional PT012 suppressed. TESTING.md CI-enforced tags now active.
+  9 intentional PT012 suppressed. Ruff PT section in TESTING.md marked enabled.
 
 - **Multi-agent orchestration skill** (BK-125): `/orchestrate` skill delegating
   to 4 domain experts (Store & Backend, Extension, Testing, Documentation) via
