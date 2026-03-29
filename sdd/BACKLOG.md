@@ -75,6 +75,15 @@ Items graduate through the SDD pipeline:
   Each fix must follow the bug-fix protocol (backlog → changelog → failing test
   → fix). Split into sub-items or a single PR depending on scope at the time.
 
+### Testing
+
+- [ ] **BK-124 — Adopt testing rules and guardrails from research-testing-best-practices**
+  Follow-up to [research](research/research-testing-best-practices.md) (PR #304).
+  8 proposed rules, Ruff PT enforcement, CI checks, phased adoption plan.
+  Scope and priorities to be decided when work begins — the research doc is
+  a proposal, not a commitment. Multi-agent orchestration work (PR #305)
+  may influence which rules and enforcement mechanisms are adopted.
+
 ### Developer Tooling
 
 - [ ] **BK-016 — Eliminate avoidable `# type: ignore` comments in src/**
