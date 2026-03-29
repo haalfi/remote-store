@@ -126,10 +126,11 @@ Items graduate through the SDD pipeline:
   Unified introspection across all backends. `Store.resolve(key)` returns a
   `ResolutionPlan` dataclass (`kind`, `backend`, `key`, `details`). Replaces
   ad-hoc `resolve_query()` / `resolve_tier()` / `explain()` methods.
-  - [Research](research/research-sqlalchemy-backend.md#51-resolutionplan--unified-introspection)
+  - [Research (original)](research/research-sqlalchemy-backend.md#51-resolutionplan--unified-introspection)
+  - [Research (proposal)](research/research-resolve-spec-proposal.md)
   - Default implementation on `Backend` returns plan with `kind=backend.name`
   - SQLAlchemy + CompositeStore override with meaningful details
-  - Enables principled cache keys (`hash(plan)`) and debuggability
+  - Cache keys from plan fields (not `hash(plan)` — details dict is unhashable)
   - Next: spec now that ID-119 validates the pattern
 
 - [ ] **ID-121 — CompositeStore (research complete)**

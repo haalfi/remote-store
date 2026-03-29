@@ -4,7 +4,7 @@
 **Date:** 2026-03-29
 **Status:** Research complete — ready for spec drafting
 **Depends on:** ID-119 (SQLAlchemy backends, done)
-**Sources:** [Condensed research notes](research-resolve-spec-notes.md)
+**Sources:** Internal research files, source code analysis, external prior art
 
 ---
 
@@ -67,15 +67,16 @@ Derived from internal research + external prior art:
    not just a location string. The plan *is* the resolved identity.
 2. **Extensible details** — each backend adds its own context via `details`.
    No schema imposed on backend-specific information.
-3. **Hashable and cacheable** — `ResolutionPlan` is a frozen dataclass. Its
-   hash is a principled cache key (replacing ad-hoc tuple construction).
+3. **Immutable and cacheable** — `ResolutionPlan` is a frozen dataclass.
+   Cache keys derived from `(kind, backend, key, native_path)` tuple, not
+   `hash(plan)` directly (the `details` dict prevents `__hash__`).
 4. **Composable** — composite resolution (try tier A, then B) is expressible
    as a `ResolutionPlan` whose details include the sub-plans.
 5. **Inspectable** — callers branch on `kind` (a string discriminator) rather
    than `isinstance` checks on backend types.
 6. **Backward-compatible** — the default implementation returns a sensible
    plan for any backend. No ABC signature change required.
-7. **Immutable** — frozen dataclass, safe for concurrent use and hashing.
+7. **Immutable** — frozen dataclass, safe for concurrent use.
 
 ---
 
@@ -105,7 +106,8 @@ class ResolutionPlan:
     - ``"azure"`` — Azure Blob Storage object
     - ``"sftp"`` — SFTP remote path
     - ``"http"`` — HTTP/HTTPS URL (read-only)
-    - ``"memory"`` — in-memory store
+    - ``"memory"`` — in-memory store (``native_path`` equals ``key``; no
+      additional location information for in-memory backends)
     - ``"sql_blob"`` — SQL row-based blob storage
     - ``"sql_query"`` — SQL query -> serialized result
     - ``"composite"`` — resolved through tier composition
@@ -134,6 +136,12 @@ class ResolutionPlan:
     - SQL blob: ``{"table": "remote_store_objects", "key_column": "path"}``
     - Composite: ``{"resolved_tier": "warm", "tried": ["hot", "warm"],
                     "tier_plan": <ResolutionPlan from warm tier>}``
+
+    **Serialization note:** ``details`` values should be JSON-serializable
+    primitives for logging/OTel compatibility. Nested ``ResolutionPlan`` in
+    ``details`` (e.g. ``tier_plan`` in composite resolution) is allowed but
+    requires a custom serializer. Consider a ``CompositeResolutionPlan``
+    subclass with a typed ``tier_plan`` field in a future version.
     """
 ```
 
@@ -225,6 +233,10 @@ class Store:
         )
 ```
 
+**Invariant:** `store.native_path(plan.key) == plan.native_path` — this is the
+implicit contract that makes the design coherent. The plan's `native_path` always
+agrees with what the store would return for that key.
+
 ### 4.4 `ProxyStore.resolve()` Delegation
 
 ```python
@@ -233,12 +245,20 @@ class ProxyStore(Store):
         return self._inner.resolve(key)
 ```
 
-`ext.observe` wraps with observation callback. `ext.cache` can use
-`hash(plan)` as cache key.
+`ext.observe` wraps with observation callback. `ext.cache` can derive a
+cache key from the plan's fields (see §4.6).
+
+**Note:** `resolve()` is expected to be cheap (no I/O for most backends). For
+CompositeStore (where tier matching may involve I/O), the cache should store
+the plan itself rather than calling `resolve()` on every lookup.
 
 ### 4.5 CompositeStore Resolution (ID-121, Future)
 
-CompositeStore overrides `resolve()` to report tier-based resolution:
+CompositeStore overrides `resolve()` to report tier-based resolution.
+`tier.matches(key)` is pattern-based (no I/O) — it checks whether the key
+matches a tier's configured pattern, not whether the key exists in that tier's
+storage. `NotFoundError` from `resolve()` means "no pattern matched any tier",
+not "key doesn't exist in storage".
 
 ```python
 class CompositeStore(Store):
@@ -262,17 +282,23 @@ class CompositeStore(Store):
         raise NotFoundError(key)
 ```
 
+**Note:** The nested `tier_plan` in `details` is a `ResolutionPlan` object, not a
+JSON-serializable primitive. See the serialization note in §4.1 `details` docstring
+for implications and future direction.
+
 ### 4.6 Cache Key Usage
 
 ```python
 # ext/cache.py — principled cache keys
 def _cache_key(self, key: str) -> str:
     plan = self._inner.resolve(key)
-    return str(hash(plan))
+    return f"{plan.kind}:{plan.backend}:{plan.native_path}"
 ```
 
 This replaces ad-hoc `(backend_name, full_path)` tuple construction and is
-correct across all backend types including SQL and composite.
+correct across all backend types including SQL and composite. Note: we derive
+the cache key from specific fields rather than `hash(plan)` because the
+`details` dict makes `ResolutionPlan` unhashable.
 
 ---
 
@@ -297,7 +323,7 @@ universal and not gated by capabilities.
 7. Export from `remote_store.__init__`
 
 ### Phase 2: Cache integration
-1. `ext.cache` uses `hash(plan)` for cache keys
+1. `ext.cache` derives cache keys from plan fields (see §4.6)
 2. Backward-compatible: existing cache keys still work during transition
 
 ### Phase 3: CompositeStore (ID-121)
@@ -321,7 +347,7 @@ universal and not gated by capabilities.
 | RES-030 | `Store.resolve()` key rebasing |
 | RES-040 | `ProxyStore.resolve()` delegation |
 | RES-050..RES-090 | Per-backend `resolve()` overrides (one per backend) |
-| RES-100 | `ResolutionPlan.__hash__` for cache key use |
+| RES-100 | Cache key derivation from `ResolutionPlan` fields (not `__hash__`) |
 | RES-110 | `CompositeStore.resolve()` tier reporting |
 
 ---
@@ -331,13 +357,18 @@ universal and not gated by capabilities.
 1. **Should `details` be typed per-kind?** Current design: `dict[str, Any]`.
    Alternative: `TypedDict` subclasses per kind. Recommendation: keep `dict`
    for v1 (simpler, extensible), consider typed details in v2 if patterns
-   stabilize.
+   stabilize. **Hashability note:** the `dict` field makes `ResolutionPlan`
+   unhashable despite `frozen=True`. Cache keys must be derived from specific
+   fields (see §4.6), not from `hash(plan)`.
 
 2. **Should `resolve()` check existence?** Current design: no — `resolve()`
    is a pure name-to-plan mapping. Existence checking is `exists()`. This
    matches Iceberg (catalog lookup doesn't check file existence) and Delta
    (name resolution doesn't verify storage). Recommendation: keep `resolve()`
-   as pure resolution, no I/O.
+   as pure resolution, no I/O. **CompositeStore nuance:**
+   `CompositeStore.resolve()` uses `tier.matches(key)` which is pattern-based
+   (no I/O). `NotFoundError` means "no tier pattern matched", not "key doesn't
+   exist in storage". This is consistent with the no-I/O principle.
 
 3. **Should `native_path` be in the plan?** It duplicates `Backend.native_path()`
    output. But including it avoids a second call and makes the plan
@@ -375,11 +406,11 @@ separate spec with separate timeline.
 ### Internal
 - [SQLAlchemy backend research § 5](research-sqlalchemy-backend.md#5-resolution-model--composite-store) — original ResolutionPlan design
 - [Store config research](research-store-config.md) — Registry multi-backend composition
-- [BACKLOG.md](../BACKLOG.md) — ID-120, ID-121 descriptions
+- `sdd/BACKLOG.md` — ID-120, ID-121 descriptions
 
 ### External
 - [Apache Iceberg Spec](https://iceberg.apache.org/spec/) — catalog-based table resolution
-- [Delta Catalog-Managed Tables](https://delta.io/blog/2026-02-02-delta-catalog-managed-tables/) — name-based resolution, catalog as coordinator
+- [Delta Lake Documentation](https://docs.delta.io/) — name-based resolution, catalog as coordinator
 - [Apache Hudi Tech Spec](https://hudi.apache.org/tech-specs/) — timeline + metadata table resolution
 - [fsspec](https://filesystem-spec.readthedocs.io/) — protocol-based filesystem dispatch
 - [Unity Catalog](https://www.unitycatalog.io/) — three-level namespace, OpenAPI spec
