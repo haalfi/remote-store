@@ -73,10 +73,13 @@ The orchestrator:
 
 | Expert | Domain | Foundation |
 |--------|--------|-----------|
-| Store & Backend | `src/remote_store/`, `backends/` | DESIGN.md + relevant specs/ADRs |
+| Store & Backend | `src/remote_store/` (includes `backends/`) | DESIGN.md + relevant specs/ADRs |
 | Extension | `src/remote_store/ext/` | DESIGN.md + relevant specs/ADRs |
 | Testing | `tests/` | TESTING.md, DESIGN.md § 11 |
-| Documentation | `docs-src/`, `examples/`, `guides/`, docstrings, README.md, CHANGELOG.md | DOCUMENTATION.md, DESIGN.md § 4 |
+| Documentation | `docs-src/`, `examples/`, `guides/`, docstrings | DOCUMENTATION.md, DESIGN.md § 4 |
+
+README.md and CHANGELOG.md are cross-domain files owned by the orchestrator.
+The Documentation Expert assesses their impact but does not write to them.
 
 ## Consequences
 

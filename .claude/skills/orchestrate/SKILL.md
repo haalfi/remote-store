@@ -5,7 +5,7 @@ disable-model-invocation: true
 argument-hint: "[BACKLOG-ID] [optional: task description]"
 ---
 
-Orchestrate a complex task by delegating to 4 domain experts in parallel.
+Orchestrate a complex task by delegating to 4 domain experts.
 See ADR-0019 for architecture rationale.
 
 Parse `$ARGUMENTS`: first token is the backlog ID (e.g., `BK-123`, `ID-120`),
@@ -25,7 +25,7 @@ Before spawning experts, decide and document:
 - Spec IDs that each expert will implement or reference
 - Which mode applies (see activation rules below)
 
-This upfront plan lets experts work in parallel without conflicts. Share it
+This upfront plan lets experts work without conflicts. Share it
 with each expert in their task prompt.
 
 ### Expert activation rules
@@ -39,16 +39,15 @@ implement) from their domain perspective.
 
 ## Step 3: Spawn experts
 
-Spawn all needed experts in a **single message with multiple Agent tool calls**
-so they run in parallel. Each expert gets the architecture plan from Step 2
-plus their domain-specific prompt below.
+Spawn all needed experts using multiple Agent tool calls. Each expert gets
+the architecture plan from Step 2 plus their domain-specific prompt below.
 
 ### Store & Backend Expert
 
 ```
 You are the Store & Backend expert for remote-store.
 
-DOMAIN: src/remote_store/ and src/remote_store/backends/
+DOMAIN: src/remote_store/ (includes backends/)
 
 FOUNDATION — read before writing:
 - sdd/DESIGN.md (code conventions)
@@ -62,6 +61,11 @@ CONSTRAINTS:
 - Follow Backend ABC contract, error mapping patterns, capabilities.
 - Use existing backends as reference implementations.
 - Only create/modify files under src/remote_store/.
+
+DONE WHEN:
+- All spec IDs from the plan are implemented.
+- `hatch run typecheck` passes on changed files.
+- No `# type: ignore` added without justification.
 
 OUTPUT: files created/modified, spec IDs implemented, issues found.
 ```
@@ -86,6 +90,11 @@ CONSTRAINTS:
 - Follow ADR-0008 extension pattern.
 - Lazy imports for optional dependencies.
 - Even if no ext/ files change, report your impact assessment.
+
+DONE WHEN:
+- Impact assessment written with reasoning.
+- If ext/ files changed: lazy imports verified, ADR-0008 pattern followed.
+- If no impact: assessment explains why.
 
 OUTPUT: impact assessment, files created/modified (if any), issues found.
 ```
@@ -112,6 +121,11 @@ CONSTRAINTS:
 - 95% coverage target.
 - Parametrize 3+ similar test shapes (Rule 7).
 
+DONE WHEN:
+- All new public methods have failure-path tests.
+- Every test has @pytest.mark.spec tracing.
+- Coverage delta >= 0 (verify with hatch run test-cov).
+
 OUTPUT: files created/modified, spec IDs covered, coverage impact.
 ```
 
@@ -120,8 +134,7 @@ OUTPUT: files created/modified, spec IDs covered, coverage impact.
 ```
 You are the Documentation expert for remote-store.
 
-DOMAIN: docs-src/, examples/, guides/, docstrings in source files,
-README.md, CHANGELOG.md
+DOMAIN: docs-src/, examples/, guides/, docstrings in source files
 
 FOUNDATION — read before writing:
 - sdd/DOCUMENTATION.md (Diataxis, content homes, cross-linking)
@@ -130,7 +143,8 @@ FOUNDATION — read before writing:
 
 TASK: [orchestrator fills this — always includes: "Evaluate whether
 behavior changes, guides, examples, troubleshooting, or API docs
-need updating."]
+need updating. Assess README.md and CHANGELOG.md impact but do not
+write to them — the orchestrator owns those files."]
 
 CONSTRAINTS:
 - Diataxis placement: tutorials, how-to, reference, explanation.
@@ -138,8 +152,16 @@ CONSTRAINTS:
 - Update nav files (_nav.yml) if adding pages.
 - Docstring completeness per DESIGN.md symbol type table.
 - Even if no doc changes needed, report your assessment.
+- README.md and CHANGELOG.md: assess impact only, orchestrator writes.
 
-OUTPUT: assessment, files created/modified (if any), nav changes.
+DONE WHEN:
+- Every new public symbol has a docstring.
+- Nav files updated if pages added.
+- Cross-links verified (API ref ↔ guides ↔ examples).
+- README/CHANGELOG assessment provided to orchestrator.
+
+OUTPUT: assessment, files created/modified (if any), nav changes,
+README/CHANGELOG recommendations for orchestrator.
 ```
 
 ## Step 4: Post-process
@@ -147,10 +169,13 @@ OUTPUT: assessment, files created/modified (if any), nav changes.
 After all experts complete:
 
 1. **Ripple-check audit**: Walk `sdd/CLAUDE-REFERENCE.md` table. For each
-   triggered row, verify target files were updated. Fix gaps directly.
-2. **CHANGELOG**: Add entry under `[Unreleased]` with backlog ID.
+   triggered row, verify target files were updated. For domain-specific gaps
+   (e.g., missing test), re-spawn the relevant expert. For cross-domain gaps,
+   fix directly.
+2. **CHANGELOG**: Add entry under `[Unreleased]` with backlog ID, incorporating
+   the Documentation Expert's assessment.
 3. **BACKLOG**: Mark item `[x]` or `[~]`, move completed parts to BACKLOG-DONE.
-4. **Validate**: Run `hatch run all`. Fix failures, re-run until clean.
+4. **Validate**: Run `hatch run all`. Fix failures (max 2 attempts — see Rules).
 
 ## Step 5: Commit & report
 
@@ -165,4 +190,5 @@ After all experts complete:
 - If `hatch run all` fails after 2 fix attempts, report the failure and stop.
 - Commit message: `<BACKLOG-ID>: <short description>`.
 - The orchestrator handles cross-domain files (CHANGELOG, BACKLOG, README tables,
-  pyproject.toml extras, nav files). Experts stay in their domain.
+  pyproject.toml extras). Experts stay in their domain. The Documentation Expert
+  assesses README/CHANGELOG impact but does not write to them.
