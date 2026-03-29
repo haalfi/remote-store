@@ -8,15 +8,17 @@ Items graduate through the SDD pipeline:
 
 ## How this file works
 
-**Status legend:** `[ ]` pending · `[~]` in progress · `[x]` done
+**Status legend:** `[ ]` pending · `[~]` in progress
 
 **Ordering:** newest first within each section.
 
 **Completing work:**
 
-- Fully done → move to `BACKLOG-DONE.md` (same commit as the code change).
-- Partially done → split: ship the done part to `BACKLOG-DONE.md` under its
-  original ID, create a new ID here for the remaining work, and link both.
+- Fully done → delete from here, add to `BACKLOG-DONE.md` as `[x]`
+  (same commit as the code change).
+- Partially done → split: ship the done part to `BACKLOG-DONE.md` as `[x]`
+  under its original ID, create a new ID here for the remaining work, and
+  link both.
 
 **ID prefixes:**
 

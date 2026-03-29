@@ -1,6 +1,7 @@
 # Development Backlog — Done
 
-Completed items, newest first. Active work lives in [BACKLOG.md](BACKLOG.md).
+Completed items, newest first. All items must use `[x]` status.
+Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
