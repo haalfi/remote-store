@@ -28,7 +28,7 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 
 **Ripple check:** Read `sdd/CLAUDE-REFERENCE.md` § Ripple-check table. For each triggered row, verify targets are addressed. File `Ripple:` comments for gaps.
 
-**CHECKPOINT — before proceeding to Step 3, confirm to yourself: "I am a reviewer. I will only post comments. Nothing else."**
+**CHECKPOINT — before proceeding to Step 4, confirm to yourself: "I am a reviewer. I will only post comments. Nothing else."**
 
 ## Step 3: Consolidate findings
 
