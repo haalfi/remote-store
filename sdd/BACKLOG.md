@@ -75,16 +75,6 @@ Items graduate through the SDD pipeline:
   Each fix must follow the bug-fix protocol (backlog → changelog → failing test
   → fix). Split into sub-items or a single PR depending on scope at the time.
 
-### Testing
-
-- [x] **BK-124b — Enforce testing rules from TESTING.md**
-  → moved to [BACKLOG-DONE.md](BACKLOG-DONE.md)
-
-### Process & Orchestration
-
-- [x] **BK-125 — Multi-agent orchestration for complex tasks**
-  → moved to [BACKLOG-DONE.md](BACKLOG-DONE.md)
-
 ### Developer Tooling
 
 - [ ] **BK-016 — Eliminate avoidable `# type: ignore` comments in src/**
