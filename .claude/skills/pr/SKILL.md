@@ -17,9 +17,9 @@ See CLAUDE.md § GitHub operations for the full priority chain.
 1. **Pre-check:** Verify not on master, working tree clean, branch pushed to remote.
    Push with `-u` if needed.
 
-2. **Coverage gate:** Run `hatch run test-cov` (requires 95%).
-   If it fails, stop and report which files are below threshold.
-   Do **not** create the PR until coverage passes.
+2. **Coverage gate:** Check `git diff master...HEAD --name-only` for files under `src/`, `tests/`, or `examples/`.
+   - If any match: run `hatch run test-cov` (requires 95%). If it fails, stop and report which files are below threshold. Do **not** create the PR until coverage passes.
+   - If none match (docs/config-only): skip coverage.
 
 3. **Gather context:** `git log master..HEAD --oneline` and `git diff master...HEAD`
    to understand all changes (not just the latest commit).
