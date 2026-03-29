@@ -274,9 +274,8 @@ class ObservedStore(ProxyStore):
     def resolve(self, key: str) -> ResolutionPlan:
         """Resolve a key to a ``ResolutionPlan``, emitting observation events.
 
-        Only ``kind``, ``backend``, and ``key`` from the plan are included in
-        event metadata to prevent sensitive ``details`` from flowing through
-        callbacks.
+        Event metadata is intentionally empty to prevent sensitive
+        ``details`` from flowing through observation callbacks.
         """
         with self._observe_op("resolve", key, {}):
             plan = self._inner.resolve(key)
@@ -423,7 +422,8 @@ def observe(
         on_copy: Fires after copy.
         on_move: Fires after move.
         on_list: Fires after list_files/list_folders/iter_children/glob/
-            get_file_info/get_folder_info/exists/is_file/is_folder.
+            get_file_info/get_folder_info/exists/is_file/is_folder/
+            resolve.
         on_ping: Fires after ping.
         on_error: Fires on any operation that raises an exception.
         on_any: Fires after every operation (catch-all).

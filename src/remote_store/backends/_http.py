@@ -427,14 +427,16 @@ class ReadOnlyHttpBackend(Backend):
             ``url`` and ``method``.
         """
         from remote_store._resolution import ResolutionPlan as _RP
+        from remote_store.backends._s3 import _strip_userinfo
 
+        url = self.native_path(path)
         return _RP(
             kind="http",
             backend=self.name,
             key=path,
-            native_path=self.native_path(path),
+            native_path=url,
             details={
-                "url": self.native_path(path),
+                "url": _strip_userinfo(url) or url,
                 "method": "GET",
             },
         )
