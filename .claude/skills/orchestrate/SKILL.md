@@ -202,7 +202,9 @@ After all experts complete:
    fix directly.
 2. **CHANGELOG**: Add entry under `[Unreleased]` with backlog ID, incorporating
    the Documentation Expert's assessment.
-3. **BACKLOG**: Mark item `[x]` or `[~]`, move completed parts to BACKLOG-DONE.
+3. **BACKLOG**: Delete completed items from BACKLOG.md, add as `[x]` to
+   BACKLOG-DONE.md. Partially done → split: done part to BACKLOG-DONE.md as
+   `[x]`, new ID in BACKLOG.md for remainder.
 4. **Validate**: Run `hatch run all`. Fix failures (max 2 attempts — see Rules).
 
 ## Step 5: Commit & report
