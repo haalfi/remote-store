@@ -25,6 +25,8 @@ from remote_store.backends._fileinfo import _clean_etag, _name_from_path, _norma
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from remote_store._resolution import ResolutionPlan
+
 
 def _normalize_endpoint_url(url: str | None) -> str | None:
     """Normalize endpoint URL: bare ``host:port`` becomes ``https://host:port``.
@@ -43,6 +45,22 @@ def _normalize_endpoint_url(url: str | None) -> str | None:
     if lower.startswith("http://") or lower.startswith("https://"):
         return url
     return f"https://{url}"
+
+
+def _strip_userinfo(url: str | None) -> str | None:
+    """Remove userinfo (``user:pass@``) from a URL per RFC 3986."""
+    if url is None:
+        return None
+    import urllib.parse
+
+    parsed = urllib.parse.urlparse(url)
+    if not parsed.username:
+        return url
+    # Rebuild without userinfo
+    netloc = parsed.hostname or ""
+    if parsed.port:
+        netloc = f"{netloc}:{parsed.port}"
+    return urllib.parse.urlunparse(parsed._replace(netloc=netloc))
 
 
 _S3_CA_ENV_VARS: tuple[str, ...] = ("AWS_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE")
@@ -77,6 +95,7 @@ class _S3Base(Backend):
 
     # Set by subclass __init__
     _bucket: str
+    _endpoint_url: str | None
 
     # region: abstract property
 
@@ -101,6 +120,30 @@ class _S3Base(Backend):
         if native_path.startswith(prefix):
             return native_path[len(prefix) :]
         return native_path
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` with S3-specific details.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            Plan with ``kind=self.name`` and ``details`` containing
+            ``bucket``, ``object_key``, and ``endpoint_url``.
+        """
+        from remote_store._resolution import ResolutionPlan as _RP
+
+        return _RP(
+            kind=self.name,
+            backend=self.name,
+            key=path,
+            native_path=self.native_path(path),
+            details={
+                "bucket": self._bucket,
+                "object_key": path,
+                "endpoint_url": _strip_userinfo(self._endpoint_url),
+            },
+        )
 
     # endregion
 
