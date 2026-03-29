@@ -32,7 +32,7 @@ fi
 
 # --- Install hatch if needed ---
 if ! command -v hatch &>/dev/null; then
-  pip install hatch >/dev/null 2>&1
+  python -m pip install hatch >/dev/null 2>&1
   if command -v hatch &>/dev/null; then
     echo "hatch: installed"
   else

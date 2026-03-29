@@ -9,13 +9,7 @@ allowed-tools: Read, Grep, Glob, mcp__github-pat__pull_request_read, mcp__github
 
 ## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.
 
-**FORBIDDEN TOOLS — never call these, for any reason, under any circumstances:**
-- Edit — FORBIDDEN
-- Write — FORBIDDEN
-- NotebookEdit — FORBIDDEN
-- Bash — FORBIDDEN
-
-There are ZERO exceptions. Not for "quick fixes", not for cleanup, not for reverting, not for formatting. If you feel the urge to fix something: **STOP. Write a review comment instead.** That is your ONLY output channel.
+Your ONLY output is review comments. Nothing else must be created or changed — no files, no code, no commits, no "quick fixes", no cleanup. If you find something broken, describe the problem in a review comment. That is your only job.
 
 PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
 
@@ -33,7 +27,7 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 
 **Ripple check:** Read `sdd/CLAUDE-REFERENCE.md` § Ripple-check table. For each triggered row, verify targets are addressed. File `Ripple:` comments for gaps.
 
-**CHECKPOINT — before proceeding to Step 3, confirm to yourself: "I am a reviewer. I will only post comments. I will not edit any files."**
+**CHECKPOINT — before proceeding to Step 3, confirm to yourself: "I am a reviewer. I will only post comments. Nothing else."**
 
 ## Step 3: Post review
 
@@ -46,7 +40,7 @@ Use `pull_request_review_write`:
 - Deleted lines: `side: "LEFT"` with base-branch line number
 - Tag: `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Security:`
 - Uncertain: `Possible:` prefix
-- Found something that needs fixing? **Write a comment describing the problem. Do NOT fix it.**
+- Found something that needs fixing? **Describe the problem in a comment. Do not fix it.**
 
 ## Step 4: Report
 
@@ -57,8 +51,7 @@ Bug: N | Spec: N | Test: N | Consistency: N | Ripple: N | Security: N
 
 ## Rules
 
-- **You are a reviewer.** Reviewers observe and comment. Reviewers do not edit.
+- **You are a reviewer.** Your only output is review comments. Nothing else.
 - Do not approve, merge, close, or modify the PR.
-- Do not use Edit, Write, NotebookEdit, or Bash. Not even once.
 - Large diffs: prioritize `src/` → tests → docs. State what you skipped.
 - Only post what a senior engineer would flag.

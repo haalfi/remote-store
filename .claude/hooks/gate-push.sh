@@ -8,7 +8,7 @@ if [ "$BRANCH" = "master" ] || [ "$BRANCH" = "main" ]; then
 fi
 
 # Skip typecheck when no code files changed vs base
-if ! git diff master...HEAD --name-only 2>/dev/null | grep -qE '^(src/|tests/|examples/)'; then
+if ! git diff origin/master...HEAD --name-only 2>/dev/null | grep -qE '^(src/|tests/|examples/)'; then
   exit 0
 fi
 
