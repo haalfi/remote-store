@@ -39,8 +39,20 @@ implement) from their domain perspective.
 
 ## Step 3: Spawn experts
 
-Spawn all needed experts using multiple Agent tool calls. Each expert gets
-the architecture plan from Step 2 plus their domain-specific prompt below.
+Each expert gets the architecture plan from Step 2 plus their domain-specific
+prompt below.
+
+**Feature/refactor:** Spawn all experts using multiple Agent tool calls.
+
+**Bug fix (TDD):** Sequential — Testing Expert goes first:
+1. Spawn **Testing Expert only** — write a failing test that clearly reproduces
+   the bug, conforming to the full testing guide (`sdd/TESTING.md`).
+2. Verify the test fails for the right reason.
+3. Then spawn remaining experts (Store & Backend, Extension, Documentation)
+   to fix the bug and assess impact.
+
+This follows the bug-fix protocol in CLAUDE.md: backlog → changelog → failing
+test → fix.
 
 ### Store & Backend Expert
 
