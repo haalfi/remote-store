@@ -90,6 +90,7 @@ docs = [
   "mkdocs-section-index>=0.3",
   "mike>=2.0",
   "Pygments>=2.18,<2.21",  # 2.20 breaks pymdownx.highlight (filename=None)
+  "ruff>=0.4",  # mkdocstrings signature formatting
   "s3fs>=2024.2.0",
 ]
 
