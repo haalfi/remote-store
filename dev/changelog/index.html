@@ -9361,9 +9361,17 @@
 </li>
 <li>
 <p><strong>pytest-gremlins integration</strong> (BK-126): Added <code>pytest-gremlins&gt;=1.5</code> for
-  mutation testing. New hatch scripts: <code>check-test-quality</code>, <code>mutate</code>,
-  <code>mutate-report</code>, <code>test-cov-branch</code> (branch coverage diagnostic). No CI
-  threshold yet.</p>
+  mutation testing. New hatch scripts: <code>check-test-quality</code>,
+  <code>test-cov-branch</code> (branch coverage diagnostic). No CI threshold yet.</p>
+</li>
+<li>
+<p><strong>Fix mutation testing scripts</strong> (BK-131): Replaced broken <code>mutate</code> /
+  <code>mutate-report</code> scripts with 6 scoped scripts (<code>mutate-core-api</code>,
+  <code>mutate-core-infra</code>, <code>mutate-ext-proxy</code>, <code>mutate-ext-format</code>,
+  <code>mutate-backends-local</code>, <code>mutate-backends-cloud</code>). Original scripts passed
+  source dir as positional arg instead of <code>--gremlin-targets</code>. Scoped runs
+  avoid Windows command-line length limits. Added <code>[tool.pytest-gremlins]</code>
+  config with incremental caching enabled.</p>
 </li>
 <li>
 <p><strong>Eliminate avoidable <code>type: ignore</code> comments</strong> (BK-016): Replaced 9
