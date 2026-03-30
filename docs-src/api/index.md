@@ -78,6 +78,7 @@ Complete reference for all public exports of `remote-store`.
 
 | Function | Description |
 |----------|-------------|
+| [info](info.md#remote_store.info) | Runtime introspection of available backends and extensions |
 | [register_backend](registry.md#remote_store.register_backend) | Register a custom backend type |
 
 ## Extensions
