@@ -39,6 +39,12 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-133 — Upgrade GitHub Actions from Node.js 20 to 24**
+  `actions/deploy-pages@v4` runs on Node.js 20, deprecated by GitHub.
+  Node.js 24 becomes default 2026-06-02; Node.js 20 removed 2026-09-16.
+  Audit all workflows for Node.js 20 actions and upgrade to versions
+  supporting Node.js 24. See [GitHub blog post](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/).
+
 ---
 
 ## Ideas
