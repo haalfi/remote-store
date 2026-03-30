@@ -17,6 +17,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Cleanup
 
+- [x] **BK-131 — Fix mutation testing scripts (pytest-gremlins)**
+  `hatch run mutate` was broken: passed source dir as positional arg instead
+  of `--gremlin-targets`. Replaced with 6 scoped scripts (`mutate-core-api`,
+  `mutate-core-infra`, `mutate-ext-proxy`, `mutate-ext-format`,
+  `mutate-backends-local`, `mutate-backends-cloud`) using comma-separated
+  `--gremlin-targets` and matching test files. Scoping avoids Windows
+  `WinError 206` (command-line length limit). Added `[tool.pytest-gremlins]`
+  config with incremental caching. Updated CLAUDE.md dev commands.
+
 - [x] **BK-130 — Remove deprecated function aliases (pre-v1 cleanup)**
   Removed `cached_store()`, `remote_store_io_manager()`,
   `pydantic_to_registry_config()`, `_deprecated_alias()` helper, and

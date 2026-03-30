@@ -237,9 +237,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `assert` or `pytest.raises` now have meaningful post-condition assertions.
 
 - **pytest-gremlins integration** (BK-126): Added `pytest-gremlins>=1.5` for
-  mutation testing. New hatch scripts: `check-test-quality`, `mutate`,
-  `mutate-report`, `test-cov-branch` (branch coverage diagnostic). No CI
-  threshold yet.
+  mutation testing. New hatch scripts: `check-test-quality`,
+  `test-cov-branch` (branch coverage diagnostic). No CI threshold yet.
+
+- **Fix mutation testing scripts** (BK-131): Replaced broken `mutate` /
+  `mutate-report` scripts with 6 scoped scripts (`mutate-core-api`,
+  `mutate-core-infra`, `mutate-ext-proxy`, `mutate-ext-format`,
+  `mutate-backends-local`, `mutate-backends-cloud`). Original scripts passed
+  source dir as positional arg instead of `--gremlin-targets`. Scoped runs
+  avoid Windows command-line length limits. Added `[tool.pytest-gremlins]`
+  config with incremental caching enabled.
 
 - **Eliminate avoidable `type: ignore` comments** (BK-016): Replaced 9
   `no-any-return` suppressions with `cast()` in `ext/cache.py` (6) and
