@@ -8,6 +8,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- Fix 72 `ResourceWarning: unclosed database` in SQL backend tests by adding
+  proper fixture teardown and `close()` calls. Filter residual SQLAlchemy pool
+  warning on Python 3.13+ (BK-135).
 - Replace `isinstance`-only assertions (12 tests) and private attribute
   assertions (~15 instances) with behavioral checks (BK-134).
 - Upgrade `setup-uv` from v7 to v8.0.0 (immutable tags) across all workflows.

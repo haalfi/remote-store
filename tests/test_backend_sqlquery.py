@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from typing import TYPE_CHECKING
 
 import pyarrow.csv as pcsv
 import pyarrow.ipc as pipc
@@ -22,13 +23,16 @@ from remote_store.backends._sqlalchemy import (
     SQLQueryBackend,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
 
 @pytest.fixture
-def engine() -> sa.Engine:
+def engine() -> Iterator[sa.Engine]:
     """SQLite engine with a pre-populated test table."""
     eng = sa.create_engine("sqlite:///:memory:")
     with eng.begin() as conn:
@@ -41,13 +45,14 @@ def engine() -> sa.Engine:
                 {"id": 3, "amount": 150.0, "region": "north"},
             ],
         )
-    return eng
+    yield eng
+    eng.dispose()
 
 
 @pytest.fixture
-def backend(engine: sa.Engine) -> SQLQueryBackend:
+def backend(engine: sa.Engine) -> Iterator[SQLQueryBackend]:
     """Backend with explicit query mappings."""
-    return SQLQueryBackend(
+    b = SQLQueryBackend(
         engine=engine,
         queries={
             "reports/sales.parquet": "SELECT * FROM sales",
@@ -57,6 +62,8 @@ def backend(engine: sa.Engine) -> SQLQueryBackend:
             "summaries/total.parquet": "SELECT SUM(amount) AS total FROM sales",
         },
     )
+    yield b
+    b.close()
 
 
 # ---------------------------------------------------------------------------
@@ -69,10 +76,12 @@ class TestConstruction:
     def test_url_creates_backend(self) -> None:
         b = SQLQueryBackend(url="sqlite:///:memory:", queries={"t.parquet": "SELECT 1"})
         assert b.name == "sql-query"
+        b.close()
 
     def test_engine_creates_backend(self, engine: sa.Engine) -> None:
         b = SQLQueryBackend(engine=engine, queries={"t.parquet": "SELECT 1"})
         assert b.name == "sql-query"
+        b.close()
 
     def test_both_url_and_engine_raises(self, engine: sa.Engine) -> None:
         with pytest.raises(ValueError, match="Exactly one"):
@@ -99,6 +108,7 @@ class TestConstruction:
     def test_no_queries_is_valid(self) -> None:
         b = SQLQueryBackend(url="sqlite:///:memory:")
         assert len(list(b.list_files(""))) == 0
+        b.close()
 
 
 @pytest.mark.spec("SQL-QUERY-002")
@@ -270,6 +280,7 @@ class TestRead:
         table = pq.read_table(io.BytesIO(data))
         assert table.num_rows == 0
         assert "id" in table.column_names
+        b.close()
 
 
 @pytest.mark.spec("SQL-QUERY-021")
@@ -511,6 +522,7 @@ class TestErrorMapping:
         )
         with pytest.raises(RemoteStoreError):
             b.read_bytes("bad.parquet")
+        b.close()
 
     def test_key_not_found(self, backend: SQLQueryBackend) -> None:
         with pytest.raises(NotFound, match="No query registered"):

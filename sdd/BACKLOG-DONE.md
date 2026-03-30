@@ -17,6 +17,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Cleanup
 
+- [x] **BK-135 — Fix 72 ResourceWarning in SQL backend tests** (post-v0.20.0)
+  Added `close()` / `dispose()` teardown to `test_backend_sqlquery.py` fixtures
+  and inline backends. Filtered residual SQLAlchemy pool ResourceWarning on
+  Python 3.13+ via pytest `filterwarnings`.
 - [x] **BK-134 — Fix test behavior assertion anti-patterns** (post-v0.20.0)
   Replaced `isinstance`-only assertions (12 tests) with behavioral checks and
   replaced ~15 private attribute assertions with public API equivalents across

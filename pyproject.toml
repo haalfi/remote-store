@@ -279,6 +279,12 @@ pythonpath = ["."]
 # Exclude e2e by default — they need Docker services running.
 # Run them explicitly with: hatch run e2e
 addopts = "--ignore=tests/e2e"
+# SQLAlchemy's connection pool on SQLite may leave DBAPI connections for GC to
+# finalize, triggering ResourceWarning on Python 3.13+. This is an upstream
+# pool behaviour, not a leak in our code.
+filterwarnings = [
+  "ignore:unclosed database:ResourceWarning:sqlalchemy",
+]
 markers = [
   "spec(id): links test to a spec section ID",
   "integration: requires external services",
