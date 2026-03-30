@@ -390,7 +390,7 @@ class TestDagsterStoreResource:
         from remote_store.ext.dagster import DagsterStoreResource
 
         resource = DagsterStoreResource(backend_type="nonexistent", backend_options={})
-        with pytest.raises(ValueError, match="nonexistent"):
+        with pytest.raises(ValueError, match=r"nonexistent.*Registered types"):
             resource.setup_for_execution(context=build_init_resource_context())
 
 

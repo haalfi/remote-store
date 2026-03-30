@@ -250,7 +250,6 @@ class _DatasetIOManagerImpl(IOManager):  # type: ignore[misc]
                 "PyArrow is required for dataset mode. Install it with: pip install 'remote-store[dagster,arrow]'"
             ) from exc
         self._pds = ParquetDatasetStore(store)
-        self._store = store
 
     def handle_output(self, context: OutputContext, obj: Any) -> None:
         """Write a DataFrame as a Parquet dataset to the Store."""
@@ -272,11 +271,11 @@ class _DatasetIOManagerImpl(IOManager):  # type: ignore[misc]
         log.debug("Wrote dataset to %s", key)
 
     def load_input(self, context: InputContext) -> Any:
-        """Read a Parquet dataset manifest from the Store."""
+        """Read a Parquet dataset from the Store."""
         key = _dataset_key(context)
-        manifest = self._pds.read_dataset(key)
+        table = self._pds.read_dataset(key)
         log.debug("Read dataset from %s", key)
-        return manifest
+        return table
 
 
 # ---------------------------------------------------------------------------
