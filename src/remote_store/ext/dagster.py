@@ -38,6 +38,8 @@ except ModuleNotFoundError as _exc:  # pragma: no cover
 if TYPE_CHECKING:
     import contextlib
 
+    import pyarrow as pa  # type: ignore[import-untyped]
+
     with contextlib.suppress(ImportError):
         from dagster import InputContext, OutputContext  # type: ignore[import-untyped]
 
@@ -152,7 +154,7 @@ class ParquetSerializer:
         pq.write_table(table, buf)  # type: ignore[no-untyped-call]
         return buf.getvalue()
 
-    def deserialize(self, data: bytes) -> Any:
+    def deserialize(self, data: bytes) -> pa.Table:
         """Deserialize Parquet bytes to a PyArrow Table."""
         import io
 

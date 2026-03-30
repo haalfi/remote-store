@@ -94,6 +94,26 @@ class TestParquetSerializer:
         assert result.num_rows == 3
 
     @pytest.mark.spec("DAG-004")
+    def test_roundtrip_arrow(self, store: Store) -> None:
+        """Roundtrip with a PyArrow Table returns Arrow Table."""
+        import pyarrow as pa
+
+        mgr = dagster_io_manager(store, serializer="parquet")
+
+        table = pa.table({"a": [1, 2, 3], "b": ["x", "y", "z"]})
+
+        out_ctx = build_output_context(asset_key=AssetKey(["test", "parquet_arrow"]))
+        mgr.handle_output(out_ctx, table)
+
+        in_ctx = build_input_context(
+            asset_key=AssetKey(["test", "parquet_arrow"]),
+            upstream_output=out_ctx,
+        )
+        result = mgr.load_input(in_ctx)
+        assert isinstance(result, pa.Table)
+        assert result.equals(table)
+
+    @pytest.mark.spec("DAG-004")
     def test_serialize_arrow_table(self) -> None:
         """Serialize a PyArrow Table directly."""
         import pyarrow as pa
