@@ -119,14 +119,14 @@ Backends implement storage-specific behavior behind the Store API.
 
 | Type string | Description | Class | Extras | Always available | Capabilities |
 |---|---|---|---|---|---|
-| `local` | Local filesystem storage | `LocalBackend` | — | Yes | All 10 |
+| `local` | Local filesystem storage | `LocalBackend` | — | Yes | ALL |
 | `memory` | In-memory store for testing and caching | `MemoryBackend` | — | Yes | All except GLOB |
 | `http` | Read-only HTTP file access (stdlib urllib; optional `requests`/`httpx` adapters) | `ReadOnlyHttpBackend` | — (`requests`, `httpx` optional) | Yes | READ, METADATA |
-| `s3` | Amazon S3 via s3fs | `S3Backend` | `pip install remote-store[s3]` | No | All 10 |
-| `s3-pyarrow` | Amazon S3 via PyArrow C++ filesystem | `S3PyArrowBackend` | `pip install remote-store[s3-pyarrow]` | No | All 10 |
+| `s3` | Amazon S3 via s3fs | `S3Backend` | `pip install remote-store[s3]` | No | ALL |
+| `s3-pyarrow` | Amazon S3 via PyArrow C++ filesystem | `S3PyArrowBackend` | `pip install remote-store[s3-pyarrow]` | No | ALL |
 | `sftp` | SFTP via paramiko | `SFTPBackend` | `pip install remote-store[sftp]` | No | All except GLOB |
 | `azure` | Azure Data Lake Storage via Azure SDK | `AzureBackend` | `pip install remote-store[azure]` | No | All except SEEKABLE_READ |
-| `sql-blob` | SQL blob store via SQLAlchemy | `SQLBlobBackend` | `pip install remote-store[sql]` | No | All 10 |
+| `sql-blob` | SQL blob store via SQLAlchemy | `SQLBlobBackend` | `pip install remote-store[sql]` | No | ALL |
 | `sql-query` | SQL query store for tabular data via SQLAlchemy + PyArrow | `SQLQueryBackend` | `pip install remote-store[sql-query]` | No | READ, LIST, METADATA, GLOB, SEEKABLE_READ |
 
 ---
