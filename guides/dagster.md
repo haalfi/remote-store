@@ -56,7 +56,7 @@ for storage and back.
 |------|---------------|-----------|------------|----------|
 | Pickle | `"pickle"` (default) | `.pkl` | stdlib | Any picklable object |
 | JSON | `"json"` | `.json` | stdlib | JSON-serializable data |
-| Parquet | `"parquet"` | `.parquet` | `pyarrow>=14.0` | DataFrames, Arrow Tables |
+| Parquet | `"parquet"` | `.parquet` | `pyarrow>=14.0` | DataFrames (pandas, polars), Arrow Tables |
 
 ### Pickle (default)
 
