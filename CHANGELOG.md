@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-03-30
+
 ### Added
 
 - **Dagster extension v2 (`ext.dagster`)** (ID-083): `DagsterStoreResource`

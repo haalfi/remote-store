@@ -7,7 +7,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Integrations
 
-- [x] **ID-083 — Dagster extension v2: ConfigurableResource + IOManagerFactory**
+- [x] **ID-083 — Dagster extension v2: ConfigurableResource + IOManagerFactory** (v0.20.0)
   `DagsterStoreResource` (`ConfigurableResource`) for direct Store access in
   assets, `RemoteStoreIOManager` (`ConfigurableIOManagerFactory`) for
   config-driven IO management with automatic lifecycle. Dataset mode via
@@ -17,7 +17,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Cleanup
 
-- [x] **BK-131 — Fix mutation testing scripts (pytest-gremlins)**
+- [x] **BK-131 — Fix mutation testing scripts (pytest-gremlins)** (v0.20.0)
   `hatch run mutate` was broken: passed source dir as positional arg instead
   of `--gremlin-targets`. Replaced with 6 scoped scripts (`mutate-core-api`,
   `mutate-core-infra`, `mutate-ext-proxy`, `mutate-ext-format`,
@@ -26,7 +26,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `WinError 206` (command-line length limit). Added `[tool.pytest-gremlins]`
   config with incremental caching. Updated CLAUDE.md dev commands.
 
-- [x] **BK-130 — Remove deprecated function aliases (pre-v1 cleanup)**
+- [x] **BK-130 — Remove deprecated function aliases (pre-v1 cleanup)** (v0.20.0)
   Removed `cached_store()`, `remote_store_io_manager()`,
   `pydantic_to_registry_config()`, `_deprecated_alias()` helper, and
   `ext.glob` private re-exports. Updated migration guide, tests, and
@@ -34,7 +34,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Documentation
 
-- [x] **BK-129 — Address docs list completeness findings from audit-006**
+- [x] **BK-129 — Address docs list completeness findings from audit-006** (v0.20.0)
   Follow-up to [audit-006](audits/audit-006-docs-list-completeness.md)
   (2026-03-30). All 20 findings fixed: SQL backends added to all backend
   lists/tables (A), ghost "Seekable read" removed from extension lists (B),
@@ -43,12 +43,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Performance & Memory
 
-- [x] **BK-127 — Audit-005 low-priority polish (L-1, L-2, L-3)**
+- [x] **BK-127 — Audit-005 low-priority polish (L-1, L-2, L-3)** (v0.20.0)
   Remainder of BK-123. `size()` uses `sum()` generator (L-1), concurrent
   batch `list()` materialisation documented (L-2), sqlalchemy module-level
   import rationale commented (L-3).
 
-- [x] **BK-123 — Address laziness & memory findings from audit-005**
+- [x] **BK-123 — Address laziness & memory findings from audit-005** (v0.20.0)
   Follow-up to [audit-005](audits/audit-005-laziness-memory.md) (2026-03-28).
   Shipped High + Medium findings (H-1, H-2, M-1..M-6). S3 paginated
   listing, MemoryBackend snapshot-under-lock, cache `max_listing_size`
@@ -57,7 +57,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## API Surface
 
-- [x] **ID-122 — Parquet Dataset Storage extension (`ext.parquet`)**
+- [x] **ID-122 — Parquet Dataset Storage extension (`ext.parquet`)** (v0.20.0)
   `ParquetDatasetStore` — high-level Parquet dataset read/write with manifest
   metadata, `_SUCCESS` completion markers, and atomic-commit semantics.
   Single-file and multi-part layouts, column projection, overwrite semantics.
@@ -65,7 +65,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   [Spec 042](specs/042-ext-parquet.md),
   [RFC-0008](rfcs/rfc-0008-parquet-dataset-storage.md).
 
-- [x] **ID-120 — `resolve()` → `ResolutionPlan` introspection API**
+- [x] **ID-120 — `resolve()` → `ResolutionPlan` introspection API** (v0.20.0)
   `Store.resolve(key)` returns a frozen `ResolutionPlan` dataclass describing
   how a key maps to its storage location. Available on all 9 backends with no
   I/O. `details` wrapped in `MappingProxyType` for immutability. Security:
@@ -76,7 +76,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## New Backends
 
-- [x] **ID-119 — SQLAlchemy backends**
+- [x] **ID-119 — SQLAlchemy backends** (v0.20.0)
   Two concrete backends sharing `_SQLAlchemyBaseBackend`:
   - `SQLBlobBackend` (v1) — KV blob store, full read-write. PR #292.
   - `SQLQueryBackend` (v2) — read-only query materializer, explicit query
@@ -86,7 +86,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Process
 
-- [x] **BK-126 — CI assertion/mock checks + existing test migration**
+- [x] **BK-126 — CI assertion/mock checks + existing test migration** (v0.20.0)
   CI enforcement of Testing Rules 1 and 4: AST-based assertion checker
   (`scripts/check_test_assertions.py`) and MagicMock spec checker
   (`scripts/check_mock_spec.py`) wired into CI lint job. Migration: added
@@ -96,19 +96,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `check-test-quality`, `mutate`, `mutate-report`, `test-cov-branch`
   (branch coverage diagnostic). Remainder of BK-124b.
 
-- [x] **BK-128 — Orchestrate skill v2: iterative convergence model**
+- [x] **BK-128 — Orchestrate skill v2: iterative convergence model** (v0.20.0)
   Redesign `/orchestrate` from single-pass parallel to iterative convergence.
   Three complexity modes (Simple, Standard, Complex). Plan refinement with
   experts (1 round), consolidation step, review loop (max 2 rounds), user as
   tie-breaker. ADR-0020 supersedes ADR-0019. Based on BK-123 learnings.
 
-- [x] **BK-125 — Multi-agent orchestration for complex tasks**
+- [x] **BK-125 — Multi-agent orchestration for complex tasks** (v0.20.0)
   `/orchestrate` skill: orchestrator + 4 domain experts (Store & Backend,
   Extension, Testing, Documentation) via Claude Code Agent tool. Parallel
   execution, two modes (implementation + review). ADR-0019 documents
   architecture. [RFC](rfcs/rfc-0009-multi-agent-orchestration.md).
 
-- [x] **BK-124b — Enable Ruff PT rules (partial)**
+- [x] **BK-124b — Enable Ruff PT rules (partial)** (v0.20.0)
   Enabled Ruff `PT` rules (`flake8-pytest-style`) in `pyproject.toml` with
   `raises-require-match-for` config. Auto-fixed 152 violations (PT006, PT001,
   PT022). Added `match=` to 13 `pytest.raises` calls (PT011). Suppressed 9
@@ -116,7 +116,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Remainder: [BK-126](BACKLOG.md) (CI assertion/mock checks, existing
   test migration).
 
-- [x] **BK-124a — Codify testing rules in `sdd/TESTING.md`**
+- [x] **BK-124a — Codify testing rules in `sdd/TESTING.md`** (v0.20.0)
   8 testing quality rules extracted from
   [research-testing-best-practices](research/research-testing-best-practices.md)
   and formalized as an authoritative process doc. Enforcement tags
@@ -124,30 +124,30 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Testing Expert quick reference table for BK-125. Cross-referenced from
   DESIGN.md § 11 and CLAUDE-REFERENCE.md.
 
-- [x] **BK-016 — Eliminate avoidable `# type: ignore` comments in src/**
+- [x] **BK-016 — Eliminate avoidable `# type: ignore` comments in src/** (v0.20.0)
   Replaced 9 `no-any-return` suppressions with `cast()` in `ext/cache.py` (6)
   and `_stream.py` (3). `_path.py:21` `misc` kept — mypy does not support
   `Final` on `__slots__` descriptors.
 
-- [x] **BK-015 — Replace mypy `ignore_missing_imports` overrides with proper type stubs**
+- [x] **BK-015 — Replace mypy `ignore_missing_imports` overrides with proper type stubs** (v0.20.0)
   Added `types-requests` stub, removed overrides for `requests`, `urllib3`,
   `pydantic`, `pydantic_settings`, `tomli`, `tomllib`, `httpx`, `ruamel.yaml`.
   Cleaned up now-unnecessary `type: ignore` comments in HTTP transport modules.
   Keep: `dagster` (no `py.typed`, no stubs). PR #293.
 
-- [x] **BK-001 — Audit workflow and bug-fix protocol**
+- [x] **BK-001 — Audit workflow and bug-fix protocol** (v0.20.0)
   Added `/audit` skill (scope-first, report-only), bug-fix protocol
   (backlog → changelog → failing test → fix), ripple-check row,
   process rule. PR #288.
 
 ## Bug Fixes
 
-- [x] **BUG-005 — SFTP TOFU host key not persisted when known_hosts absent**
+- [x] **BUG-005 — SFTP TOFU host key not persisted when known_hosts absent** (v0.20.0)
   `TRUST_ON_FIRST_USE` now persists accepted host keys to disk on disconnect.
   Creates the known_hosts file and parent directories if absent. Inline keys
   (code/config/env) are never persisted. Spec SFTP-028.
 
-- [x] **BUG-006 — Cache coherency in move/copy operations**
+- [x] **BUG-006 — Cache coherency in move/copy operations** (v0.20.0)
   `CachedStore.move()` and `CachedStore.copy()` now clear the entire cache
   to prevent stale cached entries for nested paths that are relocated or
   overwritten. Previously only invalidated source/destination paths, missing
@@ -156,7 +156,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Benchmarks & Performance
 
-- [x] **ID-104 — S3-PyArrow comparison chart, overhead-vs-RTT, benchmark tooling**
+- [x] **ID-104 — S3-PyArrow comparison chart, overhead-vs-RTT, benchmark tooling** (v0.20.0)
   S3-PyArrow in comparative charts/reports with boto3 baseline. New S3 vs
   S3-PyArrow comparison chart. Overhead-vs-RTT chart with real multi-profile
   data. Performance messaging rewrite (numbers, not judgment). `--file` flag
@@ -168,7 +168,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   - [x] Fix S3-PyArrow messaging: analytical workloads, not
     high-throughput (PR #276)
 
-- [x] **ID-103 — Benchmark suite v2: user-decision framing**
+- [x] **ID-103 — Benchmark suite v2: user-decision framing** (v0.20.0)
   Expand Toxiproxy to all Docker backends, generate overhead charts,
   reframe performance guide for user decisions, add README performance
   section.
@@ -182,13 +182,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Docs & DX
 
-- [x] **ID-117 — S3Backend endpoint URL normalization**
+- [x] **ID-117 — S3Backend endpoint URL normalization** (v0.20.0)
   `S3Backend` and `S3PyArrowBackend` accept bare `host:port` for
   `endpoint_url` and auto-prefix with `https://`. Shared
   `_normalize_endpoint_url()` helper in `_s3_base.py`.
   Spec S3-025 / S3PA-023.
 
-- [x] **ID-113 — Documentation: S3 listing strategies and performance**
+- [x] **ID-113 — Documentation: S3 listing strategies and performance** (v0.20.0)
   Comprehensive guide added to `guides/backends/s3.md` explaining shallow vs.
   recursive listing trade-offs, why flat `ListObjectsV2` streams beat
   delimiter-based folder iteration, and why parallelization is wrong for large
@@ -196,7 +196,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   New example file `examples/backends/s3_listing_strategies.py` demonstrates shallow,
   recursive, and filtered listing patterns.
 
-- [x] **BUG-004 — Snippet indentation leaks into docs code blocks**
+- [x] **BUG-004 — Snippet indentation leaks into docs code blocks** (v0.20.0)
   pymdownx.snippets extracts named regions verbatim; regions inside
   function bodies carry 4–8 spaces of indentation into rendered docs.
   Fix: enable `dedent_subsections: true` in pymdownx.snippets config.
@@ -206,7 +206,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Streaming & I/O
 
-- [x] **ID-102 — Azure PyArrow column pruning via seekable range reads**
+- [x] **ID-102 — Azure PyArrow column pruning via seekable range reads** (v0.20.0)
   `Store.read_seekable()` + `_AzureRangeReader` (HTTP Range per `readinto()`)
   enables Parquet column pruning on Azure without full-file download. 2–17x
   speedup for selective reads on 10 MB+ files. Arrow adapter Tier 3 uses
@@ -220,7 +220,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   - Deferred: C++ Tier 1 via `pyarrow.fs.AzureFileSystem` — see
     [ID-105](BACKLOG.md#integrations).
 
-- [x] **ID-100 — Seekable read capability + extension**
+- [x] **ID-100 — Seekable read capability + extension** (v0.20.0)
   `Capability.SEEKABLE_READ` flag for backends that always return seekable
   streams (Local, Memory, S3, S3-PyArrow, SFTP). `ext.seekable.seekable_read()`
   portable wrapper with `SpooledTemporaryFile` fallback for non-seekable
@@ -230,38 +230,38 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## API Surface
 
-- [x] **ID-118 — Certificate bundle handling (S3, Phase 1)**
+- [x] **ID-118 — Certificate bundle handling (S3, Phase 1)** (v0.20.0)
   Dedicated `tls_ca_bundle: str | None` parameter on `S3Backend` and
   `S3PyArrowBackend`. Env var fallback chain (`AWS_CA_BUNDLE` >
   `REQUESTS_CA_BUNDLE` > `SSL_CERT_FILE`), early path validation,
   `setdefault` injection for backward compat. Spec 039.
   Phase 2 (Azure) deferred as ID-118b.
 
-- [x] **ID-112 — Non-recursive `get_folder_info` optimization**
+- [x] **ID-112 — Non-recursive `get_folder_info` optimization** (v0.20.0)
   Added `max_depth` parameter to `Store.get_folder_info()`. When set,
   aggregates stats using `list_files(max_depth=N)` at the Store level
   instead of the backend's full recursive traversal. `CachedStore` and
   `ObservedStore` forward the parameter. No Backend ABC change. Spec 038.
 
-- [x] **ID-107b — `Backend.list_files(max_depth=N)` native optimization**
+- [x] **ID-107b — `Backend.list_files(max_depth=N)` native optimization** (v0.20.0)
   Added optional `max_depth` kwarg to `Backend.list_files()` ABC. Native depth
   limiting in Local (`os.walk()` depth counter), SFTP (recursive call depth
   tracking), Memory (DFS stack depth). S3/Azure/HTTP accept the parameter but
   rely on Store-level client-side filter. Store passes `max_depth` through to
   backend; client-side filter remains as safety net. Spec 037 (DEPTH-003).
 
-- [x] **ID-107 — `Store.list_files(max_depth=N)` with client-side filtering**
+- [x] **ID-107 — `Store.list_files(max_depth=N)` with client-side filtering** (v0.20.0)
   Added `max_depth` parameter to `Store.list_files()`. When set, `recursive`
   is ignored. Client-side depth filtering at Store level via path component
   count. No Backend ABC change. Spec 037 (DEPTH-001).
 
-- [x] **ID-108 — `Store.list_folders(max_depth=N)` with BFS traversal**
+- [x] **ID-108 — `Store.list_folders(max_depth=N)` with BFS traversal** (v0.20.0)
   Added `max_depth` parameter to `Store.list_folders()`. BFS using
   `Backend.list_folders()` at each level. `max_depth=None`/`0` returns
   immediate children (unchanged default). No Backend ABC change.
   Spec 037 (DEPTH-002).
 
-- [x] **ID-101 — Add ProxyStore to API reference**
+- [x] **ID-101 — Add ProxyStore to API reference** (v0.20.0)
   Exported `ProxyStore` from `remote_store`, added API reference page
   (`docs-src/api/proxy.md`), rewrote docstrings for extension authors.
   ProxyStore remains an internal delegation base by design (ADR-0014)
