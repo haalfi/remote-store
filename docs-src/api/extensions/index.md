@@ -17,7 +17,6 @@ to enable each one. For usage guides, see [Extensions](../../extensions.md).
 | [ext.parquet](parquet.md) | Managed Parquet datasets with manifests and completion markers |
 | [ext.partition](partition.md) | Hive-style partition path helpers |
 | [ext.pydantic](pydantic.md) | Pydantic model to RegistryConfig adapter |
-| [Seekable read](seekable.md) | Now built into `Store.read_seekable()` |
 | [ext.streams](streams.md) | Composable BinaryIO wrappers for progress and checksums |
 | [ext.transfer](transfer.md) | Upload, download, and cross-store transfer |
 | [ext.yaml](yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |

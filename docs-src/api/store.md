@@ -31,6 +31,11 @@
       show_root_heading: true
       heading_level: 3
 
+::: remote_store.Store.read_seekable
+    options:
+      show_root_heading: true
+      heading_level: 3
+
 ::: remote_store.Store.read_text
     options:
       show_root_heading: true
@@ -236,13 +241,13 @@
 How key operations behave across backends. Verify against actual code before
 relying on these in production.
 
-| Behavior | [Local](../backends/local.md) | [S3](../backends/s3.md) | [S3-PyArrow](../backends/s3-pyarrow.md) | [SFTP](../backends/sftp.md) | [Azure](../backends/azure.md) | [Memory](../backends/memory.md) |
-|----------|-------|----|------------|------|-------|--------|
-| `move()` atomicity | Atomic (same FS) | Copy+delete | Copy+delete | Server-dependent | Copy+delete | Atomic |
-| `copy()` preserves metadata | Yes (`copy2`) | Yes | Yes | — | Yes | — |
-| `write_atomic()` mechanism | temp+rename | Direct PUT (atomic) | Direct PUT (atomic) | temp+rename | Direct PUT or temp+rename | Direct (atomic) |
-| Native `glob()` | Yes | Yes | Yes | — | Yes | — |
-| `list_files()` ordering | OS-dependent | Lexicographic | Lexicographic | OS-dependent | Lexicographic | Insertion order |
+| Behavior | [Local](../backends/local.md) | [S3](../backends/s3.md) | [S3-PyArrow](../backends/s3-pyarrow.md) | [SFTP](../backends/sftp.md) | [Azure](../backends/azure.md) | [Memory](../backends/memory.md) | [HTTP](../backends/http.md) | [SQLBlob](../backends/sql-blob.md) | [SQLQuery](../backends/sql-query.md) |
+|----------|-------|----|------------|------|-------|--------|------|---------|-----------|
+| `move()` atomicity | Atomic (same FS) | Copy+delete | Copy+delete | Server-dependent | Copy+delete | Atomic | — | Atomic (SQL transaction) | — |
+| `copy()` preserves metadata | Yes (`copy2`) | Yes | Yes | — | Yes | — | — | Yes | — |
+| `write_atomic()` mechanism | temp+rename | Direct PUT (atomic) | Direct PUT (atomic) | temp+rename | Direct PUT or temp+rename | Direct (atomic) | — | Direct (atomic) | — |
+| Native `glob()` | Yes | Yes | Yes | — | Yes | — | — | Yes (SQL LIKE) | Yes (SQL LIKE) |
+| `list_files()` ordering | OS-dependent | Lexicographic | Lexicographic | OS-dependent | Lexicographic | Insertion order | — | Lexicographic | Lexicographic |
 
 **Related types:** `WritableContent = BinaryIO | bytes`,
 [`FileInfo`](models.md), [`FolderInfo`](models.md),

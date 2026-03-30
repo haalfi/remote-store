@@ -39,20 +39,6 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-129 — Address docs list completeness findings from audit-006**
-  Follow-up to [audit-006](audits/audit-006-docs-list-completeness.md)
-  (2026-03-30). 20 findings across 5 categories:
-  - **A (High priority):** Add SQLBlob and SQLQuery to all backend lists,
-    tables, and matrices that claim completeness (12 findings, 4 High).
-  - **B:** Remove ghost "Seekable read" entries from extension lists and nav;
-    keep `seekable.md` as a redirect page only (4 findings, 2 High).
-  - **C:** Add missing extensions (integrity, streams, dagster, yaml) to
-    `architecture.md` extension model lists (2 findings).
-  - **D:** Add `Store.read_seekable()` directive to `api/store.md` Reading
-    section (1 finding, High).
-  - **E:** Add `sql` and `sql-query` extras to README installation section
-    (1 finding).
-
 ---
 
 ## Ideas

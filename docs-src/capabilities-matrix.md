@@ -7,20 +7,20 @@ at runtime before calling an operation.
 
 ## Backend x Capability
 
-| Capability | [Local](backends/local.md) | [Memory](backends/memory.md) | [HTTP](backends/http.md) | [S3](backends/s3.md) | [S3-PyArrow](backends/s3-pyarrow.md) | [SFTP](backends/sftp.md) | [Azure](backends/azure.md) |
-|------------|:-----:|:------:|:----:|:--:|:----------:|:----:|:-----:|
-| READ           | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| WRITE          | Yes | Yes | —   | Yes | Yes | Yes | Yes |
-| DELETE         | Yes | Yes | —   | Yes | Yes | Yes | Yes |
-| LIST           | Yes | Yes | —   | Yes | Yes | Yes | Yes |
-| MOVE           | Yes | Yes | —   | Yes | Yes | Yes | Yes |
-| COPY           | Yes | Yes | —   | Yes | Yes | Yes | Yes |
-| ATOMIC_WRITE   | Yes | Yes | —   | Yes | Yes | Yes | Yes |
-| METADATA       | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| GLOB           | Yes | —  | —   | Yes | Yes | —  | Yes |
-| SEEKABLE_READ  | Yes | Yes | —   | Yes | Yes | Yes | — |
+| Capability | [Local](backends/local.md) | [Memory](backends/memory.md) | [HTTP](backends/http.md) | [S3](backends/s3.md) | [S3-PyArrow](backends/s3-pyarrow.md) | [SFTP](backends/sftp.md) | [Azure](backends/azure.md) | [SQLBlob](backends/sql-blob.md) | [SQLQuery](backends/sql-query.md) |
+|------------|:-----:|:------:|:----:|:--:|:----------:|:----:|:-----:|:-------:|:---------:|
+| READ           | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| WRITE          | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
+| DELETE         | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
+| LIST           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes |
+| MOVE           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
+| COPY           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
+| ATOMIC_WRITE   | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
+| METADATA       | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| GLOB           | Yes | —  | —   | Yes | Yes | —  | Yes | Yes | Yes |
+| SEEKABLE_READ  | Yes | Yes | —   | Yes | Yes | Yes | — | Yes | Yes |
 
-**Full support (10/10):** Local, S3, S3-PyArrow.
+**Full support (10/10):** Local, S3, S3-PyArrow, SQLBlob.
 
 **Near-full (9/10):** Memory and SFTP lack native `GLOB`. Use the portable
 fallback `ext.glob.glob_files()` instead — see the
@@ -28,7 +28,10 @@ fallback `ext.glob.glob_files()` instead — see the
 Azure lacks `SEEKABLE_READ` (forward-only chunk iterator) but supports
 `Store.read_seekable()` via an optimized HTTP Range reader.
 
-**Partial (2/10):** HTTP supports only `READ` and `METADATA` (read-only backend).
+**Partial (5/10):** SQLQuery is read-only (`READ`, `LIST`, `METADATA`, `GLOB`,
+`SEEKABLE_READ`).
+
+**Minimal (2/10):** HTTP supports only `READ` and `METADATA` (read-only backend).
 
 ## Querying capabilities at runtime
 

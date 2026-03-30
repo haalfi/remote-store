@@ -16,6 +16,8 @@ stays the same — the `Store` API is identical across all backends.
 | [S3 (PyArrow)](s3-pyarrow.md) | Built-in | `pip install "remote-store[s3-pyarrow]"` |
 | [SFTP / SSH](sftp.md) | Built-in | `pip install "remote-store[sftp]"` |
 | [Azure Blob / ADLS](azure.md) | Built-in | `pip install "remote-store[azure]"` |
+| [SQL Blob (SQLite, PostgreSQL, ...)](sql-blob.md) | Built-in | `pip install "remote-store[sql]"` |
+| [SQL Query (read-only)](sql-query.md) | Built-in | `pip install "remote-store[sql-query]"` |
 
 ## Custom Backends
 
