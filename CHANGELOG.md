@@ -6,6 +6,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Internal
+
+- Upgrade `setup-uv` from v7 to v8.0.0 (immutable tags) across all workflows.
+- Disable uv caching on lightweight CI jobs to eliminate cache-contention warnings.
+
 ## [0.20.0] - 2026-03-30
 
 ### Added
