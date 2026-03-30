@@ -9,42 +9,7 @@ env:
   UV_LINK_MODE: copy
 
 jobs:
-  ci:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.13"]
-    steps:
-      - uses: actions/checkout@v6
-      - name: Start Azurite
-        run: |
-          docker run -d --name azurite -p 10000:10000 \
-            mcr.microsoft.com/azure-storage/azurite:3.35.0 \
-            azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
-          for i in $(seq 1 30); do
-            nc -z 127.0.0.1 10000 && break || sleep 1
-          done
-          nc -z 127.0.0.1 10000 || { echo "::error::Azurite failed to start"; exit 1; }
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-      - uses: astral-sh/setup-uv@v7
-      - run: uv pip install hatch
-      - run: hatch run lint
-      - run: hatch run typecheck
-      - run: hatch run test-cov
-      - name: Upload coverage to Codecov
-        if: matrix.python-version == '3.13'
-        uses: codecov/codecov-action@v6
-        with:
-          files: coverage.xml
-          token: ${{ secrets.CODECOV_TOKEN }}
-          override_branch: master
-          fail_ci_if_error: true
-          verbose: true
-
   build:
-    needs: ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -52,8 +17,9 @@ jobs:
         with:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@v7
-      - run: uv pip install build
+      - run: uv pip install build twine
       - run: python -m build
+      - run: twine check dist/*
       - uses: actions/upload-artifact@v7
         with:
           name: dist

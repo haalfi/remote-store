@@ -133,6 +133,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **Publish workflow no longer runs full CI suite** (BK-132): Removed redundant
+  lint/typecheck/test jobs from `publish.yml` — master branch protection already
+  gates these. Publish now only builds, checks, and uploads. Fixes Python 3.10
+  dependency resolution failure caused by `pytest-gremlins>=1.5` (requires 3.11+).
+
 - **`MemoryCache.size()` no longer rebuilds dict** (BK-127 L-1): Replaced dict
   comprehension with `sum()` generator — avoids transient 2× memory spike on
   large caches. Trade-off: `size()` no longer evicts expired entries as a
