@@ -246,8 +246,8 @@ relying on these in production.
 | `move()` atomicity | Atomic (same FS) | Copy+delete | Copy+delete | Server-dependent | Copy+delete | Atomic | — | Atomic (SQL transaction) | — |
 | `copy()` preserves metadata | Yes (`copy2`) | Yes | Yes | — | Yes | — | — | Yes | — |
 | `write_atomic()` mechanism | temp+rename | Direct PUT (atomic) | Direct PUT (atomic) | temp+rename | Direct PUT or temp+rename | Direct (atomic) | — | Direct (atomic) | — |
-| Native `glob()` | Yes | Yes | Yes | — | Yes | — | — | Yes (SQL LIKE) | Yes (SQL LIKE) |
-| `list_files()` ordering | OS-dependent | Lexicographic | Lexicographic | OS-dependent | Lexicographic | Insertion order | — | Lexicographic | Lexicographic |
+| Native `glob()` | Yes | Yes | Yes | — | Yes | — | — | Yes (SQL GLOB/LIKE) | Yes (in-memory) |
+| `list_files()` ordering | OS-dependent | Lexicographic | Lexicographic | OS-dependent | Lexicographic | Insertion order | — | DB-dependent | Lexicographic |
 
 **Related types:** `WritableContent = BinaryIO | bytes`,
 [`FileInfo`](models.md), [`FolderInfo`](models.md),
