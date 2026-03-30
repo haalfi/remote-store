@@ -36,7 +36,10 @@ except ModuleNotFoundError as _exc:  # pragma: no cover
     ) from _exc
 
 if TYPE_CHECKING:
-    from dagster import InputContext, OutputContext  # type: ignore[import-untyped]
+    import contextlib
+
+    with contextlib.suppress(ImportError):
+        from dagster import InputContext, OutputContext  # type: ignore[import-untyped]
 
     from remote_store._store import Store
 

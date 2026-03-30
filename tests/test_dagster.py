@@ -238,7 +238,7 @@ class TestErrorHandling:
             asset_key=AssetKey(["missing", "asset"]),
             upstream_output=out_ctx,
         )
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="missing/asset"):
             mgr.load_input(in_ctx)
 
     @pytest.mark.spec("DAG-010")
@@ -456,6 +456,15 @@ class TestRemoteStoreIOManager:
 
         factory.teardown_after_execution(context=build_init_resource_context())
 
+    @pytest.mark.spec("DAG-015")
+    def test_create_io_manager_before_setup_raises(self) -> None:
+        """create_io_manager before setup_for_execution raises RuntimeError."""
+        from remote_store.ext.dagster import RemoteStoreIOManager
+
+        factory = RemoteStoreIOManager(backend_type="memory")
+        with pytest.raises(RuntimeError, match="setup_for_execution"):
+            factory.create_io_manager(context=build_init_resource_context())
+
 
 # ---------------------------------------------------------------------------
 # v2: Dataset IO Manager
@@ -537,6 +546,19 @@ class TestDatasetIOManager:
         assert result.equals(table)
 
         factory.teardown_after_execution(context=build_init_resource_context())
+
+    @pytest.mark.spec("DAG-017")
+    def test_dataset_unsupported_type_raises(self) -> None:
+        """Dataset mode with an unsupported type raises TypeError."""
+        pytest.importorskip("pyarrow")
+
+        from remote_store.ext.dagster import dagster_dataset_io_manager
+
+        store = Store(backend=MemoryBackend())
+        mgr = dagster_dataset_io_manager(store)
+        out_ctx = build_output_context(asset_key=AssetKey(["bad", "type"]))
+        with pytest.raises(TypeError, match="Dataset mode expects a DataFrame"):
+            mgr.handle_output(out_ctx, "not a dataframe")
 
     @pytest.mark.spec("DAG-019")
     def test_dataset_missing_pyarrow(self) -> None:
