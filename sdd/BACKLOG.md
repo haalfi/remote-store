@@ -39,7 +39,7 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-136 — Feature discoverability for agents and humans**
+- [~] **BK-136 — Feature discoverability for agents and humans**
   Implement all three recommendations from
   [research](research/research-feature-discoverability.md):
   - R-1: `FEATURES.md` at repo root — versioned snapshot of backends,

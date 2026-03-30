@@ -276,6 +276,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 - [ ] CHANGELOG.md `[Unreleased]` is complete — every user-facing change listed with its backlog ID
 - [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here, marked `[x]` with version (e.g. `(v0.8.0)`)
+- [ ] FEATURES.md: version, backends table, extensions table, extras are current
 - [ ] README.md: backends table, installation extras, API table, badges are current
 - [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
 - [ ] Examples: `hatch run examples` passes; manually review notebooks if API surface changed

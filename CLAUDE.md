@@ -14,6 +14,11 @@ Spec-Driven Development (SDD).
 5. **Run it, don't just type-check it**: verify behavior, not signatures. Reproduce bugs before claiming fixes. Test what matters, not just what type-checks.
 6. **Be critical, not agreeable**: challenge assumptions, question completeness, flag what's missing. Especially in reviews: a rubber-stamp is worse than no review. Ask what's untested, what could break, what's absent from the checklist.
 
+## Feature reference
+
+See `FEATURES.md` at the repo root for the authoritative list of backends,
+extensions, capabilities, and install extras for the current version.
+
 ## Audits
 
 1. **Report only.** Present findings with evidence. Do not fix anything.

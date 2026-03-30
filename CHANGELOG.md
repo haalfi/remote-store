@@ -6,6 +6,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- `FEATURES.md` at repo root — versioned snapshot of backends, extensions,
+  capabilities, and install extras for agent and human discoverability (BK-136).
+- `remote_store.info()` public function — runtime introspection of available
+  backends and extensions in the current environment (BK-136).
+- `CLAUDE.md` now references `FEATURES.md` for cold-start agent sessions (BK-136).
+- Release checklist in `CONTRIBUTING.md` now includes `FEATURES.md` update (BK-136).
+
 ### Changed
 
 - **`ParquetSerializer.deserialize()` now returns a PyArrow Table** instead of
