@@ -103,12 +103,14 @@ class TestMemoryCache:
 
     @pytest.mark.spec("BK-127")
     def test_size_does_not_evict_expired(self, mcache: MemoryCache) -> None:
-        """size() counts without evicting — expired entries stay in _data."""
+        """size() counts without evicting — expired entries are not returned."""
         mcache.set(("a",), 1, ttl=0.01)
         mcache.set(("b",), 2, ttl=10.0)
         time.sleep(0.02)
         assert mcache.size() == 1
-        assert len(mcache._data) == 2  # expired entry not purged
+        with pytest.raises(KeyError, match="a"):
+            mcache.get(("a",))
+        assert mcache.get(("b",)) == 2
 
     @pytest.mark.spec("CACHE-002")
     def test_max_entries_evicts_lru(self) -> None:
@@ -157,6 +159,7 @@ class TestFactory:
         result = cache(store, ttl=60.0)
         assert isinstance(result, CachedStore)
         assert isinstance(result, Store)
+        assert result.read_bytes("a.txt") == b"alpha"
 
     @pytest.mark.spec("CACHE-003")
     def test_default_ttl(self, store: Store) -> None:
@@ -165,7 +168,9 @@ class TestFactory:
     @pytest.mark.spec("CACHE-003")
     def test_custom_cache_backend(self, store: Store) -> None:
         backend = MemoryCache()
-        assert cache(store, cache_backend=backend)._cache is backend
+        cached = cache(store, cache_backend=backend)
+        cached.read_bytes("a.txt")
+        assert backend.size() >= 1
 
     @pytest.mark.spec("CACHE-003")
     @pytest.mark.parametrize(

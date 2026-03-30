@@ -47,10 +47,12 @@ class TestProxyConstruction:
         assert proxy.inner is inner
 
     def test_backend_is_shared(self, proxy: _TestProxy, inner: Store) -> None:
-        assert proxy._backend is inner._backend
+        inner.write("shared.txt", b"shared")
+        assert proxy.read_bytes("shared.txt") == b"shared"
 
-    def test_does_not_own_backend(self, proxy: _TestProxy) -> None:
-        assert proxy._owns_backend is False
+    def test_does_not_own_backend(self, proxy: _TestProxy, inner: Store) -> None:
+        proxy.close()
+        assert inner.read_bytes("hello.txt") == b"hello world"
 
 
 class TestWrapChild:
@@ -226,6 +228,7 @@ class TestInteropDelegation:
     def test_native_path(self, proxy: _TestProxy) -> None:
         path = proxy.native_path("hello.txt")
         assert isinstance(path, str)
+        assert "hello.txt" in path
 
     def test_to_key(self, proxy: _TestProxy) -> None:
         key = proxy.to_key("hello.txt")
@@ -244,6 +247,7 @@ class TestChildPropagation:
     def test_child_returns_proxy(self, proxy: _TestProxy) -> None:
         child = proxy.child("dir")
         assert isinstance(child, _TestProxy)
+        assert child.read_bytes("sub.txt") == b"sub content"
 
     def test_child_reads_inner_data(self, proxy: _TestProxy) -> None:
         child = proxy.child("dir")

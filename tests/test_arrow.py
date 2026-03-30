@@ -103,6 +103,7 @@ class TestConstruction:
     def test_pyarrow_fs_factory(self, store: Store, kwargs: dict[str, int]) -> None:
         result = pyarrow_fs(store, **kwargs)
         assert isinstance(result, pafs.PyFileSystem)
+        assert result.type_name == "py::remote-store"
 
     @pytest.mark.spec("PA-003")
     def test_type_name(self, handler: StoreFileSystemHandler) -> None:

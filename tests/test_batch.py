@@ -101,7 +101,13 @@ def test_signature_returns_type(
     args: list[Any],
     expected_type: type,
 ) -> None:
-    assert isinstance(func(store, args), expected_type)
+    result = func(store, args)
+    assert isinstance(result, expected_type)
+    if isinstance(result, BatchResult):
+        assert result.all_succeeded is True
+        assert result.total == 0
+    elif isinstance(result, dict):
+        assert result == {}
 
 
 # ---------------------------------------------------------------------------
