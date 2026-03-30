@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import importlib.util
+from unittest.mock import patch
+
 import remote_store
 
 
@@ -65,12 +68,19 @@ class TestInfo:
         assert "LocalBackend" in local["class"]  # type: ignore[operator]
 
     def test_unavailable_backend_class_is_none(self) -> None:
-        result = remote_store.info()
-        # Find any unavailable backend (extras-gated)
-        for _name, info in result["backends"].items():
-            if not info["available"]:
-                assert info["class"] is None
-                break
+        from remote_store._registry import _BACKEND_FACTORIES, _register_builtin_backends
+
+        # Ensure backends are registered, then temporarily remove 'local'.
+        _register_builtin_backends()
+        saved = _BACKEND_FACTORIES.pop("local")
+        try:
+            # Prevent info() from re-registering local.
+            with patch("remote_store._registry._register_builtin_backends"):
+                result = remote_store.info()
+            assert result["backends"]["local"]["available"] is False
+            assert result["backends"]["local"]["class"] is None
+        finally:
+            _BACKEND_FACTORIES["local"] = saved
 
     def test_top_level_keys(self) -> None:
         result = remote_store.info()
@@ -91,3 +101,20 @@ class TestInfo:
         assert hasattr(remote_store, "InfoResult")
         assert hasattr(remote_store, "BackendInfo")
         assert hasattr(remote_store, "ExtensionInfo")
+
+    def test_optional_extension_unavailable_when_dep_missing(self) -> None:
+        """Extensions with missing third-party deps report available=False."""
+        original_find_spec = importlib.util.find_spec
+
+        def _fake_find_spec(name: str, *args: object, **kwargs: object) -> object:
+            # Block pyarrow to make arrow/parquet unavailable.
+            if name == "pyarrow":
+                return None
+            return original_find_spec(name, *args, **kwargs)  # type: ignore[arg-type]
+
+        with patch("importlib.util.find_spec", side_effect=_fake_find_spec):
+            result = remote_store.info()
+            assert result["extensions"]["arrow"]["available"] is False
+            assert result["extensions"]["parquet"]["available"] is False
+            # Base extensions unaffected.
+            assert result["extensions"]["batch"]["available"] is True

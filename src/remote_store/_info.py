@@ -56,6 +56,18 @@ _EXTENSION_EXTRAS: dict[str, str | None] = {
     "dagster": "dagster",
 }
 
+# Third-party package(s) that gate each optional extension.
+# If ANY listed package is importable, the extension is available.
+# Base extensions (extras=None) are always available.
+_EXTENSION_GATE: dict[str, tuple[str, ...]] = {
+    "arrow": ("pyarrow",),
+    "parquet": ("pyarrow",),
+    "otel": ("opentelemetry",),
+    "pydantic": ("pydantic",),
+    "yaml": ("yaml", "ruamel.yaml"),
+    "dagster": ("dagster",),
+}
+
 
 def info() -> InfoResult:
     """Return a structured summary of available backends and extensions.
@@ -95,8 +107,8 @@ def info() -> InfoResult:
     extensions: dict[str, ExtensionInfo] = {}
     for module_info in pkgutil.iter_modules(_ext_pkg.__path__):
         name = module_info.name
-        module_name = f"remote_store.ext.{name}"
-        available = importlib.util.find_spec(module_name) is not None
+        gate_pkgs = _EXTENSION_GATE.get(name)
+        available = True if gate_pkgs is None else any(importlib.util.find_spec(pkg) is not None for pkg in gate_pkgs)
         extensions[name] = {
             "available": available,
             "extras": _EXTENSION_EXTRAS.get(name),
