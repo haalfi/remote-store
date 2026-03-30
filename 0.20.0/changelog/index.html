@@ -9258,6 +9258,12 @@
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong>Publish workflow no longer runs full CI suite</strong> (BK-132): Removed redundant
+  lint/typecheck/test jobs from <code>publish.yml</code> — master branch protection already
+  gates these. Publish now only builds, checks, and uploads. Fixes Python 3.10
+  dependency resolution failure caused by <code>pytest-gremlins&gt;=1.5</code> (requires 3.11+).</p>
+</li>
+<li>
 <p><strong><code>MemoryCache.size()</code> no longer rebuilds dict</strong> (BK-127 L-1): Replaced dict
   comprehension with <code>sum()</code> generator — avoids transient 2× memory spike on
   large caches. Trade-off: <code>size()</code> no longer evicts expired entries as a
