@@ -39,17 +39,6 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [~] **BK-136 — Feature discoverability for agents and humans**
-  Implement all three recommendations from
-  [research](research/research-feature-discoverability.md):
-  - R-1: `FEATURES.md` at repo root — versioned snapshot of backends,
-    extensions, capabilities, and install extras.
-  - R-2: `remote_store.info()` public function — runtime introspection of
-    available backends and extensions in the current environment.
-  - R-3: Reference `FEATURES.md` in `CLAUDE.md` so agent sessions discover
-    the feature surface on cold start.
-  Update release checklist in `CONTRIBUTING.md` to include `FEATURES.md`.
-
 ---
 
 ## Ideas

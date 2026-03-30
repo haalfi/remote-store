@@ -74,11 +74,19 @@ Complete reference for all public exports of `remote-store`.
 | [BackendUnavailable](errors.md#remote_store.BackendUnavailable) | Backend could not be reached |
 | [DirectoryNotEmpty](errors.md#remote_store.DirectoryNotEmpty) | Non-recursive delete on non-empty folder |
 
+## Introspection
+
+| Symbol | Description |
+|--------|-------------|
+| [info](info.md#remote_store.info) | Runtime introspection of available backends and extensions |
+| [InfoResult](info.md#remote_store.InfoResult) | TypedDict for the `info()` return value |
+| [BackendInfo](info.md#remote_store.BackendInfo) | TypedDict for a single backend entry in `InfoResult` |
+| [ExtensionInfo](info.md#remote_store.ExtensionInfo) | TypedDict for a single extension entry in `InfoResult` |
+
 ## Functions
 
 | Function | Description |
 |----------|-------------|
-| [info](info.md#remote_store.info) | Runtime introspection of available backends and extensions |
 | [register_backend](registry.md#remote_store.register_backend) | Register a custom backend type |
 
 ## Extensions

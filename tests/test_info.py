@@ -62,8 +62,32 @@ class TestInfo:
         result = remote_store.info()
         local = result["backends"]["local"]
         assert "class" in local
-        assert "LocalBackend" in local["class"]
+        assert "LocalBackend" in local["class"]  # type: ignore[operator]
+
+    def test_unavailable_backend_class_is_none(self) -> None:
+        result = remote_store.info()
+        # Find any unavailable backend (extras-gated)
+        for _name, info in result["backends"].items():
+            if not info["available"]:
+                assert info["class"] is None
+                break
 
     def test_top_level_keys(self) -> None:
         result = remote_store.info()
         assert set(result.keys()) == {"version", "backends", "extensions"}
+
+    def test_extensions_discovered_dynamically(self) -> None:
+        """All extension modules under remote_store.ext are discovered."""
+        import pkgutil
+
+        import remote_store.ext as _ext_pkg
+
+        expected_modules = {m.name for m in pkgutil.iter_modules(_ext_pkg.__path__)}
+        result = remote_store.info()
+        assert set(result["extensions"].keys()) == expected_modules
+
+    def test_return_type_exports(self) -> None:
+        """TypedDict types are importable from the package."""
+        assert hasattr(remote_store, "InfoResult")
+        assert hasattr(remote_store, "BackendInfo")
+        assert hasattr(remote_store, "ExtensionInfo")

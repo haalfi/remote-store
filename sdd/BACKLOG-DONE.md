@@ -5,6 +5,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Documentation & Developer Experience
+
+- [x] **BK-136 — Feature discoverability for agents and humans** (post-v0.20.0)
+  Implemented all three recommendations from
+  [research](research/research-feature-discoverability.md):
+  R-1: `FEATURES.md` at repo root — versioned snapshot of backends,
+  extensions, capabilities, and install extras.
+  R-2: `remote_store.info()` public function with `InfoResult` TypedDict —
+  runtime introspection of available backends and extensions.
+  R-3: Reference `FEATURES.md` in `CLAUDE.md` for agent cold-start discovery.
+  Updated release checklist, API docs nav, and `__init__.py` exports.
+
+---
+
 ## Bug Fixes
 
 - [x] **BUG-135 — `ParquetSerializer.deserialize()` returns Arrow Table** (post-v0.20.0)
