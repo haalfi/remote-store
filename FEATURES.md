@@ -8,7 +8,8 @@ release.
 
 ## Store API
 
-Methods grouped by capability gate. Query at runtime with
+The Store provides a portable API for file operations across any
+backend. Methods are grouped by capability gate. Query at runtime with
 `store.supports(Capability.X)`.
 
 ### Ungated (always available)
@@ -94,8 +95,9 @@ Methods grouped by capability gate. Query at runtime with
 
 ## Capabilities
 
-The `Capability` enum (10 values) gates every `Store` method. Query at
-runtime with `store.supports(Capability.X)`.
+Capabilities gate which Store methods are available for a given backend.
+The `Capability` enum has 10 values. Query at runtime with
+`store.supports(Capability.X)`.
 
 | Capability | Description | Gated methods |
 |---|---|---|
@@ -114,6 +116,9 @@ runtime with `store.supports(Capability.X)`.
 
 ## Backends
 
+Backends implement storage-specific behavior behind the Store API.
+Three ship with the base install; the rest require an extra.
+
 | Type string | Description | Class | Extras | Always available | Capabilities |
 |---|---|---|---|---|---|
 | `local` | Local filesystem storage | `LocalBackend` | — | Yes | All 10 |
@@ -129,6 +134,9 @@ runtime with `store.supports(Capability.X)`.
 ---
 
 ## Extensions
+
+Extensions add optional capabilities alongside the core — caching,
+observability, batch operations, format support, and integrations.
 
 ### Always available (included in base install)
 
