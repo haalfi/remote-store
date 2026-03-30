@@ -130,6 +130,10 @@ When a downstream asset consumes multiple partitions of an upstream asset
 `dict[str, Any]` mapping each partition key to its deserialized object:
 
 ```python
+from dagster import AssetIn, asset
+from dagster import TimeWindowPartitionMapping
+
+
 @asset(
     ins={"upstream": AssetIn(partition_mapping=TimeWindowPartitionMapping())},
 )
@@ -139,8 +143,9 @@ def aggregate(upstream: dict[str, Any]) -> dict:
 ```
 
 Single-partition inputs continue to return a single deserialized object
-(not wrapped in a dict). This applies to both the bytes-serializer IO
-manager and the dataset IO manager.
+(not wrapped in a dict). This applies to both the
+[bytes-serializer IO manager](../api/extensions/dagster.md) and the
+[dataset IO manager](../api/extensions/dagster.md#remote_store.ext.dagster.dagster_dataset_io_manager).
 
 ## Using with Registry
 
