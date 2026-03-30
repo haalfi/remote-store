@@ -6,7 +6,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
-from dagster import AssetKey, build_init_resource_context, build_input_context, build_output_context
+from dagster import AssetKey, InputContext, build_init_resource_context, build_input_context, build_output_context
 
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
@@ -600,14 +600,14 @@ class TestDatasetIOManager:
 def _multi_partition_input_context(
     asset_key: AssetKey,
     partition_keys: list[str],
-    upstream_output: Any = None,
-) -> Any:
+) -> InputContext:
     """Build a mock InputContext with multiple partition keys.
 
     Dagster's ``build_input_context`` only accepts a single ``partition_key``.
-    For multi-partition (time-window) scenarios we mock the relevant attributes.
+    For multi-partition (time-window) scenarios we mock at our boundary
+    (the context object passed to ``load_input``).
     """
-    ctx = mock.MagicMock()
+    ctx = mock.MagicMock(spec=InputContext)
     ctx.asset_key = asset_key
     ctx.has_asset_partitions = True
     ctx.asset_partition_keys = partition_keys
@@ -638,11 +638,11 @@ class TestMultiPartitionLoading:
         )
         result = mgr.load_input(in_ctx)
 
-        assert isinstance(result, dict)
-        assert len(result) == 3
-        assert result["2026-01"] == {"month": 1}
-        assert result["2026-02"] == {"month": 2}
-        assert result["2026-03"] == {"month": 3}
+        assert result == {
+            "2026-01": {"month": 1},
+            "2026-02": {"month": 2},
+            "2026-03": {"month": 3},
+        }
 
     @pytest.mark.spec("DAG-020")
     def test_multi_partition_pickle(self, store: Store) -> None:
@@ -682,7 +682,6 @@ class TestMultiPartitionLoading:
         )
         result = mgr.load_input(in_ctx)
         assert result == obj
-        assert not isinstance(result, dict) or result == obj  # dict is fine if it's the obj
 
     @pytest.mark.spec("DAG-020")
     def test_multi_partition_missing_raises(self, store: Store) -> None:
@@ -702,7 +701,7 @@ class TestMultiPartitionLoading:
             asset_key=AssetKey(["sparse"]),
             partition_keys=["exists", "missing"],
         )
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="missing"):
             mgr.load_input(in_ctx)
 
     @pytest.mark.spec("DAG-020")
@@ -731,7 +730,6 @@ class TestMultiPartitionLoading:
             partition_keys=["2026-01", "2026-02"],
         )
         result = mgr.load_input(in_ctx)
-        assert isinstance(result, dict)
-        assert len(result) == 2
+        assert set(result.keys()) == {"2026-01", "2026-02"}
         assert result["2026-01"].equals(tables["2026-01"])
         assert result["2026-02"].equals(tables["2026-02"])
