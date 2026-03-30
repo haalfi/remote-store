@@ -1327,6 +1327,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/dagster-v2-resource/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dagster v2 Resource
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/retry-policy/" class="md-nav__link">
         
   
@@ -2261,21 +2289,38 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
+  <a href="#dagster-config-driven-store-v2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        See also
+        Dagster-config-driven Store (v2)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dagster-config-driven Store (v2)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dataset-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dataset mode
       
     </span>
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#whats-next" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What's next
+        See also
       
     </span>
   </a>
@@ -7179,21 +7224,38 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
+  <a href="#dagster-config-driven-store-v2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        See also
+        Dagster-config-driven Store (v2)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dagster-config-driven Store (v2)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dataset-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dataset mode
       
     </span>
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#whats-next" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What's next
+        See also
       
     </span>
   </a>
@@ -7374,8 +7436,60 @@ the path.</p>
 <h2 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h2>
 <p>The caller owns the Store. The IO manager does not close it. If the Store
 was created inline, the caller is responsible for cleanup.</p>
+<h2 id="dagster-config-driven-store-v2">Dagster-config-driven Store (v2)<a class="headerlink" href="#dagster-config-driven-store-v2" title="Permanent link">&para;</a></h2>
+<p>Use v1 (<code>dagster_io_manager</code>) when you already have a Store. Use v2
+(<code>RemoteStoreIOManager</code>) when Dagster should construct the Store from
+config — for example in <code>Definitions</code> files where no Store exists
+outside Dagster.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">Definitions</span><span class="p">,</span> <span class="n">asset</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">RemoteStoreIOManager</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nd">@asset</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">raw_data</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">defs</span> <span class="o">=</span> <span class="n">Definitions</span><span class="p">(</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="n">assets</span><span class="o">=</span><span class="p">[</span><span class="n">raw_data</span><span class="p">],</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>    <span class="n">resources</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>        <span class="s2">&quot;io_manager&quot;</span><span class="p">:</span> <span class="n">RemoteStoreIOManager</span><span class="p">(</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>            <span class="n">backend_type</span><span class="o">=</span><span class="s2">&quot;local&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>            <span class="n">backend_options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="s2">&quot;/data/dagster&quot;</span><span class="p">},</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>            <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;pickle&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>        <span class="p">)</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>    <span class="p">},</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="p">)</span>
+</code></pre></div>
+<p><code>RemoteStoreIOManager</code> is a Dagster <code>ConfigurableIOManagerFactory</code> that
+constructs and owns the Store lifecycle — setup and teardown happen
+automatically when Dagster initialises and cleans up resources.</p>
+<p>The <code>backend_type</code> field accepts <code>"local"</code>, <code>"s3"</code>, <code>"azure"</code>, <code>"sftp"</code>,
+<code>"memory"</code>, <code>"sql-blob"</code>, and any other backend registered with the
+remote-store factory. <code>backend_options</code> accepts the same keyword arguments
+as the corresponding backend constructor.</p>
+<p>For direct Store access in assets (outside the IO manager), use
+<code>DagsterStoreResource</code> as a standalone resource.</p>
+<h3 id="dataset-mode">Dataset mode<a class="headerlink" href="#dataset-mode" title="Permanent link">&para;</a></h3>
+<p>For Parquet dataset I/O via <code>ParquetDatasetStore</code>, use
+<code>dagster_dataset_io_manager(store)</code> (v1-style) or pass
+<code>serializer="parquet-dataset"</code> on <code>RemoteStoreIOManager</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">RemoteStoreIOManager</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">resources</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="s2">&quot;io_manager&quot;</span><span class="p">:</span> <span class="n">RemoteStoreIOManager</span><span class="p">(</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>        <span class="n">backend_type</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="n">backend_options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span> <span class="s2">&quot;prefix&quot;</span><span class="p">:</span> <span class="s2">&quot;dagster/&quot;</span><span class="p">},</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>        <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;parquet-dataset&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="p">)</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="p">}</span>
+</code></pre></div>
+<p>Requires <code>pip install "remote-store[dagster,arrow]"</code>.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
+<li><a href="../api/extensions/dagster/">ext.dagster API reference</a> — full API docs</li>
+<li><a href="../examples/dagster-v2-resource/">Dagster v2 resource example</a> — config-driven
+  Store construction with <code>RemoteStoreIOManager</code></li>
 <li><a href="../examples/medallion-dagster/">Medallion + Dagster Showcase</a> — end-to-end
   Bronze/Silver/Gold pipeline demonstrating 4 extensions over live MeteoSwiss data</li>
 <li><a href="../data-lake-patterns/">Data Lake Patterns</a> — medallion architecture with
@@ -7383,10 +7497,6 @@ was created inline, the caller is responsible for cleanup.</p>
 <li><a href="../pyarrow-adapter/">PyArrow Adapter</a> — use Store as a PyArrow filesystem
   for Parquet I/O</li>
 </ul>
-<h2 id="whats-next">What's next<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
-<p>v2 (deferred) will add <code>DagsterStoreResource</code> — a Dagster <code>ConfigurableResource</code>
-that constructs a Store from Dagster config fields. This targets Dagster-first
-users who don't already have a Store.</p>
 
 
 

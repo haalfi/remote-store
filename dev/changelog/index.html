@@ -1327,6 +1327,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/dagster-v2-resource/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dagster v2 Resource
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/retry-policy/" class="md-nav__link">
         
   
@@ -9062,6 +9090,14 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong>Dagster extension v2 (<code>ext.dagster</code>)</strong> (ID-083): <code>DagsterStoreResource</code>
+  (<code>ConfigurableResource</code>) for direct Store access in assets, and
+  <code>RemoteStoreIOManager</code> (<code>ConfigurableIOManagerFactory</code>) for config-driven
+  IO management with automatic Store lifecycle. Dataset mode via
+  <code>dagster_dataset_io_manager()</code> or <code>serializer="parquet-dataset"</code> writes
+  Parquet datasets through <code>ParquetDatasetStore</code>. Spec 031 (DAG-012 -- DAG-019).</p>
+</li>
 <li>
 <p><strong>Parquet Dataset Storage extension (<code>ext.parquet</code>)</strong> (ID-122):
   <code>ParquetDatasetStore</code> — high-level Parquet dataset read/write with manifest

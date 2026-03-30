@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/041-sql-query-backend/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/examples/dagster-v2-resource/">
       
       
-        <link rel="prev" href="../040-sql-blob-backend/">
+        <link rel="prev" href="../dagster-io-manager/">
       
       
-        <link rel="next" href="../042-ext-parquet/">
+        <link rel="next" href="../retry-policy/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/logo.png">
+      <link rel="icon" href="../../assets/logo.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>041: SQL Query Backend Specification - remote-store</title>
+        <title>Dagster v2 Resource - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../css/custom.css">
+      <link rel="stylesheet" href="../../css/custom.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#sql-query-backend-specification" class="md-skip">
+        <a href="#dagster-v2-resource" class="md-skip">
           Skip to content
         </a>
       
@@ -102,9 +102,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../../assets/logo.png" alt="logo">
+  <img src="../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              041: SQL Query Backend Specification
+              Dagster v2 Resource
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../.." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -245,11 +245,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../../getting-started/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../getting-started/" class="md-tabs__link">
           
   
   
@@ -269,7 +271,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../backends/" class="md-tabs__link">
+        <a href="../../backends/" class="md-tabs__link">
           
   
   
@@ -289,7 +291,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../api/" class="md-tabs__link">
+        <a href="../../api/" class="md-tabs__link">
           
   
   
@@ -305,13 +307,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../architecture/" class="md-tabs__link">
           
   
   
@@ -329,7 +329,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../contributing/" class="md-tabs__link">
+      <a href="../../contributing/" class="md-tabs__link">
         
   
   
@@ -348,7 +348,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../further-reading/" class="md-tabs__link">
+      <a href="../../further-reading/" class="md-tabs__link">
         
   
   
@@ -367,7 +367,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../development-story/" class="md-tabs__link">
+      <a href="../../development-story/" class="md-tabs__link">
         
   
   
@@ -408,9 +408,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../../assets/logo.png" alt="logo">
+  <img src="../../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -437,7 +437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -461,24 +461,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -496,7 +501,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -514,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/" class="md-nav__link">
+      <a href="../../getting-started/" class="md-nav__link">
         
   
   
@@ -539,6 +544,8 @@
                 
   
   
+    
+  
   
   
     
@@ -549,15 +556,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../examples/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -581,7 +588,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -599,7 +606,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/quickstart/" class="md-nav__link">
+      <a href="../quickstart/" class="md-nav__link">
         
   
   
@@ -627,7 +634,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/file-operations/" class="md-nav__link">
+      <a href="../file-operations/" class="md-nav__link">
         
   
   
@@ -655,7 +662,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/streaming-io/" class="md-nav__link">
+      <a href="../streaming-io/" class="md-nav__link">
         
   
   
@@ -683,7 +690,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/atomic-writes/" class="md-nav__link">
+      <a href="../atomic-writes/" class="md-nav__link">
         
   
   
@@ -711,7 +718,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   
@@ -739,7 +746,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/config-loaders/" class="md-nav__link">
+      <a href="../config-loaders/" class="md-nav__link">
         
   
   
@@ -767,7 +774,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/error-handling/" class="md-nav__link">
+      <a href="../error-handling/" class="md-nav__link">
         
   
   
@@ -795,7 +802,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/capabilities-and-errors/" class="md-nav__link">
+      <a href="../capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -823,7 +830,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/path-model/" class="md-nav__link">
+      <a href="../path-model/" class="md-nav__link">
         
   
   
@@ -851,7 +858,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/memory-backend/" class="md-nav__link">
+      <a href="../memory-backend/" class="md-nav__link">
         
   
   
@@ -879,7 +886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/store-child/" class="md-nav__link">
+      <a href="../store-child/" class="md-nav__link">
         
   
   
@@ -907,7 +914,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/s3-backend/" class="md-nav__link">
+      <a href="../s3-backend/" class="md-nav__link">
         
   
   
@@ -935,7 +942,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -963,7 +970,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/s3-listing-strategies/" class="md-nav__link">
+      <a href="../s3-listing-strategies/" class="md-nav__link">
         
   
   
@@ -991,7 +998,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/sftp-backend/" class="md-nav__link">
+      <a href="../sftp-backend/" class="md-nav__link">
         
   
   
@@ -1019,7 +1026,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/azure-backend/" class="md-nav__link">
+      <a href="../azure-backend/" class="md-nav__link">
         
   
   
@@ -1047,7 +1054,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/http-backend/" class="md-nav__link">
+      <a href="../http-backend/" class="md-nav__link">
         
   
   
@@ -1075,7 +1082,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/batch-operations/" class="md-nav__link">
+      <a href="../batch-operations/" class="md-nav__link">
         
   
   
@@ -1103,7 +1110,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/transfer-operations/" class="md-nav__link">
+      <a href="../transfer-operations/" class="md-nav__link">
         
   
   
@@ -1131,7 +1138,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/glob-pattern-matching/" class="md-nav__link">
+      <a href="../glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1159,7 +1166,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/caching/" class="md-nav__link">
+      <a href="../caching/" class="md-nav__link">
         
   
   
@@ -1187,7 +1194,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/observe-hooks/" class="md-nav__link">
+      <a href="../observe-hooks/" class="md-nav__link">
         
   
   
@@ -1215,7 +1222,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/otel-tracing/" class="md-nav__link">
+      <a href="../otel-tracing/" class="md-nav__link">
         
   
   
@@ -1243,7 +1250,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/pyarrow-adapter/" class="md-nav__link">
+      <a href="../pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1271,7 +1278,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/parquet-dataset/" class="md-nav__link">
+      <a href="../parquet-dataset/" class="md-nav__link">
         
   
   
@@ -1299,7 +1306,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/dagster-io-manager/" class="md-nav__link">
+      <a href="../dagster-io-manager/" class="md-nav__link">
         
   
   
@@ -1324,10 +1331,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../examples/dagster-v2-resource/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dagster v2 Resource
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1343,6 +1377,37 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1355,7 +1420,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/retry-policy/" class="md-nav__link">
+      <a href="../retry-policy/" class="md-nav__link">
         
   
   
@@ -1383,7 +1448,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/health-check/" class="md-nav__link">
+      <a href="../health-check/" class="md-nav__link">
         
   
   
@@ -1411,7 +1476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/medallion-dagster/" class="md-nav__link">
+      <a href="../medallion-dagster/" class="md-nav__link">
         
   
   
@@ -1519,7 +1584,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../backends/" class="md-nav__link ">
+            <a href="../../backends/" class="md-nav__link ">
               
   
   
@@ -1561,7 +1626,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/local/" class="md-nav__link">
+      <a href="../../backends/local/" class="md-nav__link">
         
   
   
@@ -1589,7 +1654,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/memory/" class="md-nav__link">
+      <a href="../../backends/memory/" class="md-nav__link">
         
   
   
@@ -1617,7 +1682,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/http/" class="md-nav__link">
+      <a href="../../backends/http/" class="md-nav__link">
         
   
   
@@ -1645,7 +1710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/s3/" class="md-nav__link">
+      <a href="../../backends/s3/" class="md-nav__link">
         
   
   
@@ -1673,7 +1738,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -1701,7 +1766,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/sftp/" class="md-nav__link">
+      <a href="../../backends/sftp/" class="md-nav__link">
         
   
   
@@ -1729,7 +1794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/azure/" class="md-nav__link">
+      <a href="../../backends/azure/" class="md-nav__link">
         
   
   
@@ -1757,7 +1822,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/sql-blob/" class="md-nav__link">
+      <a href="../../backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -1785,7 +1850,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/sql-query/" class="md-nav__link">
+      <a href="../../backends/sql-query/" class="md-nav__link">
         
   
   
@@ -1871,7 +1936,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/" class="md-nav__link">
+      <a href="../../extensions/" class="md-nav__link">
         
   
   
@@ -1899,7 +1964,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../pyarrow-adapter/" class="md-nav__link">
+      <a href="../../pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1927,7 +1992,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../batch-operations/" class="md-nav__link">
+      <a href="../../batch-operations/" class="md-nav__link">
         
   
   
@@ -1955,7 +2020,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../glob-pattern-matching/" class="md-nav__link">
+      <a href="../../glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1983,7 +2048,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../transfer-operations/" class="md-nav__link">
+      <a href="../../transfer-operations/" class="md-nav__link">
         
   
   
@@ -2011,7 +2076,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observe/" class="md-nav__link">
+      <a href="../../observe/" class="md-nav__link">
         
   
   
@@ -2039,7 +2104,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../cache/" class="md-nav__link">
+      <a href="../../cache/" class="md-nav__link">
         
   
   
@@ -2067,7 +2132,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../parquet-datasets/" class="md-nav__link">
+      <a href="../../parquet-datasets/" class="md-nav__link">
         
   
   
@@ -2095,7 +2160,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../dagster/" class="md-nav__link">
+      <a href="../../dagster/" class="md-nav__link">
         
   
   
@@ -2123,7 +2188,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../retry/" class="md-nav__link">
+      <a href="../../retry/" class="md-nav__link">
         
   
   
@@ -2159,7 +2224,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../health-check/" class="md-nav__link">
+      <a href="../../health-check/" class="md-nav__link">
         
   
   
@@ -2187,7 +2252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../data-lake-patterns/" class="md-nav__link">
+      <a href="../../data-lake-patterns/" class="md-nav__link">
         
   
   
@@ -2215,7 +2280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../troubleshooting/" class="md-nav__link">
+      <a href="../../troubleshooting/" class="md-nav__link">
         
   
   
@@ -2243,7 +2308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../choosing-a-backend/" class="md-nav__link">
+      <a href="../../choosing-a-backend/" class="md-nav__link">
         
   
   
@@ -2271,7 +2336,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../custom-backend-guide/" class="md-nav__link">
+      <a href="../../custom-backend-guide/" class="md-nav__link">
         
   
   
@@ -2299,7 +2364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../migration/" class="md-nav__link">
+      <a href="../../migration/" class="md-nav__link">
         
   
   
@@ -2399,7 +2464,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../api/" class="md-nav__link ">
+            <a href="../../api/" class="md-nav__link ">
               
   
   
@@ -2441,7 +2506,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/store/" class="md-nav__link">
+      <a href="../../api/store/" class="md-nav__link">
         
   
   
@@ -2469,7 +2534,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/proxy/" class="md-nav__link">
+      <a href="../../api/proxy/" class="md-nav__link">
         
   
   
@@ -2497,7 +2562,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/registry/" class="md-nav__link">
+      <a href="../../api/registry/" class="md-nav__link">
         
   
   
@@ -2525,7 +2590,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backend/" class="md-nav__link">
+      <a href="../../api/backend/" class="md-nav__link">
         
   
   
@@ -2553,7 +2618,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/sftp-utils/" class="md-nav__link">
+      <a href="../../api/sftp-utils/" class="md-nav__link">
         
   
   
@@ -2581,7 +2646,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/config/" class="md-nav__link">
+      <a href="../../api/config/" class="md-nav__link">
         
   
   
@@ -2609,7 +2674,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/models/" class="md-nav__link">
+      <a href="../../api/models/" class="md-nav__link">
         
   
   
@@ -2637,7 +2702,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/path/" class="md-nav__link">
+      <a href="../../api/path/" class="md-nav__link">
         
   
   
@@ -2665,7 +2730,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/capabilities/" class="md-nav__link">
+      <a href="../../api/capabilities/" class="md-nav__link">
         
   
   
@@ -2693,7 +2758,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/errors/" class="md-nav__link">
+      <a href="../../api/errors/" class="md-nav__link">
         
   
   
@@ -2736,7 +2801,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../api/backends/" class="md-nav__link ">
+            <a href="../../api/backends/" class="md-nav__link ">
               
   
   
@@ -2778,7 +2843,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/local/" class="md-nav__link">
+      <a href="../../api/backends/local/" class="md-nav__link">
         
   
   
@@ -2806,7 +2871,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/memory/" class="md-nav__link">
+      <a href="../../api/backends/memory/" class="md-nav__link">
         
   
   
@@ -2834,7 +2899,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/http/" class="md-nav__link">
+      <a href="../../api/backends/http/" class="md-nav__link">
         
   
   
@@ -2862,7 +2927,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/s3/" class="md-nav__link">
+      <a href="../../api/backends/s3/" class="md-nav__link">
         
   
   
@@ -2890,7 +2955,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../api/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -2918,7 +2983,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/sftp/" class="md-nav__link">
+      <a href="../../api/backends/sftp/" class="md-nav__link">
         
   
   
@@ -2946,7 +3011,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/azure/" class="md-nav__link">
+      <a href="../../api/backends/azure/" class="md-nav__link">
         
   
   
@@ -2974,7 +3039,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/sql-blob/" class="md-nav__link">
+      <a href="../../api/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -3002,7 +3067,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/sql-query/" class="md-nav__link">
+      <a href="../../api/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -3053,7 +3118,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../api/extensions/" class="md-nav__link ">
+            <a href="../../api/extensions/" class="md-nav__link ">
               
   
   
@@ -3095,7 +3160,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/arrow/" class="md-nav__link">
+      <a href="../../api/extensions/arrow/" class="md-nav__link">
         
   
   
@@ -3123,7 +3188,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/batch/" class="md-nav__link">
+      <a href="../../api/extensions/batch/" class="md-nav__link">
         
   
   
@@ -3151,7 +3216,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/cache/" class="md-nav__link">
+      <a href="../../api/extensions/cache/" class="md-nav__link">
         
   
   
@@ -3179,7 +3244,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/dagster/" class="md-nav__link">
+      <a href="../../api/extensions/dagster/" class="md-nav__link">
         
   
   
@@ -3207,7 +3272,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/glob/" class="md-nav__link">
+      <a href="../../api/extensions/glob/" class="md-nav__link">
         
   
   
@@ -3235,7 +3300,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/integrity/" class="md-nav__link">
+      <a href="../../api/extensions/integrity/" class="md-nav__link">
         
   
   
@@ -3263,7 +3328,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/observe/" class="md-nav__link">
+      <a href="../../api/extensions/observe/" class="md-nav__link">
         
   
   
@@ -3291,7 +3356,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/otel/" class="md-nav__link">
+      <a href="../../api/extensions/otel/" class="md-nav__link">
         
   
   
@@ -3319,7 +3384,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/parquet/" class="md-nav__link">
+      <a href="../../api/extensions/parquet/" class="md-nav__link">
         
   
   
@@ -3347,7 +3412,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/partition/" class="md-nav__link">
+      <a href="../../api/extensions/partition/" class="md-nav__link">
         
   
   
@@ -3375,7 +3440,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/pydantic/" class="md-nav__link">
+      <a href="../../api/extensions/pydantic/" class="md-nav__link">
         
   
   
@@ -3403,7 +3468,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/streams/" class="md-nav__link">
+      <a href="../../api/extensions/streams/" class="md-nav__link">
         
   
   
@@ -3431,7 +3496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/transfer/" class="md-nav__link">
+      <a href="../../api/extensions/transfer/" class="md-nav__link">
         
   
   
@@ -3459,7 +3524,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/yaml/" class="md-nav__link">
+      <a href="../../api/extensions/yaml/" class="md-nav__link">
         
   
   
@@ -3503,7 +3568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../capabilities-matrix/" class="md-nav__link">
+      <a href="../../capabilities-matrix/" class="md-nav__link">
         
   
   
@@ -3531,7 +3596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../changelog/" class="md-nav__link">
+      <a href="../../changelog/" class="md-nav__link">
         
   
   
@@ -3563,29 +3628,24 @@
       
   
   
-    
   
   
-  
     
     
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -3603,7 +3663,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3621,7 +3681,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/" class="md-nav__link">
+      <a href="../../architecture/" class="md-nav__link">
         
   
   
@@ -3649,7 +3709,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../performance/" class="md-nav__link">
+      <a href="../../performance/" class="md-nav__link">
         
   
   
@@ -3677,7 +3737,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../concurrency/" class="md-nav__link">
+      <a href="../../concurrency/" class="md-nav__link">
         
   
   
@@ -3705,7 +3765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../security-model/" class="md-nav__link">
+      <a href="../../security-model/" class="md-nav__link">
         
   
   
@@ -3730,8 +3790,6 @@
                 
   
   
-    
-  
   
   
     
@@ -3742,15 +3800,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../../design/" class="md-nav__link ">
               
   
   
@@ -3774,7 +3832,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3792,7 +3850,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design-spec/" class="md-nav__link">
+      <a href="../../design/design-spec/" class="md-nav__link">
         
   
   
@@ -3820,7 +3878,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../testing-standards/" class="md-nav__link">
+      <a href="../../design/testing-standards/" class="md-nav__link">
         
   
   
@@ -3848,7 +3906,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../process/" class="md-nav__link">
+      <a href="../../design/process/" class="md-nav__link">
         
   
   
@@ -3873,8 +3931,6 @@
                 
   
   
-    
-  
   
   
     
@@ -3885,15 +3941,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../design/specs/" class="md-nav__link ">
               
   
   
@@ -3917,7 +3973,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3935,7 +3991,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../001-store-api/" class="md-nav__link">
+      <a href="../../design/specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -3963,7 +4019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../002-registry-config/" class="md-nav__link">
+      <a href="../../design/specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -3991,7 +4047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../design/specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -4019,7 +4075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../004-path-model/" class="md-nav__link">
+      <a href="../../design/specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -4047,7 +4103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../005-error-model/" class="md-nav__link">
+      <a href="../../design/specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -4075,7 +4131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../006-streaming-io/" class="md-nav__link">
+      <a href="../../design/specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -4103,7 +4159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../007-atomic-writes/" class="md-nav__link">
+      <a href="../../design/specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -4131,7 +4187,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../008-s3-backend/" class="md-nav__link">
+      <a href="../../design/specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -4159,7 +4215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../009-sftp-backend/" class="md-nav__link">
+      <a href="../../design/specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -4187,7 +4243,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../010-native-path-resolution/" class="md-nav__link">
+      <a href="../../design/specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -4215,7 +4271,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -4243,7 +4299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../012-azure-backend/" class="md-nav__link">
+      <a href="../../design/specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -4271,7 +4327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-memory-backend/" class="md-nav__link">
+      <a href="../../design/specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -4299,7 +4355,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -4327,7 +4383,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../015-store-child/" class="md-nav__link">
+      <a href="../../design/specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -4355,7 +4411,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-ext-batch/" class="md-nav__link">
+      <a href="../../design/specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -4383,7 +4439,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-ext-transfer/" class="md-nav__link">
+      <a href="../../design/specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -4411,7 +4467,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../018-glob/" class="md-nav__link">
+      <a href="../../design/specs/018-glob/" class="md-nav__link">
         
   
   
@@ -4439,7 +4495,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../019-ext-observe/" class="md-nav__link">
+      <a href="../../design/specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -4467,7 +4523,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../020-credential-hygiene/" class="md-nav__link">
+      <a href="../../design/specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -4495,7 +4551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../021-config-loaders/" class="md-nav__link">
+      <a href="../../design/specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -4523,7 +4579,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../design/specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -4551,7 +4607,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../023-ext-cache/" class="md-nav__link">
+      <a href="../../design/specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -4579,7 +4635,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../024-ext-partition/" class="md-nav__link">
+      <a href="../../design/specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -4607,7 +4663,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../025-retry-policy/" class="md-nav__link">
+      <a href="../../design/specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -4635,7 +4691,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../026-health-check/" class="md-nav__link">
+      <a href="../../design/specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -4663,7 +4719,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../027-iter-children/" class="md-nav__link">
+      <a href="../../design/specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -4691,7 +4747,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../028-read-text/" class="md-nav__link">
+      <a href="../../design/specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -4719,7 +4775,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../design/specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -4747,7 +4803,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../030-write-text/" class="md-nav__link">
+      <a href="../../design/specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -4775,7 +4831,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../031-ext-dagster/" class="md-nav__link">
+      <a href="../../design/specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -4803,7 +4859,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../032-http-backend/" class="md-nav__link">
+      <a href="../../design/specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -4831,7 +4887,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../033-ext-streams/" class="md-nav__link">
+      <a href="../../design/specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -4859,7 +4915,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../034-ext-integrity/" class="md-nav__link">
+      <a href="../../design/specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -4887,7 +4943,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../035-content-digest/" class="md-nav__link">
+      <a href="../../design/specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -4915,7 +4971,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../036-seekable-read/" class="md-nav__link">
+      <a href="../../design/specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -4943,7 +4999,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../037-depth-limited-listing/" class="md-nav__link">
+      <a href="../../design/specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -4971,7 +5027,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../../design/specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -4999,7 +5055,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../../design/specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -5027,7 +5083,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../040-sql-blob-backend/" class="md-nav__link">
+      <a href="../../design/specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -5052,37 +5108,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    041: SQL Query Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../design/specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -5098,543 +5127,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Construction
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Construction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-001-constructor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-001: Constructor
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-002-backend-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-004-repr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-004: Repr
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-005-registration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-005: Registration
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#key-resolution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Resolution
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Key Resolution">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-010-explicit-query-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-010: Explicit Query Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-011-strict-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-011: Strict Mode
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-012-format-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-012: Format Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#serialization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Serialization
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Serialization">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-013-resultserializer-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-013: ResultSerializer Protocol
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-014-arrowserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-014: ArrowSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-020-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-020: read()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-021-read_bytes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-021: read_bytes()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-030-list_files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-030: list_files()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-031-list_folders" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-031: list_folders()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-032-glob" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-032: glob()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Metadata
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Metadata">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-040-get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-040: get_file_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-041-get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-041: get_folder_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#existence-checks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Existence Checks
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Existence Checks">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-042-exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-042: exists()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-043-is_file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-043: is_file()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-044-is_folder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-044: is_folder()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#unsupported-operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unsupported Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Unsupported Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-050-write-operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-050: Write Operations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#engine-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Engine &amp; Connection
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Engine &amp; Connection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-060-check_health" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-060: check_health()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-061-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-061: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-062-unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-062: unwrap()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-063-sqlite-pragmas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-063: SQLite PRAGMAs
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-070-exception-translation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-070: Exception Translation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#path-handling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Path Handling
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Path Handling">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-080-path-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-080: Path Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Performance">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-090-query-execution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-090: Query Execution
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-091-serialization-overhead" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-091: Serialization Overhead
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -5647,7 +5139,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../042-ext-parquet/" class="md-nav__link">
+      <a href="../../design/specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -5675,7 +5167,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../043-resolution-plan/" class="md-nav__link">
+      <a href="../../design/specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -5726,7 +5218,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../adrs/" class="md-nav__link ">
+            <a href="../../design/adrs/" class="md-nav__link ">
               
   
   
@@ -5768,7 +5260,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -5796,7 +5288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -5824,7 +5316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -5852,7 +5344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../design/adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -5880,7 +5372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../design/adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -5908,7 +5400,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../design/adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -5936,7 +5428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -5964,7 +5456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../../design/adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -5992,7 +5484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -6020,7 +5512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -6048,7 +5540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../../design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -6076,7 +5568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../design/adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -6104,7 +5596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -6132,7 +5624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../../design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -6160,7 +5652,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../../design/adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -6188,7 +5680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../../design/adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -6216,7 +5708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../../design/adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -6244,7 +5736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
+      <a href="../../design/adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
         
   
   
@@ -6272,7 +5764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../design/adrs/0019-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -6300,7 +5792,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
+      <a href="../../design/adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
         
   
   
@@ -6351,7 +5843,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../rfcs/" class="md-nav__link ">
+            <a href="../../design/rfcs/" class="md-nav__link ">
               
   
   
@@ -6393,7 +5885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -6421,7 +5913,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -6449,7 +5941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -6477,7 +5969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -6505,7 +5997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
         
   
   
@@ -6533,7 +6025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
         
   
   
@@ -6561,7 +6053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
         
   
   
@@ -6589,7 +6081,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
         
   
   
@@ -6617,7 +6109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../design/rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -6668,7 +6160,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
+            <a href="../../design/research/" class="md-nav__link ">
               
   
   
@@ -6710,7 +6202,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
+      <a href="../../design/research/research-async-store-api/" class="md-nav__link">
         
   
   
@@ -6738,7 +6230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../../design/research/research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -6766,7 +6258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../../design/research/research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -6794,7 +6286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-dagster-extension/" class="md-nav__link">
+      <a href="../../design/research/research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -6822,7 +6314,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-depth-limited-listing/" class="md-nav__link">
+      <a href="../../design/research/research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -6850,7 +6342,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../../design/research/research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -6878,7 +6370,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
+      <a href="../../design/research/research-example-testing/" class="md-nav__link">
         
   
   
@@ -6906,7 +6398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../../design/research/research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -6934,7 +6426,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../../design/research/research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -6962,7 +6454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
+      <a href="../../design/research/research-health-check/" class="md-nav__link">
         
   
   
@@ -6990,7 +6482,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../../design/research/research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -7018,7 +6510,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../../design/research/research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -7046,7 +6538,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../../design/research/research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -7074,7 +6566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-resolve-spec-proposal/" class="md-nav__link">
+      <a href="../../design/research/research-resolve-spec-proposal/" class="md-nav__link">
         
   
   
@@ -7102,7 +6594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
+      <a href="../../design/research/research-retry-policy/" class="md-nav__link">
         
   
   
@@ -7130,7 +6622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-seekable-read/" class="md-nav__link">
+      <a href="../../design/research/research-seekable-read/" class="md-nav__link">
         
   
   
@@ -7158,7 +6650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../../design/research/research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -7186,7 +6678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../../design/research/research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -7214,7 +6706,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
+      <a href="../../design/research/research-store-config/" class="md-nav__link">
         
   
   
@@ -7242,7 +6734,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../../design/research/research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -7270,7 +6762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-testing-best-practices/" class="md-nav__link">
+      <a href="../../design/research/research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -7298,7 +6790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../../design/research/research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -7349,7 +6841,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/" class="md-nav__link">
+      <a href="../../contributing/" class="md-nav__link">
         
   
   
@@ -7376,7 +6868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../further-reading/" class="md-nav__link">
+      <a href="../../further-reading/" class="md-nav__link">
         
   
   
@@ -7403,7 +6895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development-story/" class="md-nav__link">
+      <a href="../../development-story/" class="md-nav__link">
         
   
   
@@ -7450,519 +6942,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        See also
       
     </span>
   </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Construction
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Construction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-001-constructor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-001: Constructor
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-002-backend-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-004-repr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-004: Repr
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-005-registration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-005: Registration
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#key-resolution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Resolution
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Key Resolution">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-010-explicit-query-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-010: Explicit Query Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-011-strict-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-011: Strict Mode
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-012-format-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-012: Format Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#serialization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Serialization
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Serialization">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-013-resultserializer-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-013: ResultSerializer Protocol
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-014-arrowserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-014: ArrowSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-020-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-020: read()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-021-read_bytes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-021: read_bytes()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-030-list_files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-030: list_files()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-031-list_folders" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-031: list_folders()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-032-glob" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-032: glob()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Metadata
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Metadata">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-040-get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-040: get_file_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-041-get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-041: get_folder_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#existence-checks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Existence Checks
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Existence Checks">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-042-exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-042: exists()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-043-is_file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-043: is_file()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-044-is_folder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-044: is_folder()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#unsupported-operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unsupported Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Unsupported Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-050-write-operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-050: Write Operations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#engine-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Engine &amp; Connection
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Engine &amp; Connection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-060-check_health" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-060: check_health()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-061-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-061: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-062-unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-062: unwrap()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-063-sqlite-pragmas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-063: SQLite PRAGMAs
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-070-exception-translation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-070: Exception Translation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#path-handling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Path Handling
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Path Handling">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-080-path-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-080: Path Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Performance">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-090-query-execution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-090: Query Execution
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-091-serialization-overhead" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-091: Serialization Overhead
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -7983,265 +6969,75 @@
 
 
 
-<h1 id="sql-query-backend-specification">SQL Query Backend Specification<a class="headerlink" href="#sql-query-backend-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>SQLQueryBackend</code> implements the <code>Backend</code> ABC as a read-only query
-materializer. It maps path keys to SQL queries and serializes result sets to
-bytes in the format implied by the key's file extension (Parquet, CSV, Arrow
-IPC).</p>
-<p>Shares <code>_SQLAlchemyBaseBackend</code> with <code>SQLBlobBackend</code> (v1). This spec covers
-only <code>SQLQueryBackend</code> (v2).</p>
-<p><strong>Primary use cases:</strong> exposing SQL query results as portable data products,
-on-demand materialization of views/reports, bridging SQL databases into the
-Store abstraction for downstream consumers who don't need to know the source is
-a database.</p>
-<p><strong>Dependencies:</strong> <code>sqlalchemy&gt;=2.0</code>, <code>pyarrow&gt;=12.0.0</code> (optional extra:
-<code>sql-query</code>).</p>
-<p><strong>Architecture:</strong> Two-class design with shared base -- see
-<a href="../../adrs/0018-sqlalchemy-two-class-architecture/">ADR-0018</a>.</p>
-<hr />
-<h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-001-constructor">SQL-QUERY-001: Constructor<a class="headerlink" href="#sql-query-001-constructor" title="Permanent link">&para;</a></h3>
-<p><strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">SQLQueryBackend</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">engine</span><span class="p">:</span> <span class="n">Engine</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">queries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">serializer</span><span class="p">:</span> <span class="n">ResultSerializer</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
-</code></pre></div></p>
-<p><strong>Preconditions:</strong>
-- Exactly one of <code>url</code> or <code>engine</code> must be provided. Both or neither raises
-  <code>ValueError</code>.
-- <code>queries</code>, if provided, must have non-empty string keys and non-empty string
-  values. Empty keys or values raise <code>ValueError</code>.
-- If <code>strict=False</code>, raises <code>NotImplementedError</code> (view/convention discovery
-  deferred to future version).</p>
-<p><strong>Postconditions:</strong>
-- Engine is created (if <code>url</code>) or stored (if <code>engine</code>).
-- If SQLite: <code>PRAGMA journal_mode=WAL</code> and <code>PRAGMA synchronous=NORMAL</code> are set.
-- Key registry is built from the <code>queries</code> dict.
-- If <code>serializer</code> is <code>None</code>, defaults to <code>ArrowSerializer()</code>.</p>
-<h3 id="sql-query-002-backend-name">SQL-QUERY-002: Backend Name<a class="headerlink" href="#sql-query-002-backend-name" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>name</code> property returns <code>"sql-query"</code>.</p>
-<h3 id="sql-query-003-capability-declaration">SQL-QUERY-003: Capability Declaration<a class="headerlink" href="#sql-query-003-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>SQLQueryBackend</code> declares 5 capabilities: <code>READ</code>, <code>LIST</code>,
-<code>METADATA</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code>.</p>
-<h3 id="sql-query-004-repr">SQL-QUERY-004: Repr<a class="headerlink" href="#sql-query-004-repr" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>repr(backend)</code> returns:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>SQLQueryBackend(dialect=&#39;sqlite&#39;, keys=3, strict=True)
-</code></pre></div></p>
-<p>Credential-bearing URL components are never included.</p>
-<h3 id="sql-query-005-registration">SQL-QUERY-005: Registration<a class="headerlink" href="#sql-query-005-registration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>"sql-query"</code> backend type is registered in
-<code>_register_builtin_backends()</code> behind a <code>try/except ImportError</code> guard.
-The registration guard checks for <code>sqlalchemy</code> (required for import).
-<code>pyarrow</code> is checked eagerly at construction time (<code>__init__</code>) with a
-clear error message directing users to install <code>remote-store[sql-query]</code>.</p>
-<hr />
-<h2 id="key-resolution">Key Resolution<a class="headerlink" href="#key-resolution" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-010-explicit-query-mapping">SQL-QUERY-010: Explicit Query Mapping<a class="headerlink" href="#sql-query-010-explicit-query-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Keys are resolved by exact lookup in the <code>queries</code> dict.
-If the key is not found, <code>NotFound</code> is raised. No partial matching, no
-normalization beyond standard path validation.</p>
-<p>Resolution precedence (v2 implements level 1 only):
-1. Explicit mapping (<code>queries</code> dict) -- highest priority
-2. View-based (deferred)
-3. Convention-based (deferred)</p>
-<h3 id="sql-query-011-strict-mode">SQL-QUERY-011: Strict Mode<a class="headerlink" href="#sql-query-011-strict-mode" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>strict=True</code> (default) restricts resolution to the explicit
-<code>queries</code> dict only. Setting <code>strict=False</code> raises <code>NotImplementedError</code> in
-v2 -- view-based and convention-based discovery are deferred to a future
-version.</p>
-<h3 id="sql-query-012-format-detection">SQL-QUERY-012: Format Detection<a class="headerlink" href="#sql-query-012-format-detection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The serialization format is determined by the key's file
-extension:</p>
-<table>
-<thead>
-<tr>
-<th>Extension</th>
-<th>Format</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>.parquet</code></td>
-<td>Apache Parquet</td>
-</tr>
-<tr>
-<td><code>.csv</code></td>
-<td>CSV</td>
-</tr>
-<tr>
-<td><code>.arrow</code>, <code>.ipc</code></td>
-<td>Arrow IPC</td>
-</tr>
-</tbody>
-</table>
-<p>Keys without a recognized extension raise <code>InvalidPath</code> with a message listing
-supported extensions.</p>
-<hr />
-<h2 id="serialization">Serialization<a class="headerlink" href="#serialization" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-013-resultserializer-protocol">SQL-QUERY-013: ResultSerializer Protocol<a class="headerlink" href="#sql-query-013-resultserializer-protocol" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>ResultSerializer</code> is a <code>typing.Protocol</code>:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@runtime_checkable</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ResultSerializer</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rows</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span> <span class="o">...</span>
-</code></pre></div></p>
-<p>The <code>format</code> parameter is the lowercase extension without the dot (e.g.,
-<code>"parquet"</code>, <code>"csv"</code>, <code>"arrow"</code>). The <code>rows</code> parameter is a sequence of
-row tuples. The <code>columns</code> parameter is the column name list.</p>
-<h3 id="sql-query-014-arrowserializer">SQL-QUERY-014: ArrowSerializer<a class="headerlink" href="#sql-query-014-arrowserializer" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The built-in <code>ArrowSerializer</code> converts rows + columns to a
-<code>pyarrow.Table</code>, then serializes to the requested format:
-- <code>"parquet"</code> -- <code>pyarrow.parquet.write_table()</code>
-- <code>"csv"</code> -- <code>pyarrow.csv.write_csv()</code>
-- <code>"arrow"</code> / <code>"ipc"</code> -- <code>pyarrow.ipc.RecordBatchFileWriter</code></p>
-<p>An empty result set (zero rows) produces a valid file with schema but no data.</p>
-<p>Unsupported format strings raise <code>ValueError</code>.</p>
-<hr />
-<h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-020-read">SQL-QUERY-020: read()<a class="headerlink" href="#sql-query-020-read" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>read(path)</code> resolves the key to SQL, executes the query,
-serializes the result, and returns a seekable <code>BinaryIO</code>.</p>
-<p><strong>Pipeline:</strong>
-1. Validate path (same rules as SQL-BLOB-060).
-2. Resolve key to SQL string via the <code>queries</code> dict.
-3. Detect format from file extension.
-4. Execute SQL: <code>connection.execute(sa.text(sql))</code> within <code>_map_errors()</code>.
-5. Serialize: <code>self._serializer.serialize(rows, columns, format)</code>.
-6. Return <code>BufferedReader(BytesIO(data))</code>.</p>
-<p>An empty result set is valid -- not an error.</p>
-<h3 id="sql-query-021-read_bytes">SQL-QUERY-021: read_bytes()<a class="headerlink" href="#sql-query-021-read_bytes" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same pipeline as <code>read()</code>, returns raw <code>bytes</code>.</p>
-<h3 id="sql-query-030-list_files">SQL-QUERY-030: list_files()<a class="headerlink" href="#sql-query-030-list_files" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Enumerates keys from the key registry (not database tables).
-Filters by prefix matching. Returns <code>FileInfo</code> for each matching key with
-<code>size=0</code> (sentinel -- size unknown until materialized) and
-<code>modified_at=datetime.min(tzinfo=utc)</code>.</p>
+<h1 id="dagster-v2-resource">Dagster v2 Resource<a class="headerlink" href="#dagster-v2-resource" title="Permanent link">&para;</a></h1>
+<p>Config-driven Store construction with RemoteStoreIOManager.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="sd">&quot;&quot;&quot;Dagster v2 Resource -- config-driven Store construction with RemoteStoreIOManager.</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="sd">Demonstrates:</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="sd">- RemoteStoreIOManager: IO manager factory that constructs and owns a Store</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">- setup_for_execution / teardown_after_execution: manual lifecycle outside orchestrator</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="sd">- Pickle roundtrip through the config-driven IO manager</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">AssetKey</span><span class="p">,</span> <span class="n">build_init_resource_context</span><span class="p">,</span> <span class="n">build_input_context</span><span class="p">,</span> <span class="n">build_output_context</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">RemoteStoreIOManager</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">demo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Dagster v2 resource demo. Returns results for test verification.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="n">results</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="c1"># --- Create IO manager factory from config ---</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== RemoteStoreIOManager (memory backend) ===&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="n">factory</span> <span class="o">=</span> <span class="n">RemoteStoreIOManager</span><span class="p">(</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>        <span class="n">backend_type</span><span class="o">=</span><span class="s2">&quot;memory&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        <span class="n">backend_options</span><span class="o">=</span><span class="p">{},</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>        <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;pickle&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="p">)</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    <span class="c1"># Manually drive the lifecycle (no Dagster orchestrator present)</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>    <span class="n">factory</span><span class="o">.</span><span class="n">setup_for_execution</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">build_init_resource_context</span><span class="p">())</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>    <span class="n">io_mgr</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">create_io_manager</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">build_init_resource_context</span><span class="p">())</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  IO manager created with memory backend&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    <span class="nb">print</span><span class="p">()</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>    <span class="c1"># --- Pickle roundtrip ---</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== Pickle roundtrip ===&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>    <span class="n">obj</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;pipeline&quot;</span><span class="p">:</span> <span class="s2">&quot;v2-demo&quot;</span><span class="p">,</span> <span class="s2">&quot;records&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">]}</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>    <span class="n">out_ctx</span> <span class="o">=</span> <span class="n">build_output_context</span><span class="p">(</span><span class="n">asset_key</span><span class="o">=</span><span class="n">AssetKey</span><span class="p">([</span><span class="s2">&quot;processed&quot;</span><span class="p">,</span> <span class="s2">&quot;records&quot;</span><span class="p">]))</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>    <span class="n">io_mgr</span><span class="o">.</span><span class="n">handle_output</span><span class="p">(</span><span class="n">out_ctx</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Wrote processed/records.pkl&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>    <span class="n">in_ctx</span> <span class="o">=</span> <span class="n">build_input_context</span><span class="p">(</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>        <span class="n">asset_key</span><span class="o">=</span><span class="n">AssetKey</span><span class="p">([</span><span class="s2">&quot;processed&quot;</span><span class="p">,</span> <span class="s2">&quot;records&quot;</span><span class="p">]),</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>        <span class="n">upstream_output</span><span class="o">=</span><span class="n">out_ctx</span><span class="p">,</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>    <span class="p">)</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>    <span class="n">loaded</span> <span class="o">=</span> <span class="n">io_mgr</span><span class="o">.</span><span class="n">load_input</span><span class="p">(</span><span class="n">in_ctx</span><span class="p">)</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Loaded: </span><span class="si">{</span><span class="n">loaded</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;pickle_roundtrip&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">loaded</span> <span class="o">==</span> <span class="n">obj</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>    <span class="nb">print</span><span class="p">()</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>
+<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>    <span class="c1"># --- Teardown ---</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>    <span class="n">factory</span><span class="o">.</span><span class="n">teardown_after_execution</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">build_init_resource_context</span><span class="p">())</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Store torn down&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;teardown_ok&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>
+<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>    <span class="k">return</span> <span class="n">results</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>
+<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>
+<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>    <span class="n">demo</span><span class="p">()</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Done!&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Non-recursive: only direct children of the prefix.</li>
-<li>Recursive: all keys under the prefix.</li>
-<li><code>max_depth</code>: limits depth of suffix beyond prefix.</li>
+<li><a href="../../dagster/">Dagster</a> — Dagster integration guide</li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/examples/dagster_v2_resource.py">Source: <code>examples/dagster_v2_resource.py</code></a></li>
 </ul>
-<h3 id="sql-query-031-list_folders">SQL-QUERY-031: list_folders()<a class="headerlink" href="#sql-query-031-list_folders" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Derives virtual folders from key registry paths. Same
-prefix-based deduplication logic as <code>SQLBlobBackend.list_folders()</code>.</p>
-<h3 id="sql-query-032-glob">SQL-QUERY-032: glob()<a class="headerlink" href="#sql-query-032-glob" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Applies <code>pattern_to_regex(pattern)</code> from <code>_glob.py</code> against
-the key registry. Returns <code>FileInfo</code> for all matching keys. No SQL-side
-narrowing needed since the key set is in-memory.</p>
-<hr />
-<h2 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-040-get_file_info">SQL-QUERY-040: get_file_info()<a class="headerlink" href="#sql-query-040-get_file_info" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Returns <code>FileInfo</code> with:
-- <code>path</code>: the requested key as <code>RemotePath</code>
-- <code>name</code>: final path component
-- <code>size</code>: <code>0</code> (sentinel -- unknown until materialized)
-- <code>modified_at</code>: <code>datetime.min.replace(tzinfo=timezone.utc)</code>
-- <code>extra</code>: <code>{"materialized": False}</code></p>
-<p>Raises <code>NotFound</code> if the key is not in the registry.</p>
-<h3 id="sql-query-041-get_folder_info">SQL-QUERY-041: get_folder_info()<a class="headerlink" href="#sql-query-041-get_folder_info" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Computes folder info from the key registry:
-- <code>file_count</code>: number of keys under prefix
-- <code>total_size</code>: <code>0</code> (all files have sentinel size)
-- <code>modified_at</code>: <code>None</code></p>
-<p>Raises <code>NotFound</code> if no keys match the prefix and path is non-empty.</p>
-<hr />
-<h2 id="existence-checks">Existence Checks<a class="headerlink" href="#existence-checks" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-042-exists">SQL-QUERY-042: exists()<a class="headerlink" href="#sql-query-042-exists" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Returns <code>True</code> if path matches a registered key (file) or
-any key starts with <code>path/</code> (virtual folder). Empty path returns <code>True</code>
-(root).</p>
-<h3 id="sql-query-043-is_file">SQL-QUERY-043: is_file()<a class="headerlink" href="#sql-query-043-is_file" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Returns <code>True</code> if path is an exact key in the registry.
-Empty path returns <code>False</code>.</p>
-<h3 id="sql-query-044-is_folder">SQL-QUERY-044: is_folder()<a class="headerlink" href="#sql-query-044-is_folder" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Returns <code>True</code> if any registered key starts with <code>path/</code>.
-Empty path returns <code>True</code> (root).</p>
-<hr />
-<h2 id="unsupported-operations">Unsupported Operations<a class="headerlink" href="#unsupported-operations" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-050-write-operations">SQL-QUERY-050: Write Operations<a class="headerlink" href="#sql-query-050-write-operations" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The following methods raise <code>CapabilityNotSupported</code> with
-<code>backend=self.name</code>:</p>
-<ul>
-<li><code>write()</code> -- capability <code>"write"</code></li>
-<li><code>write_atomic()</code> -- capability <code>"atomic_write"</code></li>
-<li><code>open_atomic()</code> -- capability <code>"atomic_write"</code></li>
-<li><code>delete()</code> -- capability <code>"delete"</code></li>
-<li><code>delete_folder()</code> -- capability <code>"delete"</code></li>
-<li><code>move()</code> -- capability <code>"move"</code></li>
-<li><code>copy()</code> -- capability <code>"copy"</code></li>
-</ul>
-<hr />
-<h2 id="engine-connection">Engine &amp; Connection<a class="headerlink" href="#engine-connection" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-060-check_health">SQL-QUERY-060: check_health()<a class="headerlink" href="#sql-query-060-check_health" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Inherited from <code>_SQLAlchemyBaseBackend</code>. Executes <code>SELECT 1</code>.
-Raises <code>BackendUnavailable</code> on failure.</p>
-<h3 id="sql-query-061-close">SQL-QUERY-061: close()<a class="headerlink" href="#sql-query-061-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Inherited. Disposes owned engines; no-op for borrowed.</p>
-<h3 id="sql-query-062-unwrap">SQL-QUERY-062: unwrap()<a class="headerlink" href="#sql-query-062-unwrap" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Inherited. <code>unwrap(Engine)</code> returns the SQLAlchemy <code>Engine</code>.</p>
-<h3 id="sql-query-063-sqlite-pragmas">SQL-QUERY-063: SQLite PRAGMAs<a class="headerlink" href="#sql-query-063-sqlite-pragmas" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Inherited. WAL mode and <code>synchronous=NORMAL</code> for SQLite.</p>
-<hr />
-<h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-070-exception-translation">SQL-QUERY-070: Exception Translation<a class="headerlink" href="#sql-query-070-exception-translation" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Condition</th>
-<th>remote-store error</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Key not in registry</td>
-<td><code>NotFound</code></td>
-</tr>
-<tr>
-<td>Unsupported file extension</td>
-<td><code>InvalidPath</code></td>
-</tr>
-<tr>
-<td><code>strict=False</code></td>
-<td><code>NotImplementedError</code></td>
-</tr>
-<tr>
-<td>SQL execution error (<code>ProgrammingError</code>, <code>OperationalError</code>)</td>
-<td><code>RemoteStoreError</code> / <code>BackendUnavailable</code></td>
-</tr>
-<tr>
-<td>Other <code>SQLAlchemyError</code></td>
-<td><code>RemoteStoreError</code></td>
-</tr>
-<tr>
-<td>Unsupported operation</td>
-<td><code>CapabilityNotSupported</code></td>
-</tr>
-</tbody>
-</table>
-<p>Backend-native exceptions must never leak.</p>
-<hr />
-<h2 id="path-handling">Path Handling<a class="headerlink" href="#path-handling" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-080-path-validation">SQL-QUERY-080: Path Validation<a class="headerlink" href="#sql-query-080-path-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same rules as SQL-BLOB-060:
-- No null bytes -&gt; <code>InvalidPath</code>
-- No absolute paths (leading <code>/</code>) -&gt; <code>InvalidPath</code>
-- No <code>..</code> segments -&gt; <code>InvalidPath</code>
-- Empty path allowed for folder operations (root), rejected for file operations.</p>
-<hr />
-<h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-090-query-execution">SQL-QUERY-090: Query Execution<a class="headerlink" href="#sql-query-090-query-execution" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Queries execute via SQLAlchemy Core <code>connection.execute()</code>.
-Full materialization of result sets in memory. Streaming/chunked execution
-is deferred to a future version.</p>
-<h3 id="sql-query-091-serialization-overhead">SQL-QUERY-091: Serialization Overhead<a class="headerlink" href="#sql-query-091-serialization-overhead" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>ArrowSerializer</code> converts SQL rows to a PyArrow Table,
-then serializes. This is a full copy. Zero-copy paths (ADBC) are deferred
-to v3.</p>
 
 
 
@@ -8297,10 +7093,10 @@ to v3.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
