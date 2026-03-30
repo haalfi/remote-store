@@ -133,8 +133,7 @@ Backends implement storage-specific behavior behind the Store API.
 
 ## Extensions
 
-Extensions add optional capabilities alongside the core — caching,
-observability, batch operations, format support, and integrations.
+Extensions add optional capabilities alongside the core.
 
 ### Always available (included in base install)
 
