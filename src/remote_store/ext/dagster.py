@@ -335,7 +335,7 @@ class DagsterStoreResource(ConfigurableResource):  # type: ignore[misc,type-arg]
     lifecycle because it is a Dagster Resource with ``setup_for_execution``
     / ``teardown_after_execution`` hooks.
 
-    Args:
+    Attributes:
         backend_type: Backend type string (e.g. ``"local"``, ``"s3"``, ``"memory"``).
             Must be registered in the backend factory registry.
         backend_options: Keyword arguments passed to the backend constructor.
@@ -402,7 +402,7 @@ class RemoteStoreIOManager(ConfigurableIOManagerFactory):  # type: ignore[misc,t
     Store lifecycle (setup and teardown). For direct Store access in assets,
     use ``DagsterStoreResource`` as a separate resource.
 
-    Args:
+    Attributes:
         backend_type: Backend type string (e.g. ``"local"``, ``"s3"``, ``"memory"``).
         backend_options: Keyword arguments passed to the backend constructor.
         root_path: Optional root path for the Store.
