@@ -205,7 +205,7 @@ Requires `pip install "remote-store[dagster,arrow]"`.
 
 ## See also
 
-- [ext.dagster API reference](../api/extensions/dagster.md) — full API docs
+- [ext.dagster API reference](api/extensions/dagster.md) — full API docs
 - [Dagster v2 resource example](examples/dagster-v2-resource.md) — config-driven
   Store construction with `RemoteStoreIOManager`
 - [Medallion + Dagster Showcase](examples/medallion-dagster.md) — end-to-end
