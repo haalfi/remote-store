@@ -17,6 +17,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Cleanup
 
+- [x] **BK-133 — Upgrade GitHub Actions Node.js 20 → 24** (post-v0.20.0)
+  Audited all workflows. Core actions (`checkout@v6`, `setup-python@v6`,
+  `codeql-action@v4`) already use Node.js 24. Upgraded `setup-uv` from
+  `@v7` to `@v8.0.0` (immutable tags). Disabled uv caching on lightweight
+  CI jobs (lint, typecheck, notebooks, examples, docs, package) to
+  eliminate cache-contention warnings. Remaining Node.js 20 warning comes
+  from GitHub's built-in `pages-build-deployment` (not user-configurable).
+
 - [x] **BK-131 — Fix mutation testing scripts (pytest-gremlins)** (v0.20.0)
   `hatch run mutate` was broken: passed source dir as positional arg instead
   of `--gremlin-targets`. Replaced with 6 scoped scripts (`mutate-core-api`,
