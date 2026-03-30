@@ -56,7 +56,7 @@ for storage and back.
 |------|---------------|-----------|------------|----------|
 | Pickle | `"pickle"` (default) | `.pkl` | stdlib | Any picklable object |
 | JSON | `"json"` | `.json` | stdlib | JSON-serializable data |
-| Parquet | `"parquet"` | `.parquet` | `pyarrow>=14.0` | DataFrames (pandas, polars) |
+| Parquet | `"parquet"` | `.parquet` | `pyarrow>=14.0` | DataFrames, Arrow Tables |
 
 ### Pickle (default)
 
@@ -84,7 +84,7 @@ mgr = dagster_io_manager(store, serializer="parquet")
 
 Efficient columnar storage for DataFrames. Requires PyArrow. Accepts pandas
 DataFrames, polars DataFrames (via `.to_arrow()`), and Arrow Tables.
-Deserializes to pandas DataFrame.
+Deserializes to a PyArrow Table.
 
 ## Custom serializer
 
