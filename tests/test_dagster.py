@@ -514,6 +514,31 @@ class TestDatasetIOManager:
         assert result.equals(table)
 
     @pytest.mark.spec("DAG-019")
+    def test_dataset_via_remote_store_io_manager(self) -> None:
+        """RemoteStoreIOManager with serializer='parquet-dataset' uses ParquetDatasetStore."""
+        pa = pytest.importorskip("pyarrow")
+
+        from remote_store.ext.dagster import RemoteStoreIOManager
+
+        factory = RemoteStoreIOManager(backend_type="memory", serializer="parquet-dataset")
+        factory.setup_for_execution(context=build_init_resource_context())
+        io_mgr = factory.create_io_manager(context=build_init_resource_context())
+
+        table = pa.table({"x": [1, 2], "y": ["a", "b"]})
+
+        out_ctx = build_output_context(asset_key=AssetKey(["v2", "dataset"]))
+        io_mgr.handle_output(out_ctx, table)
+
+        in_ctx = build_input_context(
+            asset_key=AssetKey(["v2", "dataset"]),
+            upstream_output=out_ctx,
+        )
+        result = io_mgr.load_input(in_ctx)
+        assert result.equals(table)
+
+        factory.teardown_after_execution(context=build_init_resource_context())
+
+    @pytest.mark.spec("DAG-019")
     def test_dataset_missing_pyarrow(self) -> None:
         """Dataset mode without the parquet extension gives a helpful error."""
         from remote_store.ext.dagster import dagster_dataset_io_manager

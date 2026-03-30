@@ -325,7 +325,7 @@ _EXAMPLE_DESCRIPTIONS: dict[str, str] = {
     "pyarrow_adapter.py": "Use any Store as a `pyarrow.fs.FileSystem` for Parquet, CSV, and dataset I/O.",
     "parquet_dataset.py": "Managed Parquet datasets with manifests, completion markers, and multi-part writes.",
     "dagster_io_manager.py": "Use any Store as a Dagster IOManager with pluggable serialization.",
-    "dagster_v2_resource.py": "Config-driven Store construction with DagsterStoreResource and RemoteStoreIOManager.",
+    "dagster_v2_resource.py": "Config-driven Store construction with RemoteStoreIOManager.",
     "batch_operations.py": "Bulk delete, copy, and existence checks with error aggregation.",
     "transfer_operations.py": "Upload, download, and cross-store transfer with progress tracking.",
     "retry_policy.py": "Configure retry attempts, backoff, and jitter per-backend.",

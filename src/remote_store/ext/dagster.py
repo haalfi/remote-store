@@ -324,6 +324,44 @@ def dagster_dataset_io_manager(store: Store) -> IOManager:  # type: ignore[type-
 
 
 # ---------------------------------------------------------------------------
+# Shared Store lifecycle helpers (v2)
+# ---------------------------------------------------------------------------
+
+
+def _build_store(backend_type: str, backend_options: dict[str, Any], root_path: str) -> Store:
+    """Build a Store from registry config fields.
+
+    Raises:
+        ValueError: If *backend_type* is not registered, or if the backend
+            constructor rejects the supplied options.
+    """
+    from remote_store._store import Store
+
+    _register_builtin_backends()
+
+    factory = _BACKEND_FACTORIES.get(backend_type)
+    if factory is None:
+        registered = sorted(_BACKEND_FACTORIES.keys())
+        msg = f"Unknown backend type {backend_type!r}. Registered types: {registered}"
+        raise ValueError(msg)
+
+    try:
+        backend = factory(**backend_options)
+    except TypeError as exc:
+        opts = list(backend_options.keys())
+        msg = f"Backend {backend_type!r} rejected the provided options {opts}: {exc}"
+        raise ValueError(msg) from exc
+
+    return Store(backend, root_path=root_path)
+
+
+def _close_store(store: Store | None) -> None:
+    """Close a Store if it exists."""
+    if store is not None:
+        store.close()
+
+
+# ---------------------------------------------------------------------------
 # Resource and IO manager factory (public API — v2)
 # ---------------------------------------------------------------------------
 
@@ -355,30 +393,12 @@ class DagsterStoreResource(ConfigurableResource):  # type: ignore[misc,type-arg]
             ValueError: If *backend_type* is not registered, or if the backend
                 constructor rejects the supplied *backend_options*.
         """
-        from remote_store._store import Store
-
-        _register_builtin_backends()
-
-        factory = _BACKEND_FACTORIES.get(self.backend_type)
-        if factory is None:
-            registered = sorted(_BACKEND_FACTORIES.keys())
-            msg = f"Unknown backend type {self.backend_type!r}. Registered types: {registered}"
-            raise ValueError(msg)
-
-        try:
-            backend = factory(**self.backend_options)
-        except TypeError as exc:
-            opts = list(self.backend_options.keys())
-            msg = f"Backend {self.backend_type!r} rejected the provided options {opts}: {exc}"
-            raise ValueError(msg) from exc
-
-        self._store = Store(backend, root_path=self.root_path)
+        self._store = _build_store(self.backend_type, self.backend_options, self.root_path)
 
     def teardown_after_execution(self, context: InitResourceContext) -> None:
         """Close the Store and release resources (called by Dagster after execution)."""
-        if self._store is not None:
-            self._store.close()
-            self._store = None
+        _close_store(self._store)
+        self._store = None
 
     def get_store(self) -> Store:
         """Return the underlying Store instance.
@@ -419,30 +439,12 @@ class RemoteStoreIOManager(ConfigurableIOManagerFactory):  # type: ignore[misc,t
 
     def setup_for_execution(self, context: InitResourceContext) -> None:
         """Build and cache the Store before execution."""
-        from remote_store._store import Store
-
-        _register_builtin_backends()
-
-        factory = _BACKEND_FACTORIES.get(self.backend_type)
-        if factory is None:
-            registered = sorted(_BACKEND_FACTORIES.keys())
-            msg = f"Unknown backend type {self.backend_type!r}. Registered types: {registered}"
-            raise ValueError(msg)
-
-        try:
-            backend = factory(**self.backend_options)
-        except TypeError as exc:
-            opts = list(self.backend_options.keys())
-            msg = f"Backend {self.backend_type!r} rejected the provided options {opts}: {exc}"
-            raise ValueError(msg) from exc
-
-        self._store = Store(backend, root_path=self.root_path)
+        self._store = _build_store(self.backend_type, self.backend_options, self.root_path)
 
     def teardown_after_execution(self, context: InitResourceContext) -> None:
         """Close the Store and release resources."""
-        if self._store is not None:
-            self._store.close()
-            self._store = None
+        _close_store(self._store)
+        self._store = None
 
     def create_io_manager(self, context: Any) -> IOManager:  # type: ignore[type-arg]
         """Construct the IOManager for the given execution context.

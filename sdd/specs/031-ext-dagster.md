@@ -225,4 +225,4 @@ Returns an IO manager that uses `ParquetDatasetStore` for dataset-level I/O. Acc
 
 ### DAG-019: Dataset Mode via RemoteStoreIOManager
 
-**Invariant:** `RemoteStoreIOManager(store_resource=..., serializer="parquet-dataset")` creates an IO manager that uses `ParquetDatasetStore` instead of the bytes-based Serializer protocol.
+**Invariant:** `RemoteStoreIOManager(backend_type=..., serializer="parquet-dataset")` creates an IO manager that uses `ParquetDatasetStore` instead of the bytes-based Serializer protocol.
