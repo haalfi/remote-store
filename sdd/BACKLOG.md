@@ -103,23 +103,19 @@ Items graduate through the SDD pipeline:
 
 - [~] **ID-013 — Async Store / Backend API**
   Async version of Store and Backend for async frameworks (FastAPI, aiohttp).
-  - Done: [research](research/research-async-store-api.md),
+  - Done: [research round 1](research/research-async-store-api.md),
+    [research round 2](research/research-async-store-api-round2.md),
     [ADR-0012](adrs/0012-async-store-backend-api.md) draft,
     [spec 029](specs/029-async-store-backend-api.md) draft.
   - Remaining:
-    - **Second research round** (required before implementation):
-      sync API has evolved significantly since initial research; async
-      would nearly double codebase, package surface, and docs; unclear
-      if target audience (citizen developers) benefits; unclear if
-      sync + async belong in the same package.
-    - Spec 029 amendments: add `SyncBackendAdapter` streaming write
-      conversion (materialize `AsyncIterator[bytes]` → `bytes`), add
-      `AsyncMemoryBackend` section (ASYNC-060..063), add explicit
-      `open_atomic` deferral note, add `check_health()` / `ping()`
-      async equivalents.
-    - Implementation Phase 1: core async surface.
+    - Spec 029 amendments (8 items from round 2 §2.4): `read_seekable`
+      deferral, `resolve()` passthrough, `ping()`/`check_health()` async,
+      `write_text` in ASYNC-046, `max_depth` params, `AsyncMemoryBackend`
+      (ASYNC-060..063), `open_atomic` deferral note, streaming write
+      bridging (ASYNC-036).
+    - Implementation Phase 1: core async surface (`remote_store.aio`).
     - Implementation Phase 2: native async backends.
-    - Implementation Phase 3: async extensions.
+    - Implementation Phase 3: async extensions (incl. Dagster `AsyncIOManager`).
 
 - [ ] **ID-124 — Dagster multi-partition loading**
   When `load_input` receives multiple partition keys (time-window aggregation),
