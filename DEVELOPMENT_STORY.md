@@ -6,15 +6,15 @@ This document chronicles how `remote-store` was built as a collaboration between
 
 | Metric | Value |
 |--------|-------|
-| Source code | ~10,000 lines (7 backends) |
-| Tests | ~1,875 tests, ~16,300 lines |
-| Specs & docs | 35 specs, 14 ADRs, 7 RFCs |
-| Examples | 22 core + 4 cloud + 5 notebooks + 2 snippet scripts |
-| Extensions | 13 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.dagster`, `ext.glob`, `ext.integrity`, `ext.observe`, `ext.otel`, `ext.partition`, `ext.pydantic`, `ext.streams`, `ext.transfer`, `ext.yaml`) |
+| Source code | ~13,000 lines (9 backends) |
+| Tests | ~2,500 tests, ~21,800 lines |
+| Specs & docs | 43 specs, 20 ADRs, 10 RFCs |
+| Examples | 24 core + 6 backend + 5 notebooks + 3 snippet scripts |
+| Extensions | 14 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.dagster`, `ext.glob`, `ext.integrity`, `ext.observe`, `ext.otel`, `ext.parquet`, `ext.partition`, `ext.pydantic`, `ext.streams`, `ext.transfer`, `ext.yaml`) |
 | Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
 | Coverage | >= 95% CI floor (actual in README badge) |
-| Co-work sessions | Spread across ~5 calendar weeks (since Feb 14) |
-| Commits | ~410 |
+| Co-work sessions | Spread across ~7 calendar weeks (since Feb 14) |
+| Commits | ~520 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
