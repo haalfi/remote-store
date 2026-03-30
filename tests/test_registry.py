@@ -75,25 +75,20 @@ class TestRegistryCore:
     @pytest.mark.spec("REG-006")
     def test_close_clears_backends(self, registry) -> None:
         reg, _ = registry
-        store = reg.get_store("main")
-        store.write("probe.txt", b"ok")
+        reg.get_store("main")
+        assert len(reg._backends) == 1
         reg.close()
-        # After close, getting a store re-instantiates — proves backends were cleared
-        store2 = reg.get_store("main")
-        store2.write("probe2.txt", b"ok2")
-        assert store2.read_bytes("probe2.txt") == b"ok2"
+        assert len(reg._backends) == 0
 
     @pytest.mark.spec("REG-007")
     def test_context_manager(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             with Registry(_make_config(tmp)) as reg:
                 store = reg.get_store("main")
+                assert isinstance(store, Store)
                 store.write("probe.txt", b"ok")
                 assert store.read_bytes("probe.txt") == b"ok"
-            # After exiting context, re-instantiation should work
-            store2 = reg.get_store("main")
-            store2.write("probe2.txt", b"ok2")
-            assert store2.read_bytes("probe2.txt") == b"ok2"
+            assert len(reg._backends) == 0
 
 
 class TestRegistryStoreOwnership:

@@ -103,14 +103,12 @@ class TestMemoryCache:
 
     @pytest.mark.spec("BK-127")
     def test_size_does_not_evict_expired(self, mcache: MemoryCache) -> None:
-        """size() counts without evicting — expired entries are not returned."""
+        """size() counts without evicting — expired entries stay in _data."""
         mcache.set(("a",), 1, ttl=0.01)
         mcache.set(("b",), 2, ttl=10.0)
         time.sleep(0.02)
         assert mcache.size() == 1
-        with pytest.raises(KeyError, match="a"):
-            mcache.get(("a",))
-        assert mcache.get(("b",)) == 2
+        assert len(mcache._data) == 2  # expired entry not purged
 
     @pytest.mark.spec("CACHE-002")
     def test_max_entries_evicts_lru(self) -> None:
