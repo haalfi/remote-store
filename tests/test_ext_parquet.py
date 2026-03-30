@@ -101,6 +101,53 @@ class TestDatasetManifest:
         with pytest.raises(ManifestCorrupted, match="[Mm]issing|[Rr]equired|[Ff]ield"):
             DatasetManifest.from_json(partial)
 
+    @pytest.mark.spec("PDS-008")
+    def test_from_json_bool_row_count(self) -> None:
+        data = json.dumps(
+            {
+                "dataset_key": "x",
+                "parts": ["data.parquet"],
+                "row_count": True,
+                "schema_hash": "abc",
+                "compression": "zstd",
+                "created_at_utc": "2026-01-01T00:00:00Z",
+            }
+        )
+        with pytest.raises(ManifestCorrupted, match="row_count"):
+            DatasetManifest.from_json(data)
+
+    @pytest.mark.spec("PDS-008")
+    def test_from_json_wrong_typed_run_id(self) -> None:
+        data = json.dumps(
+            {
+                "dataset_key": "x",
+                "parts": ["data.parquet"],
+                "row_count": 10,
+                "schema_hash": "abc",
+                "compression": "zstd",
+                "created_at_utc": "2026-01-01T00:00:00Z",
+                "run_id": 42,
+            }
+        )
+        with pytest.raises(ManifestCorrupted, match="run_id"):
+            DatasetManifest.from_json(data)
+
+    @pytest.mark.spec("PDS-008")
+    def test_from_json_wrong_typed_metadata(self) -> None:
+        data = json.dumps(
+            {
+                "dataset_key": "x",
+                "parts": ["data.parquet"],
+                "row_count": 10,
+                "schema_hash": "abc",
+                "compression": "zstd",
+                "created_at_utc": "2026-01-01T00:00:00Z",
+                "metadata": "not-a-dict",
+            }
+        )
+        with pytest.raises(ManifestCorrupted, match="metadata"):
+            DatasetManifest.from_json(data)
+
     @pytest.mark.spec("PDS-004")
     def test_frozen(self) -> None:
         manifest = DatasetManifest(

@@ -185,7 +185,7 @@ class DatasetManifest:
                 "Field 'parts' must be a list of strings",
                 reason="parts must be list[str]",
             )
-        if not isinstance(data["row_count"], int):
+        if not isinstance(data["row_count"], int) or isinstance(data["row_count"], bool):
             raise ManifestCorrupted(
                 "Field 'row_count' must be an integer",
                 reason=f"row_count has type {type(data['row_count']).__name__}, expected int",
@@ -206,6 +206,23 @@ class DatasetManifest:
                 reason=f"created_at_utc has type {type(data['created_at_utc']).__name__}, expected str",
             )
 
+        # Optional field type validation
+        run_id = data.get("run_id")
+        if run_id is not None and not isinstance(run_id, str):
+            raise ManifestCorrupted(
+                "Field 'run_id' must be a string or null",
+                reason=f"run_id has type {type(run_id).__name__}, expected str",
+            )
+        metadata = data.get("metadata")
+        if metadata is not None and (
+            not isinstance(metadata, dict)
+            or not all(isinstance(k, str) and isinstance(v, str) for k, v in metadata.items())
+        ):
+            raise ManifestCorrupted(
+                "Field 'metadata' must be a dict[str, str] or null",
+                reason="metadata must be dict[str, str]",
+            )
+
         return cls(
             dataset_key=data["dataset_key"],
             parts=data["parts"],
@@ -213,8 +230,8 @@ class DatasetManifest:
             schema_hash=data["schema_hash"],
             compression=data["compression"],
             created_at_utc=data["created_at_utc"],
-            run_id=data.get("run_id"),
-            metadata=data.get("metadata"),
+            run_id=run_id,
+            metadata=metadata,
         )
 
 
