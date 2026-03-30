@@ -14,6 +14,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   that need pandas call `table.to_pandas()` on the result. See
   [Migration Guide](migration.md#v0200-to-next).
 
+### Documentation
+
+- Fix CHANGELOG migration-guide link for GitHub (move `guides/migration.md`
+  to repo root so `migration.md#…` resolves in both GitHub and docs).
+- Fix stale pandas reference in Dagster guide — Parquet serializer
+  deserializes to a PyArrow Table, not a pandas DataFrame.
+
 ### Internal
 
 - Fix 72 `ResourceWarning: unclosed database` in SQL backend tests by adding
