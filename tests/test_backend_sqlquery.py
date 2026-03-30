@@ -555,6 +555,8 @@ class TestUnwrap:
     def test_unwrap_engine(self, backend: SQLQueryBackend) -> None:
         engine = backend.unwrap(sa.Engine)
         assert isinstance(engine, sa.Engine)
+        with engine.connect() as conn:
+            conn.execute(sa.text("SELECT 1"))
 
 
 class TestSQLQueryResolve:

@@ -157,6 +157,7 @@ class TestFactory:
         result = cache(store, ttl=60.0)
         assert isinstance(result, CachedStore)
         assert isinstance(result, Store)
+        assert result.read_bytes("a.txt") == b"alpha"
 
     @pytest.mark.spec("CACHE-003")
     def test_default_ttl(self, store: Store) -> None:
@@ -165,7 +166,9 @@ class TestFactory:
     @pytest.mark.spec("CACHE-003")
     def test_custom_cache_backend(self, store: Store) -> None:
         backend = MemoryCache()
-        assert cache(store, cache_backend=backend)._cache is backend
+        cached = cache(store, cache_backend=backend)
+        cached.read_bytes("a.txt")
+        assert backend.size() >= 1
 
     @pytest.mark.spec("CACHE-003")
     @pytest.mark.parametrize(

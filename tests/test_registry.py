@@ -47,7 +47,10 @@ class TestRegistryCore:
     @pytest.mark.spec("REG-002")
     def test_returns_store(self, registry) -> None:
         reg, _ = registry
-        assert isinstance(reg.get_store("main"), Store)
+        store = reg.get_store("main")
+        assert isinstance(store, Store)
+        store.write("probe.txt", b"ok")
+        assert store.read_bytes("probe.txt") == b"ok"
 
     @pytest.mark.spec("REG-003")
     def test_unknown_raises(self, registry) -> None:
@@ -81,7 +84,10 @@ class TestRegistryCore:
     def test_context_manager(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             with Registry(_make_config(tmp)) as reg:
-                assert isinstance(reg.get_store("main"), Store)
+                store = reg.get_store("main")
+                assert isinstance(store, Store)
+                store.write("probe.txt", b"ok")
+                assert store.read_bytes("probe.txt") == b"ok"
             assert len(reg._backends) == 0
 
 
@@ -89,12 +95,7 @@ class TestRegistryStoreOwnership:
     """REG-005 / ID-041: Stores from get_store() must not own the shared backend."""
 
     @pytest.mark.spec("REG-005")
-    def test_get_store_does_not_own_backend(self, registry) -> None:
-        reg, _ = registry
-        assert reg.get_store("main")._owns_backend is False
-
-    @pytest.mark.spec("REG-005")
-    def test_store_close_does_not_close_shared_backend(self, registry) -> None:
+    def test_get_store_close_does_not_close_shared_backend(self, registry) -> None:
         reg, _ = registry
         s1 = reg.get_store("main")
         s2 = reg.get_store("other")

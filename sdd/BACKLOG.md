@@ -39,11 +39,7 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-134 — Fix test behavior assertion anti-patterns**
-  Replace `isinstance`-only assertions (12 tests) and private attribute
-  assertions (~75 instances, 22 locations) with behavioral checks.
-  See [audit-007](audits/audit-007-test-behavior-assertions.md) for full
-  findings and file:line references.
+*(none)*
 
 ---
 

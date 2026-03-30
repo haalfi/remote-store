@@ -80,6 +80,8 @@ class TestOtelSetup:
             Store(backend=MemoryBackend()), **otel_hooks(tracer=otel_env["tracer"], meter=otel_env["meter"])
         )
         assert isinstance(observed, ObservedStore)
+        observed.write("probe.txt", b"ok")
+        assert observed.read_bytes("probe.txt") == b"ok"
 
     @pytest.mark.spec("OBS-011")
     def test_custom_tracer_and_meter_names(self) -> None:
@@ -98,11 +100,17 @@ class TestOtelSetup:
         observed = otel_observe(Store(backend=MemoryBackend()), **kwargs)
         assert isinstance(observed, ObservedStore)
         assert isinstance(observed, Store)
+        observed.write("probe.txt", b"ok")
+        assert observed.read_bytes("probe.txt") == b"ok"
 
     @pytest.mark.spec("OBS-011")
     def test_otel_observe_with_env(self, otel_env: dict[str, Any]) -> None:
         observed = otel_observe(Store(backend=MemoryBackend()), tracer=otel_env["tracer"], meter=otel_env["meter"])
         assert isinstance(observed, ObservedStore)
+        observed.write("probe.txt", b"ok")
+        assert observed.read_bytes("probe.txt") == b"ok"
+        spans = otel_env["span_exporter"].get_finished_spans()
+        assert len(spans) >= 1
 
 
 # ---------------------------------------------------------------------------

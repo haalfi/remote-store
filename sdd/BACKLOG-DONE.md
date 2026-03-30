@@ -17,6 +17,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Cleanup
 
+- [x] **BK-134 — Fix test behavior assertion anti-patterns** (post-v0.20.0)
+  Replaced `isinstance`-only assertions (12 tests) with behavioral checks and
+  replaced ~15 private attribute assertions with public API equivalents across
+  10 test files. ~60 remaining private attribute assertions are legitimate
+  (config storage, internal helper testing, mock introspection).
 - [x] **BK-133 — Upgrade GitHub Actions Node.js 20 → 24** (post-v0.20.0)
   Audited all workflows. Core actions (`checkout@v6`, `setup-python@v6`,
   `codeql-action@v4`) already use Node.js 24. Upgraded `setup-uv` from

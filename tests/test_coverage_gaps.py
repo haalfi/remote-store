@@ -99,7 +99,8 @@ class TestStoreBehavior:
 
     def test_root_path_normalized(self, mem_backend: MemoryBackend) -> None:
         store = Store(backend=mem_backend, root_path="a//b/./c")
-        assert store._root == "a/b/c"
+        expected = Store(backend=mem_backend, root_path="a/b/c")
+        assert store == expected
 
     @pytest.mark.parametrize(
         ("root_a", "root_b", "same_backend", "expected"),

@@ -643,6 +643,8 @@ def test_close_borrowed_engine_noop() -> None:
 def test_unwrap_engine(backend: SQLBlobBackend) -> None:
     engine = backend.unwrap(sa.Engine)
     assert isinstance(engine, sa.Engine)
+    with engine.connect() as conn:
+        conn.execute(sa.text("SELECT 1"))
 
 
 @pytest.mark.spec("SQL-BLOB-042")
@@ -752,7 +754,7 @@ class TestPathValidation:
     def test_empty_path_for_folder_op(self, backend: SQLBlobBackend) -> None:
         # Should NOT raise — empty path = root for folder ops
         result = backend.is_folder("")
-        assert isinstance(result, bool)
+        assert result is True
 
 
 # ---------------------------------------------------------------------------

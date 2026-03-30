@@ -54,7 +54,7 @@ class TestChildBasics:
         self, backend: MemoryBackend, parent_root: str, subpath: str, expected: str
     ) -> None:
         parent = Store(backend=backend, root_path=parent_root)
-        assert parent.child(subpath)._root == expected
+        assert parent.child(subpath) == Store(backend=backend, root_path=expected)
 
 
 class TestChildValidation:
@@ -78,8 +78,10 @@ class TestChildSharingAndChaining:
     """CHILD-004 / CHILD-005: Backend sharing and chaining."""
 
     @pytest.mark.spec("CHILD-004")
-    def test_child_shares_backend_identity(self, store: Store, backend: MemoryBackend) -> None:
-        assert store.child("sub")._backend is backend
+    def test_child_shares_backend(self, store: Store, backend: MemoryBackend) -> None:
+        store.write("sub/file.txt", b"shared")
+        child = store.child("sub")
+        assert child.read_bytes("file.txt") == b"shared"
 
     @pytest.mark.spec("CHILD-005")
     def test_chained_child_equals_single_child(self, backend: MemoryBackend) -> None:
@@ -87,8 +89,6 @@ class TestChildSharingAndChaining:
         chained = parent.child("a").child("b")
         single = parent.child("a/b")
         assert chained == single
-        assert chained._root == single._root
-        assert chained._backend is single._backend
 
 
 class TestChildCloseSemantics:
@@ -108,13 +108,6 @@ class TestChildCloseSemantics:
         with parent.child("sub"):
             pass
         assert parent.read_bytes("file.txt") == b"hello"
-
-    @pytest.mark.spec("CHILD-006")
-    def test_parent_owns_backend(self, backend: MemoryBackend) -> None:
-        parent = Store(backend=backend, root_path="data")
-        child = parent.child("sub")
-        assert parent._owns_backend is True
-        assert child._owns_backend is False
 
 
 class TestChildEqualityAndRepr:
