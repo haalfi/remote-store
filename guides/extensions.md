@@ -16,6 +16,7 @@ on top of the core Store API.
 | [`ext.streams`](api/extensions/streams.md) | *(none)* | Composable BinaryIO wrappers for progress and checksums | — | — |
 | [`ext.transfer`](api/extensions/transfer.md) | *(none)* | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](examples/transfer-operations.md) |
 | [`ext.arrow`](api/extensions/arrow.md) | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](examples/pyarrow-adapter.md) |
+| [`ext.parquet`](api/extensions/parquet.md) | `arrow` | Managed Parquet datasets with manifests and completion markers | [Guide](parquet-datasets.md) | [Example](examples/parquet-dataset.md) |
 | [`ext.otel`](api/extensions/otel.md) | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](examples/otel-tracing.md) |
 | [`ext.pydantic`](api/extensions/pydantic.md) | `pydantic` | Pydantic BaseModel/BaseSettings adapter | — | [Example](examples/config-loaders.md) |
 | [`ext.yaml`](api/extensions/yaml.md) | `yaml` | YAML config file loader | — | [Example](examples/config-loaders.md) |
@@ -55,12 +56,12 @@ no extension import needed.
 
 ### Optional-dependency extensions
 
-`ext.arrow` requires PyArrow, `ext.otel` requires the OpenTelemetry
-API, `ext.pydantic` requires Pydantic v2, and `ext.dagster` requires
-Dagster.  Install the relevant extra first:
+`ext.arrow` and `ext.parquet` require PyArrow, `ext.otel` requires the
+OpenTelemetry API, `ext.pydantic` requires Pydantic v2, and `ext.dagster`
+requires Dagster.  Install the relevant extra first:
 
 ```bash
-pip install "remote-store[arrow]"     # PyArrow filesystem adapter
+pip install "remote-store[arrow]"     # PyArrow filesystem adapter + parquet datasets
 pip install "remote-store[otel]"      # OpenTelemetry tracing and metrics
 pip install "remote-store[pydantic]"  # Pydantic BaseSettings adapter
 pip install "remote-store[yaml]"      # YAML config file loader
@@ -71,6 +72,7 @@ Then import from the extension module directly:
 
 ```python
 from remote_store.ext.arrow import pyarrow_fs
+from remote_store.ext.parquet import ParquetDatasetStore
 from remote_store.ext.otel import otel_hooks
 from remote_store.ext.pydantic import from_pydantic
 from remote_store.ext.yaml import from_yaml

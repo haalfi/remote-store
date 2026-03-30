@@ -21,6 +21,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## API Surface
 
+- [x] **ID-122 — Parquet Dataset Storage extension (`ext.parquet`)**
+  `ParquetDatasetStore` — high-level Parquet dataset read/write with manifest
+  metadata, `_SUCCESS` completion markers, and atomic-commit semantics.
+  Single-file and multi-part layouts, column projection, overwrite semantics.
+  New errors: `DatasetIncomplete`, `ManifestCorrupted`.
+  [Spec 042](specs/042-ext-parquet.md),
+  [RFC-0008](rfcs/rfc-0008-parquet-dataset-storage.md).
+
 - [x] **ID-120 — `resolve()` → `ResolutionPlan` introspection API**
   `Store.resolve(key)` returns a frozen `ResolutionPlan` dataclass describing
   how a key maps to its storage location. Available on all 9 backends with no
