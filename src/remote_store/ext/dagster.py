@@ -23,7 +23,13 @@ import pickle
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 try:
-    from dagster import IOManager  # type: ignore[import-untyped]
+    from dagster import (  # type: ignore[import-untyped]
+        ConfigurableIOManagerFactory,
+        ConfigurableResource,
+        InitResourceContext,
+        IOManager,
+    )
+    from pydantic import PrivateAttr  # dagster depends on pydantic
 except ModuleNotFoundError as _exc:  # pragma: no cover
     raise ModuleNotFoundError(
         "Dagster is required for the dagster extension. Install it with: pip install 'remote-store[dagster]'"
@@ -34,13 +40,18 @@ if TYPE_CHECKING:
 
     from remote_store._store import Store
 
+from remote_store._registry import _BACKEND_FACTORIES, _register_builtin_backends
+
 log = logging.getLogger(__name__)
 
 __all__ = [
+    "DagsterStoreResource",
     "JsonSerializer",
     "ParquetSerializer",
     "PickleSerializer",
+    "RemoteStoreIOManager",
     "Serializer",
+    "dagster_dataset_io_manager",
     "dagster_io_manager",
 ]
 
@@ -188,8 +199,20 @@ def _asset_path(context: OutputContext | InputContext, ext: str) -> str:
     return "/".join(str(p) for p in parts) + ext
 
 
+def _dataset_key(context: OutputContext | InputContext) -> str:
+    """Derive dataset key from asset key and partition (no file extension).
+
+    Datasets are directories, so no extension is appended. Path is
+    ``"/".join(asset_key.path)`` plus ``"/" + partition_key`` when partitioned.
+    """
+    parts = list(context.asset_key.path)
+    if context.has_partition_key:
+        parts.append(context.partition_key)
+    return "/".join(str(p) for p in parts)
+
+
 # ---------------------------------------------------------------------------
-# IO Manager implementation (internal)
+# IO Manager implementations (internal)
 # ---------------------------------------------------------------------------
 
 
@@ -216,8 +239,48 @@ class _RemoteStoreIOManagerImpl(IOManager):  # type: ignore[misc]
         return self._serializer.deserialize(data)
 
 
+class _DatasetIOManagerImpl(IOManager):  # type: ignore[misc]
+    """Internal IOManager using ParquetDatasetStore for dataset I/O."""
+
+    def __init__(self, store: Store) -> None:
+        try:
+            from remote_store.ext.parquet import ParquetDatasetStore
+        except ModuleNotFoundError as exc:
+            raise ModuleNotFoundError(
+                "PyArrow is required for dataset mode. Install it with: pip install 'remote-store[dagster,arrow]'"
+            ) from exc
+        self._pds = ParquetDatasetStore(store)
+        self._store = store
+
+    def handle_output(self, context: OutputContext, obj: Any) -> None:
+        """Write a DataFrame as a Parquet dataset to the Store."""
+        import pyarrow as pa  # type: ignore[import-untyped]
+
+        if hasattr(obj, "to_arrow"):
+            table = obj.to_arrow()  # Polars
+        elif isinstance(obj, pa.Table):
+            table = obj
+        elif hasattr(obj, "dtypes"):
+            table = pa.Table.from_pandas(obj)  # type: ignore[no-untyped-call]  # pandas
+        else:
+            msg = f"Dataset mode expects a DataFrame, got {type(obj).__name__}"
+            raise TypeError(msg)
+
+        key = _dataset_key(context)
+        self._pds.write_dataset(table, key, overwrite=True)
+        context.add_output_metadata({"dataset_key": key})
+        log.debug("Wrote dataset to %s", key)
+
+    def load_input(self, context: InputContext) -> Any:
+        """Read a Parquet dataset manifest from the Store."""
+        key = _dataset_key(context)
+        manifest = self._pds.read_dataset(key)
+        log.debug("Read dataset from %s", key)
+        return manifest
+
+
 # ---------------------------------------------------------------------------
-# Factory function (public API)
+# Factory functions (public API — v1)
 # ---------------------------------------------------------------------------
 
 
@@ -242,3 +305,160 @@ def dagster_io_manager(
     """
     resolved = _resolve_serializer(serializer)
     return _RemoteStoreIOManagerImpl(store, resolved)
+
+
+def dagster_dataset_io_manager(store: Store) -> IOManager:  # type: ignore[type-arg]
+    """Wrap a Store as a Dagster IOManager using ParquetDatasetStore (DAG-017).
+
+    Unlike ``dagster_io_manager`` which serializes objects to single files,
+    this manager writes Parquet datasets (multi-file with manifest) via
+    ``ParquetDatasetStore``.
+
+    Args:
+        store: An existing Store instance. The caller owns its lifecycle.
+
+    Returns:
+        A Dagster ``IOManager`` backed by ParquetDatasetStore.
+    """
+    return _DatasetIOManagerImpl(store)
+
+
+# ---------------------------------------------------------------------------
+# Resource and IO manager factory (public API — v2)
+# ---------------------------------------------------------------------------
+
+
+class DagsterStoreResource(ConfigurableResource):  # type: ignore[misc,type-arg]
+    """Dagster resource that constructs a Store from config fields (DAG-012).
+
+    Unlike stateless utility extensions (ADR-0008), this class owns Store
+    lifecycle because it is a Dagster Resource with ``setup_for_execution``
+    / ``teardown_after_execution`` hooks.
+
+    Args:
+        backend_type: Backend type string (e.g. ``"local"``, ``"s3"``, ``"memory"``).
+            Must be registered in the backend factory registry.
+        backend_options: Keyword arguments passed to the backend constructor.
+        root_path: Optional root path for the Store.
+    """
+
+    backend_type: str
+    backend_options: dict[str, Any] = {}
+    root_path: str = ""
+
+    _store: Store | None = PrivateAttr(default=None)
+
+    def setup_for_execution(self, context: InitResourceContext) -> None:
+        """Instantiate and cache the Store (called by Dagster before execution).
+
+        Raises:
+            ValueError: If *backend_type* is not registered, or if the backend
+                constructor rejects the supplied *backend_options*.
+        """
+        from remote_store._store import Store
+
+        _register_builtin_backends()
+
+        factory = _BACKEND_FACTORIES.get(self.backend_type)
+        if factory is None:
+            registered = sorted(_BACKEND_FACTORIES.keys())
+            msg = f"Unknown backend type {self.backend_type!r}. Registered types: {registered}"
+            raise ValueError(msg)
+
+        try:
+            backend = factory(**self.backend_options)
+        except TypeError as exc:
+            opts = list(self.backend_options.keys())
+            msg = f"Backend {self.backend_type!r} rejected the provided options {opts}: {exc}"
+            raise ValueError(msg) from exc
+
+        self._store = Store(backend, root_path=self.root_path)
+
+    def teardown_after_execution(self, context: InitResourceContext) -> None:
+        """Close the Store and release resources (called by Dagster after execution)."""
+        if self._store is not None:
+            self._store.close()
+            self._store = None
+
+    def get_store(self) -> Store:
+        """Return the underlying Store instance.
+
+        Returns:
+            The Store constructed during ``setup_for_execution``.
+
+        Raises:
+            RuntimeError: If called before ``setup_for_execution`` has run.
+        """
+        if self._store is None:
+            msg = "Store is not available. Ensure setup_for_execution has been called."
+            raise RuntimeError(msg)
+        return self._store
+
+
+class RemoteStoreIOManager(ConfigurableIOManagerFactory):  # type: ignore[misc,type-arg]
+    """IO manager factory that constructs a Store from config fields (DAG-015).
+
+    Embeds backend configuration directly so the IO manager owns the full
+    Store lifecycle (setup and teardown). For direct Store access in assets,
+    use ``DagsterStoreResource`` as a separate resource.
+
+    Args:
+        backend_type: Backend type string (e.g. ``"local"``, ``"s3"``, ``"memory"``).
+        backend_options: Keyword arguments passed to the backend constructor.
+        root_path: Optional root path for the Store.
+        serializer: Serializer name. Use ``"parquet-dataset"`` for multi-file
+            Parquet dataset output via ``ParquetDatasetStore``.
+    """
+
+    backend_type: str
+    backend_options: dict[str, Any] = {}
+    root_path: str = ""
+    serializer: str = "pickle"
+
+    _store: Store | None = PrivateAttr(default=None)
+
+    def setup_for_execution(self, context: InitResourceContext) -> None:
+        """Build and cache the Store before execution."""
+        from remote_store._store import Store
+
+        _register_builtin_backends()
+
+        factory = _BACKEND_FACTORIES.get(self.backend_type)
+        if factory is None:
+            registered = sorted(_BACKEND_FACTORIES.keys())
+            msg = f"Unknown backend type {self.backend_type!r}. Registered types: {registered}"
+            raise ValueError(msg)
+
+        try:
+            backend = factory(**self.backend_options)
+        except TypeError as exc:
+            opts = list(self.backend_options.keys())
+            msg = f"Backend {self.backend_type!r} rejected the provided options {opts}: {exc}"
+            raise ValueError(msg) from exc
+
+        self._store = Store(backend, root_path=self.root_path)
+
+    def teardown_after_execution(self, context: InitResourceContext) -> None:
+        """Close the Store and release resources."""
+        if self._store is not None:
+            self._store.close()
+            self._store = None
+
+    def create_io_manager(self, context: Any) -> IOManager:  # type: ignore[type-arg]
+        """Construct the IOManager for the given execution context.
+
+        Returns:
+            A ``_DatasetIOManagerImpl`` when ``serializer="parquet-dataset"``,
+            otherwise a ``_RemoteStoreIOManagerImpl`` with the resolved serializer.
+
+        Raises:
+            RuntimeError: If called before ``setup_for_execution``.
+            ValueError: If *serializer* is an unrecognized string.
+        """
+        if self._store is None:
+            msg = "Store is not available. Ensure setup_for_execution has been called."
+            raise RuntimeError(msg)
+        if self.serializer == "parquet-dataset":
+            return _DatasetIOManagerImpl(self._store)
+        resolved = _resolve_serializer(self.serializer)
+        return _RemoteStoreIOManagerImpl(self._store, resolved)

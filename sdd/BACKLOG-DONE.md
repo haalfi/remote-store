@@ -5,6 +5,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Integrations
+
+- [x] **ID-083 — Dagster extension v2: ConfigurableResource + IOManagerFactory**
+  `DagsterStoreResource` (`ConfigurableResource`) for direct Store access in
+  assets, `RemoteStoreIOManager` (`ConfigurableIOManagerFactory`) for
+  config-driven IO management with automatic lifecycle. Dataset mode via
+  `dagster_dataset_io_manager()` or `serializer="parquet-dataset"`. Spec 031
+  (DAG-012 -- DAG-019), tests, guide update, example script. Deferred:
+  multi-partition loading (ID-124), showcase update (ID-125).
+
 ## Cleanup
 
 - [x] **BK-130 — Remove deprecated function aliases (pre-v1 cleanup)**

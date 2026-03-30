@@ -142,17 +142,74 @@ def production_io_manager() -> IOManager:
 The caller owns the Store. The IO manager does not close it. If the Store
 was created inline, the caller is responsible for cleanup.
 
+## Dagster-config-driven Store (v2)
+
+Use v1 (`dagster_io_manager`) when you already have a Store. Use v2
+(`RemoteStoreIOManager`) when Dagster should construct the Store from
+config — for example in `Definitions` files where no Store exists
+outside Dagster.
+
+```python
+from dagster import Definitions, asset
+from remote_store.ext.dagster import RemoteStoreIOManager
+
+
+@asset
+def raw_data() -> dict:
+    return {"rows": [1, 2, 3]}
+
+
+defs = Definitions(
+    assets=[raw_data],
+    resources={
+        "io_manager": RemoteStoreIOManager(
+            backend_type="local",
+            backend_options={"root": "/data/dagster"},
+            serializer="pickle",
+        )
+    },
+)
+```
+
+`RemoteStoreIOManager` is a Dagster `ConfigurableIOManagerFactory` that
+constructs and owns the Store lifecycle — setup and teardown happen
+automatically when Dagster initialises and cleans up resources.
+
+The `backend_type` field accepts `"local"`, `"s3"`, `"azure"`, `"sftp"`,
+`"memory"`, `"sql-blob"`, and any other backend registered with the
+remote-store factory. `backend_options` accepts the same keyword arguments
+as the corresponding backend constructor.
+
+For direct Store access in assets (outside the IO manager), use
+`DagsterStoreResource` as a standalone resource.
+
+### Dataset mode
+
+For Parquet dataset I/O via `ParquetDatasetStore`, use
+`dagster_dataset_io_manager(store)` (v1-style) or pass
+`serializer="parquet-dataset"` on `RemoteStoreIOManager`:
+
+```python
+from remote_store.ext.dagster import RemoteStoreIOManager
+
+resources = {
+    "io_manager": RemoteStoreIOManager(
+        backend_type="s3",
+        backend_options={"bucket": "my-bucket", "prefix": "dagster/"},
+        serializer="parquet-dataset",
+    )
+}
+```
+
+Requires `pip install "remote-store[dagster,arrow]"`.
+
 ## See also
 
+- [Dagster v2 resource example](examples/dagster-v2-resource.md) — config-driven
+  Store construction with `DagsterStoreResource` and `RemoteStoreIOManager`
 - [Medallion + Dagster Showcase](examples/medallion-dagster.md) — end-to-end
   Bronze/Silver/Gold pipeline demonstrating 4 extensions over live MeteoSwiss data
 - [Data Lake Patterns](data-lake-patterns.md) — medallion architecture with
   `Store.child()` and PyArrow, complementary to Dagster orchestration
 - [PyArrow Adapter](pyarrow-adapter.md) — use Store as a PyArrow filesystem
   for Parquet I/O
-
-## What's next
-
-v2 (deferred) will add `DagsterStoreResource` — a Dagster `ConfigurableResource`
-that constructs a Store from Dagster config fields. This targets Dagster-first
-users who don't already have a Store.

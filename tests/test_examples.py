@@ -538,3 +538,16 @@ class TestDagsterIOManager:
         assert results["pickle_roundtrip"] is True
         assert results["partition_path_exists"] is True
         assert results["json_roundtrip"] is True
+
+
+class TestDagsterV2Resource:
+    @pytest.mark.spec("DAG-012,DAG-013")
+    def test_demo(self):
+        pytest.importorskip("dagster")
+
+        from examples.dagster_v2_resource import demo
+
+        results = demo()
+
+        assert results["pickle_roundtrip"] is True
+        assert results["teardown_ok"] is True
