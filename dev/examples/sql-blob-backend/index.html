@@ -13,6 +13,10 @@
         <link rel="canonical" href="https://docs.remotestore.dev/dev/examples/sql-blob-backend/">
       
       
+        <link rel="prev" href="../azure-backend/">
+      
+      
+        <link rel="next" href="../http-backend/">
       
       
         
@@ -23,7 +27,7 @@
     
     
       
-        <title>SQL Blob Backend example - remote-store</title>
+        <title>SQL Blob Backend - remote-store</title>
       
     
     
@@ -78,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#sql-blob-backend-example" class="md-skip">
+        <a href="#sql-blob-backend" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SQL Blob Backend example
+              SQL Blob Backend
             
           </span>
         </div>
@@ -241,10 +245,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../../getting-started/" class="md-tabs__link">
           
   
@@ -455,24 +461,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -490,7 +501,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -533,6 +544,8 @@
                 
   
   
+    
+  
   
   
     
@@ -543,11 +556,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
         
           
           <div class="md-nav__link md-nav__container">
@@ -575,7 +588,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1038,6 +1051,92 @@
                 
   
   
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Blob Backend
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Blob Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
   
   
     <li class="md-nav__item">
@@ -1384,7 +1483,7 @@
   <span class="md-ellipsis">
     
   
-    Health check example
+    Health Check
   
 
     
@@ -6926,9 +7025,9 @@
 
 
 
-<h1 id="sql-blob-backend-example">SQL Blob Backend example<a class="headerlink" href="#sql-blob-backend-example" title="Permanent link">&para;</a></h1>
-<p>SQLite key-value store (no credentials needed).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="sd">&quot;&quot;&quot;SQL Blob Backend example — SQLite key-value store (no credentials needed).</span>
+<h1 id="sql-blob-backend">SQL Blob Backend<a class="headerlink" href="#sql-blob-backend" title="Permanent link">&para;</a></h1>
+<p>SQLite key-value store — zero-infrastructure persistent file storage.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="sd">&quot;&quot;&quot;SQL Blob Backend — SQLite key-value store (no credentials needed).</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="sd">Demonstrates using SQLBlobBackend with SQLite as a zero-infrastructure</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="sd">persistent file store. All data lives in a single .db file.</span>
@@ -7005,6 +7104,7 @@
 </code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
+<li><a href="../../backends/sql-blob/">SQL Blob Backend</a> — backend guide</li>
 <li><a href="https://github.com/haalfi/remote-store/blob/master/examples/backends/sql_blob_backend.py">Source: <code>examples/backends/sql_blob_backend.py</code></a></li>
 </ul>
 

@@ -1047,6 +1047,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/sql-blob-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Blob Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/http-backend/" class="md-nav__link">
         
   
@@ -1390,7 +1418,7 @@
   <span class="md-ellipsis">
     
   
-    Health check example
+    Health Check
   
 
     
@@ -2362,6 +2390,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#v0200-to-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.20.0 to next
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#v0190-to-next" class="md-nav__link">
@@ -7056,6 +7095,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v0200-to-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.20.0 to next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v0190-to-next" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7179,6 +7229,20 @@
 <p><code>remote-store</code> has been published on PyPI since v0.11.0 (first Beta release).
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.</p>
+<h2 id="v0200-to-next">v0.20.0 to next<a class="headerlink" href="#v0200-to-next" title="Permanent link">&para;</a></h2>
+<p><strong><code>ParquetSerializer.deserialize()</code> returns Arrow Table (BUG-135):</strong></p>
+<p><code>ParquetSerializer.deserialize()</code> now returns a <code>pyarrow.Table</code> instead of a
+<code>pandas.DataFrame</code>. This removes the hidden hard dependency on pandas for
+<code>remote-store[dagster,arrow]</code> users.</p>
+<ul>
+<li>Old: <code>result = serializer.deserialize(data)  # pandas DataFrame</code></li>
+<li>New: <code>result = serializer.deserialize(data)  # pyarrow.Table</code></li>
+<li>If you need pandas: <code>df = serializer.deserialize(data).to_pandas()</code></li>
+<li>If you need polars: <code>df = pl.from_arrow(serializer.deserialize(data))</code></li>
+</ul>
+<p>Custom subclasses that override <code>deserialize()</code> (e.g. <code>PolarsParquetSerializer</code>
+from the medallion example) continue to work but the override is now optional —
+the base class already returns a framework-neutral Arrow Table.</p>
 <h2 id="v0190-to-next">v0.19.0 to next<a class="headerlink" href="#v0190-to-next" title="Permanent link">&para;</a></h2>
 <p><strong>Deprecated aliases removed (BK-130):</strong></p>
 <p>Three factory functions renamed in v0.18.0 have had their old names removed:</p>

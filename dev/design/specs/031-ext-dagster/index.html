@@ -1047,6 +1047,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../examples/sql-blob-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Blob Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../examples/http-backend/" class="md-nav__link">
         
   
@@ -1390,7 +1418,7 @@
   <span class="md-ellipsis">
     
   
-    Health check example
+    Health Check
   
 
     
@@ -7633,10 +7661,11 @@ v2 adds <code>DagsterStoreResource</code> and <code>RemoteStoreIOManager</code> 
 <h3 id="dag-004-parquetserializer">DAG-004: ParquetSerializer<a class="headerlink" href="#dag-004-parquetserializer" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>ParquetSerializer</code> implements <code>Serializer</code> with:
 - <code>extension = ".parquet"</code>
-- <code>serialize</code>: converts a pandas or polars DataFrame to Parquet bytes via
-  <code>pyarrow</code>.
-- <code>deserialize</code>: reads Parquet bytes back to a pandas DataFrame via
-  <code>pyarrow</code>.</p>
+- <code>serialize</code>: converts a pandas DataFrame, polars DataFrame, or PyArrow Table
+  to Parquet bytes via <code>pyarrow</code>.
+- <code>deserialize</code>: reads Parquet bytes back to a PyArrow Table.
+  Callers needing pandas or polars convert the result themselves
+  (e.g. <code>table.to_pandas()</code> or <code>pl.from_arrow(table)</code>).</p>
 <p><strong>Guard:</strong> instantiating <code>ParquetSerializer</code> when <code>pyarrow</code> is not installed
 raises <code>ModuleNotFoundError</code> with the message:
 <code>"PyArrow is required for the parquet serializer. Install it with: pip install 'remote-store[dagster,arrow]'"</code>.</p>

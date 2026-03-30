@@ -1047,6 +1047,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../examples/sql-blob-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Blob Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../examples/http-backend/" class="md-nav__link">
         
   
@@ -1390,7 +1418,7 @@
   <span class="md-ellipsis">
     
   
-    Health check example
+    Health Check
   
 
     
@@ -7915,7 +7943,7 @@ without duplicating config into dagster-aws / dagster-azure.</p>
 
 
 
-        <p>Parquet serializer via PyArrow (DAG-004). DataFrames only.</p>
+        <p>Parquet serializer via PyArrow (DAG-004). DataFrames and Arrow Tables.</p>
 
 
 
@@ -7966,12 +7994,12 @@ without duplicating config into dagster-aws / dagster-azure.</p>
 
 
 <a href="#remote_store.ext.dagster.ParquetSerializer.deserialize" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">deserialize</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n"><span title="bytes">bytes</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.Any">Any</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">deserialize</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n"><span title="bytes">bytes</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="pyarrow.Table">Table</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Deserialize Parquet bytes to a pandas DataFrame.</p>
+        <p>Deserialize Parquet bytes to a PyArrow Table.</p>
 
 
     </div>
@@ -8100,7 +8128,9 @@ constructor rejects the supplied <em>backend_options</em>.</p>
 
 
 <a href="#remote_store.ext.dagster.DagsterStoreResource.teardown_after_execution" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">teardown_after_execution</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n"><span title="dagster.InitResourceContext">InitResourceContext</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">teardown_after_execution</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">context</span><span class="p">:</span> <span class="n"><span title="dagster.InitResourceContext">InitResourceContext</span></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -8273,7 +8303,9 @@ Parquet dataset output via <code>ParquetDatasetStore</code>.</p>
 
 
 <a href="#remote_store.ext.dagster.RemoteStoreIOManager.teardown_after_execution" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">teardown_after_execution</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n"><span title="dagster.InitResourceContext">InitResourceContext</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">teardown_after_execution</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">context</span><span class="p">:</span> <span class="n"><span title="dagster.InitResourceContext">InitResourceContext</span></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -8360,7 +8392,9 @@ Parquet dataset output via <code>ParquetDatasetStore</code>.</p>
 
 
 <a href="#remote_store.ext.dagster.dagster_io_manager" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">serializer</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Serializer (remote_store.ext.dagster.Serializer)" href="#remote_store.ext.dagster.Serializer">Serializer</a></span> <span class="o">=</span> <span class="s1">&#39;pickle&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dagster.IOManager">IOManager</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">dagster_io_manager</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">serializer</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Serializer (remote_store.ext.dagster.Serializer)" href="#remote_store.ext.dagster.Serializer">Serializer</a></span> <span class="o">=</span> <span class="s2">&quot;pickle&quot;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dagster.IOManager">IOManager</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
