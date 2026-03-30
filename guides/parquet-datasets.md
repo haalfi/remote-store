@@ -19,6 +19,37 @@ Use `ParquetDatasetStore` when you need:
 For raw PyArrow filesystem access without manifests, use
 [`ext.arrow`](pyarrow-adapter.md) directly.
 
+## Background
+
+The pattern behind `ParquetDatasetStore` — multi-file Parquet datasets with a
+manifest and a completion marker — evolved from big-data execution frameworks,
+not from a single formal specification:
+
+- **Apache Hadoop / MapReduce** pioneered the `_SUCCESS` marker file convention.
+  A job's output directory is considered complete only when the empty `_SUCCESS`
+  file is present, preventing downstream consumers from reading partial results.
+  ([Hadoop FileOutputCommitter](https://hadoop.apache.org/docs/stable/api/org/apache/hadoop/mapreduce/lib/output/FileOutputCommitter.html))
+
+- **Apache Spark** adopted and popularized the `part-NNNNN.parquet` naming
+  convention for partitioned writes. Spark's `DataFrameWriter` splits output
+  into numbered part files and writes a `_SUCCESS` marker on commit.
+  ([Spark SQL Guide — Data Sources](https://spark.apache.org/docs/latest/sql-data-sources.html))
+
+- **Databricks DBIO** (Delta Lake's predecessor) extended the pattern with
+  manifest files that describe dataset contents, enabling incremental reads
+  and schema evolution without listing the directory.
+  ([Delta Lake Protocol](https://github.com/delta-io/delta/blob/master/PROTOCOL.md))
+
+- **Apache Hive** uses the same `_SUCCESS` / part-file layout for its managed
+  tables, with metastore-level schemas serving a similar role to manifests.
+
+`ParquetDatasetStore` distills the common subset of these conventions into a
+lightweight library-level abstraction: part files + JSON manifest + `_SUCCESS`
+marker, without requiring a metastore, transaction log, or full table format.
+Teams that outgrow this pattern can graduate to
+[Delta Lake](https://delta.io/) or [Apache Iceberg](https://iceberg.apache.org/)
+via the existing [`ext.arrow`](pyarrow-adapter.md) PyArrow filesystem adapter.
+
 ## Installation
 
 `ParquetDatasetStore` requires PyArrow:
