@@ -100,7 +100,7 @@ Query at runtime with `store.supports(Capability.X)`.
 
 | Capability | Description | Gated methods |
 |---|---|---|
-| `READ` | Stream or bulk-read file content | `read()`, `read_bytes()`, `read_text()` |
+| `READ` | Stream or bulk-read file content | `read()`, `read_bytes()`, `read_text()`, `read_seekable()` |
 | `WRITE` | Create or overwrite files | `write()`, `write_text()` |
 | `DELETE` | Remove files and folders | `delete()`, `delete_folder()` |
 | `LIST` | Enumerate files and subfolders | `list_files()`, `list_folders()`, `iter_children()` |
