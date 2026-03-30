@@ -14,8 +14,8 @@ in `src/`.
 
 - **Backends (9):** Local, Memory, HTTP, S3, S3-PyArrow, SFTP, Azure, SQLBlob,
   SQLQuery
-- **Extensions (13):** batch, cache, glob, integrity, observe, partition,
-  streams, transfer, arrow, dagster, otel, pydantic, yaml
+- **Extensions (14):** batch, cache, glob, integrity, observe, parquet,
+  partition, streams, transfer, arrow, dagster, otel, pydantic, yaml
 - **Capabilities (10):** READ, WRITE, DELETE, LIST, MOVE, COPY, ATOMIC_WRITE,
   METADATA, GLOB, SEEKABLE_READ
 - **Store public methods (29):** read, read_bytes, read_seekable, read_text,
@@ -238,7 +238,7 @@ ext.cache, ext.partition, ext.transfer`. Missing **ext.integrity** and
 **Category:** Completeness
 
 Lists 3 optional extensions: `ext.arrow, ext.otel, ext.pydantic`. Missing
-**ext.dagster** and **ext.yaml**. No selection signal.
+**ext.dagster**, **ext.parquet**, and **ext.yaml**. No selection signal.
 
 ---
 
