@@ -1271,6 +1271,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../examples/parquet-dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parquet Dataset Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../examples/dagster-io-manager/" class="md-nav__link">
         
   
@@ -1991,6 +2019,34 @@
     
   
     Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../parquet-datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parquet Datasets
   
 
     
@@ -3235,6 +3291,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../api/extensions/parquet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.parquet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../api/extensions/partition/" class="md-nav__link">
         
   
@@ -4137,6 +4221,17 @@
     <span class="md-ellipsis">
       
         ERR-010: DirectoryNotEmpty
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extension-scoped-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extension-scoped errors
       
     </span>
   </a>
@@ -5147,6 +5242,34 @@
     
   
     041: SQL Query Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../042-ext-parquet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    042: Parquet Dataset Storage Extension (ext.parquet)
   
 
     
@@ -7062,6 +7185,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#extension-scoped-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extension-scoped errors
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -7148,6 +7282,13 @@
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">DirectoryNotEmpty</span><span class="p">):</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete_folder</span><span class="p">(</span><span class="s2">&quot;folder&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div></p>
+<h2 id="extension-scoped-errors">Extension-scoped errors<a class="headerlink" href="#extension-scoped-errors" title="Permanent link">&para;</a></h2>
+<p>Extension-specific errors inherit from <code>RemoteStoreError</code> but live in their
+extension module (per ADR-0013), not in this file. See each extension's spec
+for details:</p>
+<ul>
+<li><strong>ERR-011</strong> <code>DatasetIncomplete</code>, <strong>ERR-012</strong> <code>ManifestCorrupted</code> — see <a href="../042-ext-parquet/#pds-008-error-conditions">spec 042 § PDS-008</a></li>
+</ul>
 
 
 

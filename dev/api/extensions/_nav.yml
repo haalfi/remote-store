@@ -6,6 +6,7 @@
 - ext.integrity: integrity.md
 - ext.observe: observe.md
 - ext.otel: otel.md
+- ext.parquet: parquet.md
 - ext.partition: partition.md
 - ext.pydantic: pydantic.md
 - Seekable read: seekable.md

@@ -1271,6 +1271,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/parquet-dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parquet Dataset Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/dagster-io-manager/" class="md-nav__link">
         
   
@@ -2016,6 +2044,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../parquet-datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parquet Datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../dagster/" class="md-nav__link">
         
   
@@ -2266,6 +2322,28 @@
     <span class="md-ellipsis">
       
         CapabilityNotSupported error
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasetincomplete-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DatasetIncomplete error
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manifestcorrupted-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ManifestCorrupted error
       
     </span>
   </a>
@@ -3355,6 +3433,34 @@
     
   
     ext.otel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/extensions/parquet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.parquet
   
 
     
@@ -5110,6 +5216,34 @@
     
   
     041: SQL Query Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/042-ext-parquet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    042: Parquet Dataset Storage Extension (ext.parquet)
   
 
     
@@ -6982,6 +7116,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#datasetincomplete-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DatasetIncomplete error
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manifestcorrupted-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ManifestCorrupted error
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7119,6 +7275,25 @@ native glob.</p>
 </code></pre></div>
 <p>See the <a href="../capabilities-matrix/">Capabilities Matrix</a> for the full
 backend x capability table.</p>
+<h2 id="datasetincomplete-error">DatasetIncomplete error<a class="headerlink" href="#datasetincomplete-error" title="Permanent link">&para;</a></h2>
+<p><strong>Symptom:</strong> <code>DatasetIncomplete: Dataset at 'silver/orders' is incomplete</code></p>
+<p><strong>Cause:</strong> The <code>_SUCCESS</code> marker is missing (partial write) or one or more
+Parquet part files listed in the manifest cannot be found.</p>
+<p><strong>Fix:</strong>
+- Check that the write completed successfully (look for <code>_SUCCESS</code> under the
+  dataset key).
+- If parts are missing, the dataset was likely interrupted mid-write. Re-run
+  the write with <code>overwrite=True</code>.
+- Concurrent writers to the same <code>dataset_key</code> are not safe — coordinate
+  externally.</p>
+<h2 id="manifestcorrupted-error">ManifestCorrupted error<a class="headerlink" href="#manifestcorrupted-error" title="Permanent link">&para;</a></h2>
+<p><strong>Symptom:</strong> <code>ManifestCorrupted: Failed to parse manifest JSON</code></p>
+<p><strong>Cause:</strong> The <code>manifest.json</code> file under a dataset key exists but contains
+invalid JSON or is missing required fields.</p>
+<p><strong>Fix:</strong>
+- Inspect the manifest: <code>store.read_bytes("silver/orders/manifest.json")</code>.
+- If corrupted, delete and re-write the dataset with <code>overwrite=True</code>.
+- The <code>reason</code> attribute on the exception carries the specific parse failure.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../getting-started/">Getting Started</a> — installation and quick start</li>

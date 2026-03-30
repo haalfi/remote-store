@@ -1271,6 +1271,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/parquet-dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parquet Dataset Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/dagster-io-manager/" class="md-nav__link">
         
   
@@ -1991,6 +2019,34 @@
     
   
     Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parquet-datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parquet Datasets
   
 
     
@@ -3220,6 +3276,34 @@
     
   
     ext.otel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/extensions/parquet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.parquet
   
 
     
@@ -6099,6 +6183,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../design/specs/042-ext-parquet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    042: Parquet Dataset Storage Extension (ext.parquet)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../design/specs/043-resolution-plan/" class="md-nav__link">
         
   
@@ -8956,6 +9068,14 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong>Parquet Dataset Storage extension (<code>ext.parquet</code>)</strong> (ID-122):
+  <code>ParquetDatasetStore</code> — high-level Parquet dataset read/write with manifest
+  metadata, <code>_SUCCESS</code> completion markers, and atomic-commit semantics. Supports
+  single-file and multi-part layouts, column projection on read, and
+  overwrite semantics. Extension-specific errors: <code>DatasetIncomplete</code>,
+  <code>ManifestCorrupted</code> (import from <code>remote_store.ext.parquet</code>). Spec 042.</p>
+</li>
 <li>
 <p><strong><code>resolve()</code> introspection API</strong> (ID-120): <code>Store.resolve(key)</code> returns a
   frozen <code>ResolutionPlan</code> dataclass describing how a key maps to its storage

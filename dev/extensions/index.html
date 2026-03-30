@@ -1271,6 +1271,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/parquet-dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parquet Dataset Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/dagster-io-manager/" class="md-nav__link">
         
   
@@ -2128,6 +2156,34 @@
     
   
     Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parquet-datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parquet Datasets
   
 
     
@@ -3352,6 +3408,34 @@
     
   
     ext.otel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/extensions/parquet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.parquet
   
 
     
@@ -5107,6 +5191,34 @@
     
   
     041: SQL Query Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/042-ext-parquet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    042: Parquet Dataset Storage Extension (ext.parquet)
   
 
     
@@ -7083,6 +7195,13 @@ on top of the core Store API.</p>
 <td><a href="../examples/pyarrow-adapter/">Example</a></td>
 </tr>
 <tr>
+<td><a href="../api/extensions/parquet/"><code>ext.parquet</code></a></td>
+<td><code>arrow</code></td>
+<td>Managed Parquet datasets with manifests and completion markers</td>
+<td><a href="../parquet-datasets/">Guide</a></td>
+<td><a href="../examples/parquet-dataset/">Example</a></td>
+</tr>
+<tr>
 <td><a href="../api/extensions/otel/"><code>ext.otel</code></a></td>
 <td><code>otel</code></td>
 <td>OpenTelemetry tracing and metrics bridge</td>
@@ -7136,10 +7255,10 @@ have no extra dependencies. They are re-exported from the top-level package:</p>
 <p>Seekable reads are built into the core API via <code>Store.read_seekable()</code> —
 no extension import needed.</p>
 <h3 id="optional-dependency-extensions">Optional-dependency extensions<a class="headerlink" href="#optional-dependency-extensions" title="Permanent link">&para;</a></h3>
-<p><code>ext.arrow</code> requires PyArrow, <code>ext.otel</code> requires the OpenTelemetry
-API, <code>ext.pydantic</code> requires Pydantic v2, and <code>ext.dagster</code> requires
-Dagster.  Install the relevant extra first:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[arrow]&quot;</span><span class="w">     </span><span class="c1"># PyArrow filesystem adapter</span>
+<p><code>ext.arrow</code> and <code>ext.parquet</code> require PyArrow, <code>ext.otel</code> requires the
+OpenTelemetry API, <code>ext.pydantic</code> requires Pydantic v2, and <code>ext.dagster</code>
+requires Dagster.  Install the relevant extra first:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[arrow]&quot;</span><span class="w">     </span><span class="c1"># PyArrow filesystem adapter + parquet datasets</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[otel]&quot;</span><span class="w">      </span><span class="c1"># OpenTelemetry tracing and metrics</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[pydantic]&quot;</span><span class="w">  </span><span class="c1"># Pydantic BaseSettings adapter</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[yaml]&quot;</span><span class="w">      </span><span class="c1"># YAML config file loader</span>
@@ -7147,10 +7266,11 @@ Dagster.  Install the relevant extra first:</p>
 </code></pre></div>
 <p>Then import from the extension module directly:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_pydantic</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.yaml</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_yaml</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">dagster_io_manager</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.parquet</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParquetDatasetStore</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_pydantic</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.yaml</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_yaml</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">dagster_io_manager</span>
 </code></pre></div>
 <p>If the required dependency is not installed, importing the extension
 module raises a <code>ModuleNotFoundError</code> with installation instructions.</p>
