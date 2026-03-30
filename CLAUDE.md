@@ -46,8 +46,12 @@ hatch run lint              # ruff check + format
 hatch run typecheck         # mypy strict on src/
 hatch run notebooks         # execute tutorial notebooks (no Jupyter needed)
 hatch run check-test-quality # assertion + mock-spec CI checks
-hatch run mutate            # pytest-gremlins mutation testing (diagnostic)
-hatch run mutate-report     # mutation testing with HTML report
+hatch run mutate-core-api      # mutation testing: Store, proxy, stream, glob, backend base
+hatch run mutate-core-infra    # mutation testing: capabilities, errors, config, models, path, registry
+hatch run mutate-ext-proxy     # mutation testing: arrow, batch, cache, observe, otel, partition, ...
+hatch run mutate-ext-format    # mutation testing: parquet, yaml, pydantic, dagster
+hatch run mutate-backends-local  # mutation testing: local, memory, http, sql backends
+hatch run mutate-backends-cloud  # mutation testing: s3, sftp, azure backends
 hatch run docs              # serve docs locally
 hatch run docs-build        # build docs (strict mode)
 hatch run all               # lint + format-check + typecheck + test-cov + examples + notebooks
