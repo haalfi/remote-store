@@ -23,8 +23,8 @@ Pre-v1: removed without a deprecation cycle. Find-and-replace is sufficient.
 **Factory function renames (BK-010):**
 
 Three ext factory functions were renamed for naming consistency.
-Old names emitted `DeprecationWarning` in v0.18.x and are removed in the
-next release.
+Old names emitted `DeprecationWarning` in v0.18.x and are removed after
+v0.19.0 (see [above](#v0190-to-next)).
 
 - `pydantic_to_registry_config()` → `from_pydantic()`
 - `remote_store_io_manager()` → `dagster_io_manager()`
