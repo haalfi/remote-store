@@ -130,8 +130,9 @@ When a downstream asset consumes multiple partitions of an upstream asset
 `dict[str, Any]` mapping each partition key to its deserialized object:
 
 ```python
-from dagster import AssetIn, asset
-from dagster import TimeWindowPartitionMapping
+from typing import Any
+
+from dagster import AssetIn, TimeWindowPartitionMapping, asset
 
 
 @asset(

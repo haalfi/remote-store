@@ -705,6 +705,26 @@ class TestMultiPartitionLoading:
             mgr.load_input(in_ctx)
 
     @pytest.mark.spec("DAG-020")
+    def test_multi_partition_missing_first_raises(self, store: Store) -> None:
+        """Fail-fast: missing *first* partition raises before any work."""
+        from remote_store._errors import NotFound
+
+        mgr = dagster_io_manager(store, serializer="pickle")
+
+        out_ctx = build_output_context(
+            asset_key=AssetKey(["sparse"]),
+            partition_key="exists",
+        )
+        mgr.handle_output(out_ctx, "ok")
+
+        in_ctx = _multi_partition_input_context(
+            asset_key=AssetKey(["sparse"]),
+            partition_keys=["missing", "exists"],
+        )
+        with pytest.raises(NotFound, match="missing"):
+            mgr.load_input(in_ctx)
+
+    @pytest.mark.spec("DAG-020")
     def test_multi_partition_dataset(self) -> None:
         """Dataset IO manager returns dict for multiple partition keys."""
         pa = pytest.importorskip("pyarrow")
