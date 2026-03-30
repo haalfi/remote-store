@@ -3613,6 +3613,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#documentation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3746,7 +3757,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed" class="md-nav__link">
+  <a href="#removed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -4208,7 +4219,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed_1" class="md-nav__link">
+  <a href="#removed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -8003,6 +8014,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#documentation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8136,7 +8158,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed" class="md-nav__link">
+  <a href="#removed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -8598,7 +8620,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed_1" class="md-nav__link">
+  <a href="#removed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -9251,6 +9273,14 @@
   ADR-0017 supersedes ADR-0016. Spec 036 revised.</p>
 </li>
 </ul>
+<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Deprecated function aliases removed</strong> (BK-130): <code>cached_store()</code>,
+  <code>remote_store_io_manager()</code>, and <code>pydantic_to_registry_config()</code> are removed.
+  Use <code>cache()</code>, <code>dagster_io_manager()</code>, and <code>from_pydantic()</code> respectively.
+  The <code>_deprecated_alias()</code> helper in <code>ext/_helpers.py</code> is also removed.
+  Pre-v1 — no deprecation shim needed.</li>
+</ul>
 <h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
@@ -9514,7 +9544,7 @@
   purpose-built orientation page: architecture diagram, six key messages,
   quick start, and navigation links.</li>
 </ul>
-<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
+<h3 id="removed_1">Removed<a class="headerlink" href="#removed_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Top-level re-exports of optional-dependency extensions</strong> (ADR-0013) —
   <code>from remote_store import pyarrow_fs</code> and similar shortcuts for arrow, otel,
@@ -9892,7 +9922,7 @@
 <li><strong>S3/S3-PyArrow <code>get_folder_info()</code> on empty folders</strong> — no longer raises <code>NotFound</code>; the <code>exists()</code> check already gates non-existent paths. Azure non-HNS retains current behavior since virtual folders can't be empty (AF-004)</li>
 <li><strong><code>Registry.close()</code> error handling</strong> — now closes all backends even if one raises, always clears the cache, and re-raises the first error (AF-009)</li>
 </ul>
-<h3 id="removed_1">Removed<a class="headerlink" href="#removed_1" title="Permanent link">&para;</a></h3>
+<h3 id="removed_2">Removed<a class="headerlink" href="#removed_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>RemoteFile</code> / <code>RemoteFolder</code> model classes</strong> — removed dead code from models, <code>__all__</code>, tests, docs, and specs (AF-011)</li>
 </ul>

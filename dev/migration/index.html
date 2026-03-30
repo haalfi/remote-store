@@ -2336,10 +2336,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#v0180-to-next" class="md-nav__link">
+  <a href="#v0190-to-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v0.18.0 to next
+        v0.19.0 to next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0180-to-v0190" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.18.0 to v0.19.0
       
     </span>
   </a>
@@ -6989,10 +7000,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#v0180-to-next" class="md-nav__link">
+  <a href="#v0190-to-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v0.18.0 to next
+        v0.19.0 to next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0180-to-v0190" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.18.0 to v0.19.0
       
     </span>
   </a>
@@ -7101,10 +7123,20 @@
 <p><code>remote-store</code> has been published on PyPI since v0.11.0 (first Beta release).
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.</p>
-<h2 id="v0180-to-next">v0.18.0 to next<a class="headerlink" href="#v0180-to-next" title="Permanent link">&para;</a></h2>
+<h2 id="v0190-to-next">v0.19.0 to next<a class="headerlink" href="#v0190-to-next" title="Permanent link">&para;</a></h2>
+<p><strong>Deprecated aliases removed (BK-130):</strong></p>
+<p>Three factory functions renamed in v0.18.0 have had their old names removed:</p>
+<ul>
+<li><code>pydantic_to_registry_config()</code> → use <code>from_pydantic()</code></li>
+<li><code>remote_store_io_manager()</code> → use <code>dagster_io_manager()</code></li>
+<li><code>cached_store()</code> → use <code>cache()</code></li>
+</ul>
+<p>Pre-v1: removed without a deprecation cycle. Find-and-replace is sufficient.</p>
+<h2 id="v0180-to-v0190">v0.18.0 to v0.19.0<a class="headerlink" href="#v0180-to-v0190" title="Permanent link">&para;</a></h2>
 <p><strong>Factory function renames (BK-010):</strong></p>
-<p>Three ext factory functions have been renamed for naming consistency.
-Old names still work but emit <code>DeprecationWarning</code>:</p>
+<p>Three ext factory functions were renamed for naming consistency.
+Old names emitted <code>DeprecationWarning</code> in v0.18.x and are removed after
+v0.19.0 (see <a href="#v0190-to-next">above</a>).</p>
 <ul>
 <li><code>pydantic_to_registry_config()</code> → <code>from_pydantic()</code></li>
 <li><code>remote_store_io_manager()</code> → <code>dagster_io_manager()</code></li>
@@ -7129,7 +7161,7 @@ Old names still work but emit <code>DeprecationWarning</code>:</p>
 <p>Old: <code>from remote_store import pydantic_to_registry_config</code></p>
 </li>
 <li>
-<p>New: <code>from remote_store.ext.pydantic import pydantic_to_registry_config</code></p>
+<p>New: <code>from remote_store.ext.pydantic import from_pydantic</code></p>
 </li>
 <li>
 <p>Old: <code>from remote_store import from_yaml</code></p>
