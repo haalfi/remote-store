@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-import importlib.util
 from unittest.mock import patch
 
+import pytest
+
 import remote_store
+from remote_store._info import _EXTENSION_GATE
 
 
+@pytest.mark.spec("BK-136")
 class TestInfo:
     """Verify info() returns correct structure and data."""
 
@@ -15,13 +18,9 @@ class TestInfo:
         result = remote_store.info()
         assert result["version"] == remote_store.__version__
 
-    def test_backends_section_is_dict(self) -> None:
+    def test_top_level_keys(self) -> None:
         result = remote_store.info()
-        assert isinstance(result["backends"], dict)
-
-    def test_extensions_section_is_dict(self) -> None:
-        result = remote_store.info()
-        assert isinstance(result["extensions"], dict)
+        assert set(result.keys()) == {"version", "backends", "extensions"}
 
     def test_always_available_backends_present(self) -> None:
         result = remote_store.info()
@@ -70,21 +69,15 @@ class TestInfo:
     def test_unavailable_backend_class_is_none(self) -> None:
         from remote_store._registry import _BACKEND_FACTORIES, _register_builtin_backends
 
-        # Ensure backends are registered, then temporarily remove 'local'.
         _register_builtin_backends()
         saved = _BACKEND_FACTORIES.pop("local")
         try:
-            # Prevent info() from re-registering local.
             with patch("remote_store._registry._register_builtin_backends"):
                 result = remote_store.info()
             assert result["backends"]["local"]["available"] is False
             assert result["backends"]["local"]["class"] is None
         finally:
             _BACKEND_FACTORIES["local"] = saved
-
-    def test_top_level_keys(self) -> None:
-        result = remote_store.info()
-        assert set(result.keys()) == {"version", "backends", "extensions"}
 
     def test_extensions_discovered_dynamically(self) -> None:
         """All extension modules under remote_store.ext are discovered."""
@@ -103,18 +96,29 @@ class TestInfo:
         assert hasattr(remote_store, "ExtensionInfo")
 
     def test_optional_extension_unavailable_when_dep_missing(self) -> None:
-        """Extensions with missing third-party deps report available=False."""
-        original_find_spec = importlib.util.find_spec
-
-        def _fake_find_spec(name: str, *args: object, **kwargs: object) -> object:
-            # Block pyarrow to make arrow/parquet unavailable.
-            if name == "pyarrow":
-                return None
-            return original_find_spec(name, *args, **kwargs)  # type: ignore[arg-type]
-
-        with patch("importlib.util.find_spec", side_effect=_fake_find_spec):
+        """Extensions with missing gating deps report available=False."""
+        fake_gate = {**_EXTENSION_GATE, "arrow": ("nonexistent_pkg_xyz",)}
+        with patch("remote_store._info._EXTENSION_GATE", fake_gate):
             result = remote_store.info()
             assert result["extensions"]["arrow"]["available"] is False
-            assert result["extensions"]["parquet"]["available"] is False
-            # Base extensions unaffected.
+            # Parquet still gated by real pyarrow — unaffected.
+            assert result["extensions"]["parquet"]["available"] is True
+            # Base extensions always available.
             assert result["extensions"]["batch"]["available"] is True
+
+    def test_user_registered_backend_appears_in_info(self) -> None:
+        """Backends registered after _register_builtin_backends appear in info()."""
+        from remote_store._backend import Backend
+        from remote_store._registry import _BACKEND_FACTORIES
+
+        class _FakeBackend(Backend):
+            pass
+
+        _BACKEND_FACTORIES["fake-test"] = _FakeBackend  # type: ignore[assignment]
+        try:
+            result = remote_store.info()
+            assert "fake-test" in result["backends"]
+            assert result["backends"]["fake-test"]["available"] is True
+            assert result["backends"]["fake-test"]["extras"] is None
+        finally:
+            del _BACKEND_FACTORIES["fake-test"]

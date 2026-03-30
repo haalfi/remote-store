@@ -49,12 +49,7 @@ Methods grouped by capability gate. Query at runtime with
 | `read(path)` | Open a binary stream for reading |
 | `read_bytes(path)` | Read entire file into bytes |
 | `read_text(path)` | Read entire file as decoded string |
-
-### SEEKABLE_READ
-
-| Method | Description |
-|---|---|
-| `read_seekable(path)` | Open a seekable binary stream for reading |
+| `read_seekable(path)` | Open a seekable binary stream (always seekable via spool fallback) |
 
 ### WRITE
 
@@ -118,25 +113,25 @@ Methods grouped by capability gate. Query at runtime with
 
 | Extension | Description | Module | Key exports |
 |---|---|---|---|
-| Batch | Bulk copy, delete, and existence checks across files | `remote_store.ext.batch` | `batch_copy`, `batch_delete`, `batch_exists` |
-| Cache | Transparent read-through caching layer | `remote_store.ext.cache` | `CachedStore`, `MemoryCache`, `cache` |
+| Batch | Bulk copy, delete, and existence checks across files | `remote_store.ext.batch` | `BatchResult`, `batch_copy`, `batch_delete`, `batch_exists` |
+| Cache | Transparent read-through caching layer | `remote_store.ext.cache` | `CachedStore`, `CacheBackend`, `CacheStats`, `MemoryCache`, `cache` |
 | Glob | Portable glob for backends without native GLOB capability | `remote_store.ext.glob` | `glob_files` |
-| Integrity | Content checksums and digest verification | `remote_store.ext.integrity` | `checksum`, `verify`, `content_digest` |
-| Observe | Event hooks and operation logging | `remote_store.ext.observe` | `ObservedStore`, `observe` |
-| Partition | Hive-style partition path parsing and construction | `remote_store.ext.partition` | `parse_partition`, `partition_path` |
-| Streams | Progress reporting and checksum wrappers for streams | `remote_store.ext.streams` | `ProgressReader`, `ChecksumWriter` |
+| Integrity | Content checksums and digest verification | `remote_store.ext.integrity` | `checksum`, `verify`, `verify_hex`, `content_digest` |
+| Observe | Event hooks and operation logging | `remote_store.ext.observe` | `BufferedObserver`, `ObservedStore`, `StoreEvent`, `observe`, `set_correlation_id` |
+| Partition | Hive-style partition path parsing and construction | `remote_store.ext.partition` | `ParsedPartition`, `parse_partition`, `partition_path` |
+| Streams | Progress reporting and checksum wrappers for streams | `remote_store.ext.streams` | `ChecksumReader`, `ChecksumWriter`, `ProgressReader`, `ProgressWriter`, `read_with_progress` |
 | Transfer | High-level upload, download, and store-to-store transfer | `remote_store.ext.transfer` | `upload`, `download`, `transfer` |
 
 ### Optional (require extras)
 
-| Extension | Description | Module | Extras |
-|---|---|---|---|
-| Arrow | PyArrow filesystem bridge | `remote_store.ext.arrow` | `pip install remote-store[arrow]` |
-| Parquet | Read and write Parquet files via PyArrow | `remote_store.ext.parquet` | `pip install remote-store[arrow]` |
-| OpenTelemetry | Distributed tracing spans for store operations | `remote_store.ext.otel` | `pip install remote-store[otel]` |
-| Pydantic | Pydantic settings integration for store configuration | `remote_store.ext.pydantic` | `pip install remote-store[pydantic]` |
-| YAML | YAML configuration file loading | `remote_store.ext.yaml` | `pip install remote-store[yaml]` |
-| Dagster | Dagster IO manager and resource integration | `remote_store.ext.dagster` | `pip install remote-store[dagster]` |
+| Extension | Description | Module | Key exports | Extras |
+|---|---|---|---|---|
+| Arrow | PyArrow filesystem bridge | `remote_store.ext.arrow` | `StoreFileSystemHandler`, `pyarrow_fs` | `pip install remote-store[arrow]` |
+| Parquet | Read and write Parquet files via PyArrow | `remote_store.ext.parquet` | `ParquetDatasetStore`, `DatasetManifest` | `pip install remote-store[arrow]` |
+| OpenTelemetry | Distributed tracing spans for store operations | `remote_store.ext.otel` | `otel_hooks`, `otel_observe` | `pip install remote-store[otel]` |
+| Pydantic | Pydantic settings integration for store configuration | `remote_store.ext.pydantic` | `from_pydantic` | `pip install remote-store[pydantic]` |
+| YAML | YAML configuration file loading | `remote_store.ext.yaml` | `from_yaml` | `pip install remote-store[yaml]` |
+| Dagster | Dagster IO manager and resource integration | `remote_store.ext.dagster` | `RemoteStoreIOManager`, `DagsterStoreResource`, `dagster_io_manager` | `pip install remote-store[dagster]` |
 
 ---
 
@@ -156,7 +151,7 @@ runtime with `store.supports(Capability.X)`.
 | `ATOMIC_WRITE` | Write via temp-and-rename (no partial reads) | `write_atomic()`, `open_atomic()` |
 | `METADATA` | Retrieve file/folder metadata | `get_file_info()`, `get_folder_info()` |
 | `GLOB` | Native pattern matching on file paths | `glob()` |
-| `SEEKABLE_READ` | `read()` returns a seekable stream | `read()`, `read_seekable()` |
+| `SEEKABLE_READ` | `read()` returns natively seekable streams | — (quality flag, not a method gate) |
 
 ---
 

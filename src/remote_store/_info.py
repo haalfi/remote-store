@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import importlib.util
 import pkgutil
 from typing import TypedDict
@@ -16,6 +15,13 @@ BackendInfo = TypedDict(
         "class": str | None,
     },
 )
+BackendInfo.__doc__ = """Information about a single backend.
+
+Keys:
+    available: Whether the backend is registered (dependencies installed).
+    extras: Pip extra name to install, or ``None`` for always-available backends.
+    class: Fully qualified class name when available, ``None`` otherwise.
+"""
 
 
 class ExtensionInfo(TypedDict):
