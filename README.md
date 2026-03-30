@@ -208,6 +208,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Extension | Extra | What it does |
 |-----------|-------|-------------|
 | PyArrow adapter | `remote-store[arrow]` | Use any Store as a `pyarrow.fs.FileSystem` — works with Parquet, Pandas, Polars, DuckDB |
+| Parquet datasets | `remote-store[arrow]` | Managed Parquet datasets with manifests, `_SUCCESS` markers, and multi-part layouts |
 | Batch operations | *(none)* | Bulk delete, copy, and exists with error aggregation |
 | Transfer operations | *(none)* | Upload, download, and cross-store transfer with progress |
 | Observability hooks | *(none)* | Callback-based instrumentation for logging, metrics, and tracing |

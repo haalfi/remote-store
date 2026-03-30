@@ -96,3 +96,11 @@ store.write("folder/file.txt", b"data")
 with pytest.raises(DirectoryNotEmpty):
     store.delete_folder("folder", recursive=False)
 ```
+
+## Extension-scoped errors
+
+Extension-specific errors inherit from `RemoteStoreError` but live in their
+extension module (per ADR-0013), not in this file. See each extension's spec
+for details:
+
+- **ERR-011** `DatasetIncomplete`, **ERR-012** `ManifestCorrupted` — see [spec 042 § PDS-008](042-ext-parquet.md#pds-008-error-conditions)

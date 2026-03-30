@@ -151,6 +151,33 @@ else:
 See the [Capabilities Matrix](capabilities-matrix.md) for the full
 backend x capability table.
 
+## DatasetIncomplete error
+
+**Symptom:** `DatasetIncomplete: Dataset at 'silver/orders' is incomplete`
+
+**Cause:** The `_SUCCESS` marker is missing (partial write) or one or more
+Parquet part files listed in the manifest cannot be found.
+
+**Fix:**
+- Check that the write completed successfully (look for `_SUCCESS` under the
+  dataset key).
+- If parts are missing, the dataset was likely interrupted mid-write. Re-run
+  the write with `overwrite=True`.
+- Concurrent writers to the same `dataset_key` are not safe — coordinate
+  externally.
+
+## ManifestCorrupted error
+
+**Symptom:** `ManifestCorrupted: Failed to parse manifest JSON`
+
+**Cause:** The `manifest.json` file under a dataset key exists but contains
+invalid JSON or is missing required fields.
+
+**Fix:**
+- Inspect the manifest: `store.read_bytes("silver/orders/manifest.json")`.
+- If corrupted, delete and re-write the dataset with `overwrite=True`.
+- The `reason` attribute on the exception carries the specific parse failure.
+
 ## See also
 
 - [Getting Started](getting-started.md) — installation and quick start

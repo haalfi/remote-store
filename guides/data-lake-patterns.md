@@ -309,6 +309,7 @@ These extensions work well with data lake workflows:
 | [PyArrow Tier 1 fast-path](pyarrow-adapter.md) | Zero-GIL C++ range requests for large Parquet workloads (S3-PyArrow) |
 | [Streaming atomic writes](https://docs.remotestore.dev/stable/api/store/#remote_store.Store.open_atomic) | `open_atomic()` context manager for multi-GB Parquet exports |
 | [Caching middleware](cache.md) | Reduces round-trips for metadata-heavy listing workflows |
+| [Parquet Dataset Store](parquet-datasets.md) | Managed Parquet datasets with manifests, `_SUCCESS` markers, and multi-part layouts |
 
 ## See also
 

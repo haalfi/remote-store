@@ -462,6 +462,26 @@ class TestPyArrowAdapter:
         assert results["dataset_files"] == 3
 
 
+class TestParquetDataset:
+    @pytest.mark.spec("PDS-002,PDS-003,PDS-006")
+    def test_demo(self, memory_store):
+        pytest.importorskip("pyarrow")
+
+        from examples.parquet_dataset import demo
+
+        results = demo(memory_store)
+
+        assert results["single_parts"] == ["data.parquet"]
+        assert results["single_rows"] == 3
+        assert results["read_rows"] == 3
+        assert results["projected_columns"] == ["id", "name"]
+        assert results["multi_parts"] == 2
+        assert results["overwrite_rows"] == 2
+        assert results["compression"] == "zstd"
+        assert results["exists"] is True
+        assert results["missing"] is False
+
+
 class TestHttpBackend:
     @pytest.mark.spec("HTTP-001")
     def test_demo(self):
