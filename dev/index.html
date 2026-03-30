@@ -3560,34 +3560,6 @@
   
   
     <li class="md-nav__item">
-      <a href="api/extensions/seekable/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Seekable read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="api/extensions/streams/" class="md-nav__link">
         
   
@@ -7246,7 +7218,7 @@ yourself.</p>
     subgraph INFRA[" "]
         direction TB
         Backends["Backends"]
-        B_list["Local - S3 - SFTP - Azure - Http - Memory - ...yours"]
+        B_list["Local - S3 - SFTP - Azure - Http - Memory - SQL - ...yours"]
         Libs["Proven Libraries"]
         L_list["stdlib - s3fs - pyarrow - paramiko - azure SDK"]
         Backends -.-&gt; B_list

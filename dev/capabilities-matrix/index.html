@@ -3380,34 +3380,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/seekable/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Seekable read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/extensions/streams/" class="md-nav__link">
         
   
@@ -7031,11 +7003,15 @@ at runtime before calling an operation.</p>
 <th style="text-align: center;"><a href="../backends/s3-pyarrow/">S3-PyArrow</a></th>
 <th style="text-align: center;"><a href="../backends/sftp/">SFTP</a></th>
 <th style="text-align: center;"><a href="../backends/azure/">Azure</a></th>
+<th style="text-align: center;"><a href="../backends/sql-blob/">SQLBlob</a></th>
+<th style="text-align: center;"><a href="../backends/sql-query/">SQLQuery</a></th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>READ</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
@@ -7053,6 +7029,8 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
 </tr>
 <tr>
 <td>DELETE</td>
@@ -7063,12 +7041,16 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
 </tr>
 <tr>
 <td>LIST</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
@@ -7083,6 +7065,8 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
 </tr>
 <tr>
 <td>COPY</td>
@@ -7093,6 +7077,8 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
 </tr>
 <tr>
 <td>ATOMIC_WRITE</td>
@@ -7103,9 +7089,13 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
 </tr>
 <tr>
 <td>METADATA</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
@@ -7123,6 +7113,8 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td>SEEKABLE_READ</td>
@@ -7133,16 +7125,20 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Full support (10/10):</strong> Local, S3, S3-PyArrow.</p>
+<p><strong>Full support (10/10):</strong> Local, S3, S3-PyArrow, SQLBlob.</p>
 <p><strong>Near-full (9/10):</strong> Memory and SFTP lack native <code>GLOB</code>. Use the portable
 fallback <code>ext.glob.glob_files()</code> instead — see the
 <a href="../glob-pattern-matching/">Glob Pattern Matching</a> guide.
 Azure lacks <code>SEEKABLE_READ</code> (forward-only chunk iterator) but supports
 <code>Store.read_seekable()</code> via an optimized HTTP Range reader.</p>
-<p><strong>Partial (2/10):</strong> HTTP supports only <code>READ</code> and <code>METADATA</code> (read-only backend).</p>
+<p><strong>Partial (5/10):</strong> SQLQuery is read-only (<code>READ</code>, <code>LIST</code>, <code>METADATA</code>, <code>GLOB</code>,
+<code>SEEKABLE_READ</code>).</p>
+<p><strong>Minimal (2/10):</strong> HTTP supports only <code>READ</code> and <code>METADATA</code> (read-only backend).</p>
 <h2 id="querying-capabilities-at-runtime">Querying capabilities at runtime<a class="headerlink" href="#querying-capabilities-at-runtime" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>

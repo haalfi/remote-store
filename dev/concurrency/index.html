@@ -3375,34 +3375,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/seekable/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Seekable read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/extensions/streams/" class="md-nav__link">
         
   
@@ -7171,6 +7143,26 @@
 <td>Read + write + delete</td>
 <td>—</td>
 </tr>
+<tr>
+<td><a href="../backends/memory/">Memory</a></td>
+<td>Dict key reassignment</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><a href="../backends/http/">HTTP</a></td>
+<td>— (read-only)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="../backends/sql-blob/">SQLBlob</a></td>
+<td>SQL <code>UPDATE</code> in transaction</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><a href="../backends/sql-query/">SQLQuery</a></td>
+<td>— (read-only)</td>
+<td>—</td>
+</tr>
 </tbody>
 </table>
 <p>SFTP tries three strategies in order: <code>posix_rename</code> (atomic), standard <code>rename()</code>, and finally copy+delete. Most OpenSSH servers support <code>posix_rename</code>. Servers that lack it usually still support <code>rename()</code>, which is atomic on most POSIX filesystems.</p>
@@ -7225,6 +7217,18 @@
 <td><a href="../backends/sftp/">SFTP</a></td>
 <td>Yes**</td>
 <td>Yes** (temp file + rename)</td>
+<td>No (TOCTOU)</td>
+</tr>
+<tr>
+<td><a href="../backends/memory/">Memory</a></td>
+<td>Yes</td>
+<td>Yes (direct)</td>
+<td>No (TOCTOU)</td>
+</tr>
+<tr>
+<td><a href="../backends/sql-blob/">SQLBlob</a></td>
+<td>Yes (SQL transaction)</td>
+<td>Yes (direct)</td>
 <td>No (TOCTOU)</td>
 </tr>
 </tbody>

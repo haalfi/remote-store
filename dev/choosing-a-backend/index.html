@@ -3471,34 +3471,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/seekable/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Seekable read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/extensions/streams/" class="md-nav__link">
         
   
@@ -7070,6 +7042,16 @@
    Lacks native glob (use <code>ext.glob</code> fallback).</p>
 </li>
 <li>
+<p><strong>Store blobs in a relational database (SQLite, PostgreSQL, etc.)?</strong> Use <strong>SQLBlob</strong>.
+   Full capabilities (10/10). Useful for embedded storage, metadata-heavy
+   workloads, or environments where a database is already available.</p>
+</li>
+<li>
+<p><strong>Materialize SQL queries as files (read-only)?</strong> Use <strong>SQLQuery</strong>.
+   Executes a SQL query and exposes the result as Parquet, CSV, or Arrow IPC.
+   Read-only (5 capabilities). Useful for ETL pipelines and data exports.</p>
+</li>
+<li>
 <p><strong>Read-only HTTP/HTTPS endpoint?</strong> Use <strong>HTTP</strong>.
    Public data, static file servers, REST APIs. Read and metadata only — no
    write, list, or delete. Zero required dependencies (stdlib <code>urllib</code>);
@@ -7129,6 +7111,20 @@
 <td style="text-align: center;">Native</td>
 <td>Network</td>
 <td>Azure workloads</td>
+</tr>
+<tr>
+<td><a href="../backends/sql-blob/">SQLBlob</a></td>
+<td><code>sqlalchemy</code></td>
+<td style="text-align: center;">Native</td>
+<td>DB-bound</td>
+<td>Embedded, metadata-heavy</td>
+</tr>
+<tr>
+<td><a href="../backends/sql-query/">SQLQuery</a></td>
+<td><code>sqlalchemy</code> + <code>pyarrow</code></td>
+<td style="text-align: center;">Native</td>
+<td>DB-bound</td>
+<td>Read-only ETL exports</td>
 </tr>
 <tr>
 <td><a href="../backends/http/">HTTP</a></td>

@@ -2525,6 +2525,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.Store.read_seekable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;read_seekable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.Store.read_text" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3903,34 +3914,6 @@
     
   
     ext.pydantic
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extensions/seekable/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Seekable read
   
 
     
@@ -7470,6 +7453,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.Store.read_seekable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;read_seekable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.Store.read_text" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8155,6 +8149,78 @@ Backend thread safety depends on the backend implementation.</p>
         </li>
     </ul>
         <p>Equivalent to <code>read(path).read()</code>.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.Store.read_seekable" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">read_seekable</span>
+
+
+<a href="#remote_store.Store.read_seekable" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_seekable</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.BinaryIO">BinaryIO</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Return a seekable binary stream for random-access reading.</p>
+<p>Always returns a seekable stream.  On backends that natively
+return seekable streams from <code>read()</code>, this is zero-overhead.
+On other backends (Azure, HTTP), the backend provides an
+optimized seekable implementation (e.g. HTTP Range requests)
+or falls back to spooling into a temporary file.</p>
+<p>Use <code>read()</code> for sequential streaming.  Use <code>read_seekable()</code>
+when you need <code>seek()</code> / <code>tell()</code> -- for example, when
+passing the stream to PyArrow or other analytical readers.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative file path.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="typing.BinaryIO">BinaryIO</span></code>
+          –
+          <div class="doc-md-description">
+            <p>A seekable binary stream positioned at byte 0.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the file does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -9944,6 +10010,9 @@ relying on these in production.</p>
 <th><a href="../../backends/sftp/">SFTP</a></th>
 <th><a href="../../backends/azure/">Azure</a></th>
 <th><a href="../../backends/memory/">Memory</a></th>
+<th><a href="../../backends/http/">HTTP</a></th>
+<th><a href="../../backends/sql-blob/">SQLBlob</a></th>
+<th><a href="../../backends/sql-query/">SQLQuery</a></th>
 </tr>
 </thead>
 <tbody>
@@ -9955,12 +10024,18 @@ relying on these in production.</p>
 <td>Server-dependent</td>
 <td>Copy+delete</td>
 <td>Atomic</td>
+<td>—</td>
+<td>Atomic (SQL transaction)</td>
+<td>—</td>
 </tr>
 <tr>
 <td><code>copy()</code> preserves metadata</td>
 <td>Yes (<code>copy2</code>)</td>
 <td>Yes</td>
 <td>Yes</td>
+<td>—</td>
+<td>Yes</td>
+<td>—</td>
 <td>—</td>
 <td>Yes</td>
 <td>—</td>
@@ -9973,6 +10048,9 @@ relying on these in production.</p>
 <td>temp+rename</td>
 <td>Direct PUT or temp+rename</td>
 <td>Direct (atomic)</td>
+<td>—</td>
+<td>Direct (atomic)</td>
+<td>—</td>
 </tr>
 <tr>
 <td>Native <code>glob()</code></td>
@@ -9982,6 +10060,9 @@ relying on these in production.</p>
 <td>—</td>
 <td>Yes</td>
 <td>—</td>
+<td>—</td>
+<td>Yes (SQL GLOB/LIKE)</td>
+<td>Yes (in-memory)</td>
 </tr>
 <tr>
 <td><code>list_files()</code> ordering</td>
@@ -9991,6 +10072,9 @@ relying on these in production.</p>
 <td>OS-dependent</td>
 <td>Lexicographic</td>
 <td>Insertion order</td>
+<td>—</td>
+<td>DB-dependent</td>
+<td>Lexicographic</td>
 </tr>
 </tbody>
 </table>

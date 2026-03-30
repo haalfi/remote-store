@@ -3375,34 +3375,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/seekable/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Seekable read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/extensions/streams/" class="md-nav__link">
         
   
@@ -7239,10 +7211,11 @@ Backend exceptions <strong>never leak</strong> to user code.</p>
 <h2 id="extension-model">Extension model<a class="headerlink" href="#extension-model" title="Permanent link">&para;</a></h2>
 <p>Extensions in <code>ext.*</code> add functionality without modifying the core:</p>
 <ul>
-<li><strong>Unconditional</strong> (no extra deps): <code>ext.batch</code>, <code>ext.glob</code>, <code>ext.observe</code>,
-  <code>ext.cache</code>, <code>ext.partition</code>, <code>ext.transfer</code></li>
-<li><strong>Optional</strong> (extra deps): <code>ext.arrow</code> (pyarrow), <code>ext.otel</code> (opentelemetry),
-  <code>ext.pydantic</code> (pydantic)</li>
+<li><strong>Unconditional</strong> (no extra deps): <code>ext.batch</code>, <code>ext.cache</code>, <code>ext.glob</code>,
+  <code>ext.integrity</code>, <code>ext.observe</code>, <code>ext.partition</code>, <code>ext.streams</code>, <code>ext.transfer</code></li>
+<li><strong>Optional</strong> (extra deps): <code>ext.arrow</code> (pyarrow), <code>ext.dagster</code> (dagster),
+  <code>ext.otel</code> (opentelemetry), <code>ext.parquet</code> (pyarrow), <code>ext.pydantic</code> (pydantic),
+  <code>ext.yaml</code> (pyyaml / ruamel.yaml)</li>
 </ul>
 <p>Extensions follow the contract defined in
 <a href="../design/adrs/0008-extension-architecture/">ADR-0008</a>:

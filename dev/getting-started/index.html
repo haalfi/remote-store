@@ -3554,34 +3554,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/seekable/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Seekable read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/extensions/streams/" class="md-nav__link">
         
   
@@ -7211,6 +7183,8 @@
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[s3-pyarrow]&quot;</span><span class="w">   </span><span class="c1"># S3 via PyArrow (analytical workloads)</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[sftp]&quot;</span><span class="w">         </span><span class="c1"># SFTP / SSH</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[azure]&quot;</span><span class="w">        </span><span class="c1"># Azure Blob / ADLS Gen2</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[sql]&quot;</span><span class="w">          </span><span class="c1"># SQL Blob (SQLite, PostgreSQL, ...)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[sql-query]&quot;</span><span class="w">    </span><span class="c1"># SQL Query (read-only, SQLAlchemy + PyArrow)</span>
 </code></pre></div>
 <p>Optional extras for integrations:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[requests]&quot;</span><span class="w">       </span><span class="c1"># HTTP backend with requests (connection pooling)</span>
@@ -7452,11 +7426,6 @@ use a Registry with declarative config:</p>
 <td>Caching middleware</td>
 <td><em>(none)</em></td>
 <td>TTL-based read cache with automatic invalidation on mutations</td>
-</tr>
-<tr>
-<td>Seekable read</td>
-<td><em>(none)</em></td>
-<td><code>Store.read_seekable()</code> — backend-optimized seekable streams (built-in)</td>
 </tr>
 <tr>
 <td>Stream wrappers</td>

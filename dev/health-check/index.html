@@ -3504,34 +3504,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/seekable/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Seekable read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/extensions/streams/" class="md-nav__link">
         
   
@@ -7194,6 +7166,21 @@ processing requests.</p>
 <td><a href="../backends/memory/">Memory</a></td>
 <td>No-op</td>
 <td>Always healthy</td>
+</tr>
+<tr>
+<td><a href="../backends/http/">HTTP</a></td>
+<td><code>HEAD</code> to <code>base_url</code> (falls back to <code>GET</code>)</td>
+<td>Server reachable</td>
+</tr>
+<tr>
+<td><a href="../backends/sql-blob/">SQLBlob</a></td>
+<td><code>SELECT 1</code></td>
+<td>Database connection valid</td>
+</tr>
+<tr>
+<td><a href="../backends/sql-query/">SQLQuery</a></td>
+<td><code>SELECT 1</code></td>
+<td>Database connection valid</td>
 </tr>
 </tbody>
 </table>

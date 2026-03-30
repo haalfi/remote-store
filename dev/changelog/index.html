@@ -3380,34 +3380,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/extensions/seekable/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Seekable read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/extensions/streams/" class="md-nav__link">
         
   
@@ -9281,6 +9253,13 @@
 </ul>
 <h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong>Fix docs list completeness findings</strong> (BK-129): Add SQLBlob and SQLQuery
+  backends to all backend lists, tables, and matrices across 14 doc files.
+  Remove ghost "Seekable read" entries from extension lists. Add missing
+  extensions to architecture.md. Add <code>read_seekable()</code> directive to Store API
+  reference. Add <code>sql</code> and <code>sql-query</code> extras to README installation section.</p>
+</li>
 <li>
 <p><strong>RFC-0008: Parquet Dataset Storage extension</strong> (ID-122): Draft RFC proposing
   <code>ParquetDatasetStore</code> — high-level Parquet dataset read/write with manifests,
