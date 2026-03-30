@@ -266,6 +266,10 @@ _EXAMPLE_SEE_ALSO: dict[str, list[tuple[str, str, str]]] = {
     "pyarrow_adapter.py": [
         ("PyArrow Adapter", "../pyarrow-adapter.md", "PyArrow filesystem integration guide"),
     ],
+    "parquet_dataset.py": [
+        ("Parquet Datasets", "../parquet-datasets.md", "managed Parquet dataset guide"),
+        ("ext.parquet API", "../api/extensions/parquet.md", "API reference"),
+    ],
     "dagster_io_manager.py": [
         ("Dagster", "../dagster.md", "Dagster integration guide"),
     ],
@@ -316,6 +320,7 @@ _EXAMPLE_DESCRIPTIONS: dict[str, str] = {
     ),
     "path_model.py": "`RemotePath` normalization, properties, validation, and the `/` operator.",
     "pyarrow_adapter.py": "Use any Store as a `pyarrow.fs.FileSystem` for Parquet, CSV, and dataset I/O.",
+    "parquet_dataset.py": "Managed Parquet datasets with manifests, completion markers, and multi-part writes.",
     "dagster_io_manager.py": "Use any Store as a Dagster IOManager with pluggable serialization.",
     "batch_operations.py": "Bulk delete, copy, and existence checks with error aggregation.",
     "transfer_operations.py": "Upload, download, and cross-store transfer with progress tracking.",
@@ -415,6 +420,7 @@ _EXTENSION_EXAMPLES = [
     "observe_hooks",
     "otel_tracing",
     "pyarrow_adapter",
+    "parquet_dataset",
     "dagster_io_manager",
     "retry_policy",
     "health_check",

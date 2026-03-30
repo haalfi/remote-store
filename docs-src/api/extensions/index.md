@@ -14,6 +14,7 @@ to enable each one. For usage guides, see [Extensions](../../extensions.md).
 | [ext.integrity](integrity.md) | Checksum computation and verification helpers |
 | [ext.observe](observe.md) | Callback hooks for store operations |
 | [ext.otel](otel.md) | OpenTelemetry bridge for ext.observe |
+| [ext.parquet](parquet.md) | Managed Parquet datasets with manifests and completion markers |
 | [ext.partition](partition.md) | Hive-style partition path helpers |
 | [ext.pydantic](pydantic.md) | Pydantic model to RegistryConfig adapter |
 | [Seekable read](seekable.md) | Now built into `Store.read_seekable()` |
