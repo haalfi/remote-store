@@ -227,3 +227,32 @@ Returns an IO manager that uses `ParquetDatasetStore` for dataset-level I/O. Acc
 ### DAG-019: Dataset Mode via RemoteStoreIOManager
 
 **Invariant:** `RemoteStoreIOManager(backend_type=..., serializer="parquet-dataset")` creates an IO manager that uses `ParquetDatasetStore` instead of the bytes-based Serializer protocol.
+
+---
+
+## Multi-Partition Loading
+
+### DAG-020: load_input with Multiple Partition Keys
+
+**Invariant:** When `load_input` receives an `InputContext` with multiple
+partition keys (e.g. a downstream asset consuming a time-window aggregation
+of an upstream partitioned asset), both `_RemoteStoreIOManagerImpl` and
+`_DatasetIOManagerImpl` return `dict[str, Any]` mapping each partition key
+to its deserialized object.
+
+**Behaviour:**
+
+1. If `context.has_asset_partitions` is true **and**
+   `len(context.asset_partition_keys) > 1`:
+   - For each key in `context.asset_partition_keys`, derive the storage
+     path (or dataset key) using the asset key plus that partition key.
+   - Read and deserialize each partition independently.
+   - Return `{partition_key: deserialized_object, ...}`.
+2. Otherwise (single or no partition): existing behaviour — return a single
+   deserialized object.
+
+**Applies to:** both the bytes-serializer IO manager (`_RemoteStoreIOManagerImpl`)
+and the dataset IO manager (`_DatasetIOManagerImpl`).
+
+**Raises:** `NotFound` for any individual partition whose file does not exist
+(no partial results — the first missing partition raises immediately).

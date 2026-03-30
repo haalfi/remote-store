@@ -123,6 +123,25 @@ partition keys:
 The Store's `root_path` acts as a namespace prefix — it is not embedded in
 the path.
 
+## Multi-partition loading
+
+When a downstream asset consumes multiple partitions of an upstream asset
+(e.g. a time-window aggregation), `load_input` automatically returns a
+`dict[str, Any]` mapping each partition key to its deserialized object:
+
+```python
+@asset(
+    ins={"upstream": AssetIn(partition_mapping=TimeWindowPartitionMapping())},
+)
+def aggregate(upstream: dict[str, Any]) -> dict:
+    # upstream = {"2026-01": {...}, "2026-02": {...}, "2026-03": {...}}
+    return {k: summarize(v) for k, v in upstream.items()}
+```
+
+Single-partition inputs continue to return a single deserialized object
+(not wrapped in a dict). This applies to both the bytes-serializer IO
+manager and the dataset IO manager.
+
 ## Using with Registry
 
 For teams using `Registry` for multi-backend configuration:

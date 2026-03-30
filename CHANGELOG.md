@@ -14,6 +14,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   backends and extensions in the current environment (BK-136).
 - `CLAUDE.md` now references `FEATURES.md` for cold-start agent sessions (BK-136).
 - Release checklist in `CONTRIBUTING.md` now includes `FEATURES.md` update (BK-136).
+- **Dagster multi-partition loading** — `load_input` now returns
+  `dict[str, Any]` when the input context carries multiple partition keys
+  (time-window aggregation). Applies to both the bytes-serializer IO manager
+  and the dataset IO manager (ID-124, spec DAG-020).
 
 ### Changed
 

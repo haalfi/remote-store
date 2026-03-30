@@ -29,6 +29,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Integrations
 
+- [x] **ID-124 — Dagster multi-partition loading** (post-v0.20.0)
+  When `load_input` receives multiple partition keys (time-window aggregation),
+  return `dict[str, Any]` mapping partition key to deserialized object.
+  Both `_RemoteStoreIOManagerImpl` and `_DatasetIOManagerImpl` updated.
+  Spec DAG-020, tests, guide update. Deferred from ID-083 scope.
+
 - [x] **ID-083 — Dagster extension v2: ConfigurableResource + IOManagerFactory** (v0.20.0)
   `DagsterStoreResource` (`ConfigurableResource`) for direct Store access in
   assets, `RemoteStoreIOManager` (`ConfigurableIOManagerFactory`) for
