@@ -5,6 +5,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Bug Fixes
+
+- [x] **BUG-135 — `ParquetSerializer.deserialize()` returns Arrow Table** (post-v0.20.0)
+  `deserialize()` called `table.to_pandas()`, hard-requiring pandas for
+  `remote-store[dagster,arrow]` users. Changed to return `pyarrow.Table`
+  directly. Callers convert to pandas/polars as needed. Updated spec DAG-004,
+  migration guide, medallion example.
+
 ## Integrations
 
 - [x] **ID-083 — Dagster extension v2: ConfigurableResource + IOManagerFactory** (v0.20.0)

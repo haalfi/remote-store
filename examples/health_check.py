@@ -1,4 +1,4 @@
-"""Health check example -- startup gate pattern.
+"""Health Check -- startup gate pattern.
 
 Demonstrates ``Store.ping()`` for verifying backend connectivity
 before accepting traffic.

@@ -2,12 +2,20 @@
 
 All assets read from the Silver layer via the Dagster IO manager and
 return Polars DataFrames serialized to Parquet.
+
+ParquetSerializer.deserialize() returns a PyArrow Table; each asset
+converts to Polars via ``pl.from_arrow()`` before processing.
 """
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import polars as pl
 from dagster import AssetIn, asset
+
+if TYPE_CHECKING:
+    import pyarrow as pa
 
 
 @asset(
@@ -15,8 +23,9 @@ from dagster import AssetIn, asset
     io_manager_key="gold_io_manager",
     ins={"silver_measurements": AssetIn(key_prefix=[], input_manager_key="silver_io_manager")},
 )
-def gold_daily_summary(silver_measurements: pl.DataFrame) -> pl.DataFrame:
+def gold_daily_summary(silver_measurements: pa.Table) -> pl.DataFrame:
     """Daily aggregates per station: avg/min/max temperature, precipitation sum."""
+    silver_measurements = pl.from_arrow(silver_measurements)
     # Extract date from timestamp.
     df = silver_measurements.with_columns(pl.col("timestamp").dt.date().alias("date"))
 
@@ -41,8 +50,9 @@ def gold_daily_summary(silver_measurements: pl.DataFrame) -> pl.DataFrame:
     io_manager_key="gold_io_manager",
     ins={"silver_measurements": AssetIn(key_prefix=[], input_manager_key="silver_io_manager")},
 )
-def gold_station_stats(silver_measurements: pl.DataFrame) -> pl.DataFrame:
+def gold_station_stats(silver_measurements: pa.Table) -> pl.DataFrame:
     """Per-station statistics: row count, date range, mean temperature."""
+    silver_measurements = pl.from_arrow(silver_measurements)
     agg_exprs: list[pl.Expr] = [
         pl.len().alias("row_count"),
         pl.col("timestamp").min().alias("earliest"),
@@ -63,13 +73,14 @@ def gold_station_stats(silver_measurements: pl.DataFrame) -> pl.DataFrame:
     io_manager_key="gold_io_manager",
     ins={"silver_measurements": AssetIn(key_prefix=[], input_manager_key="silver_io_manager")},
 )
-def gold_alerts(silver_measurements: pl.DataFrame) -> pl.DataFrame:
+def gold_alerts(silver_measurements: pa.Table) -> pl.DataFrame:
     """Flag days where measurements exceed thresholds.
 
     Thresholds:
     - Frost: min temperature < 0 C
     - Heat: max temperature > 30 C
     """
+    silver_measurements = pl.from_arrow(silver_measurements)
     df = silver_measurements.with_columns(pl.col("timestamp").dt.date().alias("date"))
 
     alert_exprs: list[pl.Expr] = []

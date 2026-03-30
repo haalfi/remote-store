@@ -300,6 +300,9 @@ _EXAMPLE_SEE_ALSO: dict[str, list[tuple[str, str, str]]] = {
     "http_backend.py": [
         ("HTTP Backend", "../backends/http.md", "backend guide"),
     ],
+    "backends/sql_blob_backend.py": [
+        ("SQL Blob Backend", "../backends/sql-blob.md", "backend guide"),
+    ],
 }
 
 # Custom descriptions override the docstring first-line for cases where the
@@ -343,6 +346,7 @@ _EXAMPLE_DESCRIPTIONS: dict[str, str] = {
     ),
     "backends/sftp_backend.py": "Connect to any SSH/SFTP server with paramiko.",
     "backends/azure_backend.py": "Connect to Azure Blob Storage or Azure Data Lake Storage Gen2.",
+    "backends/sql_blob_backend.py": "SQLite key-value store — zero-infrastructure persistent file storage.",
 }
 
 
@@ -414,6 +418,7 @@ _BACKEND_EXAMPLES = [
     "backends/s3_listing_strategies",
     "backends/sftp_backend",
     "backends/azure_backend",
+    "backends/sql_blob_backend",
     "http_backend",
 ]
 _EXTENSION_EXAMPLES = [

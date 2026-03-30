@@ -38,6 +38,8 @@ except ModuleNotFoundError as _exc:  # pragma: no cover
 if TYPE_CHECKING:
     import contextlib
 
+    import pyarrow as pa  # type: ignore[import-untyped]
+
     with contextlib.suppress(ImportError):
         from dagster import InputContext, OutputContext  # type: ignore[import-untyped]
 
@@ -116,7 +118,7 @@ class JsonSerializer:
 
 
 class ParquetSerializer:
-    """Parquet serializer via PyArrow (DAG-004). DataFrames only."""
+    """Parquet serializer via PyArrow (DAG-004). DataFrames and Arrow Tables."""
 
     extension: str = ".parquet"
 
@@ -152,15 +154,14 @@ class ParquetSerializer:
         pq.write_table(table, buf)  # type: ignore[no-untyped-call]
         return buf.getvalue()
 
-    def deserialize(self, data: bytes) -> Any:
-        """Deserialize Parquet bytes to a pandas DataFrame."""
+    def deserialize(self, data: bytes) -> pa.Table:
+        """Deserialize Parquet bytes to a PyArrow Table."""
         import io
 
         import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
         buf = io.BytesIO(data)
-        table = pq.read_table(buf)  # type: ignore[no-untyped-call]
-        return table.to_pandas()
+        return pq.read_table(buf)  # type: ignore[no-untyped-call]
 
 
 # ---------------------------------------------------------------------------

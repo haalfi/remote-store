@@ -1,4 +1,4 @@
-"""SQL Blob Backend example — SQLite key-value store (no credentials needed).
+"""SQL Blob Backend — SQLite key-value store (no credentials needed).
 
 Demonstrates using SQLBlobBackend with SQLite as a zero-infrastructure
 persistent file store. All data lives in a single .db file.

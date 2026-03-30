@@ -61,10 +61,11 @@ class Serializer(Protocol):
 
 **Invariant:** `ParquetSerializer` implements `Serializer` with:
 - `extension = ".parquet"`
-- `serialize`: converts a pandas or polars DataFrame to Parquet bytes via
-  `pyarrow`.
-- `deserialize`: reads Parquet bytes back to a pandas DataFrame via
-  `pyarrow`.
+- `serialize`: converts a pandas DataFrame, polars DataFrame, or PyArrow Table
+  to Parquet bytes via `pyarrow`.
+- `deserialize`: reads Parquet bytes back to a PyArrow Table.
+  Callers needing pandas or polars convert the result themselves
+  (e.g. `table.to_pandas()` or `pl.from_arrow(table)`).
 
 **Guard:** instantiating `ParquetSerializer` when `pyarrow` is not installed
 raises `ModuleNotFoundError` with the message:

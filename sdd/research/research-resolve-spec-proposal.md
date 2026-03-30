@@ -404,7 +404,7 @@ separate spec with separate timeline.
 ## 10. References
 
 ### Internal
-- [SQLAlchemy backend research § 5](research-sqlalchemy-backend.md#5-resolution-model--composite-store) — original ResolutionPlan design
+- [SQLAlchemy backend research § 5](research-sqlalchemy-backend.md#5-resolution-model-composite-store) — original ResolutionPlan design
 - [Store config research](research-store-config.md) — Registry multi-backend composition
 - `sdd/BACKLOG.md` — ID-120, ID-121 descriptions
 
