@@ -76,10 +76,11 @@ Each error carries structured attributes: `message`, `path`, and `backend`.
 
 Extensions in `ext.*` add functionality without modifying the core:
 
-- **Unconditional** (no extra deps): `ext.batch`, `ext.glob`, `ext.observe`,
-  `ext.cache`, `ext.partition`, `ext.transfer`
-- **Optional** (extra deps): `ext.arrow` (pyarrow), `ext.otel` (opentelemetry),
-  `ext.pydantic` (pydantic)
+- **Unconditional** (no extra deps): `ext.batch`, `ext.cache`, `ext.glob`,
+  `ext.integrity`, `ext.observe`, `ext.partition`, `ext.streams`, `ext.transfer`
+- **Optional** (extra deps): `ext.arrow` (pyarrow), `ext.dagster` (dagster),
+  `ext.otel` (opentelemetry), `ext.parquet` (pyarrow), `ext.pydantic` (pydantic),
+  `ext.yaml` (pyyaml / ruamel.yaml)
 
 Extensions follow the contract defined in
 [ADR-0008](design/adrs/0008-extension-architecture.md):

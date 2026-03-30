@@ -13,6 +13,8 @@ For usage guides, see [Backends](../../backends/index.md).
 | [S3PyArrowBackend](s3-pyarrow.md) | S3 via PyArrow C++ for higher throughput |
 | [SFTPBackend](sftp.md) | SSH/SFTP server storage via paramiko |
 | [AzureBackend](azure.md) | Azure Blob Storage and ADLS Gen2 |
+| [SQLBlobBackend](sql-blob.md) | SQL database blob storage via SQLAlchemy |
+| [SQLQueryBackend](sql-query.md) | Read-only SQL query materialization via SQLAlchemy + PyArrow |
 
 ## See also
 

@@ -9,7 +9,6 @@
 - ext.parquet: parquet.md
 - ext.partition: partition.md
 - ext.pydantic: pydantic.md
-- Seekable read: seekable.md
 - ext.streams: streams.md
 - ext.transfer: transfer.md
 - ext.yaml: yaml.md

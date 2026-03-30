@@ -55,6 +55,9 @@ Each backend uses the cheapest possible read-only operation:
 | [SFTP](backends/sftp.md) | `stat(base_path)` | SSH connection, path exists |
 | [Azure](backends/azure.md) | `get_container_properties()` | Container exists, credentials valid |
 | [Memory](backends/memory.md) | No-op | Always healthy |
+| [HTTP](backends/http.md) | `HEAD` to `base_url` (falls back to `GET`) | Server reachable |
+| [SQLBlob](backends/sql-blob.md) | `SELECT 1` | Database connection valid |
+| [SQLQuery](backends/sql-query.md) | `SELECT 1` | Database connection valid |
 
 ## Observability
 

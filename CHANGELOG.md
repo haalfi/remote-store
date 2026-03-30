@@ -188,6 +188,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Documentation
 
+- **Fix docs list completeness findings** (BK-129): Add SQLBlob and SQLQuery
+  backends to all backend lists, tables, and matrices across 14 doc files.
+  Remove ghost "Seekable read" entries from extension lists. Add missing
+  extensions to architecture.md. Add `read_seekable()` directive to Store API
+  reference. Add `sql` and `sql-query` extras to README installation section.
+
 - **RFC-0008: Parquet Dataset Storage extension** (ID-122): Draft RFC proposing
   `ParquetDatasetStore` — high-level Parquet dataset read/write with manifests,
   `_SUCCESS` markers, and atomic-commit semantics on top of existing Store

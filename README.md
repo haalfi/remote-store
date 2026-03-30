@@ -46,6 +46,8 @@ pip install "remote-store[s3]"           # Amazon S3 / MinIO
 pip install "remote-store[s3-pyarrow]"   # S3 via PyArrow (analytical workloads)
 pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
+pip install "remote-store[sql]"          # SQL Blob (SQLite, PostgreSQL, ...)
+pip install "remote-store[sql-query]"    # SQL Query (read-only, SQLAlchemy + PyArrow)
 ```
 
 Optional extras for integrations:
@@ -214,7 +216,6 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Observability hooks | *(none)* | Callback-based instrumentation for logging, metrics, and tracing |
 | OpenTelemetry bridge | `remote-store[otel]` | Pre-built OTel spans and metrics for Store operations |
 | Caching middleware | *(none)* | TTL-based read cache with automatic invalidation on mutations |
-| Seekable read | *(none)* | `Store.read_seekable()` — backend-optimized seekable streams (built-in) |
 | Stream wrappers | *(none)* | Composable BinaryIO wrappers for progress tracking and checksums |
 | Integrity helpers | *(none)* | Checksum computation and verification over Store's public API |
 | Dagster IO manager | `remote-store[dagster]` | Use any Store as a Dagster IOManager with pluggable serialization |

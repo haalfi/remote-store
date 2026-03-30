@@ -5,6 +5,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Documentation
+
+- [x] **BK-129 — Address docs list completeness findings from audit-006**
+  Follow-up to [audit-006](audits/audit-006-docs-list-completeness.md)
+  (2026-03-30). All 20 findings fixed: SQL backends added to all backend
+  lists/tables (A), ghost "Seekable read" removed from extension lists (B),
+  missing extensions added to architecture.md (C), `read_seekable()` directive
+  added to Store API reference (D), SQL extras added to README install (E).
+
 ## Performance & Memory
 
 - [x] **BK-127 — Audit-005 low-priority polish (L-1, L-2, L-3)**

@@ -26,7 +26,15 @@ This guide helps you pick the right `remote-store` backend for your use case.
    Legacy systems, on-prem file servers. Supports password and key-based auth.
    Lacks native glob (use `ext.glob` fallback).
 
-6. **Read-only HTTP/HTTPS endpoint?** Use **HTTP**.
+6. **Store blobs in a relational database (SQLite, PostgreSQL, etc.)?** Use **SQLBlob**.
+   Full capabilities (10/10). Useful for embedded storage, metadata-heavy
+   workloads, or environments where a database is already available.
+
+7. **Materialize SQL queries as files (read-only)?** Use **SQLQuery**.
+   Executes a SQL query and exposes the result as Parquet, CSV, or Arrow IPC.
+   Read-only (5 capabilities). Useful for ETL pipelines and data exports.
+
+8. **Read-only HTTP/HTTPS endpoint?** Use **HTTP**.
    Public data, static file servers, REST APIs. Read and metadata only — no
    write, list, or delete. Zero required dependencies (stdlib `urllib`);
    optional `requests` or `httpx` transports for connection pooling.
@@ -41,6 +49,8 @@ This guide helps you pick the right `remote-store` backend for your use case.
 | [S3-PyArrow](backends/s3-pyarrow.md) | `pyarrow` | Native | Network | Parquet, PyArrow datasets |
 | [SFTP](backends/sftp.md) | `paramiko` | Fallback | Network | Legacy, on-prem |
 | [Azure](backends/azure.md) | `azure-storage-blob` | Native | Network | Azure workloads |
+| [SQLBlob](backends/sql-blob.md) | `sqlalchemy` | Native | DB-bound | Embedded, metadata-heavy |
+| [SQLQuery](backends/sql-query.md) | `sqlalchemy` + `pyarrow` | Native | DB-bound | Read-only ETL exports |
 | [HTTP](backends/http.md) | None | — | Network | Read-only public data |
 
 ## Switching backends at runtime
