@@ -7409,7 +7409,7 @@ for storage and back.</p>
 <td><code>"parquet"</code></td>
 <td><code>.parquet</code></td>
 <td><code>pyarrow&gt;=14.0</code></td>
-<td>DataFrames (pandas, polars)</td>
+<td>DataFrames (pandas, polars), Arrow Tables</td>
 </tr>
 </tbody>
 </table>
@@ -7428,7 +7428,7 @@ strings, numbers, booleans, None).</p>
 </code></pre></div>
 <p>Efficient columnar storage for DataFrames. Requires PyArrow. Accepts pandas
 DataFrames, polars DataFrames (via <code>.to_arrow()</code>), and Arrow Tables.
-Deserializes to pandas DataFrame.</p>
+Deserializes to a PyArrow Table.</p>
 <h2 id="custom-serializer">Custom serializer<a class="headerlink" href="#custom-serializer" title="Permanent link">&para;</a></h2>
 <p>Any object matching the <code>Serializer</code> protocol can be used:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">Serializer</span><span class="p">,</span> <span class="n">dagster_io_manager</span>
