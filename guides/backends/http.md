@@ -122,9 +122,8 @@ The primary value of making HTTP a backend (vs. standalone code):
 - **`ext.observe`** -- instrument HTTP reads with callbacks (timing, logging).
 - **`ext.batch`** -- `batch_exists(store, paths)` to check multiple resources.
 
----
+## See also
 
-**See also:**
-[Capabilities matrix](../capabilities-matrix.md) --
-[API reference](../api/store.md) --
-[Spec](https://github.com/haalfi/remote-store/blob/master/sdd/specs/032-http-backend.md)
+- [Example script](../examples/http-backend.md)
+- [Capabilities matrix](../capabilities-matrix.md)
+- [API reference](../api/store.md)
