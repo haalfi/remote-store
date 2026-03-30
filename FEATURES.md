@@ -96,8 +96,7 @@ backend. Methods are grouped by capability gate. Query at runtime with
 ## Capabilities
 
 Capabilities gate which Store methods are available for a given backend.
-The `Capability` enum has 10 values. Query at runtime with
-`store.supports(Capability.X)`.
+Query at runtime with `store.supports(Capability.X)`.
 
 | Capability | Description | Gated methods |
 |---|---|---|
@@ -117,7 +116,6 @@ The `Capability` enum has 10 values. Query at runtime with
 ## Backends
 
 Backends implement storage-specific behavior behind the Store API.
-Three ship with the base install; the rest require an extra.
 
 | Type string | Description | Class | Extras | Always available | Capabilities |
 |---|---|---|---|---|---|
