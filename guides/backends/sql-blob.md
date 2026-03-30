@@ -135,5 +135,6 @@ Folders are virtual (prefix-based), not explicit nodes:
 
 ## See also
 
+- [Example: SQL Blob Backend](../examples/sql-blob-backend.md)
 - [Capabilities matrix](../capabilities-matrix.md)
 - [API reference](../api/store.md)
