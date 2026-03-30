@@ -1,23 +1,8 @@
 # Features — remote-store v0.20.0
 
-Authoritative snapshot of backends, extensions, capabilities, and install
-extras for the current version. Updated each release.
-
----
-
-## Backends
-
-| Type string | Description | Class | Extras | Always available | Capabilities |
-|---|---|---|---|---|---|
-| `local` | Local filesystem storage | `LocalBackend` | — | Yes | All 10 |
-| `memory` | In-memory store for testing and caching | `MemoryBackend` | — | Yes | All except GLOB |
-| `http` | Read-only HTTP file access (stdlib urllib; optional `requests`/`httpx` adapters) | `ReadOnlyHttpBackend` | — (`requests`, `httpx` optional) | Yes | READ, METADATA |
-| `s3` | Amazon S3 via s3fs | `S3Backend` | `pip install remote-store[s3]` | No | All 10 |
-| `s3-pyarrow` | Amazon S3 via PyArrow C++ filesystem | `S3PyArrowBackend` | `pip install remote-store[s3-pyarrow]` | No | All 10 |
-| `sftp` | SFTP via paramiko | `SFTPBackend` | `pip install remote-store[sftp]` | No | All except GLOB |
-| `azure` | Azure Data Lake Storage via Azure SDK | `AzureBackend` | `pip install remote-store[azure]` | No | All except SEEKABLE_READ |
-| `sql-blob` | SQL blob store via SQLAlchemy | `SQLBlobBackend` | `pip install remote-store[sql]` | No | All 10 |
-| `sql-query` | SQL query store for tabular data via SQLAlchemy + PyArrow | `SQLQueryBackend` | `pip install remote-store[sql-query]` | No | READ, LIST, METADATA, GLOB, SEEKABLE_READ |
+Authoritative snapshot of the Store API, capabilities, backends,
+extensions, and install extras for the current version. Updated each
+release.
 
 ---
 
@@ -107,6 +92,42 @@ Methods grouped by capability gate. Query at runtime with
 
 ---
 
+## Capabilities
+
+The `Capability` enum (10 values) gates every `Store` method. Query at
+runtime with `store.supports(Capability.X)`.
+
+| Capability | Description | Gated methods |
+|---|---|---|
+| `READ` | Stream or bulk-read file content | `read()`, `read_bytes()`, `read_text()` |
+| `WRITE` | Create or overwrite files | `write()`, `write_text()` |
+| `DELETE` | Remove files and folders | `delete()`, `delete_folder()` |
+| `LIST` | Enumerate files and subfolders | `list_files()`, `list_folders()`, `iter_children()` |
+| `MOVE` | Rename/relocate within same backend | `move()` |
+| `COPY` | Duplicate within same backend | `copy()` |
+| `ATOMIC_WRITE` | Write via temp-and-rename (no partial reads) | `write_atomic()`, `open_atomic()` |
+| `METADATA` | Retrieve file/folder metadata | `get_file_info()`, `get_folder_info()` |
+| `GLOB` | Native pattern matching on file paths | `glob()` |
+| `SEEKABLE_READ` | `read()` returns natively seekable streams | — (quality flag, not a method gate) |
+
+---
+
+## Backends
+
+| Type string | Description | Class | Extras | Always available | Capabilities |
+|---|---|---|---|---|---|
+| `local` | Local filesystem storage | `LocalBackend` | — | Yes | All 10 |
+| `memory` | In-memory store for testing and caching | `MemoryBackend` | — | Yes | All except GLOB |
+| `http` | Read-only HTTP file access (stdlib urllib; optional `requests`/`httpx` adapters) | `ReadOnlyHttpBackend` | — (`requests`, `httpx` optional) | Yes | READ, METADATA |
+| `s3` | Amazon S3 via s3fs | `S3Backend` | `pip install remote-store[s3]` | No | All 10 |
+| `s3-pyarrow` | Amazon S3 via PyArrow C++ filesystem | `S3PyArrowBackend` | `pip install remote-store[s3-pyarrow]` | No | All 10 |
+| `sftp` | SFTP via paramiko | `SFTPBackend` | `pip install remote-store[sftp]` | No | All except GLOB |
+| `azure` | Azure Data Lake Storage via Azure SDK | `AzureBackend` | `pip install remote-store[azure]` | No | All except SEEKABLE_READ |
+| `sql-blob` | SQL blob store via SQLAlchemy | `SQLBlobBackend` | `pip install remote-store[sql]` | No | All 10 |
+| `sql-query` | SQL query store for tabular data via SQLAlchemy + PyArrow | `SQLQueryBackend` | `pip install remote-store[sql-query]` | No | READ, LIST, METADATA, GLOB, SEEKABLE_READ |
+
+---
+
 ## Extensions
 
 ### Always available (included in base install)
@@ -132,26 +153,6 @@ Methods grouped by capability gate. Query at runtime with
 | Pydantic | Pydantic settings integration for store configuration | `remote_store.ext.pydantic` | `from_pydantic` | `pip install remote-store[pydantic]` |
 | YAML | YAML configuration file loading | `remote_store.ext.yaml` | `from_yaml` | `pip install remote-store[yaml]` |
 | Dagster | Dagster IO manager and resource integration | `remote_store.ext.dagster` | `RemoteStoreIOManager`, `DagsterStoreResource`, `dagster_io_manager` | `pip install remote-store[dagster]` |
-
----
-
-## Capabilities
-
-The `Capability` enum (10 values) gates every `Store` method. Query at
-runtime with `store.supports(Capability.X)`.
-
-| Capability | Description | Gated methods |
-|---|---|---|
-| `READ` | Stream or bulk-read file content | `read()`, `read_bytes()`, `read_text()` |
-| `WRITE` | Create or overwrite files | `write()`, `write_text()` |
-| `DELETE` | Remove files and folders | `delete()`, `delete_folder()` |
-| `LIST` | Enumerate files and subfolders | `list_files()`, `list_folders()`, `iter_children()` |
-| `MOVE` | Rename/relocate within same backend | `move()` |
-| `COPY` | Duplicate within same backend | `copy()` |
-| `ATOMIC_WRITE` | Write via temp-and-rename (no partial reads) | `write_atomic()`, `open_atomic()` |
-| `METADATA` | Retrieve file/folder metadata | `get_file_info()`, `get_folder_info()` |
-| `GLOB` | Native pattern matching on file paths | `glob()` |
-| `SEEKABLE_READ` | `read()` returns natively seekable streams | — (quality flag, not a method gate) |
 
 ---
 
