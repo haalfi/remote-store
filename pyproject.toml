@@ -343,3 +343,8 @@ replace = '__version__ = "{new_version}"'
 filename = "CITATION.cff"
 search = "version: {current_version}"
 replace = "version: {new_version}"
+
+[[tool.bumpversion.files]]
+filename = "FEATURES.md"
+search = "remote-store v{current_version}"
+replace = "remote-store v{new_version}"

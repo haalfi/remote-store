@@ -22,6 +22,7 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
+from remote_store._info import BackendInfo, ExtensionInfo, InfoResult, info
 from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, PathEntry
 from remote_store._path import RemotePath
 from remote_store._proxy import ProxyStore
@@ -119,6 +120,11 @@ __all__ = [
     "upload",
     "download",
     "transfer",
+    # Introspection
+    "BackendInfo",
+    "ExtensionInfo",
+    "InfoResult",
+    "info",
     # Version
     "__version__",
 ]
