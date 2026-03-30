@@ -21,8 +21,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from remote_store.ext._helpers import _deprecated_alias
-
 try:
     import pydantic  # noqa: F401
     from pydantic import SecretStr
@@ -38,7 +36,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "from_pydantic",
-    "pydantic_to_registry_config",  # deprecated alias
 ]
 
 
@@ -76,6 +73,3 @@ def from_pydantic(model: BaseModel) -> RegistryConfig:
             if isinstance(cfg, dict) and "options" in cfg and isinstance(cfg["options"], dict):
                 cfg["options"] = _unwrap_secret_strs(cfg["options"])
     return RegistryConfig.from_dict(data)
-
-
-pydantic_to_registry_config = _deprecated_alias("pydantic_to_registry_config", from_pydantic)

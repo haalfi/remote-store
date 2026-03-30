@@ -59,8 +59,6 @@ class TestApiDocsCoverage:
         all_symbols = set(remote_store.__all__)
         # __version__ is a string constant, not a documentable class/function
         all_symbols.discard("__version__")
-        # deprecated alias
-        all_symbols.discard("cached_store")
 
         missing = []
         for symbol in sorted(all_symbols):
@@ -95,7 +93,6 @@ class TestApiDocsCoverage:
 
         all_symbols = set(remote_store.__all__)
         all_symbols.discard("__version__")
-        all_symbols.discard("cached_store")
 
         # Filter to core symbols only (not from ext.*)
         core_symbols = set()

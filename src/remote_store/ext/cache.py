@@ -26,7 +26,6 @@ import time
 from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, cast, runtime_checkable
 
 from remote_store._proxy import ProxyStore
-from remote_store.ext._helpers import _deprecated_alias
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -43,7 +42,6 @@ __all__ = [
     "CachedStore",
     "MemoryCache",
     "cache",
-    "cached_store",  # deprecated alias
 ]
 
 # ---------------------------------------------------------------------------
@@ -555,6 +553,3 @@ def cache(
         max_entries=max_entries,
         cache_backend=cache_backend,
     )
-
-
-cached_store = _deprecated_alias("cached_store", cache)

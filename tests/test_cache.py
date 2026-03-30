@@ -197,14 +197,6 @@ class TestFactory:
         result = cs.close()
         assert result is None
 
-    def test_cached_store_warns(self, store: Store) -> None:
-        """cached_store() emits DeprecationWarning."""
-        from remote_store.ext.cache import cached_store
-
-        with pytest.warns(DeprecationWarning, match="use cache"):
-            result = cached_store(store, ttl=60.0)
-        assert result is not None
-
 
 class TestCacheStats:
     @pytest.mark.spec("CACHE-005")

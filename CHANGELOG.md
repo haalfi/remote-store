@@ -186,6 +186,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `ext.seekable.seekable_read()` (removed, never released).
   ADR-0017 supersedes ADR-0016. Spec 036 revised.
 
+### Removed
+
+- **Deprecated function aliases removed** (BK-130): `cached_store()`,
+  `remote_store_io_manager()`, and `pydantic_to_registry_config()` are removed.
+  Use `cache()`, `dagster_io_manager()`, and `from_pydantic()` respectively.
+  The `_deprecated_alias()` helper in `ext/_helpers.py` is also removed.
+  Pre-v1 — no deprecation shim needed.
+
 ### Documentation
 
 - **Fix docs list completeness findings** (BK-129): Add SQLBlob and SQLQuery
