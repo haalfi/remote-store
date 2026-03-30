@@ -116,7 +116,7 @@ class JsonSerializer:
 
 
 class ParquetSerializer:
-    """Parquet serializer via PyArrow (DAG-004). DataFrames only."""
+    """Parquet serializer via PyArrow (DAG-004). DataFrames and Arrow Tables."""
 
     extension: str = ".parquet"
 
@@ -153,14 +153,13 @@ class ParquetSerializer:
         return buf.getvalue()
 
     def deserialize(self, data: bytes) -> Any:
-        """Deserialize Parquet bytes to a pandas DataFrame."""
+        """Deserialize Parquet bytes to a PyArrow Table."""
         import io
 
         import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
         buf = io.BytesIO(data)
-        table = pq.read_table(buf)  # type: ignore[no-untyped-call]
-        return table.to_pandas()
+        return pq.read_table(buf)  # type: ignore[no-untyped-call]
 
 
 # ---------------------------------------------------------------------------

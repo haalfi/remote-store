@@ -6,6 +6,23 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
+## v0.20.0 to next
+
+**`ParquetSerializer.deserialize()` returns Arrow Table (BUG-135):**
+
+`ParquetSerializer.deserialize()` now returns a `pyarrow.Table` instead of a
+`pandas.DataFrame`. This removes the hidden hard dependency on pandas for
+`remote-store[dagster,arrow]` users.
+
+- Old: `result = serializer.deserialize(data)  # pandas DataFrame`
+- New: `result = serializer.deserialize(data)  # pyarrow.Table`
+- If you need pandas: `df = serializer.deserialize(data).to_pandas()`
+- If you need polars: `df = pl.from_arrow(serializer.deserialize(data))`
+
+Custom subclasses that override `deserialize()` (e.g. `PolarsParquetSerializer`
+from the medallion example) continue to work but the override is now optional —
+the base class already returns a framework-neutral Arrow Table.
+
 ## v0.19.0 to next
 
 **Deprecated aliases removed (BK-130):**

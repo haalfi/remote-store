@@ -6,6 +6,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Changed
+
+- **`ParquetSerializer.deserialize()` now returns a PyArrow Table** instead of
+  a pandas DataFrame (BUG-135). Removes the hidden hard dependency on pandas
+  for users installing `remote-store[dagster,arrow]` without pandas. Callers
+  that need pandas call `table.to_pandas()` on the result. See
+  [Migration Guide](guides/migration.md#v0200-to-next).
+
 ### Internal
 
 - Fix 72 `ResourceWarning: unclosed database` in SQL backend tests by adding

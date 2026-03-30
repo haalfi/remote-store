@@ -73,7 +73,9 @@ class TestParquetSerializer:
 
     @pytest.mark.spec("DAG-004")
     def test_roundtrip_pandas(self, store: Store) -> None:
-        """Roundtrip with a pandas DataFrame."""
+        """Roundtrip with a pandas DataFrame returns Arrow Table."""
+        import pyarrow as pa
+
         pandas = pytest.importorskip("pandas")
         mgr = dagster_io_manager(store, serializer="parquet")
 
@@ -87,8 +89,9 @@ class TestParquetSerializer:
             upstream_output=out_ctx,
         )
         result = mgr.load_input(in_ctx)
-        pandas.testing.assert_frame_equal(result, df)
-        assert len(result) == 3
+        assert isinstance(result, pa.Table)
+        pandas.testing.assert_frame_equal(result.to_pandas(), df)
+        assert result.num_rows == 3
 
     @pytest.mark.spec("DAG-004")
     def test_serialize_arrow_table(self) -> None:
@@ -140,8 +143,8 @@ class TestParquetSerializer:
             serializer.serialize("not a dataframe")
 
     @pytest.mark.spec("DAG-004")
-    def test_deserialize_returns_to_pandas(self) -> None:
-        """Deserialize reads parquet and calls to_pandas()."""
+    def test_deserialize_returns_arrow_table(self) -> None:
+        """Deserialize returns a PyArrow Table (not pandas)."""
         import io
 
         import pyarrow as pa
@@ -153,13 +156,9 @@ class TestParquetSerializer:
         parquet_bytes = buf.getvalue()
 
         serializer = ParquetSerializer()
-        sentinel = object()
-        mock_table = mock.MagicMock(spec=pa.Table)
-        mock_table.to_pandas.return_value = sentinel
-        with mock.patch("pyarrow.parquet.read_table", return_value=mock_table):
-            result = serializer.deserialize(parquet_bytes)
-        mock_table.to_pandas.assert_called_once()
-        assert result is sentinel
+        result = serializer.deserialize(parquet_bytes)
+        assert isinstance(result, pa.Table)
+        assert result.equals(table)
 
 
 # ---------------------------------------------------------------------------
