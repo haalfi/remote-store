@@ -121,17 +121,14 @@ Items graduate through the SDD pipeline:
     - Implementation Phase 2: native async backends.
     - Implementation Phase 3: async extensions.
 
-- [ ] **ID-083 — Dagster extension v2: ConfigurableResource + IOManagerFactory**
-  Follow-up to [ID-075](BACKLOG-DONE.md#post-v0170).
-  Remaining features deferred from v1:
-  - `DagsterStoreResource` (`ConfigurableResource`)
-  - `RemoteStoreIOManager` (`ConfigurableIOManagerFactory`) — dispatches to
-    `ParquetDatasetStore` for dataset-type assets (PDS-009)
-  - `teardown_after_execution()`
-  - Depends on: ID-122 (`ext.parquet`) — shipped
+- [ ] **ID-124 — Dagster multi-partition loading**
+  When `load_input` receives multiple partition keys (time-window aggregation),
+  return `dict[str, Any]` mapping partition key to deserialized object.
+  Deferred from ID-083 scope.
 
-  [Research](research/research-dagster-extension.md),
-  [showcase architecture](research/research-medallion-dagster-showcase.md).
+- [ ] **ID-125 — Update medallion showcase to Dagster v2 resource pattern**
+  Replace `dagster_io_manager(store)` calls in `examples/medallion_dagster/`
+  with `RemoteStoreIOManager`. Demonstrates the config-driven pattern.
 
 ### Documentation & Developer Experience
 

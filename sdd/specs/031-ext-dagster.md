@@ -13,8 +13,8 @@ Dagster pipelines without duplicating config into `dagster-aws` /
 **Related:** [001-store-api.md](001-store-api.md) (Store API),
 research (`sdd/research/research-dagster-extension.md`), ID-075.
 
-**Scope:** v1 only — `dagster_io_manager(store)` factory function.
-v2 (`DagsterStoreResource`, `RemoteStoreIOManager`) is deferred.
+**Scope:** v1 — `dagster_io_manager(store)` factory function (DAG-001 – DAG-011).
+v2 adds `DagsterStoreResource` and `RemoteStoreIOManager` (DAG-012 – DAG-019).
 
 ---
 
@@ -160,3 +160,69 @@ def dagster_io_manager(
 
 **Raises:**
 - `ValueError` when `serializer` is an unrecognized string.
+
+---
+
+## v2: Dagster-Config-Driven Store
+
+### DAG-012: DagsterStoreResource Builds Store
+
+**Invariant:** `DagsterStoreResource` is a `ConfigurableResource` with fields:
+- `backend_type: str` — registered backend type identifier
+- `backend_options: dict[str, Any]` — kwargs for backend constructor (default `{}`)
+- `root_path: str` — Store root path (default `""`)
+
+`setup_for_execution` constructs the backend via the factory registry and creates a `Store`. `get_store()` returns the cached Store instance.
+
+**Postcondition:** After `setup_for_execution`, `get_store()` returns a functional Store.
+
+### DAG-013: DagsterStoreResource Teardown
+
+**Invariant:** `teardown_after_execution` calls `store.close()` on the cached Store and resets the internal reference to `None`. If called before `setup_for_execution` (no Store exists), it is a no-op — does not raise.
+
+### DAG-014: Unknown Backend Type
+
+**Invariant:** `setup_for_execution` with an unregistered `backend_type` raises `ValueError` with a message containing the unknown type name and the list of registered types.
+
+### DAG-015: RemoteStoreIOManager Factory
+
+**Invariant:** `RemoteStoreIOManager` is a `ConfigurableIOManagerFactory` with fields:
+- `backend_type: str` — registered backend type identifier
+- `backend_options: dict[str, Any]` — kwargs for backend constructor (default `{}`)
+- `root_path: str` — Store root path (default `""`)
+- `serializer: str` — serializer name (default `"pickle"`)
+
+`setup_for_execution` constructs the Store (same as `DagsterStoreResource`).
+`teardown_after_execution` closes the Store.
+`create_io_manager` returns an `IOManager` instance backed by the Store.
+
+**Raises:** `ValueError` when `serializer` is an unrecognized string (same as DAG-011).
+
+### DAG-016: RemoteStoreIOManager Roundtrip
+
+**Invariant:** An object written via `handle_output` through the `RemoteStoreIOManager`-created IO manager can be read back via `load_input` with the same asset key.
+
+### DAG-017: dagster_dataset_io_manager Factory
+
+**Invariant:**
+
+```python
+def dagster_dataset_io_manager(store: Store) -> IOManager: ...
+```
+
+Returns an IO manager that uses `ParquetDatasetStore` for dataset-level I/O. Accepts DataFrames (pandas, polars, Arrow Table) on `handle_output` and returns Arrow Tables on `load_input`.
+
+**Raises:** `ModuleNotFoundError` when `pyarrow` is not installed, with message containing `"pip install 'remote-store[dagster,arrow]'"`.
+
+### DAG-018: Dataset IO Manager Path
+
+**Invariant:** The dataset key is derived from `context.asset_key.path` (joined with `/`) plus the partition key when partitioned. No file extension — datasets are directories.
+
+| Asset key | Partition | Dataset key |
+|-----------|-----------|-------------|
+| `["data", "orders"]` | *(none)* | `data/orders` |
+| `["data", "orders"]` | `"2026-01"` | `data/orders/2026-01` |
+
+### DAG-019: Dataset Mode via RemoteStoreIOManager
+
+**Invariant:** `RemoteStoreIOManager(backend_type=..., serializer="parquet-dataset")` creates an IO manager that uses `ParquetDatasetStore` instead of the bytes-based Serializer protocol.

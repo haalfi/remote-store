@@ -8,6 +8,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **Dagster extension v2 (`ext.dagster`)** (ID-083): `DagsterStoreResource`
+  (`ConfigurableResource`) for direct Store access in assets, and
+  `RemoteStoreIOManager` (`ConfigurableIOManagerFactory`) for config-driven
+  IO management with automatic Store lifecycle. Dataset mode via
+  `dagster_dataset_io_manager()` or `serializer="parquet-dataset"` writes
+  Parquet datasets through `ParquetDatasetStore`. Spec 031 (DAG-012 -- DAG-019).
+
 - **Parquet Dataset Storage extension (`ext.parquet`)** (ID-122):
   `ParquetDatasetStore` — high-level Parquet dataset read/write with manifest
   metadata, `_SUCCESS` completion markers, and atomic-commit semantics. Supports

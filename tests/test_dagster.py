@@ -6,7 +6,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
-from dagster import AssetKey, build_input_context, build_output_context
+from dagster import AssetKey, build_init_resource_context, build_input_context, build_output_context
 
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
@@ -238,7 +238,7 @@ class TestErrorHandling:
             asset_key=AssetKey(["missing", "asset"]),
             upstream_output=out_ctx,
         )
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="missing/asset"):
             mgr.load_input(in_ctx)
 
     @pytest.mark.spec("DAG-010")
@@ -334,3 +334,240 @@ class TestCustomSerializer:
         """Unknown serializer string raises ValueError."""
         with pytest.raises(ValueError, match="Unknown serializer 'nope'"):
             dagster_io_manager(store, serializer="nope")
+
+
+# ---------------------------------------------------------------------------
+# v2: DagsterStoreResource
+# ---------------------------------------------------------------------------
+
+
+class TestDagsterStoreResource:
+    """DAG-012..014: DagsterStoreResource lifecycle and config."""
+
+    @pytest.mark.spec("DAG-012")
+    def test_get_store_builds_working_store(self) -> None:
+        """Resource builds a functional Store from config."""
+        from remote_store.ext.dagster import DagsterStoreResource
+
+        resource = DagsterStoreResource(backend_type="memory", backend_options={})
+        resource.setup_for_execution(context=build_init_resource_context())
+        store = resource.get_store()
+
+        store.write("test.txt", b"hello", overwrite=True)
+        assert store.read_bytes("test.txt") == b"hello"
+
+        resource.teardown_after_execution(context=build_init_resource_context())
+
+    @pytest.mark.spec("DAG-013")
+    def test_teardown_closes_store(self) -> None:
+        """teardown_after_execution closes the Store."""
+        from remote_store.ext.dagster import DagsterStoreResource
+
+        resource = DagsterStoreResource(backend_type="memory", backend_options={})
+        resource.setup_for_execution(context=build_init_resource_context())
+        store = resource.get_store()
+        assert store is not None
+
+        resource.teardown_after_execution(context=build_init_resource_context())
+        # After teardown, get_store should raise because the store is gone
+        with pytest.raises(RuntimeError, match="setup_for_execution"):
+            resource.get_store()
+
+    @pytest.mark.spec("DAG-013")
+    def test_teardown_before_setup_is_safe(self) -> None:
+        """teardown_after_execution before setup_for_execution does not raise."""
+        from remote_store.ext.dagster import DagsterStoreResource
+
+        resource = DagsterStoreResource(backend_type="memory", backend_options={})
+        # Must not raise; get_store should still report uninitialized after teardown
+        resource.teardown_after_execution(context=build_init_resource_context())
+        with pytest.raises(RuntimeError, match="setup_for_execution"):
+            resource.get_store()
+
+    @pytest.mark.spec("DAG-014")
+    def test_unknown_backend_type_raises(self) -> None:
+        """Unknown backend_type raises ValueError that includes the type name."""
+        from remote_store.ext.dagster import DagsterStoreResource
+
+        resource = DagsterStoreResource(backend_type="nonexistent", backend_options={})
+        with pytest.raises(ValueError, match=r"nonexistent.*Registered types"):
+            resource.setup_for_execution(context=build_init_resource_context())
+
+
+# ---------------------------------------------------------------------------
+# v2: RemoteStoreIOManager
+# ---------------------------------------------------------------------------
+
+
+class TestRemoteStoreIOManager:
+    """DAG-015..016: RemoteStoreIOManager factory."""
+
+    @pytest.mark.spec("DAG-015")
+    def test_creates_working_io_manager(self) -> None:
+        """Factory creates a working IO manager that round-trips objects."""
+        from remote_store.ext.dagster import RemoteStoreIOManager
+
+        factory = RemoteStoreIOManager(backend_type="memory", serializer="pickle")
+        factory.setup_for_execution(context=build_init_resource_context())
+        io_mgr = factory.create_io_manager(context=build_init_resource_context())
+
+        obj = {"key": "value"}
+        out_ctx = build_output_context(asset_key=AssetKey(["v2", "test"]))
+        io_mgr.handle_output(out_ctx, obj)
+
+        in_ctx = build_input_context(
+            asset_key=AssetKey(["v2", "test"]),
+            upstream_output=out_ctx,
+        )
+        assert io_mgr.load_input(in_ctx) == obj
+
+        factory.teardown_after_execution(context=build_init_resource_context())
+
+    @pytest.mark.spec("DAG-016")
+    def test_json_serializer_through_factory(self) -> None:
+        """JSON serializer round-trips a list through the factory."""
+        from remote_store.ext.dagster import RemoteStoreIOManager
+
+        factory = RemoteStoreIOManager(backend_type="memory", serializer="json")
+        factory.setup_for_execution(context=build_init_resource_context())
+        io_mgr = factory.create_io_manager(context=build_init_resource_context())
+
+        obj = [1, 2, 3]
+        out_ctx = build_output_context(asset_key=AssetKey(["v2", "json"]))
+        io_mgr.handle_output(out_ctx, obj)
+
+        in_ctx = build_input_context(
+            asset_key=AssetKey(["v2", "json"]),
+            upstream_output=out_ctx,
+        )
+        assert io_mgr.load_input(in_ctx) == obj
+
+        factory.teardown_after_execution(context=build_init_resource_context())
+
+    @pytest.mark.spec("DAG-015")
+    def test_invalid_serializer_raises(self) -> None:
+        """Invalid serializer string on factory raises ValueError."""
+        from remote_store.ext.dagster import RemoteStoreIOManager
+
+        factory = RemoteStoreIOManager(backend_type="memory", serializer="nope")
+        factory.setup_for_execution(context=build_init_resource_context())
+        with pytest.raises(ValueError, match="Unknown serializer 'nope'"):
+            factory.create_io_manager(context=build_init_resource_context())
+
+        factory.teardown_after_execution(context=build_init_resource_context())
+
+    @pytest.mark.spec("DAG-015")
+    def test_create_io_manager_before_setup_raises(self) -> None:
+        """create_io_manager before setup_for_execution raises RuntimeError."""
+        from remote_store.ext.dagster import RemoteStoreIOManager
+
+        factory = RemoteStoreIOManager(backend_type="memory")
+        with pytest.raises(RuntimeError, match="setup_for_execution"):
+            factory.create_io_manager(context=build_init_resource_context())
+
+
+# ---------------------------------------------------------------------------
+# v2: Dataset IO Manager
+# ---------------------------------------------------------------------------
+
+
+class TestDatasetIOManager:
+    """DAG-017..019: Dataset IO manager via ParquetDatasetStore."""
+
+    @pytest.mark.spec("DAG-017")
+    def test_dataset_roundtrip(self) -> None:
+        """Dataset mode writes and reads an Arrow Table via ParquetDatasetStore."""
+        pa = pytest.importorskip("pyarrow")
+
+        from remote_store.ext.dagster import dagster_dataset_io_manager
+
+        store = Store(backend=MemoryBackend())
+        mgr = dagster_dataset_io_manager(store)
+
+        table = pa.table({"a": [1, 2, 3], "b": ["x", "y", "z"]})
+
+        out_ctx = build_output_context(asset_key=AssetKey(["dataset", "test"]))
+        mgr.handle_output(out_ctx, table)
+
+        in_ctx = build_input_context(
+            asset_key=AssetKey(["dataset", "test"]),
+            upstream_output=out_ctx,
+        )
+        result = mgr.load_input(in_ctx)
+        assert result.equals(table)
+
+    @pytest.mark.spec("DAG-018")
+    def test_dataset_partitioned(self) -> None:
+        """Dataset mode incorporates the partition key into the dataset path."""
+        pa = pytest.importorskip("pyarrow")
+
+        from remote_store.ext.dagster import dagster_dataset_io_manager
+
+        store = Store(backend=MemoryBackend())
+        mgr = dagster_dataset_io_manager(store)
+
+        table = pa.table({"val": [10, 20]})
+
+        out_ctx = build_output_context(
+            asset_key=AssetKey(["data", "monthly"]),
+            partition_key="2026-01",
+        )
+        mgr.handle_output(out_ctx, table)
+
+        in_ctx = build_input_context(
+            asset_key=AssetKey(["data", "monthly"]),
+            partition_key="2026-01",
+            upstream_output=out_ctx,
+        )
+        result = mgr.load_input(in_ctx)
+        assert result.equals(table)
+
+    @pytest.mark.spec("DAG-019")
+    def test_dataset_via_remote_store_io_manager(self) -> None:
+        """RemoteStoreIOManager with serializer='parquet-dataset' uses ParquetDatasetStore."""
+        pa = pytest.importorskip("pyarrow")
+
+        from remote_store.ext.dagster import RemoteStoreIOManager
+
+        factory = RemoteStoreIOManager(backend_type="memory", serializer="parquet-dataset")
+        factory.setup_for_execution(context=build_init_resource_context())
+        io_mgr = factory.create_io_manager(context=build_init_resource_context())
+
+        table = pa.table({"x": [1, 2], "y": ["a", "b"]})
+
+        out_ctx = build_output_context(asset_key=AssetKey(["v2", "dataset"]))
+        io_mgr.handle_output(out_ctx, table)
+
+        in_ctx = build_input_context(
+            asset_key=AssetKey(["v2", "dataset"]),
+            upstream_output=out_ctx,
+        )
+        result = io_mgr.load_input(in_ctx)
+        assert result.equals(table)
+
+        factory.teardown_after_execution(context=build_init_resource_context())
+
+    @pytest.mark.spec("DAG-017")
+    def test_dataset_unsupported_type_raises(self) -> None:
+        """Dataset mode with an unsupported type raises TypeError."""
+        pytest.importorskip("pyarrow")
+
+        from remote_store.ext.dagster import dagster_dataset_io_manager
+
+        store = Store(backend=MemoryBackend())
+        mgr = dagster_dataset_io_manager(store)
+        out_ctx = build_output_context(asset_key=AssetKey(["bad", "type"]))
+        with pytest.raises(TypeError, match="Dataset mode expects a DataFrame"):
+            mgr.handle_output(out_ctx, "not a dataframe")
+
+    @pytest.mark.spec("DAG-019")
+    def test_dataset_missing_pyarrow(self) -> None:
+        """Dataset mode without the parquet extension gives a helpful error."""
+        from remote_store.ext.dagster import dagster_dataset_io_manager
+
+        store = Store(backend=MemoryBackend())
+        with (
+            mock.patch.dict("sys.modules", {"remote_store.ext.parquet": None}),
+            pytest.raises(ModuleNotFoundError, match="pip install 'remote-store\\[dagster,arrow\\]'"),
+        ):
+            dagster_dataset_io_manager(store)

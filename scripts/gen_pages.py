@@ -273,6 +273,9 @@ _EXAMPLE_SEE_ALSO: dict[str, list[tuple[str, str, str]]] = {
     "dagster_io_manager.py": [
         ("Dagster", "../dagster.md", "Dagster integration guide"),
     ],
+    "dagster_v2_resource.py": [
+        ("Dagster", "../dagster.md", "Dagster integration guide"),
+    ],
     "health_check.py": [
         ("Health Check", "../health-check.md", "health check guide"),
     ],
@@ -322,6 +325,7 @@ _EXAMPLE_DESCRIPTIONS: dict[str, str] = {
     "pyarrow_adapter.py": "Use any Store as a `pyarrow.fs.FileSystem` for Parquet, CSV, and dataset I/O.",
     "parquet_dataset.py": "Managed Parquet datasets with manifests, completion markers, and multi-part writes.",
     "dagster_io_manager.py": "Use any Store as a Dagster IOManager with pluggable serialization.",
+    "dagster_v2_resource.py": "Config-driven Store construction with RemoteStoreIOManager.",
     "batch_operations.py": "Bulk delete, copy, and existence checks with error aggregation.",
     "transfer_operations.py": "Upload, download, and cross-store transfer with progress tracking.",
     "retry_policy.py": "Configure retry attempts, backoff, and jitter per-backend.",
@@ -422,6 +426,7 @@ _EXTENSION_EXAMPLES = [
     "pyarrow_adapter",
     "parquet_dataset",
     "dagster_io_manager",
+    "dagster_v2_resource",
     "retry_policy",
     "health_check",
 ]
