@@ -34,11 +34,6 @@ if TYPE_CHECKING:
 
 __all__ = ["glob_files"]
 
-# Re-export under private names for backward compatibility with tests
-_extract_prefix = extract_prefix
-_needs_recursive = needs_recursive
-_pattern_to_regex = pattern_to_regex
-
 
 def glob_files(store: Store, pattern: str) -> Iterator[FileInfo]:
     """Match files against a glob pattern.

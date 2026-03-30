@@ -334,13 +334,3 @@ class TestCustomSerializer:
         """Unknown serializer string raises ValueError."""
         with pytest.raises(ValueError, match="Unknown serializer 'nope'"):
             dagster_io_manager(store, serializer="nope")
-
-
-class TestDeprecatedAlias:
-    def test_remote_store_io_manager_warns(self, store: Store) -> None:
-        """remote_store_io_manager() emits DeprecationWarning."""
-        from remote_store.ext.dagster import remote_store_io_manager
-
-        with pytest.warns(DeprecationWarning, match="use dagster_io_manager"):
-            result = remote_store_io_manager(store)
-        assert result is not None

@@ -158,18 +158,9 @@ class TestPydanticBaseSettingsAndContract:
 
         assert hasattr(pydantic, "__all__")
         assert "from_pydantic" in pydantic.__all__
-        assert "pydantic_to_registry_config" in pydantic.__all__
 
     @pytest.mark.spec("CFG-017")
     def test_no_top_level_reexport(self) -> None:
         import remote_store
 
         assert not hasattr(remote_store, "from_pydantic")
-
-    def test_deprecated_alias_warns(self) -> None:
-        from remote_store.ext.pydantic import pydantic_to_registry_config
-
-        model = SimpleConfig(backends={"mem": BackendEntry(type="memory")}, stores={})
-        with pytest.warns(DeprecationWarning, match="use from_pydantic"):
-            result = pydantic_to_registry_config(model)
-        assert result is not None

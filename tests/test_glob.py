@@ -15,10 +15,11 @@ import pytest
 
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import CapabilityNotSupported
+from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 from remote_store._store import Store
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
-from remote_store.ext.glob import _extract_prefix, _needs_recursive, _pattern_to_regex, glob_files
+from remote_store.ext.glob import glob_files
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -299,7 +300,7 @@ class TestGlobFiles:
     ],
 )
 def test_extract_prefix(pattern: str, expected: str) -> None:
-    assert _extract_prefix(pattern) == expected
+    assert extract_prefix(pattern) == expected
 
 
 @pytest.mark.spec("GLOB-013")
@@ -314,7 +315,7 @@ def test_extract_prefix(pattern: str, expected: str) -> None:
     ],
 )
 def test_needs_recursive(pattern: str, expected: bool) -> None:
-    assert _needs_recursive(pattern) is expected
+    assert needs_recursive(pattern) is expected
 
 
 @pytest.mark.spec("GLOB-014")
@@ -337,7 +338,7 @@ def test_needs_recursive(pattern: str, expected: bool) -> None:
     ],
 )
 def test_pattern_to_regex(pattern: str, should_match: list[str], should_not_match: list[str]) -> None:
-    r = _pattern_to_regex(pattern)
+    r = pattern_to_regex(pattern)
     for path in should_match:
         assert r.match(path), f"{pattern!r} should match {path!r}"
     for path in should_not_match:
@@ -346,7 +347,7 @@ def test_pattern_to_regex(pattern: str, should_match: list[str], should_not_matc
 
 @pytest.mark.spec("GLOB-014")
 def test_unclosed_bracket_treated_as_literal() -> None:
-    r = _pattern_to_regex("[abc.txt")
+    r = pattern_to_regex("[abc.txt")
     assert r.match("[abc.txt")
     assert not r.match("a.txt")
 
@@ -354,11 +355,11 @@ def test_unclosed_bracket_treated_as_literal() -> None:
 @pytest.mark.spec("GLOB-014")
 def test_double_star_non_segment_raises() -> None:
     with pytest.raises(ValueError, match="must be a complete path segment"):
-        _pattern_to_regex("logs/**error.log")
+        pattern_to_regex("logs/**error.log")
 
 
 @pytest.mark.spec("GLOB-014")
 def test_double_star_valid_segments() -> None:
     for pattern in ("**/error.log", "logs/**", "a/**/b.txt", "**"):
-        result = _pattern_to_regex(pattern)
+        result = pattern_to_regex(pattern)
         assert result is not None

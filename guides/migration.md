@@ -6,12 +6,25 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
-## v0.18.0 to next
+## v0.19.0 to next
+
+**Deprecated aliases removed (BK-130):**
+
+Three factory functions renamed in v0.18.0 have had their old names removed:
+
+- `pydantic_to_registry_config()` → use `from_pydantic()`
+- `remote_store_io_manager()` → use `dagster_io_manager()`
+- `cached_store()` → use `cache()`
+
+Pre-v1: removed without a deprecation cycle. Find-and-replace is sufficient.
+
+## v0.18.0 to v0.19.0
 
 **Factory function renames (BK-010):**
 
-Three ext factory functions have been renamed for naming consistency.
-Old names still work but emit `DeprecationWarning`:
+Three ext factory functions were renamed for naming consistency.
+Old names emitted `DeprecationWarning` in v0.18.x and are removed after
+v0.19.0 (see [above](#v0190-to-next)).
 
 - `pydantic_to_registry_config()` → `from_pydantic()`
 - `remote_store_io_manager()` → `dagster_io_manager()`
@@ -31,7 +44,7 @@ Optional-dependency extensions are no longer re-exported from
 - New: `from remote_store.ext.otel import otel_hooks, otel_observe`
 
 - Old: `from remote_store import pydantic_to_registry_config`
-- New: `from remote_store.ext.pydantic import pydantic_to_registry_config`
+- New: `from remote_store.ext.pydantic import from_pydantic`
 
 - Old: `from remote_store import from_yaml`
 - New: `from remote_store.ext.yaml import from_yaml`

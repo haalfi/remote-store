@@ -29,7 +29,7 @@ from remote_store._registry import Registry, register_backend
 from remote_store._resolution import ResolutionPlan
 from remote_store._store import Store
 from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_exists
-from remote_store.ext.cache import CacheBackend, CachedStore, CacheStats, MemoryCache, cache, cached_store
+from remote_store.ext.cache import CacheBackend, CachedStore, CacheStats, MemoryCache, cache
 from remote_store.ext.glob import glob_files
 from remote_store.ext.integrity import checksum, content_digest, verify, verify_hex
 from remote_store.ext.observe import (
@@ -92,7 +92,6 @@ __all__ = [
     "CacheStats",
     "MemoryCache",
     "cache",
-    "cached_store",  # deprecated alias
     # Glob operations
     "glob_files",
     # Partition helpers

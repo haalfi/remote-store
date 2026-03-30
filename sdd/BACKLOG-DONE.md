@@ -5,6 +5,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Cleanup
+
+- [x] **BK-130 — Remove deprecated function aliases (pre-v1 cleanup)**
+  Removed `cached_store()`, `remote_store_io_manager()`,
+  `pydantic_to_registry_config()`, `_deprecated_alias()` helper, and
+  `ext.glob` private re-exports. Updated migration guide, tests, and
+  `__init__.py`. Pre-v1: no deprecation shim needed.
+
 ## Documentation
 
 - [x] **BK-129 — Address docs list completeness findings from audit-006**

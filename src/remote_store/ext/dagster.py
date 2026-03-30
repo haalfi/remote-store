@@ -22,8 +22,6 @@ import logging
 import pickle
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
-from remote_store.ext._helpers import _deprecated_alias
-
 try:
     from dagster import IOManager  # type: ignore[import-untyped]
 except ModuleNotFoundError as _exc:  # pragma: no cover
@@ -44,7 +42,6 @@ __all__ = [
     "PickleSerializer",
     "Serializer",
     "dagster_io_manager",
-    "remote_store_io_manager",  # deprecated alias
 ]
 
 # ---------------------------------------------------------------------------
@@ -245,6 +242,3 @@ def dagster_io_manager(
     """
     resolved = _resolve_serializer(serializer)
     return _RemoteStoreIOManagerImpl(store, resolved)
-
-
-remote_store_io_manager = _deprecated_alias("remote_store_io_manager", dagster_io_manager)
