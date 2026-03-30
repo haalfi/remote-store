@@ -109,14 +109,6 @@ class TestChildCloseSemantics:
             pass
         assert parent.read_bytes("file.txt") == b"hello"
 
-    @pytest.mark.spec("CHILD-006")
-    def test_child_close_leaves_parent_functional(self, backend: MemoryBackend) -> None:
-        parent = Store(backend=backend, root_path="data")
-        parent.write("file.txt", b"hello")
-        child = parent.child("sub")
-        child.close()
-        assert parent.read_bytes("file.txt") == b"hello"
-
 
 class TestChildEqualityAndRepr:
     """CHILD-008 / CHILD-011: Equality, hashing, and repr."""
