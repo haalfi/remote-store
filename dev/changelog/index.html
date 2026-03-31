@@ -9302,6 +9302,10 @@
   backends and extensions in the current environment (BK-136).</li>
 <li><code>CLAUDE.md</code> now references <code>FEATURES.md</code> for cold-start agent sessions (BK-136).</li>
 <li>Release checklist in <code>CONTRIBUTING.md</code> now includes <code>FEATURES.md</code> update (BK-136).</li>
+<li><strong>Dagster multi-partition loading</strong> — <code>load_input</code> now returns
+  <code>dict[str, Any]</code> when the input context carries multiple partition keys
+  (time-window aggregation). Applies to both the bytes-serializer IO manager
+  and the dataset IO manager (ID-124, spec DAG-020).</li>
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>

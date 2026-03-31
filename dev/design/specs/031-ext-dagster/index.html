@@ -5195,6 +5195,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#multi-partition-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Partition Loading
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Multi-Partition Loading">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dag-020-load_input-with-multiple-partition-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-020: load_input with Multiple Partition Keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -7626,6 +7654,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#multi-partition-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Partition Loading
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Multi-Partition Loading">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dag-020-load_input-with-multiple-partition-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-020: load_input with Multiple Partition Keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -7838,6 +7894,34 @@ raises <code>ModuleNotFoundError</code> with a message containing
 </table>
 <h3 id="dag-019-dataset-mode-via-remotestoreiomanager">DAG-019: Dataset Mode via RemoteStoreIOManager<a class="headerlink" href="#dag-019-dataset-mode-via-remotestoreiomanager" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>RemoteStoreIOManager(backend_type=..., serializer="parquet-dataset")</code> creates an IO manager that uses <code>ParquetDatasetStore</code> instead of the bytes-based Serializer protocol.</p>
+<hr />
+<h2 id="multi-partition-loading">Multi-Partition Loading<a class="headerlink" href="#multi-partition-loading" title="Permanent link">&para;</a></h2>
+<h3 id="dag-020-load_input-with-multiple-partition-keys">DAG-020: load_input with Multiple Partition Keys<a class="headerlink" href="#dag-020-load_input-with-multiple-partition-keys" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> When <code>load_input</code> receives an <code>InputContext</code> with multiple
+partition keys (e.g. a downstream asset consuming a time-window aggregation
+of an upstream partitioned asset), both <code>_RemoteStoreIOManagerImpl</code> and
+<code>_DatasetIOManagerImpl</code> return <code>dict[str, Any]</code> mapping each partition key
+to its deserialized object.</p>
+<p><strong>Behaviour:</strong></p>
+<ol>
+<li>If <code>context.has_asset_partitions</code> is true <strong>and</strong>
+   <code>len(context.asset_partition_keys) &gt; 1</code>:</li>
+<li>For each key in <code>context.asset_partition_keys</code>, derive the storage
+     path (or dataset key) using the asset key plus that partition key.</li>
+<li>Read and deserialize each partition independently.</li>
+<li>Return <code>{partition_key: deserialized_object, ...}</code>.</li>
+<li>Otherwise (single or no partition): existing behaviour — return a single
+   deserialized object.</li>
+</ol>
+<p><strong>Applies to:</strong> both the bytes-serializer IO manager (<code>_RemoteStoreIOManagerImpl</code>)
+and the dataset IO manager (<code>_DatasetIOManagerImpl</code>).</p>
+<p><strong>Raises:</strong> The first missing partition raises immediately (no partial results).
+The bytes-serializer IO manager raises <code>NotFound</code>; the dataset IO manager
+raises <code>DatasetIncomplete</code> (from <code>ext.parquet</code>) when the <code>_SUCCESS</code> marker
+is absent.</p>
+<p><strong>Note:</strong> <code>handle_output</code> remains single-partition per Dagster convention —
+Dagster calls <code>handle_output</code> once per partition key. Multi-partition
+aggregation only applies on the <code>load_input</code> side.</p>
 
 
 
