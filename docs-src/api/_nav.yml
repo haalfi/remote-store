@@ -10,4 +10,5 @@
 - Capabilities: capabilities.md
 - Errors: errors.md
 - Backends: backends/
+- Async: aio.md
 - Extensions: extensions/

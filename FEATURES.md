@@ -161,6 +161,22 @@ Extensions add optional capabilities alongside the core.
 
 ---
 
+## Async API
+
+The `remote_store.aio` module provides native `async`/`await` support.
+Phase 1 covers the core primitives; native async backends (S3, Azure) are
+planned for Phase 2.
+
+| Class | Description |
+|---|---|
+| `AsyncStore` | Async counterpart to `Store` with coroutine methods for all operations |
+| `AsyncBackend` | Abstract base class for native async backends |
+| `SyncBackendAdapter` | Wraps any synchronous backend for async use via thread-pool executor |
+| `AsyncMemoryBackend` | In-memory async backend for testing |
+| `AsyncWritableContent` | Type alias: `bytes | AsyncIterator[bytes]` |
+
+---
+
 ## Install extras
 
 ```

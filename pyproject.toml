@@ -125,6 +125,7 @@ dev = [
   "requests>=2.25.0",
   "httpx>=0.24.0",
   "sqlalchemy>=2.0",
+  "pytest-asyncio>=0.23",
 ]
 
 [tool.hatch.envs.default]
@@ -170,6 +171,7 @@ dependencies = [
   "matplotlib>=3.8",
   "sqlalchemy>=2.0",
   "pytest-gremlins>=1.5; python_version>='3.11'",
+  "pytest-asyncio>=0.23",
 ]
 
 [tool.hatch.envs.default.scripts]
@@ -286,6 +288,7 @@ addopts = "--ignore=tests/e2e"
 filterwarnings = [
   "ignore:unclosed database:ResourceWarning:sqlalchemy",
 ]
+asyncio_mode = "auto"
 markers = [
   "spec(id): links test to a spec section ID",
   "integration: requires external services",
