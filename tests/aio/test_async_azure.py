@@ -41,6 +41,7 @@ from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
 from remote_store._errors import (  # noqa: E402
     AlreadyExists,
     BackendUnavailable,
+    CapabilityNotSupported,
     DirectoryNotEmpty,
     NotFound,
     PermissionDenied,
@@ -991,6 +992,97 @@ class TestAsyncAzurePathAndResolve:
         backend = _make_backend()
         plan = backend.resolve("file.txt")
         assert "account_url" in plan.details
+
+
+# =============================================================================
+# Check Health
+# =============================================================================
+
+
+class TestAsyncAzureCheckHealth:
+    """check_health exercises _errors() and container properties."""
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_check_health_non_hns(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.get_container_properties = AsyncMock(return_value={"name": "test"})
+        await backend.check_health()
+        assert cc.get_container_properties.call_count == 1
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_check_health_error_mapped(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.get_container_properties = AsyncMock(
+            side_effect=ClientAuthenticationError("bad creds"),
+        )
+        with pytest.raises(PermissionDenied, match="Authentication failed"):
+            await backend.check_health()
+
+
+# =============================================================================
+# Glob
+# =============================================================================
+
+
+class TestAsyncAzureGlob:
+    """ASYNC-028: glob delegates to list_files + regex matching."""
+
+    @pytest.mark.spec("ASYNC-028")
+    async def test_glob_matches_pattern(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        blob1 = MagicMock(spec=BlobProperties)
+        blob1.name = "data/report.csv"
+        blob1.size = 100
+        blob1.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        blob1.etag = None
+        blob1.content_settings = MagicMock(spec=ContentSettings)
+        blob1.content_settings.content_md5 = None
+
+        blob2 = MagicMock(spec=BlobProperties)
+        blob2.name = "data/image.png"
+        blob2.size = 200
+        blob2.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        blob2.etag = None
+        blob2.content_settings = MagicMock(spec=ContentSettings)
+        blob2.content_settings.content_md5 = None
+
+        cc.walk_blobs.return_value = _async_iter([blob1, blob2])
+        results = [info async for info in backend.glob("data/*.csv")]
+        assert len(results) == 1
+        assert results[0].name == "report.csv"
+
+    @pytest.mark.spec("ASYNC-028")
+    async def test_glob_no_matches(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.walk_blobs.return_value = _async_iter([])
+        results = [info async for info in backend.glob("missing/*.txt")]
+        assert results == []
+
+
+# =============================================================================
+# Unwrap
+# =============================================================================
+
+
+class TestAsyncAzureUnwrap:
+    """ASYNC-025: unwrap exposes native async FileSystemClient."""
+
+    @pytest.mark.spec("ASYNC-025")
+    def test_unwrap_unsupported_type(self) -> None:
+        backend = _make_backend()
+        with pytest.raises(CapabilityNotSupported, match="does not expose"):
+            backend.unwrap(str)
+
+    @pytest.mark.spec("ASYNC-025")
+    def test_unwrap_filesystem_client(self) -> None:
+        from azure.storage.filedatalake.aio import FileSystemClient as AsyncFSClient
+
+        backend = _make_backend()
+        mock_fs = MagicMock(spec=FileSystemClient)
+        backend._fs_instance = mock_fs
+        backend._datalake_service_instance = AsyncMock(spec=DataLakeServiceClient)
+        result = backend.unwrap(AsyncFSClient)
+        assert result is mock_fs
 
 
 # =============================================================================
