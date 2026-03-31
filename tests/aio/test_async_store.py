@@ -630,6 +630,47 @@ class TestAsyncStoreCapabilityGating:
                 pass
 
 
+class TestAsyncStoreEagerValidation:
+    """ASYNC-045: generator-returning methods validate eagerly on call, not on iteration."""
+
+    @pytest.mark.spec("ASYNC-045")
+    @pytest.mark.parametrize(
+        ("method", "args"),
+        [
+            pytest.param("read", ("",), id="read-empty"),
+            pytest.param("list_files", ("",), id="list_files"),
+            pytest.param("list_folders", ("",), id="list_folders"),
+            pytest.param("iter_children", ("",), id="iter_children"),
+            pytest.param("glob", ("*.txt",), id="glob"),
+        ],
+    )
+    def test_validation_without_iteration(
+        self,
+        method: str,
+        args: tuple[str, ...],
+    ) -> None:
+        """Calling the method (without iterating) raises immediately."""
+        from tests.conftest import RestrictedBackend
+
+        backend = MemoryBackend()
+        if method == "glob":
+            # glob needs GLOB capability removed to trigger eager error
+            restricted = RestrictedBackend(backend, exclude={Capability.GLOB})
+            store = AsyncStore(restricted, root_path="data")  # type: ignore[arg-type]
+            with pytest.raises(CapabilityNotSupported, match="is not supported"):
+                store.glob("*.txt")  # no iteration, error raised here
+        elif method == "read":
+            store = AsyncStore(AsyncMemoryBackend(), root_path="data")
+            with pytest.raises(InvalidPath, match="must not be empty"):
+                store.read("")  # no iteration, error raised here
+        else:
+            # list_files, list_folders, iter_children need LIST removed
+            restricted = RestrictedBackend(backend, exclude={Capability.LIST})
+            store = AsyncStore(restricted, root_path="data")  # type: ignore[arg-type]
+            with pytest.raises(CapabilityNotSupported, match="is not supported"):
+                getattr(store, method)(*args)  # no iteration, error raised here
+
+
 class TestAsyncStoreWriteAtomicCapabilityGate:
     """ASYNC-011: write_atomic raises CapabilityNotSupported when backend lacks ATOMIC_WRITE."""
 
