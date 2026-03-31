@@ -28,7 +28,6 @@ from remote_store.backends._azure_common import (
     build_azure_retry,
     classify_azure_error,
     props_to_fileinfo,
-    resolve_credential,
     validate_azure_params,
 )
 
@@ -97,6 +96,7 @@ class AsyncAzureBackend(AsyncBackend):
         self._datalake_service_instance: Any = None
         self._fs_instance: Any = None
         self._hns_enabled: bool | None = None
+        self._resolved_credential: Any = None
 
     # region: properties
 
@@ -131,13 +131,7 @@ class AsyncAzureBackend(AsyncBackend):
                 if url is None and self._account_name is not None:
                     url = f"https://{self._account_name}.blob.core.windows.net"
                 assert url is not None  # guaranteed by __init__ validation
-                cred = resolve_credential(
-                    self._credential,
-                    self._account_key,
-                    self._sas_token,
-                    is_async=True,
-                    backend_name=self.name,
-                )
+                cred = self._get_credential()
                 self._blob_service_instance = BlobServiceClient(account_url=url, credential=cred, **opts)
         return self._blob_service_instance
 
@@ -167,13 +161,7 @@ class AsyncAzureBackend(AsyncBackend):
                 if url is None and self._account_name is not None:
                     url = f"https://{self._account_name}.dfs.core.windows.net"
                 assert url is not None
-                cred = resolve_credential(
-                    self._credential,
-                    self._account_key,
-                    self._sas_token,
-                    is_async=True,
-                    backend_name=self.name,
-                )
+                cred = self._get_credential()
                 self._datalake_service_instance = DataLakeServiceClient(account_url=url, credential=cred, **opts)
         return self._datalake_service_instance
 
@@ -793,7 +781,8 @@ class AsyncAzureBackend(AsyncBackend):
                 new_name = f"{self._container}/{_azure_path_fn(dst)}"
                 await src_fc.rename_file(new_name)
             else:
-                # Server-side copy + delete
+                # Server-side copy + delete.  Same-account copies complete
+                # inline; cross-account may be async (matches sync backend).
                 await dst_bc.start_copy_from_url(src_bc.url)
                 await src_bc.delete_blob()
 
@@ -839,6 +828,13 @@ class AsyncAzureBackend(AsyncBackend):
         self._fs_instance = None
         self._datalake_service_instance = None
         self._hns_enabled = None
+        # Close auto-created async credential (holds aiohttp sessions).
+        if self._resolved_credential is not None:
+            close = getattr(self._resolved_credential, "close", None)
+            if close is not None:
+                with contextlib.suppress(Exception):
+                    await close()
+            self._resolved_credential = None
 
     def unwrap(self, type_hint: type[T]) -> T:
         """Return the native async FileSystemClient if it matches the requested type.
@@ -880,6 +876,20 @@ class AsyncAzureBackend(AsyncBackend):
     # endregion
 
     # region: private helpers
+
+    def _get_credential(self) -> Any:
+        """Return cached async credential, creating it on first call."""
+        if self._resolved_credential is None:
+            from remote_store.backends._azure_common import resolve_credential
+
+            self._resolved_credential = resolve_credential(
+                self._credential,
+                self._account_key,
+                self._sas_token,
+                is_async=True,
+                backend_name=self.name,
+            )
+        return self._resolved_credential
 
     def _blob_client(self, path: str) -> Any:
         """Get an async BlobClient for the given path."""

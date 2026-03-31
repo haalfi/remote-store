@@ -78,7 +78,9 @@ Items graduate through the SDD pipeline:
   Remainder of ID-013. Phase 1 (core primitives) and Phase 2 (native async
   backends) shipped — see [BACKLOG-DONE.md](BACKLOG-DONE.md).
   - Remaining:
-    - Spec 029 amendments (8 items from round 2 §2.4).
+    - Spec 029 amendments (8 items from round 2 §2.4) + Phase 2 spec
+      for `AsyncAzureBackend` (Azure-specific invariants: HNS detection,
+      atomic write via DFS rename, `start_copy_from_url` semantics).
     - Implementation Phase 3: async extensions. Note: Dagster 1.12.21 has no
       `AsyncIOManager`; `UPathIOManager.load_partitions_async` is internal only.
       Blocked until Dagster exposes a public async IO manager interface.
