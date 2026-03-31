@@ -2,8 +2,7 @@
 
 The `remote_store.aio` module provides native `async`/`await` support
 for store operations. See [Store](store.md) for the synchronous
-counterpart. Phase 1 covers the core primitives; native async backends
-(S3, Azure) are planned for Phase 2.
+counterpart.
 
 ---
 
@@ -32,6 +31,14 @@ counterpart. Phase 1 covers the core primitives; native async backends
 ## AsyncMemoryBackend
 
 ::: remote_store.aio.AsyncMemoryBackend
+    options:
+      members: false
+
+---
+
+## AsyncAzureBackend
+
+::: remote_store.aio.AsyncAzureBackend
     options:
       members: false
 

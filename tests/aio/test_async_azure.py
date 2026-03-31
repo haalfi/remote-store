@@ -334,7 +334,7 @@ class TestAsyncAzureReadWrite:
     @pytest.mark.spec("ASYNC-007")
     async def test_read_bytes(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
-        downloader = AsyncMock()
+        downloader = AsyncMock(spec=StorageStreamDownloader)
         downloader.readall = AsyncMock(return_value=b"hello world")
         bc.download_blob = AsyncMock(return_value=downloader)
 
@@ -1198,10 +1198,7 @@ class TestAsyncAzureMaxConcurrency:
 
         await backend.write("file.txt", b"data")
         assert bc.upload_blob.call_count == 1
-        call_kwargs = bc.upload_blob.call_args
-        assert call_kwargs[1].get("max_concurrency") == 4 or (
-            len(call_kwargs[0]) > 1 and False  # fallback assertion
-        )
+        assert bc.upload_blob.call_args[1]["max_concurrency"] == 4
 
     @pytest.mark.spec("ASYNC-007")
     async def test_max_concurrency_threaded_to_download(self) -> None:
@@ -1211,17 +1208,14 @@ class TestAsyncAzureMaxConcurrency:
         cc = AsyncMock(spec=ContainerClient)
         backend._cc_instance = cc
         bc = AsyncMock(spec=BlobClient)
-        downloader = AsyncMock()
+        downloader = AsyncMock(spec=StorageStreamDownloader)
         downloader.readall = AsyncMock(return_value=b"data")
         bc.download_blob = AsyncMock(return_value=downloader)
         cc.get_blob_client.return_value = bc
 
         await backend.read_bytes("file.txt")
         assert bc.download_blob.call_count == 1
-        call_kwargs = bc.download_blob.call_args
-        assert call_kwargs[1].get("max_concurrency") == 8 or (
-            call_kwargs[0] == () and call_kwargs[1].get("max_concurrency") == 8
-        )
+        assert bc.download_blob.call_args[1]["max_concurrency"] == 8
 
 
 # =============================================================================

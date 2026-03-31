@@ -61,6 +61,7 @@ class AsyncAzureBackend(AsyncBackend):
         connection_string: Azure Storage connection string.
         credential: Any credential object (e.g. ``DefaultAzureCredential()``).
         client_options: Additional options passed to service clients.
+        retry: Retry policy for transient failures.
         max_concurrency: Maximum number of parallel connections for
             uploads and downloads (default ``1`` -- sequential).
     """
@@ -844,6 +845,9 @@ class AsyncAzureBackend(AsyncBackend):
 
         Args:
             type_hint: The expected type.
+
+        Returns:
+            The native async client instance matching *type_hint*.
 
         Raises:
             CapabilityNotSupported: If backend cannot provide the requested type.
