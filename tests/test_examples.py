@@ -551,3 +551,25 @@ class TestDagsterV2Resource:
 
         assert results["pickle_roundtrip"] is True
         assert results["teardown_ok"] is True
+
+
+# ---------------------------------------------------------------------------
+# Async Store
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncStore:
+    @pytest.mark.spec("ASYNC-040")
+    async def test_demo(self):
+        from examples.async_store import demo
+        from remote_store.aio import AsyncMemoryBackend, AsyncStore
+
+        async with AsyncStore(AsyncMemoryBackend(), root_path="data") as store:
+            await demo(store)
+
+            assert await store.exists("hello.txt")
+            assert await store.read_text("hello.txt") == "Hello, async world!"
+            assert await store.exists("data.csv")
+            assert await store.exists("reports/q1.txt")
+            info = await store.get_file_info("hello.txt")
+            assert info.size == len(b"Hello, async world!")

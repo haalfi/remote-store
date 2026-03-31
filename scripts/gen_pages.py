@@ -279,6 +279,10 @@ _EXAMPLE_SEE_ALSO: dict[str, list[tuple[str, str, str]]] = {
     "health_check.py": [
         ("Health Check", "../health-check.md", "health check guide"),
     ],
+    "async_store.py": [
+        ("Async Store", "../async.md", "async usage guide"),
+        ("Async API", "../api/aio.md", "API reference"),
+    ],
     "retry_policy.py": [
         ("Retry", "../retry.md", "retry configuration guide"),
     ],
@@ -333,6 +337,7 @@ _EXAMPLE_DESCRIPTIONS: dict[str, str] = {
     "transfer_operations.py": "Upload, download, and cross-store transfer with progress tracking.",
     "retry_policy.py": "Configure retry attempts, backoff, and jitter per-backend.",
     "health_check.py": "Startup gate pattern using `Store.ping()` to verify backend connectivity.",
+    "async_store.py": "Async/await usage with `AsyncStore` -- streaming reads, async writes, child stores.",
     "configuration.py": "Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs.",
     "config_loaders.py": "Load registry configuration from TOML, YAML, and Pydantic models.",
     "capabilities_and_errors.py": "Capability querying, gating, and the structured error hierarchy.",
@@ -411,6 +416,7 @@ _CORE_EXAMPLES = [
     "path_model",
     "memory_backend",
     "store_child",
+    "async_store",
 ]
 _BACKEND_EXAMPLES = [
     "backends/s3_backend",
