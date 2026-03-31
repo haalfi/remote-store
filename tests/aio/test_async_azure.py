@@ -275,6 +275,7 @@ class TestAsyncAzureErrorMapping:
     def test_classify_direct(self, exc_factory: Any, expected_type: type) -> None:
         mapped = classify_azure_error(exc_factory(), "file.txt", "async-azure")
         assert isinstance(mapped, expected_type)
+        assert mapped.path == "file.txt"
 
     @pytest.mark.spec("ASYNC-024")
     @pytest.mark.parametrize(
@@ -289,6 +290,7 @@ class TestAsyncAzureErrorMapping:
     def test_classify_http_status(self, status: int, expected_type: type) -> None:
         mapped = classify_azure_error(_http_err("msg", status), "file.txt", "async-azure")
         assert isinstance(mapped, expected_type)
+        assert mapped.path == "file.txt"
 
     @pytest.mark.spec("ASYNC-024")
     def test_error_has_backend_attribute(self) -> None:
@@ -530,6 +532,17 @@ class TestAsyncAzureListOperations:
 
         files = [f async for f in backend.list_files("nonexistent")]
         assert files == []
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_list_files_error_mapped(self) -> None:
+        """Native Azure exceptions during listing are mapped to RemoteStoreError."""
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.list_blobs.return_value = _async_iter([])
+        cc.walk_blobs.side_effect = ServiceRequestError("connection lost")
+
+        with pytest.raises(BackendUnavailable, match="connection lost"):
+            async for _ in backend.list_files("data"):
+                pass
 
 
 # =============================================================================
@@ -790,6 +803,7 @@ class TestAsyncAzureMetadata:
         assert isinstance(info, FolderInfo)
         assert info.file_count == 2
         assert info.total_size == 30
+        assert info.modified_at == datetime(2024, 6, 1, tzinfo=timezone.utc)
 
     @pytest.mark.spec("ASYNC-017")
     async def test_get_folder_info_not_found(self) -> None:
@@ -843,6 +857,15 @@ class TestAsyncAzureMetadata:
         bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
 
         assert await backend.is_file("missing.txt") is False
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_is_file_hns_directory_marker(self) -> None:
+        """Blobs with hdi_isfolder metadata are directories, not files."""
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(
+            return_value=_mock_blob_props(metadata={"hdi_isfolder": "true"}),
+        )
+        assert await backend.is_file("dir") is False
 
     @pytest.mark.spec("ASYNC-005")
     async def test_is_folder(self) -> None:
@@ -1134,6 +1157,22 @@ class TestAsyncAzureHNSPaths:
         await backend.write_atomic("dir/file.txt", b"content")
         assert tmp_fc.upload_data.call_count == 1
         assert tmp_fc.rename_file.call_count == 1
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_hns_cleans_up_on_failure(self) -> None:
+        """HNS write_atomic deletes temp file when rename fails."""
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        tmp_fc = AsyncMock(spec=DataLakeFileClient)
+        tmp_fc.rename_file = AsyncMock(side_effect=RuntimeError("rename failed"))
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+
+        with pytest.raises(RemoteStoreError):
+            await backend.write_atomic("dir/file.txt", b"content")
+        assert tmp_fc.delete_file.call_count == 1
 
     @pytest.mark.spec("ASYNC-013")
     async def test_delete_folder_hns_recursive(self) -> None:

@@ -82,8 +82,8 @@ Items graduate through the SDD pipeline:
     - Implementation Phase 3: async extensions. Note: Dagster 1.12.21 has no
       `AsyncIOManager`; `UPathIOManager.load_partitions_async` is internal only.
       Blocked until Dagster exposes a public async IO manager interface.
-    - Docs: async backend guide, `docs-src/api/aio.md` directive for
-      `AsyncAzureBackend`, docs nav entry (ripple-check deferred from Phase 2).
+    - Docs: async backend guide, docs nav entry (ripple-check deferred
+      from Phase 2; API directive in `aio.md` already added).
 
 ---
 
