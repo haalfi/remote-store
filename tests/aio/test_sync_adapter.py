@@ -40,6 +40,7 @@ class TestSyncAdapterConstruction:
 
         adapter = SyncBackendAdapter(MemoryBackend())
         assert isinstance(adapter, AsyncBackend)
+        assert adapter.name == "memory"
 
 
 class TestSyncAdapterPropertyPassthrough:

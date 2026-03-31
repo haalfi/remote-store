@@ -478,8 +478,10 @@ class TestAsyncStoreChild:
 
     @pytest.mark.spec("ASYNC-054")
     async def test_child_returns_async_store(self, async_store: AsyncStore) -> None:
+        await async_store.write("sub/file.txt", b"data")
         child = async_store.child("sub")
         assert isinstance(child, AsyncStore)
+        assert await child.read_bytes("file.txt") == b"data"
 
     @pytest.mark.spec("ASYNC-054")
     async def test_child_shares_backend(self, async_store: AsyncStore) -> None:
