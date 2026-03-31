@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/008-s3-backend/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-async-store-api-round2/">
       
       
-        <link rel="prev" href="../007-atomic-writes/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../009-sftp-backend/">
+        <link rel="next" href="../research-async-store-api/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>008: S3 Backend Specification - remote-store</title>
+        <title>Research Round 2: Async Store API vs Current Feature Surface (ID-013) - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#s3-backend-specification" class="md-skip">
+        <a href="#research-round-2-async-store-api-vs-current-feature-surface-id-013" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              008: S3 Backend Specification
+              Research Round 2: Async Store API vs Current Feature Surface (ID-013)
             
           </span>
         </div>
@@ -3929,8 +3929,6 @@
                 
   
   
-    
-  
   
   
     
@@ -3941,15 +3939,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -3973,7 +3971,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3991,7 +3989,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -4019,7 +4017,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -4047,7 +4045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -4075,7 +4073,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -4103,7 +4101,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../005-error-model/" class="md-nav__link">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -4131,7 +4129,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -4159,7 +4157,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -4184,37 +4182,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    008: S3 Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -4230,431 +4201,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Construction
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Construction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3-001-constructor-parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-001: Constructor Parameters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-002-backend-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-004-lazy-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-005: Construction Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#s3-object-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3 Object Model
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="S3 Object Model">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3-006-virtual-folder-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-006: Virtual Folder Semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-007-folder-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-007: Folder Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-008-write-does-not-create-folder-markers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-008: Write Does Not Create Folder Markers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-009-folder-lifecycle-tied-to-contents" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-009: Folder Lifecycle Tied to Contents
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3-010-atomic-write-via-s3-put" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-010: Atomic Write Via S3 PUT
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-011-delete_folder-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-011: delete_folder Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-012-delete_folder-non-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-012: delete_folder Non-Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-013-move-via-copy-delete" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-013: move Via Copy + Delete
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-014-copy-via-s3-server-side-copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-014: copy Via S3 Server-Side Copy
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3-015-notfound-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-015: NotFound Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-016-permissiondenied-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-016: PermissionDenied Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-017-backendunavailable-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-017: BackendUnavailable Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-018-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-018: No Native Exception Leakage
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resource Management
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Resource Management">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3-019-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-019: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-020-unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-020: unwrap()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3-021-client-options-passthrough" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-021: Client Options Passthrough
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-022-default-credential-chain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-022: Default Credential Chain
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fileinfo-population" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        FileInfo Population
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="FileInfo Population">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#s3-023-etag-population" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-023: ETag Population
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-024-digest-population-via-checksummode-enabled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-024: Digest Population via ChecksumMode: ENABLED
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-025-endpoint-url-normalization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-025: Endpoint URL Normalization
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4667,7 +4213,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -4695,7 +4241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -4723,7 +4269,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -4751,7 +4297,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../012-azure-backend/" class="md-nav__link">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -4779,7 +4325,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -4807,7 +4353,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -4835,7 +4381,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -4863,7 +4409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -4891,7 +4437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -4919,7 +4465,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -4947,7 +4493,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -4975,7 +4521,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -5003,7 +4549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -5031,7 +4577,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -5059,7 +4605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -5087,7 +4633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -5115,7 +4661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../025-retry-policy/" class="md-nav__link">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -5143,7 +4689,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../026-health-check/" class="md-nav__link">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -5171,7 +4717,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../027-iter-children/" class="md-nav__link">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -5199,7 +4745,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../028-read-text/" class="md-nav__link">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -5227,7 +4773,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5255,7 +4801,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../030-write-text/" class="md-nav__link">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -5283,7 +4829,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../031-ext-dagster/" class="md-nav__link">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -5311,7 +4857,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../032-http-backend/" class="md-nav__link">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -5339,7 +4885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../033-ext-streams/" class="md-nav__link">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -5367,7 +4913,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../034-ext-integrity/" class="md-nav__link">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -5395,7 +4941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../035-content-digest/" class="md-nav__link">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -5423,7 +4969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../036-seekable-read/" class="md-nav__link">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -5451,7 +4997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../037-depth-limited-listing/" class="md-nav__link">
+      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -5479,7 +5025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -5507,7 +5053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -5535,7 +5081,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../040-sql-blob-backend/" class="md-nav__link">
+      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -5563,7 +5109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../041-sql-query-backend/" class="md-nav__link">
+      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -5591,7 +5137,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../042-ext-parquet/" class="md-nav__link">
+      <a href="../../specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -5619,7 +5165,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../043-resolution-plan/" class="md-nav__link">
+      <a href="../../specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -6594,6 +6140,8 @@
                 
   
   
+    
+  
   
   
     
@@ -6604,15 +6152,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_7" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -6636,7 +6184,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_5_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6651,10 +6199,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../research/research-async-store-api-round2/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research Round 2: Async Store API vs Current Feature Surface (ID-013)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -6670,6 +6245,376 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Purpose
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-feature-gap-current-sync-api-vs-spec-029" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Feature Gap: Current Sync API vs Spec 029
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Feature Gap: Current Sync API vs Spec 029">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-store-methods-added-after-spec-029-was-drafted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Store methods added after spec 029 was drafted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-backend-methods-added-after-spec-029" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Backend methods added after spec 029
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-extensions-added-since-round-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Extensions added since round 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-summary-of-spec-029-amendments-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Summary of spec 029 amendments needed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-design-decisions-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Design Decisions Needed
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Design Decisions Needed">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-read_seekable-in-async-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 read_seekable in async context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-open_atomic-in-async-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 open_atomic in async context
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-scope-complexity-assessment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Scope &amp; Complexity Assessment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Scope &amp; Complexity Assessment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-what-async-adds-to-the-codebase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 What async adds to the codebase
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-documentation-impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Documentation impact
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-package-surface-impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Package surface impact
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-audience-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Audience Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Audience Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-who-benefits-from-async" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Who benefits from async?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-dagster-specifically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Dagster specifically
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-is-the-target-audience-citizen-developers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Is the target audience "citizen developers"?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-packaging-same-package-vs-separate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Packaging: Same Package vs Separate?
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Packaging: Same Package vs Separate?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-ecosystem-precedent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Ecosystem precedent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-recommendation-same-package-remote_storeaio-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Recommendation: Same package, remote_store.aio namespace
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-updated-ecosystem-landscape-march-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Updated Ecosystem Landscape (March 2026)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Updated Ecosystem Landscape (March 2026)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-changes-since-round-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Changes since round 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-native-async-sdk-readiness-per-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Native async SDK readiness per backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-risk-assessment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Risk Assessment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-conclusions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Conclusions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Conclusions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#recommended-next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended next steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -6682,7 +6627,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -6710,7 +6655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -6738,7 +6683,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -6766,7 +6711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-dagster-extension/" class="md-nav__link">
+      <a href="../research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -6794,7 +6739,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-depth-limited-listing/" class="md-nav__link">
+      <a href="../research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -6822,7 +6767,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -6850,7 +6795,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
+      <a href="../research-example-testing/" class="md-nav__link">
         
   
   
@@ -6878,7 +6823,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -6906,7 +6851,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-feature-discoverability/" class="md-nav__link">
+      <a href="../research-feature-discoverability/" class="md-nav__link">
         
   
   
@@ -6934,7 +6879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -6962,7 +6907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
+      <a href="../research-health-check/" class="md-nav__link">
         
   
   
@@ -6990,7 +6935,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -7018,7 +6963,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -7046,7 +6991,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -7074,7 +7019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-resolve-spec-proposal/" class="md-nav__link">
+      <a href="../research-resolve-spec-proposal/" class="md-nav__link">
         
   
   
@@ -7102,7 +7047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
+      <a href="../research-retry-policy/" class="md-nav__link">
         
   
   
@@ -7130,7 +7075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-seekable-read/" class="md-nav__link">
+      <a href="../research-seekable-read/" class="md-nav__link">
         
   
   
@@ -7158,7 +7103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -7186,7 +7131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -7214,7 +7159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
+      <a href="../research-store-config/" class="md-nav__link">
         
   
   
@@ -7242,7 +7187,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -7270,7 +7215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-testing-best-practices/" class="md-nav__link">
+      <a href="../research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -7298,7 +7243,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -7450,10 +7395,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#1-purpose" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        1. Purpose
       
     </span>
   </a>
@@ -7461,22 +7406,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
+  <a href="#2-feature-gap-current-sync-api-vs-spec-029" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Construction
+        2. Feature Gap: Current Sync API vs Spec 029
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Construction">
+    <nav class="md-nav" aria-label="2. Feature Gap: Current Sync API vs Spec 029">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3-001-constructor-parameters" class="md-nav__link">
+  <a href="#21-store-methods-added-after-spec-029-was-drafted" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-001: Constructor Parameters
+        2.1 Store methods added after spec 029 was drafted
       
     </span>
   </a>
@@ -7484,10 +7429,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-002-backend-name" class="md-nav__link">
+  <a href="#22-backend-methods-added-after-spec-029" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-002: Backend Name
+        2.2 Backend methods added after spec 029
       
     </span>
   </a>
@@ -7495,10 +7440,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-003-capability-declaration" class="md-nav__link">
+  <a href="#23-extensions-added-since-round-1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-003: Capability Declaration
+        2.3 Extensions added since round 1
       
     </span>
   </a>
@@ -7506,21 +7451,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-004-lazy-connection" class="md-nav__link">
+  <a href="#24-summary-of-spec-029-amendments-needed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-005: Construction Validation
+        2.4 Summary of spec 029 amendments needed
       
     </span>
   </a>
@@ -7533,22 +7467,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#s3-object-model" class="md-nav__link">
+  <a href="#3-design-decisions-needed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3 Object Model
+        3. Design Decisions Needed
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="S3 Object Model">
+    <nav class="md-nav" aria-label="3. Design Decisions Needed">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3-006-virtual-folder-semantics" class="md-nav__link">
+  <a href="#31-read_seekable-in-async-context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-006: Virtual Folder Semantics
+        3.1 read_seekable in async context
       
     </span>
   </a>
@@ -7556,32 +7490,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-007-folder-detection" class="md-nav__link">
+  <a href="#32-open_atomic-in-async-context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-007: Folder Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-008-write-does-not-create-folder-markers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-008: Write Does Not Create Folder Markers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-009-folder-lifecycle-tied-to-contents" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-009: Folder Lifecycle Tied to Contents
+        3.2 open_atomic in async context
       
     </span>
   </a>
@@ -7594,22 +7506,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
+  <a href="#4-scope-complexity-assessment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operations
+        4. Scope &amp; Complexity Assessment
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Operations">
+    <nav class="md-nav" aria-label="4. Scope &amp; Complexity Assessment">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3-010-atomic-write-via-s3-put" class="md-nav__link">
+  <a href="#41-what-async-adds-to-the-codebase" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-010: Atomic Write Via S3 PUT
+        4.1 What async adds to the codebase
       
     </span>
   </a>
@@ -7617,10 +7529,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-011-delete_folder-recursive" class="md-nav__link">
+  <a href="#42-documentation-impact" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-011: delete_folder Recursive
+        4.2 Documentation impact
       
     </span>
   </a>
@@ -7628,32 +7540,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-012-delete_folder-non-recursive" class="md-nav__link">
+  <a href="#43-package-surface-impact" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-012: delete_folder Non-Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-013-move-via-copy-delete" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-013: move Via Copy + Delete
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-014-copy-via-s3-server-side-copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-014: copy Via S3 Server-Side Copy
+        4.3 Package surface impact
       
     </span>
   </a>
@@ -7666,22 +7556,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
+  <a href="#5-audience-analysis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error Mapping
+        5. Audience Analysis
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Error Mapping">
+    <nav class="md-nav" aria-label="5. Audience Analysis">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3-015-notfound-mapping" class="md-nav__link">
+  <a href="#51-who-benefits-from-async" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-015: NotFound Mapping
+        5.1 Who benefits from async?
       
     </span>
   </a>
@@ -7689,10 +7579,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-016-permissiondenied-mapping" class="md-nav__link">
+  <a href="#52-dagster-specifically" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-016: PermissionDenied Mapping
+        5.2 Dagster specifically
       
     </span>
   </a>
@@ -7700,21 +7590,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-017-backendunavailable-mapping" class="md-nav__link">
+  <a href="#53-is-the-target-audience-citizen-developers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-017: BackendUnavailable Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-018-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-018: No Native Exception Leakage
+        5.3 Is the target audience "citizen developers"?
       
     </span>
   </a>
@@ -7727,22 +7606,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
+  <a href="#6-packaging-same-package-vs-separate" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resource Management
+        6. Packaging: Same Package vs Separate?
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Resource Management">
+    <nav class="md-nav" aria-label="6. Packaging: Same Package vs Separate?">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3-019-close" class="md-nav__link">
+  <a href="#61-options" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-019: close()
+        6.1 Options
       
     </span>
   </a>
@@ -7750,10 +7629,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-020-unwrap" class="md-nav__link">
+  <a href="#62-ecosystem-precedent" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-020: unwrap()
+        6.2 Ecosystem precedent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-recommendation-same-package-remote_storeaio-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Recommendation: Same package, remote_store.aio namespace
       
     </span>
   </a>
@@ -7766,22 +7656,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#7-updated-ecosystem-landscape-march-2026" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        7. Updated Ecosystem Landscape (March 2026)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Configuration">
+    <nav class="md-nav" aria-label="7. Updated Ecosystem Landscape (March 2026)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3-021-client-options-passthrough" class="md-nav__link">
+  <a href="#71-changes-since-round-1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-021: Client Options Passthrough
+        7.1 Changes since round 1
       
     </span>
   </a>
@@ -7789,10 +7679,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-022-default-credential-chain" class="md-nav__link">
+  <a href="#72-native-async-sdk-readiness-per-backend" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-022: Default Credential Chain
+        7.2 Native async SDK readiness per backend
       
     </span>
   </a>
@@ -7805,44 +7695,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fileinfo-population" class="md-nav__link">
+  <a href="#8-risk-assessment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FileInfo Population
+        8. Risk Assessment
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="FileInfo Population">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-conclusions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Conclusions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Conclusions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#s3-023-etag-population" class="md-nav__link">
+  <a href="#recommended-next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-023: ETag Population
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-024-digest-population-via-checksummode-enabled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-024: Digest Population via ChecksumMode: ENABLED
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3-025-endpoint-url-normalization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3-025: Endpoint URL Normalization
+        Recommended next steps
       
     </span>
   </a>
@@ -7851,6 +7730,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
   
 </li>
       
@@ -7871,159 +7761,652 @@
 
 
 
-<h1 id="s3-backend-specification">S3 Backend Specification<a class="headerlink" href="#s3-backend-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>S3Backend</code> implements the <code>Backend</code> ABC for S3-compatible object storage (AWS S3, MinIO, etc.) using <code>s3fs</code> internally. It maps the Backend contract onto S3's flat key-value model, bridging the gap between S3's prefix-based "folders" and the filesystem-like interface expected by Store.</p>
-<p>This is the fsspec-based S3 backend. A future native backend using boto3 + pyarrow.fs directly may follow for advanced data engineering workloads.</p>
-<p><strong>Dependencies:</strong> <code>s3fs</code> (optional extra: <code>pip install "remote-store[s3]"</code>)</p>
+<h1 id="research-round-2-async-store-api-vs-current-feature-surface-id-013">Research Round 2: Async Store API vs Current Feature Surface (ID-013)<a class="headerlink" href="#research-round-2-async-store-api-vs-current-feature-surface-id-013" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-03-30
+<strong>Backlog item:</strong> ID-013 (Async Store / Backend API)
+<strong>Predecessor:</strong> <a href="../research-async-store-api/">Round 1 research</a> (2026-03-03)
+<strong>Status:</strong> Research complete — findings ready for review</p>
 <hr />
-<h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
-<h3 id="s3-001-constructor-parameters">S3-001: Constructor Parameters<a class="headerlink" href="#s3-001-constructor-parameters" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>S3Backend</code> is constructed with a required <code>bucket</code> name and optional connection parameters.
-<strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">S3Backend</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">bucket</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">endpoint_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">secret</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">region_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">tls_ca_bundle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># see spec 039</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n">RetryPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># see spec 025</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span>
+<h2 id="1-purpose">1. Purpose<a class="headerlink" href="#1-purpose" title="Permanent link">&para;</a></h2>
+<p>The backlog item ID-013 requires a second research round before
+implementation proceeds. Three things changed since the initial research
+on 2026-03-03:</p>
+<ol>
+<li>The sync Store/Backend API evolved (3 new methods, parameter additions).</li>
+<li>Spec 029 (draft) and ADR-0012 were written against the March 3 surface.</li>
+<li>The question of whether async belongs in the same package remains open.</li>
+</ol>
+<p>This document audits the current FEATURES.md (v0.20.0) against spec 029
+and ADR-0012, identifies gaps, and evaluates the audience/packaging
+question.</p>
+<hr />
+<h2 id="2-feature-gap-current-sync-api-vs-spec-029">2. Feature Gap: Current Sync API vs Spec 029<a class="headerlink" href="#2-feature-gap-current-sync-api-vs-spec-029" title="Permanent link">&para;</a></h2>
+<h3 id="21-store-methods-added-after-spec-029-was-drafted">2.1 Store methods added after spec 029 was drafted<a class="headerlink" href="#21-store-methods-added-after-spec-029-was-drafted" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Added</th>
+<th>ID</th>
+<th>In spec 029?</th>
+<th>Async implications</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>read_seekable(path)</code></td>
+<td>2026-03-24</td>
+<td>ID-102</td>
+<td>No</td>
+<td>Needs async equivalent or explicit deferral. Seekable streams don't map cleanly to <code>AsyncIterator[bytes]</code> — see §3.</td>
+</tr>
+<tr>
+<td><code>resolve(key) -&gt; ResolutionPlan</code></td>
+<td>2026-03-29</td>
+<td>ID-120</td>
+<td>No</td>
+<td><strong>Sync</strong> — pure string/metadata, no I/O. Add to non-I/O passthrough list alongside <code>to_key</code>, <code>native_path</code>.</td>
+</tr>
+<tr>
+<td><code>write_text(path, text)</code></td>
+<td>Pre-existing</td>
+<td>—</td>
+<td>Missing from ASYNC-046 enumeration</td>
+<td>Trivial async equivalent: <code>await async_store.write_text(...)</code>. Delegates to <code>write()</code> after encoding.</td>
+</tr>
+<tr>
+<td><code>ping()</code></td>
+<td>Pre-existing</td>
+<td>—</td>
+<td>Missing</td>
+<td>Noted in backlog as needing async equivalent. Maps to <code>check_health()</code> on backend. Simple: <code>await asyncio.to_thread(backend.check_health)</code>.</td>
+</tr>
+<tr>
+<td><code>open_atomic(path)</code></td>
+<td>Pre-existing</td>
+<td>—</td>
+<td>Noted as needing deferral</td>
+<td>Context-manager streaming writes are hard to bridge async. See §3.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-backend-methods-added-after-spec-029">2.2 Backend methods added after spec 029<a class="headerlink" href="#22-backend-methods-added-after-spec-029" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Added</th>
+<th>In spec 029?</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>read_seekable(path) -&gt; BinaryIO</code></td>
+<td>2026-03-24</td>
+<td>No</td>
+<td>Non-abstract with spool fallback. Some backends override (Azure range reader, HTTP).</td>
+</tr>
+<tr>
+<td><code>resolve(path) -&gt; ResolutionPlan</code></td>
+<td>2026-03-29</td>
+<td>No</td>
+<td>Non-abstract with default impl. Sync — no I/O.</td>
+</tr>
+<tr>
+<td><code>check_health() -&gt; None</code></td>
+<td>Pre-existing</td>
+<td>No</td>
+<td>Non-abstract, default no-op. Store exposes as <code>ping()</code>.</td>
+</tr>
+<tr>
+<td><code>list_files</code> <code>max_depth</code> parameter</td>
+<td>Pre-existing</td>
+<td>Not reflected</td>
+<td>Spec 029 ASYNC-014 omits <code>max_depth</code>.</td>
+</tr>
+<tr>
+<td><code>list_folders</code> <code>max_depth</code> parameter</td>
+<td>Pre-existing</td>
+<td>Not reflected</td>
+<td>Spec 029 ASYNC-015 omits <code>max_depth</code>.</td>
+</tr>
+<tr>
+<td><code>get_folder_info</code> <code>max_depth</code> parameter</td>
+<td>Pre-existing</td>
+<td>Not reflected</td>
+<td>Spec 029 ASYNC-017 omits <code>max_depth</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-extensions-added-since-round-1">2.3 Extensions added since round 1<a class="headerlink" href="#23-extensions-added-since-round-1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Extension</th>
+<th>Added</th>
+<th>Async impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ParquetDatasetStore</code> (ID-122)</td>
+<td>2026-03-22</td>
+<td>Phase 3 concern. Wraps PyArrow, which has its own async story.</td>
+</tr>
+<tr>
+<td><code>Dagster</code> IO manager v2 pattern</td>
+<td>Post-round-1</td>
+<td>Key use case — see §5.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="24-summary-of-spec-029-amendments-needed">2.4 Summary of spec 029 amendments needed<a class="headerlink" href="#24-summary-of-spec-029-amendments-needed" title="Permanent link">&para;</a></h3>
+<p>Before implementation, spec 029 must be updated to cover:</p>
+<ol>
+<li><strong>ASYNC-057: <code>read_seekable()</code></strong> — design decision needed (see §3).</li>
+<li><strong>ASYNC-058: <code>resolve()</code></strong> — sync passthrough, no I/O. Add to ASYNC-034 property passthrough list.</li>
+<li><strong>ASYNC-059: <code>ping()</code> / <code>check_health()</code></strong> — <code>async def ping()</code> on AsyncStore, delegates to <code>await asyncio.to_thread(backend.check_health)</code> via SyncBackendAdapter.</li>
+<li><strong>ASYNC-046 update</strong> — add <code>write_text</code>, <code>read_seekable</code>, <code>resolve</code>, <code>ping</code> to enumeration.</li>
+<li><strong><code>max_depth</code> parameters</strong> — add to ASYNC-014, ASYNC-015, ASYNC-017.</li>
+<li><strong>ASYNC-060..063: <code>AsyncMemoryBackend</code></strong> — already noted in backlog.</li>
+<li><strong><code>open_atomic</code> deferral note</strong> — already noted in backlog.</li>
+<li><strong>ASYNC-036: Streaming write bridging</strong> — <code>SyncBackendAdapter</code> must materialize <code>AsyncIterator[bytes]</code> to <code>bytes</code> before calling sync <code>write()</code>.</li>
+</ol>
+<hr />
+<h2 id="3-design-decisions-needed">3. Design Decisions Needed<a class="headerlink" href="#3-design-decisions-needed" title="Permanent link">&para;</a></h2>
+<h3 id="31-read_seekable-in-async-context">3.1 <code>read_seekable</code> in async context<a class="headerlink" href="#31-read_seekable-in-async-context" title="Permanent link">&para;</a></h3>
+<p><strong>Problem:</strong> <code>read_seekable()</code> returns <code>BinaryIO</code> (seekable). The async
+read pattern is <code>AsyncIterator[bytes]</code> (not seekable). These are
+fundamentally different contracts.</p>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A. Omit from Phase 1</td>
+<td>Defer <code>read_seekable</code> to Phase 2</td>
+<td>Simple. No half-baked abstraction.</td>
+<td>Feature gap vs sync API.</td>
+</tr>
+<tr>
+<td>B. Return <code>bytes</code></td>
+<td><code>async def read_seekable(path) -&gt; bytes</code> materializes fully</td>
+<td>Seekable in-memory via <code>io.BytesIO</code>. Simple.</td>
+<td>Defeats streaming for large files. Name is misleading.</td>
+</tr>
+<tr>
+<td>C. Thread-bridge BinaryIO</td>
+<td>Return sync <code>BinaryIO</code> obtained via <code>to_thread</code></td>
+<td>Preserves seekability.</td>
+<td>Caller must use <code>to_thread</code> for each <code>.read()</code> / <code>.seek()</code> — defeats async purpose.</td>
+</tr>
+<tr>
+<td>D. Async seekable protocol</td>
+<td>New <code>AsyncSeekableReader</code> with <code>async read(n)</code>, <code>async seek(offset)</code></td>
+<td>True async seeking.</td>
+<td>No stdlib equivalent. Custom protocol. Over-engineering for Phase 1.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommendation:</strong> <strong>Option A (defer)</strong>. <code>read_seekable</code> is a
+convenience for random-access patterns (Arrow, Parquet). In async
+contexts, callers either: (a) use <code>read_bytes()</code> + <code>io.BytesIO</code> for
+small files, or (b) use native async SDK features for large files
+(Phase 2). Document the workaround.</p>
+<h3 id="32-open_atomic-in-async-context">3.2 <code>open_atomic</code> in async context<a class="headerlink" href="#32-open_atomic-in-async-context" title="Permanent link">&para;</a></h3>
+<p><strong>Problem:</strong> <code>open_atomic()</code> is a sync context manager yielding <code>BinaryIO</code>.
+The caller writes incrementally. In async, this requires an async context
+manager yielding something writable — but there's no stdlib async
+writable stream.</p>
+<p><strong>Recommendation:</strong> <strong>Defer to Phase 2.</strong> <code>write_atomic(path, content)</code>
+(which accepts <code>bytes | AsyncIterator[bytes]</code>) covers the async use
+case. The incremental-write-to-file pattern of <code>open_atomic</code> is inherently
+sync. Note this in spec 029.</p>
+<hr />
+<h2 id="4-scope-complexity-assessment">4. Scope &amp; Complexity Assessment<a class="headerlink" href="#4-scope-complexity-assessment" title="Permanent link">&para;</a></h2>
+<h3 id="41-what-async-adds-to-the-codebase">4.1 What async adds to the codebase<a class="headerlink" href="#41-what-async-adds-to-the-codebase" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Sync (current)</th>
+<th>Async (Phase 1)</th>
+<th>Delta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend ABC</td>
+<td><code>_backend.py</code> (~430 lines)</td>
+<td><code>_async_backend.py</code> (~350 est.)</td>
+<td>+350</td>
+</tr>
+<tr>
+<td>Store</td>
+<td><code>_store.py</code> (~900 lines)</td>
+<td><code>_async_store.py</code> (~750 est.)</td>
+<td>+750</td>
+</tr>
+<tr>
+<td>SyncBackendAdapter</td>
+<td>—</td>
+<td><code>_sync_adapter.py</code> (~200 est.)</td>
+<td>+200</td>
+</tr>
+<tr>
+<td>AsyncMemoryBackend</td>
+<td>—</td>
+<td><code>_async_memory.py</code> (~250 est.)</td>
+<td>+250</td>
+</tr>
+<tr>
+<td>ProxyStore (async)</td>
+<td><code>_proxy.py</code> (~220 lines)</td>
+<td><code>_async_proxy.py</code> (~220 est.)</td>
+<td>+220</td>
+</tr>
+<tr>
+<td>Types</td>
+<td><code>_types.py</code></td>
+<td><code>AsyncWritableContent</code> addition</td>
+<td>+5</td>
+</tr>
+<tr>
+<td>Tests</td>
+<td>~7000 lines backend+store</td>
+<td>~3000 est. (via parametrize reuse)</td>
+<td>+3000</td>
+</tr>
+<tr>
+<td>Drift tests</td>
+<td>—</td>
+<td>Sync↔async parity assertions</td>
+<td>+200</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td></td>
+<td></td>
+<td><strong>~5000 lines</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Phase 1 adds roughly 5K lines (~2K source, ~3K tests). The codebase is
+currently ~15K source lines. This is a ~13% increase, not a doubling.</p>
+<p>Phase 2 (native async backends) and Phase 3 (async extensions) would each
+add similar amounts, but those are separate decisions.</p>
+<h3 id="42-documentation-impact">4.2 Documentation impact<a class="headerlink" href="#42-documentation-impact" title="Permanent link">&para;</a></h3>
+<ul>
+<li>API reference: auto-generated from docstrings — async classes appear
+  alongside sync. Manageable.</li>
+<li>Tutorials: one new "Async Quick Start" page. Existing tutorials stay
+  sync.</li>
+<li>FEATURES.md: add "Async API" section listing <code>AsyncStore</code>, <code>AsyncBackend</code>,
+  <code>SyncBackendAdapter</code>.</li>
+</ul>
+<h3 id="43-package-surface-impact">4.3 Package surface impact<a class="headerlink" href="#43-package-surface-impact" title="Permanent link">&para;</a></h3>
+<p>New public exports (Phase 1):
+- <code>AsyncBackend</code>, <code>AsyncStore</code>, <code>SyncBackendAdapter</code>, <code>AsyncMemoryBackend</code>
+- <code>AsyncWritableContent</code> type alias
+- <code>async_store()</code> convenience constructor (mirrors <code>store()</code>)</p>
+<p>This is 6 new symbols. The current public surface is ~80 symbols. An 8%
+increase.</p>
+<hr />
+<h2 id="5-audience-analysis">5. Audience Analysis<a class="headerlink" href="#5-audience-analysis" title="Permanent link">&para;</a></h2>
+<h3 id="51-who-benefits-from-async">5.1 Who benefits from async?<a class="headerlink" href="#51-who-benefits-from-async" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Audience</th>
+<th>Use case</th>
+<th>Benefit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>FastAPI / Starlette users</strong></td>
+<td>File upload/download endpoints</td>
+<td>Avoid blocking ASGI thread pool. True async I/O in Phase 2.</td>
+</tr>
+<tr>
+<td><strong>Dagster pipelines</strong></td>
+<td>IO managers in async ops</td>
+<td>Dagster 1.9+ supports <code>AsyncIOManager</code>. Currently forces sync → thread delegation.</td>
+</tr>
+<tr>
+<td><strong>Data platform teams</strong></td>
+<td>Concurrent file operations across stores</td>
+<td><code>asyncio.gather()</code> for parallel reads/writes without thread-pool exhaustion.</td>
+</tr>
+<tr>
+<td><strong>Litestar / aiohttp users</strong></td>
+<td>Similar to FastAPI</td>
+<td>Same thread-blocking concern.</td>
+</tr>
+<tr>
+<td><strong>CLI / script users</strong></td>
+<td>Batch processing</td>
+<td>Marginal benefit — sync is fine.</td>
+</tr>
+<tr>
+<td><strong>Notebook / citizen developers</strong></td>
+<td>Interactive exploration</td>
+<td>No benefit. Sync is simpler.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-dagster-specifically">5.2 Dagster specifically<a class="headerlink" href="#52-dagster-specifically" title="Permanent link">&para;</a></h3>
+<p>Dagster is the most concrete use case. The current <code>RemoteStoreIOManager</code>
+is sync. Dagster's <code>AsyncIOManager</code> (available since 1.9) allows
+<code>handle_output</code> and <code>load_input</code> to be async, which matters for:</p>
+<ul>
+<li>Ops that do concurrent I/O (e.g., reading multiple partitions in parallel)</li>
+<li>Avoiding thread-pool exhaustion when many ops run concurrently</li>
+<li>Integration with async-native data sources</li>
+</ul>
+<p>However, the Dagster async IO manager is a Phase 3 extension concern. It
+requires <code>AsyncStore</code> (Phase 1) to exist first.</p>
+<h3 id="53-is-the-target-audience-citizen-developers">5.3 Is the target audience "citizen developers"?<a class="headerlink" href="#53-is-the-target-audience-citizen-developers" title="Permanent link">&para;</a></h3>
+<p>The library's README positions it as "unified file storage" — which serves
+both citizen developers (simple local/S3 usage) and platform engineers
+(custom backends, extensions, Dagster integration). Async specifically
+serves the latter group. Citizen developers will never use <code>AsyncStore</code>.</p>
+<p><strong>This is fine.</strong> Libraries routinely serve multiple audiences. httpx has
+<code>Client</code> for simple scripts and <code>AsyncClient</code> for web services. The key
+is that the sync API remains the default and the async API is opt-in.</p>
+<hr />
+<h2 id="6-packaging-same-package-vs-separate">6. Packaging: Same Package vs Separate?<a class="headerlink" href="#6-packaging-same-package-vs-separate" title="Permanent link">&para;</a></h2>
+<h3 id="61-options">6.1 Options<a class="headerlink" href="#61-options" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A. Same package</td>
+<td><code>remote_store.AsyncStore</code> alongside <code>remote_store.Store</code></td>
+<td>Single install. Shared types/errors. No version drift.</td>
+<td>Larger package. Async code loaded even by sync users.</td>
+</tr>
+<tr>
+<td>B. Separate package</td>
+<td><code>remote-store-async</code> depending on <code>remote-store</code></td>
+<td>Clean separation. Sync users unaffected.</td>
+<td>Two packages to version. Import confusion. Shared type changes require coordinated releases.</td>
+</tr>
+<tr>
+<td>C. Subpackage</td>
+<td><code>remote_store.aio</code> (lazy-loaded)</td>
+<td>Logical separation. Single package. Zero import cost for sync users.</td>
+<td>Slightly more complex packaging.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-ecosystem-precedent">6.2 Ecosystem precedent<a class="headerlink" href="#62-ecosystem-precedent" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Approach</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>httpx</td>
+<td>Same package (<code>httpx.AsyncClient</code>)</td>
+<td>Most popular pattern</td>
+</tr>
+<tr>
+<td>SQLAlchemy</td>
+<td>Same package (<code>sqlalchemy.ext.asyncio</code>)</td>
+<td>Works well at scale</td>
+</tr>
+<tr>
+<td>Azure SDK</td>
+<td>Same package (<code>azure.storage.blob.aio</code>)</td>
+<td>Sub-namespace</td>
+</tr>
+<tr>
+<td>redis-py</td>
+<td>Same package (<code>redis.asyncio</code>)</td>
+<td>Sub-namespace</td>
+</tr>
+<tr>
+<td>aiohttp</td>
+<td>Separate package (async-only)</td>
+<td>Different case — no sync equivalent</td>
+</tr>
+<tr>
+<td>boto3 / aioboto3</td>
+<td>Separate packages</td>
+<td>Cautionary tale — version coupling issues</td>
+</tr>
+</tbody>
+</table>
+<h3 id="63-recommendation-same-package-remote_storeaio-namespace">6.3 Recommendation: Same package, <code>remote_store.aio</code> namespace<a class="headerlink" href="#63-recommendation-same-package-remote_storeaio-namespace" title="Permanent link">&para;</a></h3>
+<p><strong>Option C.</strong> Put async classes in <code>remote_store.aio</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncStore</span><span class="p">,</span> <span class="n">AsyncBackend</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Convenience re-export at top level (optional)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncStore</span>
 </code></pre></div>
-<strong>Postconditions:</strong> The backend stores configuration but does not connect to S3 during construction (see S3-004). The <code>endpoint_url</code> is normalized per S3-025.</p>
-<h3 id="s3-002-backend-name">S3-002: Backend Name<a class="headerlink" href="#s3-002-backend-name" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>name</code> property returns <code>"s3"</code>.</p>
-<h3 id="s3-003-capability-declaration">S3-003: Capability Declaration<a class="headerlink" href="#s3-003-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>S3Backend</code> declares capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>GLOB</code>. Native glob via prefix-optimized listing (see <a href="../018-glob/">018-glob.md</a> GLOB-018).
-<strong>Rationale:</strong>
-- <code>ATOMIC_WRITE</code>: S3 PUT is inherently atomic -- readers never see partial content (see S3-010).
-- <code>MOVE</code>: Implemented via server-side copy + delete (see S3-013).
-- <code>COPY</code>: Implemented via S3 server-side copy (see S3-014).
-- <code>GLOB</code>: Native prefix-optimized glob since v0.12.0 (BK-002).</p>
-<h3 id="s3-004-lazy-connection">S3-004: Lazy Connection<a class="headerlink" href="#s3-004-lazy-connection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. The s3fs filesystem is created lazily on first operation.
-<strong>Rationale:</strong> Fail-fast at construction is undesirable -- the backend may be created during application wiring before the network is available.</p>
-<h3 id="s3-005-construction-validation">S3-005: Construction Validation<a class="headerlink" href="#s3-005-construction-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>bucket</code> must be a non-empty string. Passing an empty or whitespace-only bucket raises <code>ValueError</code> at construction time.
-<strong>Postconditions:</strong> No network validation of bucket existence at construction time. Invalid bucket names that are syntactically non-empty are caught by S3 on first operation and mapped to the appropriate error.</p>
+<p>Rationale:
+- <strong>Single package</strong> avoids version drift (the #1 pain point with
+  aioboto3/aiobotocore).
+- <strong>Sub-namespace</strong> keeps the top-level <code>import remote_store</code> clean for
+  sync users — no async symbols pollute the default namespace.
+- <strong>Lazy loading</strong> (<code>__init__.py</code> with <code>__getattr__</code>) means sync users
+  pay zero import cost for async code.
+- <strong>Shared types</strong> (<code>FileInfo</code>, <code>FolderEntry</code>, <code>RemotePath</code>, errors,
+  <code>Capability</code>) are used by both sync and async — same-package is natural.</p>
 <hr />
-<h2 id="s3-object-model">S3 Object Model<a class="headerlink" href="#s3-object-model" title="Permanent link">&para;</a></h2>
-<h3 id="s3-006-virtual-folder-semantics">S3-006: Virtual Folder Semantics<a class="headerlink" href="#s3-006-virtual-folder-semantics" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> S3 has no native directories. "Folders" are logical constructs derived from key prefixes delimited by <code>/</code>. The S3 backend presents a filesystem-like view by interpreting common prefixes as folders.
-<strong>Postconditions:</strong> This is a fundamental difference from local filesystems. Several Backend operations have S3-specific behavior documented in this section.</p>
-<h3 id="s3-007-folder-detection">S3-007: Folder Detection<a class="headerlink" href="#s3-007-folder-detection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>is_folder(path)</code> returns <code>True</code> if any objects exist with prefix <code>{path}/</code> in the bucket.
-<strong>Postconditions:</strong> Does not require an explicit folder marker object. An empty prefix (no objects) returns <code>False</code>.
-<strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">backend</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;data/file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">assert</span> <span class="n">backend</span><span class="o">.</span><span class="n">is_folder</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">assert</span> <span class="n">backend</span><span class="o">.</span><span class="n">is_folder</span><span class="p">(</span><span class="s2">&quot;data/nonexistent&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span>
-</code></pre></div></p>
-<h3 id="s3-008-write-does-not-create-folder-markers">S3-008: Write Does Not Create Folder Markers<a class="headerlink" href="#s3-008-write-does-not-create-folder-markers" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write("a/b/c.txt", content)</code> creates only the object with key <code>a/b/c.txt</code>. No folder marker objects are created for <code>a/</code> or <code>a/b/</code>.
-<strong>Rationale:</strong> Folder markers add PUT overhead and clutter. S3's prefix-based folder detection (S3-007) makes them unnecessary.</p>
-<h3 id="s3-009-folder-lifecycle-tied-to-contents">S3-009: Folder Lifecycle Tied to Contents<a class="headerlink" href="#s3-009-folder-lifecycle-tied-to-contents" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> A "folder" exists only as long as objects exist under its prefix. Deleting the last object under a prefix causes <code>is_folder()</code> to return <code>False</code>.
-<strong>Postconditions:</strong> This differs from local filesystems where empty directories persist after their contents are deleted.
-<strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">backend</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;dir/file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">assert</span> <span class="n">backend</span><span class="o">.</span><span class="n">is_folder</span><span class="p">(</span><span class="s2">&quot;dir&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">backend</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;dir/file.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">assert</span> <span class="n">backend</span><span class="o">.</span><span class="n">is_folder</span><span class="p">(</span><span class="s2">&quot;dir&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span>  <span class="c1"># folder vanishes</span>
-</code></pre></div></p>
-<p><strong>Impact on conformance:</strong> <code>delete_folder</code> on an already-empty prefix raises <code>NotFound</code> (with <code>missing_ok=False</code>), because the folder no longer exists.</p>
+<h2 id="7-updated-ecosystem-landscape-march-2026">7. Updated Ecosystem Landscape (March 2026)<a class="headerlink" href="#7-updated-ecosystem-landscape-march-2026" title="Permanent link">&para;</a></h2>
+<h3 id="71-changes-since-round-1">7.1 Changes since round 1<a class="headerlink" href="#71-changes-since-round-1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Round 1 (March 3)</th>
+<th>Now (March 30)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQLAlchemy async</td>
+<td>2.0 stable</td>
+<td>2.1.0b1 (Jan 2026) dropped greenlet-by-default. <code>sqlalchemy[asyncio]</code> extra now required. Validates our "optional async" approach.</td>
+</tr>
+<tr>
+<td>Python 3.13</td>
+<td>—</td>
+<td><code>asyncio.TaskGroup</code> stable. Good for batch operations.</td>
+</tr>
+<tr>
+<td>obstore</td>
+<td>Mentioned in passing</td>
+<td>Growing alternative to s3fs. Native async, Rust-backed. Worth watching for Phase 2.</td>
+</tr>
+<tr>
+<td>Dagster async IO</td>
+<td>Existed</td>
+<td>Now more widely adopted in Dagster community. Concrete demand signal.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-native-async-sdk-readiness-per-backend">7.2 Native async SDK readiness per backend<a class="headerlink" href="#72-native-async-sdk-readiness-per-backend" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Sync SDK</th>
+<th>Async SDK</th>
+<th>Phase 2 readiness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local</td>
+<td><code>pathlib</code> / <code>os</code></td>
+<td><code>asyncio.to_thread</code> (no native)</td>
+<td>Wrap only — acceptable</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>dict + threading.Lock</td>
+<td>dict + asyncio.Lock</td>
+<td>Native async trivial</td>
+</tr>
+<tr>
+<td>HTTP</td>
+<td>urllib / requests / httpx</td>
+<td>httpx <code>AsyncClient</code></td>
+<td>Ready</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>s3fs (sync wrapper over async internals)</td>
+<td>s3fs async internals or obstore</td>
+<td>Ready (s3fs) or watch (obstore)</td>
+</tr>
+<tr>
+<td>S3-PyArrow</td>
+<td>PyArrow C++ filesystem</td>
+<td>PyArrow async (limited)</td>
+<td>Thread-wrap for Phase 1</td>
+</tr>
+<tr>
+<td>SFTP</td>
+<td>paramiko</td>
+<td>asyncssh</td>
+<td>Ready (EPL v2.0 license OK for optional dep)</td>
+</tr>
+<tr>
+<td>Azure</td>
+<td>azure-storage-file-datalake</td>
+<td><code>azure.storage.file.datalake.aio</code></td>
+<td>Ready</td>
+</tr>
+<tr>
+<td>SQL-Blob</td>
+<td>SQLAlchemy sync</td>
+<td>SQLAlchemy async (<code>[asyncio]</code> extra)</td>
+<td>Ready</td>
+</tr>
+<tr>
+<td>SQL-Query</td>
+<td>SQLAlchemy + PyArrow</td>
+<td>SQLAlchemy async + PyArrow</td>
+<td>Ready</td>
+</tr>
+</tbody>
+</table>
+<p><strong>All backends have a viable async path.</strong> No blockers for Phase 2.</p>
 <hr />
-<h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
-<h3 id="s3-010-atomic-write-via-s3-put">S3-010: Atomic Write Via S3 PUT<a class="headerlink" href="#s3-010-atomic-write-via-s3-put" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write_atomic</code> is implemented identically to <code>write</code> -- as a direct S3 PUT.
-<strong>Rationale:</strong> S3 PUT is inherently atomic. From a reader's perspective, the object transitions from non-existent (or old content) to new content in a single operation. No partial content is ever visible. The temp-file + rename pattern used by local backends is unnecessary and would add latency (extra PUT + COPY + DELETE).
-<strong>Postconditions:</strong> Satisfies AW-001's postcondition: "No partial content is ever visible."</p>
-<h3 id="s3-011-delete_folder-recursive">S3-011: delete_folder Recursive<a class="headerlink" href="#s3-011-delete_folder-recursive" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>delete_folder(path, recursive=True)</code> deletes all objects with prefix <code>{path}/</code>.
-<strong>Postconditions:</strong> After completion, no objects exist under that prefix. The "folder" ceases to exist (S3-009).
-<strong>Raises:</strong> <code>NotFound</code> if no objects exist under the prefix and <code>missing_ok=False</code>.</p>
-<h3 id="s3-012-delete_folder-non-recursive">S3-012: delete_folder Non-Recursive<a class="headerlink" href="#s3-012-delete_folder-non-recursive" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>delete_folder(path, recursive=False)</code> succeeds only if no file objects exist under the prefix (the folder is "empty").
-<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist and <code>missing_ok=False</code>. Raises a non-empty error if file objects exist under the prefix.
-<strong>Postconditions:</strong> Consistent with local filesystem semantics where <code>rmdir</code> fails on non-empty directories.</p>
-<h3 id="s3-013-move-via-copy-delete">S3-013: move Via Copy + Delete<a class="headerlink" href="#s3-013-move-via-copy-delete" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>move(src, dst)</code> is implemented as server-side copy followed by delete of the source.
-<strong>Postconditions:</strong> Not atomic -- if copy succeeds but delete fails, both objects exist. This is inherent to S3 (no native rename).
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.</p>
-<h3 id="s3-014-copy-via-s3-server-side-copy">S3-014: copy Via S3 Server-Side Copy<a class="headerlink" href="#s3-014-copy-via-s3-server-side-copy" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>copy(src, dst)</code> uses S3 server-side copy (no data passes through the client).
-<strong>Postconditions:</strong> Efficient for large files -- the S3 service handles the copy internally.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.</p>
+<h2 id="8-risk-assessment">8. Risk Assessment<a class="headerlink" href="#8-risk-assessment" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Likelihood</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API drift between Store and AsyncStore</td>
+<td>Medium</td>
+<td>High</td>
+<td>Drift-protection tests (ADR-0010 pattern). CI fails if signatures diverge.</td>
+</tr>
+<tr>
+<td><code>SyncBackendAdapter</code> memory pressure (iterator materialization)</td>
+<td>Low</td>
+<td>Medium</td>
+<td>Documented limitation. Phase 2 native backends eliminate it.</td>
+</tr>
+<tr>
+<td>Low adoption (citizen devs don't need async)</td>
+<td>Medium</td>
+<td>Low</td>
+<td>Async is opt-in. Zero cost to sync users. Platform engineers are the audience.</td>
+</tr>
+<tr>
+<td>Maintenance burden (2 APIs to update)</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Shared types, shared error model. Only I/O methods differ. ~13% code increase, not 100%.</td>
+</tr>
+<tr>
+<td>anyio/trio demand</td>
+<td>Low</td>
+<td>Low</td>
+<td>asyncio-only for now. Can add anyio later without breaking changes.</td>
+</tr>
+</tbody>
+</table>
 <hr />
-<h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<h3 id="s3-015-notfound-mapping">S3-015: NotFound Mapping<a class="headerlink" href="#s3-015-notfound-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> S3 responses with HTTP 404 or error code <code>NoSuchKey</code> / <code>NoSuchBucket</code> are mapped to <code>NotFound</code>.
-<strong>Postconditions:</strong> <code>path</code> and <code>backend</code> attributes are set on the error.</p>
-<h3 id="s3-016-permissiondenied-mapping">S3-016: PermissionDenied Mapping<a class="headerlink" href="#s3-016-permissiondenied-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> S3 responses with HTTP 403 or error code <code>AccessDenied</code> are mapped to <code>PermissionDenied</code>.</p>
-<h3 id="s3-017-backendunavailable-mapping">S3-017: BackendUnavailable Mapping<a class="headerlink" href="#s3-017-backendunavailable-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Connection errors (DNS resolution failure, connection refused, timeouts) are mapped to <code>BackendUnavailable</code>.</p>
-<h3 id="s3-018-no-native-exception-leakage">S3-018: No Native Exception Leakage<a class="headerlink" href="#s3-018-no-native-exception-leakage" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No s3fs, botocore, or aiobotocore exceptions propagate to callers. All are mapped to <code>remote_store</code> error types per BE-021.
-<strong>Postconditions:</strong> <code>backend</code> attribute is set to <code>"s3"</code> on all mapped errors.</p>
+<h2 id="9-conclusions">9. Conclusions<a class="headerlink" href="#9-conclusions" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p><strong>Spec 029 needs 8 amendments</strong> before implementation (§2.4). The
+   largest design decisions are <code>read_seekable</code> (recommend defer) and
+   <code>open_atomic</code> (recommend defer).</p>
+</li>
+<li>
+<p><strong>Phase 1 scope is manageable</strong>: ~5K lines (2K source + 3K tests),
+   ~13% codebase increase. Not a doubling.</p>
+</li>
+<li>
+<p><strong>Same-package with <code>remote_store.aio</code> namespace</strong> is the right
+   packaging approach. Follows httpx/SQLAlchemy/redis-py precedent.</p>
+</li>
+<li>
+<p><strong>The audience is platform engineers</strong>, not citizen developers. This
+   is the same audience that uses Dagster, FastAPI, and custom backends.
+   Async is opt-in — sync users are unaffected.</p>
+</li>
+<li>
+<p><strong>All backends have viable async SDKs</strong> for Phase 2. No ecosystem
+   blockers.</p>
+</li>
+<li>
+<p><strong><code>resolve()</code> and <code>ping()</code></strong> are trivial additions to the async surface.
+   <code>read_seekable</code> and <code>open_atomic</code> should be deferred to Phase 2.</p>
+</li>
+</ol>
+<h3 id="recommended-next-steps">Recommended next steps<a class="headerlink" href="#recommended-next-steps" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Amend spec 029 with the 8 items from §2.4.</li>
+<li>Implement Phase 1: <code>AsyncBackend</code>, <code>SyncBackendAdapter</code>, <code>AsyncStore</code>,
+   <code>AsyncMemoryBackend</code> in <code>remote_store.aio</code>.</li>
+<li>Add <code>pytest-asyncio</code> to dev dependencies.</li>
+<li>Add drift-protection tests ensuring sync↔async method parity.</li>
+<li>Update FEATURES.md with async section after implementation.</li>
+</ol>
 <hr />
-<h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
-<h3 id="s3-019-close">S3-019: close()<a class="headerlink" href="#s3-019-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>close()</code> releases the underlying s3fs filesystem resources.
-<strong>Postconditions:</strong> Safe to call multiple times. After close, further operations may fail.</p>
-<h3 id="s3-020-unwrap">S3-020: unwrap()<a class="headerlink" href="#s3-020-unwrap" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>unwrap(S3FileSystem)</code> returns the underlying <code>s3fs.S3FileSystem</code> instance.
-<strong>Raises:</strong> <code>CapabilityNotSupported</code> for any other type hint.
-<strong>Rationale:</strong> Escape hatch for users who need s3fs-specific features (per ADR-0003).</p>
-<hr />
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<h3 id="s3-021-client-options-passthrough">S3-021: Client Options Passthrough<a class="headerlink" href="#s3-021-client-options-passthrough" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>client_options</code> dict is merged into the s3fs configuration, allowing advanced settings (custom SSL, proxy, timeouts, etc.).
-<strong>Postconditions:</strong> Explicit constructor parameters (<code>endpoint_url</code>, <code>key</code>, <code>secret</code>, <code>region_name</code>) take precedence over keys in <code>client_options</code>.</p>
-<h3 id="s3-022-default-credential-chain">S3-022: Default Credential Chain<a class="headerlink" href="#s3-022-default-credential-chain" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When <code>key</code> and <code>secret</code> are not provided, the backend falls back to the standard AWS credential chain (environment variables <code>AWS_ACCESS_KEY_ID</code> / <code>AWS_SECRET_ACCESS_KEY</code>, <code>~/.aws/credentials</code>, IAM role, etc.).
-<strong>Rationale:</strong> Follows the principle of least surprise for AWS users.</p>
-<hr />
-<h2 id="fileinfo-population">FileInfo Population<a class="headerlink" href="#fileinfo-population" title="Permanent link">&para;</a></h2>
-<h3 id="s3-023-etag-population">S3-023: ETag Population<a class="headerlink" href="#s3-023-etag-population" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>_info_to_fileinfo</code> populates <code>FileInfo.etag</code> from the <code>ETag</code> field of the S3 response dict (always present for existing objects). The raw S3 ETag is double-quoted (e.g. <code>"\"abc123\""</code>); the backend strips the outer quotes and lowercases the value before storing it.
-<strong>Postconditions:</strong>
-- <code>FileInfo.etag</code> is a non-empty lowercase string when the info dict contains an <code>ETag</code> key.
-- <code>FileInfo.etag</code> is <code>None</code> only when the info dict has no ETag (not expected for well-formed S3 responses).
-- <code>FileInfo.digest</code> from listing paths (<code>list_files</code>, <code>iter_children</code>) is always <code>None</code> — the extra <code>HeadObject</code> call required for checksum data is issued only by <code>get_file_info</code>.
-- <code>FileInfo.digest</code> from <code>get_file_info</code> may be a <code>ContentDigest</code> even for objects uploaded without an explicit checksum, because Amazon S3 has automatically computed and stored CRC32 checksums for new objects since late 2022 (see S3-024).</p>
-<h3 id="s3-024-digest-population-via-checksummode-enabled">S3-024: Digest Population via <code>ChecksumMode: ENABLED</code><a class="headerlink" href="#s3-024-digest-population-via-checksummode-enabled" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>get_file_info</code> populates <code>FileInfo.digest</code> from the <code>x-amz-checksum-*</code>
-response header when the object was uploaded with a checksum algorithm.
-<strong>Mechanism:</strong>
-1. <code>get_file_info</code> calls <code>_fs.call_s3("head_object", Bucket=..., Key=...,
-   ChecksumMode="ENABLED")</code> unconditionally — this single request returns both
-   standard metadata and any <code>x-amz-checksum-*</code> headers.
-2. The base64-encoded checksum value from the response is decoded to hex and
-   wrapped in a <code>ContentDigest(algorithm, hex_value)</code>.
-<strong>Supported algorithms:</strong> <code>sha256</code>, <code>sha1</code>, <code>crc32</code>, <code>crc32c</code> (case-insensitive on input,
-lowercase-normalized in <code>ContentDigest</code>).
-<strong>Postconditions:</strong>
-- <code>FileInfo.digest</code> is a <code>ContentDigest</code> with the correct algorithm and hex value when
-  the <code>HeadObject</code> response with <code>ChecksumMode: ENABLED</code> contains any known checksum key.
-- <code>FileInfo.digest</code> may be a <code>ContentDigest</code> even for objects uploaded without an
-  explicit checksum algorithm, because Amazon S3 (and moto) automatically computes and
-  stores CRC32 checksums for new objects.
-- <code>FileInfo.digest</code> is <code>None</code> only when the response contains no known checksum key, or
-  base64 decoding the value fails.
-- <code>FileInfo.digest</code> from listing paths (<code>list_files</code>, <code>iter_children</code>) is always <code>None</code>
-  — the extra request is only issued by <code>get_file_info</code>.</p>
-<h3 id="s3-025-endpoint-url-normalization">S3-025: Endpoint URL Normalization<a class="headerlink" href="#s3-025-endpoint-url-normalization" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>endpoint_url</code> is normalized at construction time so that bare <code>host:port</code> values are usable.
-<strong>Rules:</strong>
-- <code>None</code> → <code>None</code> (unchanged).
-- Empty or whitespace-only → <code>None</code>.
-- Bare <code>host:port</code> or hostname → prefixed with <code>https://</code>.
-- URLs with an existing <code>http://</code> or <code>https://</code> scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.</p>
-<p><strong>Postconditions:</strong> After construction, <code>self._endpoint_url</code> always contains a scheme prefix or is <code>None</code>.</p>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../research-async-store-api/">Round 1 research</a> (2026-03-03)</li>
+<li><a href="../../adrs/0012-async-store-backend-api/">ADR-0012</a> — Hybrid model decision</li>
+<li><a href="../../specs/029-async-store-backend-api/">Spec 029</a> — Phase 1 spec (draft)</li>
+<li><a href="../../FEATURES.md">FEATURES.md</a> — v0.20.0 feature surface</li>
+<li><a href="../BACKLOG.md">Backlog</a> — ID-013 status and remaining items</li>
+</ul>
 
 
 
