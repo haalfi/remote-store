@@ -1,0 +1,894 @@
+"""Async Azure Storage backend -- Blob SDK for non-HNS, DataLake SDK for HNS."""
+
+from __future__ import annotations
+
+import contextlib
+import logging
+import uuid
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any, TypeVar
+
+from remote_store._capabilities import Capability, CapabilitySet
+from remote_store._config import RetryPolicy, Secret, _reveal
+from remote_store._errors import (
+    AlreadyExists,
+    CapabilityNotSupported,
+    DirectoryNotEmpty,
+    NotFound,
+    RemoteStoreError,
+)
+from remote_store._models import FileInfo, FolderEntry, FolderInfo
+from remote_store._path import RemotePath
+from remote_store.aio._async_backend import AsyncBackend
+from remote_store.backends._azure_common import (
+    azure_path as _azure_path_fn,
+)
+from remote_store.backends._azure_common import (
+    build_azure_retry,
+    classify_azure_error,
+    props_to_fileinfo,
+    resolve_credential,
+    validate_azure_params,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+    from remote_store._resolution import ResolutionPlan
+    from remote_store.aio._types import AsyncWritableContent
+
+T = TypeVar("T")
+
+_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.SEEKABLE_READ})
+
+log = logging.getLogger(__name__)
+
+
+class AsyncAzureBackend(AsyncBackend):
+    """Async Azure Storage backend.
+
+    Uses the async Blob SDK for non-HNS accounts (plain Blob Storage, Azurite)
+    and the async DataLake SDK for HNS accounts (ADLS Gen2) to get atomic
+    rename and real directory support.
+
+    Args:
+        container: Azure Storage container name (required, non-empty).
+        account_name: Storage account name.
+        account_url: Full account URL (e.g. ``https://myaccount.dfs.core.windows.net``).
+        account_key: Storage account key.
+        sas_token: Shared Access Signature token.
+        connection_string: Azure Storage connection string.
+        credential: Any credential object (e.g. ``DefaultAzureCredential()``).
+        client_options: Additional options passed to service clients.
+        max_concurrency: Maximum number of parallel connections for
+            uploads and downloads (default ``1`` -- sequential).
+    """
+
+    def __init__(
+        self,
+        container: str,
+        *,
+        account_name: str | None = None,
+        account_url: str | None = None,
+        account_key: str | Secret | None = None,
+        sas_token: str | Secret | None = None,
+        connection_string: str | Secret | None = None,
+        credential: Any | None = None,
+        client_options: dict[str, Any] | None = None,
+        retry: RetryPolicy | None = None,
+        max_concurrency: int = 1,
+    ) -> None:
+        validate_azure_params(container, account_name, account_url, connection_string, max_concurrency)
+        self._container = container
+        self._account_name = account_name
+        self._account_url = account_url
+        self._account_key = _reveal(account_key)
+        self._sas_token = _reveal(sas_token)
+        self._connection_string = _reveal(connection_string)
+        self._credential = credential
+        self._client_options = client_options or {}
+        self._retry = retry
+        self._max_concurrency = max_concurrency
+        # Lazy instances
+        self._blob_service_instance: Any = None
+        self._cc_instance: Any = None
+        self._datalake_service_instance: Any = None
+        self._fs_instance: Any = None
+        self._hns_enabled: bool | None = None
+
+    # region: properties
+
+    @property
+    def name(self) -> str:
+        """Unique identifier for this backend type."""
+        return "async-azure"
+
+    @property
+    def capabilities(self) -> CapabilitySet:
+        """Declared capabilities of this backend."""
+        return _ALL_CAPABILITIES
+
+    # endregion
+
+    # region: lazy client properties
+
+    @property
+    def _blob_service(self) -> Any:
+        """Lazy async BlobServiceClient."""
+        if self._blob_service_instance is None:
+            from azure.storage.blob.aio import BlobServiceClient
+
+            opts: dict[str, Any] = dict(self._client_options)
+            azure_retry = build_azure_retry(self._retry)
+            if azure_retry is not None and "retry_policy" not in opts:
+                opts["retry_policy"] = azure_retry
+            if self._connection_string:
+                self._blob_service_instance = BlobServiceClient.from_connection_string(self._connection_string, **opts)
+            else:  # pragma: no cover -- only reached without connection_string
+                url = self._account_url
+                if url is None and self._account_name is not None:
+                    url = f"https://{self._account_name}.blob.core.windows.net"
+                assert url is not None  # guaranteed by __init__ validation
+                cred = resolve_credential(
+                    self._credential,
+                    self._account_key,
+                    self._sas_token,
+                    is_async=True,
+                    backend_name=self.name,
+                )
+                self._blob_service_instance = BlobServiceClient(account_url=url, credential=cred, **opts)
+        return self._blob_service_instance
+
+    @property
+    def _cc(self) -> Any:
+        """Lazy async ContainerClient (Blob SDK)."""
+        if self._cc_instance is None:
+            self._cc_instance = self._blob_service.get_container_client(self._container)
+        return self._cc_instance
+
+    @property
+    def _datalake_service(self) -> Any:  # pragma: no cover -- HNS only, requires ADLS Gen2
+        """Lazy async DataLakeServiceClient (only used for HNS accounts)."""
+        if self._datalake_service_instance is None:
+            from azure.storage.filedatalake.aio import DataLakeServiceClient
+
+            opts: dict[str, Any] = dict(self._client_options)
+            azure_retry = build_azure_retry(self._retry)
+            if azure_retry is not None and "retry_policy" not in opts:
+                opts["retry_policy"] = azure_retry
+            if self._connection_string:
+                self._datalake_service_instance = DataLakeServiceClient.from_connection_string(
+                    self._connection_string, **opts
+                )
+            else:
+                url = self._account_url
+                if url is None and self._account_name is not None:
+                    url = f"https://{self._account_name}.dfs.core.windows.net"
+                assert url is not None
+                cred = resolve_credential(
+                    self._credential,
+                    self._account_key,
+                    self._sas_token,
+                    is_async=True,
+                    backend_name=self.name,
+                )
+                self._datalake_service_instance = DataLakeServiceClient(account_url=url, credential=cred, **opts)
+        return self._datalake_service_instance
+
+    @property
+    def _fs(self) -> Any:  # pragma: no cover -- HNS only, requires ADLS Gen2
+        """Lazy async FileSystemClient (DataLake SDK, HNS only)."""
+        if self._fs_instance is None:
+            self._fs_instance = self._datalake_service.get_file_system_client(self._container)
+        return self._fs_instance
+
+    # endregion
+
+    # region: HNS detection
+
+    async def _ensure_hns(self) -> bool:
+        """Detect whether the storage account has Hierarchical Namespace enabled.
+
+        Returns:
+            ``True`` if HNS is enabled, ``False`` otherwise.
+        """
+        if self._hns_enabled is None:
+            try:
+                info = await self._blob_service.get_account_information()
+                self._hns_enabled = bool(info.get("is_hns_enabled", False))
+            except Exception:
+                log.warning(
+                    "Failed to detect HNS status, falling back to non-HNS behavior",
+                    exc_info=True,
+                )
+                self._hns_enabled = False
+        return self._hns_enabled
+
+    # endregion
+
+    # region: public methods
+
+    async def check_health(self) -> None:
+        """Verify the backend is reachable and credentials are valid.
+
+        Raises:
+            PermissionDenied: If credentials are invalid.
+            NotFound: If the container does not exist.
+            BackendUnavailable: If the backend cannot be reached.
+        """
+        async with self._errors():
+            if await self._ensure_hns():  # pragma: no cover -- HNS only
+                await self._fs.get_file_system_properties()
+            else:
+                await self._cc.get_container_properties()
+
+    def to_key(self, native_path: str) -> str:
+        """Convert a backend-native path to a backend-relative key.
+
+        Args:
+            native_path: Absolute or backend-native path string.
+
+        Returns:
+            Path relative to the backend's root.
+        """
+        prefix = f"{self._container}/"
+        if native_path.startswith(prefix):
+            return native_path[len(prefix) :]
+        return native_path
+
+    def native_path(self, path: str) -> str:
+        """Convert a backend-relative key to the backend-native path.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            Backend-native path (``container/path``).
+        """
+        if path:
+            return f"{self._container}/{path}"
+        return self._container
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        """Return a ``ResolutionPlan`` with Azure-specific details.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            Plan with ``kind="async-azure"`` and ``details`` containing
+            ``container`` and ``account_url``.
+        """
+        from remote_store._resolution import ResolutionPlan as _RP
+        from remote_store._resolution import _strip_userinfo
+
+        return _RP(
+            kind="async-azure",
+            backend=self.name,
+            key=path,
+            native_path=self.native_path(path),
+            details={
+                "container": self._container,
+                "account_url": _strip_userinfo(self._account_url),
+            },
+        )
+
+    async def exists(self, path: str) -> bool:
+        """Check if a file or folder exists.
+
+        Args:
+            path: Backend-relative key, or ``""`` for the root.
+
+        Returns:
+            ``True`` if a file or folder exists at *path*.
+        """
+        from azure.core.exceptions import ResourceNotFoundError
+
+        async with self._errors(path):
+            ap = _azure_path_fn(path)
+            if not ap:
+                return True
+            # Check as blob
+            bc = self._cc.get_blob_client(ap)
+            try:
+                await bc.get_blob_properties()
+                return True
+            except ResourceNotFoundError:
+                pass
+            # Check as folder
+            if await self._ensure_hns():  # pragma: no cover -- HNS only
+                try:
+                    await self._fs.get_directory_client(ap).get_directory_properties()
+                    return True
+                except Exception:
+                    return False
+            else:
+                prefix = ap.rstrip("/") + "/"
+                blobs = self._cc.list_blobs(name_starts_with=prefix, results_per_page=1)
+                return bool([b async for b in blobs][:1])
+
+    async def is_file(self, path: str) -> bool:
+        """Return ``True`` if ``path`` is an existing file.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            ``True`` if *path* exists and is a file.
+        """
+        from azure.core.exceptions import ResourceNotFoundError
+
+        async with self._errors(path):
+            bc = self._blob_client(path)
+            try:
+                props = await bc.get_blob_properties()
+                meta = getattr(props, "metadata", None) or {}
+                return not meta.get("hdi_isfolder")
+            except ResourceNotFoundError:
+                return False
+
+    async def is_folder(self, path: str) -> bool:
+        """Return ``True`` if ``path`` is an existing folder.
+
+        Args:
+            path: Backend-relative key, or ``""`` for the root.
+
+        Returns:
+            ``True`` if *path* exists and is a folder.
+        """
+        async with self._errors(path):
+            ap = _azure_path_fn(path)
+            if not ap:
+                return True
+            if await self._ensure_hns():  # pragma: no cover -- HNS only
+                try:
+                    await self._fs.get_directory_client(ap).get_directory_properties()
+                    return True
+                except Exception:
+                    return False
+            else:
+                prefix = ap.rstrip("/") + "/"
+                blobs = self._cc.list_blobs(name_starts_with=prefix, results_per_page=1)
+                return bool([b async for b in blobs][:1])
+
+    async def read(self, path: str) -> AsyncIterator[bytes]:
+        """Open a file for reading and return an async iterator of byte chunks.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            An async iterator yielding byte chunks.
+
+        Raises:
+            NotFound: If the file does not exist.
+        """
+        try:
+            bc = self._blob_client(path)
+            downloader = await bc.download_blob(max_concurrency=self._max_concurrency)
+            async for chunk in downloader.chunks():
+                yield chunk
+        except RemoteStoreError:
+            raise
+        except Exception as exc:
+            raise classify_azure_error(exc, path, self.name) from None
+
+    async def read_bytes(self, path: str) -> bytes:
+        """Read the full content of a file as bytes.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            The file content.
+
+        Raises:
+            NotFound: If the file does not exist.
+        """
+        async with self._errors(path):
+            bc = self._blob_client(path)
+            return bytes(await (await bc.download_blob(max_concurrency=self._max_concurrency)).readall())
+
+    async def write(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+        """Write content to a file.
+
+        Args:
+            path: Backend-relative key.
+            content: Data to write (bytes or async iterator of bytes).
+            overwrite: If ``False``, raise if file already exists.
+
+        Raises:
+            AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+        """
+        from azure.core.exceptions import ResourceNotFoundError
+
+        # Materialize async iterator content before uploading.
+        if not isinstance(content, bytes):
+            chunks: list[bytes] = []
+            async for chunk in content:
+                chunks.append(chunk)
+            content = b"".join(chunks)
+
+        async with self._errors(path):
+            bc = self._blob_client(path)
+            if not overwrite:
+                try:
+                    await bc.get_blob_properties()
+                    raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+                except AlreadyExists:
+                    raise
+                except ResourceNotFoundError:
+                    pass  # Blob doesn't exist, proceed
+            await bc.upload_blob(content, overwrite=True, max_concurrency=self._max_concurrency)
+
+    async def write_atomic(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+        """Write content atomically via temp file + rename.
+
+        For non-HNS accounts, direct upload is atomic (PUT semantics).
+        For HNS accounts, write to temp file via DFS then atomic rename.
+
+        Args:
+            path: Backend-relative key.
+            content: Data to write.
+            overwrite: If ``False``, raise if file already exists.
+
+        Raises:
+            AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+        """
+        if not await self._ensure_hns():
+            # non-HNS: direct upload is atomic (PUT semantics)
+            await self.write(path, content, overwrite=overwrite)
+            return
+
+        # HNS: write to temp file via DFS, then atomic rename
+        from azure.core.exceptions import ResourceNotFoundError
+
+        # Materialize async iterator content before uploading.
+        if not isinstance(content, bytes):
+            chunks: list[bytes] = []
+            async for chunk in content:
+                chunks.append(chunk)
+            content = b"".join(chunks)
+
+        async with self._errors(path):  # pragma: no cover -- HNS only
+            bc = self._blob_client(path)
+            if not overwrite:
+                try:
+                    await bc.get_blob_properties()
+                    raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+                except AlreadyExists:
+                    raise
+                except ResourceNotFoundError:
+                    pass
+
+            ap = _azure_path_fn(path)
+            basename = ap.rsplit("/", 1)[-1] if "/" in ap else ap
+            parent = ap.rsplit("/", 1)[0] if "/" in ap else ""
+            tmp_name = f".~tmp.{basename}.{uuid.uuid4().hex[:8]}"
+            tmp_path = f"{parent}/{tmp_name}" if parent else tmp_name
+
+            tmp_fc = self._fs.get_file_client(tmp_path)
+            try:
+                await tmp_fc.upload_data(content, overwrite=True, max_concurrency=self._max_concurrency)
+                new_name = f"{self._container}/{ap}"
+                await tmp_fc.rename_file(new_name)
+            except Exception:
+                with contextlib.suppress(Exception):
+                    await tmp_fc.delete_file()
+                raise
+
+    async def delete(self, path: str, *, missing_ok: bool = False) -> None:
+        """Delete a file.
+
+        Args:
+            path: Backend-relative key.
+            missing_ok: If ``True``, do not raise when the file is absent.
+
+        Raises:
+            NotFound: If the file is missing and ``missing_ok`` is ``False``.
+        """
+        async with self._errors(path):
+            bc = self._blob_client(path)
+            try:
+                await bc.delete_blob()
+            except Exception as exc:
+                mapped = classify_azure_error(exc, path, self.name)
+                if isinstance(mapped, NotFound):
+                    if not missing_ok:
+                        raise mapped from None
+                    return
+                raise mapped from None  # pragma: no cover
+
+    async def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
+        """Delete a folder.
+
+        Args:
+            path: Backend-relative key.
+            recursive: If ``True``, delete all contents first.
+            missing_ok: If ``True``, do not raise when absent.
+
+        Raises:
+            NotFound: If the folder is missing and ``missing_ok`` is ``False``.
+            DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
+        """
+        async with self._errors(path):
+            ap = _azure_path_fn(path)
+
+            if await self._ensure_hns():  # pragma: no cover -- HNS only
+                dc = self._fs.get_directory_client(ap)
+                try:
+                    await dc.get_directory_properties()
+                except Exception as exc:
+                    mapped = classify_azure_error(exc, path, self.name)
+                    if isinstance(mapped, NotFound):
+                        if not missing_ok:
+                            raise mapped from None
+                        return
+                    raise mapped from None
+
+                if not recursive:
+                    children = []
+                    async for p in self._fs.get_paths(path=ap, recursive=False, max_results=1):
+                        children.append(p)
+                    if children:
+                        raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name)
+                await dc.delete_directory()
+            else:
+                # non-HNS: virtual folders via blob prefix
+                prefix = ap.rstrip("/") + "/"
+                first = []
+                async for blob in self._cc.list_blobs(name_starts_with=prefix, results_per_page=1):
+                    first.append(blob)
+                    break
+                if first:
+                    if not recursive:
+                        raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name)
+                    async for blob in self._cc.list_blobs(name_starts_with=prefix):
+                        await self._cc.get_blob_client(blob.name).delete_blob()
+                elif not missing_ok:
+                    raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
+
+    async def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+    ) -> AsyncIterator[FileInfo]:
+        """List files under ``path``.
+
+        Args:
+            path: Backend-relative folder key, or ``""`` for the root.
+            recursive: If ``True``, include files in all subdirectories.
+            max_depth: Optional maximum folder depth to traverse.
+
+        Returns:
+            An async iterator of ``FileInfo`` objects.
+        """
+        try:
+            ap = _azure_path_fn(path)
+            prefix = (ap.rstrip("/") + "/") if ap else ""
+
+            if await self._ensure_hns():  # pragma: no cover -- HNS only
+                try:
+                    paths = self._fs.get_paths(path=ap or "/", recursive=recursive)
+                    async for p in paths:
+                        if not getattr(p, "is_directory", False):
+                            yield props_to_fileinfo(p, str(p.name))
+                except Exception as exc:
+                    mapped = classify_azure_error(exc, path, self.name)
+                    if isinstance(mapped, NotFound):
+                        return
+                    raise mapped from None
+            elif recursive:
+                async for blob in self._cc.list_blobs(name_starts_with=prefix):
+                    yield props_to_fileinfo(blob, blob.name)
+            else:
+                async for item in self._cc.walk_blobs(name_starts_with=prefix):
+                    if not getattr(item, "prefix", None):
+                        yield props_to_fileinfo(item, item.name)
+        except RemoteStoreError:
+            raise
+        except Exception as exc:
+            raise classify_azure_error(exc, path, self.name) from None
+
+    async def list_folders(self, path: str) -> AsyncIterator[FolderEntry]:
+        """List immediate subfolders under ``path``.
+
+        Args:
+            path: Backend-relative folder key, or ``""`` for the root.
+
+        Returns:
+            An async iterator of ``FolderEntry`` objects.
+        """
+        try:
+            ap = _azure_path_fn(path)
+            prefix = (ap.rstrip("/") + "/") if ap else ""
+
+            if await self._ensure_hns():  # pragma: no cover -- HNS only
+                try:
+                    paths = self._fs.get_paths(path=ap or "/", recursive=False)
+                    async for p in paths:
+                        if getattr(p, "is_directory", False):
+                            rel = str(p.name).rstrip("/")
+                            folder_name = rel.rsplit("/", 1)[-1]
+                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                except Exception as exc:
+                    mapped = classify_azure_error(exc, path, self.name)
+                    if isinstance(mapped, NotFound):
+                        return
+                    raise mapped from None
+            else:
+                async for item in self._cc.walk_blobs(name_starts_with=prefix):
+                    if getattr(item, "prefix", None):
+                        rel = self.to_key(item.prefix.rstrip("/"))
+                        folder_name = rel.rsplit("/", 1)[-1]
+                        yield FolderEntry(path=RemotePath(rel), name=folder_name)
+        except RemoteStoreError:
+            raise
+        except Exception as exc:
+            raise classify_azure_error(exc, path, self.name) from None
+
+    async def iter_children(self, path: str) -> AsyncIterator[FileInfo | FolderEntry]:
+        """Yield both files and folders under ``path`` in a single pass.
+
+        Args:
+            path: Backend-relative folder key, or ``""`` for the root.
+
+        Returns:
+            An async iterator of ``FileInfo`` (files) and ``FolderEntry`` (folders).
+        """
+        try:
+            ap = _azure_path_fn(path)
+            prefix = (ap.rstrip("/") + "/") if ap else ""
+
+            if await self._ensure_hns():  # pragma: no cover -- HNS only
+                try:
+                    paths = self._fs.get_paths(path=ap or "/", recursive=False)
+                    async for p in paths:
+                        if getattr(p, "is_directory", False):
+                            rel = str(p.name).rstrip("/")
+                            folder_name = rel.rsplit("/", 1)[-1]
+                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                        else:
+                            yield props_to_fileinfo(p, str(p.name))
+                except Exception as exc:
+                    mapped = classify_azure_error(exc, path, self.name)
+                    if isinstance(mapped, NotFound):
+                        return
+                    raise mapped from None
+            else:
+                async for item in self._cc.walk_blobs(name_starts_with=prefix):
+                    if getattr(item, "prefix", None):
+                        rel = self.to_key(item.prefix.rstrip("/"))
+                        folder_name = rel.rsplit("/", 1)[-1]
+                        yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                    else:
+                        yield props_to_fileinfo(item, item.name)
+        except RemoteStoreError:
+            raise
+        except Exception as exc:
+            raise classify_azure_error(exc, path, self.name) from None
+
+    async def glob(self, pattern: str) -> AsyncIterator[FileInfo]:
+        """Match files against a glob pattern.
+
+        Args:
+            pattern: Glob pattern (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
+
+        Returns:
+            An async iterator of matching ``FileInfo`` objects.
+        """
+        from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
+
+        try:
+            prefix = extract_prefix(pattern)
+            recursive = needs_recursive(pattern)
+            compiled = pattern_to_regex(pattern)
+            async for info in self.list_files(prefix, recursive=recursive):
+                if compiled.match(str(info.path)):
+                    yield info
+        except RemoteStoreError:
+            raise
+        except Exception as exc:
+            raise classify_azure_error(exc, pattern, self.name) from None
+
+    async def get_file_info(self, path: str) -> FileInfo:
+        """Get metadata for a file.
+
+        Args:
+            path: Backend-relative key.
+
+        Returns:
+            A ``FileInfo`` with size, modification time, etc.
+
+        Raises:
+            NotFound: If the file does not exist.
+        """
+        async with self._errors(path):
+            bc = self._blob_client(path)
+            props = await bc.get_blob_properties()
+            meta = getattr(props, "metadata", None) or {}
+            if meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                raise NotFound(f"File not found: {path}", path=path, backend=self.name)
+            return props_to_fileinfo(props, path)
+
+    async def get_folder_info(self, path: str) -> FolderInfo:
+        """Get metadata for a folder.
+
+        Args:
+            path: Backend-relative folder key, or ``""`` for the root.
+
+        Returns:
+            A ``FolderInfo`` with file count, total size, etc.
+
+        Raises:
+            NotFound: If the folder does not exist.
+        """
+        async with self._errors(path):
+            ap = _azure_path_fn(path)
+
+            if await self._ensure_hns():  # pragma: no cover -- HNS only
+                dc = self._fs.get_directory_client(ap)
+                await dc.get_directory_properties()  # raises if not found
+
+            # Gather stats from files under this prefix
+            prefix = (ap.rstrip("/") + "/") if ap else ""
+            file_count = 0
+            total_size = 0
+            latest_modified: datetime | None = None
+
+            async for blob in self._cc.list_blobs(name_starts_with=prefix):
+                file_count += 1
+                total_size += blob.size or 0
+                modified = blob.last_modified
+                if modified is not None:
+                    if modified.tzinfo is None:  # pragma: no cover
+                        modified = modified.replace(tzinfo=timezone.utc)
+                    if latest_modified is None or modified > latest_modified:
+                        latest_modified = modified
+
+            if file_count == 0 and not await self._ensure_hns():
+                raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
+
+            return FolderInfo(
+                path=RemotePath.from_backend_path(path),
+                file_count=file_count,
+                total_size=total_size,
+                modified_at=latest_modified,
+            )
+
+    async def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Move or rename a file.
+
+        Args:
+            src: Backend-relative source key.
+            dst: Backend-relative destination key.
+            overwrite: If ``True``, replace any existing file at *dst*.
+
+        Raises:
+            NotFound: If ``src`` does not exist.
+            AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
+        """
+        from azure.core.exceptions import ResourceNotFoundError
+
+        async with self._errors(src):
+            src_bc = self._blob_client(src)
+            await src_bc.get_blob_properties()  # raises NotFound if missing
+
+            dst_bc = self._blob_client(dst)
+            if not overwrite:
+                try:
+                    await dst_bc.get_blob_properties()
+                    raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
+                except AlreadyExists:
+                    raise
+                except ResourceNotFoundError:
+                    pass
+
+            if await self._ensure_hns():  # pragma: no cover -- HNS only
+                src_fc = self._fs.get_file_client(_azure_path_fn(src))
+                new_name = f"{self._container}/{_azure_path_fn(dst)}"
+                await src_fc.rename_file(new_name)
+            else:
+                # Server-side copy + delete
+                await dst_bc.start_copy_from_url(src_bc.url)
+                await src_bc.delete_blob()
+
+    async def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Copy a file.
+
+        Args:
+            src: Backend-relative source key.
+            dst: Backend-relative destination key.
+            overwrite: If ``True``, replace any existing file at *dst*.
+
+        Raises:
+            NotFound: If ``src`` does not exist.
+            AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
+        """
+        from azure.core.exceptions import ResourceNotFoundError
+
+        async with self._errors(src):
+            src_bc = self._blob_client(src)
+            await src_bc.get_blob_properties()  # raises NotFound if missing
+
+            dst_bc = self._blob_client(dst)
+            if not overwrite:
+                try:
+                    await dst_bc.get_blob_properties()
+                    raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
+                except AlreadyExists:
+                    raise
+                except ResourceNotFoundError:
+                    pass
+
+            await dst_bc.start_copy_from_url(src_bc.url)
+
+    async def aclose(self) -> None:
+        """Release all Azure SDK client resources."""
+        clients = (self._cc_instance, self._blob_service_instance, self._fs_instance, self._datalake_service_instance)
+        for client in clients:
+            if client is not None:
+                with contextlib.suppress(Exception):
+                    await client.close()
+        self._cc_instance = None
+        self._blob_service_instance = None
+        self._fs_instance = None
+        self._datalake_service_instance = None
+        self._hns_enabled = None
+
+    def unwrap(self, type_hint: type[T]) -> T:
+        """Return the native async FileSystemClient if it matches the requested type.
+
+        Args:
+            type_hint: The expected type.
+
+        Raises:
+            CapabilityNotSupported: If backend cannot provide the requested type.
+        """
+        from azure.storage.filedatalake.aio import FileSystemClient
+
+        if type_hint is FileSystemClient:
+            return self._fs  # type: ignore[no-any-return]
+        raise CapabilityNotSupported(
+            f"Backend 'async-azure' does not expose native handle of type {type_hint.__name__}. "
+            f"Supported: azure.storage.filedatalake.aio.FileSystemClient.",
+            capability="unwrap",
+            backend=self.name,
+        )
+
+    # endregion
+
+    # region: dunder methods
+
+    def __repr__(self) -> str:
+        return (
+            f"AsyncAzureBackend(container={self._container!r}, "
+            f"account_name={self._account_name!r}, "
+            f"account_key={'***' if self._account_key is not None else None!r}, "
+            f"sas_token={'***' if self._sas_token is not None else None!r}, "
+            f"connection_string={'***' if self._connection_string is not None else None!r}, "
+            f"credential={'***' if self._credential is not None else None!r})"
+        )
+
+    # endregion
+
+    # region: private helpers
+
+    def _blob_client(self, path: str) -> Any:
+        """Get an async BlobClient for the given path."""
+        return self._cc.get_blob_client(_azure_path_fn(path))
+
+    @asynccontextmanager
+    async def _errors(self, path: str = "") -> AsyncIterator[None]:
+        """Map Azure SDK exceptions to remote_store errors."""
+        try:
+            yield
+        except RemoteStoreError:
+            raise
+        except Exception as exc:
+            raise classify_azure_error(exc, path, self.name) from None
+
+    # endregion

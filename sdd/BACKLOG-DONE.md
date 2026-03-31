@@ -29,6 +29,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Integrations
 
+- [x] **ID-013 — Async Store / Backend API (Phase 1 + Phase 2)** (post-v0.20.0)
+  Phase 1: `remote_store.aio` module with `AsyncStore`, `AsyncBackend`,
+  `SyncBackendAdapter`, `AsyncMemoryBackend`. Phase 2: `AsyncAzureBackend` --
+  first native async backend using Azure SDK async clients
+  (`azure.storage.blob.aio`, `azure.storage.filedatalake.aio`). Shared helpers
+  in `_azure_common.py` for sync/async code reuse.
+  Remainder: Phase 3 (async extensions) tracked as ID-013b in BACKLOG.md.
+
 - [x] **ID-124 — Dagster multi-partition loading** (post-v0.20.0)
   When `load_input` receives multiple partition keys (time-window aggregation),
   return `dict[str, Any]` mapping partition key to deserialized object.

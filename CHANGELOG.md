@@ -15,6 +15,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   (delegates to a thread-pool executor). `AsyncMemoryBackend` for
   async testing. Phase 1 -- core primitives; native async backends
   (S3, Azure) planned for Phase 2.
+- **`AsyncAzureBackend` native async backend** (ID-013 Phase 2): First native
+  async backend for `remote_store.aio`. Uses Azure SDK async clients
+  (`azure.storage.blob.aio`, `azure.storage.filedatalake.aio`) for true
+  non-blocking I/O. Shared helpers extracted to `_azure_common.py` for
+  sync/async code reuse. Zero new dependencies.
 - `FEATURES.md` at repo root — versioned snapshot of backends, extensions,
   capabilities, and install extras for agent and human discoverability (BK-136).
 - `remote_store.info()` public function — runtime introspection of available

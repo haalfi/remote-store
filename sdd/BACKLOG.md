@@ -74,18 +74,14 @@ Items graduate through the SDD pipeline:
   - Blocked: waiting for conda-forge reviewer approval. When merged: add
     `conda install -c conda-forge remote-store` to README.
 
-- [~] **ID-013 — Async Store / Backend API**
-  Async version of Store and Backend for async frameworks (FastAPI, aiohttp).
-  - Done: [research round 1](research/research-async-store-api.md),
-    [research round 2](research/research-async-store-api-round2.md),
-    [ADR-0012](adrs/0012-async-store-backend-api.md) draft,
-    [spec 029](specs/029-async-store-backend-api.md) draft,
-    Phase 1 implementation (`remote_store.aio`: `AsyncBackend`, `AsyncStore`,
-    `SyncBackendAdapter`, `AsyncMemoryBackend`).
+- [~] **ID-013b — Async Store API Phase 3: async extensions**
+  Remainder of ID-013. Phase 1 (core primitives) and Phase 2 (native async
+  backends) shipped — see [BACKLOG-DONE.md](BACKLOG-DONE.md).
   - Remaining:
     - Spec 029 amendments (8 items from round 2 §2.4).
-    - Implementation Phase 2: native async backends.
-    - Implementation Phase 3: async extensions (incl. Dagster `AsyncIOManager`).
+    - Implementation Phase 3: async extensions. Note: Dagster 1.12.21 has no
+      `AsyncIOManager`; `UPathIOManager.load_partitions_async` is internal only.
+      Blocked until Dagster exposes a public async IO manager interface.
 
 ---
 

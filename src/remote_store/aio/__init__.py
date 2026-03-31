@@ -13,3 +13,10 @@ __all__ = [
     "AsyncWritableContent",
     "SyncBackendAdapter",
 ]
+
+try:
+    from remote_store.aio._async_azure import AsyncAzureBackend
+
+    __all__ = [*__all__, "AsyncAzureBackend"]
+except ImportError:  # pragma: no cover
+    pass
