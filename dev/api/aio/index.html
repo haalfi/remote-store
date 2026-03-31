@@ -3586,6 +3586,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#asyncazurebackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncAzureBackend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncAzureBackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncAzureBackend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#asyncwritablecontent" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7898,6 +7920,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#asyncazurebackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncAzureBackend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncAzureBackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncAzureBackend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#asyncwritablecontent" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7953,8 +7997,7 @@
 <h1 id="async-api">Async API<a class="headerlink" href="#async-api" title="Permanent link">&para;</a></h1>
 <p>The <code>remote_store.aio</code> module provides native <code>async</code>/<code>await</code> support
 for store operations. See <a href="../store/">Store</a> for the synchronous
-counterpart. Phase 1 covers the core primitives; native async backends
-(S3, Azure) are planned for Phase 2.</p>
+counterpart.</p>
 <hr />
 <h2 id="asyncstore">AsyncStore<a class="headerlink" href="#asyncstore" title="Permanent link">&para;</a></h2>
 
@@ -9685,6 +9728,186 @@ drop-in async backend for unit testing, interactive exploration, and
 documentation examples.</p>
 <p>All 8 capabilities are supported.  The full conformance suite passes
 with zero skips.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><hr />
+<h2 id="asyncazurebackend">AsyncAzureBackend<a class="headerlink" href="#asyncazurebackend" title="Permanent link">&para;</a></h2>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="remote_store.aio.AsyncAzureBackend" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">AsyncAzureBackend</span>
+
+
+<a href="#remote_store.aio.AsyncAzureBackend" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AsyncAzureBackend</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">container</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">account_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">account_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">account_key</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">sas_token</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">connection_string</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">credential</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            RetryPolicy
+
+
+  
+      dataclass
+   (remote_store._config.RetryPolicy)" href="../config/#remote_store.RetryPolicy">RetryPolicy</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">max_concurrency</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="            AsyncBackend (remote_store.aio._async_backend.AsyncBackend)" href="#remote_store.aio.AsyncBackend">AsyncBackend</a></code></p>
+
+
+
+        <p>Async Azure Storage backend.</p>
+<p>Uses the async Blob SDK for non-HNS accounts (plain Blob Storage, Azurite)
+and the async DataLake SDK for HNS accounts (ADLS Gen2) to get atomic
+rename and real directory support.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>container</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Azure Storage container name (required, non-empty).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>account_name</code></b>
+              (<code><span title="str">str</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Storage account name.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>account_url</code></b>
+              (<code><span title="str">str</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Full account URL (e.g. <code>https://myaccount.dfs.core.windows.net</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>account_key</code></b>
+              (<code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../config/#remote_store.Secret">Secret</a> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Storage account key.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>sas_token</code></b>
+              (<code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../config/#remote_store.Secret">Secret</a> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Shared Access Signature token.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>connection_string</code></b>
+              (<code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../config/#remote_store.Secret">Secret</a> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Azure Storage connection string.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>credential</code></b>
+              (<code><span title="typing.Any">Any</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Any credential object (e.g. <code>DefaultAzureCredential()</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>client_options</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Additional options passed to service clients.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>retry</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            RetryPolicy
+
+
+  
+      dataclass
+   (remote_store._config.RetryPolicy)" href="../config/#remote_store.RetryPolicy">RetryPolicy</a> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Retry policy for transient failures.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>max_concurrency</code></b>
+              (<code><span title="int">int</span></code>, default:
+                  <code>1</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Maximum number of parallel connections for
+uploads and downloads (default <code>1</code> -- sequential).</p>
+          </div>
+        </li>
+    </ul>
 
 
 

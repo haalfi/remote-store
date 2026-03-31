@@ -9413,8 +9413,12 @@
   <code>AsyncBackend</code> abstract base class for native async backends.
   <code>SyncBackendAdapter</code> wraps any synchronous backend for async use
   (delegates to a thread-pool executor). <code>AsyncMemoryBackend</code> for
-  async testing. Phase 1 -- core primitives; native async backends
-  (S3, Azure) planned for Phase 2.</li>
+  async testing. Phase 1 -- core primitives.</li>
+<li><strong><code>AsyncAzureBackend</code> native async backend</strong> (ID-013 Phase 2): First native
+  async backend for <code>remote_store.aio</code>. Uses Azure SDK async clients
+  (<code>azure.storage.blob.aio</code>, <code>azure.storage.filedatalake.aio</code>) for true
+  non-blocking I/O. Shared helpers extracted to <code>_azure_common.py</code> for
+  sync/async code reuse. Zero new dependencies.</li>
 <li><code>FEATURES.md</code> at repo root — versioned snapshot of backends, extensions,
   capabilities, and install extras for agent and human discoverability (BK-136).</li>
 <li><code>remote_store.info()</code> public function — runtime introspection of available
