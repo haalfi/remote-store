@@ -23,8 +23,13 @@ from azure.core.exceptions import (  # noqa: E402
     ServiceRequestError,
     ServiceResponseError,
 )
-from azure.storage.blob import BlobProperties, ContentSettings  # noqa: E402
+from azure.storage.blob import (  # noqa: E402
+    BlobProperties,
+    ContentSettings,
+    StorageStreamDownloader,
+)
 from azure.storage.blob.aio import BlobClient, BlobServiceClient, ContainerClient  # noqa: E402
+from azure.storage.filedatalake import PathProperties  # noqa: E402
 from azure.storage.filedatalake.aio import (  # noqa: E402
     DataLakeDirectoryClient,
     DataLakeFileClient,
@@ -211,7 +216,7 @@ class TestAsyncAzureHNSDetection:
         backend._blob_service_instance = mock_client
         first = await backend._ensure_hns()
         second = await backend._ensure_hns()
-        mock_client.get_account_information.assert_called_once()
+        assert mock_client.get_account_information.call_count == 1
         assert first is second is True
 
 
@@ -317,7 +322,7 @@ class TestAsyncAzureReadWrite:
     @pytest.mark.spec("ASYNC-006")
     async def test_read_streams_chunks(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
-        downloader = MagicMock()
+        downloader = MagicMock(spec=StorageStreamDownloader)
         downloader.chunks.return_value = _async_iter([b"chunk1", b"chunk2"])
         bc.download_blob = AsyncMock(return_value=downloader)
 
@@ -359,7 +364,7 @@ class TestAsyncAzureReadWrite:
         bc.upload_blob = AsyncMock()
 
         await backend.write("file.txt", b"data")
-        bc.upload_blob.assert_called_once()
+        assert bc.upload_blob.call_count == 1
         call_args = bc.upload_blob.call_args
         assert call_args[0][0] == b"data"
 
@@ -375,7 +380,7 @@ class TestAsyncAzureReadWrite:
             yield b"world"
 
         await backend.write("file.txt", gen())
-        bc.upload_blob.assert_called_once()
+        assert bc.upload_blob.call_count == 1
 
     @pytest.mark.spec("ASYNC-008")
     async def test_write_already_exists(self) -> None:
@@ -391,7 +396,7 @@ class TestAsyncAzureReadWrite:
         bc.upload_blob = AsyncMock()
 
         await backend.write("file.txt", b"data", overwrite=True)
-        bc.upload_blob.assert_called_once()
+        assert bc.upload_blob.call_count == 1
 
     @pytest.mark.spec("ASYNC-020")
     async def test_write_atomic_non_hns(self) -> None:
@@ -401,7 +406,7 @@ class TestAsyncAzureReadWrite:
         bc.upload_blob = AsyncMock()
 
         await backend.write_atomic("file.txt", b"atomic")
-        bc.upload_blob.assert_called_once()
+        assert bc.upload_blob.call_count == 1
 
     @pytest.mark.spec("ASYNC-021")
     async def test_write_creates_intermediate_dirs(self) -> None:
@@ -411,7 +416,7 @@ class TestAsyncAzureReadWrite:
         bc.upload_blob = AsyncMock()
 
         await backend.write("a/b/c.txt", b"deep")
-        bc.upload_blob.assert_called_once()
+        assert bc.upload_blob.call_count == 1
 
 
 # =============================================================================
@@ -476,7 +481,7 @@ class TestAsyncAzureListOperations:
     async def test_list_folders(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
 
-        folder_item = MagicMock()
+        folder_item = MagicMock(spec=BlobProperties)
         folder_item.prefix = "test/sub1/"
         folder_item.name = "test/sub1/"
 
@@ -503,7 +508,7 @@ class TestAsyncAzureListOperations:
         blob_file.prefix = None
 
         # A folder item (virtual prefix)
-        folder_item = MagicMock()
+        folder_item = MagicMock(spec=BlobProperties)
         folder_item.prefix = "test/sub/"
         folder_item.name = "test/sub/"
 
@@ -540,7 +545,7 @@ class TestAsyncAzureDeleteOperations:
         bc.delete_blob = AsyncMock()
 
         await backend.delete("file.txt")
-        bc.delete_blob.assert_called_once()
+        assert bc.delete_blob.call_count == 1
 
     @pytest.mark.spec("ASYNC-012")
     async def test_delete_missing_ok(self) -> None:
@@ -632,8 +637,9 @@ class TestAsyncAzureMoveAndCopy:
         cc.get_blob_client.side_effect = [src_bc, dst_bc]
 
         await backend.move("src.txt", "dst.txt")
-        dst_bc.start_copy_from_url.assert_called_once_with(src_bc.url)
-        src_bc.delete_blob.assert_called_once()
+        assert dst_bc.start_copy_from_url.call_count == 1
+        assert dst_bc.start_copy_from_url.call_args[0][0] == src_bc.url
+        assert src_bc.delete_blob.call_count == 1
 
     @pytest.mark.spec("ASYNC-019")
     async def test_copy(self) -> None:
@@ -651,7 +657,8 @@ class TestAsyncAzureMoveAndCopy:
         cc.get_blob_client.side_effect = [src_bc, dst_bc]
 
         await backend.copy("src.txt", "dst.txt")
-        dst_bc.start_copy_from_url.assert_called_once_with(src_bc.url)
+        assert dst_bc.start_copy_from_url.call_count == 1
+        assert dst_bc.start_copy_from_url.call_args[0][0] == src_bc.url
 
     @pytest.mark.spec("ASYNC-018")
     async def test_move_not_found(self) -> None:
@@ -718,8 +725,8 @@ class TestAsyncAzureMoveAndCopy:
         cc.get_blob_client.side_effect = [src_bc, dst_bc]
 
         await backend.move("src.txt", "dst.txt", overwrite=True)
-        dst_bc.start_copy_from_url.assert_called_once()
-        src_bc.delete_blob.assert_called_once()
+        assert dst_bc.start_copy_from_url.call_count == 1
+        assert src_bc.delete_blob.call_count == 1
 
     @pytest.mark.spec("ASYNC-019")
     async def test_copy_overwrite(self) -> None:
@@ -735,7 +742,7 @@ class TestAsyncAzureMoveAndCopy:
         cc.get_blob_client.side_effect = [src_bc, dst_bc]
 
         await backend.copy("src.txt", "dst.txt", overwrite=True)
-        dst_bc.start_copy_from_url.assert_called_once()
+        assert dst_bc.start_copy_from_url.call_count == 1
 
 
 # =============================================================================
@@ -874,10 +881,10 @@ class TestAsyncAzureClose:
 
         await backend.aclose()
 
-        mock_cc.close.assert_called_once()
-        mock_bs.close.assert_called_once()
-        mock_ds.close.assert_called_once()
-        mock_fs.close.assert_called_once()
+        assert mock_cc.close.call_count == 1
+        assert mock_bs.close.call_count == 1
+        assert mock_ds.close.call_count == 1
+        assert mock_fs.close.call_count == 1
 
     @pytest.mark.spec("ASYNC-022")
     async def test_aclose_suppresses_errors(self) -> None:
@@ -888,7 +895,8 @@ class TestAsyncAzureClose:
         backend._blob_service_instance = AsyncMock(spec=BlobServiceClient)
 
         # Should not raise
-        await backend.aclose()
+        result = await backend.aclose()
+        assert result is None
 
     @pytest.mark.spec("ASYNC-022")
     async def test_aclose_without_connection(self) -> None:
@@ -930,7 +938,7 @@ class TestAsyncAzureContextManager:
         async with backend:
             pass
 
-        mock_cc.close.assert_called_once()
+        assert mock_cc.close.call_count == 1
 
 
 # =============================================================================
@@ -1018,7 +1026,8 @@ class TestAsyncAzureHNSPaths:
         backend._fs_instance.get_file_client.return_value = fc
 
         await backend.move("src.txt", "dst.txt")
-        fc.rename_file.assert_called_once_with("test/dst.txt")
+        assert fc.rename_file.call_count == 1
+        assert fc.rename_file.call_args[0][0] == "test/dst.txt"
 
     @pytest.mark.spec("ASYNC-020")
     async def test_write_atomic_hns_uses_temp_and_rename(self) -> None:
@@ -1031,8 +1040,8 @@ class TestAsyncAzureHNSPaths:
         backend._fs_instance.get_file_client.return_value = tmp_fc
 
         await backend.write_atomic("dir/file.txt", b"content")
-        tmp_fc.upload_data.assert_called_once()
-        tmp_fc.rename_file.assert_called_once()
+        assert tmp_fc.upload_data.call_count == 1
+        assert tmp_fc.rename_file.call_count == 1
 
     @pytest.mark.spec("ASYNC-013")
     async def test_delete_folder_hns_recursive(self) -> None:
@@ -1041,7 +1050,7 @@ class TestAsyncAzureHNSPaths:
         backend._fs_instance.get_directory_client.return_value = dc
 
         await backend.delete_folder("my-dir", recursive=True)
-        dc.delete_directory.assert_called_once()
+        assert dc.delete_directory.call_count == 1
 
     @pytest.mark.spec("ASYNC-013")
     async def test_delete_folder_hns_non_recursive_empty(self) -> None:
@@ -1051,7 +1060,7 @@ class TestAsyncAzureHNSPaths:
         backend._fs_instance.get_paths.return_value = _async_iter([])
 
         await backend.delete_folder("my-dir", recursive=False)
-        dc.delete_directory.assert_called_once()
+        assert dc.delete_directory.call_count == 1
 
     @pytest.mark.spec("ASYNC-013")
     async def test_delete_folder_hns_non_recursive_non_empty_raises(self) -> None:
@@ -1059,7 +1068,7 @@ class TestAsyncAzureHNSPaths:
         dc = AsyncMock(spec=DataLakeDirectoryClient)
         backend._fs_instance.get_directory_client.return_value = dc
 
-        child = MagicMock()
+        child = MagicMock(spec=PathProperties)
         backend._fs_instance.get_paths.return_value = _async_iter([child])
 
         with pytest.raises(DirectoryNotEmpty, match="not empty|Folder not empty"):
@@ -1072,7 +1081,7 @@ class TestAsyncAzureHNSPaths:
         backend._fs_instance.get_directory_client.return_value = dc
 
         assert await backend.is_folder("my-dir") is True
-        dc.get_directory_properties.assert_called_once()
+        assert dc.get_directory_properties.call_count == 1
 
 
 # =============================================================================
@@ -1096,7 +1105,7 @@ class TestAsyncAzureMaxConcurrency:
         cc.get_blob_client.return_value = bc
 
         await backend.write("file.txt", b"data")
-        bc.upload_blob.assert_called_once()
+        assert bc.upload_blob.call_count == 1
         call_kwargs = bc.upload_blob.call_args
         assert call_kwargs[1].get("max_concurrency") == 4 or (
             len(call_kwargs[0]) > 1 and False  # fallback assertion
@@ -1116,7 +1125,7 @@ class TestAsyncAzureMaxConcurrency:
         cc.get_blob_client.return_value = bc
 
         await backend.read_bytes("file.txt")
-        bc.download_blob.assert_called_once()
+        assert bc.download_blob.call_count == 1
         call_kwargs = bc.download_blob.call_args
         assert call_kwargs[1].get("max_concurrency") == 8 or (
             call_kwargs[0] == () and call_kwargs[1].get("max_concurrency") == 8
