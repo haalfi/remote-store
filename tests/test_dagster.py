@@ -717,6 +717,10 @@ class TestMultiPartitionLoading:
         )
         mgr.handle_output(out_ctx, "ok")
 
+        # "missing" is first so it's encountered before "exists".  The code
+        # iterates asset_partition_keys in list order; the mock preserves that
+        # order.  If Dagster ever re-sorts partition keys internally this
+        # assertion would need updating, but the mock gives us a stable contract.
         in_ctx = _multi_partition_input_context(
             asset_key=AssetKey(["sparse"]),
             partition_keys=["missing", "exists"],
