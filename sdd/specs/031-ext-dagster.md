@@ -256,3 +256,7 @@ and the dataset IO manager (`_DatasetIOManagerImpl`).
 
 **Raises:** `NotFound` for any individual partition whose file does not exist
 (no partial results — the first missing partition raises immediately).
+
+**Note:** `handle_output` remains single-partition per Dagster convention —
+Dagster calls `handle_output` once per partition key. Multi-partition
+aggregation only applies on the `load_input` side.

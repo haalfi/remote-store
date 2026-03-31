@@ -127,26 +127,72 @@ the path.
 
 When a downstream asset consumes multiple partitions of an upstream asset
 (e.g. a time-window aggregation), `load_input` automatically returns a
-`dict[str, Any]` mapping each partition key to its deserialized object:
+`dict[str, Any]` mapping each partition key to its deserialized object.
 
 ```python
 from typing import Any
 
-from dagster import AssetIn, TimeWindowPartitionMapping, asset
+from dagster import (
+    AssetIn,
+    Definitions,
+    MonthlyPartitionsDefinition,
+    TimeWindowPartitionMapping,
+    asset,
+    io_manager,
+    IOManager,
+)
+
+from remote_store import Store
+from remote_store.backends import LocalBackend
+from remote_store.ext.dagster import dagster_io_manager
+
+monthly = MonthlyPartitionsDefinition(start_date="2026-01-01")
+
+
+@io_manager
+def my_io_manager() -> IOManager:
+    store = Store(LocalBackend(root="/data/dagster"))
+    return dagster_io_manager(store, serializer="json")
+
+
+@asset(partitions_def=monthly)
+def sales_monthly() -> dict:
+    """Upstream asset — one partition per month."""
+    return {"revenue": 100}
 
 
 @asset(
-    ins={"upstream": AssetIn(partition_mapping=TimeWindowPartitionMapping())},
+    partitions_def=monthly,
+    ins={
+        "sales_monthly": AssetIn(
+            partition_mapping=TimeWindowPartitionMapping(start_offset=-2),
+        ),
+    },
 )
-def aggregate(upstream: dict[str, Any]) -> dict:
-    # upstream = {"2026-01": {...}, "2026-02": {...}, "2026-03": {...}}
-    return {k: summarize(v) for k, v in upstream.items()}
+def sales_rolling_3m(sales_monthly: dict[str, Any]) -> dict:
+    """Downstream — receives last 3 months as dict[str, Any].
+
+    ``sales_monthly`` is ``{"2026-01": {...}, "2026-02": {...}, "2026-03": {...}}``
+    when the current partition is ``"2026-03"``.
+    """
+    total = sum(v["revenue"] for v in sales_monthly.values())
+    return {"rolling_revenue": total}
+
+
+defs = Definitions(
+    assets=[sales_monthly, sales_rolling_3m],
+    resources={"io_manager": my_io_manager},
+)
 ```
 
 Single-partition inputs continue to return a single deserialized object
-(not wrapped in a dict). This applies to both the
-[bytes-serializer IO manager](api/extensions/dagster.md) and the
+(not wrapped in a dict). If any partition is missing, `load_input` raises
+`NotFound` immediately — no partial results are returned. This applies to
+both the [bytes-serializer IO manager](api/extensions/dagster.md) and the
 [dataset IO manager](api/extensions/dagster.md#remote_store.ext.dagster.dagster_dataset_io_manager).
+
+Each partition is loaded individually. For high partition counts over remote
+backends, consider pre-aggregating upstream or limiting the time-window span.
 
 ## Using with Registry
 

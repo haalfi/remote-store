@@ -706,7 +706,7 @@ class TestMultiPartitionLoading:
 
     @pytest.mark.spec("DAG-020")
     def test_multi_partition_missing_first_raises(self, store: Store) -> None:
-        """Fail-fast: missing *first* partition raises before any work."""
+        """Fail-fast: missing *first* partition raises before reading the second."""
         from remote_store._errors import NotFound
 
         mgr = dagster_io_manager(store, serializer="pickle")
@@ -721,8 +721,11 @@ class TestMultiPartitionLoading:
             asset_key=AssetKey(["sparse"]),
             partition_keys=["missing", "exists"],
         )
-        with pytest.raises(NotFound, match="missing"):
-            mgr.load_input(in_ctx)
+        with mock.patch.object(store, "read_bytes", wraps=store.read_bytes) as spy:
+            with pytest.raises(NotFound, match="missing"):
+                mgr.load_input(in_ctx)
+            # Only one read attempted — the missing key; second key never read
+            spy.assert_called_once()
 
     @pytest.mark.spec("DAG-020")
     def test_multi_partition_dataset(self) -> None:

@@ -191,45 +191,46 @@ def _resolve_serializer(serializer: str | Serializer) -> Serializer:
 # ---------------------------------------------------------------------------
 
 
-def _asset_path(context: OutputContext | InputContext, ext: str) -> str:
-    """Derive storage path from asset key and partition (DAG-005, DAG-006).
+def _asset_path(
+    context: OutputContext | InputContext,
+    ext: str,
+    *,
+    partition_key: str | None = None,
+) -> str:
+    """Derive storage path from asset key and partition (DAG-005, DAG-006, DAG-020).
 
     Path is ``"/".join(asset_key.path)`` plus ``"/" + partition_key`` when
     partitioned, plus the file extension.
+
+    When *partition_key* is given explicitly (multi-partition loading), it is
+    used instead of ``context.partition_key``.
     """
     parts = list(context.asset_key.path)
-    if context.has_partition_key:
+    if partition_key is not None:
+        parts.append(partition_key)
+    elif context.has_partition_key:
         parts.append(context.partition_key)
     return "/".join(str(p) for p in parts) + ext
 
 
-def _asset_path_for_partition(context: OutputContext | InputContext, partition_key: str, ext: str) -> str:
-    """Derive storage path for an explicit *partition_key* (DAG-020).
-
-    Used when loading multiple partitions — ``context.partition_key`` is not
-    available when the context carries more than one key.
-    """
-    parts = list(context.asset_key.path)
-    parts.append(partition_key)
-    return "/".join(str(p) for p in parts) + ext
-
-
-def _dataset_key(context: OutputContext | InputContext) -> str:
+def _dataset_key(
+    context: OutputContext | InputContext,
+    *,
+    partition_key: str | None = None,
+) -> str:
     """Derive dataset key from asset key and partition (no file extension).
 
     Datasets are directories, so no extension is appended. Path is
     ``"/".join(asset_key.path)`` plus ``"/" + partition_key`` when partitioned.
+
+    When *partition_key* is given explicitly (multi-partition loading), it is
+    used instead of ``context.partition_key``.
     """
     parts = list(context.asset_key.path)
-    if context.has_partition_key:
+    if partition_key is not None:
+        parts.append(partition_key)
+    elif context.has_partition_key:
         parts.append(context.partition_key)
-    return "/".join(str(p) for p in parts)
-
-
-def _dataset_key_for_partition(context: OutputContext | InputContext, partition_key: str) -> str:
-    """Derive dataset key for an explicit *partition_key* (DAG-020)."""
-    parts = list(context.asset_key.path)
-    parts.append(partition_key)
     return "/".join(str(p) for p in parts)
 
 
@@ -263,7 +264,7 @@ class _RemoteStoreIOManagerImpl(IOManager):  # type: ignore[misc]
         if context.has_asset_partitions and len(context.asset_partition_keys) > 1:
             result: dict[str, Any] = {}
             for key in context.asset_partition_keys:
-                path = _asset_path_for_partition(context, key, self._serializer.extension)
+                path = _asset_path(context, self._serializer.extension, partition_key=key)
                 data = self._store.read_bytes(path)
                 log.debug("Read %d bytes from %s", len(data), path)
                 result[key] = self._serializer.deserialize(data)
@@ -314,7 +315,7 @@ class _DatasetIOManagerImpl(IOManager):  # type: ignore[misc]
         if context.has_asset_partitions and len(context.asset_partition_keys) > 1:
             result: dict[str, Any] = {}
             for pk in context.asset_partition_keys:
-                key = _dataset_key_for_partition(context, pk)
+                key = _dataset_key(context, partition_key=pk)
                 table = self._pds.read_dataset(key)
                 log.debug("Read dataset from %s", key)
                 result[pk] = table
