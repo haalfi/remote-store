@@ -52,23 +52,6 @@ Items graduate through the SDD pipeline:
   - Spec: RES-100 (proposed in [043](specs/043-resolution-plan.md))
   - Depends on: ID-121 (CompositeStore)
 
-### S3 Backend DX & Performance
-
-- [ ] **ID-114 — PyArrow-style bucket path support (research)**
-  PyArrow convention: `"bucket/prefix"` embeds bucket in path. Current
-  `S3Backend` requires split (`bucket=...`, `path=...`). Research feasibility
-  of factory method or native convention for easier PyArrow→remote-store
-  migration.
-  - Deliverable: RFC only — low commitment, no code change guaranteed
-
-### S3 & Azure Configuration
-
-- [ ] **ID-118b — TLS CA bundle for Azure (Phase 2)**
-  Extend `tls_ca_bundle` to `AzureBackend` if demand materializes.
-  Primarily benefits Azure Stack Hub / on-premises deployments.
-  Wrap `ClientOptions(ca_cert=...)`, check `AZURE_CA_CERTIFICATE_PATH`.
-  S3 Phase 1 shipped — see BACKLOG-DONE.md.
-
 ### New Backends
 
 - [ ] **ID-121 — CompositeStore (research complete)**
@@ -82,16 +65,6 @@ Items graduate through the SDD pipeline:
   - Next: design as separate spec — backend-agnostic, useful independently
 
 ### Integrations
-
-- [ ] **ID-105 — AzurePyArrowBackend (C++ Tier 1)**
-  Optional upgrade from the Tier 3 range reader shipped in
-  [ID-102](BACKLOG-DONE.md#streaming--io). Only worth pursuing if real-Azure
-  benchmarks show GIL overhead or missing I/O coalescing matters for target
-  workloads. Approach: `pyarrow.fs.AzureFileSystem` (C++, ships with PyArrow)
-  following the `S3PyArrowBackend` dual-library pattern.
-  [Research § 6](research/research-azure-pyarrow-optimization.md#6-full-tier-1-path-if-needed).
-  - Spike: validate auth methods, HNS/non-HNS, `ReadRangeCache` activation.
-  - If viable: `AzurePyArrowBackend` — spec, tests, docs.
 
 - [~] **ID-018 — conda-forge publishing**
   Recipe, CI validation, release checklist steps all done.
@@ -117,11 +90,38 @@ Items graduate through the SDD pipeline:
     - Implementation Phase 2: native async backends.
     - Implementation Phase 3: async extensions (incl. Dagster `AsyncIOManager`).
 
+---
+
+## Icebox
+
+Deferred indefinitely — revisit only if demand or circumstances change.
+
+- [ ] **ID-114 — PyArrow-style bucket path support (research)**
+  PyArrow convention: `"bucket/prefix"` embeds bucket in path. Current
+  `S3Backend` requires split (`bucket=...`, `path=...`). Research feasibility
+  of factory method or native convention for easier PyArrow→remote-store
+  migration.
+  - Deliverable: RFC only — low commitment, no code change guaranteed
+
+- [ ] **ID-118b — TLS CA bundle for Azure (Phase 2)**
+  Extend `tls_ca_bundle` to `AzureBackend` if demand materializes.
+  Primarily benefits Azure Stack Hub / on-premises deployments.
+  Wrap `ClientOptions(ca_cert=...)`, check `AZURE_CA_CERTIFICATE_PATH`.
+  S3 Phase 1 shipped — see BACKLOG-DONE.md.
+
+- [ ] **ID-105 — AzurePyArrowBackend (C++ Tier 1)**
+  Optional upgrade from the Tier 3 range reader shipped in
+  [ID-102](BACKLOG-DONE.md#streaming--io). Only worth pursuing if real-Azure
+  benchmarks show GIL overhead or missing I/O coalescing matters for target
+  workloads. Approach: `pyarrow.fs.AzureFileSystem` (C++, ships with PyArrow)
+  following the `S3PyArrowBackend` dual-library pattern.
+  [Research § 6](research/research-azure-pyarrow-optimization.md#6-full-tier-1-path-if-needed).
+  - Spike: validate auth methods, HNS/non-HNS, `ReadRangeCache` activation.
+  - If viable: `AzurePyArrowBackend` — spec, tests, docs.
+
 - [ ] **ID-125 — Update medallion showcase to Dagster v2 resource pattern**
   Replace `dagster_io_manager(store)` calls in `examples/medallion_dagster/`
   with `RemoteStoreIOManager`. Demonstrates the config-driven pattern.
-
-### Documentation & Developer Experience
 
 - [ ] **ID-066 — PR preview deployments**
   Deploy PR previews to Cloudflare Pages, Netlify, or GitHub Pages artifacts.
