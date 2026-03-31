@@ -33,3 +33,16 @@ class TestCoreOperationsSnippets:
 
         result = demo()
         assert result is None
+
+
+class TestDagsterGuideSnippets:
+    """Snippets used in the Dagster Integration guide."""
+
+    @pytest.mark.spec("DAG-020")
+    def test_dagster_guide_demo(self) -> None:
+        pytest.importorskip("dagster")
+
+        from examples.snippets.dagster_guide import demo
+
+        result = demo()
+        assert result is None

@@ -121,11 +121,6 @@ Items graduate through the SDD pipeline:
     - Implementation Phase 2: native async backends.
     - Implementation Phase 3: async extensions.
 
-- [ ] **ID-124 — Dagster multi-partition loading**
-  When `load_input` receives multiple partition keys (time-window aggregation),
-  return `dict[str, Any]` mapping partition key to deserialized object.
-  Deferred from ID-083 scope.
-
 - [ ] **ID-125 — Update medallion showcase to Dagster v2 resource pattern**
   Replace `dagster_io_manager(store)` calls in `examples/medallion_dagster/`
   with `RemoteStoreIOManager`. Demonstrates the config-driven pattern.

@@ -6,7 +6,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
-from dagster import AssetKey, build_init_resource_context, build_input_context, build_output_context
+from dagster import AssetKey, InputContext, build_init_resource_context, build_input_context, build_output_context
 
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
@@ -590,3 +590,199 @@ class TestDatasetIOManager:
             pytest.raises(ModuleNotFoundError, match="pip install 'remote-store\\[dagster,arrow\\]'"),
         ):
             dagster_dataset_io_manager(store)
+
+
+# ---------------------------------------------------------------------------
+# Multi-partition loading (DAG-020)
+# ---------------------------------------------------------------------------
+
+
+def _multi_partition_input_context(
+    asset_key: AssetKey,
+    partition_keys: list[str],
+) -> InputContext:
+    """Build a mock InputContext with multiple partition keys.
+
+    Dagster's ``build_input_context`` only accepts a single ``partition_key``.
+    For multi-partition (time-window) scenarios we mock at our boundary
+    (the context object passed to ``load_input``).
+    """
+    ctx = mock.MagicMock(spec=InputContext)
+    ctx.asset_key = asset_key
+    ctx.has_asset_partitions = True
+    ctx.asset_partition_keys = partition_keys
+    return ctx
+
+
+class TestMultiPartitionLoading:
+    """DAG-020: load_input with multiple partition keys."""
+
+    @pytest.mark.spec("DAG-020")
+    def test_multi_partition_returns_dict(self, store: Store) -> None:
+        """Multiple partition keys return dict[str, Any]."""
+        mgr = dagster_io_manager(store, serializer="json")
+
+        # Write three partitions individually
+        partitions = {"2026-01": {"month": 1}, "2026-02": {"month": 2}, "2026-03": {"month": 3}}
+        for pk, obj in partitions.items():
+            out_ctx = build_output_context(
+                asset_key=AssetKey(["sales", "monthly"]),
+                partition_key=pk,
+            )
+            mgr.handle_output(out_ctx, obj)
+
+        # Load all three at once
+        in_ctx = _multi_partition_input_context(
+            asset_key=AssetKey(["sales", "monthly"]),
+            partition_keys=["2026-01", "2026-02", "2026-03"],
+        )
+        result = mgr.load_input(in_ctx)
+
+        assert result == {
+            "2026-01": {"month": 1},
+            "2026-02": {"month": 2},
+            "2026-03": {"month": 3},
+        }
+
+    @pytest.mark.spec("DAG-020")
+    def test_multi_partition_pickle(self, store: Store) -> None:
+        """Multi-partition loading works with pickle serializer."""
+        mgr = dagster_io_manager(store, serializer="pickle")
+
+        for pk in ("a", "b"):
+            out_ctx = build_output_context(
+                asset_key=AssetKey(["data"]),
+                partition_key=pk,
+            )
+            mgr.handle_output(out_ctx, {"pk": pk})
+
+        in_ctx = _multi_partition_input_context(
+            asset_key=AssetKey(["data"]),
+            partition_keys=["a", "b"],
+        )
+        result = mgr.load_input(in_ctx)
+        assert result == {"a": {"pk": "a"}, "b": {"pk": "b"}}
+
+    @pytest.mark.spec("DAG-020")
+    def test_single_partition_unchanged(self, store: Store) -> None:
+        """Single partition still returns a single object (not a dict)."""
+        mgr = dagster_io_manager(store, serializer="json")
+        obj = {"val": 42}
+
+        out_ctx = build_output_context(
+            asset_key=AssetKey(["item"]),
+            partition_key="only",
+        )
+        mgr.handle_output(out_ctx, obj)
+
+        in_ctx = build_input_context(
+            asset_key=AssetKey(["item"]),
+            partition_key="only",
+            upstream_output=out_ctx,
+        )
+        result = mgr.load_input(in_ctx)
+        assert result == obj
+
+    @pytest.mark.spec("DAG-020")
+    def test_multi_partition_missing_raises(self, store: Store) -> None:
+        """Missing partition raises NotFound immediately."""
+        from remote_store._errors import NotFound
+
+        mgr = dagster_io_manager(store, serializer="pickle")
+
+        # Write only one of two partitions
+        out_ctx = build_output_context(
+            asset_key=AssetKey(["sparse"]),
+            partition_key="exists",
+        )
+        mgr.handle_output(out_ctx, "ok")
+
+        in_ctx = _multi_partition_input_context(
+            asset_key=AssetKey(["sparse"]),
+            partition_keys=["exists", "missing"],
+        )
+        with pytest.raises(NotFound, match="missing"):
+            mgr.load_input(in_ctx)
+
+    @pytest.mark.spec("DAG-020")
+    def test_multi_partition_missing_first_raises(self, store: Store) -> None:
+        """Fail-fast: missing *first* partition raises before reading the second."""
+        from remote_store._errors import NotFound
+
+        mgr = dagster_io_manager(store, serializer="pickle")
+
+        out_ctx = build_output_context(
+            asset_key=AssetKey(["sparse"]),
+            partition_key="exists",
+        )
+        mgr.handle_output(out_ctx, "ok")
+
+        # "missing" is first so it's encountered before "exists".  The code
+        # iterates asset_partition_keys in list order; the mock preserves that
+        # order.  If Dagster ever re-sorts partition keys internally this
+        # assertion would need updating, but the mock gives us a stable contract.
+        in_ctx = _multi_partition_input_context(
+            asset_key=AssetKey(["sparse"]),
+            partition_keys=["missing", "exists"],
+        )
+        with mock.patch.object(store, "read_bytes", wraps=store.read_bytes) as spy:
+            with pytest.raises(NotFound, match="missing"):
+                mgr.load_input(in_ctx)
+            # Only one read attempted — the missing key; second key never read
+            spy.assert_called_once()
+
+    @pytest.mark.spec("DAG-020")
+    def test_multi_partition_dataset(self) -> None:
+        """Dataset IO manager returns dict for multiple partition keys."""
+        pa = pytest.importorskip("pyarrow")
+
+        from remote_store.ext.dagster import dagster_dataset_io_manager
+
+        store = Store(backend=MemoryBackend())
+        mgr = dagster_dataset_io_manager(store)
+
+        tables = {
+            "2026-01": pa.table({"val": [1, 2]}),
+            "2026-02": pa.table({"val": [3, 4]}),
+        }
+        for pk, table in tables.items():
+            out_ctx = build_output_context(
+                asset_key=AssetKey(["ds", "monthly"]),
+                partition_key=pk,
+            )
+            mgr.handle_output(out_ctx, table)
+
+        in_ctx = _multi_partition_input_context(
+            asset_key=AssetKey(["ds", "monthly"]),
+            partition_keys=["2026-01", "2026-02"],
+        )
+        result = mgr.load_input(in_ctx)
+        assert set(result.keys()) == {"2026-01", "2026-02"}
+        assert result["2026-01"].equals(tables["2026-01"])
+        assert result["2026-02"].equals(tables["2026-02"])
+
+    @pytest.mark.spec("DAG-020")
+    def test_multi_partition_dataset_missing_raises(self) -> None:
+        """Dataset IO manager raises DatasetIncomplete for missing partition."""
+        pa = pytest.importorskip("pyarrow")
+
+        from remote_store.ext.dagster import dagster_dataset_io_manager
+        from remote_store.ext.parquet import DatasetIncomplete
+
+        store = Store(backend=MemoryBackend())
+        mgr = dagster_dataset_io_manager(store)
+
+        # Write only one of two partitions
+        table = pa.table({"val": [1, 2]})
+        out_ctx = build_output_context(
+            asset_key=AssetKey(["ds", "sparse"]),
+            partition_key="exists",
+        )
+        mgr.handle_output(out_ctx, table)
+
+        in_ctx = _multi_partition_input_context(
+            asset_key=AssetKey(["ds", "sparse"]),
+            partition_keys=["exists", "missing"],
+        )
+        with pytest.raises(DatasetIncomplete, match="missing"):
+            mgr.load_input(in_ctx)

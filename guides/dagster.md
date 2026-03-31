@@ -123,6 +123,25 @@ partition keys:
 The Store's `root_path` acts as a namespace prefix — it is not embedded in
 the path.
 
+## Multi-partition loading
+
+When a downstream asset consumes multiple partitions of an upstream asset
+(e.g. a time-window aggregation), `load_input` automatically returns a
+`dict[str, Any]` mapping each partition key to its deserialized object.
+
+```python
+--8<-- "examples/snippets/dagster_guide.py:multi-partition"
+```
+
+Single-partition inputs continue to return a single deserialized object
+(not wrapped in a dict). If any partition is missing, `load_input` raises
+`NotFound` immediately — no partial results are returned. This applies to
+both the [bytes-serializer IO manager](api/extensions/dagster.md) and the
+[dataset IO manager](api/extensions/dagster.md#remote_store.ext.dagster.dagster_dataset_io_manager).
+
+Each partition is loaded individually. For high partition counts over remote
+backends, consider pre-aggregating upstream or limiting the time-window span.
+
 ## Using with Registry
 
 For teams using `Registry` for multi-backend configuration:

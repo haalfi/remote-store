@@ -191,26 +191,45 @@ def _resolve_serializer(serializer: str | Serializer) -> Serializer:
 # ---------------------------------------------------------------------------
 
 
-def _asset_path(context: OutputContext | InputContext, ext: str) -> str:
-    """Derive storage path from asset key and partition (DAG-005, DAG-006).
+def _asset_path(
+    context: OutputContext | InputContext,
+    ext: str,
+    *,
+    partition_key: str | None = None,
+) -> str:
+    """Derive storage path from asset key and partition (DAG-005, DAG-006, DAG-020).
 
     Path is ``"/".join(asset_key.path)`` plus ``"/" + partition_key`` when
     partitioned, plus the file extension.
+
+    When *partition_key* is given explicitly (multi-partition loading), it is
+    used instead of ``context.partition_key``.
     """
     parts = list(context.asset_key.path)
-    if context.has_partition_key:
+    if partition_key is not None:
+        parts.append(partition_key)
+    elif context.has_partition_key:
         parts.append(context.partition_key)
     return "/".join(str(p) for p in parts) + ext
 
 
-def _dataset_key(context: OutputContext | InputContext) -> str:
+def _dataset_key(
+    context: OutputContext | InputContext,
+    *,
+    partition_key: str | None = None,
+) -> str:
     """Derive dataset key from asset key and partition (no file extension).
 
     Datasets are directories, so no extension is appended. Path is
     ``"/".join(asset_key.path)`` plus ``"/" + partition_key`` when partitioned.
+
+    When *partition_key* is given explicitly (multi-partition loading), it is
+    used instead of ``context.partition_key``.
     """
     parts = list(context.asset_key.path)
-    if context.has_partition_key:
+    if partition_key is not None:
+        parts.append(partition_key)
+    elif context.has_partition_key:
         parts.append(context.partition_key)
     return "/".join(str(p) for p in parts)
 
@@ -236,7 +255,20 @@ class _RemoteStoreIOManagerImpl(IOManager):  # type: ignore[misc]
         log.debug("Wrote %d bytes to %s", len(data), path)
 
     def load_input(self, context: InputContext) -> Any:
-        """Read and deserialize from the Store (DAG-008)."""
+        """Read and deserialize from the Store (DAG-008, DAG-020).
+
+        When the input context carries multiple partition keys (e.g. a
+        time-window aggregation), returns ``dict[str, Any]`` mapping each
+        partition key to its deserialized object.
+        """
+        if context.has_asset_partitions and len(context.asset_partition_keys) > 1:
+            result: dict[str, Any] = {}
+            for key in context.asset_partition_keys:
+                path = _asset_path(context, self._serializer.extension, partition_key=key)
+                data = self._store.read_bytes(path)
+                log.debug("Read %d bytes from %s", len(data), path)
+                result[key] = self._serializer.deserialize(data)
+            return result
         path = _asset_path(context, self._serializer.extension)
         data = self._store.read_bytes(path)
         log.debug("Read %d bytes from %s", len(data), path)
@@ -275,7 +307,19 @@ class _DatasetIOManagerImpl(IOManager):  # type: ignore[misc]
         log.debug("Wrote dataset to %s", key)
 
     def load_input(self, context: InputContext) -> Any:
-        """Read a Parquet dataset from the Store."""
+        """Read a Parquet dataset from the Store (DAG-020).
+
+        When the input context carries multiple partition keys, returns
+        ``dict[str, Any]`` mapping each partition key to its Arrow Table.
+        """
+        if context.has_asset_partitions and len(context.asset_partition_keys) > 1:
+            result: dict[str, Any] = {}
+            for pk in context.asset_partition_keys:
+                key = _dataset_key(context, partition_key=pk)
+                table = self._pds.read_dataset(key)
+                log.debug("Read dataset from %s", key)
+                result[pk] = table
+            return result
         key = _dataset_key(context)
         table = self._pds.read_dataset(key)
         log.debug("Read dataset from %s", key)
