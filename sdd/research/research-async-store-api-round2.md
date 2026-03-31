@@ -310,5 +310,5 @@ Rationale:
 - [Round 1 research](research-async-store-api.md) (2026-03-03)
 - [ADR-0012](../adrs/0012-async-store-backend-api.md) — Hybrid model decision
 - [Spec 029](../specs/029-async-store-backend-api.md) — Phase 1 spec (draft)
-- [FEATURES.md](../../FEATURES.md) — v0.20.0 feature surface
-- [Backlog](../BACKLOG.md) — ID-013 status and remaining items
+- `FEATURES.md` (repo root) — v0.20.0 feature surface
+- `sdd/BACKLOG.md` — ID-013 status and remaining items

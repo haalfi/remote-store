@@ -2,8 +2,8 @@
 
 ## Status
 
-Draft -- pending second research round to validate design against current
-sync API surface before implementation proceeds.
+Accepted -- Phase 1 implemented in ``remote_store.aio`` (v0.21).
+Pending: spec amendments from research round 2 §2.4.
 
 ## Overview
 

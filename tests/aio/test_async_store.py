@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, CapabilityNotSupported, InvalidPath, NotFound
@@ -157,6 +162,24 @@ class TestAsyncStoreWrite:
     async def test_write_atomic(self, async_store: AsyncStore) -> None:
         await async_store.write_atomic("at.txt", b"atomic")
         assert await async_store.read_bytes("at.txt") == b"atomic"
+
+    @pytest.mark.spec("ASYNC-046")
+    async def test_write_async_iterator(self, async_store: AsyncStore) -> None:
+        async def chunks() -> AsyncIterator[bytes]:
+            yield b"chunk1-"
+            yield b"chunk2"
+
+        await async_store.write("iter.txt", chunks())
+        assert await async_store.read_bytes("iter.txt") == b"chunk1-chunk2"
+
+    @pytest.mark.spec("ASYNC-046")
+    async def test_write_atomic_async_iterator(self, async_store: AsyncStore) -> None:
+        async def chunks() -> AsyncIterator[bytes]:
+            yield b"atomic-"
+            yield b"iter"
+
+        await async_store.write_atomic("at_iter.txt", chunks())
+        assert await async_store.read_bytes("at_iter.txt") == b"atomic-iter"
 
     @pytest.mark.spec("ASYNC-046")
     async def test_write_creates_intermediate_dirs(self, async_store: AsyncStore) -> None:
