@@ -54,7 +54,7 @@ class TestAsyncStorePathValidation:
         ],
     )
     async def test_invalid_path_rejected(self, async_store: AsyncStore, bad_path: str) -> None:
-        with pytest.raises(InvalidPath):
+        with pytest.raises(InvalidPath, match="path"):
             await async_store.read_bytes(bad_path)
 
     @pytest.mark.spec("ASYNC-041")
@@ -435,7 +435,7 @@ class TestAsyncStoreFileOps:
     @pytest.mark.spec("ASYNC-047")
     @pytest.mark.parametrize("op", _MOVE_COPY_OPS)
     async def test_same_path_nonexistent_raises(self, async_store: AsyncStore, op: str) -> None:
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="not found"):
             await getattr(async_store, op)("ghost.txt", "ghost.txt")
 
     @pytest.mark.spec("ASYNC-047")
@@ -507,7 +507,7 @@ class TestAsyncStoreChild:
         ],
     )
     def test_child_invalid_subpath_rejected(self, async_store: AsyncStore, bad_path: str) -> None:
-        with pytest.raises(InvalidPath):
+        with pytest.raises(InvalidPath, match="path"):
             async_store.child(bad_path)
 
     @pytest.mark.spec("ASYNC-054")
@@ -623,9 +623,23 @@ class TestAsyncStoreCapabilityGating:
         method: str,
         args: tuple[str, ...],
     ) -> None:
-        with pytest.raises(CapabilityNotSupported):
+        with pytest.raises(CapabilityNotSupported, match="is not supported"):
             async for _ in getattr(async_store, method)(*args):
                 pass
+
+
+class TestAsyncStoreWriteAtomicCapabilityGate:
+    """ASYNC-011: write_atomic raises CapabilityNotSupported when backend lacks ATOMIC_WRITE."""
+
+    @pytest.mark.spec("ASYNC-011")
+    async def test_write_atomic_without_capability(self) -> None:
+        from tests.conftest import RestrictedBackend
+
+        backend = MemoryBackend()
+        restricted = RestrictedBackend(backend, exclude={Capability.ATOMIC_WRITE})
+        store = AsyncStore(restricted, root_path="")  # type: ignore[arg-type]
+        with pytest.raises(CapabilityNotSupported, match="atomic_write"):
+            await store.write_atomic("file.txt", b"data")
 
 
 class TestAsyncStorePing:

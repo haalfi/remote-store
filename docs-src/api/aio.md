@@ -1,8 +1,9 @@
 # Async API
 
 The `remote_store.aio` module provides native `async`/`await` support
-for store operations. Phase 1 covers the core primitives; native async
-backends (S3, Azure) are planned for Phase 2.
+for store operations. See [Store](store.md) for the synchronous
+counterpart. Phase 1 covers the core primitives; native async backends
+(S3, Azure) are planned for Phase 2.
 
 ---
 

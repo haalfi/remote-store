@@ -9,6 +9,6 @@
 - RemotePath: path.md
 - Capabilities: capabilities.md
 - Errors: errors.md
-- Async: aio.md
 - Backends: backends/
+- Async: aio.md
 - Extensions: extensions/
