@@ -760,3 +760,29 @@ class TestMultiPartitionLoading:
         assert set(result.keys()) == {"2026-01", "2026-02"}
         assert result["2026-01"].equals(tables["2026-01"])
         assert result["2026-02"].equals(tables["2026-02"])
+
+    @pytest.mark.spec("DAG-020")
+    def test_multi_partition_dataset_missing_raises(self) -> None:
+        """Dataset IO manager raises DatasetIncomplete for missing partition."""
+        pa = pytest.importorskip("pyarrow")
+
+        from remote_store.ext.dagster import dagster_dataset_io_manager
+        from remote_store.ext.parquet import DatasetIncomplete
+
+        store = Store(backend=MemoryBackend())
+        mgr = dagster_dataset_io_manager(store)
+
+        # Write only one of two partitions
+        table = pa.table({"val": [1, 2]})
+        out_ctx = build_output_context(
+            asset_key=AssetKey(["ds", "sparse"]),
+            partition_key="exists",
+        )
+        mgr.handle_output(out_ctx, table)
+
+        in_ctx = _multi_partition_input_context(
+            asset_key=AssetKey(["ds", "sparse"]),
+            partition_keys=["exists", "missing"],
+        )
+        with pytest.raises(DatasetIncomplete, match="missing"):
+            mgr.load_input(in_ctx)

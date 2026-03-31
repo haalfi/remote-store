@@ -254,8 +254,10 @@ to its deserialized object.
 **Applies to:** both the bytes-serializer IO manager (`_RemoteStoreIOManagerImpl`)
 and the dataset IO manager (`_DatasetIOManagerImpl`).
 
-**Raises:** `NotFound` for any individual partition whose file does not exist
-(no partial results — the first missing partition raises immediately).
+**Raises:** The first missing partition raises immediately (no partial results).
+The bytes-serializer IO manager raises `NotFound`; the dataset IO manager
+raises `DatasetIncomplete` (from `ext.parquet`) when the `_SUCCESS` marker
+is absent.
 
 **Note:** `handle_output` remains single-partition per Dagster convention —
 Dagster calls `handle_output` once per partition key. Multi-partition
