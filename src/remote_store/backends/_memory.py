@@ -6,7 +6,6 @@ import contextlib
 import io
 import logging
 import threading
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, BinaryIO, cast
 
@@ -15,6 +14,9 @@ from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound
 from remote_store._models import FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
+from remote_store.backends._memory_tree import DirNode as _DirNode
+from remote_store.backends._memory_tree import FileEntry as _FileEntry
+from remote_store.backends._memory_tree import FileSnapshot as _FileSnapshot
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -24,39 +26,6 @@ if TYPE_CHECKING:
 _ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
 
 log = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------------
-# Internal data structures (MEM-DS-002, MEM-DS-003, MEM-DS-004)
-# ---------------------------------------------------------------------------
-
-
-@dataclass(slots=True)
-class _FileEntry:
-    data: bytearray
-    modified_at: datetime
-    content_type: str | None = None
-
-
-@dataclass(slots=True)
-class _DirNode:
-    children: dict[str, _DirNode | _FileEntry] = field(default_factory=dict)
-
-
-class _FileSnapshot:
-    """Frozen copy of ``_FileEntry`` scalars for lock-free iteration.
-
-    Copies size, modified_at, and content_type at snapshot time so that
-    concurrent writes to the live ``_FileEntry`` cannot produce inconsistent
-    ``FileInfo`` objects (e.g. new size with old timestamp).
-    """
-
-    __slots__ = ("size", "modified_at", "content_type")
-
-    def __init__(self, entry: _FileEntry) -> None:
-        self.size = len(entry.data)
-        self.modified_at = entry.modified_at
-        self.content_type = entry.content_type
 
 
 class MemoryBackend(Backend):

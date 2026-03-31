@@ -12,7 +12,9 @@ from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, 
 from remote_store._models import FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store.aio._async_backend import AsyncBackend
-from remote_store.backends._memory import _DirNode, _FileEntry, _FileSnapshot
+from remote_store.backends._memory_tree import DirNode as _DirNode
+from remote_store.backends._memory_tree import FileEntry as _FileEntry
+from remote_store.backends._memory_tree import FileSnapshot as _FileSnapshot
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator

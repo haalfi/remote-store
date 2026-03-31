@@ -56,10 +56,12 @@ class AsyncStore:
 
     # region: reading
 
-    async def read(self, path: str) -> AsyncIterator[bytes]:
+    def read(self, path: str) -> AsyncIterator[bytes]:
         """Return an async iterator of byte chunks for *path*.
 
         The caller is responsible for consuming the iterator.
+        Validation (capability check, path check) happens eagerly
+        on call, not lazily on first iteration.
 
         Args:
             path: Store-relative file path.
@@ -73,7 +75,11 @@ class AsyncStore:
         """
         log.debug("read path=%r", path, extra={"op": "read", "path": path, "backend": self._backend.name})
         self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
-        async for chunk in self._backend.read(self._require_file_path(path)):
+        return self._read_chunks(self._require_file_path(path))
+
+    async def _read_chunks(self, resolved: str) -> AsyncIterator[bytes]:
+        """Inner generator for :meth:`read` — yields chunks from backend."""
+        async for chunk in self._backend.read(resolved):
             yield chunk
 
     async def read_bytes(self, path: str) -> bytes:
@@ -266,7 +272,7 @@ class AsyncStore:
 
     # region: listing and iteration
 
-    async def list_files(
+    def list_files(
         self,
         path: str,
         *,
@@ -275,6 +281,9 @@ class AsyncStore:
         max_depth: int | None = None,
     ) -> AsyncIterator[FileInfo]:
         """Yield ``FileInfo`` objects for files under *path*.
+
+        Validation (capability check, max_depth) happens eagerly
+        on call, not lazily on first iteration.
 
         Args:
             path: Store-relative folder path.
@@ -315,8 +324,26 @@ class AsyncStore:
         # Precompute base depth for filtering
         base_parts = len(RemotePath(path).parts) if path and path != "." else 0
 
-        async for info in self._backend.list_files(
+        return self._list_files_inner(
             self._full_path(path),
+            effective_recursive=effective_recursive,
+            pattern=pattern,
+            max_depth=max_depth,
+            base_parts=base_parts,
+        )
+
+    async def _list_files_inner(
+        self,
+        full_path: str,
+        *,
+        effective_recursive: bool,
+        pattern: str | None,
+        max_depth: int | None,
+        base_parts: int,
+    ) -> AsyncIterator[FileInfo]:
+        """Inner generator for :meth:`list_files`."""
+        async for info in self._backend.list_files(
+            full_path,
             recursive=effective_recursive,
             max_depth=max_depth,
         ):
@@ -330,8 +357,11 @@ class AsyncStore:
                 continue
             yield rebased
 
-    async def list_folders(self, path: str, *, max_depth: int | None = None) -> AsyncIterator[FolderEntry]:
+    def list_folders(self, path: str, *, max_depth: int | None = None) -> AsyncIterator[FolderEntry]:
         """Yield subfolders of *path* as ``FolderEntry`` objects.
+
+        Validation (capability check, max_depth) happens eagerly
+        on call, not lazily on first iteration.
 
         Args:
             path: Store-relative folder path.
@@ -356,12 +386,12 @@ class AsyncStore:
             extra={"op": "list_folders", "path": path, "backend": _bk},
         )
         self._backend.capabilities.require(Capability.LIST, backend=_bk)
-
         effective_depth = max_depth if max_depth is not None else 0
+        return self._list_folders_inner(self._full_path(path), effective_depth=effective_depth)
 
-        # BFS traversal up to effective_depth levels
-        full = self._full_path(path)
-        current_level: list[str] = [full]
+    async def _list_folders_inner(self, full_path: str, *, effective_depth: int) -> AsyncIterator[FolderEntry]:
+        """Inner generator for :meth:`list_folders` — BFS traversal."""
+        current_level: list[str] = [full_path]
         for level in range(effective_depth + 1):
             next_level: list[str] = []
             for folder_path in current_level:
@@ -372,12 +402,15 @@ class AsyncStore:
                         next_level.append(str(entry.path))
             current_level = next_level
 
-    async def iter_children(self, path: str) -> AsyncIterator[FileInfo | FolderEntry]:
+    def iter_children(self, path: str) -> AsyncIterator[FileInfo | FolderEntry]:
         """Yield all immediate children (files and folders) of *path* in a single pass.
 
         Files are yielded as ``FileInfo``, folders as ``FolderEntry``.
         Both have ``.name`` and ``.path`` attributes (satisfying the
         ``PathEntry`` protocol) so callers can iterate uniformly.
+
+        Validation (capability check) happens eagerly on call,
+        not lazily on first iteration.
 
         Args:
             path: Store-relative folder path.
@@ -388,16 +421,21 @@ class AsyncStore:
         _bk = self._backend.name
         log.debug("iter_children path=%r", path, extra={"op": "iter_children", "path": path, "backend": _bk})
         self._backend.capabilities.require(Capability.LIST, backend=_bk)
-        async for entry in self._backend.iter_children(self._full_path(path)):
+        return self._iter_children_inner(self._full_path(path))
+
+    async def _iter_children_inner(self, full_path: str) -> AsyncIterator[FileInfo | FolderEntry]:
+        """Inner generator for :meth:`iter_children`."""
+        async for entry in self._backend.iter_children(full_path):
             if isinstance(entry, FolderEntry):
                 yield self._rebase_folder_entry(entry)
             else:
                 yield self._rebase_file_info(entry)
 
-    async def glob(self, pattern: str) -> AsyncIterator[FileInfo]:
+    def glob(self, pattern: str) -> AsyncIterator[FileInfo]:
         """Yield files matching a glob *pattern*, using the backend's native glob implementation.
 
-        Requires ``Capability.GLOB``.
+        Requires ``Capability.GLOB``.  Validation (capability check) happens
+        eagerly on call, not lazily on first iteration.
 
         Args:
             pattern: Glob pattern (e.g. ``"data/**/*.parquet"``).
@@ -411,6 +449,10 @@ class AsyncStore:
         log.debug("glob pattern=%r", pattern, extra={"op": "glob", "path": pattern, "backend": self._backend.name})
         self._backend.capabilities.require(Capability.GLOB, backend=self._backend.name)
         full_pattern = f"{self._root}/{pattern}" if self._root else pattern
+        return self._glob_inner(full_pattern)
+
+    async def _glob_inner(self, full_pattern: str) -> AsyncIterator[FileInfo]:
+        """Inner generator for :meth:`glob`."""
         async for info in self._backend.glob(full_pattern):
             yield self._rebase_file_info(info)
 
