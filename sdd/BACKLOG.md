@@ -79,14 +79,11 @@ Items graduate through the SDD pipeline:
   - Done: [research round 1](research/research-async-store-api.md),
     [research round 2](research/research-async-store-api-round2.md),
     [ADR-0012](adrs/0012-async-store-backend-api.md) draft,
-    [spec 029](specs/029-async-store-backend-api.md) draft.
+    [spec 029](specs/029-async-store-backend-api.md) draft,
+    Phase 1 implementation (`remote_store.aio`: `AsyncBackend`, `AsyncStore`,
+    `SyncBackendAdapter`, `AsyncMemoryBackend`).
   - Remaining:
-    - Spec 029 amendments (8 items from round 2 §2.4): `read_seekable`
-      deferral, `resolve()` passthrough, `ping()`/`check_health()` async,
-      `write_text` in ASYNC-046, `max_depth` params, `AsyncMemoryBackend`
-      (ASYNC-060..063), `open_atomic` deferral note, streaming write
-      bridging (ASYNC-036).
-    - Implementation Phase 1: core async surface (`remote_store.aio`).
+    - Spec 029 amendments (8 items from round 2 §2.4).
     - Implementation Phase 2: native async backends.
     - Implementation Phase 3: async extensions (incl. Dagster `AsyncIOManager`).
 

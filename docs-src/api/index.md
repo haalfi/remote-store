@@ -25,6 +25,15 @@ Complete reference for all public exports of `remote-store`.
 | [SQLBlobBackend](backends/sql-blob.md) | SQL database blob storage via SQLAlchemy |
 | [SQLQueryBackend](backends/sql-query.md) | Read-only SQL query materialization via SQLAlchemy + PyArrow |
 
+## Async
+
+| Class | Description |
+|-------|-------------|
+| [AsyncStore](aio.md#asyncstore) | Async counterpart to `Store` with coroutine methods for all operations |
+| [AsyncBackend](aio.md#asyncbackend) | Abstract base class for native async backends |
+| [SyncBackendAdapter](aio.md#syncbackendadapter) | Wraps any synchronous backend for async use via thread-pool executor |
+| [AsyncMemoryBackend](aio.md#asyncmemorybackend) | In-memory async backend for testing |
+
 ## Utilities
 
 | Class | Description |

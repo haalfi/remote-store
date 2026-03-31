@@ -29,7 +29,7 @@ Where files live is configuration, not application code.
 Under the hood, established Python libraries like `s3fs`, `paramiko`,
 and `azure-storage-file-datalake` do the real work.
 
-**Requires Python 3.10+.** The core API is synchronous; see the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for atomicity caveats and race conditions.
+**Requires Python 3.10+.** The core API is synchronous; an async counterpart is available via `remote_store.aio`. See the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for atomicity caveats and race conditions.
 
 ## Installation
 
@@ -144,6 +144,7 @@ Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Crede
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
 - **Atomic writes where supported:** safer updates for file-producing workflows
+- **Async support:** `remote_store.aio` provides `AsyncStore` with coroutine methods; wrap any sync backend with `SyncBackendAdapter`
 - **Established libraries underneath:** `s3fs`, `paramiko`, etc. do the real work
 
 Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integrations for PyArrow, OpenTelemetry, and more.
@@ -241,7 +242,7 @@ There are several excellent Python libraries for file I/O across backends. Here 
 | SFTP | via sshfs | Yes | — | — | Built-in |
 | Streaming I/O | Yes | Yes | — (downloads) | Bytes-oriented | Yes (BinaryIO) |
 | Atomic writes | — | — | — | — | Yes (capability-gated) |
-| Async | Yes | — | — | Yes (first-class) | Sync-only (for now) |
+| Async | Yes | — | — | Yes (first-class) | Yes (`remote_store.aio`) |
 | Observability | — | — | — | — | `ext.observe` + OTel |
 | Config model | Per-filesystem | URI-based | Per-client | Per-store kwargs | Immutable Registry |
 | Runtime deps | Yes | Minimal | SDK-based | Rust binary | Zero (core) |

@@ -8,6 +8,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **Async Store API (`remote_store.aio`)** (ID-013): `AsyncStore` --
+  async counterpart to `Store` with coroutine methods for all operations.
+  `AsyncBackend` abstract base class for native async backends.
+  `SyncBackendAdapter` wraps any synchronous backend for async use
+  (delegates to a thread-pool executor). `AsyncMemoryBackend` for
+  async testing. Phase 1 -- core primitives; native async backends
+  (S3, Azure) planned for Phase 2.
 - `FEATURES.md` at repo root — versioned snapshot of backends, extensions,
   capabilities, and install extras for agent and human discoverability (BK-136).
 - `remote_store.info()` public function — runtime introspection of available
