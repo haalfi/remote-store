@@ -1086,6 +1086,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/async-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/s3-backend/" class="md-nav__link">
         
   
@@ -2366,6 +2394,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../async/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../health-check/" class="md-nav__link">
         
   
@@ -3272,6 +3328,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../api/aio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -3284,7 +3368,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_14" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3306,14 +3390,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_13" id="__nav_4_1_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_14" id="__nav_4_1_14_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_14">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -7399,6 +7483,7 @@ use a Registry with declarative config:</p>
 <li><strong>Swap backends via config:</strong> move between environments without changing code</li>
 <li><strong>Streaming by default:</strong> large files just work without blowing up memory</li>
 <li><strong>Atomic writes where supported:</strong> safer updates for file-producing workflows</li>
+<li><strong>Async support:</strong> <code>remote_store.aio</code> provides <code>AsyncStore</code> with coroutine methods; wrap any sync backend with <code>SyncBackendAdapter</code></li>
 <li><strong>Established libraries underneath:</strong> <code>s3fs</code>, <code>paramiko</code>, etc. do the real work</li>
 </ul>
 <p>Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integrations for PyArrow, OpenTelemetry, and more.</p>
@@ -7652,7 +7737,7 @@ use a Registry with declarative config:</p>
 <td>—</td>
 <td>—</td>
 <td>Yes (first-class)</td>
-<td>Sync-only (for now)</td>
+<td>Yes (<code>remote_store.aio</code>)</td>
 </tr>
 <tr>
 <td>Observability</td>

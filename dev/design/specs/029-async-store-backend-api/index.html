@@ -907,6 +907,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../examples/async-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../examples/s3-backend/" class="md-nav__link">
         
   
@@ -2187,6 +2215,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../async/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../health-check/" class="md-nav__link">
         
   
@@ -3093,6 +3149,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../api/aio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -3105,7 +3189,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_14" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3127,14 +3211,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_13" id="__nav_4_1_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_14" id="__nav_4_1_14_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_14">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -8375,8 +8459,8 @@
 
 <h1 id="async-store-and-backend-api-specification">Async Store and Backend API Specification<a class="headerlink" href="#async-store-and-backend-api-specification" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Draft -- pending second research round to validate design against current
-sync API surface before implementation proceeds.</p>
+<p>Accepted -- Phase 1 implemented in <code>remote_store.aio</code> (v0.21).
+Pending: spec amendments from research round 2 §2.4.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p><code>AsyncBackend</code> and <code>AsyncStore</code> are the async equivalents of <code>Backend</code> (<a href="../003-backend-adapter-contract/">003</a>) and <code>Store</code> (<a href="../001-store-api/">001</a>). <code>SyncBackendAdapter</code> bridges sync backends into the async world via <code>asyncio.to_thread()</code>. This spec covers Phase 1 scope only — native async backends and async extensions are future specs. See <a href="../../adrs/0012-async-store-backend-api/">ADR-0012</a> for design rationale.</p>
 <hr />
@@ -8514,7 +8598,7 @@ sync API surface before implementation proceeds.</p>
 <p><strong>Invariant:</strong> <code>supports(capability)</code> checks whether the backend supports a capability. <strong>Sync</strong> — no I/O.
 <strong>See also:</strong> <a href="../001-store-api/">STORE-005</a>.</p>
 <h3 id="async-045-capability-gating">ASYNC-045: Capability Gating<a class="headerlink" href="#async-045-capability-gating" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Capability-gated methods raise <code>CapabilityNotSupported</code> before delegating if the capability is missing.
+<p><strong>Invariant:</strong> Capability-gated methods raise <code>CapabilityNotSupported</code> before delegating if the capability is missing. For methods that return <code>AsyncIterator</code> (<code>read</code>, <code>list_files</code>, <code>list_folders</code>, <code>iter_children</code>, <code>glob</code>), validation happens eagerly on call (these are regular <code>def</code> methods that validate, then return an inner async generator), not lazily on first iteration.
 <strong>See also:</strong> <a href="../001-store-api/">STORE-006</a>.</p>
 <h3 id="async-046-full-api-surface">ASYNC-046: Full API Surface<a class="headerlink" href="#async-046-full-api-surface" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>AsyncStore</code> exposes async equivalents of all <code>Store</code> methods: <code>read</code>, <code>read_bytes</code>, <code>read_text</code>, <code>write</code>, <code>write_atomic</code>, <code>delete</code>, <code>delete_folder</code>, <code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>iter_children</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>, <code>get_file_info</code>, <code>get_folder_info</code>, <code>move</code>, <code>copy</code>, <code>aclose</code>, <code>supports</code>, <code>to_key</code>, <code>native_path</code>, <code>unwrap</code>, <code>child</code>.

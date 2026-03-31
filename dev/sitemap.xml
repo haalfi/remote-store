@@ -13,6 +13,10 @@
          <lastmod>2026-03-31</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/async/</loc>
+         <lastmod>2026-03-31</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/batch-operations/</loc>
          <lastmod>2026-03-31</lastmod>
     </url>
@@ -114,6 +118,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/</loc>
+         <lastmod>2026-03-31</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/api/aio/</loc>
          <lastmod>2026-03-31</lastmod>
     </url>
     <url>
@@ -722,6 +730,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/</loc>
+         <lastmod>2026-03-31</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/examples/async-store/</loc>
          <lastmod>2026-03-31</lastmod>
     </url>
     <url>
