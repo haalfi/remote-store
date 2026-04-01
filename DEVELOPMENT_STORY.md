@@ -2,20 +2,6 @@
 
 This document chronicles how `remote-store` was built as a collaboration between a human developer and [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Anthropic's AI coding assistant. The goal is transparency: showing what worked, what surprised us, and what others can learn from the process.
 
-## The Numbers
-
-| Metric | Value |
-|--------|-------|
-| Source code | ~16,000 lines (9 backends + async layer) |
-| Tests | ~3,100 tests, ~24,300 lines |
-| Specs & docs | 43 specs, 20 ADRs, 10 RFCs |
-| Examples | 24 core + 6 backend + 5 notebooks + 3 snippet scripts |
-| Extensions | 14 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.dagster`, `ext.glob`, `ext.integrity`, `ext.observe`, `ext.otel`, `ext.parquet`, `ext.partition`, `ext.pydantic`, `ext.streams`, `ext.transfer`, `ext.yaml`) |
-| Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
-| Coverage | >= 95% CI floor (actual in README badge) |
-| Co-work sessions | Spread across ~7 calendar weeks (since Feb 14) |
-| Commits | ~530 |
-
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
 The idea for `remote-store` came from a simple observation: teams that include citizen developers — analysts, scientists, domain experts who write Python but aren't software engineers — kept getting stuck on file storage. Every cloud provider has its own SDK, its own auth dance, its own streaming quirks. The experienced devs on the team would write wrapper code, but it was never reusable across projects, and the citizen devs couldn't maintain it.
@@ -24,17 +10,131 @@ The goal was to give those teams a single API that hides the backend complexity 
 
 That citizen-developer use case shaped every design decision: immutable config (so non-experts can't accidentally mutate state), clear error messages (no raw `botocore` tracebacks), capability declarations (so unsupported operations fail with an explanation, not a cryptic exception), and streaming by default (so large files just work without anyone tuning buffer sizes).
 
-## The Approach: Specs First, Code Second
+## The Approach: How I Learned to Work with AI
 
-The project follows **Spec-Driven Development (SDD)** — every feature starts as a specification before any code is written. This turned out to be an excellent fit for AI-assisted development, because:
+This section isn't about the project's methodology. It's about the human side -- how I found a way of working that turns AI pair programming from "faster typing" into something qualitatively different.
 
-1. **Specs constrain the solution space.** Instead of asking "build me a storage library," the human wrote specs that defined exact method signatures, error conditions, and invariants. Claude Code then implemented against those contracts.
+**It started with a conversation.** The initial project concept came from chatting with ChatGPT -- not code, just ideas. What would a unified storage API look like? What exists already? Where does fsspec fall short? That conversation produced a project brief and a rough `src/` layout, which I committed as the first README.
 
-2. **Specs are reviewable.** The human could verify correctness at the spec level before any code existed. This caught design issues early, before they became refactoring problems.
+**Then Claude Code entered the picture.** I started using it inside the VSCode terminal, always with the repo open in the editor beside it. Read the code, read the structure, give instructions. At this stage I was still thinking like a developer who happens to have a fast typist -- I'd describe what I wanted, review what came back, iterate.
 
-3. **Specs enable traceability.** Every test is tagged with `@pytest.mark.spec("ID")`, linking it back to the spec section it validates. This makes it easy to verify completeness.
+**The way of working changed gradually.** The first shift was realizing that my time was better spent on *how we work* than on *what we build*. I started investing in process artifacts: `CLAUDE.md` with project rules, `DESIGN.md` with code conventions, `TESTING.md` with quality standards. Each one was a lesson learned the hard way -- a bug that shouldn't have happened, a review that caught something the rules should have prevented. Every artifact made the next session start from a higher baseline.
+
+**Then came the split-brain pattern.** For research and thinking -- exploring design spaces, evaluating trade-offs, writing `sdd/research/` documents -- I'd use Claude.ai's web interface. It's a different mode: longer context, more exploratory, no file system. For execution -- implementation, testing, docs -- Claude Code in the terminal. The two modes complement each other: research produces decisions, execution implements them.
+
+**Local hardware became part of the workflow.** The ollama MCP server let Claude Code delegate bulk tasks (code generation, reviews, test writing) to local GPU-accelerated models. Not a replacement for Claude, but a way to parallelize mechanical work without burning API budget on routine tasks.
+
+**Eventually I switched to pure terminal.** Claude Code in the terminal, browser open for monitoring -- GitHub Actions, docs site, hardware utilization. No more IDE. The terminal *is* the IDE when your AI partner can read, write, search, and run anything.
+
+**The compound payoff arrived with orchestration.** After weeks of building up process infrastructure -- skills, specs, research docs, quality gates -- something shifted. Complex features that would have taken multiple sessions now landed in one. v0.20.0 shipped more features in a single cycle than any previous release, not because the code got easier, but because the *way of working* had matured. Skills handled repeatable workflows. Research docs front-loaded design decisions. Quality gates caught regressions automatically.
+
+**The endgame surprised me.** I stopped optimizing for output and started optimizing for how I work. And output became a byproduct. It's now more like having ideas and keeping learning, instead of shipping things -- because shipping just happens at the side. The most valuable artifacts aren't the 16,000 lines of source code. They're the process documents, the skills, the memory system, the conventions -- the things that make every future session start where the last one ended, not from scratch.
+
+## Lessons for Others
+
+If this project has one recurring lesson, it's that **correctness at the interface is not correctness at the behavior.** Python's duck typing means anything that quacks correctly gets through -- and we found, repeatedly, that the gap between "passes type checks and tests" and "actually does what it claims" is where the real bugs live.
+
+| What looked correct | What was actually wrong |
+|---|---|
+| `read()` returns `BinaryIO` -- mypy happy, tests pass | Every backend loaded the entire file into memory |
+| `Capability.GLOB` declared on 4 backends | No `glob()` method existed anywhere |
+| `"strict"` passed as host key policy | `"strict" != HostKeyPolicy.STRICT` -- silently degrades to least-secure mode |
+| Quick Start in README shows S3 usage | `_register_builtin_backends()` only registers local+azure |
+| `bytes(None)` in stream wrapper | Silently produces `b'\x00\x00\x00\x00'` instead of propagating error |
+| `Example::` in every docstring | RST literal blocks, no syntax highlighting in mkdocstrings -- uniform wrongness looks intentional |
+| Azure benchmark: 107x slower than adlfs | fsspec caching artifact; real overhead was 1.2x |
+| 95% test coverage, green CI | Includes `assert WritableContent is not None` -- hitting import lines, not behavior |
+| `list_folders()` returns strings | Every other listing method returns typed objects -- strings cooperate *just enough* |
+
+The type system validates the interface; it can't validate the behavior behind it. Keep that in mind as you read the lessons below -- they're organized in two groups: how to work with AI, and how to build with AI.
+
+### Way of Working
+
+These are the transferable patterns -- the things that made the collaboration better regardless of what we were building.
+
+1. **Invest in your way of working -- it compounds faster than features.** The single highest-value activity wasn't writing code or specs. It was building process infrastructure: `CLAUDE.md` with project rules, skills for repeatable workflows, a memory system for cross-session continuity, research docs for front-loading decisions. Each artifact was small when created -- a markdown file, a skill definition -- but together they shifted the bottleneck from "how do we do this?" to "what should we do next?" Process infrastructure has the same compounding property as code infrastructure: invisible when present, crippling when absent.
+
+2. **Codify lessons as executable guardrails, not prose.** Rules in CLAUDE.md and CONTRIBUTING.md get re-read and re-applied every session. But after ~165 commits, the data showed they weren't enough: 7 of 9 audit-fix commits forgot to update the backlog, 62% of code changes skipped the CHANGELOG. The fix was extracting patterns into slash-command skills (`.claude/commands/`) -- executable checklists that Claude Code follows without re-deriving them. Each skill is a scar from a past mistake, formalized so it doesn't recur.
+
+3. **Split research and execution into separate modes.** Research (exploring design spaces, evaluating trade-offs) and execution (implementation, testing) need different cognitive modes. Using Claude.ai web for research documents and Claude Code terminal for implementation respects that difference. Research produces decisions with evidence; execution implements them without re-litigating.
+
+4. **Write research documents before implementation specs.** When a feature touches multiple design dimensions, a research document that maps the full design space prevents expensive mid-implementation pivots. But review it like code -- the first draft tends to be "an implementation plan wearing a research hat." Multiple review rounds from fresh sessions transform shallow research into genuine analysis. Research also catches design-level bugs that no amount of code review or testing will find.
+
+5. **"No" is a valid research outcome.** Two research documents produced the explicit decision *not* to build what they investigated. The async API research found it would double codebase and surface area with no clear audience benefit. The Dagster extension research concluded v1 should be a thin adapter. Both documents live in `sdd/research/`, so when someone asks "why no async?" the answer is a link, not a re-investigation.
+
+6. **Review in a separate session from authoring.** A single AI session reviewing its own output suffers from the author's blind spot -- the mental model fills in gaps the artifact doesn't. A fresh session reads the output cold. It doesn't have to fight the urge to skim past familiar code; the code isn't familiar. The context boundary between sessions acts as the "different person" that review traditionally requires. Same model, different role, different results.
+
+7. **Use plan mode for anything non-trivial.** Having the AI propose a detailed plan before writing code catches misalignment early. The more complex the task, the more a detailed plan pays off. The SFTP backend plan specified constructor params, test server architecture, and temp file naming patterns -- the entire implementation completed in a single session with no false starts.
+
+8. **Let the AI do breadth; you do depth.** AI excels at "write 53 tests to cover all uncovered code paths" or "create 6 example scripts demonstrating different API patterns." You're better at deciding whether the API design is right, whether the research covers the real alternatives, whether the messaging resonates. Tech lead, not typist.
+
+### Building with AI
+
+These are the code-level and project-level lessons -- the things we learned about building software this way.
+
+9. **Test behavior, not just interfaces.** A method that returns `BinaryIO` can satisfy mypy and pass functional tests while secretly loading everything into memory. If your spec promises streaming, write a test that proves it streams. The type system validated our interface; no test validated the behavior behind it until we explicitly looked.
+
+10. **Run the code, on your actual platform.** Generated code that looks right may not be right. Unicode arrows crashed on Windows cp1252. f-strings failed on Python 3.10. `RemotePath("")` triggered validation errors. Em dashes survived three review rounds by hiding in unchecked table cells. If your CI is more forgiving than your users' environments, your CI is testing itself, not your software.
+
+11. **Run adversarial audits after major milestones.** PR reviews catch local issues; adversarial audits catch systemic ones. Cross-backend semantic inconsistencies, capability declarations with no implementation, and docs-to-code drift are invisible at the PR level because each PR is internally consistent. A fresh session asked to "prove this package wrong" surfaces the cross-cutting concerns no single review would find.
+
+12. **Audit findings are hypotheses, not facts -- verify before fixing.** Our third audit produced 19 findings. Three were non-defects. One "missing docstring" finding was actually a mkdocstrings config gap (one-line fix vs 40 boilerplate edits). A stale count revealed a hand-maintained listing that should be structural. Completeness (fix every finding) is not the same as correctness (fix the right thing).
+
+13. **Pin your dependency lower bounds.** Unpinned deps in CI will eventually bite you. pip silently installed a 2-year-old s3fs instead of failing with a resolution error. CI was green one day, broken the next, with zero code changes. A `>=` pin costs nothing and prevents silent downgrades.
+
+14. **Point AI at legacy code.** If you have working code that solves part of the problem, show it to the AI. The SFTP backend drew proven patterns from legacy code for PEM sanitization and host key handling. Working code communicates requirements more effectively than describing them from scratch.
+
+15. **Systematic pattern errors are invisible because they look intentional.** Every docstring used RST `Example::` literal blocks. They rendered without syntax highlighting, but because *every* docstring was wrong in the same way, it looked like a deliberate style choice. No linter or test caught it. Only a human browsing the actual rendered docs noticed. If a pattern is applied uniformly, review can't distinguish "consistently correct" from "consistently wrong."
+
+16. **Document decisions as you go.** ADRs and spec updates are cheap to write in the moment but expensive to reconstruct later. We documented the empty path decision as ADR-0004 immediately after making it. The growing collection of ADRs, research docs, and specs became the project's institutional memory.
+
+17. **Adopt a documentation framework early.** Retrofitting Diataxis onto an existing flat docs site required reclassifying every page and rebuilding navigation. Any structural decision -- code architecture, test organization, docs layout -- is cheapest before content accumulates.
+
+18. **Benchmarks must measure honestly.** Present numbers (ms, %), not judgments ("negligible," "minimal"). Our overhead-vs-RTT charts showed that remote-store's fixed cost becomes irrelevant at real-world latencies. The S3-PyArrow comparison revealed its strength is analytical workloads, not raw throughput -- a distinction the messaging previously blurred. The 107x Azure number would have been damning; the 1.2x reality is an acceptable design trade-off. You only learn which it is by understanding the measurement.
+
+19. **Deduplication compounds.** Each individual housekeeping change was small, but together v0.19.0 removed ~300 lines of library code and ~1,500 lines of tests while making the codebase more navigable. The `_deprecated_alias()` helper that made naming cleanup trivial only existed because an earlier deduplication pass created it. Housekeeping releases create the infrastructure that makes future feature work faster.
+
+## What Worked Well
+
+**Specs as a shared contract.** Every feature starts as a specification. The human verifies correctness at the spec level before code exists. Claude Code implements against the contract. This reduced review time, increased trust, and made "done" unambiguous.
+
+**Discovery through dogfooding.** The empty path bug was found because AI-written examples forced real API usage that human-written tests hadn't exercised. The streaming audit was triggered by asking "does it actually stream?" The live Dagster showcase caught three bugs invisible to static analysis. Running the code -- not just type-checking it -- is where the real bugs surface.
+
+**Process infrastructure compounds.** Skills codified repeatable workflows. Research docs front-loaded decisions. Quality gates caught regressions. Together they enabled v0.20.0's feature explosion -- more output in one cycle than any previous release, because the tooling handled the cross-cutting concerns that used to dominate elapsed time.
+
+**A living backlog beats a static roadmap.** `sdd/BACKLOG.md` with tiered items (Release Blockers, Backlog, Ideas) gave Claude Code a structured context to read. It proposes promotions, spots dependencies, and drafts entries in the right tier -- without the human re-explaining the prioritization scheme each session.
+
+**Legacy code as a knowledge source.** Pointing AI at battle-tested legacy code for the SFTP backend was more effective than describing requirements from scratch. The AI extracted proven patterns and adapted them to the new contract.
+
+**Parametrize tests ruthlessly, but only after they exist.** Write tests verbosely first, then compress once patterns emerge. The slim-tests effort collapsed verbose functions into `@pytest.mark.parametrize` tables, saving ~940 lines while preserving every test case. The result is faster to scan, cheaper to extend, and just as thorough.
+
+## What Was Surprising
+
+**Cross-platform issues surface in layers.** First it was errno codes vs. string matching on German Windows. Then mypy stubs differing between Windows and Linux. Then Unicode in print statements. Then em dashes in Markdown rendering differently per OS. Cross-platform doesn't just mean "runs on both OSes" -- it means the entire toolchain behaves consistently.
+
+**Session isolation is a genuine review mechanism.** The most unexpected quality win wasn't a tool or a process. A reviewing session, with no memory of the authoring session's reasoning, approached the same artifacts as a genuinely independent reader. It caught things the authoring session created -- not incorrect things, but incomplete things. Same model, different framing, different results.
+
+**The human's role shifts to tech lead.** With AI handling implementation, the human's work becomes defining scope, making judgment calls, architectural decisions, and quality gates. Less "write the code," more "decide what's worth building and whether it's right."
+
+**Uniform wrongness is invisible.** When every docstring has the same rendering bug, it looks like a style choice. When every backend loads files into memory, the interface still quacks like streaming. Systematic errors survive because review can't distinguish "consistently correct" from "consistently wrong" without checking the rendered output or the actual behavior.
+
+**"No" produces as much value as "yes."** Two research documents that concluded "don't build this" saved more time than features that shipped. The research exists as a link for anyone who asks "why not?" -- preventing the re-investigation that would otherwise happen every time the question comes up.
+
+**Benchmarks can lie without being wrong.** The 107x Azure slowdown was a real measurement of a real benchmark. It was also a caching artifact that had nothing to do with remote-store's overhead. Understanding *what* you measured matters more than the number itself.
+
+## What Could Be Better
+
+**Rendered-output checking.** Too many bugs were only visible in the deployed docs, the PyPI listing, or the actual terminal output. RST rendering, broken images on PyPI, em dashes on Windows -- all passed CI. A pre-release step that checks what users actually see (not just what the source looks like) would catch an entire class of issues.
+
+**Cross-backend semantic contracts.** `get_folder_info` on empty folders returns success on LocalBackend but raises `NotFound` on S3/SFTP/Azure. `delete_folder` on non-empty folders raises different error types across backends. These are the exact scenarios where backend interchangeability matters most -- error handling -- and the backends still disagree in edge cases.
+
+**Spec coverage of edge cases.** The specs didn't address empty path semantics, which led to a runtime discovery. An "Edge Cases" section in each spec explicitly listing boundary conditions would have caught this at design time.
+
+**Test server complexity.** The in-process SFTP test server (~275 lines) is nearly as complex as some backends. The `SFTPHandle.stat()` bug showed that test infrastructure can harbor subtle bugs of its own. Test servers deserve the same care as production code.
 
 ## The Timeline
+
+The log below is chronological -- each phase as it happened, with commit hashes, bugs encountered, and lessons learned in context.
 
 ### Phase 1: Foundation (human-led)
 
@@ -161,11 +261,11 @@ Claude Code implemented the full stack in one session:
 - `SFTPBackend` (~420 lines) with lazy connection, staleness detection, and full Backend ABC compliance
 - SFTP-specific tests plus conformance suite (453 total tests)
 
-**The debugging was instructive.** Initial test runs had 24 failures — all reads returning "Failure." A debug script isolated the issue to `SFTPHandle.stat()` in the test server: it used `SFTPServer.convert_errno(os.fstat(...))` instead of `SFTPAttributes.from_stat(os.fstat(...))`, causing `prefetch()` to fail because the handle stat returned errno codes as file metadata. A subtle API misuse that produced confusing errors far from the root cause.
+**The debugging was instructive.** Initial test runs had 24 failures -- all reads returning "Failure." A debug script isolated the issue to `SFTPHandle.stat()` in the test server: it used `SFTPServer.convert_errno(os.fstat(...))` instead of `SFTPAttributes.from_stat(os.fstat(...))`, causing `prefetch()` to fail because the handle stat returned errno codes as file metadata. A subtle API misuse that produced confusing errors far from the root cause.
 
-**CI revealed a pip resolver surprise.** After pushing, CI failed with all S3 tests broken — despite no S3 code changes. Investigation showed that botocore 1.42.50 had released between CI runs. The new version caused pip to silently downgrade s3fs from 2026.2.0 to 0.4.2 (ancient, no aiobotocore) rather than failing with a resolution error. The fix: pin `s3fs>=2024.2.0` to prevent the fallback.
+**CI revealed a pip resolver surprise.** After pushing, CI failed with all S3 tests broken -- despite no S3 code changes. Investigation showed that botocore 1.42.50 had released between CI runs. The new version caused pip to silently downgrade s3fs from 2026.2.0 to 0.4.2 (ancient, no aiobotocore) rather than failing with a resolution error. The fix: pin `s3fs>=2024.2.0` to prevent the fallback.
 
-**Cross-platform mypy differences.** The `before_sleep_log(log, ...)` call from tenacity had a type mismatch on local mypy (Logger vs LoggerProtocol) but not on CI. Using `# type: ignore[arg-type,unused-ignore]` handles both environments — the combined codes suppress the error where it exists and silence the "unused ignore" warning where it doesn't.
+**Cross-platform mypy differences.** The `before_sleep_log(log, ...)` call from tenacity had a type mismatch on local mypy (Logger vs LoggerProtocol) but not on CI. Using `# type: ignore[arg-type,unused-ignore]` handles both environments -- the combined codes suppress the error where it exists and silence the "unused ignore" warning where it doesn't.
 
 ```
 f3b7df9  Add SFTPBackend with paramiko, spec, tests, and bump to v0.2.0
@@ -176,13 +276,13 @@ f3b7df9  Add SFTPBackend with paramiko, spec, tests, and bump to v0.2.0
 
 Making the repository public exposed a category of problems that don't exist while a project is private: **everything that works "by reference" locally breaks "by value" on external platforms.**
 
-The first casualty was the PyPI listing. The README logo used a relative path (`assets/logo.png`), which renders fine on GitHub but produces a broken image on PyPI — their CDN proxies images through `pypi-camo.freetls.fastly.net` and can't resolve relative paths. The fix was straightforward (absolute raw GitHub URL), but the failure was invisible until the package was actually published and someone looked at the PyPI page.
+The first casualty was the PyPI listing. The README logo used a relative path (`assets/logo.png`), which renders fine on GitHub but produces a broken image on PyPI -- their CDN proxies images through `pypi-camo.freetls.fastly.net` and can't resolve relative paths. The fix was straightforward (absolute raw GitHub URL), but the failure was invisible until the package was actually published and someone looked at the PyPI page.
 
-The second issue was documentation hosting. The project had GitHub Pages set up via a CI workflow, but Read the Docs was missing. RTD provides versioned docs, search, and the familiar `readthedocs.io` URL that the Python community expects. The `.readthedocs.yaml` config had been written speculatively during setup but never activated — the project needed to be imported on readthedocs.org, the build OS needed updating, and the `Documentation` URL in `pyproject.toml` was still pointing to GitHub Pages.
+The second issue was documentation hosting. The project had GitHub Pages set up via a CI workflow, but Read the Docs was missing. RTD provides versioned docs, search, and the familiar `readthedocs.io` URL that the Python community expects. The `.readthedocs.yaml` config had been written speculatively during setup but never activated -- the project needed to be imported on readthedocs.org, the build OS needed updating, and the `Documentation` URL in `pyproject.toml` was still pointing to GitHub Pages.
 
 The third issue was subtler: the documentation site itself was out of date. Specs 010 (native path resolution) and 011 (S3-PyArrow backend) had been added to `sdd/specs/` during development, but never copied to `docs/design/specs/` or added to `mkdocs.yml` navigation. Same for ADR-0005. The docs site was shipping a version of the design documentation that was two specs and one ADR behind the actual source of truth. **When docs live in two places (source-of-truth in `sdd/` and rendered site in `docs/`), keeping them in sync is a manual step that's easy to forget.**
 
-Finally, the `pyproject.toml` metadata changes (Documentation URL, README fixes) don't take effect on PyPI until a new version is published. PyPI serves whatever was in the sdist/wheel at upload time. This means every metadata fix requires a version bump and release — there's no way to patch the PyPI listing in place.
+Finally, the `pyproject.toml` metadata changes (Documentation URL, README fixes) don't take effect on PyPI until a new version is published. PyPI serves whatever was in the sdist/wheel at upload time. This means every metadata fix requires a version bump and release -- there's no way to patch the PyPI listing in place.
 
 **The lesson: "works on GitHub" is not the same as "works everywhere the package appears."** PyPI, Read the Docs, and GitHub each render the same source files differently, with different rules for resolving paths, images, and links. A pre-release checklist that includes checking the rendered output on each platform would have caught all of these issues before users did.
 
@@ -190,25 +290,25 @@ Finally, the `pyproject.toml` metadata changes (Documentation URL, README fixes)
 
 The README says "streaming by default" and spec SIO-001 mandates that `read()` returns a `BinaryIO` that streams from the backend. But when the human asked to **review whether streaming actually worked**, every single backend turned out to load the entire file into memory.
 
-The pattern was the same in all four backends: `read()` called something that fetched the full content, wrapped it in `BytesIO`, and returned that. Callers got a `BinaryIO` that quacked correctly but had already consumed all the memory. Writes had the same problem — `BinaryIO` content was `.read()` into a `bytes` object before being written.
+The pattern was the same in all four backends: `read()` called something that fetched the full content, wrapped it in `BytesIO`, and returned that. Callers got a `BinaryIO` that quacked correctly but had already consumed all the memory. Writes had the same problem -- `BinaryIO` content was `.read()` into a `bytes` object before being written.
 
 **The fixes were backend-specific but shared a theme:**
 
 | Backend | Before | After |
 |---------|--------|-------|
-| Local | `BytesIO(path.read_bytes())` | `open(path, "rb")` — real file handle |
-| S3 | `BytesIO(fs.cat_file(path))` | `fs.open(path, "rb")` — HTTP range requests |
+| Local | `BytesIO(path.read_bytes())` | `open(path, "rb")` -- real file handle |
+| S3 | `BytesIO(fs.cat_file(path))` | `fs.open(path, "rb")` -- HTTP range requests |
 | S3-PyArrow | `BytesIO(pa_fs.open_input_stream(...).read())` | Custom `_PyArrowBinaryIO(io.RawIOBase)` adapter + `BufferedReader` |
 | SFTP | `BytesIO(sftp.file(...).read())` | Return `SFTPFile` directly (no `prefetch()`) |
 
 For writes, all backends gained `shutil.copyfileobj()` for `BinaryIO` content, which copies in chunks without materializing the full stream.
 
-**The PyArrow adapter was the trickiest.** PyArrow's `RandomAccessFile` doesn't implement Python's `BinaryIO` protocol — it has `read()` and `seek()` but no `readinto()`, which `io.BufferedReader` requires. The solution was a thin `io.RawIOBase` subclass that bridges `readinto()` → `read()`, wrapped in `BufferedReader` for buffering. About 20 lines to glue two ecosystems together.
+**The PyArrow adapter was the trickiest.** PyArrow's `RandomAccessFile` doesn't implement Python's `BinaryIO` protocol -- it has `read()` and `seek()` but no `readinto()`, which `io.BufferedReader` requires. The solution was a thin `io.RawIOBase` subclass that bridges `readinto()` -> `read()`, wrapped in `BufferedReader` for buffering. About 20 lines to glue two ecosystems together.
 
 **The lesson is uncomfortable: specs that aren't enforced by tests drift from reality.** Spec SIO-001 said "streaming," and every backend's `read()` signature returned `BinaryIO`, so mypy was happy and tests passed. But no test verified that the returned `BinaryIO` actually streamed from the backend rather than from a pre-filled buffer. The type system validated the interface; it couldn't validate the behavior behind it.
 
 This session also caught two housekeeping issues:
-- **ReadTheDocs deep links need `/en/latest/`**: The README linked to `readthedocs.io/api/store/` which 404'd because RTD requires a version prefix. Another instance of the Phase 9 lesson — "works on GitHub ≠ works everywhere."
+- **ReadTheDocs deep links need `/en/latest/`**: The README linked to `readthedocs.io/api/store/` which 404'd because RTD requires a version prefix. Another instance of the Phase 9 lesson -- "works on GitHub != works everywhere."
 - **Versioning docs were duplicated and diverged**: `CONTRIBUTING.md` had the current policy (bump-my-version, single source file), while `sdd/000-process.md` still described the old manual process. Consolidated to CONTRIBUTING.md with a pointer from process.md.
 
 ```
@@ -220,33 +320,33 @@ This session also caught two housekeeping issues:
 
 ### Phase 11: AI Reviewing AI (AI-reviewed)
 
-After 14 PRs, the human asked Claude Code to review the merged pull requests — looking for patterns, missed issues, and quality gaps. The twist: **both the PRs and the reviews were produced by Claude Code, just in different sessions.** The authoring sessions wrote specs, code, and documentation; a separate reviewing session evaluated them cold.
+After 14 PRs, the human asked Claude Code to review the merged pull requests -- looking for patterns, missed issues, and quality gaps. The twist: **both the PRs and the reviews were produced by Claude Code, just in different sessions.** The authoring sessions wrote specs, code, and documentation; a separate reviewing session evaluated them cold.
 
 Only 2 of the 14 PRs had received substantive review. But those two reviews caught real issues:
 
-- **PR #1** (backlog + README rewrite): 3 non-blocking items — a dead documentation URL (`readthedocs.io` referenced before hosting existed), stale `mkdocs.yml` description, and misleading `pyproject.toml` keywords.
-- **PR #11** (Azure backend RFC + spec): 6 critical issues + 4 minor notes — wrong RFC numbering, invalid markdown checkbox syntax, 7 Backend ABC methods with no spec coverage, GLOB capability declared but unexplained, cross-references instead of inline explanations, ambiguous return types.
+- **PR #1** (backlog + README rewrite): 3 non-blocking items -- a dead documentation URL (`readthedocs.io` referenced before hosting existed), stale `mkdocs.yml` description, and misleading `pyproject.toml` keywords.
+- **PR #11** (Azure backend RFC + spec): 6 critical issues + 4 minor notes -- wrong RFC numbering, invalid markdown checkbox syntax, 7 Backend ABC methods with no spec coverage, GLOB capability declared but unexplained, cross-references instead of inline explanations, ambiguous return types.
 
 All 6 critical issues on PR #11 were fixed before merge. The 12 unreviewed PRs shipped as-is.
 
-**The most revealing pattern was the authoring session's blind spot: completeness, not correctness.** The reviewing session didn't find things that were *wrong* — it found things that were *missing*. Seven abstract methods without invariants, a capability declared but never specified, return types left ambiguous. The authoring session "knew" how those would work and didn't realize the output was incomplete. A second session, reading the artifacts without that context, immediately spotted the gaps.
+**The most revealing pattern was the authoring session's blind spot: completeness, not correctness.** The reviewing session didn't find things that were *wrong* -- it found things that were *missing*. Seven abstract methods without invariants, a capability declared but never specified, return types left ambiguous. The authoring session "knew" how those would work and didn't realize the output was incomplete. A second session, reading the artifacts without that context, immediately spotted the gaps.
 
-**Same model, different role, different results.** Both sessions had identical capabilities, but the reviewing session found issues the authoring session created. The difference wasn't intelligence — it was framing. The author optimizes for producing; the reviewer optimizes for interrogating. Session isolation prevented the reviewer from inheriting the author's assumptions, which is exactly what code review is supposed to provide.
+**Same model, different role, different results.** Both sessions had identical capabilities, but the reviewing session found issues the authoring session created. The difference wasn't intelligence -- it was framing. The author optimizes for producing; the reviewer optimizes for interrogating. Session isolation prevented the reviewer from inheriting the author's assumptions, which is exactly what code review is supposed to provide.
 
 **The practical implication for solo maintainers:** separate sessions simulate a two-person team. The context boundary between sessions acts as the "different person" that review traditionally requires. The cost of a review session is low; the 2 PRs that received reviews caught issues that would have persisted in the 12 that didn't.
 
 ### Phase 12: Adversarial Audit (AI-vs-AI)
 
-Phase 11 used a second AI session as a code reviewer. Phase 12 took it further: the human asked a fresh Claude Code session to act as an adversary — "prove this package wrong." Four parallel AI agents independently audited security, test quality, API design, and CI/docs, then the human consolidated findings.
+Phase 11 used a second AI session as a code reviewer. Phase 12 took it further: the human asked a fresh Claude Code session to act as an adversary -- "prove this package wrong." Four parallel AI agents independently audited security, test quality, API design, and CI/docs, then the human consolidated findings.
 
 The audit produced 47 findings across four severity tiers. Two were critical (after post-audit verification downgraded one from Critical to High):
 
 1. **The README Quick Start for S3 doesn't work.** `_register_builtin_backends()` only registers `local` and `azure`. S3, SFTP, and S3-PyArrow must be manually imported and registered. The documented happy path for the three most common remote backends crashes on first use.
 2. **The GLOB capability is a ghost.** Four backends declare support; no `glob()` method exists anywhere. The capability system says "yes" to something the code can't do.
 
-A third finding — `S3Backend.close()` calling a process-wide `clear_instance_cache()` — was initially rated Critical but downgraded to High after verification showed existing filesystem references remain valid (the cache is a lookup table, not a lifecycle manager).
+A third finding -- `S3Backend.close()` calling a process-wide `clear_instance_cache()` -- was initially rated Critical but downgraded to High after verification showed existing filesystem references remain valid (the cache is a lookup table, not a lifecycle manager).
 
-Beyond the critical items, the audit exposed a pattern: **the "unified interface" promise breaks down at the edges.** `get_folder_info` on empty folders returns success on LocalBackend but raises `NotFound` on S3/SFTP/Azure. `delete_folder` on non-empty folders raises `NotFound` (wrong type) on local but `RemoteStoreError` (base class) on others. These are the exact scenarios where backend interchangeability matters most — error handling — and the backends disagree.
+Beyond the critical items, the audit exposed a pattern: **the "unified interface" promise breaks down at the edges.** `get_folder_info` on empty folders returns success on LocalBackend but raises `NotFound` on S3/SFTP/Azure. `delete_folder` on non-empty folders raises `NotFound` (wrong type) on local but `RemoteStoreError` (base class) on others. These are the exact scenarios where backend interchangeability matters most -- error handling -- and the backends disagree.
 
 The audit also found that thread safety (claimed by STORE-007) has zero implementation (no locks on lazy init) and zero tests (no concurrency tests exist). The 95% test coverage includes tests like `assert WritableContent is not None` that hit import lines without verifying behavior.
 
@@ -263,7 +363,7 @@ Phase 12 found the problems; Phase 13 fixed them. The human took the 7 highest-s
 | Finding | Severity | Fix |
 |---------|----------|-----|
 | AF-005 | High | New `DirectoryNotEmpty` error type, replacing generic `NotFound` when deleting non-empty folders |
-| AF-002 | Critical | Removed `Capability.GLOB` and `Capability.RECURSIVE_LIST` — enum members with no corresponding methods |
+| AF-002 | Critical | Removed `Capability.GLOB` and `Capability.RECURSIVE_LIST` -- enum members with no corresponding methods |
 | AF-001 | Critical | `_register_builtin_backends()` now auto-registers S3, SFTP, and S3-PyArrow (not just local/azure) |
 | AF-003 | High | `S3Backend.close()` no longer calls `clear_instance_cache()`, which was a process-wide side-effect |
 | AF-004 | High | SFTP `get_folder_info()` on empty folders returns `FolderInfo(file_count=0)` instead of raising `NotFound` |
@@ -300,22 +400,22 @@ fade101  AF-007: Wire Azure guide into docs site
 
 ### Phase 14: Release Checklist (process improvement)
 
-Expanded the 5-item release checklist into a 6-phase process (pre-flight, content freeze, version bump, validate, ship, post-release verification). The motivation: despite thorough process documentation — specs, CLAUDE.md principles, CONTRIBUTING.md conventions, PR templates — past releases still had preventable errors (v0.6.1 bumped but never published, CITATION.cff dates missed, no post-publish verification). Process docs govern how to build; a release checklist governs how to ship. One doesn't replace the other.
+Expanded the 5-item release checklist into a 6-phase process (pre-flight, content freeze, version bump, validate, ship, post-release verification). The motivation: despite thorough process documentation -- specs, CLAUDE.md principles, CONTRIBUTING.md conventions, PR templates -- past releases still had preventable errors (v0.6.1 bumped but never published, CITATION.cff dates missed, no post-publish verification). Process docs govern how to build; a release checklist governs how to ship. One doesn't replace the other.
 
 ### Phase 15: Reusable Skills (collaborative process mining)
 
-After ~165 commits of human-AI pair programming, recurring friction points had become visible in the data: 7 of 9 audit-fix commits forgot to update the backlog, 62% of code changes skipped the CHANGELOG, version-file sync was missed repeatedly, and cross-reference consistency (the "ripple check") was manual and error-prone. These weren't knowledge gaps — the rules existed in CLAUDE.md, CONTRIBUTING.md, and PR templates — but they lived in prose that had to be re-read and re-applied every session.
+After ~165 commits of human-AI pair programming, recurring friction points had become visible in the data: 7 of 9 audit-fix commits forgot to update the backlog, 62% of code changes skipped the CHANGELOG, version-file sync was missed repeatedly, and cross-reference consistency (the "ripple check") was manual and error-prone. These weren't knowledge gaps -- the rules existed in CLAUDE.md, CONTRIBUTING.md, and PR templates -- but they lived in prose that had to be re-read and re-applied every session.
 
 The fix was to extract the patterns into executable checklists: 6 slash-command skills in `.claude/commands/` that Claude Code can invoke directly. Each skill codifies a workflow that had been learned through trial and error across multiple sessions:
 
-- **`/ripple-check`** — the cross-reference table from CLAUDE-REFERENCE.md, turned into an actionable checklist
-- **`/release`** — the 6-phase release process, with every file and command spelled out
-- **`/add-backend`** — 12-step backend scaffolding (the exact sequence that tripped up AF-001)
-- **`/backlog-sync`** — enforces "same commit" backlog updates
-- **`/pr-preflight`** — 11 checks covering the historically-missed items
-- **`/add-spec`** — SDD spec + test scaffolding with the right markers
+- **`/ripple-check`** -- the cross-reference table from CLAUDE-REFERENCE.md, turned into an actionable checklist
+- **`/release`** -- the 6-phase release process, with every file and command spelled out
+- **`/add-backend`** -- 12-step backend scaffolding (the exact sequence that tripped up AF-001)
+- **`/backlog-sync`** -- enforces "same commit" backlog updates
+- **`/pr-preflight`** -- 11 checks covering the historically-missed items
+- **`/add-spec`** -- SDD spec + test scaffolding with the right markers
 
-The interesting insight: **the skills weren't designed top-down — they were mined from failure patterns.** The commit history told us exactly which steps got forgotten and how often. The backlog-sync skill exists because 78% of tagged commits forgot the backlog. The CHANGELOG check in pr-preflight exists because the majority of code changes skipped it. Each skill is a scar from a past mistake, formalized so it doesn't recur.
+The interesting insight: **the skills weren't designed top-down -- they were mined from failure patterns.** The commit history told us exactly which steps got forgotten and how often. The backlog-sync skill exists because 78% of tagged commits forgot the backlog. The CHANGELOG check in pr-preflight exists because the majority of code changes skipped it. Each skill is a scar from a past mistake, formalized so it doesn't recur.
 
 This is a natural evolution of the human-AI workflow: the human defines principles (CLAUDE.md), the pair discovers where those principles get violated in practice (PR reviews, audits), and the violations get codified into guardrails (skills) that the AI can follow without re-deriving them each session. The principles stay high-level; the skills handle the mechanical enforcement.
 
@@ -323,9 +423,9 @@ This is a natural evolution of the human-AI workflow: the human defines principl
 
 Three new capabilities shipped in a single minor release, all following the `ext.*` pattern established by the PyArrow adapter:
 
-- **`ext.batch`** (ID-022) — `batch_delete`, `batch_copy`, `batch_exists` with error aggregation via `BatchResult`. The pattern of "call Store methods one-by-one, collect errors into a result" proved clean enough to template future extensions.
-- **`ext.transfer`** (ID-023) — `upload`, `download`, `transfer` for local-file-to-store and cross-store data movement. Unified two long-standing backlog items (ID-001 cross-store transfer, ID-009 upload/download) into three streaming functions with progress callbacks. The `_ProgressReader` wrapper reuses the `cast("BinaryIO", ...)` + `__getattr__` delegation pattern from the PyArrow adapter.
-- **PyArrow FileSystem adapter Phase 1** (ID-016) — `StoreFileSystemHandler` wraps any Store into a `pyarrow.fs.PyFileSystem`, enabling interop with Parquet, Pandas, Polars, DuckDB, and dataset discovery. The tiered read strategy (BufferReader for small files, PythonFile for large seekable files) and `_StoreSink` spill-to-disk write buffer were the most architecturally complex additions since the backends themselves.
+- **`ext.batch`** (ID-022) -- `batch_delete`, `batch_copy`, `batch_exists` with error aggregation via `BatchResult`. The pattern of "call Store methods one-by-one, collect errors into a result" proved clean enough to template future extensions.
+- **`ext.transfer`** (ID-023) -- `upload`, `download`, `transfer` for local-file-to-store and cross-store data movement. Unified two long-standing backlog items (ID-001 cross-store transfer, ID-009 upload/download) into three streaming functions with progress callbacks. The `_ProgressReader` wrapper reuses the `cast("BinaryIO", ...)` + `__getattr__` delegation pattern from the PyArrow adapter.
+- **PyArrow FileSystem adapter Phase 1** (ID-016) -- `StoreFileSystemHandler` wraps any Store into a `pyarrow.fs.PyFileSystem`, enabling interop with Parquet, Pandas, Polars, DuckDB, and dataset discovery. The tiered read strategy (BufferReader for small files, PythonFile for large seekable files) and `_StoreSink` spill-to-disk write buffer were the most architecturally complex additions since the backends themselves.
 
 Supporting work included a concurrency guide (AF-010), capability gating tests (AF-012), error path tests for S3/SFTP (AF-013), a CI gate on the publish workflow (AF-014), and cleanup of stale capability declarations (ID-019).
 
@@ -347,11 +447,11 @@ The glob story completed. v0.11.0 shipped with native glob only for LocalBackend
 
 On the infrastructure side, a conda-forge recipe was added (`packaging/conda-forge/recipe.yaml`, v1 CEP-13 format) with CI validation via `rattler-build --render-only`. The release checklist gained conda-specific steps: version bump in Phase 2, version match check in Phase 3, and sha256 update in Phase 5. Benchmark fixtures were fixed to invalidate fsspec listing caches (ID-032), and the 1000-file listing test was moved from quick to standard tier (ID-033).
 
-This release also demonstrated iterative self-review: the `/review-pr` skill (added in PR #76) was used to review its own PR and subsequent conda PRs, catching real consistency gaps each time — including a non-existent GitHub Action, a premature version bump, and a missing staging step in the release checklist.
+This release also demonstrated iterative self-review: the `/review-pr` skill (added in PR #76) was used to review its own PR and subsequent conda PRs, catching real consistency gaps each time -- including a non-existent GitHub Action, a premature version bump, and a missing staging step in the release checklist.
 
 ### Phase 20: Research Before Implementation (post-v0.12.0)
 
-Three backlog items (ID-002 YAML config, ID-003 Pydantic adapter, ID-005 TOML config) had been sitting in the Ideas tier for months. Rather than jumping to implementation, the approach was to write a research document first: `sdd/research/research-store-config.md`. The document mapped the design space — config formats, library choices, API surface, ecosystem compatibility — before committing to any implementation decisions.
+Three backlog items (ID-002 YAML config, ID-003 Pydantic adapter, ID-005 TOML config) had been sitting in the Ideas tier for months. Rather than jumping to implementation, the approach was to write a research document first: `sdd/research/research-store-config.md`. The document mapped the design space -- config formats, library choices, API surface, ecosystem compatibility -- before committing to any implementation decisions.
 
 **The research went through four review rounds, and each round found real problems:**
 
@@ -361,83 +461,83 @@ Three backlog items (ID-002 YAML config, ID-003 Pydantic adapter, ID-005 TOML co
 | 2-3 | Inline review comments | Factual errors: `boto3` attribution wrong (S3Backend uses `s3fs` -> `aiobotocore` -> `botocore`), `endpoint_url` placement incorrect, `HostKeyPolicy` Enum case wrong |
 | 4 | Challenge review (adversarial session) | 7 gaps: `from_dict()` silently ignores unknown keys, YAML import precedence undermines YAML 1.2 intent, `SecretStr` + `model_dump()` negates secret protection, config discovery and schema versioning unaddressed |
 
-**The most valuable discovery was a real pre-existing bug.** The research process — not a test, not a linter, not a code review — found that `SFTPBackend.__init__` stores `host_key_policy` as a raw string without Enum coercion. When config loaders pass `"strict"` (a string from TOML/YAML), the Enum comparisons in `_create_ssh_client()` silently fail because `"strict" != HostKeyPolicy.STRICT` in Python. The result: host key verification silently degrades to the least secure mode. This bug existed since v0.2.0 and was invisible to every test, type checker, and code review because no test exercised the string-to-Enum path — they all used the Enum directly.
+**The most valuable discovery was a real pre-existing bug.** The research process -- not a test, not a linter, not a code review -- found that `SFTPBackend.__init__` stores `host_key_policy` as a raw string without Enum coercion. When config loaders pass `"strict"` (a string from TOML/YAML), the Enum comparisons in `_create_ssh_client()` silently fail because `"strict" != HostKeyPolicy.STRICT` in Python. The result: host key verification silently degrades to the least secure mode. This bug existed since v0.2.0 and was invisible to every test, type checker, and code review because no test exercised the string-to-Enum path -- they all used the Enum directly.
 
 **The lesson has two parts:**
 
 First, **research documents catch design-level bugs that code-level tools miss.** The Enum coercion bug was invisible to mypy (both types are valid kwargs), invisible to tests (tests use Enum values, not strings), and invisible to code review (the constructor looks correct in isolation). Only by thinking through "what happens when a TOML parser sends a string here?" did the failure path become apparent. Thinking through integration scenarios on paper is cheaper than debugging them in production.
 
-Second, **research quality improves dramatically under adversarial review.** The first draft was described as "an implementation plan wearing a research hat" — it proposed solutions before demonstrating that alternatives were studied. Four rounds of review transformed it into a genuine landscape analysis with explicit decisions, documented trade-offs, and scoped-out concerns. Each round found issues the previous round missed because each reviewer brought a different framing: the first focused on external landscape completeness, the second on factual accuracy, the third on internal consistency, the fourth on edge cases and missing explicit decisions.
+Second, **research quality improves dramatically under adversarial review.** The first draft was described as "an implementation plan wearing a research hat" -- it proposed solutions before demonstrating that alternatives were studied. Four rounds of review transformed it into a genuine landscape analysis with explicit decisions, documented trade-offs, and scoped-out concerns. Each round found issues the previous round missed because each reviewer brought a different framing: the first focused on external landscape completeness, the second on factual accuracy, the third on internal consistency, the fourth on edge cases and missing explicit decisions.
 
-The final document (1,250 lines) covers 8+ ecosystem tools, maps all 6 backends' config surfaces, provides implementation sketches, resolves ADR-0002 tension with Pydantic, and captures 9 open design questions with reasoned recommendations. All of this exists before a single line of implementation code is written — and the implementation spec can now cite specific decisions with ecosystem evidence rather than asserting them without context.
+The final document (1,250 lines) covers 8+ ecosystem tools, maps all 6 backends' config surfaces, provides implementation sketches, resolves ADR-0002 tension with Pydantic, and captures 9 open design questions with reasoned recommendations. All of this exists before a single line of implementation code is written -- and the implementation spec can now cite specific decisions with ecosystem evidence rather than asserting them without context.
 
 ### BUG-001: When Your Value Object Has No Word for "Here" (post-v0.12.0)
 
-`RemotePath` — the immutable path value object at the heart of every Store operation — could represent any path *except* the root folder. Both `RemotePath("")` and `RemotePath(".")` raised `InvalidPath` by design (PATH-008). This was fine until `get_folder_info("")` needed to return metadata about the root folder itself. All six backends tried to construct `FolderInfo(path=RemotePath(""))` and crashed.
+`RemotePath` -- the immutable path value object at the heart of every Store operation -- could represent any path *except* the root folder. Both `RemotePath("")` and `RemotePath(".")` raised `InvalidPath` by design (PATH-008). This was fine until `get_folder_info("")` needed to return metadata about the root folder itself. All six backends tried to construct `FolderInfo(path=RemotePath(""))` and crashed.
 
-The fix was a class-level sentinel: `RemotePath.ROOT`, created via `object.__new__` to bypass `__init__` validation, with an internal path of `"."`. The constructor still rejects `""` and `"."` — `ROOT` is the only way to get a root-folder path, and it's a singleton.
+The fix was a class-level sentinel: `RemotePath.ROOT`, created via `object.__new__` to bypass `__init__` validation, with an internal path of `"."`. The constructor still rejects `""` and `"."` -- `ROOT` is the only way to get a root-folder path, and it's a singleton.
 
-**The interesting part was the bug's discovery path.** It wasn't found by tests, type checking, or code review. It was found by an external code analysis tool scanning for edge cases in `RemotePath` construction across all backends. The four regression tests were written *before* the fix — a pattern that made the fix trivially verifiable. Write the failing test first, then make it pass.
+**The interesting part was the bug's discovery path.** It wasn't found by tests, type checking, or code review. It was found by an external code analysis tool scanning for edge cases in `RemotePath` construction across all backends. The four regression tests were written *before* the fix -- a pattern that made the fix trivially verifiable. Write the failing test first, then make it pass.
 
-The fix also surfaced two related consistency issues (now tracked as ID-040 and ID-041): `move(src, dst)` behaves inconsistently when `src == dst` across backends, and `Registry.get_store()` returns stores that can accidentally close a shared backend. Neither crashes today, but both are foot-guns waiting for the right trigger. **Edge-case audits don't just find the bug you're looking for — they find the bugs next to it.**
+The fix also surfaced two related consistency issues (now tracked as ID-040 and ID-041): `move(src, dst)` behaves inconsistently when `src == dst` across backends, and `Registry.get_store()` returns stores that can accidentally close a shared backend. Neither crashes today, but both are foot-guns waiting for the right trigger. **Edge-case audits don't just find the bug you're looking for -- they find the bugs next to it.**
 
 ### Phase 21: Observability and Credential Hygiene (v0.13.0)
 
 This release shipped two new extensions and a security hardening layer, all following the established `ext.*` pattern:
 
-- **`ext.observe`** (ID-024) — callback-based observability hooks. `observe(store, on_read=..., on_write=..., on_any=..., around=...)` wraps a Store in an `ObservedStore` proxy that fires `StoreEvent` callbacks after each operation. A `BufferedObserver` queues events for batched delivery on a background thread. A drift-protection test ensures new Store methods cannot silently bypass observation.
-- **`ext.otel`** (ID-024) — pre-built OpenTelemetry bridge. `otel_observe(store)` wraps a Store with distributed tracing spans and three metric instruments (operations counter, errors counter, duration histogram). Depends only on `opentelemetry-api` for zero-cost no-ops without an SDK configured. New optional extra: `pip install "remote-store[otel]"`.
-- **`Secret` wrapper** (ID-039) — credential hygiene layer in `_config.py`. `Secret` wraps sensitive strings so that `repr()` and `str()` return `'***'` while `.reveal()` returns the plain value. `RegistryConfig.from_dict()` auto-wraps known sensitive keys. All backends accept `str | Secret` via `_reveal()`. A `SecretRedactionFilter` logging filter scrubs secrets from log output.
+- **`ext.observe`** (ID-024) -- callback-based observability hooks. `observe(store, on_read=..., on_write=..., on_any=..., around=...)` wraps a Store in an `ObservedStore` proxy that fires `StoreEvent` callbacks after each operation. A `BufferedObserver` queues events for batched delivery on a background thread. A drift-protection test ensures new Store methods cannot silently bypass observation.
+- **`ext.otel`** (ID-024) -- pre-built OpenTelemetry bridge. `otel_observe(store)` wraps a Store with distributed tracing spans and three metric instruments (operations counter, errors counter, duration histogram). Depends only on `opentelemetry-api` for zero-cost no-ops without an SDK configured. New optional extra: `pip install "remote-store[otel]"`.
+- **`Secret` wrapper** (ID-039) -- credential hygiene layer in `_config.py`. `Secret` wraps sensitive strings so that `repr()` and `str()` return `'***'` while `.reveal()` returns the plain value. `RegistryConfig.from_dict()` auto-wraps known sensitive keys. All backends accept `str | Secret` via `_reveal()`. A `SecretRedactionFilter` logging filter scrubs secrets from log output.
 
-The `Secret` wrapper emerged from the config loaders research (Phase 20). While mapping out how TOML/YAML config values flow into backend constructors, the research identified that credential strings were stored and logged in plain text throughout the library. Rather than waiting for config loaders to ship, the credential hygiene layer was extracted as a standalone improvement — a case of research producing immediate value before its primary deliverable.
+The `Secret` wrapper emerged from the config loaders research (Phase 20). While mapping out how TOML/YAML config values flow into backend constructors, the research identified that credential strings were stored and logged in plain text throughout the library. Rather than waiting for config loaders to ship, the credential hygiene layer was extracted as a standalone improvement -- a case of research producing immediate value before its primary deliverable.
 
 The release also fixed BUG-001 (`get_folder_info("")` crashing for root folders) and added intrinsic stdlib logging to all modules (ID-004), completing the three-layer observability stack: Layer 1 (stdlib logging), Layer 2 (`ext.observe` callbacks), Layer 3 (`ext.otel` OpenTelemetry).
 
 ### Phase 22: Config Loaders and Consolidation (v0.14.0)
 
-Phase 20's research document finally paid off. Three config loaders shipped in a single PR: `RegistryConfig.from_toml()` (zero-dep on 3.11+, `tomli` backport for 3.10), `RegistryConfig.from_yaml()` (pyyaml or ruamel.yaml), and `pydantic_to_registry_config()` in the new `ext/pydantic.py` module. The research had mapped every design decision in advance — format precedence, library fallback chains, `SecretStr` interaction, unknown-key detection — so implementation was a matter of following the blueprint. `from_dict()` also gained a `UserWarning` for unrecognized top-level keys like `"backend"` (typo for `"backends"`), a gap the Phase 20 adversarial review had flagged.
+Phase 20's research document finally paid off. Three config loaders shipped in a single PR: `RegistryConfig.from_toml()` (zero-dep on 3.11+, `tomli` backport for 3.10), `RegistryConfig.from_yaml()` (pyyaml or ruamel.yaml), and `pydantic_to_registry_config()` in the new `ext/pydantic.py` module. The research had mapped every design decision in advance -- format precedence, library fallback chains, `SecretStr` interaction, unknown-key detection -- so implementation was a matter of following the blueprint. `from_dict()` also gained a `UserWarning` for unrecognized top-level keys like `"backend"` (typo for `"backends"`), a gap the Phase 20 adversarial review had flagged.
 
 Alongside the loaders, three "Tier 1" fixes addressed foot-guns the research had surfaced: `Registry.get_store()` no longer owns the shared backend (ID-041), `move()`/`copy()` short-circuit when `src == dst` (ID-040), and `_stacklevel` was removed from the public `from_dict()` signature (ID-043). The last one was a strict application of a project rule: no private parameters on public APIs, ever.
 
-**The consolidation work was as significant as the features.** Both SFTP and Memory backends reached 100% test coverage (BK-005, BK-006) — 65 new tests covering every uncovered branch. The slim-tests effort (PR #116) then went the other direction: collapsing verbose test functions into `@pytest.mark.parametrize` tables and extracting a shared `RestrictedBackend` fixture into `conftest.py`, saving ~940 lines while preserving every test case. This was lesson #15 in practice — write tests verbosely, then compress once patterns emerge.
+**The consolidation work was as significant as the features.** Both SFTP and Memory backends reached 100% test coverage (BK-005, BK-006) -- 65 new tests covering every uncovered branch. The slim-tests effort (PR #116) then went the other direction: collapsing verbose test functions into `@pytest.mark.parametrize` tables and extracting a shared `RestrictedBackend` fixture into `conftest.py`, saving ~940 lines while preserving every test case. This was lesson #15 in practice -- write tests verbosely, then compress once patterns emerge.
 
 A design-compliance audit (AF-016 through AF-021) swept the codebase for spec drift: glob capabilities missing from three backend specs, method ordering violations in `_store.py` and all six backends, an unlinked TODO in `ext/arrow.py`. These were individually minor but collectively represented the kind of slow rot that compounds across releases.
 
-Three more research documents were added to the `sdd/research/` collection: unified retry policy (ID-010), v1 communication strategy, and example testing patterns across language ecosystems. The research-first pattern from Phase 20 was becoming habitual — map the space on paper before committing to implementation.
+Three more research documents were added to the `sdd/research/` collection: unified retry policy (ID-010), v1 communication strategy, and example testing patterns across language ecosystems. The research-first pattern from Phase 20 was becoming habitual -- map the space on paper before committing to implementation.
 
-The data lake patterns guide (ID-034) demonstrated that existing features could combine into something greater than the sum of their parts. `Store.child()` + `ext.arrow` + `ext.transfer` already supported Bronze/Silver/Gold medallion architectures — the guide just documented the patterns. No new code was needed; the API surface was already sufficient.
+The data lake patterns guide (ID-034) demonstrated that existing features could combine into something greater than the sum of their parts. `Store.child()` + `ext.arrow` + `ext.transfer` already supported Bronze/Silver/Gold medallion architectures -- the guide just documented the patterns. No new code was needed; the API surface was already sufficient.
 
 ### Phase 23: Extensions and Documentation (v0.15.0)
 
-This release was the most extension-heavy yet — three new extensions and major enhancements to an existing one, all backed by specs and full test suites.
+This release was the most extension-heavy yet -- three new extensions and major enhancements to an existing one, all backed by specs and full test suites.
 
 **Streaming atomic writes** (`Store.open_atomic()`, ID-026) extended the existing `write_atomic()` with a context manager that yields a writable file object, eliminating the need to buffer large files in memory before writing. The implementation required careful attention to error mapping boundaries: SFTP's context manager had to yield *outside* the `_errors()` scope so user exceptions wouldn't get remapped as storage errors. RFC-0004 documented the design, and all six backends got per-backend temp-path strategies.
 
-**Store-level caching** (`ext.cache`, ID-025) added TTL-based read caching with automatic invalidation on mutations. A subtle CPython dict behavior bit us: `dict.__setitem__` on an existing key does *not* move it to the end, breaking LRU eviction. The fix — `del` then re-insert — was simple but the bug was invisible in unit tests and only appeared under specific access patterns.
+**Store-level caching** (`ext.cache`, ID-025) added TTL-based read caching with automatic invalidation on mutations. A subtle CPython dict behavior bit us: `dict.__setitem__` on an existing key does *not* move it to the end, breaking LRU eviction. The fix -- `del` then re-insert -- was simple but the bug was invisible in unit tests and only appeared under specific access patterns.
 
-**Parallel batch operations** (ID-035) added `concurrent=True` to `batch_delete`, `batch_copy`, and `batch_exists`, using `ThreadPoolExecutor` from stdlib. The design explicitly made `stop_on_error` incompatible with concurrency — a `ValueError` rather than silent misbehavior.
+**Parallel batch operations** (ID-035) added `concurrent=True` to `batch_delete`, `batch_copy`, and `batch_exists`, using `ThreadPoolExecutor` from stdlib. The design explicitly made `stop_on_error` incompatible with concurrency -- a `ValueError` rather than silent misbehavior.
 
-**Hive-style partition helpers** (`ext.partition`, ID-036) provided pure-Python path builders and parsers for partition schemes like `year=2026/month=03/data.parquet`. A review caught that `=` in partition values would break round-trip parsing — rejected at construction time.
+**Hive-style partition helpers** (`ext.partition`, ID-036) provided pure-Python path builders and parsers for partition schemes like `year=2026/month=03/data.parquet`. A review caught that `=` in partition values would break round-trip parsing -- rejected at construction time.
 
 **PyArrow Tier 1 native fast-path** (ID-037) completed the PyArrow adapter's Phase 2: `StoreFileSystemHandler` now probes for a native PyArrow filesystem at construction and dispatches reads directly to C++ for zero-GIL overhead. Benchmarks showed 1.6-2x improvement on S3-PyArrow.
 
 **The documentation overhaul** (DOC-001) was the largest non-code effort yet: full Diataxis restructure, 9 extension API reference pages, 7 new content pages, docstring audit for Store/Backend/errors, and cross-links throughout. Lesson #16 emerged: adopt a documentation framework early. Retrofitting Diataxis onto an existing flat site required reclassifying every page and rebuilding navigation.
 
-**E2E integration tests** (ID-050) validated six extensions working together in a full data lake pipeline against Docker backends (MinIO, Azurite). A cross-layer assertion lesson: don't assert `gold_bytes < silver_bytes` — aggregation adds computed columns that can make Gold larger despite fewer rows. Use row counts for aggregation invariants.
+**E2E integration tests** (ID-050) validated six extensions working together in a full data lake pipeline against Docker backends (MinIO, Azurite). A cross-layer assertion lesson: don't assert `gold_bytes < silver_bytes` -- aggregation adds computed columns that can make Gold larger despite fewer rows. Use row counts for aggregation invariants.
 
 ### Phase 24: Developer Experience and Tooling (post-v0.15.0)
 
 Four PRs (#170--#173) landed in a single day, each small but collectively shaping the developer experience story.
 
-**API ergonomics through convention** (ID-056, ID-055). `read_text()` and `iter_children()` followed pathlib's API conventions deliberately — same parameter names (`encoding`, `errors`), same return semantics. The lesson: when your audience is citizen developers, matching stdlib patterns reduces the API surface they need to learn to zero.
+**API ergonomics through convention** (ID-056, ID-055). `read_text()` and `iter_children()` followed pathlib's API conventions deliberately -- same parameter names (`encoding`, `errors`), same return semantics. The lesson: when your audience is citizen developers, matching stdlib patterns reduces the API surface they need to learn to zero.
 
-**Learning from other projects' toolchains** (#171, #173). A research pass on FastAPI's documentation setup (PR #171) revealed that mkdocstrings already supported colored, cross-linked type annotations — just not enabled. A 4-line config change (`separate_signature`, `signature_crossrefs`, `show_symbol_type_heading`, `show_symbol_type_toc`) in PR #173 gave the API reference the same visual quality that FastAPI is known for. Lesson: before building, check if your existing tools already support the feature.
+**Learning from other projects' toolchains** (#171, #173). A research pass on FastAPI's documentation setup (PR #171) revealed that mkdocstrings already supported colored, cross-linked type annotations -- just not enabled. A 4-line config change (`separate_signature`, `signature_crossrefs`, `show_symbol_type_heading`, `show_symbol_type_toc`) in PR #173 gave the API reference the same visual quality that FastAPI is known for. Lesson: before building, check if your existing tools already support the feature.
 
-**uv adoption, incrementally** (#173). CI moved from pip to uv across three workflows (ci.yml, publish.yml, then docs.yml). The key insight: uv replaces pip *for installation speed in CI*, not hatch for local development. Locally, `hatch run` remains the interface — it manages environments, scripts, and matrix testing. uv is a CI concern only, cutting install steps from ~45s to ~8s.
+**uv adoption, incrementally** (#173). CI moved from pip to uv across three workflows (ci.yml, publish.yml, then docs.yml). The key insight: uv replaces pip *for installation speed in CI*, not hatch for local development. Locally, `hatch run` remains the interface -- it manages environments, scripts, and matrix testing. uv is a CI concern only, cutting install steps from ~45s to ~8s.
 
-**Cross-platform as a first-class constraint.** The Win/macOS/Linux test matrix surfaced patterns that became project conventions: errno codes instead of string matching (German locale breaks English error messages), closing streams before `shutil.rmtree()` (Windows file locking), ASCII-only `print()` (cp1252 codec), and em-dash avoidance in Markdown titles (mojibake via MkDocs). These aren't edge cases — they're the default experience for half the target audience.
+**Cross-platform as a first-class constraint.** The Win/macOS/Linux test matrix surfaced patterns that became project conventions: errno codes instead of string matching (German locale breaks English error messages), closing streams before `shutil.rmtree()` (Windows file locking), ASCII-only `print()` (cp1252 codec), and em-dash avoidance in Markdown titles (mojibake via MkDocs). These aren't edge cases -- they're the default experience for half the target audience.
 
-**Ripple-check strengthening** (#172). The CLAUDE-REFERENCE.md ripple-check table gained more specific verification targets: Store method changes now explicitly require README API table + method count updates, extension changes require docs nav + API reference pages. The README audit in the same PR caught 3 missing examples and a stale method count — exactly the kind of drift the table is designed to prevent.
+**Ripple-check strengthening** (#172). The CLAUDE-REFERENCE.md ripple-check table gained more specific verification targets: Store method changes now explicitly require README API table + method count updates, extension changes require docs nav + API reference pages. The README audit in the same PR caught 3 missing examples and a stale method count -- exactly the kind of drift the table is designed to prevent.
 
 ### Phase 25: API Conveniences and Documentation Quality (v0.16.0)
 
@@ -445,232 +545,84 @@ The v0.16.0 release bundled the post-v0.15.0 work into a cohesive minor release:
 
 The release also shipped colored type annotations in the docs site (mkdocstrings config), uv-based CI installs across all workflows, and cross-platform CI (Windows + macOS). The documentation audit reinforced Principle 17 from the lessons section: audit findings are hypotheses, not prescriptions. Three of the 19 findings were closed as non-defects after investigation.
 
-### Phase 26: The Polish Phase — What Happens After "Feature Complete" (post-v0.16.0)
+### Phase 26: The Polish Phase -- What Happens After "Feature Complete" (post-v0.16.0)
 
-After v0.16.0, the project had every feature it needed for beta. What followed was not a cooldown — it was the densest learning period yet. Twelve PRs in four days exposed problems that only become visible when you stop adding features and start examining what you already have.
+After v0.16.0, the project had every feature it needed for beta. What followed was not a cooldown -- it was the densest learning period yet. Twelve PRs in four days exposed problems that only become visible when you stop adding features and start examining what you already have.
 
-**Consistency bugs are invisible to tools.** `list_folders()` had been returning plain strings since v0.1.0 while every other listing method returned typed objects. Tests passed, mypy was happy — strings cooperate just enough. Only a systematic cross-method API audit (ID-074) surfaced the gap. The fix introduced `FolderEntry` and a `PathEntry` protocol unifying all listing return types. **Each callsite is locally correct; only a cross-method comparison reveals the inconsistency.**
+**Consistency bugs are invisible to tools.** `list_folders()` had been returning plain strings since v0.1.0 while every other listing method returned typed objects. Tests passed, mypy was happy -- strings cooperate just enough. Only a systematic cross-method API audit (ID-074) surfaced the gap. The fix introduced `FolderEntry` and a `PathEntry` protocol unifying all listing return types. **Each callsite is locally correct; only a cross-method comparison reveals the inconsistency.**
 
-**Research that says "no" is not wasted.** Two research documents produced the explicit decision *not* to build what they investigated. The async API research (ID-013) found it would double codebase/surface/docs with no clear audience benefit. The Dagster extension research (ID-073) concluded v1 should be a thin adapter — only if someone actually needs it. Both documents live in `sdd/research/`, so when someone asks "why no async?", the answer is a link, not a re-investigation.
+**Research that says "no" is not wasted.** Two research documents produced the explicit decision *not* to build what they investigated. The async API research (ID-013) found it would double codebase/surface/docs with no clear audience benefit. The Dagster extension research (ID-073) concluded v1 should be a thin adapter -- only if someone actually needs it. Both documents live in `sdd/research/`, so when someone asks "why no async?", the answer is a link, not a re-investigation.
 
 **Fast failures that leave a record.** The Claude Code GitHub Action for automated PR review (ID-069) hit 18 sandbox permission denials, took ~10 minutes, and cost ~$2 per trivial PR. Added in one commit, reverted in the next. The revert documents the specific failure modes so nobody repeats the experiment.
 
-**Choose docstring style by what your toolchain renders, not what looks best in source.** Sphinx `:param:` markers, `:class:` cross-references, and `.. note::` directives all rendered as plain text in mkdocstrings. The migration to Google style (ID-080, 367+ markers across 25 files) was driven entirely by rendered output, not preference. Review caught that dataclass docstrings need `Attributes:` not `Args:` — a distinction only visible in the rendered docs.
+**Choose docstring style by what your toolchain renders, not what looks best in source.** Sphinx `:param:` markers, `:class:` cross-references, and `.. note::` directives all rendered as plain text in mkdocstrings. The migration to Google style (ID-080, 367+ markers across 25 files) was driven entirely by rendered output, not preference. Review caught that dataclass docstrings need `Attributes:` not `Args:` -- a distinction only visible in the rendered docs.
 
-**Include-markdown makes every link potentially circular.** The README restructuring (ID-081) replaced the inline extras list with a link to getting-started. But `getting-started.md` includes README content via `include-markdown` — so the link would point back to itself. **The authoring context (README standalone) and rendering context (README included inside another page) see different link targets.**
+**Include-markdown makes every link potentially circular.** The README restructuring (ID-081) replaced the inline extras list with a link to getting-started. But `getting-started.md` includes README content via `include-markdown` -- so the link would point back to itself. **The authoring context (README standalone) and rendering context (README included inside another page) see different link targets.**
 
-**Encoding bugs survive by hiding in unchecked cells.** Em dashes were caught and fixed three times in the same PR — prose, then table headers, then table N/A cells. Each review round fixed the instances the reviewer checked; the rest survived. Em dashes render fine on Linux CI but produce mojibake on Windows cp1252. **Systematic encoding issues don't announce themselves — they hide in the specific cells you didn't look at.**
+**Encoding bugs survive by hiding in unchecked cells.** Em dashes were caught and fixed three times in the same PR -- prose, then table headers, then table N/A cells. Each review round fixed the instances the reviewer checked; the rest survived. Em dashes render fine on Linux CI but produce mojibake on Windows cp1252. **Systematic encoding issues don't announce themselves -- they hide in the specific cells you didn't look at.**
 
-**Benchmark numbers without understanding the measurement are dangerous.** Azure comparative benchmarks showed remote-store 107x slower than `adlfs` at listing. Investigation revealed a fsspec caching artifact: `adlfs` caches after the first call, remote-store hits Azurite every iteration. Real overhead: 1.2x vs raw SDK — FileInfo/RemotePath construction cost. **The 107x would have been damning; the 1.2x is an acceptable design trade-off.**
+**Benchmark numbers without understanding the measurement are dangerous.** Azure comparative benchmarks showed remote-store 107x slower than `adlfs` at listing. Investigation revealed a fsspec caching artifact: `adlfs` caches after the first call, remote-store hits Azurite every iteration. Real overhead: 1.2x vs raw SDK -- FileInfo/RemotePath construction cost. **The 107x would have been damning; the 1.2x is an acceptable design trade-off.**
 
-**"Defensive" code that duplicates library guarantees is just overhead.** Three S3 listing methods had `exists()` guards before every call — an extra HEAD request each time. But `s3fs.ls()` already raises `FileNotFoundError` for missing prefixes. The guards doubled round-trips for zero benefit. **Know what your dependencies promise before adding safety nets.**
+**"Defensive" code that duplicates library guarantees is just overhead.** Three S3 listing methods had `exists()` guards before every call -- an extra HEAD request each time. But `s3fs.ls()` already raises `FileNotFoundError` for missing prefixes. The guards doubled round-trips for zero benefit. **Know what your dependencies promise before adding safety nets.**
 
 ### Phase 27: Listing Normalization and API Consistency (v0.17.0)
 
-The v0.17.0 release completed the API consistency work that Phase 26 identified. The headline change was listing normalization (ID-072): `list_folders()` shifted from returning bare strings to `FolderEntry` objects, and `iter_children()` from `FileInfo | str` to `FileInfo | FolderEntry`. A new `PathEntry` protocol unified all listing return types. `FolderInfo` gained a `.name` property (ID-079) so it also satisfies `PathEntry`. These changes made the listing API uniform — every method that returns path-bearing objects now returns typed objects with `.name` and `.path`.
+The v0.17.0 release completed the API consistency work that Phase 26 identified. The headline change was listing normalization (ID-072): `list_folders()` shifted from returning bare strings to `FolderEntry` objects, and `iter_children()` from `FileInfo | str` to `FileInfo | FolderEntry`. A new `PathEntry` protocol unified all listing return types. `FolderInfo` gained a `.name` property (ID-079) so it also satisfies `PathEntry`. These changes made the listing API uniform -- every method that returns path-bearing objects now returns typed objects with `.name` and `.path`.
 
 Azure got `max_concurrency` support (ID-076), threading a single constructor parameter through all five SDK call sites. Benchmarks showed ~50% write and ~25% read improvement on 100MB payloads. `Store.write_text()` (ID-074) rounded out the convenience API started by `read_text()` in v0.16.0.
 
-On the docs side, the full Sphinx-to-Google docstring migration (ID-080, 367 markers across 25 files) unlocked proper rendering in mkdocstrings. The README got a medium pass (ID-081) streamlining onboarding, and the docs site gained Fira Code, sticky tabs, and property type annotations (ID-064). S3 listing methods dropped their redundant `exists()` guards (ID-062) — a one-line change per method that halved round-trips.
+On the docs side, the full Sphinx-to-Google docstring migration (ID-080, 367 markers across 25 files) unlocked proper rendering in mkdocstrings. The README got a medium pass (ID-081) streamlining onboarding, and the docs site gained Fira Code, sticky tabs, and property type annotations (ID-064). S3 listing methods dropped their redundant `exists()` guards (ID-062) -- a one-line change per method that halved round-trips.
 
 ### Phase 28: Middleware, Integrity, and "Eat Your Own Dogfood" (v0.18.0)
 
-v0.18.0 was the middleware release. ADR-0014 introduced `ProxyStore` as an internal delegation base for `ObservedStore` and `CachedStore`, centralizing the boilerplate that both proxies duplicated. Two new extension modules landed alongside it: `ext.streams` (composable `BinaryIO` wrappers — `ProgressReader`, `ProgressWriter`, `ChecksumReader`, `ChecksumWriter`) and `ext.integrity` (store-level checksum verification via `checksum()`, `verify()`, `verify_hex()`). The `ContentDigest` frozen dataclass replaced the informal `FileInfo.checksum` field with typed `digest` and `etag` fields, and S3/Azure backends learned to populate them from server-side checksums.
+v0.18.0 was the middleware release. ADR-0014 introduced `ProxyStore` as an internal delegation base for `ObservedStore` and `CachedStore`, centralizing the boilerplate that both proxies duplicated. Two new extension modules landed alongside it: `ext.streams` (composable `BinaryIO` wrappers -- `ProgressReader`, `ProgressWriter`, `ChecksumReader`, `ChecksumWriter`) and `ext.integrity` (store-level checksum verification via `checksum()`, `verify()`, `verify_hex()`). The `ContentDigest` frozen dataclass replaced the informal `FileInfo.checksum` field with typed `digest` and `etag` fields, and S3/Azure backends learned to populate them from server-side checksums.
 
-The biggest lesson came from the BK-008 Medallion + Dagster showcase — a self-contained example composing four extensions over live MeteoSwiss weather data. AI-generated showcase code had three bugs that only surfaced when running against the real API: wrong data URLs, wrong column names and timestamp formats, and a cache bypass where `transfer()` uses streaming `read()` which `CachedStore` doesn't cache. All three passed type checking and looked plausible in review. **Running the code against live data caught what static analysis and code review could not.** This reinforced the project principle "run it, don't just type-check it" — and extended it to examples and showcases, not just library code.
+The biggest lesson came from the BK-008 Medallion + Dagster showcase -- a self-contained example composing four extensions over live MeteoSwiss weather data. AI-generated showcase code had three bugs that only surfaced when running against the real API: wrong data URLs, wrong column names and timestamp formats, and a cache bypass where `transfer()` uses streaming `read()` which `CachedStore` doesn't cache. All three passed type checking and looked plausible in review. **Running the code against live data caught what static analysis and code review could not.** This reinforced the project principle "run it, don't just type-check it" -- and extended it to examples and showcases, not just library code.
 
 The HTTP backend gained HEAD fallback (ID-085): when a CDN blocks HEAD requests with 401/403, the backend retries with `GET + Range: bytes=0-0` and caches the result. Discovered during live testing against opentransportdata.swiss. The docs site got a purpose-built landing page (ID-090) replacing the README include, and the API reference gained dedicated sections for backends (ID-088) and extensions (ID-089).
 
 ### Phase 29: Consolidation and Code Hygiene (v0.19.0)
 
-v0.19.0 was a housekeeping release — no new features, just making the existing codebase smaller, more consistent, and easier to maintain.
+v0.19.0 was a housekeeping release -- no new features, just making the existing codebase smaller, more consistent, and easier to maintain.
 
-The biggest theme was **deduplication across three layers.** BK-011 extracted `_S3Base` from the two S3 backends, consolidating 155 lines of duplicated listing, error handling, and FileInfo construction into a single base class (net −94 lines). BK-012 did the same for extensions: `_StreamWrapper` in `ext/streams.py` eliminated close/context-manager boilerplate from four stream wrappers, `_run_batch()` in `ext/batch.py` replaced two near-identical sequential/concurrent executors, and `_deprecated_alias()` in `ext/_helpers.py` turned three hand-written deprecation wrappers into one-liners. BK-014 then tackled the test suite: 30 of 40 test files were refactored (~17,800 → ~16,300 lines, −8.6%) through parametrization, fixture extraction, and class merging — all while preserving identical coverage.
+The biggest theme was **deduplication across three layers.** BK-011 extracted `_S3Base` from the two S3 backends, consolidating 155 lines of duplicated listing, error handling, and FileInfo construction into a single base class (net -94 lines). BK-012 did the same for extensions: `_StreamWrapper` in `ext/streams.py` eliminated close/context-manager boilerplate from four stream wrappers, `_run_batch()` in `ext/batch.py` replaced two near-identical sequential/concurrent executors, and `_deprecated_alias()` in `ext/_helpers.py` turned three hand-written deprecation wrappers into one-liners. BK-014 then tackled the test suite: 30 of 40 test files were refactored (~17,800 -> ~16,300 lines, -8.6%) through parametrization, fixture extraction, and class merging -- all while preserving identical coverage.
 
-The naming pass (BK-010) renamed three extension factory functions (`pydantic_to_registry_config` → `from_pydantic`, `remote_store_io_manager` → `dagster_io_manager`, `cached_store` → `cache`) to match existing `from_*` and bare-verb patterns. Old names remained as deprecated aliases — a one-line helper `_deprecated_alias()` (itself a product of BK-012) made this trivial.
+The naming pass (BK-010) renamed three extension factory functions (`pydantic_to_registry_config` -> `from_pydantic`, `remote_store_io_manager` -> `dagster_io_manager`, `cached_store` -> `cache`) to match existing `from_*` and bare-verb patterns. Old names remained as deprecated aliases -- a one-line helper `_deprecated_alias()` (itself a product of BK-012) made this trivial.
 
-Documentation got the same treatment. ID-057 introduced single-source code snippets (`examples/snippets/` with pymdownx named regions) so docs and tested code can't diverge. ID-058 automated example doc wrappers via `scripts/gen_pages.py` — scanning `examples/*.py`, extracting docstrings, generating pages. BK-013 added `## See also` sections to all 57 docs pages and linked backend names in comparison tables. And ID-099 consolidated SDD document categories from 7 to 5, merging `proposals/` into `rfcs/` and `plans/` into `research/`.
+Documentation got the same treatment. ID-057 introduced single-source code snippets (`examples/snippets/` with pymdownx named regions) so docs and tested code can't diverge. ID-058 automated example doc wrappers via `scripts/gen_pages.py` -- scanning `examples/*.py`, extracting docstrings, generating pages. BK-013 added `## See also` sections to all 57 docs pages and linked backend names in comparison tables. And ID-099 consolidated SDD document categories from 7 to 5, merging `proposals/` into `rfcs/` and `plans/` into `research/`.
 
 **The lesson from this phase is that deduplication compounds.** Each individual change was small, but together they removed ~300 lines of library code and ~1,500 lines of tests while making the codebase more navigable. The `_deprecated_alias()` helper that made BK-010 trivial only existed because BK-012 created it. The auto-generated example wrappers that eliminated a class of "forgot to add a wrapper" bugs only worked because BK-013 had already established cross-linking conventions. Housekeeping releases aren't exciting, but they create the infrastructure that makes future feature work faster.
 
 ### Phase 30: The Feature Explosion (v0.20.0)
 
-v0.20.0 was the largest feature release since the project's inception — landing SQL backends, Parquet datasets, Dagster v2, a resolution introspection API, performance benchmarking infrastructure, and depth-limited listing in a single cycle.
+v0.20.0 was the largest feature release since the project's inception -- landing SQL backends, Parquet datasets, Dagster v2, a resolution introspection API, performance benchmarking infrastructure, and depth-limited listing in a single cycle.
 
-**The output wasn't luck — it was infrastructure.** The previous three releases had built up the process scaffolding that made this pace possible. SDD guiding documents (specs, RFCs, research docs, TESTING.md, DESIGN.md) meant every feature started with a shared definition of "done" rather than ad-hoc discovery. The `/orchestrate` skill (BK-125, BK-128) let complex multi-concern tasks — like the SQL backends, which touched code, tests, docs, and specs simultaneously — be decomposed and executed with domain-expert agents in parallel. Skills codified repeatable workflows (release, audit, PR review) so process steps weren't reinvented each time. The compounding effect: each feature took roughly the same wall-clock time as a single-concern change in earlier releases, because the tooling handled the cross-cutting concerns that used to dominate elapsed time.
+**The output wasn't luck -- it was infrastructure.** The previous three releases had built up the process scaffolding that made this pace possible. SDD guiding documents (specs, RFCs, research docs, TESTING.md, DESIGN.md) meant every feature started with a shared definition of "done" rather than ad-hoc discovery. The `/orchestrate` skill (BK-125, BK-128) let complex multi-concern tasks -- like the SQL backends, which touched code, tests, docs, and specs simultaneously -- be decomposed and executed with domain-expert agents in parallel. Skills codified repeatable workflows (release, audit, PR review) so process steps weren't reinvented each time. The compounding effect: each feature took roughly the same wall-clock time as a single-concern change in earlier releases, because the tooling handled the cross-cutting concerns that used to dominate elapsed time.
 
-**Two SQL backends from one research spike.** ID-119 started as "should we use SQLAlchemy?" and produced two complementary backends sharing `_SQLAlchemyBaseBackend`: `SQLBlobBackend` (full read-write key-value store) and `SQLQueryBackend` (read-only query materializer). The blob backend exercises all 10 capabilities; the query backend introduces a new `ResultSerializer` protocol that maps path extensions to output formats. Research drove the split — one backend doing both jobs would have been an uncomfortable abstraction.
+**Two SQL backends from one research spike.** ID-119 started as "should we use SQLAlchemy?" and produced two complementary backends sharing `_SQLAlchemyBaseBackend`: `SQLBlobBackend` (full read-write key-value store) and `SQLQueryBackend` (read-only query materializer). The blob backend exercises all 10 capabilities; the query backend introduces a new `ResultSerializer` protocol that maps path extensions to output formats. Research drove the split -- one backend doing both jobs would have been an uncomfortable abstraction.
 
-**Parquet datasets needed their own error hierarchy.** `ParquetDatasetStore` (ID-122) manages manifests, `_SUCCESS` markers, and atomic-commit semantics on top of Store primitives. Its failure modes (`DatasetIncomplete`, `ManifestCorrupted`) are domain-specific — they don't map to the generic `StorageError` hierarchy. Placing them in `ext.parquet` rather than `_errors.py` established the pattern that extension-specific errors belong in their extension modules.
+**Parquet datasets needed their own error hierarchy.** `ParquetDatasetStore` (ID-122) manages manifests, `_SUCCESS` markers, and atomic-commit semantics on top of Store primitives. Its failure modes (`DatasetIncomplete`, `ManifestCorrupted`) are domain-specific -- they don't map to the generic `StorageError` hierarchy. Placing them in `ext.parquet` rather than `_errors.py` established the pattern that extension-specific errors belong in their extension modules.
 
-**`resolve()` makes the invisible visible.** The `ResolutionPlan` API (ID-120) answers "how would this key be resolved?" without performing I/O. Every backend returns a frozen dataclass describing the storage location, backend identity, and backend-specific context. Security was non-negotiable: no credentials in details, userinfo stripped from URLs. The design anticipated `CompositeStore` (ID-121) — resolution plans compose naturally across backend tiers.
+**`resolve()` makes the invisible visible.** The `ResolutionPlan` API (ID-120) answers "how would this key be resolved?" without performing I/O. Every backend returns a frozen dataclass describing the storage location, backend identity, and backend-specific context. Security was non-negotiable: no credentials in details, userinfo stripped from URLs. The design anticipated `CompositeStore` (ID-121) -- resolution plans compose naturally across backend tiers.
 
-**Depth-limited listing required three specs in one.** ID-107 (Store-level `list_files`), ID-108 (`list_folders`), and ID-107b (backend-native optimization) delivered one user-facing feature — `max_depth=N` — but the implementation split across Store filtering, BFS traversal, and backend pruning. Local, SFTP, and Memory backends prune natively; S3/Azure accept the parameter but defer to Store-level filtering. The three-layer approach kept the Backend ABC change optional.
+**Depth-limited listing required three specs in one.** ID-107 (Store-level `list_files`), ID-108 (`list_folders`), and ID-107b (backend-native optimization) delivered one user-facing feature -- `max_depth=N` -- but the implementation split across Store filtering, BFS traversal, and backend pruning. Local, SFTP, and Memory backends prune natively; S3/Azure accept the parameter but defer to Store-level filtering. The three-layer approach kept the Backend ABC change optional.
 
-**Benchmarks that measure honestly.** The benchmark suite (ID-103, ID-104) was designed to present numbers (ms, %), not judgments ("negligible", "minimal"). Overhead-vs-RTT charts showed that remote-store's fixed cost becomes irrelevant at real-world latencies. The S3-PyArrow comparison revealed its strength is analytical workloads, not raw throughput — a distinction the messaging previously blurred.
+**Benchmarks that measure honestly.** The benchmark suite (ID-103, ID-104) was designed to present numbers (ms, %), not judgments ("negligible", "minimal"). Overhead-vs-RTT charts showed that remote-store's fixed cost becomes irrelevant at real-world latencies. The S3-PyArrow comparison revealed its strength is analytical workloads, not raw throughput -- a distinction the messaging previously blurred.
 
 **Dagster v2 rewrote the integration model.** The original `dagster_io_manager()` wrapper (v1, ID-075) was a function-based adapter. v2 (ID-083) introduced `DagsterStoreResource` (ConfigurableResource) for direct Store access and `RemoteStoreIOManager` (ConfigurableIOManagerFactory) for config-driven IO management. The migration exposed Dagster-Pydantic quirks: `PrivateAttr` must come from `pydantic` not `dagster`, `ResourceDependency` needs runtime wiring, and docstrings use `Attributes:` not `Args:`.
 
-**Test quality enforcement closed the loop.** BK-126 added AST-based CI checks for assertions and mock specs, then migrated all 67 unconstrained mocks and 87 assertion-less tests. Combined with mutation testing scripts (BK-131) and Ruff PT rules (BK-124b), the test suite went from "tests exist" to "tests prove something." The deprecated aliases removed in BK-130 were the last remnants of the v0.19.0 naming cleanup — pre-v1, no shim needed.
+**Test quality enforcement closed the loop.** BK-126 added AST-based CI checks for assertions and mock specs, then migrated all 67 unconstrained mocks and 87 assertion-less tests. Combined with mutation testing scripts (BK-131) and Ruff PT rules (BK-124b), the test suite went from "tests exist" to "tests prove something." The deprecated aliases removed in BK-130 were the last remnants of the v0.19.0 naming cleanup -- pre-v1, no shim needed.
 
 ### Phase 31: Async, Config, and Quality Hardening (v0.21.0)
 
-v0.21.0 was an async-first release — the first to ship a fully native async storage layer alongside config ergonomics and a behavioral correction in the Parquet serializer.
+v0.21.0 was an async-first release -- the first to ship a fully native async storage layer alongside config ergonomics and a behavioral correction in the Parquet serializer.
 
-**Async arrived in two deliberate phases.** Phase 1 (ID-013) delivered the `remote_store.aio` module: `AsyncStore`, `AsyncBackend` ABC, `SyncBackendAdapter` (thread-pool wrapper for any sync backend), and `AsyncMemoryBackend` for testing. Phase 2 landed `AsyncAzureBackend` — the first native async backend, using Azure SDK async clients (`azure.storage.blob.aio`, `azure.storage.filedatalake.aio`) for true non-blocking I/O. Shared helpers extracted to `_azure_common.py` kept the sync and async Azure backends DRY. **Phasing meant each layer was tested and reviewed independently, rather than shipping a monolithic async rewrite.** Phase 3 (async extensions) is deferred — Dagster has no public async IO manager interface yet, so there's nothing to wrap.
+**Async arrived in two deliberate phases.** Phase 1 (ID-013) delivered the `remote_store.aio` module: `AsyncStore`, `AsyncBackend` ABC, `SyncBackendAdapter` (thread-pool wrapper for any sync backend), and `AsyncMemoryBackend` for testing. Phase 2 landed `AsyncAzureBackend` -- the first native async backend, using Azure SDK async clients (`azure.storage.blob.aio`, `azure.storage.filedatalake.aio`) for true non-blocking I/O. Shared helpers extracted to `_azure_common.py` kept the sync and async Azure backends DRY. **Phasing meant each layer was tested and reviewed independently, rather than shipping a monolithic async rewrite.** Phase 3 (async extensions) is deferred -- Dagster has no public async IO manager interface yet, so there's nothing to wrap.
 
-**`resolve_env()` closed the last config gap.** ID-126 added `${VAR}` and `${VAR:-default}` interpolation for config dicts. `from_toml()` and `from_yaml()` gained `resolve_env_vars=True`; a standalone `resolve_env()` function is exported for custom loaders. The design deliberately avoids recursive resolution and fails loudly on unresolved placeholders — security over convenience.
+**`resolve_env()` closed the last config gap.** ID-126 added `${VAR}` and `${VAR:-default}` interpolation for config dicts. `from_toml()` and `from_yaml()` gained `resolve_env_vars=True`; a standalone `resolve_env()` function is exported for custom loaders. The design deliberately avoids recursive resolution and fails loudly on unresolved placeholders -- security over convenience.
 
-**A hidden pandas dependency surfaced in the Parquet serializer.** BUG-135 found that `ParquetSerializer.deserialize()` called `table.to_pandas()`, silently requiring pandas for `remote-store[dagster,arrow]` users. The fix returns `pyarrow.Table` directly — framework-neutral, no hidden dependencies. This was the project's first behavioral breaking change to an extension, handled via migration guide rather than a deprecation cycle (pre-v1 policy).
+**A hidden pandas dependency surfaced in the Parquet serializer.** BUG-135 found that `ParquetSerializer.deserialize()` called `table.to_pandas()`, silently requiring pandas for `remote-store[dagster,arrow]` users. The fix returns `pyarrow.Table` directly -- framework-neutral, no hidden dependencies. This was the project's first behavioral breaking change to an extension, handled via migration guide rather than a deprecation cycle (pre-v1 policy).
 
 **Dagster multi-partition loading completed the IO manager story.** ID-124 taught `load_input` to return `dict[str, Any]` when the input context carries multiple partition keys (time-window aggregation), covering the last gap deferred from the v0.20.0 Dagster v2 work.
 
 **Test quality hardening was the quiet backbone.** BK-137 audited the new async and Dagster tests against TESTING.md rules, fixing behavioral assertion gaps and parametrizing copy-paste tests. BK-134 replaced `isinstance`-only assertions and private attribute checks across 10 test files. BK-135 fixed 72 `ResourceWarning: unclosed database` warnings in SQL tests. Coverage for `_azure_common` went from 69% to 100%. **The test suite grew from ~2,500 to ~3,100 tests while getting stricter about what each test actually proves.**
-
-## What Worked Well
-
-### Specs as a shared contract
-
-The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.
-
-### AI excels at breadth tasks
-
-Tasks like "write 53 tests to cover all uncovered code paths" or "create 6 example scripts demonstrating different API patterns" are tedious for humans but well-suited to AI. Claude Code could read the coverage report, identify gaps, and write targeted tests — all in a single pass.
-
-### Plan mode for alignment
-
-Before large tasks, Claude Code entered "plan mode" — proposing a detailed plan (files to create, structure, approach) for the human to review before any code was written. This prevented wasted work. The examples/notebooks plan, for instance, was reviewed and approved before a single file was created.
-
-### Discovery through implementation
-
-The empty path bug was found because writing examples forced real API usage. This is a well-known benefit of dogfooding, but it's worth noting that **AI-written examples caught an issue that human-written tests missed.** The tests were spec-compliant but the spec itself had a gap.
-
-### Detailed plans pay for themselves
-
-The SFTP backend plan was unusually detailed — specifying constructor params, region structure, temp file naming patterns, and even the test server architecture. This upfront investment meant the entire implementation (spec + server + backend + tests + wiring) was completed in a single session with no false starts. **The more complex the task, the more a detailed plan pays off.**
-
-### Legacy code as a knowledge source
-
-The SFTP backend drew from battle-tested legacy code (`legacy/sftp/sftp_store.py`) for PEM sanitization and host key handling. Claude Code extracted the proven patterns and adapted them to the new Backend ABC contract. **Pointing AI at working legacy code is often more effective than describing requirements from scratch.**
-
-## What Was Surprising
-
-### Cross-platform issues surface in layers
-
-The Windows errno fix was discovered because Claude Code ran tests on a German-locale Windows machine. The `delete_folder` method was catching `OSError` and checking `if "not empty" in str(exc)` — which fails when the OS returns "Das Verzeichnis ist nicht leer." The fix (checking `exc.errno` instead) is obvious in hindsight but easy to miss in an English-only development environment.
-
-The SFTP work added another layer: mypy type-checking results differed between Windows (local) and Linux (CI) due to different tenacity stub versions. **Cross-platform doesn't just mean "runs on both OSes" — it means the entire toolchain (linters, type checkers, dependency resolvers) behaves consistently.**
-
-### Session isolation as a review mechanism
-
-The most unexpected quality win wasn't a tool or a process — it was the context boundary between Claude Code sessions. A reviewing session, with no memory of the authoring session's reasoning, approached the same artifacts as a genuinely independent reader. It didn't have to fight the urge to skim past familiar code; the code wasn't familiar. This produced reviews that were qualitatively different from "check your own work" — closer to what you'd get from a colleague who reads your PR for the first time.
-
-### The human's role shifts
-
-With AI handling implementation, the human's role shifted toward:
-- **Defining scope** ("do items 1 through 5")
-- **Making judgment calls** ("fix it, but let's audit all methods first")
-- **Architectural decisions** (spec-first, two-tier path resolution)
-- **Quality gates** (reviewing code, approving plans)
-
-This is closer to a tech lead role than a traditional developer role.
-
-### Documentation quality requires iteration
-
-The first pass of examples had issues: Unicode characters that broke on Windows consoles, f-string syntax not supported on Python 3.10, and `RemotePath("")` calls that triggered validation errors. Each required a fix-and-rerun cycle. **Generated documentation isn't done until it actually runs.**
-
-### Unpinned dependencies are a time bomb
-
-The s3fs downgrade incident was particularly insidious: pip silently installed a 2-year-old version instead of failing with a resolution error. The CI was green one day and broken the next, with zero code changes to the affected component. **Pin lower bounds on all non-trivial dependencies, especially in dev/CI configurations where transitive dependency trees are large.**
-
-## What Could Be Better
-
-### Spec coverage of edge cases
-
-The specs didn't address empty path semantics, which led to a runtime discovery. Specs could include an "Edge Cases" section explicitly listing boundary conditions (empty strings, None, very long paths, special characters).
-
-### Test-before-spec updates
-
-When we fixed the empty path handling, the code and tests were updated first, and the spec was updated afterward. In strict SDD, the spec should change first. In practice, the fix-then-document flow was faster for a bug-like issue, but it's a discipline worth noting.
-
-### Test server complexity
-
-The in-process SFTP test server (~275 lines) is nearly as complex as some backends. The `SFTPHandle.stat()` bug showed that test infrastructure can harbor subtle bugs of its own. A dedicated debug script was needed to isolate the issue — standard test output just showed "Failure" with no useful context. **Test servers deserve the same care as production code.**
-
-### A living backlog beats a static roadmap
-
-After the production readiness audit (Phase 5), we realized loose ideas were
-scattered across commit messages and review comments. We created
-`sdd/BACKLOG.md` as a single, tiered tracker:
-
-| Tier | Prefix | Purpose |
-|------|--------|---------|
-| Release Blockers | `BL-NNN` | Must ship before the next PyPI publish |
-| Backlog | `BK-NNN` | Committed work, queued behind blockers |
-| Ideas | `ID-NNN` | Parking lot — not evaluated, not committed |
-| Done | `DONE-NNN` | Completed items kept for reference |
-
-Items graduate upward: an Idea becomes a Backlog item when someone scopes it
-and commits to an RFC; a Backlog item becomes a Release Blocker when it's
-required for the upcoming release. Code-changing items still go through the
-full SDD pipeline (spec → tests → code); operational items (CI, branch
-protection, dependency pins) are tracked and closed directly.
-
-This turned out to be surprisingly useful for AI-assisted development.
-**Giving Claude Code a structured backlog to read means it can propose
-promotions, spot dependencies between items, and draft new entries in the
-right tier with the right prefix** — without the human re-explaining the
-prioritization scheme each session.
-
-## Lessons for Others
-
-1. **Write specs before involving AI.** The clearer your specs, the better the AI's output. Vague requirements produce vague code.
-
-2. **Use plan mode for anything non-trivial.** Having the AI propose a plan before writing code catches misalignment early.
-
-3. **Run the examples.** Generated code that looks right may not be right. Run it, on your actual platform, with your actual Python version.
-
-4. **Let the AI do breadth; you do depth.** AI is great at writing 50 tests or 6 example scripts. You're great at deciding whether the API design is right.
-
-5. **Document decisions as you go.** ADRs and spec updates are cheap to write in the moment but expensive to reconstruct later. We documented the empty path decision as ADR-0004 immediately after making it.
-
-6. **Audit before release.** Asking "what's missing?" and getting a structured, prioritized list is one of the highest-value uses of AI pair programming. It surfaces blind spots you've adapted to.
-
-7. **Pin your dependency lower bounds.** Unpinned deps in CI will eventually bite you. A `>=` pin costs nothing and prevents silent downgrades that produce baffling failures.
-
-8. **Point AI at legacy code.** If you have working code that solves part of the problem, show it to the AI. It will extract the relevant patterns faster than you can describe them.
-
-9. **Test behavior, not just interfaces.** A method that returns `BinaryIO` can satisfy mypy and pass functional tests while secretly loading everything into memory. If your spec promises streaming, write a test that proves it streams — e.g., verify that reading a large file doesn't allocate proportional memory, or that the returned handle reads lazily from the source.
-
-10. **Periodically audit spec claims against implementation.** Specs drift. A dedicated "does the code still do what the spec says?" review caught four backends worth of non-streaming `read()` implementations hiding behind correct type signatures.
-
-11. **Review in a separate session from authoring.** A single AI session reviewing its own output suffers from the same blind spot a human developer has proofreading their own code — the author's mental model fills in gaps the artifact doesn't. A fresh session reads the output cold and catches what the authoring session "knew" but didn't write down. This is especially valuable for design documents (specs, RFCs) where correctness means completeness and internal consistency, not just "does it compile."
-
-12. **Run adversarial audits after major releases.** PR reviews catch local issues; adversarial audits catch systemic ones. Cross-backend semantic inconsistencies, capability declarations with no implementation, and docs-to-code drift are invisible at the PR level because each PR is internally consistent. Asking a fresh session to "prove this package wrong" with parallel specialized agents (security, tests, design, CI) surfaces the cross-cutting concerns that no single review would find. The cost is one session; the yield is a prioritized list of real problems ranked by severity.
-
-13. **Write research documents before implementation specs, and review them like code.** When a feature touches multiple design dimensions (formats, libraries, ecosystem compatibility, security), a research document that maps the full design space before committing to any solution prevents expensive mid-implementation pivots. But the document itself must be reviewed rigorously — the first draft tends to be "an implementation plan wearing a research hat," proposing solutions before proving alternatives were studied. Multiple review rounds from fresh sessions, each with a different angle (landscape completeness, factual accuracy, internal consistency, adversarial challenge), transform shallow research into genuine analysis. The investment is front-loaded but pays compound interest: every downstream artifact — spec, implementation, docs, tests — can cite explicit decisions with ecosystem evidence instead of asserting them without context. Research also catches design-level bugs that no amount of code review, testing, or type-checking will find, because those tools operate on code that exists, not on integration scenarios that haven't been built yet.
-
-14. **Your CI environment is not your user's environment.** CI ran on Linux with Azurite (our Azure emulator), which inflated test coverage enough to mask untested code paths in new config loaders. Meanwhile, example scripts used Unicode arrows (`→`) that rendered fine on Linux's UTF-8 locale but crashed on Windows cp1252. Both bugs shipped through green CI. The fix was a pre-commit hook rejecting non-ASCII in `print()` calls and a release checklist item requiring `hatch run all` locally — because the developer's environment (Windows, no Docker backends) was closer to a real user's experience than CI was. **If your CI is more forgiving than your users' environments, your CI is testing itself, not your software.**
-
-15. **Parametrize tests ruthlessly, but only after they exist.** Once a test suite reaches critical mass, repetitive test functions become a maintenance burden — every API change ripples through dozens of near-identical functions. Collapsing them into `@pytest.mark.parametrize` data tables with `pytest.param(..., id="...")` preserves every test case while cutting hundreds of lines. Shared fixtures (a single `RestrictedBackend` in `conftest.py` replaced five per-file copies) compound the savings. But this works precisely because the tests existed first as explicit, readable functions — parametrizing from scratch risks hiding what's actually being tested behind opaque data tables. **Write tests verbosely, then compress them once patterns emerge.** The result is a suite that's faster to scan, cheaper to extend, and just as thorough.
-
-16. **Adopt a documentation framework early.** We retrofitted the [Diataxis](https://diataxis.fr/) framework (tutorials, how-to guides, reference, explanation) onto an existing flat docs site. Every existing page needed reclassification, the navigation had to be rebuilt, and pages that mixed guide content with reference material had to be split. If we had adopted Diataxis from the start, content would have landed in the right category naturally. The lesson applies beyond Diataxis: any structural decision (code architecture, test organization, docs layout) is cheapest when made before content accumulates, and most expensive when retrofitted after hundreds of pages exist. We also learned that Sphinx RST cross-reference syntax (`:meth:`, `:class:`) does not render in mkdocstrings — a subtle trap when writing docstrings with IDE autocompletion trained on Sphinx projects.
-
-17. **Audit findings are hypotheses, not facts — verify before fixing.** Our third audit (documentation quality) produced 19 findings. Blindly implementing them would have meant updating hardcoded counts that would go stale again, adding 40+ boilerplate docstrings that add zero information, and "fixing" three items that weren't defects at all. The real value came from treating each finding as a hypothesis and investigating the root cause: a stale count revealed a hand-maintained listing that should be structural; missing proxy docstrings revealed a mkdocstrings config gap (one line fix vs 40 boilerplate edits); private imports in guides revealed missing public re-exports. Three findings were closed as non-defects after verifying the code was already correct. **Completeness (fix every finding) is not the same as correctness (fix the right thing). An audit tells you where to look, not what to do.**
-
-18. **Invest in your way of working — it compounds faster than features.** v0.20.0 shipped more features in one cycle than any previous release, not because the code got easier but because the surrounding infrastructure matured. SDD guiding documents (specs, research docs, TESTING.md, DESIGN.md) meant every feature started with an unambiguous definition of "done." Skills codified repeatable workflows (release, audit, PR review) so process steps weren't reinvented each session. The `/orchestrate` skill decomposed multi-concern tasks into parallel expert tracks. Each of these was a small investment when created — a markdown file, a skill definition, a process doc — but together they shifted the bottleneck from "how do we do this?" to "what should we do next?" **Process infrastructure has the same compounding property as code infrastructure: it's invisible when present, crippling when absent, and most valuable when invested in before you need it.**
-
-19. **Systematic pattern errors are invisible because they look intentional.** Every docstring in the project used RST `Example::` literal blocks — the standard Python convention. They rendered without syntax highlighting in mkdocstrings, but because *every* docstring was wrong in the same way, it looked like a deliberate style choice. No linter, type checker, or test caught it — all operated on source, not rendered output. It took a human browsing the actual docs site to notice that code examples were plain monospace text instead of highlighted Python. The fix was mechanical (replace `Example::` + indented code with markdown fenced blocks across 13 files), but finding it required looking at what users see, not what CI checks. **If a pattern is applied uniformly, review can't distinguish "consistently correct" from "consistently wrong." Only the rendered artifact reveals which one it is.**
-
-## Reproducing This Workflow
-
-If you want to try this approach on your own project:
-
-1. Write specs first (see `sdd/specs/` for examples of the format)
-2. Use [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or a similar AI coding tool
-3. Start with plan mode: describe the task, review the plan, then approve
-4. Implement in phases: core first, then docs, then polish
-5. Run everything after each phase (lint, typecheck, tests, examples)
-6. Document decisions as ADRs when you make non-obvious choices
-
-The full commit history of this project is the best documentation of the process. Each commit message describes what changed and why.
