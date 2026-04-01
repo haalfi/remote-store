@@ -941,6 +941,7 @@ class TestResolveEnvLoaderIntegration:
         assert rc.backends["s3"].options["key"].reveal() == "my-secret"  # type: ignore[union-attr]
 
     @pytest.mark.spec("CFG-020")
+    @pytest.mark.spec("CFG-021")
     def test_from_toml_default_off(self, tmp_path: Path) -> None:
         f = tmp_path / "config.toml"
         f.write_text('[backends.s3]\ntype = "s3"\n\n[backends.s3.options]\nkey = "${AWS_KEY}"\n\n[stores]\n')

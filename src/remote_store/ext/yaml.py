@@ -81,6 +81,8 @@ def from_yaml(
             is installed.
         FileNotFoundError: If *path* does not exist.
         TypeError: If the top-level YAML value is not a mapping.
+        KeyError: If *resolve_env_vars* is ``True`` and a placeholder
+            references an unset variable with no default.
     """
     safe_load = _get_yaml_loader()
 

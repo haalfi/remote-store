@@ -160,6 +160,7 @@ class TestFromYamlResolveEnv:
         assert rc.backends["s3"].options["key"].reveal() == "my-secret"  # type: ignore[union-attr]
 
     @pytest.mark.spec("CFG-020")
+    @pytest.mark.spec("CFG-021")
     def test_from_yaml_default_off(self, tmp_path: Path) -> None:
         yaml_file = tmp_path / "config.yaml"
         yaml_file.write_text("backends:\n  s3:\n    type: s3\n    options:\n      key: ${AWS_KEY}\nstores: {}\n")
