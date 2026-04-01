@@ -28,9 +28,7 @@ AUTO_SUBDIRS = [
 ]
 
 # Scripts to skip (need optional deps, have known platform issues, etc.)
-SKIP = {
-    "config_loaders.py",  # needs yaml extra; Windows backslash bug in TOML strings
-}
+SKIP: set[str] = set()
 
 # Individual scripts outside the auto-discovered subdirs
 EXTRA_SCRIPTS = [

@@ -7,12 +7,23 @@ from_dict() for Secret wrapping and validation.
 
 from __future__ import annotations
 
+import json
+import os
 import tempfile
 from pathlib import Path
 
-from remote_store import Registry, RegistryConfig
+from remote_store import Registry, RegistryConfig, resolve_env
 
-if __name__ == "__main__":
+
+def _posix(p: Path) -> str:
+    """Return a forward-slash path string safe for TOML/YAML values."""
+    return p.as_posix()
+
+
+def demo() -> dict[str, object]:
+    """Run config-loader examples and return results for test verification."""
+    results: dict[str, object] = {}
+
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
 
@@ -22,7 +33,7 @@ if __name__ == "__main__":
             "[backends.local]\n"
             'type = "local"\n\n'
             "[backends.local.options]\n"
-            f'root = "{root / "toml-data"}"\n\n'
+            f'root = "{_posix(root / "toml-data")}"\n\n'
             "[stores.docs]\n"
             'backend = "local"\n'
             'root_path = "docs"\n'
@@ -34,7 +45,8 @@ if __name__ == "__main__":
         with Registry(config) as reg:
             docs = reg.get_store("docs")
             docs.write("readme.txt", b"Hello from TOML config!")
-            print(f"  wrote: {docs.read_bytes('readme.txt').decode()}")
+            results["toml_content"] = docs.read_bytes("readme.txt")
+            print(f"  wrote: {results['toml_content'].decode()}")
 
         # --- from_toml(): pyproject.toml with table extraction ---
         pyproject = root / "pyproject.toml"
@@ -44,7 +56,7 @@ if __name__ == "__main__":
             "[tool.remote-store.backends.local]\n"
             'type = "local"\n\n'
             "[tool.remote-store.backends.local.options]\n"
-            f'root = "{root / "pyproject-data"}"\n\n'
+            f'root = "{_posix(root / "pyproject-data")}"\n\n'
             "[tool.remote-store.stores.cache]\n"
             'backend = "local"\n'
             'root_path = "cache"\n'
@@ -56,7 +68,8 @@ if __name__ == "__main__":
         with Registry(config) as reg:
             cache = reg.get_store("cache")
             cache.write("data.bin", b"\x00\x01\x02")
-            print(f"  wrote {len(cache.read_bytes('data.bin'))} bytes to cache")
+            results["pyproject_bytes"] = len(cache.read_bytes("data.bin"))
+            print(f"  wrote {results['pyproject_bytes']} bytes to cache")
 
         # --- from_yaml() (ext.yaml) ---
         yaml_file = root / "remote-store.yaml"
@@ -65,7 +78,7 @@ if __name__ == "__main__":
             "  local:\n"
             "    type: local\n"
             "    options:\n"
-            f"      root: '{root / 'yaml-data'}'\n"
+            f"      root: '{_posix(root / 'yaml-data')}'\n"
             "stores:\n"
             "  logs:\n"
             "    backend: local\n"
@@ -80,7 +93,8 @@ if __name__ == "__main__":
         with Registry(config) as reg:
             logs = reg.get_store("logs")
             logs.write("app.log", b"[INFO] started\n")
-            print(f"  wrote: {logs.read_bytes('app.log').decode().strip()}")
+            results["yaml_content"] = logs.read_bytes("app.log")
+            print(f"  wrote: {results['yaml_content'].decode().strip()}")
 
         # --- from_pydantic() ---
         try:
@@ -101,26 +115,31 @@ if __name__ == "__main__":
                 stores: dict[str, StoreEntry] = {}
 
             model = MyConfig(
-                backends={"local": BackendEntry(type="local", options={"root": str(root / "pydantic-data")})},
+                backends={
+                    "local": BackendEntry(
+                        type="local",
+                        options={"root": _posix(root / "pydantic-data")},
+                    )
+                },
                 stores={"notes": StoreEntry(backend="local", root_path="notes")},
             )
             config = from_pydantic(model)
-            print(f"\nfrom_pydantic(): {len(config.stores)} store(s)")
+            results["pydantic_stores"] = len(config.stores)
+            print(f"\nfrom_pydantic(): {results['pydantic_stores']} store(s)")
 
             with Registry(config) as reg:
                 notes = reg.get_store("notes")
                 notes.write("todo.txt", b"Ship config loaders!")
-                print(f"  wrote: {notes.read_bytes('todo.txt').decode()}")
+                results["pydantic_content"] = notes.read_bytes("todo.txt")
+                print(f"  wrote: {results['pydantic_content'].decode()}")
 
         except ImportError:
             print("\n(pydantic not installed -- skipping pydantic example)")
+            results["pydantic_stores"] = None
 
         # --- resolve_env(): env-var interpolation for YAML ---
-        import os
-
-        from remote_store import resolve_env
-
-        os.environ["DEMO_STORE_ROOT"] = str(root / "env-data")
+        _prev_root = os.environ.get("DEMO_STORE_ROOT")
+        os.environ["DEMO_STORE_ROOT"] = _posix(root / "env-data")
 
         yaml_env_file = root / "env-config.yaml"
         yaml_env_file.write_text(
@@ -137,18 +156,31 @@ if __name__ == "__main__":
 
         # Option A: resolve_env_vars=True on the loader
         config = from_yaml(yaml_env_file, resolve_env_vars=True)
-        print(f"\nfrom_yaml(resolve_env_vars=True): root={config.backends['local'].options['root']}")
+        resolved_root = config.backends["local"].options["root"]
+        results["resolved_root"] = resolved_root
+        print(f"\nfrom_yaml(resolve_env_vars=True): root={resolved_root}")
 
         # Option B: standalone resolve_env() for any dict
-        import json
-
         raw = json.loads('{"backends": {"mem": {"type": "memory"}}, "stores": {}}')
         resolved = resolve_env(raw)
         config2 = RegistryConfig.from_dict(resolved)
-        print(f"resolve_env() standalone: {len(config2.backends)} backend(s)")
+        results["resolve_env_backends"] = len(config2.backends)
+        print(f"resolve_env() standalone: {results['resolve_env_backends']} backend(s)")
 
         # Default values: ${VAR:-fallback} syntax
         data_with_default: dict[str, object] = {"greeting": "${UNSET_VAR:-hello world}"}
-        print(f"Default value: {resolve_env(data_with_default)['greeting']}")
+        results["default_value"] = resolve_env(data_with_default)["greeting"]
+        print(f"Default value: {results['default_value']}")
+
+        # Clean up env var
+        if _prev_root is None:
+            os.environ.pop("DEMO_STORE_ROOT", None)
+        else:
+            os.environ["DEMO_STORE_ROOT"] = _prev_root
 
     print("\nDone!")
+    return results
+
+
+if __name__ == "__main__":
+    demo()

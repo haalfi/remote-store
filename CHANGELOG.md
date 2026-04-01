@@ -6,6 +6,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- **`config_loaders.py` example crashes on Windows** (BUG-136): Path
+  interpolation into TOML/YAML strings produced backslashes which are
+  invalid escape sequences. Now uses forward slashes on all platforms.
+
 ### Changed
 
 - **Examples reorganized into topical subdirectories** — examples are now

@@ -183,6 +183,42 @@ class TestConfiguration:
         assert isinstance(results["validation_error"], ValueError)
 
 
+class TestConfigLoaders:
+    @pytest.mark.spec("CFG-018")
+    def test_demo(self):
+        pytest.importorskip("yaml", reason="PyYAML not installed")
+
+        from examples.configuration.config_loaders import demo
+
+        results = demo()
+
+        # TOML loaders
+        assert results["toml_content"] == b"Hello from TOML config!"
+        assert results["pyproject_bytes"] == 3
+        # YAML loader
+        assert results["yaml_content"] == b"[INFO] started\n"
+        # Pydantic loader (optional dep)
+        if results["pydantic_stores"] is not None:
+            assert results["pydantic_stores"] == 1
+            assert results["pydantic_content"] == b"Ship config loaders!"
+        # resolve_env()
+        assert results["resolve_env_backends"] == 1
+        assert results["default_value"] == "hello world"
+        assert isinstance(results["resolved_root"], str)
+        assert len(results["resolved_root"]) > 0
+
+    def test_posix_paths_in_generated_config(self):
+        """BUG-136 regression: generated TOML/YAML must use forward slashes."""
+        from pathlib import PureWindowsPath
+
+        from examples.configuration.config_loaders import _posix
+
+        # Simulate a Windows path — should produce forward slashes
+        win_path = PureWindowsPath("C:/Users/test/data")
+        assert "\\" not in _posix(win_path)
+        assert _posix(win_path) == "C:/Users/test/data"
+
+
 # ---------------------------------------------------------------------------
 # Error handling
 # ---------------------------------------------------------------------------
