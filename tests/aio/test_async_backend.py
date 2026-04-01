@@ -33,7 +33,7 @@ class TestAsyncBackendDefaults:
         # Backend still functional after aclose (no-op)
         assert backend.name == "async-memory"
 
-    @pytest.mark.spec("ASYNC-022")
+    @pytest.mark.spec("ASYNC-022", "ASYNC-057")
     async def test_check_health_noop(self) -> None:
         backend = AsyncMemoryBackend()
         result = await backend.check_health()
@@ -89,7 +89,7 @@ class TestAsyncBackendSyncMethods:
         backend = AsyncMemoryBackend()
         assert backend.native_path("some/path") == "some/path"
 
-    @pytest.mark.spec("ASYNC-025")
+    @pytest.mark.spec("ASYNC-025", "ASYNC-058")
     def test_resolve_returns_plan(self) -> None:
         backend = AsyncMemoryBackend()
         plan = backend.resolve("some/path")

@@ -147,12 +147,12 @@ class TestAsyncStoreWrite:
         await async_store.write("ow.txt", b"new", overwrite=True)
         assert await async_store.read_bytes("ow.txt") == b"new"
 
-    @pytest.mark.spec("ASYNC-046")
+    @pytest.mark.spec("ASYNC-046", "ASYNC-052a")
     async def test_write_text(self, async_store: AsyncStore) -> None:
         await async_store.write_text("wt.txt", "hello")
         assert await async_store.read_text("wt.txt") == "hello"
 
-    @pytest.mark.spec("ASYNC-046")
+    @pytest.mark.spec("ASYNC-046", "ASYNC-052a")
     async def test_write_text_overwrite(self, async_store: AsyncStore) -> None:
         await async_store.write_text("wto.txt", "old")
         await async_store.write_text("wto.txt", "new", overwrite=True)
@@ -244,7 +244,7 @@ class TestAsyncStoreListFiles:
         files = [f async for f in async_store.list_files("lfr", recursive=True)]
         assert len(files) == 2
 
-    @pytest.mark.spec("ASYNC-052")
+    @pytest.mark.spec("ASYNC-014", "ASYNC-052")
     async def test_list_files_max_depth_zero(self, async_store: AsyncStore) -> None:
         await async_store.write("md/a.txt", b"a")
         await async_store.write("md/sub/b.txt", b"b")
@@ -252,7 +252,7 @@ class TestAsyncStoreListFiles:
         assert len(files) == 1
         assert files[0].name == "a.txt"
 
-    @pytest.mark.spec("ASYNC-052")
+    @pytest.mark.spec("ASYNC-014", "ASYNC-052")
     async def test_list_files_max_depth_negative_raises(self, async_store: AsyncStore) -> None:
         with pytest.raises(ValueError, match="max_depth must be >= 0"):
             async for _ in async_store.list_files("", max_depth=-1):
@@ -278,7 +278,7 @@ class TestAsyncStoreListFolders:
         assert {f.name for f in folders} == {"sub1", "sub2"}
         assert {str(f.path) for f in folders} == {"lfd/sub1", "lfd/sub2"}
 
-    @pytest.mark.spec("ASYNC-046")
+    @pytest.mark.spec("ASYNC-046", "ASYNC-052b")
     async def test_list_folders_max_depth(self, async_store: AsyncStore) -> None:
         await async_store.write("lfd2/a/b/f.txt", b"x")
         folders_d0 = [f async for f in async_store.list_folders("lfd2", max_depth=0)]
@@ -289,7 +289,7 @@ class TestAsyncStoreListFolders:
         names = {f.name for f in folders_d1}
         assert names == {"a", "b"}
 
-    @pytest.mark.spec("ASYNC-046")
+    @pytest.mark.spec("ASYNC-046", "ASYNC-052b")
     async def test_list_folders_max_depth_negative_raises(self, async_store: AsyncStore) -> None:
         with pytest.raises(ValueError, match="max_depth must be >= 0"):
             async for _ in async_store.list_folders("", max_depth=-1):
@@ -383,7 +383,7 @@ class TestAsyncStoreMetadata:
 class TestAsyncStoreGetFolderInfoDepthLimited:
     """Depth-limited get_folder_info aggregation."""
 
-    @pytest.mark.spec("ASYNC-046")
+    @pytest.mark.spec("ASYNC-046", "ASYNC-052c")
     async def test_depth_limited_aggregation(self, async_store: AsyncStore) -> None:
         await async_store.write("dfi/a.txt", b"aaa")
         await async_store.write("dfi/sub/b.txt", b"bb")
@@ -394,12 +394,12 @@ class TestAsyncStoreGetFolderInfoDepthLimited:
         assert fi_full.file_count == 2
         assert fi_full.total_size == 5
 
-    @pytest.mark.spec("ASYNC-046")
+    @pytest.mark.spec("ASYNC-046", "ASYNC-052c")
     async def test_depth_limited_negative_raises(self, async_store: AsyncStore) -> None:
         with pytest.raises(ValueError, match="max_depth must be >= 0"):
             await async_store.get_folder_info("", max_depth=-1)
 
-    @pytest.mark.spec("ASYNC-046")
+    @pytest.mark.spec("ASYNC-046", "ASYNC-052c")
     async def test_depth_limited_not_found(self, async_store: AsyncStore) -> None:
         with pytest.raises(NotFound, match="not found"):
             await async_store.get_folder_info("ghost", max_depth=0)
@@ -587,7 +587,7 @@ class TestAsyncStoreInterop:
         with pytest.raises(InvalidPath):
             store.to_key("other/file.txt")
 
-    @pytest.mark.spec("ASYNC-046")
+    @pytest.mark.spec("ASYNC-046", "ASYNC-052d")
     def test_resolve(self) -> None:
         store = AsyncStore(AsyncMemoryBackend(), root_path="data")
         plan = store.resolve("file.txt")
@@ -686,9 +686,9 @@ class TestAsyncStoreWriteAtomicCapabilityGate:
 
 
 class TestAsyncStorePing:
-    """ASYNC-046: ping delegates to check_health."""
+    """ASYNC-052e: ping delegates to check_health."""
 
-    @pytest.mark.spec("ASYNC-046")
+    @pytest.mark.spec("ASYNC-046", "ASYNC-052e")
     async def test_ping(self, async_store: AsyncStore) -> None:
         result = await async_store.ping()
         assert result is None

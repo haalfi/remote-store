@@ -135,7 +135,7 @@ class TestSyncAdapterIODelegation:
         await adapter.delete_folder("sub", recursive=True)
         assert await adapter.exists("sub") is False
 
-    @pytest.mark.spec("ASYNC-031")
+    @pytest.mark.spec("ASYNC-031", "ASYNC-037")
     async def test_check_health(self) -> None:
         adapter = SyncBackendAdapter(MemoryBackend())
         result = await adapter.check_health()
