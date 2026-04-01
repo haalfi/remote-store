@@ -4,91 +4,91 @@ This document chronicles how `remote-store` was built as a collaboration between
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
-Teams with citizen developers — analysts, scientists, domain experts who write Python but aren't software engineers — kept getting stuck on file storage. Every cloud provider has its own SDK, its own auth dance, its own streaming quirks.
+Teams with citizen developers (analysts, scientists, domain experts who write Python but aren't software engineers) kept getting stuck on file storage. Every cloud provider has its own SDK, its own auth dance, its own streaming quirks.
 
 The goal: a single API that hides all of it. `store.write("report.csv", data)` should work whether files live on a shared drive, an S3 bucket, or an SFTP server. Switching backends should be a config change, not a code change.
 
 ## The Approach: How I Learned to Work with AI
 
-This isn't about the project's methodology. It's about the human side — how I found a way of working that turns AI pair programming from "faster typing" into something qualitatively different.
+This isn't about the project's methodology. It's about the human side: how I found a way of working that turns AI pair programming from "faster typing" into something qualitatively different.
 
-**It started with a conversation.** The initial concept came from chatting with ChatGPT — not code, just ideas. That conversation produced a project brief and a rough `src/` layout.
+**It started with a conversation.** The initial concept came from chatting with ChatGPT. Not code, just ideas. That conversation produced a project brief and a rough `src/` layout.
 
-**The methodology was Spec-Driven Development (SDD) from day one.** Before any AI touched the code, I wrote specs defining exact method signatures, error conditions, and invariants. Specs constrain the solution space, are reviewable before code exists, and enable traceability (`@pytest.mark.spec("ID")`). The human defines the *what* and *why*; the AI handles the *how*.
+**The methodology was Spec-Driven Development (SDD) from day one.** I came with the idea of what each spec should cover; Claude Code brought the details, method signatures, error conditions, and invariants. We refined together, reworked drafts, and landed on contracts that both sides could implement and verify against. Specs constrain the solution space, are reviewable before code exists, and enable traceability (`@pytest.mark.spec("ID")`). The human defines the *what* and *why*; the AI handles the *how*.
 
 **Then Claude Code entered the picture.** VSCode terminal, repo open beside it. At this stage I was still thinking like a developer who happens to have a fast typist.
 
 **The way of working changed gradually.** My time was better spent on *how we work* than on *what we build*. I invested in process artifacts: `CLAUDE.md` with project rules, `DESIGN.md` with code conventions, `TESTING.md` with quality standards. Every artifact made the next session start from a higher baseline.
 
-**A big part of that was learning from others.** `TESTING.md` came from studying pytest best practices, mutation testing, and how FastAPI and SQLAlchemy structure their test suites. `DOCUMENTATION.md` was built on Diataxis and mkdocstrings conventions. None of the process infrastructure was invented from scratch — it was curated from the ecosystem and made specific to our workflow.
+**A big part of that was learning from others.** `TESTING.md` came from studying pytest best practices, mutation testing, and how FastAPI and SQLAlchemy structure their test suites. `DOCUMENTATION.md` was built on Diataxis and mkdocstrings conventions. None of the process infrastructure was invented from scratch. It was curated from the ecosystem and made specific to our workflow.
 
-**Then came the split-brain pattern.** Claude.ai web for research and thinking. Claude Code terminal for execution. Research produces decisions; execution implements them.
+**Then came the split-brain pattern.** [claude.ai/code](https://claude.ai/code) for research and thinking: it has full repo access but is less dangerous to let loose searching the internet. Claude Code terminal for execution. Research produces decisions; execution implements them.
 
-**Local hardware became part of the workflow.** The ollama MCP server delegates bulk tasks to local GPU-accelerated models — parallelizing mechanical work without burning API budget.
+**Local hardware became part of the workflow.** The ollama MCP server delegates bulk tasks to local GPU-accelerated models, parallelizing mechanical work without burning API budget.
 
 **Eventually I switched to pure terminal.** Claude Code in the terminal, browser for monitoring. No more IDE. The terminal *is* the IDE when your AI partner can read, write, search, and run anything.
 
-**The compound payoff arrived with orchestration — "ask the experts" mode.** The `/orchestrate` skill decomposes tasks into parallel tracks, each handled by a domain-expert agent. These agents do real refinement — they change the plan when they find a better approach, and explain why. Their reviews focus on their expertise and almost always find things the normal `/review-pr` skill misses. Features flow the way they should, with quality built in at every step. It feels like reinvented scrum — a sprint's worth of coordinated expert work in a single session.
+**The compound payoff arrived with orchestration: "ask the experts" mode.** The `/orchestrate` skill decomposes tasks into parallel tracks, each handled by a domain-expert agent. These agents do real refinement. They change the plan when they find a better approach, and explain why. Their reviews focus on their expertise and almost always find things the normal `/review-pr` skill misses. Features flow the way they should, with quality built in at every step. It feels like reinvented scrum: a sprint's worth of coordinated expert work in a single session.
 
-**Where it stands now.** I stopped optimizing for output and started optimizing for how I work. Output became a byproduct. The most valuable artifacts aren't the 16,000 lines of source code — they're the process documents, skills, memory system, and conventions that make every future session start where the last one ended. We're not done — the workflow keeps evolving.
+**Where it stands now.** I stopped optimizing for output and started optimizing for how I work. Output became a byproduct. The most valuable artifacts aren't the 16,000 lines of source code. They're the process documents, skills, memory system, and conventions that make every future session start where the last one ended. We're not done. The workflow keeps evolving.
 
 ## Lessons for Others
 
-If this project has one recurring lesson, it's that **correctness at the interface is not correctness at the behavior.** Python's duck typing means anything that quacks correctly gets through — and we found, repeatedly, that the gap between "passes type checks and tests" and "actually does what it claims" is where the real bugs live.
+If this project has one recurring lesson, it's that **correctness at the interface is not correctness at the behavior.** Python's duck typing means anything that quacks correctly gets through. We found, repeatedly, that the gap between "passes type checks and tests" and "actually does what it claims" is where the real bugs live.
 
 | What looked correct | What was actually wrong |
 |---|---|
-| `read()` returns `BinaryIO` — mypy happy, tests pass | Every backend loaded the entire file into memory |
+| `read()` returns `BinaryIO`, mypy happy, tests pass | Every backend loaded the entire file into memory |
 | `Capability.GLOB` declared on 4 backends | No `glob()` method existed anywhere |
-| `"strict"` passed as host key policy | `"strict" != HostKeyPolicy.STRICT` — silently degrades to least-secure mode |
+| `"strict"` passed as host key policy | `"strict" != HostKeyPolicy.STRICT`, silently degrades to least-secure mode |
 | Quick Start in README shows S3 usage | `_register_builtin_backends()` only registers local+azure |
 | `bytes(None)` in stream wrapper | Silently produces `b'\x00\x00\x00\x00'` instead of propagating error |
-| `Example::` in every docstring | RST literal blocks, no syntax highlighting in mkdocstrings — uniform wrongness looks intentional |
+| `Example::` in every docstring | RST literal blocks, no syntax highlighting in mkdocstrings. Uniform wrongness looks intentional |
 | Azure benchmark: 107x slower than adlfs | fsspec caching artifact; real overhead was 1.2x |
-| 95% test coverage, green CI | Includes `assert WritableContent is not None` — hitting import lines, not behavior |
-| `list_folders()` returns strings | Every other listing method returns typed objects — strings cooperate *just enough* |
+| 95% test coverage, green CI | Includes `assert WritableContent is not None`, hitting import lines, not behavior |
+| `list_folders()` returns strings | Every other listing method returns typed objects. Strings cooperate *just enough* |
 
-The type system validates the interface; it can't validate the behavior behind it. Keep that in mind as you read the lessons below — they're organized in two groups: how to work with AI, and how to build with AI.
+The type system validates the interface; it can't validate the behavior behind it. The lessons below are organized in two groups: how to work with AI, and how to build with AI.
 
 ### Way of Working
 
-1. **Invest in your way of working — it compounds faster than features.** `CLAUDE.md` with project rules, skills for repeatable workflows, a memory system for cross-session continuity, research docs for front-loading decisions. Each one was small when created, but together they shifted the bottleneck from "how do we do this?" to "what should we do next?"
+1. **Invest in your way of working. It compounds faster than features.** `CLAUDE.md` with project rules, skills for repeatable workflows, a memory system for cross-session continuity, research docs for front-loading decisions. Each one was small when created, but together they shifted the bottleneck from "how do we do this?" to "what should we do next?"
 
-2. **Codify lessons as executable guardrails, not prose.** After ~165 commits, data showed prose rules weren't enough — 7 of 9 audit-fix commits forgot the backlog, 62% of code changes skipped the CHANGELOG. Slash-command skills (`.claude/commands/`) turned those failure patterns into executable checklists the AI follows without re-deriving.
+2. **Codify lessons as executable guardrails, not prose.** After ~165 commits, data showed prose rules weren't enough: 7 of 9 audit-fix commits forgot the backlog, 62% of code changes skipped the CHANGELOG. Slash-command skills (`.claude/commands/`) turned those failure patterns into executable checklists the AI follows without re-deriving.
 
-3. **Split research and execution into separate modes.** They need different thinking. Claude.ai web for exploring trade-offs and writing research documents; Claude Code terminal for implementation. Research produces decisions with evidence; execution implements them without re-litigating.
+3. **Split research and execution into separate modes.** They need different thinking. claude.ai/code for exploring trade-offs and writing research documents; Claude Code terminal for implementation. Research produces decisions with evidence; execution implements them without re-litigating.
 
-4. **Write research documents before implementation specs.** Mapping the design space on paper prevents mid-implementation pivots. Our config-loaders research caught a real security bug — `"strict" != HostKeyPolicy.STRICT` — that was invisible to mypy, tests, and code review. Thinking through integration scenarios is cheaper than debugging them in production.
+4. **Write research documents before implementation specs.** Mapping the design space on paper prevents mid-implementation pivots. Our config-loaders research caught a real security bug (`"strict" != HostKeyPolicy.STRICT`) that was invisible to mypy, tests, and code review. Thinking through integration scenarios is cheaper than debugging them in production.
 
-5. **"No" is a valid research outcome.** Two research documents concluded "don't build this" — async would double the codebase, Dagster v1 should be thin. Both live in `sdd/research/` as a link for anyone who asks "why not?" — saving the next person from re-investigating.
+5. **"No" is a valid research outcome.** Two research documents concluded "don't build this": async would double the codebase, Dagster v1 should be thin. Both live in `sdd/research/` as a link for anyone who asks "why not?", saving the next person from re-investigating.
 
-6. **Review in a separate session from authoring.** A fresh session reads your output cold — it doesn't inherit the author's assumptions. The context boundary between sessions is the "different person" that review traditionally requires. Same model, different role, different results.
+6. **Review in a separate session from authoring.** A fresh session reads your output cold. It doesn't inherit the author's assumptions. The context boundary between sessions is the "different person" that review traditionally requires. Same model, different role, different results.
 
-7. **Use plan mode for anything non-trivial.** Have the AI propose a detailed plan before writing code. The SFTP backend plan specified constructor params, test server architecture, and temp file naming — the entire implementation completed in one session with no false starts.
+7. **Use plan mode for anything non-trivial.** Have the AI propose a detailed plan before writing code. The SFTP backend plan specified constructor params, test server architecture, and temp file naming. The entire implementation completed in one session with no false starts.
 
 8. **Let the AI do breadth; you do depth.** AI writes 53 tests or 6 example scripts. You decide whether the API design is right, whether the research covers real alternatives, whether the messaging resonates. Tech lead, not typist.
 
 ### Building with AI
 
-9. **Test behavior, not just interfaces.** A method that returns `BinaryIO` can satisfy mypy while secretly loading everything into memory. If your spec promises streaming, write a test that proves it. We didn't — and every backend was faking it.
+9. **Test behavior, not just interfaces.** A method that returns `BinaryIO` can satisfy mypy while secretly loading everything into memory. If your spec promises streaming, write a test that proves it. We didn't, and every backend was faking it.
 
 10. **Run the code, on your actual platform.** Unicode crashed on Windows cp1252, f-strings failed on Python 3.10, em dashes hid in unchecked table cells. If your CI is more forgiving than your users' environments, your CI is testing itself, not your software.
 
 11. **Run adversarial audits after major milestones.** PR reviews catch local issues; adversarial audits catch systemic ones. Cross-backend inconsistencies, ghost capabilities, and docs-to-code drift are invisible at the PR level because each PR is internally consistent.
 
-12. **Audit findings are hypotheses — verify before fixing.** Our third audit produced 19 findings; three were non-defects. One "missing docstring" finding was actually a one-line config gap, not 40 boilerplate edits. Completeness is not correctness.
+12. **Audit findings are hypotheses. Verify before fixing.** Our third audit produced 19 findings; three were non-defects. One "missing docstring" finding was actually a one-line config gap, not 40 boilerplate edits. Completeness is not correctness.
 
 13. **Pin your dependency lower bounds.** pip silently installed a 2-year-old s3fs instead of failing with a resolution error. CI was green one day, broken the next, zero code changes. A `>=` pin costs nothing.
 
 14. **Point AI at legacy code.** The SFTP backend drew proven patterns from battle-tested legacy code for PEM sanitization and host key handling. Working code communicates requirements more effectively than describing them from scratch.
 
-15. **Systematic pattern errors are invisible because they look intentional.** Every docstring used RST `Example::` blocks — no syntax highlighting in mkdocstrings. Because *every* docstring was wrong the same way, it looked deliberate. Only a human browsing the rendered docs noticed.
+15. **Systematic pattern errors are invisible because they look intentional.** Every docstring used RST `Example::` blocks with no syntax highlighting in mkdocstrings. Because *every* docstring was wrong the same way, it looked deliberate. Only a human browsing the rendered docs noticed.
 
 16. **Document decisions as you go.** ADRs and spec updates are cheap in the moment but expensive to reconstruct later. The growing collection became the project's institutional memory.
 
-17. **Adopt structural decisions early.** We retrofitted Diataxis onto an existing flat docs site — reclassifying every page and rebuilding navigation. Any structural decision is cheapest before content accumulates.
+17. **Adopt structural decisions early.** We retrofitted Diataxis onto an existing flat docs site, reclassifying every page and rebuilding navigation. Any structural decision is cheapest before content accumulates.
 
-18. **Benchmarks must measure honestly.** Our Azure benchmark showed 107x slower than adlfs — damning until we found it was a caching artifact. Real overhead: 1.2x. Present numbers (ms, %), not judgments, and understand what you measured.
+18. **Benchmarks must measure honestly.** Our Azure benchmark showed 107x slower than adlfs, damning until we found it was a caching artifact. Real overhead: 1.2x. Present numbers (ms, %), not judgments, and understand what you measured.
 
 19. **Deduplication compounds.** v0.19.0 removed ~300 lines of library code and ~1,500 lines of tests while improving navigability. Each small cleanup created helpers that made the next cleanup trivial.
 
@@ -96,9 +96,9 @@ The type system validates the interface; it can't validate the behavior behind i
 
 **Specs as a shared contract.** The human verifies correctness at the spec level before code exists; Claude Code implements against it. This made "done" unambiguous and reduced review to checking contracts, not forming expectations on the fly.
 
-**Discovery through dogfooding.** AI-written examples found an API bug that human-written tests missed. The streaming audit — triggered by simply asking "does it actually stream?" — found every backend faking it. Running the code is where the real bugs surface.
+**Discovery through dogfooding.** AI-written examples found an API bug that human-written tests missed. The streaming audit, triggered by simply asking "does it actually stream?", found every backend faking it. Running the code is where the real bugs surface.
 
-**Process infrastructure compounds.** Skills codified repeatable workflows, research docs front-loaded decisions, quality gates caught regressions. Together they enabled v0.20.0's feature explosion — more output in one cycle than any previous release, because cross-cutting concerns were handled automatically.
+**Process infrastructure compounds.** Skills codified repeatable workflows, research docs front-loaded decisions, quality gates caught regressions. Together they enabled v0.20.0's feature explosion: more output in one cycle than any previous release, because cross-cutting concerns were handled automatically.
 
 **A living backlog beats a static roadmap.** A tiered `BACKLOG.md` (Release Blockers → Backlog → Ideas) gives Claude Code structured context to work from. It proposes promotions, spots dependencies, and drafts entries in the right tier without re-explanation.
 
@@ -108,9 +108,9 @@ The type system validates the interface; it can't validate the behavior behind i
 
 ## What Was Surprising
 
-**Cross-platform means the entire toolchain.** Not just "runs on both OSes" — errno codes on German Windows, mypy stubs differing between platforms, Unicode crashing cp1252 consoles, em dashes rendering differently per OS. Each layer surfaced a new category of problems.
+**Cross-platform means the entire toolchain.** Not just "runs on both OSes": errno codes on German Windows, mypy stubs differing between platforms, Unicode crashing cp1252 consoles, em dashes rendering differently per OS. Each layer surfaced a new category of problems.
 
-**Session isolation is a genuine review mechanism.** A reviewing session with no memory of the authoring session's reasoning approached the same artifacts as a genuinely independent reader. It caught things that were *missing*, not things that were *wrong* — exactly what code review is supposed to provide.
+**Session isolation is a genuine review mechanism.** A reviewing session with no memory of the authoring session's reasoning approached the same artifacts as a genuinely independent reader. It caught things that were *missing*, not things that were *wrong*. Exactly what code review is supposed to provide.
 
 **The human's role shifts to tech lead.** Defining scope, making judgment calls, architectural decisions, quality gates. Less "write the code," more "decide what's worth building and whether it's right."
 
@@ -118,13 +118,13 @@ The type system validates the interface; it can't validate the behavior behind i
 
 **"No" produces as much value as "yes."** Two research documents that concluded "don't build this" saved more time than features that shipped, by preventing the question from being re-asked.
 
-**Benchmarks can lie without being wrong.** The 107x Azure slowdown was a real measurement — of a caching artifact. Understanding *what* you measured matters more than the number.
+**Benchmarks can lie without being wrong.** The 107x Azure slowdown was a real measurement of a caching artifact. Understanding *what* you measured matters more than the number.
 
 ## What Could Be Better
 
-**Rendered-output checking.** Too many bugs were only visible in deployed docs, the PyPI listing, or actual terminal output. RST rendering, broken images, em dashes on Windows — all passed CI. A pre-release step checking what users actually see would catch an entire class of issues.
+**Rendered-output checking.** Too many bugs were only visible in deployed docs, the PyPI listing, or actual terminal output. RST rendering, broken images, encoding issues. All passed CI. A pre-release step checking what users actually see would catch an entire class of issues.
 
-**Cross-backend semantic contracts.** Error handling is where backend interchangeability matters most — `get_folder_info` on empty folders succeeds on Local but raises `NotFound` on S3/SFTP/Azure. The backends still disagree in the edge cases that matter.
+**Cross-backend semantic contracts.** Error handling is where backend interchangeability matters most. `get_folder_info` on empty folders succeeds on Local but raises `NotFound` on S3/SFTP/Azure. The backends still disagree in the edge cases that matter.
 
 **Spec coverage of edge cases.** The specs didn't address empty path semantics, leading to a runtime discovery. An explicit "Edge Cases" section in each spec would catch boundary conditions at design time.
 
@@ -132,7 +132,7 @@ The type system validates the interface; it can't validate the behavior behind i
 
 ## The Timeline
 
-The log below is chronological — each phase as it happened, with commit hashes, bugs encountered, and lessons learned in context.
+The log below is chronological: each phase as it happened, with commit hashes, bugs encountered, and lessons learned in context.
 
 ### Phase 1: Foundation (human-led)
 
