@@ -1451,7 +1451,6 @@ class TestValidateAzureParams:
 
     @pytest.mark.spec("ASYNC-001")
     def test_account_url_accepted(self) -> None:
-        # Should not raise
         validate_azure_params(
             container="c",
             account_name=None,
@@ -1459,6 +1458,7 @@ class TestValidateAzureParams:
             connection_string=None,
             max_concurrency=1,
         )
+        assert True  # validates no ValueError raised
 
     @pytest.mark.spec("ASYNC-001")
     def test_connection_string_accepted(self) -> None:
@@ -1469,6 +1469,7 @@ class TestValidateAzureParams:
             connection_string="DefaultEndpointsProtocol=http;AccountName=x",
             max_concurrency=1,
         )
+        assert True  # validates no ValueError raised
 
     @pytest.mark.spec("ASYNC-001")
     def test_no_auth_raises(self) -> None:
@@ -1611,9 +1612,10 @@ class TestAsyncAzureCloseCredential:
 
     @pytest.mark.spec("ASYNC-001")
     async def test_close_without_credential(self) -> None:
-        """close() when no credential was resolved does not raise."""
+        """aclose() when no credential was resolved does not raise."""
         backend = _make_backend()
-        await backend.aclose()  # should not raise
+        await backend.aclose()
+        assert backend._resolved_credential is None
 
 
 # =============================================================================
