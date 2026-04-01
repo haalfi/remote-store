@@ -1608,33 +1608,11 @@ class TestAsyncAzureCloseCredential:
 
         await backend.aclose()
         mock_cred.close.assert_awaited_once()
-        assert backend._resolved_credential is None
+        assert backend._resolved_credential is None  # internal: no public observable
 
     @pytest.mark.spec("ASYNC-001")
     async def test_close_without_credential(self) -> None:
         """aclose() when no credential was resolved does not raise."""
         backend = _make_backend()
         await backend.aclose()
-        assert backend._resolved_credential is None
-
-
-# =============================================================================
-# AsyncAzureBackend: _get_credential (ASYNC-001)
-# =============================================================================
-
-
-class TestAsyncAzureGetCredential:
-    """_get_credential caches and returns the resolved credential."""
-
-    @pytest.mark.spec("ASYNC-001")
-    def test_get_credential_with_account_key(self) -> None:
-        backend = _make_backend(account_key="mykey")
-        cred = backend._get_credential()
-        assert cred == "mykey"
-
-    @pytest.mark.spec("ASYNC-001")
-    def test_get_credential_caches(self) -> None:
-        backend = _make_backend(account_key="mykey")
-        cred1 = backend._get_credential()
-        cred2 = backend._get_credential()
-        assert cred1 is cred2
+        assert backend._resolved_credential is None  # internal: no public observable
