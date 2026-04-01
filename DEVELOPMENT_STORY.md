@@ -6,15 +6,15 @@ This document chronicles how `remote-store` was built as a collaboration between
 
 | Metric | Value |
 |--------|-------|
-| Source code | ~13,000 lines (9 backends) |
-| Tests | ~2,500 tests, ~21,800 lines |
+| Source code | ~16,000 lines (9 backends + async layer) |
+| Tests | ~3,100 tests, ~24,300 lines |
 | Specs & docs | 43 specs, 20 ADRs, 10 RFCs |
 | Examples | 24 core + 6 backend + 5 notebooks + 3 snippet scripts |
 | Extensions | 14 (`ext.arrow`, `ext.batch`, `ext.cache`, `ext.dagster`, `ext.glob`, `ext.integrity`, `ext.observe`, `ext.otel`, `ext.parquet`, `ext.partition`, `ext.pydantic`, `ext.streams`, `ext.transfer`, `ext.yaml`) |
 | Documentation site | MkDocs Material (versioned via mike, Diataxis structure) |
 | Coverage | >= 95% CI floor (actual in README badge) |
 | Co-work sessions | Spread across ~7 calendar weeks (since Feb 14) |
-| Commits | ~520 |
+| Commits | ~530 |
 
 ## Origin: Citizen Developers Shouldn't Need to Learn boto3
 
@@ -512,6 +512,20 @@ v0.20.0 was the largest feature release since the project's inception — landin
 **Dagster v2 rewrote the integration model.** The original `dagster_io_manager()` wrapper (v1, ID-075) was a function-based adapter. v2 (ID-083) introduced `DagsterStoreResource` (ConfigurableResource) for direct Store access and `RemoteStoreIOManager` (ConfigurableIOManagerFactory) for config-driven IO management. The migration exposed Dagster-Pydantic quirks: `PrivateAttr` must come from `pydantic` not `dagster`, `ResourceDependency` needs runtime wiring, and docstrings use `Attributes:` not `Args:`.
 
 **Test quality enforcement closed the loop.** BK-126 added AST-based CI checks for assertions and mock specs, then migrated all 67 unconstrained mocks and 87 assertion-less tests. Combined with mutation testing scripts (BK-131) and Ruff PT rules (BK-124b), the test suite went from "tests exist" to "tests prove something." The deprecated aliases removed in BK-130 were the last remnants of the v0.19.0 naming cleanup — pre-v1, no shim needed.
+
+### Phase 31: Async, Config, and Quality Hardening (v0.21.0)
+
+v0.21.0 was an async-first release — the first to ship a fully native async storage layer alongside config ergonomics and a behavioral correction in the Parquet serializer.
+
+**Async arrived in two deliberate phases.** Phase 1 (ID-013) delivered the `remote_store.aio` module: `AsyncStore`, `AsyncBackend` ABC, `SyncBackendAdapter` (thread-pool wrapper for any sync backend), and `AsyncMemoryBackend` for testing. Phase 2 landed `AsyncAzureBackend` — the first native async backend, using Azure SDK async clients (`azure.storage.blob.aio`, `azure.storage.filedatalake.aio`) for true non-blocking I/O. Shared helpers extracted to `_azure_common.py` kept the sync and async Azure backends DRY. **Phasing meant each layer was tested and reviewed independently, rather than shipping a monolithic async rewrite.** Phase 3 (async extensions) is deferred — Dagster has no public async IO manager interface yet, so there's nothing to wrap.
+
+**`resolve_env()` closed the last config gap.** ID-126 added `${VAR}` and `${VAR:-default}` interpolation for config dicts. `from_toml()` and `from_yaml()` gained `resolve_env_vars=True`; a standalone `resolve_env()` function is exported for custom loaders. The design deliberately avoids recursive resolution and fails loudly on unresolved placeholders — security over convenience.
+
+**A hidden pandas dependency surfaced in the Parquet serializer.** BUG-135 found that `ParquetSerializer.deserialize()` called `table.to_pandas()`, silently requiring pandas for `remote-store[dagster,arrow]` users. The fix returns `pyarrow.Table` directly — framework-neutral, no hidden dependencies. This was the project's first behavioral breaking change to an extension, handled via migration guide rather than a deprecation cycle (pre-v1 policy).
+
+**Dagster multi-partition loading completed the IO manager story.** ID-124 taught `load_input` to return `dict[str, Any]` when the input context carries multiple partition keys (time-window aggregation), covering the last gap deferred from the v0.20.0 Dagster v2 work.
+
+**Test quality hardening was the quiet backbone.** BK-137 audited the new async and Dagster tests against TESTING.md rules, fixing behavioral assertion gaps and parametrizing copy-paste tests. BK-134 replaced `isinstance`-only assertions and private attribute checks across 10 test files. BK-135 fixed 72 `ResourceWarning: unclosed database` warnings in SQL tests. Coverage for `_azure_common` went from 69% to 100%. **The test suite grew from ~2,500 to ~3,100 tests while getting stricter about what each test actually proves.**
 
 ## What Worked Well
 

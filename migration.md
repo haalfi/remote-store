@@ -6,7 +6,7 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
-## v0.20.0 to next
+## v0.20.0 to v0.21.0
 
 **`ParquetSerializer.deserialize()` returns Arrow Table (BUG-135):**
 
@@ -23,7 +23,7 @@ Custom subclasses that override `deserialize()` (e.g. `PolarsParquetSerializer`
 from the medallion example) continue to work but the override is now optional —
 the base class already returns a framework-neutral Arrow Table.
 
-## v0.19.0 to next
+## v0.19.0 to v0.20.0
 
 **Deprecated aliases removed (BK-130):**
 
@@ -41,7 +41,7 @@ Pre-v1: removed without a deprecation cycle. Find-and-replace is sufficient.
 
 Three ext factory functions were renamed for naming consistency.
 Old names emitted `DeprecationWarning` in v0.18.x and are removed after
-v0.19.0 (see [above](#v0190-to-next)).
+v0.19.0 (see [above](#v0190-to-v0200)).
 
 - `pydantic_to_registry_config()` → `from_pydantic()`
 - `remote_store_io_manager()` → `dagster_io_manager()`
