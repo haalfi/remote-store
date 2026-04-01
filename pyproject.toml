@@ -182,28 +182,10 @@ typecheck = "mypy src/"
 test = "pytest"
 test-cov = "pytest --cov=remote_store --cov-report=term-missing --cov-report=xml --cov-fail-under=95"
 test-cov-branch = "pytest --cov=remote_store --cov-branch --cov-report=term-missing --cov-report=xml"
-# Core examples only — cloud backend examples (examples/backends/) need
-# real services and credentials, so they are excluded from `hatch run examples`.
-examples = [
-  "python examples/getting_started/quickstart.py",
-  "python examples/getting_started/file_operations.py",
-  "python examples/getting_started/streaming_io.py",
-  "python examples/getting_started/atomic_writes.py",
-  "python examples/configuration/configuration.py",
-  "python examples/errors/error_handling.py",
-  "python examples/errors/capabilities_and_errors.py",
-  "python examples/advanced/memory_backend.py",
-  "python examples/advanced/store_child.py",
-  "python examples/advanced/path_model.py",
-  "python examples/extensions/batch_operations.py",
-  "python examples/extensions/glob_pattern_matching.py",
-  "python examples/extensions/transfer_operations.py",
-  "python examples/extensions/observe_hooks.py",
-  "python examples/integrations/pyarrow_adapter.py",
-  "python examples/snippets/homepage.py",
-  "python examples/snippets/core_operations.py",
-  "python examples/snippets/custom_backend_guide.py",
-]
+# Auto-discovers examples in getting_started/, configuration/, errors/,
+# advanced/, extensions/, plus snippets.  Skips backends/ (needs credentials)
+# and integrations/ (needs optional deps like PyArrow/Dagster).
+examples = "python tests/scripts/run_examples.py"
 notebooks = "python tests/scripts/run_notebooks.py"
 # End-to-end tests against Docker backends (docker compose -f benchmarks/infra/docker-compose.yml up -d)
 e2e = "pytest tests/e2e/ -v -o addopts="

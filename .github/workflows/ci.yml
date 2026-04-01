@@ -151,19 +151,7 @@ jobs:
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev,arrow]"
-      - run: python examples/getting_started/quickstart.py
-      - run: python examples/getting_started/file_operations.py
-      - run: python examples/getting_started/streaming_io.py
-      - run: python examples/getting_started/atomic_writes.py
-      - run: python examples/configuration/configuration.py
-      - run: python examples/errors/error_handling.py
-      - run: python examples/errors/capabilities_and_errors.py
-      - run: python examples/advanced/memory_backend.py
-      - run: python examples/advanced/store_child.py
-      - run: python examples/advanced/path_model.py
-      - run: python examples/extensions/batch_operations.py
-      - run: python examples/extensions/transfer_operations.py
-      - run: python examples/extensions/observe_hooks.py
+      - run: python tests/scripts/run_examples.py
       # PyArrow's C++ atexit handlers can deadlock on Linux during interpreter
       # shutdown. The script completes but process exit hangs. Use timeout with
       # SIGKILL fallback; accept exit 124 (timeout) as success.
