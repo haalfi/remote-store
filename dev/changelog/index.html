@@ -9458,6 +9458,11 @@
 </ul>
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>Test quality: TESTING.md compliance</strong> (BK-137): Fixed Rule 2 (sole
+  <code>isinstance</code> → behavioral assertions) and Rule 7 (copy-paste → parametrize)
+  violations in post-v0.20.0 async and dagster tests. Improved coverage for
+  <code>_azure_common</code> (69→100%), <code>_async_azure</code> (89→95%), <code>_sync_adapter</code> (93→98%),
+  <code>_async_store</code> (96→98%).</li>
 <li>Fix 72 <code>ResourceWarning: unclosed database</code> in SQL backend tests by adding
   proper fixture teardown and <code>close()</code> calls. Filter residual SQLAlchemy pool
   warning on Python 3.13+ (BK-135).</li>
