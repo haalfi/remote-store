@@ -37,7 +37,7 @@ from azure.storage.filedatalake.aio import (  # noqa: E402
     FileSystemClient,
 )
 
-from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
+from remote_store._capabilities import Capability  # noqa: E402
 from remote_store._errors import (  # noqa: E402
     AlreadyExists,
     BackendUnavailable,
@@ -47,9 +47,15 @@ from remote_store._errors import (  # noqa: E402
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderEntry, FolderInfo  # noqa: E402
+from remote_store._models import FileInfo, FolderEntry  # noqa: E402
 from remote_store.aio._async_azure import AsyncAzureBackend  # noqa: E402
-from remote_store.backends._azure_common import classify_azure_error  # noqa: E402
+from remote_store.backends._azure_common import (  # noqa: E402
+    build_azure_retry,
+    classify_azure_error,
+    props_to_fileinfo,
+    resolve_credential,
+    validate_azure_params,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -71,13 +77,17 @@ async def _async_iter(items: list[Any]):  # noqa: ANN201 -- async generator
 
 def _mock_blob_props(
     *,
+    name: str | None = None,
     size: int = 100,
     etag: str = '"0x8D4BCC2E4835CD0"',
     md5: bytes | None = None,
     metadata: dict[str, str] | None = None,
+    prefix: str | None = None,
 ) -> MagicMock:
     """Create a mock BlobProperties-like object."""
     props = MagicMock(spec=BlobProperties)
+    if name is not None:
+        props.name = name
     props.size = size
     props.content_length = size
     props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
@@ -86,6 +96,7 @@ def _mock_blob_props(
     cs.content_md5 = md5
     props.content_settings = cs
     props.metadata = metadata or {}
+    props.prefix = prefix
     return props
 
 
@@ -121,7 +132,7 @@ class TestAsyncAzureConstruction:
     @pytest.mark.spec("ASYNC-003")
     def test_capabilities_include_all_except_seekable_read(self) -> None:
         caps = _make_backend().capabilities
-        assert isinstance(caps, CapabilitySet)
+        # Behavioral: verify capabilities answer supports() correctly (not just type)
         for cap in Capability:
             if cap is Capability.SEEKABLE_READ:
                 assert not caps.supports(cap), "async-azure must not declare SEEKABLE_READ"
@@ -433,45 +444,20 @@ class TestAsyncAzureListOperations:
     @pytest.mark.spec("ASYNC-014")
     async def test_list_files_non_recursive(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
-
-        blob_file = MagicMock(spec=BlobProperties)
-        blob_file.name = "file.txt"
-        blob_file.size = 42
-        blob_file.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        blob_file.etag = '"abc"'
-        blob_file.content_settings = MagicMock(spec=ContentSettings)
-        blob_file.content_settings.content_md5 = None
-        blob_file.metadata = {}
-        blob_file.prefix = None  # not a virtual directory
+        blob_file = _mock_blob_props(name="file.txt", size=42, etag='"abc"')
 
         cc.walk_blobs.return_value = _async_iter([blob_file])
 
         files = [f async for f in backend.list_files("")]
         assert len(files) == 1
         assert files[0].name == "file.txt"
-        assert isinstance(files[0], FileInfo)
+        assert files[0].size == 42
 
     @pytest.mark.spec("ASYNC-014")
     async def test_list_files_recursive(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
-
-        blob1 = MagicMock(spec=BlobProperties)
-        blob1.name = "file.txt"
-        blob1.size = 10
-        blob1.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        blob1.etag = '"a"'
-        blob1.content_settings = MagicMock(spec=ContentSettings)
-        blob1.content_settings.content_md5 = None
-        blob1.metadata = {}
-
-        blob2 = MagicMock(spec=BlobProperties)
-        blob2.name = "sub/deep.txt"
-        blob2.size = 20
-        blob2.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        blob2.etag = '"b"'
-        blob2.content_settings = MagicMock(spec=ContentSettings)
-        blob2.content_settings.content_md5 = None
-        blob2.metadata = {}
+        blob1 = _mock_blob_props(name="file.txt", size=10, etag='"a"')
+        blob2 = _mock_blob_props(name="sub/deep.txt", size=20, etag='"b"')
 
         cc.list_blobs.return_value = _async_iter([blob1, blob2])
 
@@ -483,37 +469,20 @@ class TestAsyncAzureListOperations:
     @pytest.mark.spec("ASYNC-015")
     async def test_list_folders(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
-
-        folder_item = MagicMock(spec=BlobProperties)
-        folder_item.prefix = "test/sub1/"
-        folder_item.name = "test/sub1/"
+        folder_item = _mock_blob_props(name="test/sub1/", prefix="test/sub1/")
 
         cc.walk_blobs.return_value = _async_iter([folder_item])
 
         folders = [f async for f in backend.list_folders("")]
         assert len(folders) == 1
-        assert isinstance(folders[0], FolderEntry)
         assert folders[0].name == "sub1"
+        assert str(folders[0].path) == "sub1"
 
     @pytest.mark.spec("ASYNC-029")
     async def test_iter_children(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
-
-        # A file item
-        blob_file = MagicMock(spec=BlobProperties)
-        blob_file.name = "file.txt"
-        blob_file.size = 42
-        blob_file.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        blob_file.etag = '"abc"'
-        blob_file.content_settings = MagicMock(spec=ContentSettings)
-        blob_file.content_settings.content_md5 = None
-        blob_file.metadata = {}
-        blob_file.prefix = None
-
-        # A folder item (virtual prefix)
-        folder_item = MagicMock(spec=BlobProperties)
-        folder_item.prefix = "test/sub/"
-        folder_item.name = "test/sub/"
+        blob_file = _mock_blob_props(name="file.txt", size=42, etag='"abc"')
+        folder_item = _mock_blob_props(name="test/sub/", prefix="test/sub/")
 
         cc.walk_blobs.return_value = _async_iter([blob_file, folder_item])
 
@@ -773,7 +742,6 @@ class TestAsyncAzureMetadata:
         bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props(size=42))
 
         info = await backend.get_file_info("file.txt")
-        assert isinstance(info, FileInfo)
         assert info.name == "file.txt"
         assert info.size == 42
         assert info.modified_at is not None
@@ -790,17 +758,13 @@ class TestAsyncAzureMetadata:
     async def test_get_folder_info(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
 
-        blob1 = MagicMock(spec=BlobProperties)
-        blob1.size = 10
-        blob1.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        blob2 = MagicMock(spec=BlobProperties)
-        blob2.size = 20
+        blob1 = _mock_blob_props(size=10)
+        blob2 = _mock_blob_props(size=20)
         blob2.last_modified = datetime(2024, 6, 1, tzinfo=timezone.utc)
 
         cc.list_blobs.return_value = _async_iter([blob1, blob2])
 
         info = await backend.get_folder_info("dir")
-        assert isinstance(info, FolderInfo)
         assert info.file_count == 2
         assert info.total_size == 30
         assert info.modified_at == datetime(2024, 6, 1, tzinfo=timezone.utc)
@@ -1278,3 +1242,397 @@ class TestAsyncAzureRepr:
         backend = _make_backend(container="my-bucket")
         r = repr(backend)
         assert "my-bucket" in r
+
+
+# =============================================================================
+# _azure_common: props_to_fileinfo (ASYNC-016)
+# =============================================================================
+
+
+class TestPropsToFileinfo:
+    """Behavioral tests for the shared props_to_fileinfo helper."""
+
+    @pytest.mark.spec("ASYNC-016")
+    def test_extracts_name_from_nested_path(self) -> None:
+        props = _mock_blob_props(size=50, etag='"0xABC"')
+        info = props_to_fileinfo(props, "folder/sub/data.csv")
+        assert info.name == "data.csv"
+        assert info.size == 50
+        assert str(info.path) == "folder/sub/data.csv"
+
+    @pytest.mark.spec("ASYNC-016")
+    def test_flat_path_name(self) -> None:
+        props = _mock_blob_props(size=10)
+        info = props_to_fileinfo(props, "readme.md")
+        assert info.name == "readme.md"
+
+    @pytest.mark.spec("ASYNC-016")
+    def test_etag_stripped_and_lowered(self) -> None:
+        props = _mock_blob_props(etag='"0x8D4BCC2E4835CD0"')
+        info = props_to_fileinfo(props, "file.txt")
+        assert info.etag == "0x8d4bcc2e4835cd0"
+
+    @pytest.mark.spec("ASYNC-016")
+    def test_md5_digest_extracted(self) -> None:
+        md5_bytes = b"\xd4\x1d\x8c\xd9\x8f\x00\xb2\x04\xe9\x80\x09\x98\xec\xf8\x42\x7e"
+        props = _mock_blob_props(md5=md5_bytes)
+        info = props_to_fileinfo(props, "file.txt")
+        assert info.digest is not None
+        assert info.digest.algorithm == "md5"
+        assert info.digest.value == md5_bytes.hex()
+
+    @pytest.mark.spec("ASYNC-016")
+    def test_no_md5_returns_no_digest(self) -> None:
+        props = _mock_blob_props()
+        info = props_to_fileinfo(props, "file.txt")
+        assert info.digest is None
+
+    @pytest.mark.spec("ASYNC-016")
+    def test_empty_md5_returns_no_digest(self) -> None:
+        props = _mock_blob_props(md5=b"")
+        info = props_to_fileinfo(props, "file.txt")
+        assert info.digest is None
+
+    @pytest.mark.spec("ASYNC-016")
+    def test_no_etag_returns_none(self) -> None:
+        props = _mock_blob_props()
+        props.etag = None
+        info = props_to_fileinfo(props, "file.txt")
+        assert info.etag is None
+
+    @pytest.mark.spec("ASYNC-016")
+    def test_content_length_fallback(self) -> None:
+        """Uses content_length when size is missing."""
+        props = _mock_blob_props(size=0)
+        props.size = None
+        props.content_length = 77
+        info = props_to_fileinfo(props, "file.txt")
+        assert info.size == 77
+
+
+# =============================================================================
+# _azure_common: classify_azure_error — OSError unwrap (ASYNC-024)
+# =============================================================================
+
+
+class TestClassifyAzureErrorOSErrorUnwrap:
+    """classify_azure_error unwraps OSError wrapping an AzureError."""
+
+    @pytest.mark.spec("ASYNC-024")
+    def test_oserror_wrapping_resource_not_found(self) -> None:
+        inner = ResourceNotFoundError("blob not found")
+        wrapper = OSError("read failed")
+        wrapper.__cause__ = inner
+        mapped = classify_azure_error(wrapper, "data.bin", "async-azure")
+        assert mapped.path == "data.bin"
+        assert mapped.backend == "async-azure"
+        assert "Not found" in str(mapped)
+
+    @pytest.mark.spec("ASYNC-024")
+    def test_oserror_wrapping_service_request_error(self) -> None:
+        inner = ServiceRequestError("connection timeout")
+        wrapper = OSError("stream read failed")
+        wrapper.__cause__ = inner
+        mapped = classify_azure_error(wrapper, "data.bin", "async-azure")
+        assert isinstance(mapped, BackendUnavailable)
+        assert mapped.path == "data.bin"
+
+
+# =============================================================================
+# _azure_common: resolve_credential (ASYNC-001)
+# =============================================================================
+
+
+class TestResolveCredential:
+    """resolve_credential returns the correct credential type."""
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_explicit_credential_returned(self) -> None:
+        sentinel = object()
+        result = resolve_credential(sentinel, None, None, is_async=False, backend_name="test")
+        assert result is sentinel
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_account_key_used(self) -> None:
+        result = resolve_credential(None, "my-key", None, is_async=False, backend_name="test")
+        assert result == "my-key"
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_sas_token_used(self) -> None:
+        result = resolve_credential(None, None, "my-sas", is_async=False, backend_name="test")
+        assert result == "my-sas"
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_account_key_preferred_over_sas(self) -> None:
+        result = resolve_credential(None, "my-key", "my-sas", is_async=False, backend_name="test")
+        assert result == "my-key"
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_default_credential_sync(self) -> None:
+        """Falls back to DefaultAzureCredential for sync path."""
+        result = resolve_credential(None, None, None, is_async=False, backend_name="test")
+        from azure.identity import DefaultAzureCredential
+
+        assert isinstance(result, DefaultAzureCredential)
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_default_credential_async(self) -> None:
+        """Falls back to DefaultAzureCredential for async path."""
+        result = resolve_credential(None, None, None, is_async=True, backend_name="test")
+        from azure.identity.aio import DefaultAzureCredential as AsyncDefaultAzureCredential
+
+        assert isinstance(result, AsyncDefaultAzureCredential)
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_missing_identity_raises_backend_unavailable(self) -> None:
+        """BackendUnavailable when azure-identity missing and no credential given."""
+        import sys
+        from unittest import mock
+
+        with (
+            mock.patch.dict(sys.modules, {"azure.identity": None, "azure.identity.aio": None}),
+            pytest.raises(BackendUnavailable, match="azure-identity"),
+        ):
+            resolve_credential(None, None, None, is_async=False, backend_name="test")
+
+
+# =============================================================================
+# _azure_common: build_azure_retry (ASYNC-001)
+# =============================================================================
+
+
+class TestBuildAzureRetry:
+    """build_azure_retry maps RetryPolicy to ExponentialRetry."""
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_none_returns_none(self) -> None:
+        assert build_azure_retry(None) is None
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_default_retry_policy(self) -> None:
+        from remote_store._config import RetryPolicy
+
+        retry = build_azure_retry(RetryPolicy())
+        assert retry is not None
+        assert retry.total_retries == 2  # max_attempts(3) - 1
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_custom_retry_policy(self) -> None:
+        from remote_store._config import RetryPolicy
+
+        rp = RetryPolicy(max_attempts=5, backoff_base=2.0, jitter=0.5)
+        retry = build_azure_retry(rp)
+        assert retry is not None
+        assert retry.total_retries == 4  # 5 - 1
+        assert retry.initial_backoff == 2
+        assert retry.random_jitter_range == 0
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_unmappable_fields_logged(self, caplog: pytest.LogCaptureFixture) -> None:
+        """backoff_max != 60 or timeout != None triggers a debug log."""
+        import logging
+
+        from remote_store._config import RetryPolicy
+
+        rp = RetryPolicy(backoff_max=30.0, timeout=120.0)
+        with caplog.at_level(logging.DEBUG, logger="remote_store.backends._azure_common"):
+            retry = build_azure_retry(rp)
+        assert retry is not None
+        assert "not mappable" in caplog.text
+
+
+# =============================================================================
+# _azure_common: validate_azure_params (ASYNC-001)
+# =============================================================================
+
+
+class TestValidateAzureParams:
+    """validate_azure_params raises ValueError on invalid input."""
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_account_url_accepted(self) -> None:
+        # Should not raise
+        validate_azure_params(
+            container="c",
+            account_name=None,
+            account_url="https://x.blob.core.windows.net",
+            connection_string=None,
+            max_concurrency=1,
+        )
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_connection_string_accepted(self) -> None:
+        validate_azure_params(
+            container="c",
+            account_name=None,
+            account_url=None,
+            connection_string="DefaultEndpointsProtocol=http;AccountName=x",
+            max_concurrency=1,
+        )
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_no_auth_raises(self) -> None:
+        with pytest.raises(ValueError, match="account_name"):
+            validate_azure_params(
+                container="c",
+                account_name=None,
+                account_url=None,
+                connection_string=None,
+                max_concurrency=1,
+            )
+
+
+# =============================================================================
+# AsyncAzureBackend: error mapping in list/glob operations (ASYNC-024)
+# =============================================================================
+
+
+class TestAsyncAzureErrorPropagation:
+    """RemoteStoreError re-raised untouched in list/glob/iter_children."""
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_list_folders_error_mapped(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.walk_blobs.side_effect = ServiceRequestError("timeout")
+
+        with pytest.raises(BackendUnavailable, match="timeout"):
+            async for _ in backend.list_folders("data"):
+                pass
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_iter_children_error_mapped(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.walk_blobs.side_effect = ResourceNotFoundError("not here")
+
+        with pytest.raises(NotFound):
+            async for _ in backend.iter_children("missing"):
+                pass
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_list_files_remote_store_error_passthrough(self) -> None:
+        """RemoteStoreError raised during list_files passes through unchanged."""
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.walk_blobs.side_effect = NotFound("custom not found", path="x", backend="async-azure")
+
+        with pytest.raises(NotFound, match="custom not found"):
+            async for _ in backend.list_files("data"):
+                pass
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_list_folders_remote_store_error_passthrough(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.walk_blobs.side_effect = PermissionDenied("denied", path="x", backend="async-azure")
+
+        with pytest.raises(PermissionDenied, match="denied"):
+            async for _ in backend.list_folders("data"):
+                pass
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_iter_children_remote_store_error_passthrough(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.walk_blobs.side_effect = AlreadyExists("exists", path="x", backend="async-azure")
+
+        with pytest.raises(AlreadyExists, match="exists"):
+            async for _ in backend.iter_children("data"):
+                pass
+
+
+# =============================================================================
+# AsyncAzureBackend: read_file error mapping (ASYNC-024)
+# =============================================================================
+
+
+class TestAsyncAzureReadErrors:
+    """Error mapping in read_file and read_bytes."""
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_read_file_remote_store_error_passthrough(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.download_blob = AsyncMock(
+            side_effect=NotFound("custom", path="x.txt", backend="async-azure"),
+        )
+
+        with pytest.raises(NotFound, match="custom"):
+            async for _ in backend.read("x.txt"):
+                pass
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_read_file_native_error_mapped(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.download_blob = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+
+        with pytest.raises(NotFound):
+            async for _ in backend.read("missing.txt"):
+                pass
+
+
+# =============================================================================
+# AsyncAzureBackend: write_atomic with async iterator (ASYNC-007)
+# =============================================================================
+
+
+class TestAsyncAzureWriteAtomicIterator:
+    """write_atomic materializes async iterator content."""
+
+    @pytest.mark.spec("ASYNC-007")
+    async def test_write_atomic_materializes_async_chunks(self) -> None:
+        """write_atomic collects async chunks before uploading (non-HNS path)."""
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.upload_blob = AsyncMock()
+
+        async def chunk_gen():
+            yield b"hello "
+            yield b"world"
+
+        await backend.write_atomic("file.txt", chunk_gen(), overwrite=True)
+        bc.upload_blob.assert_awaited_once()
+        uploaded = bc.upload_blob.call_args[0][0]
+        assert uploaded == b"hello world"
+
+
+# =============================================================================
+# AsyncAzureBackend: close credential (ASYNC-001)
+# =============================================================================
+
+
+class TestAsyncAzureCloseCredential:
+    """aclose() cleans up credential resources."""
+
+    @pytest.mark.spec("ASYNC-001")
+    async def test_close_closes_credential(self) -> None:
+        backend = _make_backend()
+        mock_cred = MagicMock(spec=["close"])
+        mock_cred.close = AsyncMock()
+        backend._resolved_credential = mock_cred
+
+        await backend.aclose()
+        mock_cred.close.assert_awaited_once()
+        assert backend._resolved_credential is None
+
+    @pytest.mark.spec("ASYNC-001")
+    async def test_close_without_credential(self) -> None:
+        """close() when no credential was resolved does not raise."""
+        backend = _make_backend()
+        await backend.aclose()  # should not raise
+
+
+# =============================================================================
+# AsyncAzureBackend: _get_credential (ASYNC-001)
+# =============================================================================
+
+
+class TestAsyncAzureGetCredential:
+    """_get_credential caches and returns the resolved credential."""
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_get_credential_with_account_key(self) -> None:
+        backend = _make_backend(account_key="mykey")
+        cred = backend._get_credential()
+        assert cred == "mykey"
+
+    @pytest.mark.spec("ASYNC-001")
+    def test_get_credential_caches(self) -> None:
+        backend = _make_backend(account_key="mykey")
+        cred1 = backend._get_credential()
+        cred2 = backend._get_credential()
+        assert cred1 is cred2
