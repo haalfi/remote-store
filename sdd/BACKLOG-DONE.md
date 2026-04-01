@@ -66,6 +66,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Cleanup
 
+- [x] **BK-138 — Deduplicate `pyproject.toml` dependency lists**
+  Hatch env uses `features` key instead of re-listing 43 packages.
+  `dev`, `docs`, and `bench` extras compose from user-facing extras via
+  self-referential dependencies. Removed cargo-culted `s3fs` from `docs`.
+
 - [x] **BK-135 — Fix 72 ResourceWarning in SQL backend tests** (v0.21.0)
   Added `close()` / `dispose()` teardown to `test_backend_sqlquery.py` fixtures
   and inline backends. Filtered residual SQLAlchemy pool ResourceWarning on
