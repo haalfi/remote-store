@@ -339,7 +339,9 @@ _EXAMPLE_DESCRIPTIONS: dict[str, str] = {
     "health_check.py": "Startup gate pattern using `Store.ping()` to verify backend connectivity.",
     "async_store.py": "Async/await usage with `AsyncStore` -- streaming reads, async writes, child stores.",
     "configuration.py": "Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs.",
-    "config_loaders.py": "Load registry configuration from TOML, YAML, and Pydantic models.",
+    "config_loaders.py": (
+        "Load registry configuration from TOML, YAML, and Pydantic models, with env-var interpolation."
+    ),
     "capabilities_and_errors.py": "Capability querying, gating, and the structured error hierarchy.",
     "file_operations.py": (
         "Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key."

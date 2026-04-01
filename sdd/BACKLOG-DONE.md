@@ -110,6 +110,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## API Surface
 
+- [x] **ID-126 — `resolve_env()` — env-var interpolation for config loaders** (post-v0.20.0)
+  `resolve_env(data)` resolves `${VAR}` and `${VAR:-default}` placeholders in
+  config dicts. Opt-in `resolve_env_vars=True` on `from_yaml()` and
+  `from_toml()`. Standalone function exported from `remote_store` for custom
+  loaders. Spec: CFG-018..CFG-021.
+
 - [x] **ID-122 — Parquet Dataset Storage extension (`ext.parquet`)** (v0.20.0)
   `ParquetDatasetStore` — high-level Parquet dataset read/write with manifest
   metadata, `_SUCCESS` completion markers, and atomic-commit semantics.

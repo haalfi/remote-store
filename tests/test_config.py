@@ -21,6 +21,7 @@ from remote_store._config import (
     SecretRedactionFilter,
     StoreProfile,
     _reveal,
+    resolve_env,
 )
 
 # ---------------------------------------------------------------------------
@@ -859,3 +860,90 @@ def test_s3_pyarrow_retry_strategy() -> None:
 )
 def test_retry_policy_export(check: Any) -> None:
     assert check()
+
+
+# ---------------------------------------------------------------------------
+# CFG-018 .. CFG-021: resolve_env() — env-var interpolation
+# ---------------------------------------------------------------------------
+
+
+class TestResolveEnv:
+    """CFG-018/CFG-019: resolve_env() placeholder resolution."""
+
+    @pytest.mark.spec("CFG-018")
+    @pytest.mark.spec("CFG-019")
+    @pytest.mark.parametrize(
+        ("template", "environ", "expected"),
+        [
+            pytest.param("${MY_VAR}", {"MY_VAR": "hello"}, "hello", id="simple"),
+            pytest.param("${X}", {"X": "custom"}, "custom", id="custom-environ"),
+            pytest.param("${MISSING:-fallback}", {}, "fallback", id="default-used"),
+            pytest.param("${MISSING:-}", {}, "", id="default-empty"),
+            pytest.param("${VAR:-fallback}", {"VAR": "actual"}, "actual", id="default-ignored"),
+            pytest.param("$${NOT_A_VAR}", {}, "${NOT_A_VAR}", id="escape"),
+            pytest.param(
+                "https://${HOST}:${PORT}/path",
+                {"HOST": "example.com", "PORT": "8080"},
+                "https://example.com:8080/path",
+                id="embedded-multiple",
+            ),
+        ],
+    )
+    def test_placeholder_resolution(self, template: str, environ: dict[str, str], expected: str) -> None:
+        result = resolve_env({"key": template}, environ=environ)
+        assert result["key"] == expected
+
+    @pytest.mark.spec("CFG-018")
+    def test_missing_var_raises(self) -> None:
+        data: dict[str, object] = {"backends": {"s3": {"secret": "${MISSING}"}}}
+        with pytest.raises(KeyError, match="MISSING"):
+            resolve_env(data, environ={})
+
+    @pytest.mark.spec("CFG-018")
+    def test_nested_dict_list(self) -> None:
+        data: dict[str, object] = {
+            "backends": {"s3": {"options": {"key": "${K}"}}},
+            "tags": ["${T1}", "${T2}"],
+        }
+        result = resolve_env(data, environ={"K": "secret", "T1": "a", "T2": "b"})
+        assert result["backends"]["s3"]["options"]["key"] == "secret"  # type: ignore[index]
+        assert result["tags"] == ["a", "b"]
+
+    @pytest.mark.spec("CFG-018")
+    def test_non_string_passthrough(self) -> None:
+        data: dict[str, object] = {"port": 8080, "debug": True, "empty": None}
+        result = resolve_env(data, environ={})
+        assert result == {"port": 8080, "debug": True, "empty": None}
+
+    @pytest.mark.spec("CFG-018")
+    def test_keys_not_interpolated(self) -> None:
+        data: dict[str, object] = {"${KEY}": "value"}
+        result = resolve_env(data, environ={"KEY": "replaced"})
+        assert "${KEY}" in result
+        assert "replaced" not in result
+
+    @pytest.mark.spec("CFG-018")
+    def test_original_not_mutated(self) -> None:
+        data: dict[str, object] = {"nested": {"key": "${VAR}"}}
+        resolve_env(data, environ={"VAR": "new"})
+        assert data == {"nested": {"key": "${VAR}"}}
+
+
+class TestResolveEnvLoaderIntegration:
+    """CFG-020: resolve_env_vars parameter on from_toml()."""
+
+    @pytest.mark.spec("CFG-020")
+    def test_from_toml_resolve(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        f = tmp_path / "config.toml"
+        f.write_text('[backends.s3]\ntype = "s3"\n\n[backends.s3.options]\nkey = "${AWS_KEY}"\n\n[stores]\n')
+        monkeypatch.setenv("AWS_KEY", "my-secret")
+        rc = RegistryConfig.from_toml(f, resolve_env_vars=True)
+        assert rc.backends["s3"].options["key"].reveal() == "my-secret"  # type: ignore[union-attr]
+
+    @pytest.mark.spec("CFG-020")
+    def test_from_toml_default_off(self, tmp_path: Path) -> None:
+        f = tmp_path / "config.toml"
+        f.write_text('[backends.s3]\ntype = "s3"\n\n[backends.s3.options]\nkey = "${AWS_KEY}"\n\n[stores]\n')
+        rc = RegistryConfig.from_toml(f)
+        # Placeholder is NOT resolved — stored as-is, then wrapped in Secret
+        assert rc.backends["s3"].options["key"].reveal() == "${AWS_KEY}"  # type: ignore[union-attr]

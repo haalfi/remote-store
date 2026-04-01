@@ -51,6 +51,7 @@ Complete reference for all public exports of `remote-store`.
 | [RetryPolicy](config.md#remote_store.RetryPolicy) | Retry policy for backend operations |
 | [Secret](config.md#remote_store.Secret) | Sensitive string wrapper with masked repr |
 | [SecretRedactionFilter](config.md#remote_store.SecretRedactionFilter) | Logging filter that redacts secrets |
+| [resolve_env](config.md#remote_store.resolve_env) | Resolve `${VAR}` placeholders in config dicts |
 
 ## Path & Models
 

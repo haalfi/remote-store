@@ -8,6 +8,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`resolve_env()` env-var interpolation** (ID-126): `resolve_env(data)`
+  resolves `${VAR}` and `${VAR:-default}` placeholders in config dicts.
+  `from_toml()` and `from_yaml()` gain an opt-in `resolve_env_vars=True`
+  parameter. Standalone function exported from `remote_store` for custom
+  loaders. Spec: CFG-018..CFG-021.
 - **Async Store API (`remote_store.aio`)** (ID-013): `AsyncStore` --
   async counterpart to `Store` with coroutine methods for all operations.
   `AsyncBackend` abstract base class for native async backends.
