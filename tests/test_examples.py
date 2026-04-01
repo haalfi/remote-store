@@ -207,6 +207,7 @@ class TestConfigLoaders:
         assert isinstance(results["resolved_root"], str)
         assert len(results["resolved_root"]) > 0
 
+    @pytest.mark.os_sensitive
     def test_posix_paths_in_generated_config(self):
         """BUG-136 regression: generated TOML/YAML must use forward slashes."""
         from pathlib import PureWindowsPath
