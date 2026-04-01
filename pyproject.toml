@@ -51,35 +51,34 @@ Changelog = "https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md"
 Issues = "https://github.com/haalfi/remote-store/issues"
 
 [project.optional-dependencies]
+# -- Backend extras (pip install remote-store[s3], etc.) --
 s3 = ["s3fs>=2024.2.0"]
 s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
 sftp = ["paramiko>=2.2", "tenacity>=4.0"]
 azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
+sql = ["sqlalchemy>=2.0"]
+sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0"]
+requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
+httpx = ["httpx>=0.24.0"]
+# -- Extension extras --
 arrow = ["pyarrow>=12.0.0"]
 otel = ["opentelemetry-api>=1.28.0"]
 toml = ["tomli>=1.1.0; python_version < '3.11'"]
 yaml = ["pyyaml>=5.1"]
 pydantic = ["pydantic-settings>=2.0.0"]
 dagster = ["dagster>=1.9"]
-sql = ["sqlalchemy>=2.0"]
-sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0"]
-requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
-httpx = ["httpx>=0.24.0"]
 
+# -- Benchmark suite (all backends + charting) --
 bench = [
+  "remote-store[s3-pyarrow,sftp,azure]",
   "pytest-benchmark>=4.0",
   "boto3",
-  "s3fs>=2024.2.0",
-  "pyarrow>=14.0.0",
-  "paramiko>=2.2",
-  "tenacity>=4.0",
-  "azure-storage-file-datalake>=12.16.0",
-  "azure-identity>=1.0.0",
   "adlfs>=2024.2.0",
   "sshfs>=2023.1.0",
   "matplotlib>=3.8",
 ]
 
+# -- Documentation build --
 docs = [
   "mkdocs>=1.6,<2",
   "mkdocs-material>=9.5",
@@ -91,87 +90,42 @@ docs = [
   "mike>=2.0",
   "Pygments>=2.18,<2.21",  # 2.20 breaks pymdownx.highlight (filename=None)
   "ruff>=0.4",  # mkdocstrings signature formatting
-  "s3fs>=2024.2.0",
 ]
 
+# -- Development (all user-facing extras + test/build tooling) --
 dev = [
+  "remote-store[s3-pyarrow,sftp,azure,otel,toml,yaml,pydantic,dagster,sql,sql-query,requests,httpx]",
+  # Testing
   "pytest",
   "pytest-cov",
+  "pytest-httpserver>=1.0.0",
+  "pytest-asyncio>=0.23",
+  "moto[server,s3]",
+  # Type checking & linting
   "mypy",
   "ruff",
-  "jupyter",
-  "s3fs>=2024.2.0",
-  "pyarrow>=14.0.0",
-  "moto[server,s3]",
-  "paramiko>=2.2",
-  "tenacity>=4.0",
   "types-paramiko",
   "types-requests>=2.31",
-  "azure-storage-file-datalake>=12.16.0",
-  "azure-identity>=1.0.0",
-  "opentelemetry-api>=1.28.0",
-  "opentelemetry-sdk>=1.28.0",
-  "tomli>=1.1.0",
-  "ruamel.yaml>=0.15",
-  "pyyaml>=5.1",
+  # Dev tools
+  "jupyter",
   "pre-commit",
   "bump-my-version>=0.28",
   "twine",
   "python-dotenv",
+  # Not in user-facing extras but needed for tests/examples
+  "opentelemetry-sdk>=1.28.0",
+  "ruamel.yaml>=0.15",
+  "tomli>=1.1.0",  # toml extra is marker-gated to <3.11; tests need tomli on all versions
   "polars>=0.20",
   "duckdb>=0.9",
-  "dagster>=1.9",
-  "pytest-httpserver>=1.0.0",
-  "requests>=2.25.0",
-  "httpx>=0.24.0",
-  "sqlalchemy>=2.0",
-  "pytest-asyncio>=0.23",
 ]
 
 [tool.hatch.envs.default]
 installer = "uv"
+features = ["dev", "docs", "bench"]
 dependencies = [
-  "pytest",
-  "pytest-cov",
-  "mypy",
-  "ruff",
-  "s3fs>=2024.2.0",
-  "moto[server,s3]",
-  "paramiko>=2.2",
-  "tenacity>=4.0",
-  "pyarrow>=14.0.0",
-  "types-paramiko",
-  "types-requests>=2.31",
-  "azure-storage-file-datalake>=12.16.0",
-  "azure-identity>=1.0.0",
-  "opentelemetry-api>=1.28.0",
-  "opentelemetry-sdk>=1.28.0",
-  "pytest-benchmark",
-  "adlfs>=2024.2.0",
-  "sshfs>=2023.1.0",
-  "tomli>=1.1.0",
-  "ruamel.yaml>=0.15",
-  "pyyaml>=5.1",
-  "pre-commit",
-  "mkdocs>=1.6,<2",
-  "mkdocs-material>=9.5",
-  "mkdocstrings[python]>=0.27",
-  "mkdocs-include-markdown-plugin>=7.0",
-  "mkdocs-gen-files>=0.5",
-  "mkdocs-literate-nav>=0.6",
-  "mkdocs-section-index>=0.3",
-  "mike>=2.0",
-  "Pygments>=2.18,<2.21",
-  "polars>=0.20",
-  "duckdb>=0.9",
-  "dagster>=1.9",
-  "pytest-httpserver>=1.0.0",
-  "requests>=2.25.0",
-  "httpx>=0.24.0",
-  "matplotlib>=3.8",
-  "sqlalchemy>=2.0",
+  # Not in any optional-dependencies extra:
   "pytest-gremlins>=1.5; python_version>='3.11'",
-  "pytest-asyncio>=0.23",
 ]
 
 [tool.hatch.envs.default.scripts]

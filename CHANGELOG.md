@@ -20,6 +20,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   The docs index page reflects the new 7-section layout. All import paths,
   CI workflows, and docs references updated accordingly.
 
+### Internal
+
+- **Deduplicate `pyproject.toml` dependency lists** (BK-138): Hatch env uses
+  `features = ["dev", "docs", "bench"]` instead of re-listing 43 packages.
+  `bench`, `docs`, and `dev` extras compose from user-facing backend/extension
+  extras via self-referential dependencies. Removed cargo-culted `s3fs` from
+  `docs` extra (all backends use lazy imports).
+
 ## [0.21.0] - 2026-04-01
 
 ### Added
