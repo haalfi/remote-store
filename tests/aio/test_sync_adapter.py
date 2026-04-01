@@ -256,6 +256,32 @@ class TestSyncAdapterWriteContent:
         assert await adapter.read_bytes("at.txt") == b"atomic"
 
 
+class TestSyncAdapterPathPassthrough:
+    """ASYNC-034: Path methods forwarded from sync backend."""
+
+    @pytest.mark.spec("ASYNC-034")
+    def test_to_key(self) -> None:
+        adapter = SyncBackendAdapter(MemoryBackend())
+        assert adapter.to_key("some/path") == "some/path"
+
+    @pytest.mark.spec("ASYNC-034")
+    def test_native_path(self) -> None:
+        adapter = SyncBackendAdapter(MemoryBackend())
+        assert adapter.native_path("some/path") == "some/path"
+
+    @pytest.mark.spec("ASYNC-034")
+    def test_resolve(self) -> None:
+        adapter = SyncBackendAdapter(MemoryBackend())
+        plan = adapter.resolve("data.csv")
+        assert plan.key == "data.csv"
+
+    @pytest.mark.spec("ASYNC-034")
+    def test_unwrap_raises_for_unsupported(self) -> None:
+        adapter = SyncBackendAdapter(MemoryBackend())
+        with pytest.raises(CapabilityNotSupported, match="does not expose"):
+            adapter.unwrap(MemoryBackend)
+
+
 class TestSyncAdapterLifecycle:
     """ASYNC-035: aclose delegates to sync close."""
 

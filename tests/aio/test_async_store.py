@@ -685,6 +685,37 @@ class TestAsyncStoreWriteAtomicCapabilityGate:
             await store.write_atomic("file.txt", b"data")
 
 
+class TestAsyncStoreNoRootRebase:
+    """Rebase methods return original objects unchanged when root_path is empty."""
+
+    @pytest.mark.spec("ASYNC-042")
+    async def test_list_files_no_root(self) -> None:
+        backend = AsyncMemoryBackend()
+        store = AsyncStore(backend, root_path="")
+        await store.write("a.txt", b"data")
+        files = [f async for f in store.list_files("")]
+        assert len(files) == 1
+        assert files[0].name == "a.txt"
+
+    @pytest.mark.spec("ASYNC-042")
+    async def test_list_folders_no_root(self) -> None:
+        backend = AsyncMemoryBackend()
+        store = AsyncStore(backend, root_path="")
+        await store.write("sub/b.txt", b"data")
+        folders = [f async for f in store.list_folders("")]
+        assert len(folders) == 1
+        assert folders[0].name == "sub"
+
+    @pytest.mark.spec("ASYNC-042")
+    async def test_get_folder_info_no_root(self) -> None:
+        backend = AsyncMemoryBackend()
+        store = AsyncStore(backend, root_path="")
+        await store.write("a.txt", b"data")
+        info = await store.get_folder_info("")
+        assert info.file_count == 1
+        assert info.total_size == 4
+
+
 class TestAsyncStorePing:
     """ASYNC-052e: ping delegates to check_health."""
 

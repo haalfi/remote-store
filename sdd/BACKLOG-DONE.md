@@ -7,6 +7,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Documentation & Developer Experience
 
+- [x] **BK-137 — Post-v0.20.0 test quality: TESTING.md compliance + coverage gaps**
+  Audited new async/dagster test files against `sdd/TESTING.md` rules.
+  Fixed Rule 2 (sole `isinstance` → behavioral assertions) and Rule 7
+  (copy-paste → parametrize) violations. Coverage improved for
+  `_azure_common` (69→100%), `_async_azure` (89→95%),
+  `_sync_adapter` (93→98%), `_async_store` (96→98%).
+
 - [x] **BK-136 — Feature discoverability for agents and humans** (post-v0.20.0)
   Implemented all three recommendations from
   [research](research/research-feature-discoverability.md):

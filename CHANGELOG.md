@@ -58,6 +58,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Test quality: TESTING.md compliance** (BK-137): Fixed Rule 2 (sole
+  `isinstance` → behavioral assertions) and Rule 7 (copy-paste → parametrize)
+  violations in post-v0.20.0 async and dagster tests. Improved coverage for
+  `_azure_common` (69→100%), `_async_azure` (89→95%), `_sync_adapter` (93→98%),
+  `_async_store` (96→98%).
 - Fix 72 `ResourceWarning: unclosed database` in SQL backend tests by adding
   proper fixture teardown and `close()` calls. Filter residual SQLAlchemy pool
   warning on Python 3.13+ (BK-135).

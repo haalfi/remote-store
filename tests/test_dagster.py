@@ -32,37 +32,25 @@ def store() -> Store:
 # ---------------------------------------------------------------------------
 
 
-class TestPickleSerializer:
-    """DAG-002: Pickle roundtrip."""
+class TestSerializerRoundtrips:
+    """DAG-002, DAG-003: Pickle and JSON roundtrips."""
 
-    @pytest.mark.spec("DAG-002")
-    def test_roundtrip(self, store: Store) -> None:
-        mgr = dagster_io_manager(store, serializer="pickle")
+    @pytest.mark.parametrize(
+        "serializer",
+        [
+            pytest.param("pickle", id="pickle", marks=pytest.mark.spec("DAG-002")),
+            pytest.param("json", id="json", marks=pytest.mark.spec("DAG-003")),
+        ],
+    )
+    def test_roundtrip(self, store: Store, serializer: str) -> None:
+        mgr = dagster_io_manager(store, serializer=serializer)
         obj = {"key": "value", "numbers": [1, 2, 3]}
 
-        out_ctx = build_output_context(asset_key=AssetKey(["test", "pickle"]))
+        out_ctx = build_output_context(asset_key=AssetKey(["test", serializer]))
         mgr.handle_output(out_ctx, obj)
 
         in_ctx = build_input_context(
-            asset_key=AssetKey(["test", "pickle"]),
-            upstream_output=out_ctx,
-        )
-        assert mgr.load_input(in_ctx) == obj
-
-
-class TestJsonSerializer:
-    """DAG-003: JSON roundtrip."""
-
-    @pytest.mark.spec("DAG-003")
-    def test_roundtrip(self, store: Store) -> None:
-        mgr = dagster_io_manager(store, serializer="json")
-        obj = {"key": "value", "numbers": [1, 2, 3]}
-
-        out_ctx = build_output_context(asset_key=AssetKey(["test", "json"]))
-        mgr.handle_output(out_ctx, obj)
-
-        in_ctx = build_input_context(
-            asset_key=AssetKey(["test", "json"]),
+            asset_key=AssetKey(["test", serializer]),
             upstream_output=out_ctx,
         )
         assert mgr.load_input(in_ctx) == obj
