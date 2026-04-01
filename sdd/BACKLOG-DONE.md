@@ -28,6 +28,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Bug Fixes
 
+- [x] **BUG-136 — `config_loaders.py` example crashes on Windows**
+  `Path` interpolation into TOML/YAML strings produced backslashes
+  (`C:\Users\...`) which are invalid escape sequences in TOML.
+  Fixed with `.as_posix()`. Extracted `demo()` function and added
+  test in `test_examples.py`.
+
 - [x] **BUG-135 — `ParquetSerializer.deserialize()` returns Arrow Table** (v0.21.0)
   `deserialize()` called `table.to_pandas()`, hard-requiring pandas for
   `remote-store[dagster,arrow]` users. Changed to return `pyarrow.Table`

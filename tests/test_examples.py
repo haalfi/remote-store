@@ -183,6 +183,22 @@ class TestConfiguration:
         assert isinstance(results["validation_error"], ValueError)
 
 
+class TestConfigLoaders:
+    @pytest.mark.spec("CFG-018")
+    def test_demo(self):
+        pytest.importorskip("yaml", reason="PyYAML not installed")
+
+        from examples.configuration.config_loaders import demo
+
+        results = demo()
+
+        assert results["toml_content"] == b"Hello from TOML config!"
+        assert results["pyproject_bytes"] == 3
+        assert results["yaml_content"] == b"[INFO] started\n"
+        assert results["resolve_env_backends"] == 1
+        assert results["default_value"] == "hello world"
+
+
 # ---------------------------------------------------------------------------
 # Error handling
 # ---------------------------------------------------------------------------
