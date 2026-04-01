@@ -14,7 +14,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `_azure_common` (69→100%), `_async_azure` (89→95%),
   `_sync_adapter` (93→98%), `_async_store` (96→98%).
 
-- [x] **BK-136 — Feature discoverability for agents and humans** (post-v0.20.0)
+- [x] **BK-136 — Feature discoverability for agents and humans** (v0.21.0)
   Implemented all three recommendations from
   [research](research/research-feature-discoverability.md):
   R-1: `FEATURES.md` at repo root — versioned snapshot of backends,
@@ -28,7 +28,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Bug Fixes
 
-- [x] **BUG-135 — `ParquetSerializer.deserialize()` returns Arrow Table** (post-v0.20.0)
+- [x] **BUG-135 — `ParquetSerializer.deserialize()` returns Arrow Table** (v0.21.0)
   `deserialize()` called `table.to_pandas()`, hard-requiring pandas for
   `remote-store[dagster,arrow]` users. Changed to return `pyarrow.Table`
   directly. Callers convert to pandas/polars as needed. Updated spec DAG-004,
@@ -36,7 +36,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Integrations
 
-- [x] **ID-013 — Async Store / Backend API (Phase 1 + Phase 2)** (post-v0.20.0)
+- [x] **ID-013 — Async Store / Backend API (Phase 1 + Phase 2)** (v0.21.0)
   Phase 1: `remote_store.aio` module with `AsyncStore`, `AsyncBackend`,
   `SyncBackendAdapter`, `AsyncMemoryBackend`. Phase 2: `AsyncAzureBackend` --
   first native async backend using Azure SDK async clients
@@ -44,7 +44,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   in `_azure_common.py` for sync/async code reuse.
   Remainder: Phase 3 (async extensions) tracked as ID-013b in BACKLOG.md.
 
-- [x] **ID-124 — Dagster multi-partition loading** (post-v0.20.0)
+- [x] **ID-124 — Dagster multi-partition loading** (v0.21.0)
   When `load_input` receives multiple partition keys (time-window aggregation),
   return `dict[str, Any]` mapping partition key to deserialized object.
   Both `_RemoteStoreIOManagerImpl` and `_DatasetIOManagerImpl` updated.
@@ -60,16 +60,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Cleanup
 
-- [x] **BK-135 — Fix 72 ResourceWarning in SQL backend tests** (post-v0.20.0)
+- [x] **BK-135 — Fix 72 ResourceWarning in SQL backend tests** (v0.21.0)
   Added `close()` / `dispose()` teardown to `test_backend_sqlquery.py` fixtures
   and inline backends. Filtered residual SQLAlchemy pool ResourceWarning on
   Python 3.13+ via pytest `filterwarnings`.
-- [x] **BK-134 — Fix test behavior assertion anti-patterns** (post-v0.20.0)
+- [x] **BK-134 — Fix test behavior assertion anti-patterns** (v0.21.0)
   Replaced `isinstance`-only assertions (12 tests) with behavioral checks and
   replaced ~15 private attribute assertions with public API equivalents across
   10 test files. ~60 remaining private attribute assertions are legitimate
   (config storage, internal helper testing, mock introspection).
-- [x] **BK-133 — Upgrade GitHub Actions Node.js 20 → 24** (post-v0.20.0)
+- [x] **BK-133 — Upgrade GitHub Actions Node.js 20 → 24** (v0.21.0)
   Audited all workflows. Core actions (`checkout@v6`, `setup-python@v6`,
   `codeql-action@v4`) already use Node.js 24. Upgraded `setup-uv` from
   `@v7` to `@v8.0.0` (immutable tags). Disabled uv caching on lightweight
@@ -117,7 +117,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## API Surface
 
-- [x] **ID-126 — `resolve_env()` — env-var interpolation for config loaders** (post-v0.20.0)
+- [x] **ID-126 — `resolve_env()` — env-var interpolation for config loaders** (v0.21.0)
   `resolve_env(data)` resolves `${VAR}` and `${VAR:-default}` placeholders in
   config dicts. Opt-in `resolve_env_vars=True` on `from_yaml()` and
   `from_toml()`. Standalone function exported from `remote_store` for custom
