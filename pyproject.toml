@@ -117,7 +117,7 @@ dev = [
   # Not in user-facing extras but needed for tests/examples
   "opentelemetry-sdk>=1.28.0",
   "ruamel.yaml>=0.15",
-  "tomli>=1.1.0",
+  "tomli>=1.1.0",  # toml extra is marker-gated to <3.11; tests need tomli on all versions
   "polars>=0.20",
   "duckdb>=0.9",
 ]
