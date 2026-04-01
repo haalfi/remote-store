@@ -50,7 +50,7 @@ Items graduate through the SDD pipeline:
   config dicts. Closes the ergonomic gap between Pydantic users (who get
   env-var secrets via `BaseSettings`) and YAML/TOML users (who currently
   write 10–15 lines of boilerplate to inject credentials from env vars).
-  - Opt-in `resolve_env=True` parameter on `from_yaml()` and `from_toml()`
+  - Opt-in `resolve_env_vars=True` parameter on `from_yaml()` and `from_toml()`
   - Standalone `resolve_env()` for `from_dict()` and custom loaders
   - ADR-0002 compatible: pre-processing step, not merging
   - Spec: CFG-018 .. CFG-021 (amendment to [021](specs/021-config-loaders.md))

@@ -241,11 +241,11 @@ and shell parameter expansion.
 ### CFG-020: Loader Integration
 
 **Invariant:** `from_yaml()` and `from_toml()` accept an optional
-`resolve_env: bool = False` keyword argument.
+`resolve_env_vars: bool = False` keyword argument.
 
 **Behavior:**
-- When `resolve_env=False` (default): no change to current behavior.
-- When `resolve_env=True`: the parsed dict is passed through `resolve_env()`
+- When `resolve_env_vars=False` (default): no change to current behavior.
+- When `resolve_env_vars=True`: the parsed dict is passed through `resolve_env()`
   before delegation to `from_dict()`.
 
 **Flow (YAML example):**
@@ -254,7 +254,7 @@ YAML file → yaml.safe_load() → resolve_env() → from_dict()
     → RegistryConfig (immutable, ADR-0002 applies)
 ```
 
-**Design note:** `from_dict()` does **not** gain a `resolve_env` parameter.
+**Design note:** `from_dict()` does **not** gain a `resolve_env_vars` parameter.
 It accepts already-constructed dicts where interpolation would be surprising.
 Users who build dicts manually and want interpolation call `resolve_env()`
 explicitly.
@@ -267,7 +267,7 @@ Pydantic's `BaseSettings` env-var resolution (CFG-016): user-side glue that
 produces a single, final dict. Once the `RegistryConfig` is constructed,
 ADR-0002 applies — no further merging or env-var lookups.
 
-**Opt-in only:** The default is `resolve_env=False`. No loader reads
+**Opt-in only:** The default is `resolve_env_vars=False`. No loader reads
 environment variables unless the caller explicitly opts in. This preserves
 determinism, test safety, and the "same code = same behavior" guarantee.
 
@@ -405,7 +405,7 @@ stores:
 from remote_store.ext.yaml import from_yaml
 
 # One line — env vars resolved, secrets wrapped, config immutable
-config = from_yaml("remote-store.yaml", resolve_env=True)
+config = from_yaml("remote-store.yaml", resolve_env_vars=True)
 ```
 
 ## Example: TOML with Environment Variable Secrets
@@ -424,7 +424,7 @@ root_path = "events/raw"
 ```
 
 ```python
-config = RegistryConfig.from_toml("remote-store.toml", resolve_env=True)
+config = RegistryConfig.from_toml("remote-store.toml", resolve_env_vars=True)
 ```
 
 ## Example: Standalone `resolve_env()` with Custom Loader
