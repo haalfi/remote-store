@@ -147,4 +147,4 @@ patterns.
 ## See also
 
 - [API reference](api/extensions/cache.md)
-- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/caching.py)
+- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/extensions/caching.py)

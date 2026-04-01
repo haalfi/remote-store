@@ -155,4 +155,4 @@ assert result.all_succeeded
 ## See also
 
 - [API reference](api/extensions/batch.md)
-- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/batch_operations.py)
+- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/extensions/batch_operations.py)
