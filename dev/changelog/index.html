@@ -9408,6 +9408,11 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong><code>resolve_env()</code> env-var interpolation</strong> (ID-126): <code>resolve_env(data)</code>
+  resolves <code>${VAR}</code> and <code>${VAR:-default}</code> placeholders in config dicts.
+  <code>from_toml()</code> and <code>from_yaml()</code> gain an opt-in <code>resolve_env_vars=True</code>
+  parameter. Standalone function exported from <code>remote_store</code> for custom
+  loaders. Spec: CFG-018..CFG-021.</li>
 <li><strong>Async Store API (<code>remote_store.aio</code>)</strong> (ID-013): <code>AsyncStore</code> --
   async counterpart to <code>Store</code> with coroutine methods for all operations.
   <code>AsyncBackend</code> abstract base class for native async backends.

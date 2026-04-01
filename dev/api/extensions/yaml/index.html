@@ -7278,7 +7278,9 @@
 
 
 <a href="#remote_store.ext.yaml.from_yaml" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">from_yaml</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            RegistryConfig
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">from_yaml</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">resolve_env_vars</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            RegistryConfig
 
 
   
@@ -7300,6 +7302,18 @@
           –
           <div class="doc-md-description">
             <p>Path to the YAML file.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>resolve_env_vars</code></b>
+              (<code><span title="bool">bool</span></code>, default:
+                  <code>False</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>When <code>True</code>, resolve <code>${VAR}</code> placeholders
+via :func:<code>~remote_store.resolve_env</code> before constructing
+the config.</p>
           </div>
         </li>
     </ul>
@@ -7344,6 +7358,14 @@ is installed.</p>
             –
           <div class="doc-md-description">
             <p>If the top-level YAML value is not a mapping.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="KeyError">KeyError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>resolve_env_vars</em> is <code>True</code> and a placeholder
+references an unset variable with no default.</p>
           </div>
         </li>
     </ul>

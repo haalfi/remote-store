@@ -2899,6 +2899,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#remote_store.resolve_env" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;resolve_env
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7416,6 +7427,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#remote_store.resolve_env" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;resolve_env
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7627,8 +7649,11 @@
 
 <a href="#remote_store.RegistryConfig.from_toml" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">from_toml</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            RegistryConfig
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">table</span><span class="p">:</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">resolve_env_vars</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            RegistryConfig
 
 
   
@@ -7662,6 +7687,17 @@
 For <code>pyproject.toml</code> use <code>table=("tool", "remote-store")</code>.</p>
           </div>
         </li>
+        <li class="doc-section-item field-body">
+            <b><code>resolve_env_vars</code></b>
+              (<code><span title="bool">bool</span></code>, default:
+                  <code>False</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>When <code>True</code>, resolve <code>${VAR}</code> placeholders
+via :func:<code>resolve_env</code> before constructing the config.</p>
+          </div>
+        </li>
     </ul>
 
 
@@ -7679,7 +7715,9 @@ For <code>pyproject.toml</code> use <code>table=("tool", "remote-store")</code>.
               <code><span title="KeyError">KeyError</span></code>
             –
           <div class="doc-md-description">
-            <p>If a <em>table</em> key is not found.</p>
+            <p>If a <em>table</em> key is not found, or if
+<em>resolve_env_vars</em> is <code>True</code> and a placeholder
+references an unset variable with no default.</p>
           </div>
         </li>
     </ul>
@@ -8173,12 +8211,92 @@ Call <code>.reveal()</code> to obtain the plain-text credential.</p>
 
     </div>
 
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="remote_store.resolve_env" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">resolve_env</span>
+
+
+<a href="#remote_store.resolve_env" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_env</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">data</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="object">object</span></span><span class="p">],</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">environ</span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="object">object</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Resolve <code>${VAR}</code> placeholders in a config dict.</p>
+<p>Recursively walks <em>data</em> and replaces <code>${VAR}</code> with the value of
+the environment variable <em>VAR</em>. Use <code>${VAR:-default}</code> to provide a
+fallback when <em>VAR</em> is not set. Escape with <code>$${</code> to produce a
+literal <code>${</code>.</p>
+<p>The original dict is never mutated; a deep copy with resolved values
+is returned.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>data</code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Config dict (typically parsed from YAML/TOML).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>environ</code></b>
+              (<code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="str">str</span>] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Variable source. Defaults to :data:<code>os.environ</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>A new dict with all placeholder strings resolved.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="KeyError">KeyError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>If a placeholder references a variable that is not set
+and has no default. The message includes the variable name
+and the config key path where it was found.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
 </div><h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../retry/">Retry</a> — configuring retry policies</li>
 <li><a href="../../security-model/">Security Model</a> — credential handling and secret redaction</li>
 <li><a href="../../examples/configuration/">Configuration example</a> — backend and store configuration</li>
 <li><a href="../../examples/retry-policy/">Retry Policy example</a> — retry policy in action</li>
+<li><a href="../../examples/config-loaders/">Config Loaders example</a> — TOML, YAML, Pydantic, and env-var interpolation</li>
 </ul>
 
 
