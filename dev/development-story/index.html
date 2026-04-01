@@ -7469,6 +7469,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-31-async-config-and-quality-hardening-v0210" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 31: Async, Config, and Quality Hardening (v0.21.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8132,6 +8143,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-31-async-config-and-quality-hardening-v0210" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 31: Async, Config, and Quality Hardening (v0.21.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8408,11 +8430,11 @@
 <tbody>
 <tr>
 <td>Source code</td>
-<td>~13,000 lines (9 backends)</td>
+<td>~16,000 lines (9 backends + async layer)</td>
 </tr>
 <tr>
 <td>Tests</td>
-<td>~2,500 tests, ~21,800 lines</td>
+<td>~3,100 tests, ~24,300 lines</td>
 </tr>
 <tr>
 <td>Specs &amp; docs</td>
@@ -8440,7 +8462,7 @@
 </tr>
 <tr>
 <td>Commits</td>
-<td>~520</td>
+<td>~530</td>
 </tr>
 </tbody>
 </table>
@@ -8852,6 +8874,13 @@
 <p><strong>Benchmarks that measure honestly.</strong> The benchmark suite (ID-103, ID-104) was designed to present numbers (ms, %), not judgments ("negligible", "minimal"). Overhead-vs-RTT charts showed that remote-store's fixed cost becomes irrelevant at real-world latencies. The S3-PyArrow comparison revealed its strength is analytical workloads, not raw throughput — a distinction the messaging previously blurred.</p>
 <p><strong>Dagster v2 rewrote the integration model.</strong> The original <code>dagster_io_manager()</code> wrapper (v1, ID-075) was a function-based adapter. v2 (ID-083) introduced <code>DagsterStoreResource</code> (ConfigurableResource) for direct Store access and <code>RemoteStoreIOManager</code> (ConfigurableIOManagerFactory) for config-driven IO management. The migration exposed Dagster-Pydantic quirks: <code>PrivateAttr</code> must come from <code>pydantic</code> not <code>dagster</code>, <code>ResourceDependency</code> needs runtime wiring, and docstrings use <code>Attributes:</code> not <code>Args:</code>.</p>
 <p><strong>Test quality enforcement closed the loop.</strong> BK-126 added AST-based CI checks for assertions and mock specs, then migrated all 67 unconstrained mocks and 87 assertion-less tests. Combined with mutation testing scripts (BK-131) and Ruff PT rules (BK-124b), the test suite went from "tests exist" to "tests prove something." The deprecated aliases removed in BK-130 were the last remnants of the v0.19.0 naming cleanup — pre-v1, no shim needed.</p>
+<h3 id="phase-31-async-config-and-quality-hardening-v0210">Phase 31: Async, Config, and Quality Hardening (v0.21.0)<a class="headerlink" href="#phase-31-async-config-and-quality-hardening-v0210" title="Permanent link">&para;</a></h3>
+<p>v0.21.0 was an async-first release — the first to ship a fully native async storage layer alongside config ergonomics and a behavioral correction in the Parquet serializer.</p>
+<p><strong>Async arrived in two deliberate phases.</strong> Phase 1 (ID-013) delivered the <code>remote_store.aio</code> module: <code>AsyncStore</code>, <code>AsyncBackend</code> ABC, <code>SyncBackendAdapter</code> (thread-pool wrapper for any sync backend), and <code>AsyncMemoryBackend</code> for testing. Phase 2 landed <code>AsyncAzureBackend</code> — the first native async backend, using Azure SDK async clients (<code>azure.storage.blob.aio</code>, <code>azure.storage.filedatalake.aio</code>) for true non-blocking I/O. Shared helpers extracted to <code>_azure_common.py</code> kept the sync and async Azure backends DRY. <strong>Phasing meant each layer was tested and reviewed independently, rather than shipping a monolithic async rewrite.</strong> Phase 3 (async extensions) is deferred — Dagster has no public async IO manager interface yet, so there's nothing to wrap.</p>
+<p><strong><code>resolve_env()</code> closed the last config gap.</strong> ID-126 added <code>${VAR}</code> and <code>${VAR:-default}</code> interpolation for config dicts. <code>from_toml()</code> and <code>from_yaml()</code> gained <code>resolve_env_vars=True</code>; a standalone <code>resolve_env()</code> function is exported for custom loaders. The design deliberately avoids recursive resolution and fails loudly on unresolved placeholders — security over convenience.</p>
+<p><strong>A hidden pandas dependency surfaced in the Parquet serializer.</strong> BUG-135 found that <code>ParquetSerializer.deserialize()</code> called <code>table.to_pandas()</code>, silently requiring pandas for <code>remote-store[dagster,arrow]</code> users. The fix returns <code>pyarrow.Table</code> directly — framework-neutral, no hidden dependencies. This was the project's first behavioral breaking change to an extension, handled via migration guide rather than a deprecation cycle (pre-v1 policy).</p>
+<p><strong>Dagster multi-partition loading completed the IO manager story.</strong> ID-124 taught <code>load_input</code> to return <code>dict[str, Any]</code> when the input context carries multiple partition keys (time-window aggregation), covering the last gap deferred from the v0.20.0 Dagster v2 work.</p>
+<p><strong>Test quality hardening was the quiet backbone.</strong> BK-137 audited the new async and Dagster tests against TESTING.md rules, fixing behavioral assertion gaps and parametrizing copy-paste tests. BK-134 replaced <code>isinstance</code>-only assertions and private attribute checks across 10 test files. BK-135 fixed 72 <code>ResourceWarning: unclosed database</code> warnings in SQL tests. Coverage for <code>_azure_common</code> went from 69% to 100%. <strong>The test suite grew from ~2,500 to ~3,100 tests while getting stricter about what each test actually proves.</strong></p>
 <h2 id="what-worked-well">What Worked Well<a class="headerlink" href="#what-worked-well" title="Permanent link">&para;</a></h2>
 <h3 id="specs-as-a-shared-contract">Specs as a shared contract<a class="headerlink" href="#specs-as-a-shared-contract" title="Permanent link">&para;</a></h3>
 <p>The specs gave both human and AI a shared, unambiguous definition of "done." When Claude Code implemented a method, the human could check it against the spec rather than forming expectations on the fly. This reduced review time and increased trust.</p>

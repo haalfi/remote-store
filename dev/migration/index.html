@@ -2448,10 +2448,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#v0200-to-next" class="md-nav__link">
+  <a href="#v0200-to-v0210" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v0.20.0 to next
+        v0.20.0 to v0.21.0
       
     </span>
   </a>
@@ -2459,10 +2459,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#v0190-to-next" class="md-nav__link">
+  <a href="#v0190-to-v0200" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v0.19.0 to next
+        v0.19.0 to v0.20.0
       
     </span>
   </a>
@@ -7235,10 +7235,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#v0200-to-next" class="md-nav__link">
+  <a href="#v0200-to-v0210" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v0.20.0 to next
+        v0.20.0 to v0.21.0
       
     </span>
   </a>
@@ -7246,10 +7246,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#v0190-to-next" class="md-nav__link">
+  <a href="#v0190-to-v0200" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v0.19.0 to next
+        v0.19.0 to v0.20.0
       
     </span>
   </a>
@@ -7369,7 +7369,7 @@
 <p><code>remote-store</code> has been published on PyPI since v0.11.0 (first Beta release).
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.</p>
-<h2 id="v0200-to-next">v0.20.0 to next<a class="headerlink" href="#v0200-to-next" title="Permanent link">&para;</a></h2>
+<h2 id="v0200-to-v0210">v0.20.0 to v0.21.0<a class="headerlink" href="#v0200-to-v0210" title="Permanent link">&para;</a></h2>
 <p><strong><code>ParquetSerializer.deserialize()</code> returns Arrow Table (BUG-135):</strong></p>
 <p><code>ParquetSerializer.deserialize()</code> now returns a <code>pyarrow.Table</code> instead of a
 <code>pandas.DataFrame</code>. This removes the hidden hard dependency on pandas for
@@ -7383,7 +7383,7 @@ changes that require action when upgrading.</p>
 <p>Custom subclasses that override <code>deserialize()</code> (e.g. <code>PolarsParquetSerializer</code>
 from the medallion example) continue to work but the override is now optional —
 the base class already returns a framework-neutral Arrow Table.</p>
-<h2 id="v0190-to-next">v0.19.0 to next<a class="headerlink" href="#v0190-to-next" title="Permanent link">&para;</a></h2>
+<h2 id="v0190-to-v0200">v0.19.0 to v0.20.0<a class="headerlink" href="#v0190-to-v0200" title="Permanent link">&para;</a></h2>
 <p><strong>Deprecated aliases removed (BK-130):</strong></p>
 <p>Three factory functions renamed in v0.18.0 have had their old names removed:</p>
 <ul>
@@ -7396,7 +7396,7 @@ the base class already returns a framework-neutral Arrow Table.</p>
 <p><strong>Factory function renames (BK-010):</strong></p>
 <p>Three ext factory functions were renamed for naming consistency.
 Old names emitted <code>DeprecationWarning</code> in v0.18.x and are removed after
-v0.19.0 (see <a href="#v0190-to-next">above</a>).</p>
+v0.19.0 (see <a href="#v0190-to-v0200">above</a>).</p>
 <ul>
 <li><code>pydantic_to_registry_config()</code> → <code>from_pydantic()</code></li>
 <li><code>remote_store_io_manager()</code> → <code>dagster_io_manager()</code></li>
