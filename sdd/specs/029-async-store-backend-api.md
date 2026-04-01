@@ -2,12 +2,12 @@
 
 ## Status
 
-Accepted -- Phase 1 implemented in ``remote_store.aio`` (v0.21).
-Pending: spec amendments from research round 2 §2.4.
+Accepted -- Phase 1 and Phase 2 implemented in ``remote_store.aio``.
+Amended with research round 2 §2.4 items and Phase 2 spec.
 
 ## Overview
 
-`AsyncBackend` and `AsyncStore` are the async equivalents of `Backend` ([003](003-backend-adapter-contract.md)) and `Store` ([001](001-store-api.md)). `SyncBackendAdapter` bridges sync backends into the async world via `asyncio.to_thread()`. This spec covers Phase 1 scope only — native async backends and async extensions are future specs. See [ADR-0012](../adrs/0012-async-store-backend-api.md) for design rationale.
+`AsyncBackend` and `AsyncStore` are the async equivalents of `Backend` ([003](003-backend-adapter-contract.md)) and `Store` ([001](001-store-api.md)). `SyncBackendAdapter` bridges sync backends into the async world via `asyncio.to_thread()`. Phase 2 adds `AsyncAzureBackend` — the first native async backend. See [ADR-0012](../adrs/0012-async-store-backend-api.md) for design rationale.
 
 ---
 
@@ -87,13 +87,13 @@ Pending: spec amendments from research round 2 §2.4.
 
 ### ASYNC-014: list_files()
 
-**Invariant:** `async def list_files(path, *, recursive=False) -> AsyncIterator[FileInfo]`.
-**Postconditions:** Returns only files, not folders. If `recursive=True`, includes files in all subdirectories.
-**See also:** [BE-014](003-backend-adapter-contract.md).
+**Invariant:** `async def list_files(path, *, recursive=False, max_depth=None) -> AsyncIterator[FileInfo]`.
+**Postconditions:** Returns only files, not folders. If `recursive=True`, includes files in all subdirectories. `max_depth` limits traversal depth (when set, `recursive` is ignored).
+**See also:** [BE-014](003-backend-adapter-contract.md), [037-depth-limited-listing.md](037-depth-limited-listing.md) (DEPTH-003).
 
 ### ASYNC-015: list_folders()
 
-**Invariant:** `async def list_folders(path) -> AsyncIterator[FolderEntry]` of immediate subfolders.
+**Invariant:** `async def list_folders(path) -> AsyncIterator[FolderEntry]` of immediate subfolders. The `AsyncBackend` ABC does not accept `max_depth` — depth expansion is an `AsyncStore`-level concern (see ASYNC-052b).
 **See also:** [BE-015](003-backend-adapter-contract.md).
 
 ### ASYNC-016: get_file_info()
@@ -104,7 +104,7 @@ Pending: spec amendments from research round 2 §2.4.
 
 ### ASYNC-017: get_folder_info()
 
-**Invariant:** `async def get_folder_info(path) -> FolderInfo`.
+**Invariant:** `async def get_folder_info(path) -> FolderInfo`. The `AsyncBackend` ABC does not accept `max_depth` — depth-limited aggregation is an `AsyncStore`-level concern (see ASYNC-052c).
 **Raises:** `NotFound` if the folder does not exist.
 **See also:** [BE-017](003-backend-adapter-contract.md).
 
@@ -171,6 +171,16 @@ Pending: spec amendments from research round 2 §2.4.
 **Invariant:** `async def iter_children(path) -> AsyncIterator[FileInfo | FolderEntry]` — files as `FileInfo`, folders as `FolderEntry`. Concrete method with a default implementation that chains `list_files(path)` and `list_folders(path)`.
 **See also:** [BE-026](003-backend-adapter-contract.md), [027-iter-children.md](027-iter-children.md).
 
+### ASYNC-057: check_health()
+
+**Invariant:** `async def check_health() -> None` is a concrete method (default no-op). Native async backends override to verify connectivity (e.g., container probe). `SyncBackendAdapter` delegates to the sync backend's `check_health()` via `asyncio.to_thread()` (see ASYNC-037).
+**See also:** [026-health-check.md](026-health-check.md).
+
+### ASYNC-058: resolve()
+
+**Invariant:** `def resolve(path) -> ResolutionPlan` is a concrete method with a default implementation. **Sync** — pure introspection, no I/O. Returns a frozen `ResolutionPlan` with `kind`, `backend`, `key`, `native_path`, and `details`.
+**See also:** [043-resolution-plan.md](043-resolution-plan.md) (RES-020).
+
 ---
 
 ## SyncBackendAdapter
@@ -194,11 +204,20 @@ Pending: spec amendments from research round 2 §2.4.
 
 ### ASYNC-034: Property Passthrough
 
-**Invariant:** `name`, `capabilities`, `to_key()`, `unwrap()`, and `native_path()` delegate directly to the wrapped backend without `asyncio.to_thread()` — they are sync, non-I/O properties/methods.
+**Invariant:** `name`, `capabilities`, `to_key()`, `unwrap()`, `native_path()`, and `resolve()` delegate directly to the wrapped backend without `asyncio.to_thread()` — they are sync, non-I/O properties/methods.
 
 ### ASYNC-035: aclose() Delegation
 
 **Invariant:** `aclose()` calls `await asyncio.to_thread(self._sync.close)`.
+
+### ASYNC-036: Streaming Write Bridging
+
+**Invariant:** `write()` and `write_atomic()` materialize `AsyncIterator[bytes]` content to `bytes` via an internal `_materialize()` helper before delegating to the sync backend. The sync `write()` receives a single `bytes` object, not an iterator.
+**Rationale:** Sync backends accept `bytes | BinaryIO` — there is no way to stream an `AsyncIterator` across the thread boundary. Native async backends (Phase 2) handle `AsyncIterator[bytes]` directly.
+
+### ASYNC-037: check_health() Delegation
+
+**Invariant:** `check_health()` delegates to `await asyncio.to_thread(self._sync.check_health)`.
 
 ---
 
@@ -236,7 +255,8 @@ Pending: spec amendments from research round 2 §2.4.
 
 ### ASYNC-046: Full API Surface
 
-**Invariant:** `AsyncStore` exposes async equivalents of all `Store` methods: `read`, `read_bytes`, `read_text`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `move`, `copy`, `aclose`, `supports`, `to_key`, `native_path`, `unwrap`, `child`.
+**Invariant:** `AsyncStore` exposes async equivalents of all `Store` methods: `read`, `read_bytes`, `read_text`, `write`, `write_text`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `move`, `copy`, `ping`, `resolve`, `aclose`, `supports`, `to_key`, `native_path`, `unwrap`, `child`.
+**Deferred:** `read_seekable` and `open_atomic` are not available in the async API — see ASYNC-061, ASYNC-062.
 **See also:** [STORE-008](001-store-api.md).
 
 ### ASYNC-047: Same-Path Move and Copy
@@ -280,6 +300,31 @@ Pending: spec amendments from research round 2 §2.4.
 **Invariant:** `child(subpath) -> AsyncStore`. Returns a new `AsyncStore` scoped to a subfolder. Same semantics as `Store.child()`: shared backend identity, composed root path, no-op `aclose()`, supports chaining.
 **See also:** [015-store-child.md](015-store-child.md) (CHILD-001 through CHILD-011).
 
+### ASYNC-052a: write_text()
+
+**Invariant:** `async def write_text(path, text, *, encoding="utf-8", overwrite=False)` encodes the string and delegates to `write()`. Convenience method — no separate backend call.
+
+### ASYNC-052b: list_folders(max_depth=)
+
+**Invariant:** `list_folders(path, *, max_depth=None)` accepts an optional `max_depth` keyword. Depth expansion is implemented at the `AsyncStore` level via BFS traversal over the backend's `list_folders()`. `max_depth=None` returns immediate subfolders only (same as omitting).
+**See also:** [037-depth-limited-listing.md](037-depth-limited-listing.md) (DEPTH-002).
+
+### ASYNC-052c: get_folder_info(max_depth=)
+
+**Invariant:** `get_folder_info(path, *, max_depth=None)` accepts an optional `max_depth` keyword for depth-limited aggregation. Implemented at the `AsyncStore` level.
+**See also:** [037-depth-limited-listing.md](037-depth-limited-listing.md).
+
+### ASYNC-052d: resolve()
+
+**Invariant:** `resolve(key) -> ResolutionPlan` is **sync** — no I/O. Delegates to `backend.resolve()` and rebases the key to store-relative. Same composition as `Store.resolve()`.
+**See also:** [043-resolution-plan.md](043-resolution-plan.md) (RES-010, RES-025).
+
+### ASYNC-052e: ping()
+
+**Invariant:** `async def ping()` verifies backend connectivity. Delegates to `await backend.check_health()`. The threading concern is handled by the backend layer: `SyncBackendAdapter.check_health()` uses `asyncio.to_thread()` (ASYNC-037); native async backends execute directly.
+**Raises:** `PermissionDenied` if credentials are invalid. `NotFound` if the bucket, container, or root path does not exist. `BackendUnavailable` if the backend cannot be reached.
+**See also:** [026-health-check.md](026-health-check.md).
+
 ### ASYNC-055: Concurrency Safety
 
 **Invariant:** `AsyncStore` is safe for concurrent coroutines on the same event loop. It is not safe across multiple event loops (each event loop requires its own `AsyncStore` instance).
@@ -291,9 +336,77 @@ Pending: spec amendments from research round 2 §2.4.
 
 ---
 
-## Deferred (out of scope)
+## Deferred (async API gaps)
 
-- Native async backends (`AsyncS3Backend`, `AsyncAzureBackend`, `AsyncSFTPBackend`) — Phase 2, separate specs.
-- Async extensions (`async_batch`, `async_transfer`, `AsyncObservedStore`) — Phase 3, separate specs.
+### ASYNC-061: read_seekable() Deferral
+
+`read_seekable()` is not available in the async API. Python has no standard async seekable stream protocol. Callers should use `read_bytes()` + `io.BytesIO()` for small files, or native async SDK features for large files via a native async backend.
+**See also:** [036-seekable-read.md](036-seekable-read.md), research round 2 §3.1.
+
+### ASYNC-062: open_atomic() Deferral
+
+`open_atomic()` is not available in the async API. The incremental-write-to-file context-manager pattern is inherently sync. Use `write_atomic(path, content)` with `bytes | AsyncIterator[bytes]` instead.
+**See also:** research round 2 §3.2.
+
+## Deferred (future phases)
+
+- Native async backends for remaining backends (`AsyncS3Backend`, `AsyncSFTPBackend`) — future specs.
+- Async extensions (`async_batch`, `async_transfer`, `AsyncObservedStore`) — Phase 3, separate specs. Dagster `AsyncIOManager` blocked until Dagster exposes a public async IO manager interface.
 - anyio / trio support — future ADR if demand materializes.
 - `AsyncRegistry` — Phase 3, if needed for coordinated async lifecycle.
+
+---
+
+## Phase 2: AsyncAzureBackend
+
+Native async Azure backend using `azure.storage.blob.aio` and `azure.storage.filedatalake.aio`. Implemented in `remote_store.aio._async_azure`. See [012-azure-backend.md](012-azure-backend.md) for the sync counterpart.
+
+### ASYNC-070: Dual-Mode Architecture
+
+**Invariant:** `AsyncAzureBackend` supports both plain Blob Storage and ADLS Gen2 (HNS-enabled) accounts. HNS is detected lazily on first I/O via `_ensure_hns()` and cached. Non-HNS accounts use the Blob SDK (`BlobServiceClient`, `ContainerClient`). HNS accounts use the DataLake SDK (`DataLakeServiceClient`, `FileSystemClient`).
+**See also:** [012-azure-backend.md](012-azure-backend.md) (AZ-002).
+
+### ASYNC-071: Lazy Client Initialization
+
+**Invariant:** All four SDK clients (`_blob_service`, `_cc`, `_datalake_service`, `_fs`) are created lazily on first access. This avoids I/O during construction and allows the backend to be instantiated outside an event loop.
+
+### ASYNC-072: Atomic Write Strategy
+
+**Invariant:** `write_atomic()` uses different strategies per account type:
+- **Non-HNS:** Direct `upload_blob()` is atomic (single PUT semantics).
+- **HNS:** Write to a temporary file (`.~tmp.{basename}.{uuid4[:8]}`), then atomic rename via DFS `rename_file()`.
+
+**See also:** [007-atomic-writes.md](007-atomic-writes.md), [012-azure-backend.md](012-azure-backend.md) (AZ-006).
+
+### ASYNC-073: Move and Copy
+
+**Invariant:** `move()` uses atomic `rename_file()` on HNS accounts, or server-side `start_copy_from_url()` + delete on non-HNS. `copy()` uses `start_copy_from_url()` on both.
+**See also:** [012-azure-backend.md](012-azure-backend.md) (AZ-011, AZ-012).
+
+### ASYNC-074: Content Materialization
+
+**Invariant:** `write()` and `write_atomic()` materialize `AsyncIterator[bytes]` to `bytes` before calling `upload_blob()` / `upload_data()`. The Azure SDK async upload methods do not support streaming from an `AsyncIterator`.
+
+### ASYNC-075: check_health() Override
+
+**Invariant:** `check_health()` probes the container (non-HNS: `get_container_properties()`) or filesystem (HNS: `get_file_system_properties()`).
+**Raises:** `PermissionDenied` if credentials are invalid. `NotFound` if the container does not exist. `BackendUnavailable` if the backend cannot be reached.
+
+### ASYNC-076: Capabilities
+
+**Invariant:** `AsyncAzureBackend` declares all capabilities except `SEEKABLE_READ`. Same capability set as the sync `AzureBackend`.
+**See also:** [012-azure-backend.md](012-azure-backend.md) (AZ-001).
+
+### ASYNC-077: Shared Helpers
+
+**Invariant:** `_azure_common.py` contains sync/async-shared utilities: error classification (`classify_azure_error()`), retry policy application, credential resolution, and path normalization. Both `AzureBackend` and `AsyncAzureBackend` import from this module.
+**Rationale:** Eliminates code duplication between sync and async Azure backends.
+
+### ASYNC-078: Resource Cleanup
+
+**Invariant:** `aclose()` closes all four lazily-created SDK clients and any auto-created async credential. Safe to call multiple times. Idempotent.
+
+### ASYNC-079: Error Mapping
+
+**Invariant:** All Azure SDK exceptions are mapped to `remote_store` error types via `classify_azure_error()` from `_azure_common`. Same mapping as the sync `AzureBackend`.
+**See also:** [012-azure-backend.md](012-azure-backend.md) (AZ-013 through AZ-016), [005-error-model.md](005-error-model.md).

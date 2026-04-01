@@ -999,7 +999,7 @@ class TestAsyncAzurePathAndResolve:
         backend = _make_backend(container="test")
         assert backend.native_path(path) == expected
 
-    @pytest.mark.spec("ASYNC-027")
+    @pytest.mark.spec("ASYNC-027", "ASYNC-058")
     def test_resolve(self) -> None:
         backend = _make_backend()
         plan = backend.resolve("file.txt")
@@ -1010,7 +1010,7 @@ class TestAsyncAzurePathAndResolve:
         assert "container" in plan.details
         assert plan.details["container"] == "test"
 
-    @pytest.mark.spec("ASYNC-027")
+    @pytest.mark.spec("ASYNC-027", "ASYNC-058")
     def test_resolve_has_account_url(self) -> None:
         backend = _make_backend()
         plan = backend.resolve("file.txt")
@@ -1025,14 +1025,14 @@ class TestAsyncAzurePathAndResolve:
 class TestAsyncAzureCheckHealth:
     """check_health exercises _errors() and container properties."""
 
-    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ASYNC-024", "ASYNC-075")
     async def test_check_health_non_hns(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
         cc.get_container_properties = AsyncMock(return_value={"name": "test"})
         await backend.check_health()
         assert cc.get_container_properties.call_count == 1
 
-    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ASYNC-024", "ASYNC-075")
     async def test_check_health_error_mapped(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
         cc.get_container_properties = AsyncMock(
