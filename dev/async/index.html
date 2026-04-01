@@ -2335,6 +2335,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#native-async-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Native async backends
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Native async backends">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#asyncazurebackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncAzureBackend
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#health-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#context-manager" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7268,6 +7307,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#native-async-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Native async backends
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Native async backends">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#asyncazurebackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncAzureBackend
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#health-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#context-manager" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7340,6 +7418,8 @@ same capability model — so existing knowledge transfers directly.</p>
 <p>Any sync <code>Backend</code> (Local, S3, SFTP, Azure, Memory) is auto-wrapped via
 <code>SyncBackendAdapter</code>, which delegates each call to the default executor
 through <code>asyncio.to_thread()</code>. No code changes needed on the backend side.</p>
+<p>For backends with native async SDK support, use the dedicated async backend
+class for true non-blocking I/O — see <a href="#native-async-backends">Native async backends</a>.</p>
 <h2 id="streaming-reads">Streaming reads<a class="headerlink" href="#streaming-reads" title="Permanent link">&para;</a></h2>
 <p><code>AsyncStore.read()</code> returns an <code>AsyncIterator[bytes]</code> (not <code>BinaryIO</code>),
 because Python has no standard async file-like protocol. Consume it with
@@ -7386,28 +7466,61 @@ to a subfolder. The child shares the parent's backend:</p>
 <a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">starlette.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamingResponse</span>
 <a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>    <span class="k">return</span> <span class="n">StreamingResponse</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
 </code></pre></div>
+<h2 id="native-async-backends">Native async backends<a class="headerlink" href="#native-async-backends" title="Permanent link">&para;</a></h2>
+<p><code>SyncBackendAdapter</code> runs sync backends in a thread pool — good enough for
+many workloads, but each call still blocks a thread. Native async backends
+use the cloud SDK's async clients directly, avoiding thread-pool overhead.</p>
+<h3 id="asyncazurebackend">AsyncAzureBackend<a class="headerlink" href="#asyncazurebackend" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncStore</span><span class="p">,</span> <span class="n">AsyncAzureBackend</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AsyncAzureBackend</span><span class="p">(</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">container</span><span class="o">=</span><span class="s2">&quot;my-container&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;myaccount&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">account_key</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="k">async</span> <span class="k">with</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;col1,col2</span><span class="se">\n</span><span class="s2">1,2&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p><code>AsyncAzureBackend</code> supports both plain Blob Storage and ADLS Gen2
+(HNS-enabled) accounts. HNS is detected automatically on first I/O.
+The constructor accepts the same credential parameters as the sync
+<code>AzureBackend</code>.</p>
+<p>Install the async Azure extras:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[azure]&quot;</span>
+</code></pre></div>
+<p>No additional dependencies are needed — the Azure SDK's async clients
+(<code>azure.storage.blob.aio</code>, <code>azure.storage.filedatalake.aio</code>) are
+included in the same packages as the sync clients.</p>
+<h2 id="health-check">Health check<a class="headerlink" href="#health-check" title="Permanent link">&para;</a></h2>
+<p><code>ping()</code> verifies that the backend is reachable and credentials are valid:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>  <span class="c1"># raises BackendUnavailable on failure</span>
+</code></pre></div>
+<p>Native async backends (like <code>AsyncAzureBackend</code>) perform a lightweight
+async probe. Wrapped sync backends delegate through <code>asyncio.to_thread()</code>.</p>
 <h2 id="context-manager">Context manager<a class="headerlink" href="#context-manager" title="Permanent link">&para;</a></h2>
 <p>Use <code>async with</code> for automatic cleanup:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># backend resources released here</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># backend resources released here</span>
 </code></pre></div>
 <p>Child stores do not close the parent's backend — only the owning store
 calls <code>aclose()</code> on exit.</p>
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong><code>read_seekable()</code> and <code>open_atomic()</code> are not available</strong> in the async
-  API (Phase 1). Use <code>read_bytes()</code> + <code>io.BytesIO()</code> if you need a
-  seekable stream, or <code>write_atomic()</code> for single-shot atomic writes.</li>
+  API. Use <code>read_bytes()</code> + <code>io.BytesIO()</code> if you need a seekable stream,
+  or <code>write_atomic()</code> for single-shot atomic writes.</li>
 <li><strong><code>SyncBackendAdapter</code> materializes listing iterators</strong> in memory
   (<code>list_files</code>, <code>list_folders</code>, <code>glob</code>). For very large directories this
-  may use more memory than the sync API. Native async backends (Phase 2)
-  will stream without materialisation.</li>
-<li><strong><code>asyncio</code> only</strong> — trio and anyio are not supported in Phase 1.</li>
+  may use more memory than the sync API. Native async backends stream
+  without materialisation.</li>
+<li><strong><code>asyncio</code> only</strong> — trio and anyio are not supported.</li>
 </ul>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../api/aio/">API reference</a> — <code>AsyncStore</code>, <code>AsyncBackend</code>, <code>SyncBackendAdapter</code></li>
+<li><a href="../api/aio/">API reference</a> — <code>AsyncStore</code>, <code>AsyncBackend</code>, <code>AsyncAzureBackend</code>, <code>SyncBackendAdapter</code></li>
+<li><a href="../backends/azure/">Azure Backend</a> — sync Azure backend configuration and usage</li>
+<li><a href="../health-check/">Health Check</a> — <code>ping()</code> and <code>check_health()</code> details</li>
 <li><a href="../concurrency/">Concurrency</a> — thread safety, atomicity, and <code>overwrite=False</code> semantics</li>
 <li><a href="../examples/async-store/">Example: Async Store</a> — runnable async demo</li>
 </ul>
