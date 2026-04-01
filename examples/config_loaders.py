@@ -1,7 +1,8 @@
-"""Config loaders — from_toml(), from_yaml(), and from_pydantic().
+"""Config loaders — from_toml(), from_yaml(), from_pydantic(), and resolve_env().
 
 Demonstrates loading RegistryConfig from TOML files, YAML files, and Pydantic
-models. All loaders delegate to from_dict() for Secret wrapping and validation.
+models, plus env-var interpolation with resolve_env(). All loaders delegate to
+from_dict() for Secret wrapping and validation.
 """
 
 from __future__ import annotations
@@ -113,5 +114,41 @@ if __name__ == "__main__":
 
         except ImportError:
             print("\n(pydantic not installed -- skipping pydantic example)")
+
+        # --- resolve_env(): env-var interpolation for YAML ---
+        import os
+
+        from remote_store import resolve_env
+
+        os.environ["DEMO_STORE_ROOT"] = str(root / "env-data")
+
+        yaml_env_file = root / "env-config.yaml"
+        yaml_env_file.write_text(
+            "backends:\n"
+            "  local:\n"
+            "    type: local\n"
+            "    options:\n"
+            "      root: ${DEMO_STORE_ROOT}\n"
+            "stores:\n"
+            "  data:\n"
+            "    backend: local\n"
+            "    root_path: resolved\n"
+        )
+
+        # Option A: resolve_env_vars=True on the loader
+        config = from_yaml(yaml_env_file, resolve_env_vars=True)
+        print(f"\nfrom_yaml(resolve_env_vars=True): root={config.backends['local'].options['root']}")
+
+        # Option B: standalone resolve_env() for any dict
+        import json
+
+        raw = json.loads('{"backends": {"mem": {"type": "memory"}}, "stores": {}}')
+        resolved = resolve_env(raw)
+        config2 = RegistryConfig.from_dict(resolved)
+        print(f"resolve_env() standalone: {len(config2.backends)} backend(s)")
+
+        # Default values: ${VAR:-fallback} syntax
+        data_with_default: dict[str, object] = {"greeting": "${UNSET_VAR:-hello world}"}
+        print(f"Default value: {resolve_env(data_with_default)['greeting']}")
 
     print("\nDone!")

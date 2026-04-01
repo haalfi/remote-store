@@ -146,3 +146,23 @@ class TestYamlExtensionContract:
         import remote_store
 
         assert not hasattr(remote_store, "from_yaml")
+
+
+class TestFromYamlResolveEnv:
+    """CFG-020: resolve_env_vars parameter on from_yaml()."""
+
+    @pytest.mark.spec("CFG-020")
+    def test_from_yaml_resolve(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        yaml_file = tmp_path / "config.yaml"
+        yaml_file.write_text("backends:\n  s3:\n    type: s3\n    options:\n      key: ${AWS_KEY}\nstores: {}\n")
+        monkeypatch.setenv("AWS_KEY", "my-secret")
+        rc = from_yaml(yaml_file, resolve_env_vars=True)
+        assert rc.backends["s3"].options["key"].reveal() == "my-secret"  # type: ignore[union-attr]
+
+    @pytest.mark.spec("CFG-020")
+    @pytest.mark.spec("CFG-021")
+    def test_from_yaml_default_off(self, tmp_path: Path) -> None:
+        yaml_file = tmp_path / "config.yaml"
+        yaml_file.write_text("backends:\n  s3:\n    type: s3\n    options:\n      key: ${AWS_KEY}\nstores: {}\n")
+        rc = from_yaml(yaml_file)
+        assert rc.backends["s3"].options["key"].reveal() == "${AWS_KEY}"  # type: ignore[union-attr]

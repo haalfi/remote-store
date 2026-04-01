@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import os
+import re
 import warnings
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from pathlib import Path
 
 # region: Secret wrapper
@@ -284,6 +287,7 @@ class RegistryConfig:
         path: str | Path,
         *,
         table: tuple[str, ...] = (),
+        resolve_env_vars: bool = False,
     ) -> RegistryConfig:
         """Load config from a TOML file.
 
@@ -291,11 +295,15 @@ class RegistryConfig:
             path: Path to the TOML file.
             table: Dotted table path to extract config from.
                 For ``pyproject.toml`` use ``table=("tool", "remote-store")``.
+            resolve_env_vars: When ``True``, resolve ``${VAR}`` placeholders
+                via :func:`resolve_env` before constructing the config.
 
         Raises:
             ModuleNotFoundError: If ``tomllib`` is unavailable and
                 ``tomli`` is not installed.
-            KeyError: If a *table* key is not found.
+            KeyError: If a *table* key is not found, or if
+                *resolve_env_vars* is ``True`` and a placeholder
+                references an unset variable with no default.
         """
         try:
             import tomllib
@@ -319,4 +327,81 @@ class RegistryConfig:
             msg = f"Expected a TOML table, got {type(data).__name__}"
             raise TypeError(msg)
 
+        if resolve_env_vars:
+            data = resolve_env(data)
+
         return cls._from_dict(data, stacklevel=3)
+
+
+# region: env-var interpolation
+
+_PLACEHOLDER_RE = re.compile(r"\$\$\{|\$\{([^}]+)\}")
+
+
+def _resolve_placeholder(
+    match: re.Match[str],
+    env: Mapping[str, str],
+    path: str,
+) -> str:
+    """Replace a single placeholder match."""
+    full = match.group(0)
+    if full == "$${":
+        return "${"
+    expr = match.group(1)
+    if ":-" in expr:
+        var, default = expr.split(":-", 1)
+        return env.get(var, default)
+    if expr not in env:
+        raise KeyError(f"Environment variable {expr!r} is not set (referenced at config path {path!r})")
+    return env[expr]
+
+
+def _resolve_value(
+    value: object,
+    env: Mapping[str, str],
+    path: str,
+) -> object:
+    """Recursively resolve placeholders in a config value."""
+    if isinstance(value, str):
+        return _PLACEHOLDER_RE.sub(lambda m: _resolve_placeholder(m, env, path), value)
+    if isinstance(value, dict):
+        return {k: _resolve_value(v, env, f"{path}.{k}") for k, v in value.items()}
+    if isinstance(value, list):
+        return [_resolve_value(item, env, f"{path}[{i}]") for i, item in enumerate(value)]
+    return value
+
+
+def resolve_env(
+    data: dict[str, object],
+    *,
+    environ: Mapping[str, str] | None = None,
+) -> dict[str, object]:
+    """Resolve ``${VAR}`` placeholders in a config dict.
+
+    Recursively walks *data* and replaces ``${VAR}`` with the value of
+    the environment variable *VAR*. Use ``${VAR:-default}`` to provide a
+    fallback when *VAR* is not set. Escape with ``$${`` to produce a
+    literal ``${``.
+
+    The original dict is never mutated; a deep copy with resolved values
+    is returned.
+
+    Args:
+        data: Config dict (typically parsed from YAML/TOML).
+        environ: Variable source. Defaults to :data:`os.environ`.
+
+    Returns:
+        A new dict with all placeholder strings resolved.
+
+    Raises:
+        KeyError: If a placeholder references a variable that is not set
+            and has no default. The message includes the variable name
+            and the config key path where it was found.
+    """
+    env: Mapping[str, str] = environ if environ is not None else os.environ
+    result = _resolve_value(data, env, "$")
+    assert isinstance(result, dict)  # noqa: S101 — guaranteed by input type
+    return result  # type: ignore[return-value]
+
+
+# endregion

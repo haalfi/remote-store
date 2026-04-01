@@ -11,6 +11,7 @@ from remote_store._config import (
     Secret,
     SecretRedactionFilter,
     StoreProfile,
+    resolve_env,
 )
 from remote_store._errors import (
     AlreadyExists,
@@ -73,6 +74,7 @@ __all__ = [
     "RetryPolicy",
     "Secret",
     "SecretRedactionFilter",
+    "resolve_env",
     # Errors
     "RemoteStoreError",
     "NotFound",

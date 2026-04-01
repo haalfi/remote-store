@@ -131,6 +131,22 @@ Backends implement storage-specific behavior behind the Store API.
 
 ---
 
+## Configuration
+
+`RegistryConfig` manages backend and store definitions. Load from dicts,
+TOML, YAML, or Pydantic models. Credentials in sensitive keys are
+auto-wrapped in `Secret`.
+
+| Function / Method | Description | Location |
+|---|---|---|
+| `RegistryConfig.from_dict(data)` | Construct from a plain dict | `remote_store` |
+| `RegistryConfig.from_toml(path, *, table, resolve_env_vars)` | Load from a TOML file | `remote_store` |
+| `from_yaml(path, *, resolve_env_vars)` | Load from a YAML file | `remote_store.ext.yaml` |
+| `from_pydantic(model)` | Convert a Pydantic model | `remote_store.ext.pydantic` |
+| `resolve_env(data, *, environ)` | Resolve `${VAR}` / `${VAR:-default}` placeholders in a config dict | `remote_store` |
+
+---
+
 ## Extensions
 
 Extensions add optional capabilities alongside the core.
