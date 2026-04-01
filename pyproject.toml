@@ -56,6 +56,10 @@ s3 = ["s3fs>=2024.2.0"]
 s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
 sftp = ["paramiko>=2.2", "tenacity>=4.0"]
 azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
+sql = ["sqlalchemy>=2.0"]
+sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0"]
+requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
+httpx = ["httpx>=0.24.0"]
 # -- Extension extras --
 arrow = ["pyarrow>=12.0.0"]
 otel = ["opentelemetry-api>=1.28.0"]
@@ -63,11 +67,6 @@ toml = ["tomli>=1.1.0; python_version < '3.11'"]
 yaml = ["pyyaml>=5.1"]
 pydantic = ["pydantic-settings>=2.0.0"]
 dagster = ["dagster>=1.9"]
-sql = ["sqlalchemy>=2.0"]
-sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0"]
-# -- HTTP backend extras --
-requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
-httpx = ["httpx>=0.24.0"]
 
 # -- Benchmark suite (all backends + charting) --
 bench = [
