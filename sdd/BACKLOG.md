@@ -39,14 +39,7 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [~] **BK-137 — Post-v0.20.0 test quality: TESTING.md compliance + coverage gaps**
-  Audit new async/dagster test files against `sdd/TESTING.md` rules.
-  Fix Rule 2 (sole `isinstance` checks) and Rule 7 (copy-paste → parametrize)
-  violations. Bring coverage up for `_azure_common` (69 → 100%),
-  `_async_azure` (89 → 95%), `_sync_adapter` (93 → 98%),
-  `_async_store` (96 → 98%).
-  - Files: `test_async_azure.py`, `test_async_store.py`, `test_sync_adapter.py`,
-    `test_dagster.py`
+*(none)*
 
 ---
 

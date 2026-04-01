@@ -35,12 +35,11 @@ def store() -> Store:
 class TestSerializerRoundtrips:
     """DAG-002, DAG-003: Pickle and JSON roundtrips."""
 
-    @pytest.mark.spec("DAG-002")
     @pytest.mark.parametrize(
         "serializer",
         [
-            pytest.param("pickle", id="pickle"),
-            pytest.param("json", id="json"),
+            pytest.param("pickle", id="pickle", marks=pytest.mark.spec("DAG-002")),
+            pytest.param("json", id="json", marks=pytest.mark.spec("DAG-003")),
         ],
     )
     def test_roundtrip(self, store: Store, serializer: str) -> None:

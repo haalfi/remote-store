@@ -1451,25 +1451,25 @@ class TestValidateAzureParams:
 
     @pytest.mark.spec("ASYNC-001")
     def test_account_url_accepted(self) -> None:
-        validate_azure_params(
+        result = validate_azure_params(
             container="c",
             account_name=None,
             account_url="https://x.blob.core.windows.net",
             connection_string=None,
             max_concurrency=1,
         )
-        assert True  # validates no ValueError raised
+        assert result is None
 
     @pytest.mark.spec("ASYNC-001")
     def test_connection_string_accepted(self) -> None:
-        validate_azure_params(
+        result = validate_azure_params(
             container="c",
             account_name=None,
             account_url=None,
             connection_string="DefaultEndpointsProtocol=http;AccountName=x",
             max_concurrency=1,
         )
-        assert True  # validates no ValueError raised
+        assert result is None
 
     @pytest.mark.spec("ASYNC-001")
     def test_no_auth_raises(self) -> None:
