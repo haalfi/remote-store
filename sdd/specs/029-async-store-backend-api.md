@@ -322,7 +322,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-052e: ping()
 
 **Invariant:** `async def ping()` verifies backend connectivity. Delegates to `await backend.check_health()`. The threading concern is handled by the backend layer: `SyncBackendAdapter.check_health()` uses `asyncio.to_thread()` (ASYNC-037); native async backends execute directly.
-**Raises:** Backend-specific errors (mapped to `BackendUnavailable`) if the health check fails.
+**Raises:** `PermissionDenied` if credentials are invalid. `NotFound` if the bucket, container, or root path does not exist. `BackendUnavailable` if the backend cannot be reached.
 **See also:** [026-health-check.md](026-health-check.md).
 
 ### ASYNC-055: Concurrency Safety
@@ -389,7 +389,8 @@ Native async Azure backend using `azure.storage.blob.aio` and `azure.storage.fil
 
 ### ASYNC-075: check_health() Override
 
-**Invariant:** `check_health()` probes the container (non-HNS: `get_container_properties()`) or filesystem (HNS: `get_file_system_properties()`). Raises `BackendUnavailable` on failure.
+**Invariant:** `check_health()` probes the container (non-HNS: `get_container_properties()`) or filesystem (HNS: `get_file_system_properties()`).
+**Raises:** `PermissionDenied` if credentials are invalid. `NotFound` if the container does not exist. `BackendUnavailable` if the backend cannot be reached.
 
 ### ASYNC-076: Capabilities
 
