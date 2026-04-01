@@ -4233,6 +4233,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#internal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4284,7 +4295,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal" class="md-nav__link">
+  <a href="#internal_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -4367,7 +4378,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal_1" class="md-nav__link">
+  <a href="#internal_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -4417,7 +4428,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal_2" class="md-nav__link">
+  <a href="#internal_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -8790,6 +8801,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#internal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8841,7 +8863,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal" class="md-nav__link">
+  <a href="#internal_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -8924,7 +8946,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal_1" class="md-nav__link">
+  <a href="#internal_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -8974,7 +8996,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal_2" class="md-nav__link">
+  <a href="#internal_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -9962,6 +9984,14 @@
   The docs index page reflects the new 7-section layout. All import paths,
   CI workflows, and docs references updated accordingly.</li>
 </ul>
+<h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Deduplicate <code>pyproject.toml</code> dependency lists</strong> (BK-138): Hatch env uses
+  <code>features = ["dev", "docs", "bench"]</code> instead of re-listing 43 packages.
+  <code>bench</code>, <code>docs</code>, and <code>dev</code> extras compose from user-facing backend/extension
+  extras via self-referential dependencies. Removed cargo-culted <code>s3fs</code> from
+  <code>docs</code> extra (all backends use lazy imports).</li>
+</ul>
 <h2 id="0210-2026-04-01">[0.21.0] - 2026-04-01<a class="headerlink" href="#0210-2026-04-01" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
@@ -10013,7 +10043,7 @@
 <li>Fix stale pandas reference in Dagster guide — Parquet serializer
   deserializes to a PyArrow Table, not a pandas DataFrame.</li>
 </ul>
-<h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
+<h3 id="internal_1">Internal<a class="headerlink" href="#internal_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Test quality: TESTING.md compliance</strong> (BK-137): Fixed Rule 2 (sole
   <code>isinstance</code> → behavioral assertions) and Rule 7 (copy-paste → parametrize)
@@ -10289,7 +10319,7 @@
   and filtered listing patterns.</p>
 </li>
 </ul>
-<h3 id="internal_1">Internal<a class="headerlink" href="#internal_1" title="Permanent link">&para;</a></h3>
+<h3 id="internal_2">Internal<a class="headerlink" href="#internal_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
 <p><strong>CI test quality gates</strong> (BK-126): AST-based assertion checker
@@ -10406,7 +10436,7 @@
   API paths in docs, completed extensions table, fixed Sphinx-style remnants.</p>
 </li>
 </ul>
-<h3 id="internal_2">Internal<a class="headerlink" href="#internal_2" title="Permanent link">&para;</a></h3>
+<h3 id="internal_3">Internal<a class="headerlink" href="#internal_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
 <p><strong>S3 backend code deduplication</strong> (BK-011): extracted <code>_S3Base</code> base class,
