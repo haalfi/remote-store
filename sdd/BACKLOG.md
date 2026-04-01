@@ -45,7 +45,7 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
-- [ ] **ID-123 ��� Cache key derivation from `ResolutionPlan` (Phase 2)**
+- [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
   `ext.cache` derives cache keys from `ResolutionPlan` fields instead of
   ad-hoc `(operation, path)` tuples. Only valuable once `CompositeStore`
   (ID-121) exists — single-backend cache keys are already correct.
