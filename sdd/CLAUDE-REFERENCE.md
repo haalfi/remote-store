@@ -59,7 +59,7 @@ Before committing, check whether your change has cross-file dependencies:
 | **A bug fix**              | `sdd/BACKLOG.md` (item), `CHANGELOG.md` (`[Unreleased]`),|
 |                            | failing test **before** the fix, spec if the bug          |
 |                            | contradicts a spec invariant                              |
-| **Source/test/spec counts**| `DEVELOPMENT_STORY.md` "The Numbers" table                |
+| **Source/test/spec counts**| README badge + CI coverage report (no manual table)       |
 | **A new test file**        | Ask: does it exercise OS-specific code (path separators,  |
 |                            | `os.replace`, `tempfile`, local filesystem, atomic writes)?|
 |                            | If yes → add `pytestmark = pytest.mark.os_sensitive` at   |
