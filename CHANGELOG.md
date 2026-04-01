@@ -6,6 +6,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Changed
+
+- **Test quality: TESTING.md compliance** (BK-137): Fixed Rule 2 (sole
+  `isinstance` → behavioral assertions) and Rule 7 (copy-paste → parametrize)
+  violations in post-v0.20.0 async and dagster tests. Improved coverage for
+  `_azure_common` (69→100%), `_async_azure` (89→95%), `_sync_adapter` (93→98%),
+  `_async_store` (96→98%).
+
 ### Added
 
 - **`resolve_env()` env-var interpolation** (ID-126): `resolve_env(data)`
