@@ -176,12 +176,119 @@ User's Pydantic model (merges env + .env + files)
 
 ---
 
+## Environment Variable Interpolation
+
+**Backlog item:** ID-126
+**Motivation:** Every backend that touches a remote system needs credentials.
+Outside Pydantic, the dominant real-world pattern is env-var injection — but
+`from_yaml()` and `from_toml()` offer no help, forcing users to write 10–15
+lines of boilerplate (parse file → mutate dict → inject from `os.environ` →
+call `from_dict()`). The Pydantic adapter solves this via `BaseSettings`, but
+YAML/TOML users deserve the same ergonomics.
+
+### CFG-018: `resolve_env()` Function
+
+**Invariant:** `resolve_env(data, *, environ=None)` recursively resolves
+`${VAR}` placeholders in a config dict and returns a new dict.
+
+**Location:** `_config.py`, public export via `remote_store`.
+
+**Parameters:**
+- `data: dict[str, object]` — Config dict (typically parsed from YAML/TOML).
+- `environ: Mapping[str, str] | None` — Variable source. Defaults to
+  `os.environ`.
+
+**Returns:** A deep copy of *data* with all placeholder strings resolved.
+The original dict is never mutated.
+
+**Raises:**
+- `KeyError` if a placeholder references a variable that is not set and has
+  no default. The error message includes the variable name and the config
+  key path where it was found.
+
+**Postconditions:**
+- Non-string values (numbers, booleans, `None`, nested dicts, lists) are
+  traversed but never modified.
+- Keys are never interpolated — only values.
+- The returned dict is suitable for `RegistryConfig.from_dict()`.
+
+### CFG-019: Placeholder Syntax
+
+**Invariant:** Two placeholder forms are supported:
+
+| Form | Behavior |
+|------|----------|
+| `${VAR}` | Substitute the value of `VAR`; raise `KeyError` if unset |
+| `${VAR:-default}` | Substitute the value of `VAR`; use `default` if unset |
+
+**Rules:**
+1. Placeholders may appear as the entire value (`${S3_KEY}`) or embedded in
+   a larger string (`https://${HOST}:${PORT}/path`).
+2. Multiple placeholders in one string are resolved left-to-right.
+3. A full-value placeholder that resolves to a string remains a string — no
+   type coercion. The YAML/TOML parser already determined the type by using
+   the `${}` syntax (which is always a string).
+4. Literal `${` that should not be interpolated can be escaped as `$${`
+   (produces literal `${` in output).
+5. Nested placeholders (`${${INNER}}`) are not supported.
+6. Default values are literal strings — they do not undergo further
+   interpolation.
+
+**Syntax reference:** Follows the Docker Compose `${VAR}` / `${VAR:-default}`
+convention — the de facto standard across Docker, Spring Boot, GitHub Actions,
+and shell parameter expansion.
+
+### CFG-020: Loader Integration
+
+**Invariant:** `from_yaml()` and `from_toml()` accept an optional
+`resolve_env: bool = False` keyword argument.
+
+**Behavior:**
+- When `resolve_env=False` (default): no change to current behavior.
+- When `resolve_env=True`: the parsed dict is passed through `resolve_env()`
+  before delegation to `from_dict()`.
+
+**Flow (YAML example):**
+```text
+YAML file → yaml.safe_load() → resolve_env() → from_dict()
+    → RegistryConfig (immutable, ADR-0002 applies)
+```
+
+**Design note:** `from_dict()` does **not** gain a `resolve_env` parameter.
+It accepts already-constructed dicts where interpolation would be surprising.
+Users who build dicts manually and want interpolation call `resolve_env()`
+explicitly.
+
+### CFG-021: ADR-0002 Compatibility
+
+**Invariant:** `resolve_env()` is a pre-processing step that runs *before*
+`RegistryConfig` construction. It occupies the same architectural position as
+Pydantic's `BaseSettings` env-var resolution (CFG-016): user-side glue that
+produces a single, final dict. Once the `RegistryConfig` is constructed,
+ADR-0002 applies — no further merging or env-var lookups.
+
+**Opt-in only:** The default is `resolve_env=False`. No loader reads
+environment variables unless the caller explicitly opts in. This preserves
+determinism, test safety, and the "same code = same behavior" guarantee.
+
+**No `.env` loading:** `resolve_env()` reads from `os.environ` (or the
+provided `environ` mapping). Loading `.env` files is the user's responsibility
+(e.g. via `python-dotenv`). This keeps the function pure and predictable.
+
+**No vault integration:** Secret managers (HashiCorp Vault, AWS Secrets
+Manager, Azure Key Vault) populate env vars or provide their own SDKs.
+`resolve_env()` consumes the result — it does not integrate with any
+specific vault provider.
+
+---
+
 ## File Placement
 
 | Component | Location |
 |-----------|----------|
 | `from_toml()` | `_config.py` classmethod on `RegistryConfig` |
 | `from_yaml()` | `ext/yaml.py` standalone function |
+| `resolve_env()` | `_config.py` standalone function, public export |
 | Unknown-key warning | `_config.py` inside `from_dict()` |
 | Pydantic adapter | `ext/pydantic.py` |
 | Optional extras | `pyproject.toml` `[project.optional-dependencies]` |
@@ -267,4 +374,67 @@ class RemoteStoreSettings(BaseSettings):
 
 settings = RemoteStoreSettings()
 config = from_pydantic(settings)
+```
+
+## Example: YAML with Environment Variable Secrets
+
+```yaml
+# remote-store.yaml
+backends:
+  s3-prod:
+    type: s3
+    options:
+      bucket: prod-data
+      region_name: eu-central-1
+      key: ${AWS_ACCESS_KEY_ID}
+      secret: ${AWS_SECRET_ACCESS_KEY}
+  sftp:
+    type: sftp
+    options:
+      host: files.vendor.com
+      username: ${SFTP_USER}
+      password: ${SFTP_PASSWORD:-}
+
+stores:
+  raw-events:
+    backend: s3-prod
+    root_path: events/raw
+```
+
+```python
+from remote_store.ext.yaml import from_yaml
+
+# One line — env vars resolved, secrets wrapped, config immutable
+config = from_yaml("remote-store.yaml", resolve_env=True)
+```
+
+## Example: TOML with Environment Variable Secrets
+
+```toml
+# remote-store.toml
+[backends.s3-prod]
+type = "s3"
+options.bucket = "prod-data"
+options.key = "${AWS_ACCESS_KEY_ID}"
+options.secret = "${AWS_SECRET_ACCESS_KEY}"
+
+[stores.raw-events]
+backend = "s3-prod"
+root_path = "events/raw"
+```
+
+```python
+config = RegistryConfig.from_toml("remote-store.toml", resolve_env=True)
+```
+
+## Example: Standalone `resolve_env()` with Custom Loader
+
+```python
+import json
+from remote_store import RegistryConfig, resolve_env
+
+with open("config.json") as f:
+    data = json.load(f)
+
+config = RegistryConfig.from_dict(resolve_env(data))
 ```
