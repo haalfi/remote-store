@@ -138,6 +138,7 @@ def demo() -> dict[str, object]:
             results["pydantic_stores"] = None
 
         # --- resolve_env(): env-var interpolation for YAML ---
+        _prev_root = os.environ.get("DEMO_STORE_ROOT")
         os.environ["DEMO_STORE_ROOT"] = _posix(root / "env-data")
 
         yaml_env_file = root / "env-config.yaml"
@@ -170,6 +171,12 @@ def demo() -> dict[str, object]:
         data_with_default: dict[str, object] = {"greeting": "${UNSET_VAR:-hello world}"}
         results["default_value"] = resolve_env(data_with_default)["greeting"]
         print(f"Default value: {results['default_value']}")
+
+        # Clean up env var
+        if _prev_root is None:
+            os.environ.pop("DEMO_STORE_ROOT", None)
+        else:
+            os.environ["DEMO_STORE_ROOT"] = _prev_root
 
     print("\nDone!")
     return results
