@@ -268,10 +268,10 @@ _EXAMPLE_SEE_ALSO: dict[str, list[tuple[str, str, str]]] = {
     "extensions/caching.py": [
         ("Cache", "../cache.md", "caching guide"),
     ],
-    "extensions/health_check.py": [
+    "advanced/health_check.py": [
         ("Health Check", "../health-check.md", "health check guide"),
     ],
-    "extensions/retry_policy.py": [
+    "advanced/retry_policy.py": [
         ("Retry", "../retry.md", "retry configuration guide"),
     ],
     "integrations/pyarrow_adapter.py": [
@@ -342,8 +342,8 @@ _EXAMPLE_DESCRIPTIONS: dict[str, str] = {
         "Callback-based instrumentation for Store operations — logging, metrics, auditing, and error tracking."
     ),
     "extensions/otel_tracing.py": "Instrument any Store with OpenTelemetry spans and metrics.",
-    "extensions/retry_policy.py": "Configure retry attempts, backoff, and jitter per-backend.",
-    "extensions/health_check.py": "Startup gate pattern using `Store.ping()` to verify backend connectivity.",
+    "advanced/retry_policy.py": "Configure retry attempts, backoff, and jitter per-backend.",
+    "advanced/health_check.py": "Startup gate pattern using `Store.ping()` to verify backend connectivity.",
     "integrations/pyarrow_adapter.py": "Use any Store as a `pyarrow.fs.FileSystem` for Parquet, CSV, and dataset I/O.",
     "integrations/parquet_dataset.py": (
         "Managed Parquet datasets with manifests, completion markers, and multi-part writes."
@@ -432,6 +432,8 @@ _ADVANCED_EXAMPLES = [
     "advanced/memory_backend",
     "advanced/store_child",
     "advanced/async_store",
+    "advanced/retry_policy",
+    "advanced/health_check",
 ]
 _BACKEND_EXAMPLES = [
     "backends/s3_backend",
@@ -449,8 +451,6 @@ _EXTENSION_EXAMPLES = [
     "extensions/caching",
     "extensions/observe_hooks",
     "extensions/otel_tracing",
-    "extensions/retry_policy",
-    "extensions/health_check",
 ]
 _INTEGRATION_EXAMPLES = [
     "integrations/pyarrow_adapter",
@@ -573,7 +573,7 @@ def _gen_example_index() -> str:
             "",
             "## Advanced Store Patterns",
             "",
-            "Deeper Store API concepts — paths, memory backend, child stores, and async.",
+            "Deeper Store API concepts — paths, memory backend, child stores, async, retry, and health checks.",
             "",
         ]
     )
@@ -597,7 +597,7 @@ def _gen_example_index() -> str:
             "",
             "## Extensions",
             "",
-            "Composable Store wrappers — batch, transfer, glob, caching, observability, retry, and health checks.",
+            "Composable Store wrappers — batch, transfer, glob, caching, and observability.",
             "",
         ]
     )

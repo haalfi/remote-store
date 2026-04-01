@@ -385,7 +385,7 @@ class TestObserveHooks:
 class TestRetryPolicy:
     @pytest.mark.spec("RET-001")
     def test_demo(self):
-        from examples.extensions.retry_policy import demo
+        from examples.advanced.retry_policy import demo
 
         result = demo()
         assert result is None
@@ -394,7 +394,7 @@ class TestRetryPolicy:
 class TestHealthCheck:
     @pytest.mark.spec("PING-001")
     def test_demo(self, memory_store: Store):
-        from examples.extensions.health_check import demo
+        from examples.advanced.health_check import demo
 
         result = demo(memory_store)
         assert result is None
