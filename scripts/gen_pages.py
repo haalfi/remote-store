@@ -220,71 +220,72 @@ REPO_URL = "https://github.com/haalfi/remote-store"
 
 # Per-example "See also" guide links (label, relative-url, description).
 # Only entries with guide links need to be listed here.
+# Keys use the rel_key format: "subdir/stem.py" (e.g. "getting_started/quickstart.py").
 _EXAMPLE_SEE_ALSO: dict[str, list[tuple[str, str, str]]] = {
-    "quickstart.py": [
+    "getting_started/quickstart.py": [
         ("Getting Started", "../getting-started.md", "step-by-step guide"),
     ],
-    "file_operations.py": [
+    "getting_started/file_operations.py": [
         ("Getting Started", "../getting-started.md", "step-by-step guide"),
     ],
-    "atomic_writes.py": [
+    "getting_started/atomic_writes.py": [
         ("Concurrency", "../concurrency.md", "atomicity and overwrite semantics"),
     ],
-    "configuration.py": [
+    "configuration/configuration.py": [
         ("Choosing a Backend", "../choosing-a-backend.md", "backend selection guide"),
     ],
-    "config_loaders.py": [
+    "configuration/config_loaders.py": [
         ("Extensions", "../extensions.md", "extension modules overview"),
     ],
-    "error_handling.py": [
+    "errors/error_handling.py": [
         ("Troubleshooting", "../troubleshooting.md", "error diagnosis guide"),
     ],
-    "capabilities_and_errors.py": [
+    "errors/capabilities_and_errors.py": [
         ("Capabilities Matrix", "../capabilities-matrix.md", "per-backend capability reference"),
     ],
-    "memory_backend.py": [
+    "advanced/memory_backend.py": [
         ("Memory Backend", "../backends/memory.md", "backend guide"),
     ],
-    "batch_operations.py": [
-        ("Batch Operations", "../batch-operations.md", "bulk operations guide"),
-    ],
-    "transfer_operations.py": [
-        ("Transfer Operations", "../transfer-operations.md", "upload, download, and cross-store transfer guide"),
-    ],
-    "glob_pattern_matching.py": [
-        ("Glob Pattern Matching", "../glob-pattern-matching.md", "pattern matching guide"),
-    ],
-    "observe_hooks.py": [
-        ("Observe", "../observe.md", "instrumentation guide"),
-    ],
-    "otel_tracing.py": [
-        ("Observe", "../observe.md", "instrumentation guide"),
-    ],
-    "caching.py": [
-        ("Cache", "../cache.md", "caching guide"),
-    ],
-    "pyarrow_adapter.py": [
-        ("PyArrow Adapter", "../pyarrow-adapter.md", "PyArrow filesystem integration guide"),
-    ],
-    "parquet_dataset.py": [
-        ("Parquet Datasets", "../parquet-datasets.md", "managed Parquet dataset guide"),
-        ("ext.parquet API", "../api/extensions/parquet.md", "API reference"),
-    ],
-    "dagster_io_manager.py": [
-        ("Dagster", "../dagster.md", "Dagster integration guide"),
-    ],
-    "dagster_v2_resource.py": [
-        ("Dagster", "../dagster.md", "Dagster integration guide"),
-    ],
-    "health_check.py": [
-        ("Health Check", "../health-check.md", "health check guide"),
-    ],
-    "async_store.py": [
+    "advanced/async_store.py": [
         ("Async Store", "../async.md", "async usage guide"),
         ("Async API", "../api/aio.md", "API reference"),
     ],
-    "retry_policy.py": [
+    "extensions/batch_operations.py": [
+        ("Batch Operations", "../batch-operations.md", "bulk operations guide"),
+    ],
+    "extensions/transfer_operations.py": [
+        ("Transfer Operations", "../transfer-operations.md", "upload, download, and cross-store transfer guide"),
+    ],
+    "extensions/glob_pattern_matching.py": [
+        ("Glob Pattern Matching", "../glob-pattern-matching.md", "pattern matching guide"),
+    ],
+    "extensions/observe_hooks.py": [
+        ("Observe", "../observe.md", "instrumentation guide"),
+    ],
+    "extensions/otel_tracing.py": [
+        ("Observe", "../observe.md", "instrumentation guide"),
+    ],
+    "extensions/caching.py": [
+        ("Cache", "../cache.md", "caching guide"),
+    ],
+    "advanced/health_check.py": [
+        ("Health Check", "../health-check.md", "health check guide"),
+    ],
+    "advanced/retry_policy.py": [
         ("Retry", "../retry.md", "retry configuration guide"),
+    ],
+    "integrations/pyarrow_adapter.py": [
+        ("PyArrow Adapter", "../pyarrow-adapter.md", "PyArrow filesystem integration guide"),
+    ],
+    "integrations/parquet_dataset.py": [
+        ("Parquet Datasets", "../parquet-datasets.md", "managed Parquet dataset guide"),
+        ("ext.parquet API", "../api/extensions/parquet.md", "API reference"),
+    ],
+    "integrations/dagster_io_manager.py": [
+        ("Dagster", "../dagster.md", "Dagster integration guide"),
+    ],
+    "integrations/dagster_v2_resource.py": [
+        ("Dagster", "../dagster.md", "Dagster integration guide"),
     ],
     "backends/s3_backend.py": [
         ("S3 Backend", "../backends/s3.md", "backend guide"),
@@ -301,7 +302,7 @@ _EXAMPLE_SEE_ALSO: dict[str, list[tuple[str, str, str]]] = {
     "backends/azure_backend.py": [
         ("Azure Backend", "../backends/azure.md", "backend guide"),
     ],
-    "http_backend.py": [
+    "backends/http_backend.py": [
         ("HTTP Backend", "../backends/http.md", "backend guide"),
     ],
     "backends/sql_blob_backend.py": [
@@ -311,48 +312,53 @@ _EXAMPLE_SEE_ALSO: dict[str, list[tuple[str, str, str]]] = {
 
 # Custom descriptions override the docstring first-line for cases where the
 # hand-authored wrapper had a better summary.
+# Keys use the rel_key format: "subdir/stem.py".
 _EXAMPLE_DESCRIPTIONS: dict[str, str] = {
-    "quickstart.py": "Minimal config, write, and read.",
-    "error_handling.py": "Catching `NotFound`, `AlreadyExists`, and more.",
-    "memory_backend.py": "In-process memory backend for testing and caching — no filesystem access needed.",
-    "streaming_io.py": "Streaming writes and reads with `BytesIO`.",
-    "store_child.py": "Runtime sub-scoping: create child stores that share a backend but isolate paths.",
-    "http_backend.py": "Read-only access to files over HTTP/HTTPS — no credentials needed for public endpoints.",
-    "caching.py": (
-        "Store-level caching with `ext.cache` — cached reads, automatic invalidation on writes, and cache statistics."
-    ),
-    "observe_hooks.py": (
-        "Callback-based instrumentation for Store operations — logging, metrics, auditing, and error tracking."
-    ),
-    "otel_tracing.py": "Instrument any Store with OpenTelemetry spans and metrics.",
-    "glob_pattern_matching.py": (
-        "Three-tier file filtering with `list_files(pattern=)`, `Store.glob()`, and `glob_files()`."
-    ),
-    "path_model.py": "`RemotePath` normalization, properties, validation, and the `/` operator.",
-    "pyarrow_adapter.py": "Use any Store as a `pyarrow.fs.FileSystem` for Parquet, CSV, and dataset I/O.",
-    "parquet_dataset.py": "Managed Parquet datasets with manifests, completion markers, and multi-part writes.",
-    "dagster_io_manager.py": "Use any Store as a Dagster IOManager with pluggable serialization.",
-    "dagster_v2_resource.py": "Config-driven Store construction with RemoteStoreIOManager.",
-    "batch_operations.py": "Bulk delete, copy, and existence checks with error aggregation.",
-    "transfer_operations.py": "Upload, download, and cross-store transfer with progress tracking.",
-    "retry_policy.py": "Configure retry attempts, backoff, and jitter per-backend.",
-    "health_check.py": "Startup gate pattern using `Store.ping()` to verify backend connectivity.",
-    "async_store.py": "Async/await usage with `AsyncStore` -- streaming reads, async writes, child stores.",
-    "configuration.py": "Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs.",
-    "config_loaders.py": (
-        "Load registry configuration from TOML, YAML, and Pydantic models, with env-var interpolation."
-    ),
-    "capabilities_and_errors.py": "Capability querying, gating, and the structured error hierarchy.",
-    "file_operations.py": (
+    "getting_started/quickstart.py": "Minimal config, write, and read.",
+    "getting_started/file_operations.py": (
         "Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key."
     ),
-    "atomic_writes.py": "Atomic writes and overwrite semantics.",
+    "getting_started/streaming_io.py": "Streaming writes and reads with `BytesIO`.",
+    "getting_started/atomic_writes.py": "Atomic writes and overwrite semantics.",
+    "configuration/configuration.py": "Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs.",
+    "configuration/config_loaders.py": (
+        "Load registry configuration from TOML, YAML, and Pydantic models, with env-var interpolation."
+    ),
+    "errors/error_handling.py": "Catching `NotFound`, `AlreadyExists`, and more.",
+    "errors/capabilities_and_errors.py": "Capability querying, gating, and the structured error hierarchy.",
+    "advanced/path_model.py": "`RemotePath` normalization, properties, validation, and the `/` operator.",
+    "advanced/memory_backend.py": "In-process memory backend for testing and caching — no filesystem access needed.",
+    "advanced/store_child.py": "Runtime sub-scoping: create child stores that share a backend but isolate paths.",
+    "advanced/async_store.py": "Async/await usage with `AsyncStore` -- streaming reads, async writes, child stores.",
+    "extensions/batch_operations.py": "Bulk delete, copy, and existence checks with error aggregation.",
+    "extensions/transfer_operations.py": "Upload, download, and cross-store transfer with progress tracking.",
+    "extensions/glob_pattern_matching.py": (
+        "Three-tier file filtering with `list_files(pattern=)`, `Store.glob()`, and `glob_files()`."
+    ),
+    "extensions/caching.py": (
+        "Store-level caching with `ext.cache` — cached reads, automatic invalidation on writes, and cache statistics."
+    ),
+    "extensions/observe_hooks.py": (
+        "Callback-based instrumentation for Store operations — logging, metrics, auditing, and error tracking."
+    ),
+    "extensions/otel_tracing.py": "Instrument any Store with OpenTelemetry spans and metrics.",
+    "advanced/retry_policy.py": "Configure retry attempts, backoff, and jitter per-backend.",
+    "advanced/health_check.py": "Startup gate pattern using `Store.ping()` to verify backend connectivity.",
+    "integrations/pyarrow_adapter.py": "Use any Store as a `pyarrow.fs.FileSystem` for Parquet, CSV, and dataset I/O.",
+    "integrations/parquet_dataset.py": (
+        "Managed Parquet datasets with manifests, completion markers, and multi-part writes."
+    ),
+    "integrations/dagster_io_manager.py": "Use any Store as a Dagster IOManager with pluggable serialization.",
+    "integrations/dagster_v2_resource.py": "Config-driven Store construction with RemoteStoreIOManager.",
     "backends/s3_backend.py": "Connect to Amazon S3 or any S3-compatible service (MinIO, DigitalOcean Spaces, etc.).",
     "backends/s3_pyarrow_backend.py": (
         "High-throughput S3 via PyArrow's C++ filesystem. Drop-in swap from the S3 backend."
     ),
     "backends/sftp_backend.py": "Connect to any SSH/SFTP server with paramiko.",
     "backends/azure_backend.py": "Connect to Azure Blob Storage or Azure Data Lake Storage Gen2.",
+    "backends/http_backend.py": (
+        "Read-only access to files over HTTP/HTTPS — no credentials needed for public endpoints."
+    ),
     "backends/sql_blob_backend.py": "SQLite key-value store — zero-infrastructure persistent file storage.",
 }
 
@@ -405,20 +411,29 @@ def _make_title(stem: str, docstring_first: str) -> str:
     return title
 
 
-# Categorisation for the index page
-_CORE_EXAMPLES = [
-    "quickstart",
-    "file_operations",
-    "streaming_io",
-    "atomic_writes",
-    "configuration",
-    "config_loaders",
-    "error_handling",
-    "capabilities_and_errors",
-    "path_model",
-    "memory_backend",
-    "store_child",
-    "async_store",
+# Categorisation for the index page.
+# Keys use "subdir/stem" format matching the repo layout.
+_GETTING_STARTED_EXAMPLES = [
+    "getting_started/quickstart",
+    "getting_started/file_operations",
+    "getting_started/streaming_io",
+    "getting_started/atomic_writes",
+]
+_CONFIGURATION_EXAMPLES = [
+    "configuration/configuration",
+    "configuration/config_loaders",
+]
+_ERROR_EXAMPLES = [
+    "errors/error_handling",
+    "errors/capabilities_and_errors",
+]
+_ADVANCED_EXAMPLES = [
+    "advanced/path_model",
+    "advanced/memory_backend",
+    "advanced/store_child",
+    "advanced/async_store",
+    "advanced/retry_policy",
+    "advanced/health_check",
 ]
 _BACKEND_EXAMPLES = [
     "backends/s3_backend",
@@ -427,21 +442,21 @@ _BACKEND_EXAMPLES = [
     "backends/sftp_backend",
     "backends/azure_backend",
     "backends/sql_blob_backend",
-    "http_backend",
+    "backends/http_backend",
 ]
 _EXTENSION_EXAMPLES = [
-    "batch_operations",
-    "transfer_operations",
-    "glob_pattern_matching",
-    "caching",
-    "observe_hooks",
-    "otel_tracing",
-    "pyarrow_adapter",
-    "parquet_dataset",
-    "dagster_io_manager",
-    "dagster_v2_resource",
-    "retry_policy",
-    "health_check",
+    "extensions/batch_operations",
+    "extensions/transfer_operations",
+    "extensions/glob_pattern_matching",
+    "extensions/caching",
+    "extensions/observe_hooks",
+    "extensions/otel_tracing",
+]
+_INTEGRATION_EXAMPLES = [
+    "integrations/pyarrow_adapter",
+    "integrations/parquet_dataset",
+    "integrations/dagster_io_manager",
+    "integrations/dagster_v2_resource",
 ]
 _SHOWCASE_EXAMPLES = [
     "medallion_dagster",
@@ -464,25 +479,28 @@ def _scan_example(rel_path: str, py_path: Path) -> tuple[str, str, str, str]:
     return rel_path, slug, title, description
 
 
-# Scan all example files
+# Scan all example files across subdirectories
+_EXAMPLE_SUBDIRS = [
+    "getting_started",
+    "configuration",
+    "errors",
+    "advanced",
+    "backends",
+    "extensions",
+    "integrations",
+]
+
 _example_entries: list[tuple[str, str, str, str]] = []  # (rel_key, slug, title, desc)
 _example_by_key: dict[str, tuple[str, str, str, str]] = {}
 
-for py_file in sorted((ROOT / "examples").glob("*.py")):
-    if py_file.stem == "__init__":
-        continue
-    rel_key = py_file.stem + ".py"
-    entry = _scan_example(rel_key, py_file)
-    _example_entries.append(entry)
-    _example_by_key[rel_key] = entry
-
-for py_file in sorted((ROOT / "examples" / "backends").glob("*.py")):
-    if py_file.stem == "__init__":
-        continue
-    rel_key = f"backends/{py_file.stem}.py"
-    entry = _scan_example(rel_key, py_file)
-    _example_entries.append(entry)
-    _example_by_key[rel_key] = entry
+for subdir in _EXAMPLE_SUBDIRS:
+    for py_file in sorted((ROOT / "examples" / subdir).glob("*.py")):
+        if py_file.stem == "__init__":
+            continue
+        rel_key = f"{subdir}/{py_file.stem}.py"
+        entry = _scan_example(rel_key, py_file)
+        _example_entries.append(entry)
+        _example_by_key[rel_key] = entry
 
 
 def _gen_example_page(rel_key: str, slug: str, title: str, description: str) -> str:
@@ -508,12 +526,19 @@ def _gen_example_page(rel_key: str, slug: str, title: str, description: str) -> 
     return "\n".join(lines)
 
 
-def _gen_example_index(
-    core: list[str],
-    backends: list[str],
-    extensions: list[str],
-    showcases: list[str],
-) -> str:
+def _render_example_table(keys: list[str], lines: list[str]) -> None:
+    """Append a Markdown table of examples for the given category keys."""
+    lines.extend(["| Example | Description |", "|---------|-------------|"])
+    for key in keys:
+        entry = _example_by_key.get(key + ".py")
+        if entry:
+            _, slug, title, desc = entry
+            lines.append(f"| [{title}]({slug}.md) | {desc} |")
+        else:
+            warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=2)
+
+
+def _gen_example_index() -> str:
     """Generate examples/index.md from the categorised example lists."""
     lines = [
         "# Examples",
@@ -522,58 +547,66 @@ def _gen_example_index(
         "Each example is self-contained and uses a temporary directory so you can "
         "run them directly.",
         "",
-        "## Core Examples",
+        "## Getting Started",
         "",
-        "These run locally with no external services or credentials.",
+        "Your first steps with `remote-store` — read, write, stream, and atomic semantics.",
         "",
-        "| Example | Description |",
-        "|---------|-------------|",
     ]
-    for key in core:
-        entry = _example_by_key.get(key + ".py")
-        if entry:
-            _, slug, title, desc = entry
-            lines.append(f"| [{title}]({slug}.md) | {desc} |")
-        else:
-            warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=2)
+    _render_example_table(_GETTING_STARTED_EXAMPLES, lines)
+
+    lines.extend(["", "## Configuration", "", "Wiring up stores from code, files, and registries.", ""])
+    _render_example_table(_CONFIGURATION_EXAMPLES, lines)
 
     lines.extend(
         [
             "",
-            "## Backend Examples",
+            "## Errors & Capabilities",
+            "",
+            "Understanding the safety net — error hierarchy and capability gating.",
+            "",
+        ]
+    )
+    _render_example_table(_ERROR_EXAMPLES, lines)
+
+    lines.extend(
+        [
+            "",
+            "## Advanced Store Patterns",
+            "",
+            "Deeper Store API concepts — paths, memory backend, child stores, async, retry, and health checks.",
+            "",
+        ]
+    )
+    _render_example_table(_ADVANCED_EXAMPLES, lines)
+
+    lines.extend(
+        [
+            "",
+            "## Backends",
             "",
             "These require a running service (AWS, MinIO, an SFTP server, Azure, Azurite, etc.) "
             "and credentials supplied via environment variables. Each script prints a help message "
             "when the required variables are missing.",
             "",
-            "| Example | Description |",
-            "|---------|-------------|",
         ]
     )
-    for key in backends:
-        entry = _example_by_key.get(key + ".py")
-        if entry:
-            _, slug, title, desc = entry
-            lines.append(f"| [{title}]({slug}.md) | {desc} |")
-        else:
-            warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=2)
+    _render_example_table(_BACKEND_EXAMPLES, lines)
 
     lines.extend(
         [
             "",
-            "## Extension Examples",
+            "## Extensions",
             "",
-            "| Example | Description |",
-            "|---------|-------------|",
+            "Composable Store wrappers — batch, transfer, glob, caching, and observability.",
+            "",
         ]
     )
-    for key in extensions:
-        entry = _example_by_key.get(key + ".py")
-        if entry:
-            _, slug, title, desc = entry
-            lines.append(f"| [{title}]({slug}.md) | {desc} |")
-        else:
-            warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=2)
+    _render_example_table(_EXTENSION_EXAMPLES, lines)
+
+    lines.extend(
+        ["", "## Integrations", "", "Third-party library bridges — PyArrow, Parquet datasets, and Dagster.", ""]
+    )
+    _render_example_table(_INTEGRATION_EXAMPLES, lines)
 
     lines.extend(
         [
@@ -586,7 +619,7 @@ def _gen_example_index(
             "|---------|-------------|",
         ]
     )
-    for key in showcases:
+    for key in _SHOWCASE_EXAMPLES:
         if key == "medallion_dagster":
             lines.append(
                 "| [Medallion + Dagster Showcase](medallion-dagster.md) | "
@@ -606,9 +639,9 @@ def _gen_example_index(
 
 
 # --- Write example wrapper pages ---
-for rel_key, slug, title, description in _example_entries:
-    # Backend examples get the backend prefix in their slug for the docs
-    doc_slug = _stem_to_slug(rel_key.split("/")[1].replace(".py", "")) if rel_key.startswith("backends/") else slug
+for rel_key, _slug, title, description in _example_entries:
+    # All examples render as flat pages under examples/ using the stem slug
+    doc_slug = _stem_to_slug(rel_key.split("/")[-1].replace(".py", ""))
     page_content = _gen_example_page(rel_key, doc_slug, title, description)
     with mkdocs_gen_files.open(f"examples/{doc_slug}.md", "w") as f:
         f.write(page_content)
@@ -657,48 +690,39 @@ with mkdocs_gen_files.open("examples/medallion-dagster.md", "w") as f:
     f.write(_medallion_page)
 
 # --- Write examples/index.md ---
-index_content = _gen_example_index(
-    _CORE_EXAMPLES,
-    _BACKEND_EXAMPLES,
-    _EXTENSION_EXAMPLES,
-    _SHOWCASE_EXAMPLES,
-)
+index_content = _gen_example_index()
 with mkdocs_gen_files.open("examples/index.md", "w") as f:
     f.write(index_content)
 
-# --- Build example nav entries for scanned_sections ---
-_example_nav_entries: list[tuple[str, str]] = []
+# --- Build grouped example nav entries for scanned_sections ---
+_EXAMPLE_NAV_GROUPS: list[tuple[str, list[str]]] = [
+    ("Getting Started", _GETTING_STARTED_EXAMPLES),
+    ("Configuration", _CONFIGURATION_EXAMPLES),
+    ("Errors & Capabilities", _ERROR_EXAMPLES),
+    ("Advanced Store Patterns", _ADVANCED_EXAMPLES),
+    ("Backends", _BACKEND_EXAMPLES),
+    ("Extensions", _EXTENSION_EXAMPLES),
+    ("Integrations", _INTEGRATION_EXAMPLES),
+]
 
-# Core examples
-for key in _CORE_EXAMPLES:
-    entry = _example_by_key.get(key + ".py")
-    if entry:
-        _, slug, title, _ = entry
-        _example_nav_entries.append((title, f"examples/{slug}.md"))
-    else:
-        warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=1)
+# Grouped entries: (group_label, title, file) triples
+# The group_label is used to create sub-sections in the sidebar nav.
+_example_nav_groups: list[tuple[str, list[tuple[str, str]]]] = []
 
-# Backend examples
-for key in _BACKEND_EXAMPLES:
-    entry = _example_by_key.get(key + ".py")
-    if entry:
-        _, slug, title, _ = entry
-        doc_slug = _stem_to_slug(key.split("/")[-1]) if "/" in key else slug
-        _example_nav_entries.append((title, f"examples/{doc_slug}.md"))
-    else:
-        warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=1)
+for group_label, category in _EXAMPLE_NAV_GROUPS:
+    group_entries: list[tuple[str, str]] = []
+    for key in category:
+        entry = _example_by_key.get(key + ".py")
+        if entry:
+            _, _slug, title, _ = entry
+            doc_slug = _stem_to_slug(key.split("/")[-1])
+            group_entries.append((title, f"examples/{doc_slug}.md"))
+        else:
+            warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=1)
+    _example_nav_groups.append((group_label, group_entries))
 
-# Extension examples
-for key in _EXTENSION_EXAMPLES:
-    entry = _example_by_key.get(key + ".py")
-    if entry:
-        _, slug, title, _ = entry
-        _example_nav_entries.append((title, f"examples/{slug}.md"))
-    else:
-        warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=1)
-
-# Showcases
-_example_nav_entries.append(("Medallion + Dagster Showcase", "examples/medallion-dagster.md"))
+# Showcases as a final group
+_example_nav_groups.append(("Showcases", [("Medallion + Dagster Showcase", "examples/medallion-dagster.md")]))
 
 # ---------------------------------------------------------------------------
 # 6. Assemble SUMMARY.md from per-section _nav.yml files
@@ -715,7 +739,12 @@ _scanned_sections: dict[str, list[tuple[str, str]]] = {
     "design/adrs": [(f"{num}: {title}", f"design/adrs/{slug}.md") for num, slug, title in adr_entries],
     "design/rfcs": [(f"{num}: {title}", f"design/rfcs/{slug}.md") for num, slug, title in rfc_entries],
     "design/research": [(title, f"design/research/{slug}.md") for _num, slug, title in research_entries],
-    "examples": _example_nav_entries,
+}
+
+# Grouped scanned sections: directory prefix → list of (group_label, entries) pairs
+# Used for sections that need sub-grouping in the sidebar nav.
+_grouped_scanned_sections: dict[str, list[tuple[str, list[tuple[str, str]]]]] = {
+    "examples": _example_nav_groups,
 }
 
 nav = mkdocs_gen_files.Nav()
@@ -745,8 +774,14 @@ def _process_entries(
                 child_nav = DOCS_SRC / full_dir / "_nav.yml"
                 if child_nav.exists():
                     _load_nav_section(child_nav, full_dir, child_path)
+                elif full_dir in _grouped_scanned_sections:
+                    # Auto-populated from filesystem scan, with sub-groups
+                    for group_label, group_items in _grouped_scanned_sections[full_dir]:
+                        group_path = child_path + (group_label,)
+                        for scan_label, scan_file in group_items:
+                            nav[group_path + (scan_label,)] = scan_file
                 elif full_dir in _scanned_sections:
-                    # Auto-populated from filesystem scan
+                    # Auto-populated from filesystem scan (flat)
                     for scan_label, scan_file in _scanned_sections[full_dir]:
                         nav[child_path + (scan_label,)] = scan_file
             else:

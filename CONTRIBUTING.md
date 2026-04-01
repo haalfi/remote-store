@@ -72,7 +72,7 @@ walkthrough of the `Backend` contract, error mapping, and capabilities.
 5. Add user-facing guide in `guides/backends/<name>.md` and register in `mkdocs.yml` nav
 6. Update `guides/backends/index.md` (Supported Backends table)
 7. Update `README.md` (Supported Backends table + Installation extras)
-8. Add backend config example to `examples/configuration.py`
+8. Add backend config example to `examples/configuration/configuration.py`
 9. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`
 
 ## Adding an Extension

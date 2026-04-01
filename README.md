@@ -64,7 +64,7 @@ pip install "remote-store[toml]"           # TOML config on Python < 3.11
 
 ## Quick Start
 
-The simplest way to use `remote-store` ([`examples/quickstart.py`](https://github.com/haalfi/remote-store/blob/master/examples/quickstart.py)):
+The simplest way to use `remote-store` ([`examples/getting_started/quickstart.py`](https://github.com/haalfi/remote-store/blob/master/examples/getting_started/quickstart.py)):
 
 ```python
 from remote_store import Store

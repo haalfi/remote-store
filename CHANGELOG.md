@@ -6,6 +6,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Changed
+
+- **Examples reorganized into topical subdirectories** — examples are now
+  grouped into `getting_started/`, `configuration/`, `errors/`, `advanced/`,
+  `backends/`, `extensions/`, and `integrations/` for easier navigation.
+  The docs index page reflects the new 7-section layout. All import paths,
+  CI workflows, and docs references updated accordingly.
+
 ## [0.21.0] - 2026-04-01
 
 ### Added

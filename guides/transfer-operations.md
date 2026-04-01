@@ -130,4 +130,4 @@ upload(reports, "local/q1.csv", "q1.csv")
 ## See also
 
 - [API reference](api/extensions/transfer.md)
-- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/transfer_operations.py)
+- [Example script](https://github.com/haalfi/remote-store/blob/master/examples/extensions/transfer_operations.py)

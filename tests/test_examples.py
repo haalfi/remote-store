@@ -84,7 +84,7 @@ class TestQuickstart:
         ],
     )
     def test_demo(self, tmp_path, demo_func, subdir):
-        import examples.quickstart as qs
+        import examples.getting_started.quickstart as qs
 
         getattr(qs, demo_func)(str(tmp_path / subdir))
         _verify_hello_store(tmp_path, subdir)
@@ -99,7 +99,7 @@ class TestQuickstart:
 class TestFileOperations:
     @pytest.mark.spec("STORE-008")
     def test_demo(self, memory_store):
-        from examples.file_operations import demo
+        from examples.getting_started.file_operations import demo
 
         demo(memory_store)
 
@@ -126,7 +126,7 @@ class TestStreamingIO:
     @pytest.mark.spec("SIO-002")
     @pytest.mark.spec("SIO-003")
     def test_demo(self, memory_store):
-        from examples.streaming_io import demo
+        from examples.getting_started.streaming_io import demo
 
         demo(memory_store)
 
@@ -147,7 +147,7 @@ class TestAtomicWrites:
     @pytest.mark.spec("AW-001")
     @pytest.mark.spec("AW-003")
     def test_demo(self, memory_store):
-        from examples.atomic_writes import demo
+        from examples.getting_started.atomic_writes import demo
 
         results = demo(memory_store)
 
@@ -168,7 +168,7 @@ class TestConfiguration:
     @pytest.mark.spec("SEC-001")
     @pytest.mark.spec("SEC-003")
     def test_demo(self):
-        from examples.configuration import demo
+        from examples.configuration.configuration import demo
 
         results = demo()
 
@@ -193,7 +193,7 @@ class TestErrorHandling:
     @pytest.mark.spec("ERR-003")
     @pytest.mark.spec("ERR-005")
     def test_demo(self, memory_store):
-        from examples.error_handling import demo
+        from examples.errors.error_handling import demo
 
         results = demo(memory_store)
 
@@ -219,7 +219,7 @@ class TestErrorHandling:
 class TestMemoryBackend:
     @pytest.mark.spec("MEM-DS-002")
     def test_demo(self, memory_store):
-        from examples.memory_backend import demo
+        from examples.advanced.memory_backend import demo
 
         demo(memory_store)
 
@@ -243,7 +243,7 @@ class TestStoreChild:
     @pytest.mark.spec("CHILD-005")
     @pytest.mark.spec("CHILD-006")
     def test_demo(self, memory_store):
-        from examples.store_child import demo
+        from examples.advanced.store_child import demo
 
         demo(memory_store)
 
@@ -270,7 +270,7 @@ class TestBatchOperations:
     @pytest.mark.spec("BATCH-008")
     @pytest.mark.spec("BATCH-014")
     def test_demo(self, memory_store):
-        from examples.batch_operations import demo
+        from examples.extensions.batch_operations import demo
 
         results = demo(memory_store)
 
@@ -296,7 +296,7 @@ class TestGlobPatternMatching:
     @pytest.mark.spec("GLOB-001")
     @pytest.mark.spec("GLOB-009")
     def test_demo(self, memory_store):
-        from examples.glob_pattern_matching import demo
+        from examples.extensions.glob_pattern_matching import demo
 
         results = demo(memory_store)
 
@@ -326,7 +326,7 @@ class TestTransferOperations:
     @pytest.mark.spec("XFER-006")
     @pytest.mark.spec("XFER-011")
     def test_demo(self, two_stores, tmp_path):
-        from examples.transfer_operations import demo
+        from examples.extensions.transfer_operations import demo
 
         primary, archive = two_stores
         results = demo(primary, archive, str(tmp_path))
@@ -356,7 +356,7 @@ class TestObserveHooks:
     @pytest.mark.spec("OBS-005")
     @pytest.mark.spec("OBS-006")
     def test_demo(self, memory_store):
-        from examples.observe_hooks import demo
+        from examples.extensions.observe_hooks import demo
 
         results = demo(memory_store)
 
@@ -385,7 +385,7 @@ class TestObserveHooks:
 class TestRetryPolicy:
     @pytest.mark.spec("RET-001")
     def test_demo(self):
-        from examples.retry_policy import demo
+        from examples.advanced.retry_policy import demo
 
         result = demo()
         assert result is None
@@ -394,7 +394,7 @@ class TestRetryPolicy:
 class TestHealthCheck:
     @pytest.mark.spec("PING-001")
     def test_demo(self, memory_store: Store):
-        from examples.health_check import demo
+        from examples.advanced.health_check import demo
 
         result = demo(memory_store)
         assert result is None
@@ -416,7 +416,7 @@ class TestOtelTracing:
         from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
-        from examples.otel_tracing import demo
+        from examples.extensions.otel_tracing import demo
         from remote_store.ext.otel import otel_observe
 
         span_exporter = InMemorySpanExporter()
@@ -450,7 +450,7 @@ class TestPyArrowAdapter:
     def test_demo(self, memory_store):
         pytest.importorskip("pyarrow")
 
-        from examples.pyarrow_adapter import demo
+        from examples.integrations.pyarrow_adapter import demo
 
         results = demo(memory_store)
 
@@ -467,7 +467,7 @@ class TestParquetDataset:
     def test_demo(self, memory_store):
         pytest.importorskip("pyarrow")
 
-        from examples.parquet_dataset import demo
+        from examples.integrations.parquet_dataset import demo
 
         results = demo(memory_store)
 
@@ -490,7 +490,7 @@ class TestHttpBackend:
         from pytest_httpserver import HTTPServer
         from werkzeug.wrappers import Response as WerkzeugResponse
 
-        from examples.http_backend import demo
+        from examples.backends.http_backend import demo
         from remote_store.backends import ReadOnlyHttpBackend
 
         server = HTTPServer(host="127.0.0.1")
@@ -531,7 +531,7 @@ class TestDagsterIOManager:
     def test_demo(self):
         pytest.importorskip("dagster")
 
-        from examples.dagster_io_manager import demo
+        from examples.integrations.dagster_io_manager import demo
 
         results = demo()
 
@@ -545,7 +545,7 @@ class TestDagsterV2Resource:
     def test_demo(self):
         pytest.importorskip("dagster")
 
-        from examples.dagster_v2_resource import demo
+        from examples.integrations.dagster_v2_resource import demo
 
         results = demo()
 
@@ -561,7 +561,7 @@ class TestDagsterV2Resource:
 class TestAsyncStore:
     @pytest.mark.spec("ASYNC-040")
     async def test_demo(self):
-        from examples.async_store import demo
+        from examples.advanced.async_store import demo
         from remote_store.aio import AsyncMemoryBackend, AsyncStore
 
         async with AsyncStore(AsyncMemoryBackend(), root_path="data") as store:

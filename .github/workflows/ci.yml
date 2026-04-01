@@ -151,26 +151,14 @@ jobs:
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev,arrow]"
-      - run: python examples/quickstart.py
-      - run: python examples/file_operations.py
-      - run: python examples/streaming_io.py
-      - run: python examples/atomic_writes.py
-      - run: python examples/configuration.py
-      - run: python examples/error_handling.py
-      - run: python examples/memory_backend.py
-      - run: python examples/store_child.py
-      - run: python examples/batch_operations.py
-      - run: python examples/transfer_operations.py
-      - run: python examples/observe_hooks.py
-      - run: python examples/capabilities_and_errors.py
-      - run: python examples/path_model.py
+      - run: python tests/scripts/run_examples.py
       # PyArrow's C++ atexit handlers can deadlock on Linux during interpreter
       # shutdown. The script completes but process exit hangs. Use timeout with
       # SIGKILL fallback; accept exit 124 (timeout) as success.
-      - name: Run python examples/pyarrow_adapter.py
+      - name: Run python examples/integrations/pyarrow_adapter.py
         run: |
           rc=0
-          timeout --kill-after=5 30 python examples/pyarrow_adapter.py || rc=$?
+          timeout --kill-after=5 30 python examples/integrations/pyarrow_adapter.py || rc=$?
           if [ $rc -ne 0 ] && [ $rc -ne 124 ]; then exit $rc; fi
 
   e2e:
