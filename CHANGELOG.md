@@ -40,6 +40,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Documentation
 
+- **Spec 029 amendments** (ID-013b): add round 2 §2.4 items (ASYNC-036/037,
+  ASYNC-052a–e, ASYNC-057/058, ASYNC-061/062) and Phase 2 `AsyncAzureBackend`
+  spec (ASYNC-070–079). Update `max_depth` on ASYNC-014/015/017, `resolve()`
+  in ASYNC-034 passthrough list, and ASYNC-046 enumeration.
+- Expand async guide with native backend section (`AsyncAzureBackend`),
+  health check (`ping()`), and updated limitations.
 - Fix CHANGELOG migration-guide link for GitHub (move `guides/migration.md`
   to repo root so `migration.md#…` resolves in both GitHub and docs).
 - Fix stale pandas reference in Dagster guide — Parquet serializer
