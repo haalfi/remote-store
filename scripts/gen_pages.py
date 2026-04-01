@@ -694,30 +694,35 @@ index_content = _gen_example_index()
 with mkdocs_gen_files.open("examples/index.md", "w") as f:
     f.write(index_content)
 
-# --- Build example nav entries for scanned_sections ---
-_ALL_CATEGORY_LISTS = [
-    _GETTING_STARTED_EXAMPLES,
-    _CONFIGURATION_EXAMPLES,
-    _ERROR_EXAMPLES,
-    _ADVANCED_EXAMPLES,
-    _BACKEND_EXAMPLES,
-    _EXTENSION_EXAMPLES,
-    _INTEGRATION_EXAMPLES,
+# --- Build grouped example nav entries for scanned_sections ---
+_EXAMPLE_NAV_GROUPS: list[tuple[str, list[str]]] = [
+    ("Getting Started", _GETTING_STARTED_EXAMPLES),
+    ("Configuration", _CONFIGURATION_EXAMPLES),
+    ("Errors & Capabilities", _ERROR_EXAMPLES),
+    ("Advanced Store Patterns", _ADVANCED_EXAMPLES),
+    ("Backends", _BACKEND_EXAMPLES),
+    ("Extensions", _EXTENSION_EXAMPLES),
+    ("Integrations", _INTEGRATION_EXAMPLES),
 ]
-_example_nav_entries: list[tuple[str, str]] = []
 
-for category in _ALL_CATEGORY_LISTS:
+# Grouped entries: (group_label, title, file) triples
+# The group_label is used to create sub-sections in the sidebar nav.
+_example_nav_groups: list[tuple[str, list[tuple[str, str]]]] = []
+
+for group_label, category in _EXAMPLE_NAV_GROUPS:
+    group_entries: list[tuple[str, str]] = []
     for key in category:
         entry = _example_by_key.get(key + ".py")
         if entry:
-            _, slug, title, _ = entry
+            _, _slug, title, _ = entry
             doc_slug = _stem_to_slug(key.split("/")[-1])
-            _example_nav_entries.append((title, f"examples/{doc_slug}.md"))
+            group_entries.append((title, f"examples/{doc_slug}.md"))
         else:
             warnings.warn(f"Example key {key!r} not found in scanned examples", stacklevel=1)
+    _example_nav_groups.append((group_label, group_entries))
 
-# Showcases
-_example_nav_entries.append(("Medallion + Dagster Showcase", "examples/medallion-dagster.md"))
+# Showcases as a final group
+_example_nav_groups.append(("Showcases", [("Medallion + Dagster Showcase", "examples/medallion-dagster.md")]))
 
 # ---------------------------------------------------------------------------
 # 6. Assemble SUMMARY.md from per-section _nav.yml files
@@ -734,7 +739,12 @@ _scanned_sections: dict[str, list[tuple[str, str]]] = {
     "design/adrs": [(f"{num}: {title}", f"design/adrs/{slug}.md") for num, slug, title in adr_entries],
     "design/rfcs": [(f"{num}: {title}", f"design/rfcs/{slug}.md") for num, slug, title in rfc_entries],
     "design/research": [(title, f"design/research/{slug}.md") for _num, slug, title in research_entries],
-    "examples": _example_nav_entries,
+}
+
+# Grouped scanned sections: directory prefix → list of (group_label, entries) pairs
+# Used for sections that need sub-grouping in the sidebar nav.
+_grouped_scanned_sections: dict[str, list[tuple[str, list[tuple[str, str]]]]] = {
+    "examples": _example_nav_groups,
 }
 
 nav = mkdocs_gen_files.Nav()
@@ -764,8 +774,14 @@ def _process_entries(
                 child_nav = DOCS_SRC / full_dir / "_nav.yml"
                 if child_nav.exists():
                     _load_nav_section(child_nav, full_dir, child_path)
+                elif full_dir in _grouped_scanned_sections:
+                    # Auto-populated from filesystem scan, with sub-groups
+                    for group_label, group_items in _grouped_scanned_sections[full_dir]:
+                        group_path = child_path + (group_label,)
+                        for scan_label, scan_file in group_items:
+                            nav[group_path + (scan_label,)] = scan_file
                 elif full_dir in _scanned_sections:
-                    # Auto-populated from filesystem scan
+                    # Auto-populated from filesystem scan (flat)
                     for scan_label, scan_file in _scanned_sections[full_dir]:
                         nav[child_path + (scan_label,)] = scan_file
             else:
