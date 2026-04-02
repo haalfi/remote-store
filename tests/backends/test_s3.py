@@ -148,6 +148,24 @@ class TestS3Construction:
         )
         assert backend.name == "s3"
 
+    @pytest.mark.spec("S3-021")
+    def test_client_options_not_mutated(self) -> None:
+        """client_options nested dicts must not be mutated by lazy init."""
+        from remote_store.backends._s3 import S3Backend
+
+        opts: dict = {"client_kwargs": {"timeout": 30}}
+        original_inner = dict(opts["client_kwargs"])  # snapshot
+        backend = S3Backend(
+            bucket="any-bucket",
+            key="k",
+            secret="s",
+            region_name="us-east-1",
+            client_options=opts,
+        )
+        with patch("s3fs.S3FileSystem"):
+            _ = backend._fs
+        assert opts["client_kwargs"] == original_inner
+
     @pytest.mark.spec("S3-022")
     def test_credentials_optional(self) -> None:
         """Backend can be constructed without explicit credentials."""
@@ -581,6 +599,22 @@ class TestS3Listing:
     def test_list_folders_empty(self, s3_backend: Backend) -> None:
         folders = list(s3_backend.list_folders("empty"))
         assert folders == []
+
+    @pytest.mark.spec("S3-003")
+    def test_list_files_max_depth(self, s3_backend: Backend) -> None:
+        """max_depth limits traversal depth natively."""
+        s3_backend.write("md/a.txt", b"a")
+        s3_backend.write("md/d1/b.txt", b"b")
+        s3_backend.write("md/d1/d2/c.txt", b"c")
+        # depth 0: files directly in md/
+        files_d0 = list(s3_backend.list_files("md", recursive=True, max_depth=0))
+        assert {f.name for f in files_d0} == {"a.txt"}
+        # depth 1: md/ + md/d1/
+        files_d1 = list(s3_backend.list_files("md", recursive=True, max_depth=1))
+        assert {f.name for f in files_d1} == {"a.txt", "b.txt"}
+        # depth 2: all
+        files_d2 = list(s3_backend.list_files("md", recursive=True, max_depth=2))
+        assert {f.name for f in files_d2} == {"a.txt", "b.txt", "c.txt"}
 
 
 class TestS3Metadata:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import io
 import logging
 import shutil
@@ -18,10 +17,7 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     NotFound,
 )
-from remote_store._models import ContentDigest, FileInfo
-from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
-from remote_store.backends._fileinfo import _clean_etag, _name_from_path, _normalize_modified
 from remote_store.backends._s3_base import (
     _S3_CA_ENV_VARS,
     _normalize_endpoint_url,
@@ -33,6 +29,7 @@ from remote_store.backends._s3_base import (
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from remote_store._models import FileInfo
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
@@ -261,9 +258,11 @@ class S3Backend(_S3Base):
     @property
     def _fs(self) -> Any:
         if self._fs_instance is None:
+            import copy
+
             import s3fs
 
-            opts: dict[str, Any] = dict(self._client_options)
+            opts: dict[str, Any] = copy.deepcopy(self._client_options)
             if self._endpoint_url is not None:
                 opts["endpoint_url"] = self._endpoint_url
             if self._key is not None:
@@ -297,53 +296,5 @@ class S3Backend(_S3Base):
             opts.setdefault("anon", False)
             self._fs_instance = s3fs.S3FileSystem(**opts)
         return self._fs_instance
-
-    # S3-024: algorithm name → HeadObject response key for checksums
-    _CHECKSUM_ALGO_TO_RESPONSE_KEY: dict[str, str] = {
-        "sha256": "ChecksumSHA256",
-        "sha1": "ChecksumSHA1",
-        "crc32": "ChecksumCRC32",
-        "crc32c": "ChecksumCRC32C",
-    }
-
-    def _head_to_fileinfo(self, raw: dict[str, Any], path: str) -> FileInfo:
-        """Convert a raw boto3 HeadObject response to a FileInfo.
-
-        Expects a response obtained with ``ChecksumMode="ENABLED"`` so that
-        checksum fields (``ChecksumSHA256``, etc.) are included when present.
-        """
-        name = _name_from_path(path)
-        size = raw.get("ContentLength", 0) or 0
-        modified = _normalize_modified(raw.get("LastModified"))
-        etag = _clean_etag(raw.get("ETag"))
-        digest = self._digest_from_head_response(raw)
-        return FileInfo(
-            path=RemotePath(path),
-            name=name,
-            size=int(size),
-            modified_at=modified,
-            etag=etag,
-            digest=digest,
-        )
-
-    def _digest_from_head_response(self, raw: dict[str, Any]) -> ContentDigest | None:
-        """Extract a ContentDigest from a HeadObject response with ChecksumMode=ENABLED.
-
-        Iterates the known checksum response keys and returns the first one found.
-        Returns None when no checksum key is present in the response.
-
-        Note: Amazon S3 automatically computes and stores CRC32 checksums for objects
-        created since late 2022, so ``ContentDigest`` may be returned even for objects
-        uploaded without an explicit checksum algorithm.
-        """
-        for algo_lower, response_key in self._CHECKSUM_ALGO_TO_RESPONSE_KEY.items():
-            b64_value = raw.get(response_key)
-            if not b64_value:
-                continue
-            try:
-                return ContentDigest(algo_lower, base64.b64decode(b64_value).hex())
-            except Exception:
-                continue
-        return None
 
     # endregion

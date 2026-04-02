@@ -147,6 +147,24 @@ class TestS3PyArrowConstruction:
         )
         assert backend.name == "s3-pyarrow"
 
+    @pytest.mark.spec("S3PA-022")
+    def test_client_options_not_mutated(self) -> None:
+        """client_options nested dicts must not be mutated by lazy init."""
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        opts: dict = {"client_kwargs": {"timeout": 30}}
+        original_inner = dict(opts["client_kwargs"])  # snapshot
+        backend = S3PyArrowBackend(
+            bucket="any-bucket",
+            key="k",
+            secret="s",
+            region_name="us-east-1",
+            client_options=opts,
+        )
+        with patch("s3fs.S3FileSystem"):
+            _ = backend._s3fs
+        assert opts["client_kwargs"] == original_inner
+
     @pytest.mark.spec("S3PA-001")
     def test_credentials_optional(self) -> None:
         """Backend can be constructed without explicit credentials."""
@@ -685,6 +703,22 @@ class TestS3PyArrowListing:
         folders = list(s3pa_backend.list_folders("empty"))
         assert folders == []
 
+    @pytest.mark.spec("S3PA-003")
+    def test_list_files_max_depth(self, s3pa_backend: Backend) -> None:
+        """max_depth limits traversal depth natively."""
+        s3pa_backend.write("md/a.txt", b"a")
+        s3pa_backend.write("md/d1/b.txt", b"b")
+        s3pa_backend.write("md/d1/d2/c.txt", b"c")
+        # depth 0: files directly in md/
+        files_d0 = list(s3pa_backend.list_files("md", recursive=True, max_depth=0))
+        assert {f.name for f in files_d0} == {"a.txt"}
+        # depth 1: md/ + md/d1/
+        files_d1 = list(s3pa_backend.list_files("md", recursive=True, max_depth=1))
+        assert {f.name for f in files_d1} == {"a.txt", "b.txt"}
+        # depth 2: all
+        files_d2 = list(s3pa_backend.list_files("md", recursive=True, max_depth=2))
+        assert {f.name for f in files_d2} == {"a.txt", "b.txt", "c.txt"}
+
 
 class TestS3PyArrowMetadata:
     """File and folder metadata operations."""
@@ -696,6 +730,54 @@ class TestS3PyArrowMetadata:
         assert fi.name == "info.txt"
         assert fi.size == 11
         assert fi.modified_at is not None
+
+    @pytest.mark.spec("S3PA-017")
+    def test_get_file_info_has_etag(self, s3pa_backend: Backend) -> None:
+        """get_file_info must return ETag, same as S3Backend (S3PA-017)."""
+        s3pa_backend.write("etag.txt", b"hello")
+        fi = s3pa_backend.get_file_info("etag.txt")
+        assert fi.etag is not None
+        assert isinstance(fi.etag, str)
+        assert '"' not in fi.etag
+        assert fi.etag == fi.etag.lower()
+
+    @pytest.mark.spec("S3PA-017")
+    def test_get_file_info_has_digest(self, s3pa_backend: Backend, moto_server: str) -> None:
+        """get_file_info must return digest when object has checksum (S3PA-017)."""
+        import base64
+        import hashlib
+
+        import boto3
+
+        from remote_store._models import ContentDigest
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        content = b"hello checksum"
+        expected_hex = hashlib.sha256(content).hexdigest()
+        b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
+
+        backend = s3pa_backend
+        assert isinstance(backend, S3PyArrowBackend)
+        raw_client = boto3.client(
+            "s3",
+            endpoint_url=moto_server,
+            aws_access_key_id="testing",
+            aws_secret_access_key="testing",
+            region_name=REGION,
+        )
+        raw_client.put_object(
+            Bucket=backend._bucket,
+            Key="sha256_file.txt",
+            Body=content,
+            ChecksumAlgorithm="SHA256",
+            ChecksumSHA256=b64,
+        )
+
+        fi = backend.get_file_info("sha256_file.txt")
+        assert fi.digest is not None
+        assert isinstance(fi.digest, ContentDigest)
+        assert fi.digest.algorithm == "sha256"
+        assert fi.digest.value == expected_hex
 
     def test_get_file_info_not_found(self, s3pa_backend: Backend) -> None:
         with pytest.raises(NotFound):
