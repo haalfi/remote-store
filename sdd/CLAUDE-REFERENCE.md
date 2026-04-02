@@ -68,8 +68,8 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | correctness — see `@pytest.mark.os_sensitive` in          |
 |                            | `pyproject.toml` for rationale.                           |
 | **CHANGELOG entry**        | One heading per section per release — no duplicates.      |
-|                            | Section order: Added > Fixed > Changed > Deprecated >     |
-|                            | Removed > Documentation > Internal.                       |
+|                            | Section order: Added > Fixed > Known Issues > Changed >   |
+|                            | Deprecated > Removed > Documentation > Internal.          |
 
 ---
 

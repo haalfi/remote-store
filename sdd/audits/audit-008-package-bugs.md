@@ -21,6 +21,8 @@ with confirmed failing reproductions are included.
 
 ---
 
+<a id="b-1"></a>
+
 ## B-1 — CachedStore: write doesn't invalidate parent directory metadata
 
 **File:** `src/remote_store/ext/cache.py` lines 288–292 (`_invalidate_path`)
@@ -74,6 +76,8 @@ metadata (`exists`, `is_folder`, `is_file`) for **parent** segments (e.g.
 
 ---
 
+<a id="b-2"></a>
+
 ## B-2 — CachedStore.child() creates isolated cache
 
 **File:** `src/remote_store/ext/cache.py` lines 443–451 (`_wrap_child`)
@@ -124,6 +128,8 @@ never shared or linked.
 
 ---
 
+<a id="b-3"></a>
+
 ## B-3 — RegistryConfig.from_dict crashes on YAML/TOML null options
 
 **File:** `src/remote_store/_config.py` line 246 and 270
@@ -169,6 +175,8 @@ present), and `dict(None)` raises `TypeError`. The same pattern exists at
 line 270 for store profiles.
 
 ---
+
+<a id="b-4"></a>
 
 ## B-4 — RegistryConfig.from_dict silently converts null to string "None"
 
@@ -218,6 +226,8 @@ and 269 (`str(prof.get("root_path", ""))`) treats `None` as a valid input
 instead of validating that required fields are strings.
 
 ---
+
+<a id="b-5"></a>
 
 ## B-5 — partition_path allows `=` in key — round-trip fails
 

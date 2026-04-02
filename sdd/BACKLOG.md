@@ -37,6 +37,37 @@ Items graduate through the SDD pipeline:
 
 ---
 
+## Bugs
+
+- [ ] **BUG-137 — CachedStore write doesn't invalidate parent directory metadata**
+  Writing a nested path (e.g. `dir/file.txt`) only invalidates cache for the
+  leaf path, not parent directories. `exists()` / `is_folder()` return stale
+  `False` for implicitly created parents.
+  Audit: [008 B-1](audits/audit-008-package-bugs.md#b-1)
+
+- [ ] **BUG-138 — CachedStore.child() creates isolated cache**
+  `_wrap_child()` passes `cache_backend=None`, constructing a fresh
+  `MemoryCache`. Child writes don't invalidate parent cache — parent reads
+  return stale data.
+  Audit: [008 B-2](audits/audit-008-package-bugs.md#b-2)
+
+- [ ] **BUG-139 — RegistryConfig.from_dict crashes on null options**
+  YAML/TOML `options:` with no value produces `None`. `dict(None)` raises
+  `TypeError` instead of treating it as empty.
+  Audit: [008 B-3](audits/audit-008-package-bugs.md#b-3)
+
+- [ ] **BUG-140 — RegistryConfig.from_dict converts null fields to string "None"**
+  `str(None)` coercion on `type`, `backend`, `root_path` silently produces
+  `"None"` — files stored under `None/` prefix, confusing backend lookup errors.
+  Audit: [008 B-4](audits/audit-008-package-bugs.md#b-4)
+
+- [ ] **BUG-141 — partition_path allows `=` in key, round-trip fails**
+  Key validation missing for `=` character. `partition_path(**{"col=x": "val"})`
+  produces `col=x=val/...` which `parse_partition` can't parse.
+  Audit: [008 B-5](audits/audit-008-package-bugs.md#b-5)
+
+---
+
 ## Backlog (Prioritized)
 
 *(none)*
