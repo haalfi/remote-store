@@ -12,7 +12,7 @@ import os
 import shutil
 import tempfile
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
@@ -22,6 +22,7 @@ paramiko = pytest.importorskip("paramiko", reason="paramiko not installed")
 pytest.importorskip("tenacity", reason="tenacity not installed")
 
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
+from remote_store._config import RetryPolicy  # noqa: E402
 from remote_store._errors import (  # noqa: E402
     AlreadyExists,
     BackendUnavailable,
@@ -991,21 +992,36 @@ class TestSFTPListingExceptions:
 class TestSFTPDeleteFolderEdgeCases:
     """BK-005: delete_folder listdir OSError and _rmtree OSError (lines 558-559, 572-573)."""
 
-    def test_delete_folder_non_recursive_listdir_oserror(self, sftp_backend: Backend) -> None:
-        """Non-recursive delete_folder treats OSError on listdir as empty (lines 558-559)."""
+    def test_delete_folder_non_recursive_listdir_enoent(self, sftp_backend: Backend) -> None:
+        """Non-recursive delete_folder treats ENOENT on listdir as empty."""
         assert isinstance(sftp_backend, SFTPBackend)
         # Create an empty folder
         sftp_backend.write("df_oserr/tmp.txt", b"x")
         sftp_backend.delete("df_oserr/tmp.txt")
 
         def failing_listdir(path: str) -> None:
-            raise OSError(errno.EIO, "I/O error on listdir")
+            raise OSError(errno.ENOENT, "No such file on listdir")
 
-        # With listdir failing, it assumes empty and tries rmdir — should succeed
+        # With ENOENT on listdir, it assumes empty and tries rmdir — should succeed
         with patch.object(sftp_backend._sftp_client, "listdir", side_effect=failing_listdir):
             sftp_backend.delete_folder("df_oserr", recursive=False)
 
         assert sftp_backend.is_folder("df_oserr") is False
+
+    def test_delete_folder_non_recursive_listdir_eio_raises(self, sftp_backend: Backend) -> None:
+        """BUG-147: Non-recursive delete_folder re-raises non-ENOENT listdir errors."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("df_eio/tmp.txt", b"x")
+        sftp_backend.delete("df_eio/tmp.txt")
+
+        def failing_listdir(path: str) -> None:
+            raise OSError(errno.EIO, "I/O error on listdir")
+
+        with (
+            patch.object(sftp_backend._sftp_client, "listdir", side_effect=failing_listdir),
+            pytest.raises(RemoteStoreError),
+        ):
+            sftp_backend.delete_folder("df_eio", recursive=False)
 
     def test_rmtree_listdir_attr_oserror(self, sftp_backend: Backend) -> None:
         """_rmtree handles OSError on listdir_attr gracefully (lines 572-573)."""
@@ -1043,6 +1059,206 @@ class TestSFTPCollectFolderStatsOSError:
 
 
 # endregion
+
+
+# region: Bug fixes (BUG-142 through BUG-147)
+
+
+class TestSFTPBug146ListingEioRaises:
+    """BUG-146: listing methods must re-raise non-ENOENT errors from listdir_attr."""
+
+    @pytest.mark.parametrize(
+        "method",
+        [
+            pytest.param("list_files", id="list-files"),
+            pytest.param("list_folders", id="list-folders"),
+            pytest.param("iter_children", id="iter-children"),
+        ],
+    )
+    def test_listdir_attr_eio_raises(self, sftp_backend: Backend, method: str) -> None:
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("eio_dir/a.txt", b"a")
+
+        def failing_listdir_attr(path: str) -> None:
+            raise OSError(errno.EIO, "I/O error")
+
+        with (
+            patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=failing_listdir_attr),
+            pytest.raises(RemoteStoreError),
+        ):
+            list(getattr(sftp_backend, method)("eio_dir"))
+
+    @pytest.mark.parametrize(
+        "method",
+        [
+            pytest.param("list_files", id="list-files"),
+            pytest.param("list_folders", id="list-folders"),
+            pytest.param("iter_children", id="iter-children"),
+        ],
+    )
+    def test_listdir_attr_enoent_returns_empty(self, sftp_backend: Backend, method: str) -> None:
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        def enoent_listdir_attr(path: str) -> None:
+            raise OSError(errno.ENOENT, "No such file")
+
+        with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=enoent_listdir_attr):
+            result = list(getattr(sftp_backend, method)("nonexistent"))
+
+        assert result == []
+
+
+class TestSFTPBug145EnsureParentDirsEio:
+    """BUG-145: _ensure_parent_dirs must re-raise non-ENOENT stat errors."""
+
+    def test_stat_eio_on_intermediate_dir_raises(self, sftp_backend: Backend) -> None:
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        original_stat = sftp_backend._sftp_client.stat
+
+        def eio_stat(path: str) -> object:
+            # Fail with EIO on any path that ends with a specific marker
+            if path.endswith("/eio_parent"):
+                raise OSError(errno.EIO, "I/O error")
+            return original_stat(path)
+
+        with (
+            patch.object(sftp_backend._sftp_client, "stat", side_effect=eio_stat),
+            pytest.raises(RemoteStoreError),
+        ):
+            sftp_backend.write("eio_parent/child.txt", b"data")
+
+
+class TestSFTPBug144SshClientLeak:
+    """BUG-144: SSHClient is closed when _do_connect exhausts retries."""
+
+    def test_ssh_client_closed_on_connect_failure(self) -> None:
+        import paramiko
+
+        close_called = False
+        original_close = paramiko.SSHClient.close
+
+        def tracking_close(self_ssh: Any) -> None:
+            nonlocal close_called
+            close_called = True
+            return original_close(self_ssh)
+
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=1,  # unreachable
+            username="x",
+            password="x",
+            host_key_policy=HostKeyPolicy.AUTO_ADD,
+            retry=RetryPolicy(max_attempts=1, backoff_base=0, backoff_max=0),
+        )
+        with (
+            patch.object(paramiko.SSHClient, "close", tracking_close),
+            pytest.raises((BackendUnavailable, RemoteStoreError, OSError)),
+        ):
+            backend._connect()
+
+        # SSHClient.close() must have been called to prevent leak
+        assert close_called, "SSHClient was not closed after connection failure"
+
+
+class TestSFTPBug143StModeNone:
+    """BUG-143: entries with st_mode=None are skipped instead of raising TypeError."""
+
+    def test_list_files_skips_none_st_mode(self, sftp_backend: Backend) -> None:
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("mode_dir/ok.txt", b"data")
+
+        original_listdir_attr = sftp_backend._sftp_client.listdir_attr
+
+        def patched_listdir_attr(path: str) -> list[object]:
+            results = original_listdir_attr(path)
+            # Inject a fake entry with st_mode=None
+            fake = type("FakeAttrs", (), {"st_mode": None, "filename": "ghost.txt", "st_size": 0, "st_mtime": None})()
+            results.append(fake)
+            return results
+
+        with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=patched_listdir_attr):
+            files = list(sftp_backend.list_files("mode_dir"))
+
+        names = {f.name for f in files}
+        assert "ok.txt" in names
+        assert "ghost.txt" not in names
+
+    def test_iter_children_skips_none_st_mode(self, sftp_backend: Backend) -> None:
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("ic_dir/ok.txt", b"data")
+
+        original_listdir_attr = sftp_backend._sftp_client.listdir_attr
+
+        def patched_listdir_attr(path: str) -> list[object]:
+            results = original_listdir_attr(path)
+            fake = type("FakeAttrs", (), {"st_mode": None, "filename": "ghost", "st_size": 0, "st_mtime": None})()
+            results.append(fake)
+            return results
+
+        with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=patched_listdir_attr):
+            children = list(sftp_backend.iter_children("ic_dir"))
+
+        names = {c.name for c in children}
+        assert "ok.txt" in names
+        assert "ghost" not in names
+
+    def test_collect_folder_stats_skips_none_st_mode(self, sftp_backend: Backend) -> None:
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("cfs_dir/ok.txt", b"data")
+
+        original_listdir_attr = sftp_backend._sftp_client.listdir_attr
+
+        def patched_listdir_attr(path: str) -> list[object]:
+            results = original_listdir_attr(path)
+            fake = type("FakeAttrs", (), {"st_mode": None, "filename": "ghost.txt", "st_size": 999, "st_mtime": None})()
+            results.append(fake)
+            return results
+
+        with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=patched_listdir_attr):
+            count, size, _ = sftp_backend._collect_folder_stats(sftp_backend._sftp_path("cfs_dir"))
+
+        assert count == 1
+        assert size == 4  # "data" = 4 bytes, not 4 + 999
+
+
+class TestSFTPBug142ReadHandleLeak:
+    """BUG-142: read() closes the paramiko handle if wrapping fails."""
+
+    def test_read_closes_handle_on_wrapping_failure(self, sftp_backend: Backend) -> None:
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("leak_test.txt", b"data")
+
+        # Force connection to populate _sftp_client
+        sftp_backend.exists("warmup.txt")
+
+        original_file = sftp_backend._sftp_client.file
+        opened_handle = None
+
+        def tracking_file(path: str, mode: str) -> object:
+            nonlocal opened_handle
+            opened_handle = original_file(path, mode)
+            return opened_handle
+
+        # Patch BufferedReader to fail during construction;
+        # _errors() will catch and map the RuntimeError to RemoteStoreError
+        with (
+            patch.object(sftp_backend._sftp_client, "file", side_effect=tracking_file),
+            patch("remote_store.backends._sftp.io.BufferedReader", side_effect=RuntimeError("boom")),
+            pytest.raises(RemoteStoreError, match="boom"),
+        ):
+            sftp_backend.read("leak_test.txt")
+
+        # The handle should have been closed by the except clause
+        assert opened_handle is not None
+        # paramiko SFTPFile uses _closed attribute
+        assert getattr(opened_handle, "_closed", False) is True
+
+
+# endregion
+
 
 # region: TOFU persistence (SFTP-028)
 
