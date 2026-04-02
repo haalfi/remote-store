@@ -10000,6 +10000,19 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>S3 <code>client_options</code> shallow copy mutates caller's nested dicts</strong> (BUG-148):
+  Lazy filesystem init now deep-copies <code>client_options</code> so that adding
+  <code>region_name</code>, <code>config</code>, or <code>verify</code> to <code>client_kwargs</code> does not modify
+  the caller's original dict. Affects both <code>S3Backend</code> and <code>S3PyArrowBackend</code>.</li>
+<li><strong>S3PyArrow <code>get_file_info</code> returns no ETag and no digest</strong> (BUG-150):
+  <code>get_file_info</code> now uses <code>call_s3("head_object", ChecksumMode="ENABLED")</code>
+  like <code>S3Backend</code>, returning both ETag and digest when available.</li>
+<li><strong>S3PyArrow <code>_extract_etag</code> scope too broad</strong> (BUG-151): <code>_extract_etag</code>
+  override now only affects listing paths; <code>get_file_info</code> extracts ETag
+  from the HeadObject response.</li>
+<li><strong>S3 <code>list_files</code> ignores <code>max_depth</code></strong> (BUG-152): <code>_S3Base.list_files</code>
+  now implements native depth limiting during BFS traversal, consistent
+  with all other backends.</li>
 <li><strong>SFTP <code>delete_folder</code> masks <code>listdir</code> permission errors</strong> (BUG-147):
   Non-recursive <code>delete_folder</code> now re-raises non-ENOENT errors from
   <code>listdir</code> instead of silently treating them as empty.</li>
