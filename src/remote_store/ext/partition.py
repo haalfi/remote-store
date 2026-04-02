@@ -45,7 +45,8 @@ def partition_path(filename: str, /, **partitions: str | int) -> str:
         filename: Leaf file name (e.g., ``"data.parquet"``).
             Must be non-empty and must not contain ``/``.
         partitions: Partition key-value pairs. Values are coerced to
-            ``str``. Keys and coerced values must be non-empty.
+            ``str``. Keys and coerced values must be non-empty and
+            must not contain ``=``.
 
     Returns:
         Forward-slash-joined path like ``"year=2026/month=03/data.parquet"``.

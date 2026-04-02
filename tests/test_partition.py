@@ -50,7 +50,12 @@ class TestPartitionPath:
             pytest.param({"year": ""}, "non-empty", id="empty_value"),
             pytest.param({"key": "a=b"}, "must not contain '='", id="equals_in_value"),
             pytest.param({"": "val"}, "key must be non-empty", id="empty_key"),
-            pytest.param({"col=x": "val"}, "must not contain '='", id="equals_in_key"),
+            pytest.param(
+                {"col=x": "val"},
+                "must not contain '='",
+                id="equals_in_key",
+                marks=pytest.mark.spec("BUG-141"),
+            ),
         ],
     )
     def test_invalid_partition_raises(self, kwargs: dict, match: str) -> None:
