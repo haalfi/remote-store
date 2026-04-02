@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-openrouter-integration/">
       
       
-        <link rel="prev" href="../rfcs/rfc-0009-multi-agent-orchestration/">
+        <link rel="prev" href="../research-medallion-dagster-showcase/">
       
       
-        <link rel="next" href="research-async-store-api-round2/">
+        <link rel="next" href="../research-readonly-http-backend/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/logo.png">
+      <link rel="icon" href="../../../assets/logo.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Research - remote-store</title>
+        <title>OpenRouter.ai Integration for Claude Code Workflow - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../css/custom.css">
+      <link rel="stylesheet" href="../../../css/custom.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#research" class="md-skip">
+        <a href="#research-openrouterai-integration-for-claude-code-workflow" class="md-skip">
           Skip to content
         </a>
       
@@ -102,9 +102,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../assets/logo.png" alt="logo">
+  <img src="../../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Research
+              OpenRouter.ai Integration for Claude Code Workflow
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href="../../.." class="md-tabs__link">
         
   
   
@@ -249,7 +249,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../getting-started/" class="md-tabs__link">
+        <a href="../../../getting-started/" class="md-tabs__link">
           
   
   
@@ -269,7 +269,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../backends/" class="md-tabs__link">
+        <a href="../../../backends/" class="md-tabs__link">
           
   
   
@@ -289,7 +289,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../api/" class="md-tabs__link">
+        <a href="../../../api/" class="md-tabs__link">
           
   
   
@@ -311,7 +311,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../architecture/" class="md-tabs__link">
+        <a href="../../../architecture/" class="md-tabs__link">
           
   
   
@@ -329,7 +329,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../contributing/" class="md-tabs__link">
+      <a href="../../../contributing/" class="md-tabs__link">
         
   
   
@@ -348,7 +348,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../further-reading/" class="md-tabs__link">
+      <a href="../../../further-reading/" class="md-tabs__link">
         
   
   
@@ -367,7 +367,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../development-story/" class="md-tabs__link">
+      <a href="../../../development-story/" class="md-tabs__link">
         
   
   
@@ -408,9 +408,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../assets/logo.png" alt="logo">
+  <img src="../../../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -437,7 +437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -514,7 +514,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/" class="md-nav__link">
+      <a href="../../../getting-started/" class="md-nav__link">
         
   
   
@@ -557,7 +557,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../examples/" class="md-nav__link ">
+            <a href="../../../examples/" class="md-nav__link ">
               
   
   
@@ -649,7 +649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/quickstart/" class="md-nav__link">
+      <a href="../../../examples/quickstart/" class="md-nav__link">
         
   
   
@@ -677,7 +677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/file-operations/" class="md-nav__link">
+      <a href="../../../examples/file-operations/" class="md-nav__link">
         
   
   
@@ -705,7 +705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/streaming-io/" class="md-nav__link">
+      <a href="../../../examples/streaming-io/" class="md-nav__link">
         
   
   
@@ -733,7 +733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/atomic-writes/" class="md-nav__link">
+      <a href="../../../examples/atomic-writes/" class="md-nav__link">
         
   
   
@@ -819,7 +819,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/configuration/" class="md-nav__link">
+      <a href="../../../examples/configuration/" class="md-nav__link">
         
   
   
@@ -847,7 +847,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/config-loaders/" class="md-nav__link">
+      <a href="../../../examples/config-loaders/" class="md-nav__link">
         
   
   
@@ -933,7 +933,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/error-handling/" class="md-nav__link">
+      <a href="../../../examples/error-handling/" class="md-nav__link">
         
   
   
@@ -961,7 +961,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/capabilities-and-errors/" class="md-nav__link">
+      <a href="../../../examples/capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -1047,7 +1047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/path-model/" class="md-nav__link">
+      <a href="../../../examples/path-model/" class="md-nav__link">
         
   
   
@@ -1075,7 +1075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/memory-backend/" class="md-nav__link">
+      <a href="../../../examples/memory-backend/" class="md-nav__link">
         
   
   
@@ -1103,7 +1103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/store-child/" class="md-nav__link">
+      <a href="../../../examples/store-child/" class="md-nav__link">
         
   
   
@@ -1131,7 +1131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/async-store/" class="md-nav__link">
+      <a href="../../../examples/async-store/" class="md-nav__link">
         
   
   
@@ -1159,7 +1159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/retry-policy/" class="md-nav__link">
+      <a href="../../../examples/retry-policy/" class="md-nav__link">
         
   
   
@@ -1187,7 +1187,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/health-check/" class="md-nav__link">
+      <a href="../../../examples/health-check/" class="md-nav__link">
         
   
   
@@ -1273,7 +1273,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/s3-backend/" class="md-nav__link">
+      <a href="../../../examples/s3-backend/" class="md-nav__link">
         
   
   
@@ -1301,7 +1301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../../examples/s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -1329,7 +1329,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/s3-listing-strategies/" class="md-nav__link">
+      <a href="../../../examples/s3-listing-strategies/" class="md-nav__link">
         
   
   
@@ -1357,7 +1357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/sftp-backend/" class="md-nav__link">
+      <a href="../../../examples/sftp-backend/" class="md-nav__link">
         
   
   
@@ -1385,7 +1385,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/azure-backend/" class="md-nav__link">
+      <a href="../../../examples/azure-backend/" class="md-nav__link">
         
   
   
@@ -1413,7 +1413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/sql-blob-backend/" class="md-nav__link">
+      <a href="../../../examples/sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -1441,7 +1441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/http-backend/" class="md-nav__link">
+      <a href="../../../examples/http-backend/" class="md-nav__link">
         
   
   
@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/batch-operations/" class="md-nav__link">
+      <a href="../../../examples/batch-operations/" class="md-nav__link">
         
   
   
@@ -1555,7 +1555,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/transfer-operations/" class="md-nav__link">
+      <a href="../../../examples/transfer-operations/" class="md-nav__link">
         
   
   
@@ -1583,7 +1583,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../examples/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1611,7 +1611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/caching/" class="md-nav__link">
+      <a href="../../../examples/caching/" class="md-nav__link">
         
   
   
@@ -1639,7 +1639,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/observe-hooks/" class="md-nav__link">
+      <a href="../../../examples/observe-hooks/" class="md-nav__link">
         
   
   
@@ -1667,7 +1667,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/otel-tracing/" class="md-nav__link">
+      <a href="../../../examples/otel-tracing/" class="md-nav__link">
         
   
   
@@ -1753,7 +1753,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../examples/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1781,7 +1781,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/parquet-dataset/" class="md-nav__link">
+      <a href="../../../examples/parquet-dataset/" class="md-nav__link">
         
   
   
@@ -1809,7 +1809,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/dagster-io-manager/" class="md-nav__link">
+      <a href="../../../examples/dagster-io-manager/" class="md-nav__link">
         
   
   
@@ -1837,7 +1837,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/dagster-v2-resource/" class="md-nav__link">
+      <a href="../../../examples/dagster-v2-resource/" class="md-nav__link">
         
   
   
@@ -1923,7 +1923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/medallion-dagster/" class="md-nav__link">
+      <a href="../../../examples/medallion-dagster/" class="md-nav__link">
         
   
   
@@ -2039,7 +2039,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../backends/" class="md-nav__link ">
+            <a href="../../../backends/" class="md-nav__link ">
               
   
   
@@ -2081,7 +2081,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/local/" class="md-nav__link">
+      <a href="../../../backends/local/" class="md-nav__link">
         
   
   
@@ -2109,7 +2109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/memory/" class="md-nav__link">
+      <a href="../../../backends/memory/" class="md-nav__link">
         
   
   
@@ -2137,7 +2137,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/http/" class="md-nav__link">
+      <a href="../../../backends/http/" class="md-nav__link">
         
   
   
@@ -2165,7 +2165,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/s3/" class="md-nav__link">
+      <a href="../../../backends/s3/" class="md-nav__link">
         
   
   
@@ -2193,7 +2193,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -2221,7 +2221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/sftp/" class="md-nav__link">
+      <a href="../../../backends/sftp/" class="md-nav__link">
         
   
   
@@ -2249,7 +2249,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/azure/" class="md-nav__link">
+      <a href="../../../backends/azure/" class="md-nav__link">
         
   
   
@@ -2277,7 +2277,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/sql-blob/" class="md-nav__link">
+      <a href="../../../backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -2305,7 +2305,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backends/sql-query/" class="md-nav__link">
+      <a href="../../../backends/sql-query/" class="md-nav__link">
         
   
   
@@ -2391,7 +2391,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../extensions/" class="md-nav__link">
+      <a href="../../../extensions/" class="md-nav__link">
         
   
   
@@ -2419,7 +2419,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -2447,7 +2447,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../batch-operations/" class="md-nav__link">
+      <a href="../../../batch-operations/" class="md-nav__link">
         
   
   
@@ -2475,7 +2475,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -2503,7 +2503,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../transfer-operations/" class="md-nav__link">
+      <a href="../../../transfer-operations/" class="md-nav__link">
         
   
   
@@ -2531,7 +2531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observe/" class="md-nav__link">
+      <a href="../../../observe/" class="md-nav__link">
         
   
   
@@ -2559,7 +2559,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cache/" class="md-nav__link">
+      <a href="../../../cache/" class="md-nav__link">
         
   
   
@@ -2587,7 +2587,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../parquet-datasets/" class="md-nav__link">
+      <a href="../../../parquet-datasets/" class="md-nav__link">
         
   
   
@@ -2615,7 +2615,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dagster/" class="md-nav__link">
+      <a href="../../../dagster/" class="md-nav__link">
         
   
   
@@ -2643,7 +2643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../retry/" class="md-nav__link">
+      <a href="../../../retry/" class="md-nav__link">
         
   
   
@@ -2679,7 +2679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../async/" class="md-nav__link">
+      <a href="../../../async/" class="md-nav__link">
         
   
   
@@ -2707,7 +2707,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../health-check/" class="md-nav__link">
+      <a href="../../../health-check/" class="md-nav__link">
         
   
   
@@ -2735,7 +2735,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../data-lake-patterns/" class="md-nav__link">
+      <a href="../../../data-lake-patterns/" class="md-nav__link">
         
   
   
@@ -2763,7 +2763,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../troubleshooting/" class="md-nav__link">
+      <a href="../../../troubleshooting/" class="md-nav__link">
         
   
   
@@ -2791,7 +2791,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../choosing-a-backend/" class="md-nav__link">
+      <a href="../../../choosing-a-backend/" class="md-nav__link">
         
   
   
@@ -2819,7 +2819,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../custom-backend-guide/" class="md-nav__link">
+      <a href="../../../custom-backend-guide/" class="md-nav__link">
         
   
   
@@ -2847,7 +2847,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../migration/" class="md-nav__link">
+      <a href="../../../migration/" class="md-nav__link">
         
   
   
@@ -2947,7 +2947,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/" class="md-nav__link ">
+            <a href="../../../api/" class="md-nav__link ">
               
   
   
@@ -2989,7 +2989,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/" class="md-nav__link">
+      <a href="../../../api/store/" class="md-nav__link">
         
   
   
@@ -3017,7 +3017,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/proxy/" class="md-nav__link">
+      <a href="../../../api/proxy/" class="md-nav__link">
         
   
   
@@ -3045,7 +3045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/registry/" class="md-nav__link">
+      <a href="../../../api/registry/" class="md-nav__link">
         
   
   
@@ -3073,7 +3073,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/info/" class="md-nav__link">
+      <a href="../../../api/info/" class="md-nav__link">
         
   
   
@@ -3101,7 +3101,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/backend/" class="md-nav__link">
+      <a href="../../../api/backend/" class="md-nav__link">
         
   
   
@@ -3129,7 +3129,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/sftp-utils/" class="md-nav__link">
+      <a href="../../../api/sftp-utils/" class="md-nav__link">
         
   
   
@@ -3157,7 +3157,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/config/" class="md-nav__link">
+      <a href="../../../api/config/" class="md-nav__link">
         
   
   
@@ -3185,7 +3185,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/models/" class="md-nav__link">
+      <a href="../../../api/models/" class="md-nav__link">
         
   
   
@@ -3213,7 +3213,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/path/" class="md-nav__link">
+      <a href="../../../api/path/" class="md-nav__link">
         
   
   
@@ -3241,7 +3241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/capabilities/" class="md-nav__link">
+      <a href="../../../api/capabilities/" class="md-nav__link">
         
   
   
@@ -3269,7 +3269,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/errors/" class="md-nav__link">
+      <a href="../../../api/errors/" class="md-nav__link">
         
   
   
@@ -3312,7 +3312,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/backends/" class="md-nav__link ">
+            <a href="../../../api/backends/" class="md-nav__link ">
               
   
   
@@ -3354,7 +3354,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/backends/local/" class="md-nav__link">
+      <a href="../../../api/backends/local/" class="md-nav__link">
         
   
   
@@ -3382,7 +3382,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/backends/memory/" class="md-nav__link">
+      <a href="../../../api/backends/memory/" class="md-nav__link">
         
   
   
@@ -3410,7 +3410,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/backends/http/" class="md-nav__link">
+      <a href="../../../api/backends/http/" class="md-nav__link">
         
   
   
@@ -3438,7 +3438,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/backends/s3/" class="md-nav__link">
+      <a href="../../../api/backends/s3/" class="md-nav__link">
         
   
   
@@ -3466,7 +3466,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../api/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -3494,7 +3494,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/backends/sftp/" class="md-nav__link">
+      <a href="../../../api/backends/sftp/" class="md-nav__link">
         
   
   
@@ -3522,7 +3522,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/backends/azure/" class="md-nav__link">
+      <a href="../../../api/backends/azure/" class="md-nav__link">
         
   
   
@@ -3550,7 +3550,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/backends/sql-blob/" class="md-nav__link">
+      <a href="../../../api/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -3578,7 +3578,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/backends/sql-query/" class="md-nav__link">
+      <a href="../../../api/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -3614,7 +3614,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/aio/" class="md-nav__link">
+      <a href="../../../api/aio/" class="md-nav__link">
         
   
   
@@ -3657,7 +3657,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/extensions/" class="md-nav__link ">
+            <a href="../../../api/extensions/" class="md-nav__link ">
               
   
   
@@ -3699,7 +3699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/arrow/" class="md-nav__link">
+      <a href="../../../api/extensions/arrow/" class="md-nav__link">
         
   
   
@@ -3727,7 +3727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/batch/" class="md-nav__link">
+      <a href="../../../api/extensions/batch/" class="md-nav__link">
         
   
   
@@ -3755,7 +3755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/cache/" class="md-nav__link">
+      <a href="../../../api/extensions/cache/" class="md-nav__link">
         
   
   
@@ -3783,7 +3783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/dagster/" class="md-nav__link">
+      <a href="../../../api/extensions/dagster/" class="md-nav__link">
         
   
   
@@ -3811,7 +3811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/glob/" class="md-nav__link">
+      <a href="../../../api/extensions/glob/" class="md-nav__link">
         
   
   
@@ -3839,7 +3839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/integrity/" class="md-nav__link">
+      <a href="../../../api/extensions/integrity/" class="md-nav__link">
         
   
   
@@ -3867,7 +3867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/observe/" class="md-nav__link">
+      <a href="../../../api/extensions/observe/" class="md-nav__link">
         
   
   
@@ -3895,7 +3895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/otel/" class="md-nav__link">
+      <a href="../../../api/extensions/otel/" class="md-nav__link">
         
   
   
@@ -3923,7 +3923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/parquet/" class="md-nav__link">
+      <a href="../../../api/extensions/parquet/" class="md-nav__link">
         
   
   
@@ -3951,7 +3951,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/partition/" class="md-nav__link">
+      <a href="../../../api/extensions/partition/" class="md-nav__link">
         
   
   
@@ -3979,7 +3979,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/pydantic/" class="md-nav__link">
+      <a href="../../../api/extensions/pydantic/" class="md-nav__link">
         
   
   
@@ -4007,7 +4007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/streams/" class="md-nav__link">
+      <a href="../../../api/extensions/streams/" class="md-nav__link">
         
   
   
@@ -4035,7 +4035,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/transfer/" class="md-nav__link">
+      <a href="../../../api/extensions/transfer/" class="md-nav__link">
         
   
   
@@ -4063,7 +4063,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/extensions/yaml/" class="md-nav__link">
+      <a href="../../../api/extensions/yaml/" class="md-nav__link">
         
   
   
@@ -4107,7 +4107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../capabilities-matrix/" class="md-nav__link">
+      <a href="../../../capabilities-matrix/" class="md-nav__link">
         
   
   
@@ -4135,7 +4135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../changelog/" class="md-nav__link">
+      <a href="../../../changelog/" class="md-nav__link">
         
   
   
@@ -4225,7 +4225,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/" class="md-nav__link">
+      <a href="../../../architecture/" class="md-nav__link">
         
   
   
@@ -4253,7 +4253,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../performance/" class="md-nav__link">
+      <a href="../../../performance/" class="md-nav__link">
         
   
   
@@ -4281,7 +4281,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concurrency/" class="md-nav__link">
+      <a href="../../../concurrency/" class="md-nav__link">
         
   
   
@@ -4309,7 +4309,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security-model/" class="md-nav__link">
+      <a href="../../../security-model/" class="md-nav__link">
         
   
   
@@ -4354,7 +4354,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -4396,7 +4396,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design-spec/" class="md-nav__link">
+      <a href="../../design-spec/" class="md-nav__link">
         
   
   
@@ -4424,7 +4424,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../testing-standards/" class="md-nav__link">
+      <a href="../../testing-standards/" class="md-nav__link">
         
   
   
@@ -4452,7 +4452,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../process/" class="md-nav__link">
+      <a href="../../process/" class="md-nav__link">
         
   
   
@@ -4495,7 +4495,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../specs/" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -4537,7 +4537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -4565,7 +4565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -4593,7 +4593,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -4621,7 +4621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -4649,7 +4649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/005-error-model/" class="md-nav__link">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -4677,7 +4677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -4705,7 +4705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -4733,7 +4733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/008-s3-backend/" class="md-nav__link">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -4761,7 +4761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -4789,7 +4789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -4817,7 +4817,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -4845,7 +4845,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/012-azure-backend/" class="md-nav__link">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -4873,7 +4873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -4901,7 +4901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -4929,7 +4929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -4957,7 +4957,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -4985,7 +4985,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -5013,7 +5013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -5041,7 +5041,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -5069,7 +5069,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -5097,7 +5097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -5125,7 +5125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -5153,7 +5153,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -5181,7 +5181,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -5209,7 +5209,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/025-retry-policy/" class="md-nav__link">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -5237,7 +5237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/026-health-check/" class="md-nav__link">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -5265,7 +5265,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/027-iter-children/" class="md-nav__link">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -5293,7 +5293,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/028-read-text/" class="md-nav__link">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -5321,7 +5321,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5349,7 +5349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/030-write-text/" class="md-nav__link">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -5377,7 +5377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/031-ext-dagster/" class="md-nav__link">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -5405,7 +5405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/032-http-backend/" class="md-nav__link">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -5433,7 +5433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/033-ext-streams/" class="md-nav__link">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -5461,7 +5461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/034-ext-integrity/" class="md-nav__link">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -5489,7 +5489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/035-content-digest/" class="md-nav__link">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -5517,7 +5517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/036-seekable-read/" class="md-nav__link">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -5545,7 +5545,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/037-depth-limited-listing/" class="md-nav__link">
+      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -5573,7 +5573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -5601,7 +5601,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -5629,7 +5629,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/040-sql-blob-backend/" class="md-nav__link">
+      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -5657,7 +5657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/041-sql-query-backend/" class="md-nav__link">
+      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -5685,7 +5685,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/042-ext-parquet/" class="md-nav__link">
+      <a href="../../specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -5713,7 +5713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specs/043-resolution-plan/" class="md-nav__link">
+      <a href="../../specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -5764,7 +5764,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../adrs/" class="md-nav__link ">
+            <a href="../../adrs/" class="md-nav__link ">
               
   
   
@@ -5806,7 +5806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -5834,7 +5834,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -5862,7 +5862,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -5890,7 +5890,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -5918,7 +5918,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -5946,7 +5946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -5974,7 +5974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -6002,7 +6002,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -6030,7 +6030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -6058,7 +6058,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -6086,7 +6086,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -6114,7 +6114,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -6142,7 +6142,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -6170,7 +6170,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -6198,7 +6198,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -6226,7 +6226,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -6254,7 +6254,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -6282,7 +6282,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
+      <a href="../../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
         
   
   
@@ -6310,7 +6310,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -6338,7 +6338,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
+      <a href="../../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
         
   
   
@@ -6389,7 +6389,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../rfcs/" class="md-nav__link ">
+            <a href="../../rfcs/" class="md-nav__link ">
               
   
   
@@ -6431,7 +6431,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -6459,7 +6459,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -6487,7 +6487,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -6515,7 +6515,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -6543,7 +6543,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
         
   
   
@@ -6571,7 +6571,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
         
   
   
@@ -6599,7 +6599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
         
   
   
@@ -6627,7 +6627,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
         
   
   
@@ -6655,7 +6655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -6708,7 +6708,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -6726,7 +6726,7 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_5_5_7" id="__nav_5_5_7_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_5_5_7" id="__nav_5_5_7_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -6750,7 +6750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-async-store-api-round2/" class="md-nav__link">
+      <a href="../research-async-store-api-round2/" class="md-nav__link">
         
   
   
@@ -6778,7 +6778,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -6806,7 +6806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -6834,7 +6834,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -6862,7 +6862,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-dagster-extension/" class="md-nav__link">
+      <a href="../research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -6890,7 +6890,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-depth-limited-listing/" class="md-nav__link">
+      <a href="../research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -6918,7 +6918,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-docs-landing-page/" class="md-nav__link">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -6946,7 +6946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-example-testing/" class="md-nav__link">
+      <a href="../research-example-testing/" class="md-nav__link">
         
   
   
@@ -6974,7 +6974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-fastapi-docs/" class="md-nav__link">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -7002,7 +7002,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-feature-discoverability/" class="md-nav__link">
+      <a href="../research-feature-discoverability/" class="md-nav__link">
         
   
   
@@ -7030,7 +7030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-google-docstring-migration/" class="md-nav__link">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -7058,7 +7058,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-health-check/" class="md-nav__link">
+      <a href="../research-health-check/" class="md-nav__link">
         
   
   
@@ -7086,7 +7086,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -7114,7 +7114,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -7139,10 +7139,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="research-openrouter-integration/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenRouter.ai Integration for Claude Code Workflow
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -7158,6 +7185,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-is-openrouter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. What is OpenRouter?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-current-ai-usage-in-remote-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Current AI Usage in remote-store
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-integration-feasibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Integration Feasibility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Integration Feasibility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-claude-code-openrouter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Claude Code + OpenRouter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-model-switching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Model switching
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-evaluation-against-current-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Evaluation Against Current Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-comparison-with-existing-ollama-approach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Comparison with Existing ollama Approach
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -7170,7 +7311,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-readonly-http-backend/" class="md-nav__link">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -7198,7 +7339,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-resolve-spec-proposal/" class="md-nav__link">
+      <a href="../research-resolve-spec-proposal/" class="md-nav__link">
         
   
   
@@ -7226,7 +7367,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-retry-policy/" class="md-nav__link">
+      <a href="../research-retry-policy/" class="md-nav__link">
         
   
   
@@ -7254,7 +7395,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-seekable-read/" class="md-nav__link">
+      <a href="../research-seekable-read/" class="md-nav__link">
         
   
   
@@ -7282,7 +7423,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -7310,7 +7451,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-store-api-refinement/" class="md-nav__link">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -7338,7 +7479,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-store-config/" class="md-nav__link">
+      <a href="../research-store-config/" class="md-nav__link">
         
   
   
@@ -7366,7 +7507,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -7394,7 +7535,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-testing-best-practices/" class="md-nav__link">
+      <a href="../research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -7422,7 +7563,7 @@
   
   
     <li class="md-nav__item">
-      <a href="research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -7473,7 +7614,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../contributing/" class="md-nav__link">
+      <a href="../../../contributing/" class="md-nav__link">
         
   
   
@@ -7500,7 +7641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../further-reading/" class="md-nav__link">
+      <a href="../../../further-reading/" class="md-nav__link">
         
   
   
@@ -7527,7 +7668,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development-story/" class="md-nav__link">
+      <a href="../../../development-story/" class="md-nav__link">
         
   
   
@@ -7567,6 +7708,108 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-is-openrouter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. What is OpenRouter?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-current-ai-usage-in-remote-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Current AI Usage in remote-store
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-integration-feasibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Integration Feasibility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Integration Feasibility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-claude-code-openrouter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Claude Code + OpenRouter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-model-switching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Model switching
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-evaluation-against-current-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Evaluation Against Current Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-comparison-with-existing-ollama-approach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Comparison with Existing ollama Approach
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -7582,121 +7825,202 @@
 
 
 
-<h1 id="research">Research<a class="headerlink" href="#research" title="Permanent link">&para;</a></h1>
-<p>Before specifying a feature, we research the design space: compare libraries,
-evaluate trade-offs, and prototype approaches. The resulting documents are
-presented here for readers who want to understand <em>why</em> a particular direction
-was chosen -- or who face similar decisions in their own projects.</p>
+<h1 id="research-openrouterai-integration-for-claude-code-workflow">Research: OpenRouter.ai Integration for Claude Code Workflow<a class="headerlink" href="#research-openrouterai-integration-for-claude-code-workflow" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-04-02
+<strong>Status:</strong> Analysis complete — no action recommended at this time</p>
+<hr />
+<h2 id="1-what-is-openrouter">1. What is OpenRouter?<a class="headerlink" href="#1-what-is-openrouter" title="Permanent link">&para;</a></h2>
+<p>OpenRouter.ai is a unified API gateway that routes requests to 300+ LLM models
+from 60+ providers (OpenAI, Anthropic, Google, Meta, Mistral, etc.) through a
+single OpenAI-compatible endpoint. Key capabilities:</p>
+<ul>
+<li><strong>Single API key</strong> for all providers</li>
+<li><strong>Automatic failover</strong> between providers during outages</li>
+<li><strong>Cost-based routing</strong> — pick the cheapest provider for a given model</li>
+<li><strong>BYOK mode</strong> — Bring Your Own Key for direct provider billing</li>
+<li><strong>Zero data retention</strong> option</li>
+<li><strong>Centralized billing</strong> and usage monitoring across models/teams</li>
+</ul>
+<p>As of early 2026: 30T+ tokens/month processed, 5M+ users, SDKs for
+TypeScript, Python, Go, Java.</p>
+<hr />
+<h2 id="2-current-ai-usage-in-remote-store">2. Current AI Usage in remote-store<a class="headerlink" href="#2-current-ai-usage-in-remote-store" title="Permanent link">&para;</a></h2>
+<p>The <code>remote-store</code> library has <strong>zero LLM dependencies</strong> in its source code —
+it is a file storage abstraction layer. All AI usage is in the <strong>development
+workflow</strong> via Claude Code:</p>
 <table>
 <thead>
 <tr>
-<th>Topic</th>
-<th>Document</th>
+<th>Component</th>
+<th>Location</th>
+<th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Research Round 2: Async Store API vs Current Feature Surface (ID-013)</td>
-<td><a href="research-async-store-api-round2/">Research Round 2: Async Store API vs Current Feature Surface (ID-013)</a></td>
+<td>7 custom skills</td>
+<td><code>.claude/skills/</code></td>
+<td><code>/pr</code>, <code>/review-pr</code>, <code>/fix-pr</code>, <code>/audit</code>, <code>/orchestrate</code>, <code>/release</code>, <code>/preview</code></td>
 </tr>
 <tr>
-<td>Async Store / Backend API (ID-013)</td>
-<td><a href="research-async-store-api/">Async Store / Backend API (ID-013)</a></td>
+<td>Multi-agent orchestration</td>
+<td><code>/orchestrate</code> skill</td>
+<td>4 parallel domain-expert subagents</td>
 </tr>
 <tr>
-<td>Azure PyArrow Optimization</td>
-<td><a href="research-azure-pyarrow-optimization/">Azure PyArrow Optimization</a></td>
+<td>GitHub MCP servers</td>
+<td><code>github-pat</code>, <code>MCP_DOCKER</code></td>
+<td>PR creation, review, thread resolution</td>
 </tr>
 <tr>
-<td>Benchmark Suite v2 — User-Decision Framing</td>
-<td><a href="research-benchmark-suite-v2/">Benchmark Suite v2 — User-Decision Framing</a></td>
+<td>Hooks</td>
+<td><code>.claude/settings.json</code></td>
+<td>Session init, commit gating, auto-formatting</td>
 </tr>
 <tr>
-<td>Dagster Extension (<code>ext.dagster</code>, ID-075)</td>
-<td><a href="research-dagster-extension/">Dagster Extension (<code>ext.dagster</code>, ID-075)</a></td>
-</tr>
-<tr>
-<td>Depth-Limited Listing</td>
-<td><a href="research-depth-limited-listing/">Depth-Limited Listing</a></td>
-</tr>
-<tr>
-<td>ID-090 — Docs Landing Page</td>
-<td><a href="research-docs-landing-page/">ID-090 — Docs Landing Page</a></td>
-</tr>
-<tr>
-<td>Example Testing Across Language Ecosystems</td>
-<td><a href="research-example-testing/">Example Testing Across Language Ecosystems</a></td>
-</tr>
-<tr>
-<td>FastAPI Documentation &amp; CI/CD Patterns</td>
-<td><a href="research-fastapi-docs/">FastAPI Documentation &amp; CI/CD Patterns</a></td>
-</tr>
-<tr>
-<td>Feature Discoverability for Agents and Humans</td>
-<td><a href="research-feature-discoverability/">Feature Discoverability for Agents and Humans</a></td>
-</tr>
-<tr>
-<td>Google-Style Docstring Migration &amp; Zensical Evaluation</td>
-<td><a href="research-google-docstring-migration/">Google-Style Docstring Migration &amp; Zensical Evaluation</a></td>
-</tr>
-<tr>
-<td>Backend Health Check (<code>store.ping()</code> / <code>backend.check_health()</code>)</td>
-<td><a href="research-health-check/">Backend Health Check (<code>store.ping()</code> / <code>backend.check_health()</code>)</a></td>
-</tr>
-<tr>
-<td>Logging, Monitoring &amp; Tracing for remote-store</td>
-<td><a href="research-logging-monitoring-tracing/">Logging, Monitoring &amp; Tracing for remote-store</a></td>
-</tr>
-<tr>
-<td>Architecture: Medallion + Dagster Showcase</td>
-<td><a href="research-medallion-dagster-showcase/">Architecture: Medallion + Dagster Showcase</a></td>
-</tr>
-<tr>
-<td>OpenRouter.ai Integration for Claude Code Workflow</td>
-<td><a href="research-openrouter-integration/">OpenRouter.ai Integration for Claude Code Workflow</a></td>
-</tr>
-<tr>
-<td>Read-Only HTTP Backend</td>
-<td><a href="research-readonly-http-backend/">Read-Only HTTP Backend</a></td>
-</tr>
-<tr>
-<td><code>resolve()</code> Specification Proposal</td>
-<td><a href="research-resolve-spec-proposal/"><code>resolve()</code> Specification Proposal</a></td>
-</tr>
-<tr>
-<td>Retry Policy Configuration (ID-010)</td>
-<td><a href="research-retry-policy/">Retry Policy Configuration (ID-010)</a></td>
-</tr>
-<tr>
-<td>Seekable Read</td>
-<td><a href="research-seekable-read/">Seekable Read</a></td>
-</tr>
-<tr>
-<td>SQLAlchemy Backends &amp; Composite Store</td>
-<td><a href="research-sqlalchemy-backend/">SQLAlchemy Backends &amp; Composite Store</a></td>
-</tr>
-<tr>
-<td>Store API Refinement</td>
-<td><a href="research-store-api-refinement/">Store API Refinement</a></td>
-</tr>
-<tr>
-<td>Configuration Loaders and Store Config Patterns</td>
-<td><a href="research-store-config/">Configuration Loaders and Store Config Patterns</a></td>
-</tr>
-<tr>
-<td>Store Middleware Architecture</td>
-<td><a href="research-store-middleware-architecture/">Store Middleware Architecture</a></td>
-</tr>
-<tr>
-<td>Testing Best Practices for Long-Term Package Quality</td>
-<td><a href="research-testing-best-practices/">Testing Best Practices for Long-Term Package Quality</a></td>
-</tr>
-<tr>
-<td>v1 Communication &amp; Announcement Plan</td>
-<td><a href="research-v1-communication-plan/">v1 Communication &amp; Announcement Plan</a></td>
+<td>ollama reference</td>
+<td><code>DEVELOPMENT_STORY.md</code></td>
+<td>Mentioned for local GPU-accelerated bulk tasks</td>
 </tr>
 </tbody>
 </table>
+<hr />
+<h2 id="3-integration-feasibility">3. Integration Feasibility<a class="headerlink" href="#3-integration-feasibility" title="Permanent link">&para;</a></h2>
+<h3 id="31-claude-code-openrouter">3.1 Claude Code + OpenRouter<a class="headerlink" href="#31-claude-code-openrouter" title="Permanent link">&para;</a></h3>
+<p>Claude Code supports routing through OpenRouter by setting two environment
+variables:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ANTHROPIC_BASE_URL</span><span class="o">=</span>https://openrouter.ai/api
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span>&lt;openrouter-key&gt;
+</code></pre></div>
+<p>This uses OpenRouter's "Anthropic Skin" — no proxy or code changes needed.
+Provides automatic failover if Anthropic's API is temporarily unavailable.</p>
+<h3 id="32-model-switching">3.2 Model switching<a class="headerlink" href="#32-model-switching" title="Permanent link">&para;</a></h3>
+<p>OpenRouter exposes <code>/model</code> switching mid-session, allowing cheaper models for
+low-stakes tasks. However, Claude Code subagents (used by <code>/orchestrate</code>) must
+all run the same model family — there is no per-agent model routing in the
+Claude Code architecture today.</p>
+<hr />
+<h2 id="4-evaluation-against-current-workflow">4. Evaluation Against Current Workflow<a class="headerlink" href="#4-evaluation-against-current-workflow" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>OpenRouter value</th>
+<th>Relevance</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Failover during Anthropic outages</td>
+<td>Automatic rerouting</td>
+<td>Low — outages are rare</td>
+<td>Nice-to-have</td>
+</tr>
+<tr>
+<td>Centralized team billing</td>
+<td>Single invoice, usage dashboard</td>
+<td>Only if multiple devs share billing</td>
+<td>Not needed (single-dev today)</td>
+</tr>
+<tr>
+<td>Switch models mid-session</td>
+<td>Access to non-Claude models</td>
+<td>Skills/hooks assume Claude capabilities</td>
+<td>Risk of breakage</td>
+</tr>
+<tr>
+<td>Cheaper models for bulk tasks</td>
+<td>Cost savings on routine work</td>
+<td>ollama already covers this locally</td>
+<td>Redundant</td>
+</tr>
+<tr>
+<td>Add LLM features to the library</td>
+<td>Product feature</td>
+<td><code>remote_store</code> is a storage lib</td>
+<td>Not applicable</td>
+</tr>
+<tr>
+<td>CI/CD with Claude Code Action</td>
+<td>Failover in CI pipelines</td>
+<td>CI has no AI steps currently</td>
+<td>Not applicable</td>
+</tr>
+<tr>
+<td>Per-subagent model routing</td>
+<td>Route simple experts to cheaper models</td>
+<td>Claude Code doesn't support this</td>
+<td>Blocked by architecture</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-comparison-with-existing-ollama-approach">5. Comparison with Existing ollama Approach<a class="headerlink" href="#5-comparison-with-existing-ollama-approach" title="Permanent link">&para;</a></h2>
+<p><code>DEVELOPMENT_STORY.md</code> mentions using an ollama MCP server for delegating bulk
+tasks to local GPU-accelerated models. This overlaps with OpenRouter's
+cheaper-model routing:</p>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>ollama (local)</th>
+<th>OpenRouter (cloud)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cost</td>
+<td>Free after hardware</td>
+<td>Pay per token</td>
+</tr>
+<tr>
+<td>Latency</td>
+<td>Low (local GPU)</td>
+<td>Network round-trip</td>
+</tr>
+<tr>
+<td>Privacy</td>
+<td>Full local control</td>
+<td>Depends on provider policy</td>
+</tr>
+<tr>
+<td>Model variety</td>
+<td>Limited by VRAM</td>
+<td>300+ models</td>
+</tr>
+<tr>
+<td>Setup</td>
+<td>Requires local GPU</td>
+<td>Environment variables only</td>
+</tr>
+<tr>
+<td>Availability</td>
+<td>Depends on local machine</td>
+<td>Always available</td>
+</tr>
+</tbody>
+</table>
+<p>OpenRouter would complement (not replace) ollama for scenarios where local GPU
+is unavailable (e.g., cloud-based development sessions on claude.ai/code).</p>
+<hr />
+<h2 id="6-conclusion">6. Conclusion<a class="headerlink" href="#6-conclusion" title="Permanent link">&para;</a></h2>
+<p><strong>No actionable integration at this time.</strong> The remote-store development
+workflow is tightly coupled to Claude Code's native capabilities, and the
+library itself has no LLM dependencies.</p>
+<p>OpenRouter becomes relevant if:</p>
+<ol>
+<li><strong>Anthropic reliability</strong> becomes a concern — trivial to enable as a
+   failover proxy via environment variables.</li>
+<li><strong>Team scaling</strong> — multiple developers need centralized billing and usage
+   monitoring across Claude Code sessions.</li>
+<li><strong>Claude Code adds per-agent model routing</strong> — would unlock cost
+   optimization in the <code>/orchestrate</code> multi-agent workflow.</li>
+<li><strong>Cloud dev sessions</strong> need access to cheaper models without local GPU
+   (replaces ollama for those environments).</li>
+</ol>
+<p>None of these conditions apply today. Revisit if the development team grows or
+if Claude Code's architecture evolves to support heterogeneous model routing.</p>
 
 
 
@@ -7752,10 +8076,10 @@ was chosen -- or who face similar decisions in their own projects.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
