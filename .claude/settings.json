@@ -59,12 +59,27 @@
           {
             "type": "command",
             "if": "Bash(tail*)",
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-bare-runner.sh 'tail → use Read tool with offset'"
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-bare-runner.sh 'tail → use Read tool (read full file or use offset+limit)'"
           },
           {
             "type": "command",
             "if": "Bash(awk*)",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-bare-runner.sh 'awk → use Read/Grep tools'"
+          },
+          {
+            "type": "command",
+            "if": "Bash(find*)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-bare-runner.sh 'find → use Glob tool'"
+          },
+          {
+            "type": "command",
+            "if": "Bash(grep*)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-bare-runner.sh 'grep → use Grep tool'"
+          },
+          {
+            "type": "command",
+            "if": "Bash(echo*)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-bare-runner.sh 'echo → output text directly or use Write tool'"
           }
         ]
       }
