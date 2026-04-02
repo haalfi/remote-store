@@ -11,13 +11,17 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **`config_loaders.py` example crashes on Windows** (BUG-136): Path
   interpolation into TOML/YAML strings produced backslashes which are
   invalid escape sequences. Now uses forward slashes on all platforms.
+- **CachedStore write doesn't invalidate parent directory metadata** (BUG-137):
+  Writing a nested path (e.g. `dir/file.txt`) now also invalidates cached
+  `exists()` / `is_folder()` / `is_file()` entries for all ancestor
+  directories, not just the leaf path.
+- **CachedStore.child() creates isolated cache** (BUG-138): `_wrap_child()`
+  now passes the parent's cache backend to the child and tracks the child's
+  path prefix so mutations through a child store correctly invalidate
+  the parent's cached entries.
 
 ### Known Issues
 
-- **CachedStore write doesn't invalidate parent directory metadata** (BUG-137):
-  Writing a nested path leaves `exists()` / `is_folder()` stale for parent dirs.
-- **CachedStore.child() creates isolated cache** (BUG-138): Child store gets
-  a fresh cache — writes through child don't invalidate parent's cached entries.
 - **RegistryConfig.from_dict crashes on null options** (BUG-139): YAML/TOML
   `options:` with no value raises `TypeError` instead of treating as empty.
 - **RegistryConfig.from_dict converts null to string "None"** (BUG-140): Null

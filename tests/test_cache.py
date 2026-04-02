@@ -413,6 +413,77 @@ class TestNonCached:
         assert isinstance(cached.native_path("a.txt"), str)
 
 
+class TestBug137:
+    """BUG-137: write doesn't invalidate parent directory metadata."""
+
+    @pytest.mark.spec("BUG-137")
+    def test_write_nested_invalidates_parent_exists(self) -> None:
+        backend = MemoryBackend()
+        s = Store(backend)
+        cs = cache(s, ttl=60.0)
+        assert cs.exists("newdir") is False  # cached as False
+        cs.write("newdir/file.txt", b"hello")
+        assert cs.exists("newdir") is True  # must see fresh True
+
+    @pytest.mark.spec("BUG-137")
+    def test_write_nested_invalidates_parent_is_folder(self) -> None:
+        backend = MemoryBackend()
+        s = Store(backend)
+        cs = cache(s, ttl=60.0)
+        assert cs.is_folder("newdir") is False  # cached as False
+        cs.write("newdir/file.txt", b"hello")
+        assert cs.is_folder("newdir") is True  # must see fresh True
+
+    @pytest.mark.spec("BUG-137")
+    def test_write_deeply_nested_invalidates_all_ancestors(self) -> None:
+        backend = MemoryBackend()
+        s = Store(backend)
+        cs = cache(s, ttl=60.0)
+        assert cs.exists("a") is False
+        assert cs.exists("a/b") is False
+        cs.write("a/b/c.txt", b"data")
+        assert cs.exists("a") is True
+        assert cs.exists("a/b") is True
+
+
+class TestBug138:
+    """BUG-138: child() creates isolated cache."""
+
+    @pytest.mark.spec("BUG-138")
+    def test_child_shares_cache_backend(self) -> None:
+        backend = MemoryBackend()
+        s = Store(backend)
+        cs = cache(s, ttl=60.0)
+        child = cs.child("sub")
+        assert isinstance(child, CachedStore)
+        assert child._cache is cs._cache  # noqa: SLF001
+
+    @pytest.mark.spec("BUG-138")
+    def test_child_write_invalidates_parent_read_bytes(self) -> None:
+        backend = MemoryBackend()
+        s = Store(backend)
+        cs = cache(s, ttl=60.0)
+        cs.write("sub/file.txt", b"version1", overwrite=True)
+        assert cs.read_bytes("sub/file.txt") == b"version1"  # cached
+
+        child = cs.child("sub")
+        child.write("file.txt", b"version2", overwrite=True)
+
+        assert cs.read_bytes("sub/file.txt") == b"version2"  # must be fresh
+
+    @pytest.mark.spec("BUG-138")
+    def test_child_write_invalidates_parent_exists(self) -> None:
+        backend = MemoryBackend()
+        s = Store(backend)
+        cs = cache(s, ttl=60.0)
+        assert cs.exists("sub/file.txt") is False  # cached as False
+
+        child = cs.child("sub")
+        child.write("file.txt", b"data")
+
+        assert cs.exists("sub/file.txt") is True  # must be fresh
+
+
 class TestInvalidation:
     @pytest.mark.spec("CACHE-008")
     @pytest.mark.parametrize(
