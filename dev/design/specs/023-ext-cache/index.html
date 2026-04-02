@@ -5477,6 +5477,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cache-016-child-cache-sharing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CACHE-016: Child Cache Sharing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#cache-015-lifecycle" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8161,6 +8172,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cache-016-child-cache-sharing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CACHE-016: Child Cache Sharing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#cache-015-lifecycle" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8281,7 +8303,7 @@ pattern (ADR-0010).</p>
 - <code>stats: CacheStats</code> -- read-only property returning current statistics.</p>
 <p><strong>Public cache-management methods:</strong>
 - <code>invalidate(path: str) -&gt; None</code> -- remove all cached entries for
-  the given path.
+  the given path and its ancestor directories.
 - <code>clear_cache() -&gt; None</code> -- remove all cached entries.</p>
 <h3 id="cache-005-cachestats-dataclass">CACHE-005: CacheStats Dataclass<a class="headerlink" href="#cache-005-cachestats-dataclass" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>CacheStats</code> is a frozen dataclass:</p>
@@ -8385,19 +8407,24 @@ inner store without caching:</p>
 <hr />
 <h2 id="invalidation">Invalidation<a class="headerlink" href="#invalidation" title="Permanent link">&para;</a></h2>
 <h3 id="cache-008-write-invalidation">CACHE-008: Write Invalidation<a class="headerlink" href="#cache-008-write-invalidation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write()</code>, <code>write_atomic()</code>, and <code>open_atomic()</code> (on
+<p><strong>Invariant:</strong> <code>write()</code>, <code>write_text()</code>, <code>write_atomic()</code>, and <code>open_atomic()</code> (on
 successful context exit) invalidate:</p>
 <ol>
-<li>All per-path cache entries for the written path (all operation
-   prefixes: <code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>read_bytes</code>,
-   <code>get_file_info</code>).</li>
+<li>All per-path cache entries for the written path <strong>and every ancestor
+   directory</strong> of that path (all operation prefixes: <code>exists</code>, <code>is_file</code>,
+   <code>is_folder</code>, <code>read_bytes</code>, <code>get_file_info</code>). Writing a nested path
+   (e.g. <code>dir/file.txt</code>) implicitly creates parent directories, so their
+   cached metadata must also be cleared.</li>
 <li>All listing cache entries (<code>iter_children</code>, <code>list_files</code>, <code>list_folders</code>,
    <code>glob</code>, <code>get_folder_info</code>).</li>
 </ol>
 <h3 id="cache-009-delete-invalidation">CACHE-009: Delete Invalidation<a class="headerlink" href="#cache-009-delete-invalidation" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>delete()</code> invalidates:</p>
 <ol>
-<li>All per-path cache entries for the deleted path.</li>
+<li>All per-path cache entries for the deleted path <strong>and every ancestor
+   directory</strong> of that path. After deleting the last file in a directory
+   the ancestor may become non-existent; stale <code>True</code> entries must be
+   cleared.</li>
 <li>All listing cache entries.</li>
 </ol>
 <p><code>delete_folder()</code> invalidates all cache entries (full clear), since
@@ -8432,6 +8459,21 @@ other processes or Store instances sharing the same backend). Users must
 either set an appropriate TTL or call <code>invalidate()</code> / <code>clear_cache()</code>
 manually when external mutations are expected. This limitation is
 documented in the user guide.</p>
+<h3 id="cache-016-child-cache-sharing">CACHE-016: Child Cache Sharing<a class="headerlink" href="#cache-016-child-cache-sharing" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>CachedStore.child(subpath)</code> returns a <code>CachedStore</code> that
+shares the parent's cache backend. The child tracks a path prefix
+derived from <code>subpath</code> so that mutations through the child also
+invalidate the parent's fully-qualified cache keys.</p>
+<p><strong>Postconditions:</strong>
+- <code>child._cache is parent._cache</code> — the same <code>CacheBackend</code> instance.
+- When the child calls <code>_invalidate_path(path)</code>, it invalidates both
+  <code>(op, path)</code> (the child-local key) and <code>(op, prefix/path)</code> (the
+  parent-visible key) for all per-path operation prefixes.
+- Ancestor invalidation (CACHE-008/CACHE-009) applies to both the
+  child-local and parent-visible paths.
+- Nesting is composable: <code>cache.child("a").child("b")</code> produces prefix
+  <code>"a/b"</code>, so a write to <code>"file.txt"</code> invalidates <code>"file.txt"</code>,
+  <code>"b/file.txt"</code>, and <code>"a/b/file.txt"</code> in the shared cache.</p>
 <h3 id="cache-015-lifecycle">CACHE-015: Lifecycle<a class="headerlink" href="#cache-015-lifecycle" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>CachedStore.close()</code> delegates to the inner store's
 <code>close()</code>. The cache itself has no resources requiring cleanup. Follows

@@ -10025,13 +10025,17 @@
 <li><strong><code>config_loaders.py</code> example crashes on Windows</strong> (BUG-136): Path
   interpolation into TOML/YAML strings produced backslashes which are
   invalid escape sequences. Now uses forward slashes on all platforms.</li>
+<li><strong>CachedStore write doesn't invalidate parent directory metadata</strong> (BUG-137):
+  Writing a nested path (e.g. <code>dir/file.txt</code>) now also invalidates cached
+  <code>exists()</code> / <code>is_folder()</code> / <code>is_file()</code> entries for all ancestor
+  directories, not just the leaf path.</li>
+<li><strong>CachedStore.child() creates isolated cache</strong> (BUG-138): <code>_wrap_child()</code>
+  now passes the parent's cache backend to the child and tracks the child's
+  path prefix so mutations through a child store correctly invalidate
+  the parent's cached entries.</li>
 </ul>
 <h3 id="known-issues">Known Issues<a class="headerlink" href="#known-issues" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>CachedStore write doesn't invalidate parent directory metadata</strong> (BUG-137):
-  Writing a nested path leaves <code>exists()</code> / <code>is_folder()</code> stale for parent dirs.</li>
-<li><strong>CachedStore.child() creates isolated cache</strong> (BUG-138): Child store gets
-  a fresh cache — writes through child don't invalidate parent's cached entries.</li>
 <li><strong>RegistryConfig.from_dict crashes on null options</strong> (BUG-139): YAML/TOML
   <code>options:</code> with no value raises <code>TypeError</code> instead of treating as empty.</li>
 <li><strong>RegistryConfig.from_dict converts null to string "None"</strong> (BUG-140): Null
