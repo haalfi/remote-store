@@ -118,6 +118,34 @@ def test_from_dict_minimal() -> None:
     assert rc.stores == {}
 
 
+@pytest.mark.spec("BUG-139")
+@pytest.mark.spec("CFG-005")
+@pytest.mark.parametrize(
+    ("data", "check"),
+    [
+        pytest.param(
+            {
+                "backends": {"b": {"type": "local", "options": None}},
+                "stores": {},
+            },
+            lambda rc: rc.backends["b"].options == {},
+            id="backend_null_options",
+        ),
+        pytest.param(
+            {
+                "backends": {"b": {"type": "local", "options": {"root": "/"}}},
+                "stores": {"s": {"backend": "b", "options": None}},
+            },
+            lambda rc: rc.stores["s"].options == {},
+            id="store_null_options",
+        ),
+    ],
+)
+def test_from_dict_null_options_treated_as_empty(data: dict[str, object], check: object) -> None:
+    rc = RegistryConfig.from_dict(data)
+    assert check(rc)  # type: ignore[operator]
+
+
 # ---------------------------------------------------------------------------
 # CFG-006: Immutability
 # ---------------------------------------------------------------------------

@@ -66,6 +66,9 @@ def partition_path(filename: str, /, **partitions: str | int) -> str:
         if not key:
             msg = "partition key must be non-empty"
             raise ValueError(msg)
+        if "=" in key:
+            msg = f"partition key must not contain '=': {key!r}"
+            raise ValueError(msg)
         str_value = str(value)
         if not str_value:
             msg = f"partition value for {key!r} must be non-empty"
