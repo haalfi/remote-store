@@ -51,8 +51,9 @@ def partition_path(filename: str, /, **partitions: str | int) -> str:
         Forward-slash-joined path like ``"year=2026/month=03/data.parquet"``.
 
     Raises:
-        ValueError: If *filename* is empty or contains ``/``, or if
-            any partition key or coerced value is empty.
+        ValueError: If *filename* is empty or contains ``/``, if any
+            partition key or coerced value is empty, or if any key or
+            value contains ``=``.
     """
     if not filename:
         msg = "filename must be non-empty"

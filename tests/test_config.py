@@ -139,6 +139,14 @@ def test_from_dict_minimal() -> None:
             lambda rc: rc.stores["s"].options == {},
             id="store_null_options",
         ),
+        pytest.param(
+            {
+                "backends": {"b": {"type": "local", "options": {"root": "/"}}},
+                "stores": {"s": {"backend": "b", "root_path": None}},
+            },
+            lambda rc: rc.stores["s"].root_path == "",
+            id="store_null_root_path",
+        ),
     ],
 )
 def test_from_dict_null_options_treated_as_empty(data: dict[str, object], check: object) -> None:
