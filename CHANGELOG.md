@@ -12,6 +12,19 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   interpolation into TOML/YAML strings produced backslashes which are
   invalid escape sequences. Now uses forward slashes on all platforms.
 
+### Known Issues
+
+- **CachedStore write doesn't invalidate parent directory metadata** (BUG-137):
+  Writing a nested path leaves `exists()` / `is_folder()` stale for parent dirs.
+- **CachedStore.child() creates isolated cache** (BUG-138): Child store gets
+  a fresh cache — writes through child don't invalidate parent's cached entries.
+- **RegistryConfig.from_dict crashes on null options** (BUG-139): YAML/TOML
+  `options:` with no value raises `TypeError` instead of treating as empty.
+- **RegistryConfig.from_dict converts null to string "None"** (BUG-140): Null
+  `type`, `backend`, or `root_path` silently becomes `"None"` string.
+- **partition_path allows `=` in key** (BUG-141): Round-trip with
+  `parse_partition` fails when partition key contains `=`.
+
 ### Changed
 
 - **Examples reorganized into topical subdirectories** — examples are now
