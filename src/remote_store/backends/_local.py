@@ -122,6 +122,8 @@ class LocalBackend(Backend):
             return open(str(full), "rb")  # noqa: SIM115
         except FileNotFoundError:
             raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
+        except IsADirectoryError:
+            raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
@@ -131,6 +133,8 @@ class LocalBackend(Backend):
             return full.read_bytes()
         except FileNotFoundError:
             raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
+        except IsADirectoryError:
+            raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
@@ -210,7 +214,8 @@ class LocalBackend(Backend):
             if not missing_ok:
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
         except IsADirectoryError:
-            raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
+            if not missing_ok:
+                raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
