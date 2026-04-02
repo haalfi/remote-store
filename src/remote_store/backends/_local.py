@@ -140,6 +140,8 @@ class LocalBackend(Backend):
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         full = self._resolve(path)
+        if full.is_dir():
+            raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
         if not overwrite and full.exists():
             raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
         try:
@@ -156,6 +158,8 @@ class LocalBackend(Backend):
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         full = self._resolve(path)
+        if full.is_dir():
+            raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
         if not overwrite and full.exists():
             raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
         try:
@@ -181,6 +185,8 @@ class LocalBackend(Backend):
     @contextlib.contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
         full = self._resolve(path)
+        if full.is_dir():
+            raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
         if not overwrite and full.exists():
             raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
         try:
