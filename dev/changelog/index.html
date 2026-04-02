@@ -10000,6 +10000,22 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>SFTP <code>delete_folder</code> masks <code>listdir</code> permission errors</strong> (BUG-147):
+  Non-recursive <code>delete_folder</code> now re-raises non-ENOENT errors from
+  <code>listdir</code> instead of silently treating them as empty.</li>
+<li><strong>SFTP listing methods silently swallow non-ENOENT errors</strong> (BUG-146):
+  <code>list_files</code>, <code>list_folders</code>, and <code>iter_children</code> now only suppress
+  ENOENT from <code>listdir_attr</code>; other errors propagate as <code>RemoteStoreError</code>.</li>
+<li><strong>SFTP <code>_ensure_parent_dirs</code> swallows permission errors</strong> (BUG-145):
+  Parent directory creation now only catches ENOENT on <code>stat</code> and EEXIST
+  on <code>mkdir</code>; other errors propagate.</li>
+<li><strong>SFTP SSH client leaked on connection failure</strong> (BUG-144): <code>_connect()</code>
+  now closes the <code>SSHClient</code> if the retry-wrapped connect exhausts attempts.</li>
+<li><strong>SFTP <code>st_mode</code> None causes TypeError</strong> (BUG-143): Entries with
+  <code>st_mode is None</code> are now skipped in listing, traversal, and stats methods.</li>
+<li><strong>SFTP <code>read()</code> leaks file handle if stream wrapping fails</strong> (BUG-142):
+  The paramiko file handle is now closed if <code>_ErrorMappingStream</code> or
+  <code>BufferedReader</code> construction raises.</li>
 <li><strong><code>config_loaders.py</code> example crashes on Windows</strong> (BUG-136): Path
   interpolation into TOML/YAML strings produced backslashes which are
   invalid escape sequences. Now uses forward slashes on all platforms.</li>
