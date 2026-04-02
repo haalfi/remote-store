@@ -33,6 +33,14 @@ The Registry loads configuration, validates it, lazily instantiates backends, an
 **Invariant:** `from_dict(data)` constructs a `RegistryConfig` from a dict.
 String values for sensitive keys are wrapped in `Secret()` — see
 [020-credential-hygiene.md](020-credential-hygiene.md) SEC-003.
+
+**Null handling:**
+- `type` (backend) and `backend` (store) must be strings. `None` or
+  other non-string values raise `TypeError`.
+- `root_path`: `None` is treated as `""` (same as omitted). Other
+  non-string values raise `TypeError`.
+- `options`: `None` is treated as `{}` (same as omitted).
+
 **Example:**
 ```python
 config = RegistryConfig.from_dict({

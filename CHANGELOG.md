@@ -19,15 +19,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   now passes the parent's cache backend to the child and tracks the child's
   path prefix so mutations through a child store correctly invalidate
   the parent's cached entries.
-
-### Known Issues
-
 - **RegistryConfig.from_dict crashes on null options** (BUG-139): YAML/TOML
-  `options:` with no value raises `TypeError` instead of treating as empty.
-- **RegistryConfig.from_dict converts null to string "None"** (BUG-140): Null
-  `type`, `backend`, or `root_path` silently becomes `"None"` string.
-- **partition_path allows `=` in key** (BUG-141): Round-trip with
-  `parse_partition` fails when partition key contains `=`.
+  `options:` with no value (`None`) now treated as empty dict instead of
+  raising `TypeError`.
+- **RegistryConfig.from_dict converts null to string "None"** (BUG-140):
+  Null `type` or `backend` now raises `TypeError` with a clear message
+  instead of silently producing the string `"None"`. Null `root_path`
+  is treated as empty string (same as omitted).
+- **partition_path allows `=` in key** (BUG-141): Partition keys containing
+  `=` now raise `ValueError`, preventing round-trip failures with
+  `parse_partition`.
 
 ### Changed
 

@@ -45,14 +45,16 @@ def partition_path(filename: str, /, **partitions: str | int) -> str:
         filename: Leaf file name (e.g., ``"data.parquet"``).
             Must be non-empty and must not contain ``/``.
         partitions: Partition key-value pairs. Values are coerced to
-            ``str``. Keys and coerced values must be non-empty.
+            ``str``. Keys and coerced values must be non-empty and
+            must not contain ``=``.
 
     Returns:
         Forward-slash-joined path like ``"year=2026/month=03/data.parquet"``.
 
     Raises:
-        ValueError: If *filename* is empty or contains ``/``, or if
-            any partition key or coerced value is empty.
+        ValueError: If *filename* is empty or contains ``/``, if any
+            partition key or coerced value is empty, or if any key or
+            value contains ``=``.
     """
     if not filename:
         msg = "filename must be non-empty"
@@ -65,6 +67,9 @@ def partition_path(filename: str, /, **partitions: str | int) -> str:
     for key, value in partitions.items():
         if not key:
             msg = "partition key must be non-empty"
+            raise ValueError(msg)
+        if "=" in key:
+            msg = f"partition key must not contain '=': {key!r}"
             raise ValueError(msg)
         str_value = str(value)
         if not str_value:

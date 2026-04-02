@@ -184,6 +184,24 @@ _CONFIG_ERROR_CASES = [
     pytest.param({"backends": {}, "stores": "bad"}, TypeError, "dicts", id="stores_not_dict"),
     pytest.param({"backends": {"local": "bad"}, "stores": {}}, TypeError, "Backend config", id="backend_entry"),
     pytest.param({"backends": {}, "stores": {"main": "bad"}}, TypeError, "Store profile", id="store_entry"),
+    pytest.param(
+        {"backends": {"b": {"type": None, "options": {}}}, "stores": {}},
+        TypeError,
+        "must be a string",
+        id="null_backend_type",
+    ),
+    pytest.param(
+        {"backends": {}, "stores": {"s": {"backend": None}}},
+        TypeError,
+        "must be a string",
+        id="null_store_backend",
+    ),
+    pytest.param(
+        {"backends": {"b": {"type": "local"}}, "stores": {"s": {"backend": "b", "root_path": 0}}},
+        TypeError,
+        "root_path must be a string",
+        id="non_string_root_path",
+    ),
 ]
 
 

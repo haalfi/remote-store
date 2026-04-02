@@ -243,7 +243,7 @@ class RegistryConfig:
             if not isinstance(cfg, dict):
                 msg = f"Backend config for '{name}' must be a dict"
                 raise TypeError(msg)
-            options = dict(cfg.get("options", {}))
+            options = dict(cfg.get("options") or {})
             for k in _SENSITIVE_KEYS:
                 if k in options and isinstance(options[k], str):
                     options[k] = Secret(options[k])
@@ -253,8 +253,12 @@ class RegistryConfig:
                 retry = RetryPolicy(**raw_retry)
             elif isinstance(raw_retry, RetryPolicy):
                 retry = raw_retry
+            backend_type = cfg["type"]
+            if not isinstance(backend_type, str):
+                msg = f"Backend '{name}' type must be a string, got {type(backend_type).__name__}"
+                raise TypeError(msg)
             backends[str(name)] = BackendConfig(
-                type=str(cfg["type"]),
+                type=backend_type,
                 options=options,
                 retry=retry,
             )
@@ -264,10 +268,20 @@ class RegistryConfig:
             if not isinstance(prof, dict):
                 msg = f"Store profile for '{name}' must be a dict"
                 raise TypeError(msg)
+            store_backend = prof["backend"]
+            if not isinstance(store_backend, str):
+                msg = f"Store '{name}' backend must be a string, got {type(store_backend).__name__}"
+                raise TypeError(msg)
+            raw_root = prof.get("root_path", "")
+            if raw_root is None:
+                raw_root = ""
+            if not isinstance(raw_root, str):
+                msg = f"Store '{name}' root_path must be a string, got {type(raw_root).__name__}"
+                raise TypeError(msg)
             stores[str(name)] = StoreProfile(
-                backend=str(prof["backend"]),
-                root_path=str(prof.get("root_path", "")),
-                options=dict(prof.get("options", {})),
+                backend=store_backend,
+                root_path=raw_root,
+                options=dict(prof.get("options") or {}),
             )
 
         return cls(backends=backends, stores=stores)

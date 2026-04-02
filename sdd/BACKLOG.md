@@ -39,20 +39,7 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
-- [ ] **BUG-139 — RegistryConfig.from_dict crashes on null options**
-  YAML/TOML `options:` with no value produces `None`. `dict(None)` raises
-  `TypeError` instead of treating it as empty.
-  Audit: [008 B-3](audits/audit-008-package-bugs.md#b-3)
-
-- [ ] **BUG-140 — RegistryConfig.from_dict converts null fields to string "None"**
-  `str(None)` coercion on `type`, `backend`, `root_path` silently produces
-  `"None"` — files stored under `None/` prefix, confusing backend lookup errors.
-  Audit: [008 B-4](audits/audit-008-package-bugs.md#b-4)
-
-- [ ] **BUG-141 — partition_path allows `=` in key, round-trip fails**
-  Key validation missing for `=` character. `partition_path(**{"col=x": "val"})`
-  produces `col=x=val/...` which `parse_partition` can't parse.
-  Audit: [008 B-5](audits/audit-008-package-bugs.md#b-5)
+*(none)*
 
 ---
 

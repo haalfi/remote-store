@@ -7,6 +7,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Bugs
 
+- [x] **BUG-141 — partition_path allows `=` in key, round-trip fails**
+  Added `=` validation for partition keys (matching existing value
+  validation). Updated PART-006 spec.
+  Audit: [008 B-5](audits/audit-008-package-bugs.md#b-5)
+
+- [x] **BUG-140 — RegistryConfig.from_dict converts null fields to string "None"**
+  `type` and `backend` now validated as strings with `TypeError` on null.
+  `root_path` null treated as empty string (same as omitted).
+  Audit: [008 B-4](audits/audit-008-package-bugs.md#b-4)
+
+- [x] **BUG-139 — RegistryConfig.from_dict crashes on null options**
+  Changed `cfg.get("options", {})` to `cfg.get("options") or {}` so null
+  values are treated as empty dict instead of crashing.
+  Audit: [008 B-3](audits/audit-008-package-bugs.md#b-3)
+
 - [x] **BUG-138 — CachedStore.child() creates isolated cache**
   `_wrap_child()` now passes the parent's `CacheBackend` instance to the
   child instead of `None`, so child and parent share one cache. A `_prefix`
