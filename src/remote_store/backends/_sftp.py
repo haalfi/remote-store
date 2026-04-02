@@ -912,11 +912,15 @@ class SFTPBackend(Backend):
         """Recursively remove a directory tree, bottom-up."""
         try:
             entries = self._sftp.listdir_attr(sftp_path)
-        except OSError:
-            return
+        except OSError as exc:
+            if getattr(exc, "errno", None) == errno.ENOENT:
+                return
+            raise
         for attr in entries:
             child = f"{sftp_path}/{attr.filename}"
-            if attr.st_mode is not None and stat.S_ISDIR(attr.st_mode):
+            if attr.st_mode is None:
+                continue
+            if stat.S_ISDIR(attr.st_mode):
                 self._rmtree(child)
             else:
                 self._sftp.remove(child)

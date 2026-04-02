@@ -1023,20 +1023,31 @@ class TestSFTPDeleteFolderEdgeCases:
         ):
             sftp_backend.delete_folder("df_eio", recursive=False)
 
-    def test_rmtree_listdir_attr_oserror(self, sftp_backend: Backend) -> None:
-        """_rmtree handles OSError on listdir_attr gracefully (lines 572-573)."""
+    def test_rmtree_listdir_attr_enoent_returns(self, sftp_backend: Backend) -> None:
+        """_rmtree returns silently on ENOENT from listdir_attr."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        def enoent_listdir_attr(path: str) -> None:
+            raise OSError(errno.ENOENT, "No such file")
+
+        # _rmtree returns early on ENOENT — no error raised
+        with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=enoent_listdir_attr):
+            sftp_backend._rmtree("/nonexistent")
+
+    def test_rmtree_listdir_attr_eio_raises(self, sftp_backend: Backend) -> None:
+        """_rmtree re-raises non-ENOENT errors from listdir_attr."""
         assert isinstance(sftp_backend, SFTPBackend)
         sftp_backend.write("rmtree_oserr/a.txt", b"a")
 
         def failing_listdir_attr(path: str) -> None:
             raise OSError(errno.EIO, "I/O error on listdir_attr")
 
-        # _rmtree returns early on OSError — folder is NOT deleted
-        with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=failing_listdir_attr):
+        with (
+            patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=failing_listdir_attr),
+            pytest.raises(OSError),
+        ):
             sftp_backend._rmtree(sftp_backend._sftp_path("rmtree_oserr"))
-
-        # Folder still exists because _rmtree bailed out
-        assert sftp_backend.is_folder("rmtree_oserr") is True
 
 
 class TestSFTPCollectFolderStatsOSError:
@@ -1135,6 +1146,8 @@ class TestSFTPBug144SshClientLeak:
     """BUG-144: SSHClient is closed when _do_connect exhausts retries."""
 
     def test_ssh_client_closed_on_connect_failure(self) -> None:
+        # internal: no public observable — resource cleanup after failed connect
+        # has no behavioral signal; tracking SSHClient.close() is the only option
         import paramiko
 
         close_called = False
@@ -1159,7 +1172,6 @@ class TestSFTPBug144SshClientLeak:
         ):
             backend._connect()
 
-        # SSHClient.close() must have been called to prevent leak
         assert close_called, "SSHClient was not closed after connection failure"
 
 
@@ -1185,6 +1197,42 @@ class TestSFTPBug143StModeNone:
         names = {f.name for f in files}
         assert "ok.txt" in names
         assert "ghost.txt" not in names
+
+    def test_list_folders_skips_none_st_mode(self, sftp_backend: Backend) -> None:
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("lf_dir/sub/a.txt", b"data")
+
+        original_listdir_attr = sftp_backend._sftp_client.listdir_attr
+
+        def patched_listdir_attr(path: str) -> list[object]:
+            results = original_listdir_attr(path)
+            fake = type("FakeAttrs", (), {"st_mode": None, "filename": "ghost_dir", "st_size": 0, "st_mtime": None})()
+            results.append(fake)
+            return results
+
+        with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=patched_listdir_attr):
+            folders = list(sftp_backend.list_folders("lf_dir"))
+
+        names = {f.name for f in folders}
+        assert "sub" in names
+        assert "ghost_dir" not in names
+
+    def test_rmtree_skips_none_st_mode(self, sftp_backend: Backend) -> None:
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("rm_dir/ok.txt", b"data")
+
+        original_listdir_attr = sftp_backend._sftp_client.listdir_attr
+
+        def patched_listdir_attr(path: str) -> list[object]:
+            results = original_listdir_attr(path)
+            fake = type("FakeAttrs", (), {"st_mode": None, "filename": "ghost", "st_size": 0, "st_mtime": None})()
+            results.append(fake)
+            return results
+
+        # _rmtree should skip the None-st_mode entry and successfully remove
+        # the rest; no TypeError should be raised
+        with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=patched_listdir_attr):
+            sftp_backend._rmtree(sftp_backend._sftp_path("rm_dir"))
 
     def test_iter_children_skips_none_st_mode(self, sftp_backend: Backend) -> None:
         assert isinstance(sftp_backend, SFTPBackend)
@@ -1251,9 +1299,9 @@ class TestSFTPBug142ReadHandleLeak:
         ):
             sftp_backend.read("leak_test.txt")
 
-        # The handle should have been closed by the except clause
+        # internal: no public observable — paramiko SFTPFile has no public
+        # closed property; _closed is the only way to verify resource cleanup
         assert opened_handle is not None
-        # paramiko SFTPFile uses _closed attribute
         assert getattr(opened_handle, "_closed", False) is True
 
 

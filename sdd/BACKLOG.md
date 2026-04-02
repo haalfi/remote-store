@@ -39,40 +39,7 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
-- [ ] **BUG-147 — SFTP `delete_folder` masks `listdir` permission errors**
-  Non-recursive `delete_folder` catches bare `OSError` from `listdir` and
-  defaults to `entries = []` (line 437). A permission-denied error is silently
-  swallowed; the code then calls `rmdir` on a non-empty folder, producing a
-  misleading error. Should distinguish ENOENT from other errno values.
-
-- [ ] **BUG-146 — SFTP listing methods silently swallow non-ENOENT errors**
-  `_list_files_depth`, `list_folders`, and `iter_children` all catch bare
-  `OSError` from `listdir_attr` and return/yield nothing. Permission-denied
-  or I/O errors are indistinguishable from an empty directory. Should only
-  catch ENOENT; other errors should propagate as `RemoteStoreError`.
-
-- [ ] **BUG-145 — SFTP `_ensure_parent_dirs` swallows permission errors**
-  `stat` failure catches bare `OSError` (line 826), then `mkdir` failure is
-  suppressed (line 827-828). A permission error at any intermediate directory
-  is invisible — the caller sees only the subsequent write fail with a
-  misleading error. Should check errno before attempting mkdir.
-
-- [ ] **BUG-144 — SFTP SSH client leaked on connection failure**
-  `_connect()` creates `ssh = self._create_ssh_client()` (line 680). If
-  `_do_connect()` exhausts retries, the exception propagates without storing
-  `ssh` in `self._ssh_client`, so `_close_clients()` never closes it. The
-  `SSHClient` (socket, transport) leaks.
-
-- [ ] **BUG-143 — SFTP `st_mode` None causes TypeError in listing/traversal**
-  paramiko `SFTPAttributes` defaults `st_mode = None`. If an SFTP server omits
-  file-mode flags in `listdir_attr` responses, `stat.S_ISREG(None)` raises
-  `TypeError`. Affects `list_files`, `list_folders`, `iter_children`, `_rmtree`,
-  and `_collect_folder_stats`.
-
-- [ ] **BUG-142 — SFTP `read()` leaks file handle if stream wrapping fails**
-  In `read()`, if `_ErrorMappingStream()` or `io.BufferedReader()` construction
-  raises, the paramiko file handle `f` (line 302) is never closed. Should wrap
-  in try/except to close `f` on failure.
+*(none)*
 
 ---
 

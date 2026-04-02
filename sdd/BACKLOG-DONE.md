@@ -7,6 +7,30 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Bugs
 
+- [x] **BUG-147 — SFTP `delete_folder` masks `listdir` permission errors**
+  Non-recursive `delete_folder` now re-raises non-ENOENT errors from
+  `listdir` instead of silently treating them as empty.
+
+- [x] **BUG-146 — SFTP listing methods silently swallow non-ENOENT errors**
+  `list_files`, `list_folders`, and `iter_children` now only suppress ENOENT
+  from `listdir_attr`; other errors propagate as `RemoteStoreError`.
+
+- [x] **BUG-145 — SFTP `_ensure_parent_dirs` swallows permission errors**
+  Parent directory creation now only catches ENOENT on `stat` and EEXIST
+  on `mkdir`; other errors propagate.
+
+- [x] **BUG-144 — SFTP SSH client leaked on connection failure**
+  `_connect()` now closes the `SSHClient` if the retry-wrapped connect
+  exhausts attempts.
+
+- [x] **BUG-143 — SFTP `st_mode` None causes TypeError in listing/traversal**
+  Entries with `st_mode is None` are now skipped in listing, traversal,
+  and stats methods.
+
+- [x] **BUG-142 — SFTP `read()` leaks file handle if stream wrapping fails**
+  The paramiko file handle is now closed if `_ErrorMappingStream` or
+  `BufferedReader` construction raises.
+
 - [x] **BUG-141 — partition_path allows `=` in key, round-trip fails**
   Added `=` validation for partition keys (matching existing value
   validation). Updated PART-006 spec.
