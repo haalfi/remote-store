@@ -155,6 +155,8 @@ class TestLocalWriteOnDirectory:
         local_backend.write("dir/file.txt", b"hello")
         assert local_backend.is_folder("dir")
 
-        with pytest.raises(InvalidPath, match="exists as a directory"):
-            with local_backend.open_atomic("dir", overwrite=True) as f:
-                f.write(b"overwrite")
+        with (
+            pytest.raises(InvalidPath, match="exists as a directory"),
+            local_backend.open_atomic("dir", overwrite=True) as f,
+        ):
+            f.write(b"overwrite")
