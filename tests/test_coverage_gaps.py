@@ -196,6 +196,12 @@ _CONFIG_ERROR_CASES = [
         "must be a string",
         id="null_store_backend",
     ),
+    pytest.param(
+        {"backends": {"b": {"type": "local"}}, "stores": {"s": {"backend": "b", "root_path": 0}}},
+        TypeError,
+        "root_path must be a string",
+        id="non_string_root_path",
+    ),
 ]
 
 

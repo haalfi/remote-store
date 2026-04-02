@@ -272,9 +272,15 @@ class RegistryConfig:
             if not isinstance(store_backend, str):
                 msg = f"Store '{name}' backend must be a string, got {type(store_backend).__name__}"
                 raise TypeError(msg)
+            raw_root = prof.get("root_path", "")
+            if raw_root is None:
+                raw_root = ""
+            if not isinstance(raw_root, str):
+                msg = f"Store '{name}' root_path must be a string, got {type(raw_root).__name__}"
+                raise TypeError(msg)
             stores[str(name)] = StoreProfile(
                 backend=store_backend,
-                root_path=prof.get("root_path") or "",
+                root_path=raw_root,
                 options=dict(prof.get("options") or {}),
             )
 
