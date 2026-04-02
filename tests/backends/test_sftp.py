@@ -1053,20 +1053,34 @@ class TestSFTPDeleteFolderEdgeCases:
 class TestSFTPCollectFolderStatsOSError:
     """BK-005: _collect_folder_stats OSError on listdir_attr (lines 664-665)."""
 
-    def test_collect_folder_stats_listdir_oserror(self, sftp_backend: Backend) -> None:
-        """_collect_folder_stats returns zeros when listdir_attr fails."""
+    def test_collect_folder_stats_listdir_enoent_returns_zeros(self, sftp_backend: Backend) -> None:
+        """_collect_folder_stats returns zeros on ENOENT from listdir_attr."""
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")
+
+        def enoent_listdir_attr(path: str) -> None:
+            raise OSError(errno.ENOENT, "No such file")
+
+        with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=enoent_listdir_attr):
+            count, size, latest = sftp_backend._collect_folder_stats("/nonexistent")
+
+        assert count == 0
+        assert size == 0
+        assert latest is None
+
+    def test_collect_folder_stats_listdir_eio_raises(self, sftp_backend: Backend) -> None:
+        """_collect_folder_stats re-raises non-ENOENT errors from listdir_attr."""
         assert isinstance(sftp_backend, SFTPBackend)
         sftp_backend.write("cfs_oserr/a.txt", b"a")
 
         def failing_listdir_attr(path: str) -> None:
             raise OSError(errno.EIO, "I/O error")
 
-        with patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=failing_listdir_attr):
-            count, size, latest = sftp_backend._collect_folder_stats(sftp_backend._sftp_path("cfs_oserr"))
-
-        assert count == 0
-        assert size == 0
-        assert latest is None
+        with (
+            patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=failing_listdir_attr),
+            pytest.raises(OSError),
+        ):
+            sftp_backend._collect_folder_stats(sftp_backend._sftp_path("cfs_oserr"))
 
 
 # endregion

@@ -934,8 +934,10 @@ class SFTPBackend(Backend):
 
         try:
             entries = self._sftp.listdir_attr(sftp_path)
-        except OSError:
-            return file_count, total_size, latest_modified
+        except OSError as exc:
+            if getattr(exc, "errno", None) == errno.ENOENT:
+                return file_count, total_size, latest_modified
+            raise
 
         for attr in entries:
             if attr.st_mode is None:
