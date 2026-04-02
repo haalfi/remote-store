@@ -472,6 +472,10 @@ class CachedStore(ProxyStore):
         # the fully-qualified prefix for cross-store cache invalidation.
         parent_root = self._inner._root or ""
         child_root = inner_child._root or ""
+        if parent_root:
+            assert child_root.startswith(parent_root + "/"), (
+                f"child root {child_root!r} does not start with parent root {parent_root!r}"
+            )
         subpath = child_root[len(parent_root) + 1 :] if parent_root else child_root
         prefix = f"{self._prefix}/{subpath}" if self._prefix else subpath
         return CachedStore(

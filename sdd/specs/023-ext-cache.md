@@ -111,7 +111,7 @@ pattern (ADR-0010).
 
 **Public cache-management methods:**
 - `invalidate(path: str) -> None` -- remove all cached entries for
-  the given path.
+  the given path and its ancestor directories.
 - `clear_cache() -> None` -- remove all cached entries.
 
 ### CACHE-005: CacheStats Dataclass
@@ -245,6 +245,24 @@ other processes or Store instances sharing the same backend). Users must
 either set an appropriate TTL or call `invalidate()` / `clear_cache()`
 manually when external mutations are expected. This limitation is
 documented in the user guide.
+
+### CACHE-016: Child Cache Sharing
+
+**Invariant:** `CachedStore.child(subpath)` returns a `CachedStore` that
+shares the parent's cache backend. The child tracks a path prefix
+derived from `subpath` so that mutations through the child also
+invalidate the parent's fully-qualified cache keys.
+
+**Postconditions:**
+- `child._cache is parent._cache` — the same `CacheBackend` instance.
+- When the child calls `_invalidate_path(path)`, it invalidates both
+  `(op, path)` (the child-local key) and `(op, prefix/path)` (the
+  parent-visible key) for all per-path operation prefixes.
+- Ancestor invalidation (CACHE-008/CACHE-009) applies to both the
+  child-local and parent-visible paths.
+- Nesting is composable: `cache.child("a").child("b")` produces prefix
+  `"a/b"`, so a write to `"file.txt"` invalidates `"file.txt"`,
+  `"b/file.txt"`, and `"a/b/file.txt"` in the shared cache.
 
 ### CACHE-015: Lifecycle
 

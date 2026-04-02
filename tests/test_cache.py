@@ -417,6 +417,7 @@ class TestBug137:
     """BUG-137: write doesn't invalidate parent directory metadata."""
 
     @pytest.mark.spec("BUG-137")
+    @pytest.mark.spec("CACHE-008")
     def test_write_nested_invalidates_parent_exists(self) -> None:
         backend = MemoryBackend()
         s = Store(backend)
@@ -426,6 +427,7 @@ class TestBug137:
         assert cs.exists("newdir") is True  # must see fresh True
 
     @pytest.mark.spec("BUG-137")
+    @pytest.mark.spec("CACHE-008")
     def test_write_nested_invalidates_parent_is_folder(self) -> None:
         backend = MemoryBackend()
         s = Store(backend)
@@ -435,6 +437,7 @@ class TestBug137:
         assert cs.is_folder("newdir") is True  # must see fresh True
 
     @pytest.mark.spec("BUG-137")
+    @pytest.mark.spec("CACHE-008")
     def test_write_deeply_nested_invalidates_all_ancestors(self) -> None:
         backend = MemoryBackend()
         s = Store(backend)
@@ -446,6 +449,7 @@ class TestBug137:
         assert cs.exists("a/b") is True
 
     @pytest.mark.spec("BUG-137")
+    @pytest.mark.spec("CACHE-008")
     @pytest.mark.parametrize(
         ("write_method", "write_args", "write_kwargs"),
         [
@@ -464,6 +468,7 @@ class TestBug137:
         assert cs.exists("newdir") is True  # must see fresh True
 
     @pytest.mark.spec("BUG-137")
+    @pytest.mark.spec("CACHE-008")
     def test_open_atomic_success_invalidates_ancestor(self) -> None:
         backend = MemoryBackend()
         s = Store(backend)
@@ -474,6 +479,7 @@ class TestBug137:
         assert cs.exists("newdir") is True  # must see fresh True
 
     @pytest.mark.spec("BUG-137")
+    @pytest.mark.spec("CACHE-009")
     def test_delete_invalidates_ancestor(self) -> None:
         """delete() invalidates ancestor cache entries — next read is a miss, not stale hit."""
         backend = MemoryBackend()
@@ -483,7 +489,9 @@ class TestBug137:
         assert cs.exists("dir") is True  # miss 1 — cached as True
         assert cs.stats.misses == 1
         cs.delete("dir/file.txt")
-        cs.exists("dir")  # must be miss 2 — cache entry was invalidated
+        # Return value is True (MemoryBackend keeps empty dirs); the point
+        # is that the cache entry was invalidated, producing miss 2.
+        cs.exists("dir")
         assert cs.stats.misses == 2
 
 
@@ -491,6 +499,7 @@ class TestBug138:
     """BUG-138: child() creates isolated cache."""
 
     @pytest.mark.spec("BUG-138")
+    @pytest.mark.spec("CACHE-016")
     def test_child_write_invalidates_parent_read_bytes(self) -> None:
         backend = MemoryBackend()
         s = Store(backend)
@@ -504,6 +513,7 @@ class TestBug138:
         assert cs.read_bytes("sub/file.txt") == b"version2"  # must be fresh
 
     @pytest.mark.spec("BUG-138")
+    @pytest.mark.spec("CACHE-016")
     def test_child_write_invalidates_parent_exists(self) -> None:
         backend = MemoryBackend()
         s = Store(backend)
@@ -516,6 +526,7 @@ class TestBug138:
         assert cs.exists("sub/file.txt") is True  # must be fresh
 
     @pytest.mark.spec("BUG-138")
+    @pytest.mark.spec("CACHE-016")
     def test_child_delete_invalidates_parent_cache(self) -> None:
         """Child delete() should evict parent's cached read_bytes and exists entries."""
         backend = MemoryBackend()
@@ -531,6 +542,7 @@ class TestBug138:
         assert cs.exists("sub/file.txt") is False  # must be fresh
 
     @pytest.mark.spec("BUG-138")
+    @pytest.mark.spec("CACHE-016")
     def test_grandchild_shares_cache_and_invalidates(self) -> None:
         """cache.child('a').child('b') shares cache; write invalidates root entries."""
         backend = MemoryBackend()
