@@ -148,8 +148,6 @@ class _S3Base(Backend):
                 queue: deque[tuple[str, int]] = deque([(s3_path, 0)])
                 while queue:
                     current, depth = queue.popleft()
-                    if max_depth is not None and depth > max_depth:
-                        continue
                     try:
                         dir_entries: list[dict[str, Any]] = self._s3fs.ls(current, detail=True)
                     except FileNotFoundError:
@@ -159,7 +157,8 @@ class _S3Base(Backend):
                             rel = self.to_key(info["name"])
                             yield self._info_to_fileinfo(info, rel)
                         elif info.get("type") == "directory":
-                            queue.append((info["name"], depth + 1))
+                            if max_depth is None or depth < max_depth:
+                                queue.append((info["name"], depth + 1))
             else:
                 entries: list[dict[str, Any]] = self._s3fs.ls(s3_path, detail=True)
                 for info in entries:

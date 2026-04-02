@@ -703,6 +703,7 @@ class TestS3PyArrowListing:
         folders = list(s3pa_backend.list_folders("empty"))
         assert folders == []
 
+    @pytest.mark.spec("S3PA-003")
     def test_list_files_max_depth(self, s3pa_backend: Backend) -> None:
         """max_depth limits traversal depth natively."""
         s3pa_backend.write("md/a.txt", b"a")

@@ -7,6 +7,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Bugs
 
+- [x] **BUG-149 — S3 `tls_ca_bundle` doesn't override `client_options` verify**
+  Investigated and closed: `setdefault` behavior is spec-compliant per
+  TLS-005 ("explicit `client_options.client_kwargs.verify` is NOT
+  overridden"). Existing test confirms. Not a defect.
+
 - [x] **BUG-152 — S3 `list_files` ignores `max_depth`**
   `_S3Base.list_files` now tracks depth in BFS traversal and prunes
   directories beyond `max_depth`, consistent with all other backends.

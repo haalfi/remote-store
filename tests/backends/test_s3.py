@@ -600,6 +600,7 @@ class TestS3Listing:
         folders = list(s3_backend.list_folders("empty"))
         assert folders == []
 
+    @pytest.mark.spec("S3-003")
     def test_list_files_max_depth(self, s3_backend: Backend) -> None:
         """max_depth limits traversal depth natively."""
         s3_backend.write("md/a.txt", b"a")
