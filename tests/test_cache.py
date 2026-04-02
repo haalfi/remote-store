@@ -445,6 +445,47 @@ class TestBug137:
         assert cs.exists("a") is True
         assert cs.exists("a/b") is True
 
+    @pytest.mark.spec("BUG-137")
+    @pytest.mark.parametrize(
+        ("write_method", "write_args", "write_kwargs"),
+        [
+            pytest.param("write_text", ("hello",), {}, id="write_text"),
+            pytest.param("write_atomic", (b"hello",), {}, id="write_atomic"),
+        ],
+    )
+    def test_other_write_methods_invalidate_ancestor(
+        self, write_method: str, write_args: tuple[Any, ...], write_kwargs: dict[str, Any]
+    ) -> None:
+        backend = MemoryBackend()
+        s = Store(backend)
+        cs = cache(s, ttl=60.0)
+        assert cs.exists("newdir") is False  # cached as False
+        getattr(cs, write_method)("newdir/file.txt", *write_args, **write_kwargs)
+        assert cs.exists("newdir") is True  # must see fresh True
+
+    @pytest.mark.spec("BUG-137")
+    def test_open_atomic_success_invalidates_ancestor(self) -> None:
+        backend = MemoryBackend()
+        s = Store(backend)
+        cs = cache(s, ttl=60.0)
+        assert cs.exists("newdir") is False  # cached as False
+        with cs.open_atomic("newdir/file.txt") as f:
+            f.write(b"hello")
+        assert cs.exists("newdir") is True  # must see fresh True
+
+    @pytest.mark.spec("BUG-137")
+    def test_delete_invalidates_ancestor(self) -> None:
+        """delete() invalidates ancestor cache entries — next read is a miss, not stale hit."""
+        backend = MemoryBackend()
+        s = Store(backend)
+        s.write("dir/file.txt", b"data")
+        cs = cache(s, ttl=60.0)
+        assert cs.exists("dir") is True  # miss 1 — cached as True
+        assert cs.stats.misses == 1
+        cs.delete("dir/file.txt")
+        cs.exists("dir")  # must be miss 2 — cache entry was invalidated
+        assert cs.stats.misses == 2
+
 
 class TestBug138:
     """BUG-138: child() creates isolated cache."""
@@ -482,6 +523,37 @@ class TestBug138:
         child.write("file.txt", b"data")
 
         assert cs.exists("sub/file.txt") is True  # must be fresh
+
+    @pytest.mark.spec("BUG-138")
+    def test_child_delete_invalidates_parent_cache(self) -> None:
+        """Child delete() should evict parent's cached read_bytes and exists entries."""
+        backend = MemoryBackend()
+        s = Store(backend)
+        s.write("sub/file.txt", b"data")
+        cs = cache(s, ttl=60.0)
+        assert cs.read_bytes("sub/file.txt") == b"data"  # cached
+        assert cs.exists("sub/file.txt") is True  # cached
+
+        child = cs.child("sub")
+        child.delete("file.txt")
+
+        assert cs.exists("sub/file.txt") is False  # must be fresh
+
+    @pytest.mark.spec("BUG-138")
+    def test_grandchild_shares_cache_and_invalidates(self) -> None:
+        """cache.child('a').child('b') shares cache; write invalidates root entries."""
+        backend = MemoryBackend()
+        s = Store(backend)
+        cs = cache(s, ttl=60.0)
+        cs.write("a/b/file.txt", b"v1", overwrite=True)
+        assert cs.read_bytes("a/b/file.txt") == b"v1"  # cached
+
+        grandchild = cs.child("a").child("b")
+        assert isinstance(grandchild, CachedStore)
+        assert grandchild._cache is cs._cache  # noqa: SLF001
+
+        grandchild.write("file.txt", b"v2", overwrite=True)
+        assert cs.read_bytes("a/b/file.txt") == b"v2"  # root cache sees fresh data
 
 
 class TestInvalidation:

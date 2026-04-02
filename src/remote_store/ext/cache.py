@@ -244,6 +244,7 @@ class CachedStore(ProxyStore):
     _max_content_size: int | None
     _max_listing_size: int | None
     _max_entries: int | None
+    _prefix: str
     _hits: int
     _misses: int
 
@@ -285,7 +286,7 @@ class CachedStore(ProxyStore):
     # region: public cache-management methods
 
     def invalidate(self, path: str) -> None:
-        """Remove all cached entries for *path*."""
+        """Remove all cached entries for *path* and its ancestor directories."""
         self._invalidate_path(path)
 
     def clear_cache(self) -> None:

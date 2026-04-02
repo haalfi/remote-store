@@ -180,12 +180,14 @@ inner store without caching:
 
 ### CACHE-008: Write Invalidation
 
-**Invariant:** `write()`, `write_atomic()`, and `open_atomic()` (on
+**Invariant:** `write()`, `write_text()`, `write_atomic()`, and `open_atomic()` (on
 successful context exit) invalidate:
 
-1. All per-path cache entries for the written path (all operation
-   prefixes: `exists`, `is_file`, `is_folder`, `read_bytes`,
-   `get_file_info`).
+1. All per-path cache entries for the written path **and every ancestor
+   directory** of that path (all operation prefixes: `exists`, `is_file`,
+   `is_folder`, `read_bytes`, `get_file_info`). Writing a nested path
+   (e.g. `dir/file.txt`) implicitly creates parent directories, so their
+   cached metadata must also be cleared.
 2. All listing cache entries (`iter_children`, `list_files`, `list_folders`,
    `glob`, `get_folder_info`).
 
@@ -193,7 +195,10 @@ successful context exit) invalidate:
 
 **Invariant:** `delete()` invalidates:
 
-1. All per-path cache entries for the deleted path.
+1. All per-path cache entries for the deleted path **and every ancestor
+   directory** of that path. After deleting the last file in a directory
+   the ancestor may become non-existent; stale `True` entries must be
+   cleared.
 2. All listing cache entries.
 
 `delete_folder()` invalidates all cache entries (full clear), since
