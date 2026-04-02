@@ -8,6 +8,22 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **SFTP `delete_folder` masks `listdir` permission errors** (BUG-147):
+  Non-recursive `delete_folder` now re-raises non-ENOENT errors from
+  `listdir` instead of silently treating them as empty.
+- **SFTP listing methods silently swallow non-ENOENT errors** (BUG-146):
+  `list_files`, `list_folders`, and `iter_children` now only suppress
+  ENOENT from `listdir_attr`; other errors propagate as `RemoteStoreError`.
+- **SFTP `_ensure_parent_dirs` swallows permission errors** (BUG-145):
+  Parent directory creation now only catches ENOENT on `stat` and EEXIST
+  on `mkdir`; other errors propagate.
+- **SFTP SSH client leaked on connection failure** (BUG-144): `_connect()`
+  now closes the `SSHClient` if the retry-wrapped connect exhausts attempts.
+- **SFTP `st_mode` None causes TypeError** (BUG-143): Entries with
+  `st_mode is None` are now skipped in listing, traversal, and stats methods.
+- **SFTP `read()` leaks file handle if stream wrapping fails** (BUG-142):
+  The paramiko file handle is now closed if `_ErrorMappingStream` or
+  `BufferedReader` construction raises.
 - **`config_loaders.py` example crashes on Windows** (BUG-136): Path
   interpolation into TOML/YAML strings produced backslashes which are
   invalid escape sequences. Now uses forward slashes on all platforms.

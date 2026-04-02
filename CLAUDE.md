@@ -30,8 +30,8 @@ Strict order — no skipping:
 
 1. Backlog entry (`sdd/BACKLOG.md`)
 2. CHANGELOG entry (`[Unreleased]`)
-3. Failing test that reproduces the bug
-4. Fix (make the test pass)
+3. Failing test that reproduces the bug -- **write it, run it, see it fail**
+4. Fix (make the test pass) -- **run the test again, see it pass**
 5. Commit all together (or mark `[~]`)
 
 ## Backlog (mandatory)

@@ -300,8 +300,12 @@ class SFTPBackend(Backend):
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             f: BinaryIO = self._sftp.file(sftp_path, "r")
-            raw = _ErrorMappingStream(f, self._map_exception, path)
-            return io.BufferedReader(cast("io.RawIOBase", raw))
+            try:
+                raw = _ErrorMappingStream(f, self._map_exception, path)
+                return io.BufferedReader(cast("io.RawIOBase", raw))
+            except Exception:
+                f.close()
+                raise
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
@@ -434,8 +438,11 @@ class SFTPBackend(Backend):
                 # Non-recursive: fail if folder has contents
                 try:
                     entries = self._sftp.listdir(sftp_path)
-                except OSError:
-                    entries = []
+                except OSError as exc:
+                    if getattr(exc, "errno", None) == errno.ENOENT:
+                        entries = []
+                    else:
+                        raise
                 if entries:
                     raise DirectoryNotEmpty(
                         f"Folder not empty: {path}",
@@ -469,9 +476,13 @@ class SFTPBackend(Backend):
         sftp_path = self._sftp_path(path)
         try:
             entries = self._sftp.listdir_attr(sftp_path)
-        except OSError:
-            return
+        except OSError as exc:
+            if getattr(exc, "errno", None) == errno.ENOENT:
+                return
+            raise
         for attr in entries:
+            if attr.st_mode is None:
+                continue
             if stat.S_ISREG(attr.st_mode):
                 rel = f"{path}/{attr.filename}" if path else attr.filename
                 yield self._stat_to_fileinfo(rel, attr)
@@ -491,9 +502,13 @@ class SFTPBackend(Backend):
             sftp_path = self._sftp_path(path)
             try:
                 entries = self._sftp.listdir_attr(sftp_path)
-            except OSError:
-                return
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    return
+                raise
             for attr in entries:
+                if attr.st_mode is None:
+                    continue
                 if stat.S_ISDIR(attr.st_mode):
                     rel = f"{path}/{attr.filename}" if path else attr.filename
                     yield FolderEntry(path=RemotePath(rel), name=attr.filename)
@@ -507,9 +522,13 @@ class SFTPBackend(Backend):
             sftp_path = self._sftp_path(path)
             try:
                 entries = self._sftp.listdir_attr(sftp_path)
-            except OSError:
-                return
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    return
+                raise
             for attr in entries:
+                if attr.st_mode is None:
+                    continue
                 if stat.S_ISREG(attr.st_mode):
                     rel = f"{path}/{attr.filename}" if path else attr.filename
                     yield self._stat_to_fileinfo(rel, attr)
@@ -720,7 +739,12 @@ class SFTPBackend(Backend):
                 **self._connect_kwargs,
             )
 
-        _do_connect()
+        try:
+            _do_connect()
+        except Exception:
+            with contextlib.suppress(Exception):
+                ssh.close()
+            raise
         self._ssh_client = ssh
         self._sftp_client = ssh.open_sftp()
         log.info("SFTP connection established.", extra={"op": "connect", "backend": "sftp"})
@@ -823,9 +847,15 @@ class SFTPBackend(Backend):
             current = f"{current}/{part}" if current and current != "/" else f"/{part}"
             try:
                 self._sftp.stat(current)
-            except OSError:
-                with contextlib.suppress(OSError):
+            except OSError as exc:
+                if getattr(exc, "errno", None) != errno.ENOENT:
+                    raise
+                try:
                     self._sftp.mkdir(current)
+                except OSError as mkdir_exc:
+                    # Suppress EEXIST (race condition: another client created it)
+                    if getattr(mkdir_exc, "errno", None) != errno.EEXIST:
+                        raise
 
     @contextmanager
     def _errors(self, path: str = "") -> Iterator[None]:
@@ -882,10 +912,14 @@ class SFTPBackend(Backend):
         """Recursively remove a directory tree, bottom-up."""
         try:
             entries = self._sftp.listdir_attr(sftp_path)
-        except OSError:
-            return
+        except OSError as exc:
+            if getattr(exc, "errno", None) == errno.ENOENT:
+                return
+            raise
         for attr in entries:
             child = f"{sftp_path}/{attr.filename}"
+            if attr.st_mode is None:
+                continue
             if stat.S_ISDIR(attr.st_mode):
                 self._rmtree(child)
             else:
@@ -900,10 +934,14 @@ class SFTPBackend(Backend):
 
         try:
             entries = self._sftp.listdir_attr(sftp_path)
-        except OSError:
-            return file_count, total_size, latest_modified
+        except OSError as exc:
+            if getattr(exc, "errno", None) == errno.ENOENT:
+                return file_count, total_size, latest_modified
+            raise
 
         for attr in entries:
+            if attr.st_mode is None:
+                continue
             if stat.S_ISREG(attr.st_mode):
                 file_count += 1
                 total_size += attr.st_size or 0
