@@ -10032,6 +10032,8 @@
 </ul>
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>Remove Pygments <code>&lt;2.21</code> upper-bound pin</strong>: pymdown-extensions 10.21.2
+  fixed the <code>filename=None</code> highlight bug. Pygments is now unpinned above 2.18.</li>
 <li><strong>Deduplicate <code>pyproject.toml</code> dependency lists</strong> (BK-138): Hatch env uses
   <code>features = ["dev", "docs", "bench"]</code> instead of re-listing 43 packages.
   <code>bench</code>, <code>docs</code>, and <code>dev</code> extras compose from user-facing backend/extension
