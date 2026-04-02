@@ -40,6 +40,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Remove Pygments `<2.21` upper-bound pin**: pymdown-extensions 10.21.2
+  fixed the `filename=None` highlight bug. Pygments is now unpinned above 2.18.
 - **Deduplicate `pyproject.toml` dependency lists** (BK-138): Hatch env uses
   `features = ["dev", "docs", "bench"]` instead of re-listing 43 packages.
   `bench`, `docs`, and `dev` extras compose from user-facing backend/extension
