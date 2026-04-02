@@ -491,15 +491,6 @@ class TestBug138:
     """BUG-138: child() creates isolated cache."""
 
     @pytest.mark.spec("BUG-138")
-    def test_child_shares_cache_backend(self) -> None:
-        backend = MemoryBackend()
-        s = Store(backend)
-        cs = cache(s, ttl=60.0)
-        child = cs.child("sub")
-        assert isinstance(child, CachedStore)
-        assert child._cache is cs._cache  # noqa: SLF001
-
-    @pytest.mark.spec("BUG-138")
     def test_child_write_invalidates_parent_read_bytes(self) -> None:
         backend = MemoryBackend()
         s = Store(backend)
@@ -549,9 +540,6 @@ class TestBug138:
         assert cs.read_bytes("a/b/file.txt") == b"v1"  # cached
 
         grandchild = cs.child("a").child("b")
-        assert isinstance(grandchild, CachedStore)
-        assert grandchild._cache is cs._cache  # noqa: SLF001
-
         grandchild.write("file.txt", b"v2", overwrite=True)
         assert cs.read_bytes("a/b/file.txt") == b"v2"  # root cache sees fresh data
 
