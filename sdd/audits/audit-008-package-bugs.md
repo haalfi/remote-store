@@ -66,9 +66,11 @@ is_folder("newdir") after write: False  ← stale
 ### Root cause
 
 `_invalidate_path(path)` at line 288 iterates `_PATH_PREFIXES` and deletes
-`(prefix, path)` — only the **leaf** path. It does not walk up the directory
-tree to invalidate parent segments (e.g. `"newdir"` when writing
-`"newdir/file.txt"`).
+`(prefix, path)` — only the **leaf** path — then calls `_invalidate_listings()`
+(line 292), which clears all listing/glob cache entries. Listing operations
+like `list_files("newdir")` therefore return fresh results. However, per-path
+metadata (`exists`, `is_folder`, `is_file`) for **parent** segments (e.g.
+`"newdir"` when writing `"newdir/file.txt"`) is not invalidated.
 
 ---
 
