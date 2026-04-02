@@ -4223,17 +4223,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#known-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Known Issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#changed" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8830,17 +8819,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#known-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Known Issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#changed" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10033,15 +10011,16 @@
   now passes the parent's cache backend to the child and tracks the child's
   path prefix so mutations through a child store correctly invalidate
   the parent's cached entries.</li>
-</ul>
-<h3 id="known-issues">Known Issues<a class="headerlink" href="#known-issues" title="Permanent link">&para;</a></h3>
-<ul>
 <li><strong>RegistryConfig.from_dict crashes on null options</strong> (BUG-139): YAML/TOML
-  <code>options:</code> with no value raises <code>TypeError</code> instead of treating as empty.</li>
-<li><strong>RegistryConfig.from_dict converts null to string "None"</strong> (BUG-140): Null
-  <code>type</code>, <code>backend</code>, or <code>root_path</code> silently becomes <code>"None"</code> string.</li>
-<li><strong>partition_path allows <code>=</code> in key</strong> (BUG-141): Round-trip with
-  <code>parse_partition</code> fails when partition key contains <code>=</code>.</li>
+  <code>options:</code> with no value (<code>None</code>) now treated as empty dict instead of
+  raising <code>TypeError</code>.</li>
+<li><strong>RegistryConfig.from_dict converts null to string "None"</strong> (BUG-140):
+  Null <code>type</code> or <code>backend</code> now raises <code>TypeError</code> with a clear message
+  instead of silently producing the string <code>"None"</code>. Null <code>root_path</code>
+  is treated as empty string (same as omitted).</li>
+<li><strong>partition_path allows <code>=</code> in key</strong> (BUG-141): Partition keys containing
+  <code>=</code> now raise <code>ValueError</code>, preventing round-trip failures with
+  <code>parse_partition</code>.</li>
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>

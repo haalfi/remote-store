@@ -8016,10 +8016,11 @@ returns <code>filename</code> unchanged.</p>
 <p><strong>Invariant:</strong> <code>filename</code> must be a non-empty string containing no <code>/</code>
 characters. Raises <code>ValueError</code> if empty or contains <code>/</code>.</p>
 <h3 id="part-006-partition_path-validation-keys">PART-006: partition_path() Validation — keys<a class="headerlink" href="#part-006-partition_path-validation-keys" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Partition keys must be non-empty strings. Partition values
-must be non-empty after <code>str()</code> coercion and must not contain <code>=</code> (breaks
-round-trip parsing per PART-011 / PART-008). Raises <code>ValueError</code> on empty
-key, empty value, or value containing <code>=</code>.</p>
+<p><strong>Invariant:</strong> Partition keys must be non-empty strings and must not
+contain <code>=</code>. Partition values must be non-empty after <code>str()</code> coercion
+and must not contain <code>=</code> (breaks round-trip parsing per PART-011 /
+PART-008). Raises <code>ValueError</code> on empty key, key containing <code>=</code>, empty
+value, or value containing <code>=</code>.</p>
 <h3 id="part-007-parse_partition-signature">PART-007: parse_partition() Signature<a class="headerlink" href="#part-007-parse_partition-signature" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>parse_partition(path: str) -&gt; ParsedPartition</code>.</p>
 <p><code>ParsedPartition</code> is a frozen dataclass with:

@@ -7921,7 +7921,8 @@ Must be non-empty and must not contain <code>/</code>.</p>
           –
           <div class="doc-md-description">
             <p>Partition key-value pairs. Values are coerced to
-<code>str</code>. Keys and coerced values must be non-empty.</p>
+<code>str</code>. Keys and coerced values must be non-empty and
+must not contain <code>=</code>.</p>
           </div>
         </li>
     </ul>
@@ -7945,8 +7946,9 @@ Must be non-empty and must not contain <code>/</code>.</p>
               <code><span title="ValueError">ValueError</span></code>
             –
           <div class="doc-md-description">
-            <p>If <em>filename</em> is empty or contains <code>/</code>, or if
-any partition key or coerced value is empty.</p>
+            <p>If <em>filename</em> is empty or contains <code>/</code>, if any
+partition key or coerced value is empty, or if any key or
+value contains <code>=</code>.</p>
           </div>
         </li>
     </ul>
