@@ -7,6 +7,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Bugs
 
+- [x] **BUG-152 — S3 `list_files` ignores `max_depth`**
+  `_S3Base.list_files` now tracks depth in BFS traversal and prunes
+  directories beyond `max_depth`, consistent with all other backends.
+
+- [x] **BUG-151 — S3PyArrow `_extract_etag` scope too broad**
+  `_extract_etag` override now only affects listing paths; `get_file_info`
+  extracts ETag from the HeadObject response via `_head_to_fileinfo`.
+
+- [x] **BUG-150 — S3PyArrow `get_file_info` returns no ETag and no digest**
+  `get_file_info` now uses `call_s3("head_object", ChecksumMode="ENABLED")`
+  like `S3Backend`, returning both ETag and digest when available.
+
+- [x] **BUG-148 — S3 `client_options` shallow copy mutates caller's nested dicts**
+  Lazy filesystem init now uses `copy.deepcopy(client_options)` instead
+  of `dict(client_options)`. Both `S3Backend` and `S3PyArrowBackend`.
+
 - [x] **BUG-147 — SFTP `delete_folder` masks `listdir` permission errors**
   Non-recursive `delete_folder` now re-raises non-ENOENT errors from
   `listdir` instead of silently treating them as empty.

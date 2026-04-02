@@ -8,6 +8,19 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **S3 `client_options` shallow copy mutates caller's nested dicts** (BUG-148):
+  Lazy filesystem init now deep-copies `client_options` so that adding
+  `region_name`, `config`, or `verify` to `client_kwargs` does not modify
+  the caller's original dict. Affects both `S3Backend` and `S3PyArrowBackend`.
+- **S3PyArrow `get_file_info` returns no ETag and no digest** (BUG-150):
+  `get_file_info` now uses `call_s3("head_object", ChecksumMode="ENABLED")`
+  like `S3Backend`, returning both ETag and digest when available.
+- **S3PyArrow `_extract_etag` scope too broad** (BUG-151): `_extract_etag`
+  override now only affects listing paths; `get_file_info` extracts ETag
+  from the HeadObject response.
+- **S3 `list_files` ignores `max_depth`** (BUG-152): `_S3Base.list_files`
+  now implements native depth limiting during BFS traversal, consistent
+  with all other backends.
 - **SFTP `delete_folder` masks `listdir` permission errors** (BUG-147):
   Non-recursive `delete_folder` now re-raises non-ENOENT errors from
   `listdir` instead of silently treating them as empty.

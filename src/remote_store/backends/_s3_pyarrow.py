@@ -267,10 +267,13 @@ class S3PyArrowBackend(_S3Base):
 
     def get_file_info(self, path: str) -> FileInfo:
         with self._s3fs_errors(path):
-            info = self._s3fs.info(self._s3_path(path))
-            if info.get("type") != "file":  # pragma: no cover -- s3fs raises FileNotFoundError first
-                raise NotFound(f"File not found: {path}", path=path, backend=self.name)
-            return self._info_to_fileinfo(info, path)
+            raw = self._s3fs.call_s3(
+                "head_object",
+                Bucket=self._bucket,
+                Key=path,
+                ChecksumMode="ENABLED",
+            )
+            return self._head_to_fileinfo(raw, path)
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         # Existence checks via s3fs, copy via pyarrow, delete via s3fs
@@ -379,9 +382,11 @@ class S3PyArrowBackend(_S3Base):
     def _s3fs(self) -> Any:
         """Lazy s3fs S3FileSystem."""
         if self._s3fs_instance is None:
+            import copy
+
             import s3fs
 
-            opts: dict[str, Any] = dict(self._client_options)
+            opts: dict[str, Any] = copy.deepcopy(self._client_options)
             if self._endpoint_url is not None:
                 opts["endpoint_url"] = self._endpoint_url
             if self._key is not None:
@@ -446,7 +451,11 @@ class S3PyArrowBackend(_S3Base):
             raise self._classify_error(exc, path) from None
 
     def _extract_etag(self, info: dict[str, Any]) -> str | None:
-        """S3PyArrow does not use ETag from s3fs listing metadata."""
+        """Suppress ETag for listing paths (``list_files``, ``iter_children``).
+
+        ``get_file_info`` bypasses this via ``_head_to_fileinfo`` which
+        extracts ETag directly from the HeadObject response.
+        """
         return None
 
     # endregion
