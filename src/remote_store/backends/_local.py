@@ -145,6 +145,8 @@ class LocalBackend(Backend):
             else:
                 with open(str(full), "wb") as f:
                     shutil.copyfileobj(content, f)
+        except IsADirectoryError:
+            raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
@@ -167,6 +169,8 @@ class LocalBackend(Backend):
                     if os.path.exists(tmp_path):
                         os.unlink(tmp_path)
                 raise
+        except IsADirectoryError:
+            raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
@@ -186,6 +190,10 @@ class LocalBackend(Backend):
                 yield f
             try:
                 os.replace(tmp_path, str(full))
+            except IsADirectoryError:
+                raise InvalidPath(
+                    f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name
+                ) from None
             except PermissionError:
                 raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
         except BaseException:
@@ -201,6 +209,8 @@ class LocalBackend(Backend):
         except FileNotFoundError:
             if not missing_ok:
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
+        except IsADirectoryError:
+            raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 

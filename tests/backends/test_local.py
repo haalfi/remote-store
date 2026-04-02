@@ -78,3 +78,33 @@ class TestLocalBackendResolve:
         plan = local_backend.resolve("file.txt")
         # root in details matches the backend's native root (Path normalizes separators)
         assert Path(plan.details["root"]) == Path(local_backend.native_path(""))
+
+
+class TestLocalDeleteOnDirectory:
+    """BUG-153: delete() on a directory must raise RemoteStoreError, not leak IsADirectoryError."""
+
+    @pytest.mark.spec("BE-021")
+    def test_delete_directory_raises_not_found(self, local_backend: LocalBackend) -> None:
+        """delete() on a directory path should raise NotFound, not IsADirectoryError."""
+        from remote_store._errors import NotFound
+
+        # Create a directory with a file inside
+        local_backend.write("folder/file.txt", b"hello")
+        assert local_backend.is_folder("folder")
+
+        with pytest.raises(NotFound):
+            local_backend.delete("folder")
+
+
+class TestLocalWriteOnDirectory:
+    """BUG-154: write(overwrite=True) on a directory must raise RemoteStoreError."""
+
+    @pytest.mark.spec("BE-021")
+    def test_write_overwrite_directory_raises_remote_store_error(self, local_backend: LocalBackend) -> None:
+        """write(overwrite=True) on a directory path should raise InvalidPath."""
+        # Create a directory with a file inside
+        local_backend.write("dir/file.txt", b"hello")
+        assert local_backend.is_folder("dir")
+
+        with pytest.raises(InvalidPath):
+            local_backend.write("dir", b"overwrite", overwrite=True)
