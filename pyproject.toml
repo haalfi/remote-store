@@ -88,7 +88,7 @@ docs = [
   "mkdocs-literate-nav>=0.6",
   "mkdocs-section-index>=0.3",
   "mike>=2.0",
-  "Pygments>=2.18,<2.21",  # 2.20 breaks pymdownx.highlight (filename=None)
+  "Pygments>=2.18",
   "ruff>=0.4",  # mkdocstrings signature formatting
 ]
 
