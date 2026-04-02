@@ -5,6 +5,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Bugs
+
+- [x] **BUG-138 — CachedStore.child() creates isolated cache**
+  `_wrap_child()` now passes the parent's `CacheBackend` instance to the
+  child instead of `None`, so child and parent share one cache. A `_prefix`
+  tracks the child's path namespace so mutations through the child also
+  invalidate the corresponding fully-qualified keys in the shared cache.
+  Audit: [008 B-2](audits/audit-008-package-bugs.md#b-2)
+
+- [x] **BUG-137 — CachedStore write doesn't invalidate parent directory metadata**
+  New `_delete_path_and_ancestors` helper invalidates cached
+  `exists`/`is_file`/`is_folder` entries for every ancestor directory of
+  the mutated path, not just the leaf. Called from `_invalidate_path`.
+  Audit: [008 B-1](audits/audit-008-package-bugs.md#b-1)
+
 ## Documentation & Developer Experience
 
 - [x] **BK-137 — Post-v0.20.0 test quality: TESTING.md compliance + coverage gaps**

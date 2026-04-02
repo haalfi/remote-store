@@ -203,6 +203,27 @@ class MemoryCache:
 
 
 # ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+
+def _delete_path_and_ancestors(cache: CacheBackend, path: str) -> None:
+    """Delete per-path cache entries for *path* and all ancestor directories.
+
+    Fixes BUG-137: writing ``dir/file.txt`` implicitly creates ``dir``, so
+    cached ``exists``/``is_folder``/``is_file`` entries for ``dir`` must also
+    be invalidated.
+    """
+    for op in _PATH_PREFIXES:
+        cache.delete((op, path))
+    parts = path.split("/")
+    for i in range(1, len(parts)):
+        ancestor = "/".join(parts[:i])
+        for op in _PATH_PREFIXES:
+            cache.delete((op, ancestor))
+
+
+# ---------------------------------------------------------------------------
 # CachedStore proxy
 # ---------------------------------------------------------------------------
 
@@ -223,6 +244,7 @@ class CachedStore(ProxyStore):
     _max_content_size: int | None
     _max_listing_size: int | None
     _max_entries: int | None
+    _prefix: str
     _hits: int
     _misses: int
 
@@ -235,6 +257,7 @@ class CachedStore(ProxyStore):
         max_listing_size: int | None,
         max_entries: int | None,
         cache_backend: CacheBackend | None,
+        _prefix: str = "",
     ) -> None:
         super().__init__(inner)
         self._cache = cache_backend if cache_backend is not None else MemoryCache(max_entries=max_entries)
@@ -242,6 +265,7 @@ class CachedStore(ProxyStore):
         self._max_content_size = max_content_size
         self._max_listing_size = max_listing_size
         self._max_entries = max_entries
+        self._prefix = _prefix
         self._hits = 0
         self._misses = 0
         self._stats_lock = threading.Lock()
@@ -262,7 +286,7 @@ class CachedStore(ProxyStore):
     # region: public cache-management methods
 
     def invalidate(self, path: str) -> None:
-        """Remove all cached entries for *path*."""
+        """Remove all cached entries for *path* and its ancestor directories."""
         self._invalidate_path(path)
 
     def clear_cache(self) -> None:
@@ -286,9 +310,12 @@ class CachedStore(ProxyStore):
         return value
 
     def _invalidate_path(self, path: str) -> None:
-        """Invalidate per-path entries + all listings."""
-        for prefix in _PATH_PREFIXES:
-            self._cache.delete((prefix, path))
+        """Invalidate per-path entries for path, its ancestors, and all listings."""
+        _delete_path_and_ancestors(self._cache, path)
+        # BUG-138: if this is a child store, also invalidate the parent's
+        # fully-qualified key for the same path in the shared cache.
+        if self._prefix:
+            _delete_path_and_ancestors(self._cache, f"{self._prefix}/{path}")
         self._invalidate_listings()
 
     def _invalidate_listings(self) -> None:
@@ -441,13 +468,24 @@ class CachedStore(ProxyStore):
         return self.read_bytes(path).decode(encoding, errors)
 
     def _wrap_child(self, inner_child: Store) -> Store:
+        # Derive the child's subpath by comparing store roots, then build
+        # the fully-qualified prefix for cross-store cache invalidation.
+        parent_root = self._inner._root or ""
+        child_root = inner_child._root or ""
+        if parent_root:
+            assert child_root.startswith(parent_root + "/"), (
+                f"child root {child_root!r} does not start with parent root {parent_root!r}"
+            )
+        subpath = child_root[len(parent_root) + 1 :] if parent_root else child_root
+        prefix = f"{self._prefix}/{subpath}" if self._prefix else subpath
         return CachedStore(
             inner_child,
             ttl=self._ttl,
             max_content_size=self._max_content_size,
             max_listing_size=self._max_listing_size,
             max_entries=self._max_entries,
-            cache_backend=None,
+            cache_backend=self._cache,
+            _prefix=prefix,
         )
 
     # endregion
