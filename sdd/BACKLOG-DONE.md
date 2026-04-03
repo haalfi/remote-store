@@ -7,6 +7,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Bugs
 
+- [x] **BUG-158 — Sync `AzureBackend.read()` doesn't protect raw stream on wrapping failure**
+  `_AzureBinaryIO` is now closed if `_ErrorMappingStream` or `BufferedReader`
+  construction fails, matching the BUG-142 (SFTP) defensive pattern.
+
+- [x] **BUG-157 — Sync `AzureBackend.delete_folder` non-HNS materializes all blobs**
+  Existence check now uses `for ... break` to stop after the first blob
+  instead of `list()` which eagerly fetched all pages.
+
+- [x] **BUG-156 — Sync `AzureBackend.close()` doesn't close `DefaultAzureCredential`**
+  `_resolve_credential()` now caches the credential in `_resolved_credential`.
+  `close()` calls `credential.close()` if available, matching the async
+  backend's `aclose()` pattern.
+
+- [x] **BUG-155 — Azure `list_files` ignores `max_depth`**
+  Both `AzureBackend.list_files` and `AsyncAzureBackend.list_files` now
+  filter by depth when `recursive=True` and `max_depth` is specified,
+  consistent with S3 (BUG-152) and Local backends.
+
 - [x] **BUG-154 — `LocalBackend.write(overwrite=True)` leaks `IsADirectoryError` for directory paths**
   `write()`, `write_atomic()`, and `open_atomic()` now catch
   `IsADirectoryError` and raise `InvalidPath`, consistent with MemoryBackend.

@@ -521,6 +521,114 @@ class TestAzureLifecycle:
         result = backend.close()
         assert result is None
 
+    @pytest.mark.spec("AZ-029")
+    def test_close_closes_credential(self) -> None:
+        """BUG-156: close() should close cached credential (DefaultAzureCredential)."""
+        backend = _make_backend()
+        mock_cred = MagicMock(spec=["close"])
+        backend._resolved_credential = mock_cred
+
+        backend.close()
+        mock_cred.close.assert_called_once()
+        assert backend._resolved_credential is None  # internal: no public observable
+
+    @pytest.mark.spec("AZ-029")
+    def test_close_credential_without_close_method(self) -> None:
+        """BUG-156: close() handles credentials without a close() method."""
+        backend = _make_backend()
+        backend._resolved_credential = "just-a-key-string"
+
+        backend.close()
+        assert backend._resolved_credential is None  # internal: no public observable
+
+
+# =============================================================================
+# delete_folder performance (BUG-157)
+# =============================================================================
+
+
+class TestAzureDeleteFolderPerformance:
+    """BUG-157: non-HNS delete_folder should not materialize all blobs for existence check."""
+
+    @pytest.mark.spec("BE-021")
+    def test_delete_folder_non_recursive_stops_after_first_blob(self) -> None:
+        """Non-recursive delete_folder should stop iterating after finding one blob."""
+        backend = _make_backend()
+        backend._hns_enabled = False
+        cc = MagicMock(spec=ContainerClient)
+        backend._cc_instance = cc
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+
+        # Create an iterator that tracks how many items were consumed
+        consumed: list[Any] = []
+        blob1 = MagicMock(spec=BlobProperties)
+        blob1.name = "folder/a.txt"
+        blob2 = MagicMock(spec=BlobProperties)
+        blob2.name = "folder/b.txt"
+
+        def tracking_iter():  # type: ignore[no-untyped-def]
+            for b in [blob1, blob2]:
+                consumed.append(b)
+                yield b
+
+        cc.list_blobs.return_value = tracking_iter()
+
+        with pytest.raises(DirectoryNotEmpty, match="Folder not empty"):
+            backend.delete_folder("folder", recursive=False)
+
+        # Should have consumed only 1 blob, not all of them
+        assert len(consumed) == 1
+
+
+# =============================================================================
+# read() resource safety (BUG-158)
+# =============================================================================
+
+
+class TestAzureReadResourceSafety:
+    """BUG-158: read() should clean up raw stream if wrapping fails."""
+
+    @pytest.mark.spec("BE-021")
+    def test_read_closes_raw_stream_on_wrapper_failure(self) -> None:
+        """If _ErrorMappingStream fails, the _AzureBinaryIO raw stream should be closed."""
+        backend = _make_backend()
+        backend._hns_enabled = False
+        cc = MagicMock(spec=ContainerClient)
+        backend._cc_instance = cc
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+
+        bc = MagicMock(spec=BlobClient)
+        cc.get_blob_client.return_value = bc
+
+        downloader = MagicMock(spec=StorageStreamDownloader)
+        downloader.chunks.return_value = iter([b"data"])
+        bc.download_blob.return_value = downloader
+
+        # Track whether _AzureBinaryIO.close() was called
+        import remote_store.backends._azure as azure_mod
+
+        original_stream = azure_mod._ErrorMappingStream
+        created_raw: list[Any] = []
+        original_init = _AzureBinaryIO.__init__
+
+        def tracking_init(self_raw: Any, *args: Any, **kwargs: Any) -> None:
+            original_init(self_raw, *args, **kwargs)
+            created_raw.append(self_raw)
+
+        try:
+            azure_mod._ErrorMappingStream = MagicMock(spec=type, side_effect=RuntimeError("wrapper failed"))
+            _AzureBinaryIO.__init__ = tracking_init  # type: ignore[method-assign]
+            # _errors() remaps RuntimeError to RemoteStoreError
+            with pytest.raises(RemoteStoreError, match="wrapper failed"):
+                backend.read("file.txt")
+        finally:
+            azure_mod._ErrorMappingStream = original_stream
+            _AzureBinaryIO.__init__ = original_init  # type: ignore[method-assign]
+
+        # Raw stream should have been created and then closed
+        assert len(created_raw) == 1
+        assert created_raw[0].closed
+
 
 # =============================================================================
 # HNS code path mock tests
@@ -835,6 +943,24 @@ class TestAzureIntegration:
     def test_list_files_empty(self, azure_backend: Backend) -> None:
         files = list(azure_backend.list_files("empty"))
         assert files == []
+
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize(
+        ("max_depth", "expected"),
+        [
+            pytest.param(0, {"a.txt"}, id="depth-0"),
+            pytest.param(1, {"a.txt", "b.txt"}, id="depth-1"),
+            pytest.param(None, {"a.txt", "b.txt", "c.txt"}, id="unlimited"),
+        ],
+    )
+    def test_list_files_max_depth(self, azure_backend: Backend, max_depth: int | None, expected: set[str]) -> None:
+        """BUG-155: list_files respects max_depth parameter."""
+        azure_backend.write("md/a.txt", b"a")
+        azure_backend.write("md/sub/b.txt", b"b")
+        azure_backend.write("md/sub/deep/c.txt", b"c")
+        files = list(azure_backend.list_files("md", recursive=True, max_depth=max_depth))
+        names = {f.name for f in files}
+        assert names == expected
 
     def test_list_folders(self, azure_backend: Backend) -> None:
         azure_backend.write("lf/sub1/a.txt", b"a")

@@ -195,6 +195,7 @@ class AzureBackend(Backend):
         self._datalake_service_instance: Any = None
         self._fs_instance: Any = None
         self._hns_enabled: bool | None = None
+        self._resolved_credential: Any = None
 
     # region: properties
 
@@ -312,7 +313,12 @@ class AzureBackend(Backend):
             bc = self._blob_client(path)
             downloader = bc.download_blob(max_concurrency=self._max_concurrency)
             raw = _AzureBinaryIO(downloader.chunks())
-            return io.BufferedReader(cast("io.RawIOBase", _ErrorMappingStream(raw, self._classify, path)))
+            try:
+                return io.BufferedReader(cast("io.RawIOBase", _ErrorMappingStream(raw, self._classify, path)))
+            except BaseException:
+                with contextlib.suppress(Exception):
+                    raw.close()
+                raise
 
     def read_seekable(self, path: str) -> BinaryIO:
         with self._errors(path):
@@ -485,8 +491,11 @@ class AzureBackend(Backend):
             else:
                 # non-HNS: virtual folders via blob prefix
                 prefix = azure_path.rstrip("/") + "/"
-                first = list(self._cc.list_blobs(name_starts_with=prefix, results_per_page=1))
-                if first:
+                has_children = False
+                for _ in self._cc.list_blobs(name_starts_with=prefix, results_per_page=1):
+                    has_children = True
+                    break
+                if has_children:
                     if not recursive:
                         raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name)
                     for blob in self._cc.list_blobs(name_starts_with=prefix):
@@ -510,6 +519,11 @@ class AzureBackend(Backend):
                     paths = self._fs.get_paths(path=azure_path or "/", recursive=recursive)
                     for p in paths:
                         if not getattr(p, "is_directory", False):
+                            if recursive and max_depth is not None:
+                                rel = str(p.name)[len(prefix) :]
+                                depth = rel.count("/")
+                                if depth > max_depth:
+                                    continue
                             yield self._props_to_fileinfo(p, str(p.name))
                 except Exception as exc:
                     mapped = self._classify(exc, path)
@@ -519,6 +533,11 @@ class AzureBackend(Backend):
             elif recursive:
                 blobs = self._cc.list_blobs(name_starts_with=prefix)
                 for blob in blobs:
+                    if max_depth is not None:
+                        rel = blob.name[len(prefix) :]
+                        depth = rel.count("/")
+                        if depth > max_depth:
+                            continue
                     yield self._props_to_fileinfo(blob, blob.name)
             else:
                 blobs = self._cc.walk_blobs(name_starts_with=prefix)
@@ -691,6 +710,13 @@ class AzureBackend(Backend):
         self._fs_instance = None
         self._datalake_service_instance = None
         self._hns_enabled = None
+        # Close credential (e.g. DefaultAzureCredential holds transport sessions).
+        if self._resolved_credential is not None:
+            close = getattr(self._resolved_credential, "close", None)
+            if close is not None:
+                with contextlib.suppress(Exception):
+                    close()
+            self._resolved_credential = None
 
     def unwrap(self, type_hint: type[T]) -> T:
         from azure.storage.filedatalake import FileSystemClient
@@ -723,14 +749,16 @@ class AzureBackend(Backend):
     # region: private helpers
 
     def _resolve_credential(self) -> Any:  # pragma: no cover -- only reached without connection_string
-        """Build credential from constructor params."""
-        return resolve_credential(
-            self._credential,
-            self._account_key,
-            self._sas_token,
-            is_async=False,
-            backend_name=self.name,
-        )
+        """Return cached credential, creating it on first call."""
+        if self._resolved_credential is None:
+            self._resolved_credential = resolve_credential(
+                self._credential,
+                self._account_key,
+                self._sas_token,
+                is_async=False,
+                backend_name=self.name,
+            )
+        return self._resolved_credential
 
     def _build_azure_retry(self) -> Any | None:
         """Build an Azure ExponentialRetry from the retry policy, or None."""

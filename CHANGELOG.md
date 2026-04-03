@@ -8,6 +8,19 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **Azure `list_files` ignores `max_depth`** (BUG-155): Both
+  `AzureBackend.list_files` and `AsyncAzureBackend.list_files` now implement
+  depth limiting when `recursive=True` and `max_depth` is specified,
+  consistent with S3 and Local backends.
+- **Sync `AzureBackend.close()` doesn't close `DefaultAzureCredential`**
+  (BUG-156): Sync backend now caches the credential and closes it in
+  `close()`, matching the async backend's `aclose()` pattern.
+- **Sync `AzureBackend.delete_folder` non-HNS materializes all blobs**
+  (BUG-157): Existence check now stops after the first blob instead of
+  eagerly fetching all blobs into memory.
+- **Sync `AzureBackend.read()` doesn't protect downloader on stream-wrapping
+  failure** (BUG-158): The downloader is now cleaned up if
+  `_ErrorMappingStream` or `BufferedReader` construction fails.
 - **`LocalBackend` leaks `IsADirectoryError` for directory paths**
   (BUG-153, BUG-154): `read()`, `read_bytes()`, `delete()`, `write()`,
   `write_atomic()`, and `open_atomic()` now catch `IsADirectoryError` and
