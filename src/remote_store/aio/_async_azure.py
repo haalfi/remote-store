@@ -564,6 +564,11 @@ class AsyncAzureBackend(AsyncBackend):
                     paths = self._fs.get_paths(path=ap or "/", recursive=recursive)
                     async for p in paths:
                         if not getattr(p, "is_directory", False):
+                            if recursive and max_depth is not None:
+                                rel = str(p.name)[len(prefix) :]
+                                depth = rel.count("/")
+                                if depth > max_depth:
+                                    continue
                             yield props_to_fileinfo(p, str(p.name))
                 except Exception as exc:
                     mapped = classify_azure_error(exc, path, self.name)
@@ -572,6 +577,11 @@ class AsyncAzureBackend(AsyncBackend):
                     raise mapped from None
             elif recursive:
                 async for blob in self._cc.list_blobs(name_starts_with=prefix):
+                    if max_depth is not None:
+                        rel = blob.name[len(prefix) :]
+                        depth = rel.count("/")
+                        if depth > max_depth:
+                            continue
                     yield props_to_fileinfo(blob, blob.name)
             else:
                 async for item in self._cc.walk_blobs(name_starts_with=prefix):

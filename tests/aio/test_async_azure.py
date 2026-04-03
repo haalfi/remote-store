@@ -495,6 +495,34 @@ class TestAsyncAzureListOperations:
         assert folders[0].name == "sub"
 
     @pytest.mark.spec("ASYNC-014")
+    async def test_list_files_max_depth_zero(self) -> None:
+        """BUG-155: list_files(max_depth=0) should return only immediate files."""
+        backend, cc, bc = _setup_non_hns_backend()
+        blob_root = _mock_blob_props(name="data/a.txt", size=10, etag='"a"')
+        blob_sub = _mock_blob_props(name="data/sub/b.txt", size=20, etag='"b"')
+        blob_deep = _mock_blob_props(name="data/sub/deep/c.txt", size=30, etag='"c"')
+
+        cc.list_blobs.return_value = _async_iter([blob_root, blob_sub, blob_deep])
+
+        files = [f async for f in backend.list_files("data", recursive=True, max_depth=0)]
+        names = {f.name for f in files}
+        assert names == {"a.txt"}
+
+    @pytest.mark.spec("ASYNC-014")
+    async def test_list_files_max_depth_one(self) -> None:
+        """BUG-155: list_files(max_depth=1) should return files up to depth 1."""
+        backend, cc, bc = _setup_non_hns_backend()
+        blob_root = _mock_blob_props(name="data/a.txt", size=10, etag='"a"')
+        blob_sub = _mock_blob_props(name="data/sub/b.txt", size=20, etag='"b"')
+        blob_deep = _mock_blob_props(name="data/sub/deep/c.txt", size=30, etag='"c"')
+
+        cc.list_blobs.return_value = _async_iter([blob_root, blob_sub, blob_deep])
+
+        files = [f async for f in backend.list_files("data", recursive=True, max_depth=1)]
+        names = {f.name for f in files}
+        assert names == {"a.txt", "b.txt"}
+
+    @pytest.mark.spec("ASYNC-014")
     async def test_list_files_empty(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
         cc.walk_blobs.return_value = _async_iter([])
