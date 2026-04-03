@@ -7,6 +7,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Bugs
 
+- [x] **BUG-154 — `LocalBackend.write(overwrite=True)` leaks `IsADirectoryError` for directory paths**
+  `write()`, `write_atomic()`, and `open_atomic()` now catch
+  `IsADirectoryError` and raise `InvalidPath`, consistent with MemoryBackend.
+
+- [x] **BUG-153 — `LocalBackend` leaks `IsADirectoryError` for directory paths**
+  `read()`, `read_bytes()`, and `delete()` now catch `IsADirectoryError`
+  and raise `NotFound`, consistent with MemoryBackend.
+  `delete(missing_ok=True)` on a directory is silenced, matching
+  MemoryBackend's behavior.
+
 - [x] **BUG-149 — S3 `tls_ca_bundle` doesn't override `client_options` verify**
   Investigated and closed: `setdefault` behavior is spec-compliant per
   TLS-005 ("explicit `client_options.client_kwargs.verify` is NOT

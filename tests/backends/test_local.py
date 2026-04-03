@@ -78,3 +78,115 @@ class TestLocalBackendResolve:
         plan = local_backend.resolve("file.txt")
         # root in details matches the backend's native root (Path normalizes separators)
         assert Path(plan.details["root"]) == Path(local_backend.native_path(""))
+
+
+class TestLocalDeleteOnDirectory:
+    """BUG-153: delete() on a directory must raise RemoteStoreError, not leak IsADirectoryError."""
+
+    @pytest.mark.spec("BE-021")
+    def test_delete_directory_raises_not_found(self, local_backend: LocalBackend) -> None:
+        """delete() on a directory path should raise NotFound, not IsADirectoryError."""
+        from remote_store._errors import NotFound
+
+        local_backend.write("folder/file.txt", b"hello")
+        assert local_backend.is_folder("folder")
+
+        with pytest.raises(NotFound, match="Not a file"):
+            local_backend.delete("folder")
+
+    @pytest.mark.spec("BE-021")
+    def test_delete_directory_missing_ok_silenced(self, local_backend: LocalBackend) -> None:
+        """delete(missing_ok=True) on a directory should be silenced, consistent with MemoryBackend."""
+        local_backend.write("folder/file.txt", b"hello")
+        assert local_backend.is_folder("folder")
+
+        # Should not raise — missing_ok silences directory paths
+        local_backend.delete("folder", missing_ok=True)
+
+
+class TestLocalReadOnDirectory:
+    """BUG-153: read()/read_bytes() on a directory must not leak IsADirectoryError."""
+
+    @pytest.mark.spec("BE-021")
+    def test_read_directory_raises_not_found(self, local_backend: LocalBackend) -> None:
+        """read() on a directory path should raise NotFound."""
+        from remote_store._errors import NotFound
+
+        local_backend.write("folder/file.txt", b"hello")
+
+        with pytest.raises(NotFound, match="Not a file"):
+            local_backend.read("folder")
+
+    @pytest.mark.spec("BE-021")
+    def test_read_bytes_directory_raises_not_found(self, local_backend: LocalBackend) -> None:
+        """read_bytes() on a directory path should raise NotFound."""
+        from remote_store._errors import NotFound
+
+        local_backend.write("folder/file.txt", b"hello")
+
+        with pytest.raises(NotFound, match="Not a file"):
+            local_backend.read_bytes("folder")
+
+
+class TestLocalWriteOnDirectory:
+    """BUG-154: write/write_atomic/open_atomic on a directory must raise InvalidPath."""
+
+    @pytest.mark.spec("BE-021")
+    def test_write_no_overwrite_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:
+        """write(overwrite=False) on a directory path should raise InvalidPath, not AlreadyExists."""
+        local_backend.write("dir/file.txt", b"hello")
+        assert local_backend.is_folder("dir")
+
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            local_backend.write("dir", b"data")
+
+    @pytest.mark.spec("BE-021")
+    def test_write_overwrite_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:
+        """write(overwrite=True) on a directory path should raise InvalidPath."""
+        local_backend.write("dir/file.txt", b"hello")
+        assert local_backend.is_folder("dir")
+
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            local_backend.write("dir", b"overwrite", overwrite=True)
+
+    @pytest.mark.spec("BE-021")
+    def test_write_atomic_no_overwrite_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:
+        """write_atomic(overwrite=False) on a directory path should raise InvalidPath, not AlreadyExists."""
+        local_backend.write("dir/file.txt", b"hello")
+        assert local_backend.is_folder("dir")
+
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            local_backend.write_atomic("dir", b"data")
+
+    @pytest.mark.spec("BE-021")
+    def test_write_atomic_overwrite_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:
+        """write_atomic(overwrite=True) on a directory path should raise InvalidPath."""
+        local_backend.write("dir/file.txt", b"hello")
+        assert local_backend.is_folder("dir")
+
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            local_backend.write_atomic("dir", b"overwrite", overwrite=True)
+
+    @pytest.mark.spec("BE-021")
+    def test_open_atomic_no_overwrite_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:
+        """open_atomic(overwrite=False) on a directory path should raise InvalidPath, not AlreadyExists."""
+        local_backend.write("dir/file.txt", b"hello")
+        assert local_backend.is_folder("dir")
+
+        with (
+            pytest.raises(InvalidPath, match="exists as a directory"),
+            local_backend.open_atomic("dir") as f,
+        ):
+            f.write(b"data")
+
+    @pytest.mark.spec("BE-021")
+    def test_open_atomic_overwrite_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:
+        """open_atomic(overwrite=True) on a directory path should raise InvalidPath."""
+        local_backend.write("dir/file.txt", b"hello")
+        assert local_backend.is_folder("dir")
+
+        with (
+            pytest.raises(InvalidPath, match="exists as a directory"),
+            local_backend.open_atomic("dir", overwrite=True) as f,
+        ):
+            f.write(b"overwrite")

@@ -8,6 +8,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **`LocalBackend` leaks `IsADirectoryError` for directory paths**
+  (BUG-153, BUG-154): `read()`, `read_bytes()`, `delete()`, `write()`,
+  `write_atomic()`, and `open_atomic()` now catch `IsADirectoryError` and
+  raise `NotFound` (read/delete) or `InvalidPath` (write), consistent with
+  MemoryBackend.  `delete(missing_ok=True)` on a directory is now silenced,
+  matching MemoryBackend's behavior.
 - **S3 `client_options` shallow copy mutates caller's nested dicts** (BUG-148):
   Lazy filesystem init now deep-copies `client_options` so that adding
   `region_name`, `config`, or `verify` to `client_kwargs` does not modify
