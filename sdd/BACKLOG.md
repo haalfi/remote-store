@@ -45,7 +45,17 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-*(none)*
+- [ ] **BK-139 — Implement bug prevention measures from research**
+  Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
+  Seven deliverables, ordered by value-to-effort:
+  1. `_safe_wrap()` helper in `_stream.py` + fix latent S3 `read()` leak (~20 lines)
+  2. `scripts/check_error_handling.py` AST script for silent-swallow detection (~80 lines)
+  3. Enable ruff `BLE` rule set (1-line config change)
+  4. Hypothesis PBT for partition, config, path roundtrips (~80 lines)
+  5. Extended conformance suite — parameter combos, edge inputs, error fidelity,
+     metadata, resource cleanup, operational consistency (~300 lines, ~58 tests)
+  6. Hypothesis stateful backend model (~60 lines)
+  7. `ResourceWarning` safety net for SFTP/Azure backends (~10 lines)
 
 ---
 
