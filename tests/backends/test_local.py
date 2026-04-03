@@ -150,6 +150,15 @@ class TestLocalWriteOnDirectory:
             local_backend.write("dir", b"overwrite", overwrite=True)
 
     @pytest.mark.spec("BE-021")
+    def test_write_atomic_no_overwrite_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:
+        """write_atomic(overwrite=False) on a directory path should raise InvalidPath, not AlreadyExists."""
+        local_backend.write("dir/file.txt", b"hello")
+        assert local_backend.is_folder("dir")
+
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            local_backend.write_atomic("dir", b"data")
+
+    @pytest.mark.spec("BE-021")
     def test_write_atomic_overwrite_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:
         """write_atomic(overwrite=True) on a directory path should raise InvalidPath."""
         local_backend.write("dir/file.txt", b"hello")
@@ -157,6 +166,18 @@ class TestLocalWriteOnDirectory:
 
         with pytest.raises(InvalidPath, match="exists as a directory"):
             local_backend.write_atomic("dir", b"overwrite", overwrite=True)
+
+    @pytest.mark.spec("BE-021")
+    def test_open_atomic_no_overwrite_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:
+        """open_atomic(overwrite=False) on a directory path should raise InvalidPath, not AlreadyExists."""
+        local_backend.write("dir/file.txt", b"hello")
+        assert local_backend.is_folder("dir")
+
+        with (
+            pytest.raises(InvalidPath, match="exists as a directory"),
+            local_backend.open_atomic("dir") as f,
+        ):
+            f.write(b"data")
 
     @pytest.mark.spec("BE-021")
     def test_open_atomic_overwrite_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:

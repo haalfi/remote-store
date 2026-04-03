@@ -125,6 +125,9 @@ class LocalBackend(Backend):
         except IsADirectoryError:
             raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
         except PermissionError:
+            # Windows raises PermissionError (not IsADirectoryError) for directories
+            if full.is_dir():
+                raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
     def read_bytes(self, path: str) -> bytes:
@@ -136,6 +139,9 @@ class LocalBackend(Backend):
         except IsADirectoryError:
             raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
         except PermissionError:
+            # Windows raises PermissionError (not IsADirectoryError) for directories
+            if full.is_dir():
+                raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
@@ -223,7 +229,12 @@ class LocalBackend(Backend):
             if not missing_ok:
                 raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
         except PermissionError:
-            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+            # Windows raises PermissionError (not IsADirectoryError) for directories
+            if full.is_dir():
+                if not missing_ok:
+                    raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
+            else:
+                raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         full = self._resolve(path)
