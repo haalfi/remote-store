@@ -525,13 +525,12 @@ class TestAzureLifecycle:
     def test_close_closes_credential(self) -> None:
         """BUG-156: close() should close cached credential (DefaultAzureCredential)."""
         backend = _make_backend()
-        mock_cred = MagicMock()
-        mock_cred.close = MagicMock()
+        mock_cred = MagicMock(spec=["close"])
         backend._resolved_credential = mock_cred
 
         backend.close()
         mock_cred.close.assert_called_once()
-        assert backend._resolved_credential is None
+        assert backend._resolved_credential is None  # internal: no public observable
 
     @pytest.mark.spec("AZ-029")
     def test_close_credential_without_close_method(self) -> None:
@@ -540,7 +539,7 @@ class TestAzureLifecycle:
         backend._resolved_credential = "just-a-key-string"
 
         backend.close()
-        assert backend._resolved_credential is None
+        assert backend._resolved_credential is None  # internal: no public observable
 
 
 # =============================================================================
@@ -562,9 +561,9 @@ class TestAzureDeleteFolderPerformance:
 
         # Create an iterator that tracks how many items were consumed
         consumed: list[Any] = []
-        blob1 = MagicMock()
+        blob1 = MagicMock(spec=BlobProperties)
         blob1.name = "folder/a.txt"
-        blob2 = MagicMock()
+        blob2 = MagicMock(spec=BlobProperties)
         blob2.name = "folder/b.txt"
 
         def tracking_iter():  # type: ignore[no-untyped-def]
@@ -574,7 +573,7 @@ class TestAzureDeleteFolderPerformance:
 
         cc.list_blobs.return_value = tracking_iter()
 
-        with pytest.raises(DirectoryNotEmpty):
+        with pytest.raises(DirectoryNotEmpty, match="Folder not empty"):
             backend.delete_folder("folder", recursive=False)
 
         # Should have consumed only 1 blob, not all of them
@@ -617,7 +616,7 @@ class TestAzureReadResourceSafety:
             created_raw.append(self_raw)
 
         try:
-            azure_mod._ErrorMappingStream = MagicMock(side_effect=RuntimeError("wrapper failed"))
+            azure_mod._ErrorMappingStream = MagicMock(spec=type, side_effect=RuntimeError("wrapper failed"))
             _AzureBinaryIO.__init__ = tracking_init  # type: ignore[method-assign]
             # _errors() remaps RuntimeError to RemoteStoreError
             with pytest.raises(RemoteStoreError, match="wrapper failed"):
@@ -946,34 +945,22 @@ class TestAzureIntegration:
         assert files == []
 
     @pytest.mark.spec("BE-021")
-    def test_list_files_max_depth_zero(self, azure_backend: Backend) -> None:
-        """BUG-155: list_files(max_depth=0) should return only immediate files."""
+    @pytest.mark.parametrize(
+        ("max_depth", "expected"),
+        [
+            pytest.param(0, {"a.txt"}, id="depth-0"),
+            pytest.param(1, {"a.txt", "b.txt"}, id="depth-1"),
+            pytest.param(None, {"a.txt", "b.txt", "c.txt"}, id="unlimited"),
+        ],
+    )
+    def test_list_files_max_depth(self, azure_backend: Backend, max_depth: int | None, expected: set[str]) -> None:
+        """BUG-155: list_files respects max_depth parameter."""
         azure_backend.write("md/a.txt", b"a")
         azure_backend.write("md/sub/b.txt", b"b")
         azure_backend.write("md/sub/deep/c.txt", b"c")
-        files = list(azure_backend.list_files("md", recursive=True, max_depth=0))
+        files = list(azure_backend.list_files("md", recursive=True, max_depth=max_depth))
         names = {f.name for f in files}
-        assert names == {"a.txt"}
-
-    @pytest.mark.spec("BE-021")
-    def test_list_files_max_depth_one(self, azure_backend: Backend) -> None:
-        """BUG-155: list_files(max_depth=1) should return files up to depth 1."""
-        azure_backend.write("md1/a.txt", b"a")
-        azure_backend.write("md1/sub/b.txt", b"b")
-        azure_backend.write("md1/sub/deep/c.txt", b"c")
-        files = list(azure_backend.list_files("md1", recursive=True, max_depth=1))
-        names = {f.name for f in files}
-        assert names == {"a.txt", "b.txt"}
-
-    @pytest.mark.spec("BE-021")
-    def test_list_files_max_depth_none_returns_all(self, azure_backend: Backend) -> None:
-        """BUG-155: list_files(max_depth=None) should return all files."""
-        azure_backend.write("mdn/a.txt", b"a")
-        azure_backend.write("mdn/sub/b.txt", b"b")
-        azure_backend.write("mdn/sub/deep/c.txt", b"c")
-        files = list(azure_backend.list_files("mdn", recursive=True, max_depth=None))
-        names = {f.name for f in files}
-        assert names == {"a.txt", "b.txt", "c.txt"}
+        assert names == expected
 
     def test_list_folders(self, azure_backend: Backend) -> None:
         azure_backend.write("lf/sub1/a.txt", b"a")
