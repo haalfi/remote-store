@@ -10000,6 +10000,19 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>Azure <code>list_files</code> ignores <code>max_depth</code></strong> (BUG-155): Both
+  <code>AzureBackend.list_files</code> and <code>AsyncAzureBackend.list_files</code> now implement
+  depth limiting when <code>recursive=True</code> and <code>max_depth</code> is specified,
+  consistent with S3 and Local backends.</li>
+<li><strong>Sync <code>AzureBackend.close()</code> doesn't close <code>DefaultAzureCredential</code></strong>
+  (BUG-156): Sync backend now caches the credential and closes it in
+  <code>close()</code>, matching the async backend's <code>aclose()</code> pattern.</li>
+<li><strong>Sync <code>AzureBackend.delete_folder</code> non-HNS materializes all blobs</strong>
+  (BUG-157): Existence check now stops after the first blob instead of
+  eagerly fetching all blobs into memory.</li>
+<li><strong>Sync <code>AzureBackend.read()</code> doesn't protect downloader on stream-wrapping
+  failure</strong> (BUG-158): The downloader is now cleaned up if
+  <code>_ErrorMappingStream</code> or <code>BufferedReader</code> construction fails.</li>
 <li><strong><code>LocalBackend</code> leaks <code>IsADirectoryError</code> for directory paths</strong>
   (BUG-153, BUG-154): <code>read()</code>, <code>read_bytes()</code>, <code>delete()</code>, <code>write()</code>,
   <code>write_atomic()</code>, and <code>open_atomic()</code> now catch <code>IsADirectoryError</code> and
