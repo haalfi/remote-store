@@ -10000,6 +10000,12 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong><code>LocalBackend</code> leaks <code>IsADirectoryError</code> for directory paths</strong>
+  (BUG-153, BUG-154): <code>read()</code>, <code>read_bytes()</code>, <code>delete()</code>, <code>write()</code>,
+  <code>write_atomic()</code>, and <code>open_atomic()</code> now catch <code>IsADirectoryError</code> and
+  raise <code>NotFound</code> (read/delete) or <code>InvalidPath</code> (write), consistent with
+  MemoryBackend.  <code>delete(missing_ok=True)</code> on a directory is now silenced,
+  matching MemoryBackend's behavior.</li>
 <li><strong>S3 <code>client_options</code> shallow copy mutates caller's nested dicts</strong> (BUG-148):
   Lazy filesystem init now deep-copies <code>client_options</code> so that adding
   <code>region_name</code>, <code>config</code>, or <code>verify</code> to <code>client_kwargs</code> does not modify
