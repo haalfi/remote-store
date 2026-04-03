@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-04-03
+
 ### Fixed
 
 - **Azure `list_files` ignores `max_depth`** (BUG-155): Both

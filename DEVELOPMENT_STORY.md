@@ -625,6 +625,20 @@ v0.21.0 was an async-first release — the first to ship a fully native async st
 
 **Test quality hardening was the quiet backbone.** BK-137 audited the new async and Dagster tests against TESTING.md rules, fixing behavioral assertion gaps and parametrizing copy-paste tests. BK-134 replaced `isinstance`-only assertions and private attribute checks across 10 test files. BK-135 fixed 72 `ResourceWarning: unclosed database` warnings in SQL tests. Coverage for `_azure_common` went from 69% to 100%. **The test suite grew from ~2,500 to ~3,100 tests while getting stricter about what each test actually proves.**
 
+### Phase 32: Backend Hardening (v0.21.1)
+
+v0.21.1 was a pure bugfix release — no new features, no API changes. A systematic audit examined every backend for error-handling gaps, resource leaks, and behavioral inconsistencies. The result: 22 bugs filed, 21 fixed, 1 closed as non-defect (BUG-149).
+
+**Defensive cleanup at the boundary.** The most common pattern was resources leaking when stream-wrapping failed. SFTP (BUG-142) and Azure (BUG-158) both had code paths where `_ErrorMappingStream` or `BufferedReader` construction could fail after acquiring a file handle, leaving the underlying handle unclosed. The fix was uniform: acquire, wrap in try/except, close on failure.
+
+**Error suppression scope was consistently too broad.** SFTP's `listdir_attr` (BUG-146), `_ensure_parent_dirs` (BUG-145), and `delete_folder` (BUG-147) all caught generic `IOError` when they should have caught only ENOENT or EEXIST. The pattern: tighten exception handling to the narrowest errno that the code path actually needs to suppress. The same discipline applied to `LocalBackend`'s `IsADirectoryError` leaks (BUG-153, BUG-154) — the fix was mapping to the correct `RemoteStoreError` subclass rather than letting platform-specific exceptions escape.
+
+**`max_depth` was a specification gap.** S3 (BUG-152) and Azure (BUG-155) both accepted `max_depth` but ignored it during listing traversal. The BFS implementations needed depth tracking at the traversal level, not post-hoc filtering. Local and Memory backends already had this right — the fix was aligning the cloud backends to match.
+
+**`CachedStore` had two invalidation blind spots.** Writing a nested path didn't invalidate ancestor directory metadata (BUG-137), and `child()` created an isolated cache instead of sharing the parent's (BUG-138). Both are subtle because they only manifest in multi-level directory structures with interleaved reads and writes.
+
+**Housekeeping shipped alongside.** Examples were reorganized from a flat directory into seven topical subdirectories. The Pygments upper-bound pin was removed after pymdown-extensions fixed the upstream bug. `pyproject.toml` dependency lists were deduplicated via Hatch's `features` key (BK-138).
+
 ## Reproducing This Workflow
 
 If you want to try this approach on your own project:

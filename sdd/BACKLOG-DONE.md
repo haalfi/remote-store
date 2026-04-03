@@ -7,102 +7,102 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Bugs
 
-- [x] **BUG-158 — Sync `AzureBackend.read()` doesn't protect raw stream on wrapping failure**
+- [x] **BUG-158 — Sync `AzureBackend.read()` doesn't protect raw stream on wrapping failure** (v0.21.1)
   `_AzureBinaryIO` is now closed if `_ErrorMappingStream` or `BufferedReader`
   construction fails, matching the BUG-142 (SFTP) defensive pattern.
 
-- [x] **BUG-157 — Sync `AzureBackend.delete_folder` non-HNS materializes all blobs**
+- [x] **BUG-157 — Sync `AzureBackend.delete_folder` non-HNS materializes all blobs** (v0.21.1)
   Existence check now uses `for ... break` to stop after the first blob
   instead of `list()` which eagerly fetched all pages.
 
-- [x] **BUG-156 — Sync `AzureBackend.close()` doesn't close `DefaultAzureCredential`**
+- [x] **BUG-156 — Sync `AzureBackend.close()` doesn't close `DefaultAzureCredential`** (v0.21.1)
   `_resolve_credential()` now caches the credential in `_resolved_credential`.
   `close()` calls `credential.close()` if available, matching the async
   backend's `aclose()` pattern.
 
-- [x] **BUG-155 — Azure `list_files` ignores `max_depth`**
+- [x] **BUG-155 — Azure `list_files` ignores `max_depth`** (v0.21.1)
   Both `AzureBackend.list_files` and `AsyncAzureBackend.list_files` now
   filter by depth when `recursive=True` and `max_depth` is specified,
   consistent with S3 (BUG-152) and Local backends.
 
-- [x] **BUG-154 — `LocalBackend.write(overwrite=True)` leaks `IsADirectoryError` for directory paths**
+- [x] **BUG-154 — `LocalBackend.write(overwrite=True)` leaks `IsADirectoryError` for directory paths** (v0.21.1)
   `write()`, `write_atomic()`, and `open_atomic()` now catch
   `IsADirectoryError` and raise `InvalidPath`, consistent with MemoryBackend.
 
-- [x] **BUG-153 — `LocalBackend` leaks `IsADirectoryError` for directory paths**
+- [x] **BUG-153 — `LocalBackend` leaks `IsADirectoryError` for directory paths** (v0.21.1)
   `read()`, `read_bytes()`, and `delete()` now catch `IsADirectoryError`
   and raise `NotFound`, consistent with MemoryBackend.
   `delete(missing_ok=True)` on a directory is silenced, matching
   MemoryBackend's behavior.
 
-- [x] **BUG-149 — S3 `tls_ca_bundle` doesn't override `client_options` verify**
+- [x] **BUG-149 — S3 `tls_ca_bundle` doesn't override `client_options` verify** (v0.21.1)
   Investigated and closed: `setdefault` behavior is spec-compliant per
   TLS-005 ("explicit `client_options.client_kwargs.verify` is NOT
   overridden"). Existing test confirms. Not a defect.
 
-- [x] **BUG-152 — S3 `list_files` ignores `max_depth`**
+- [x] **BUG-152 — S3 `list_files` ignores `max_depth`** (v0.21.1)
   `_S3Base.list_files` now tracks depth in BFS traversal and prunes
   directories beyond `max_depth`, consistent with all other backends.
 
-- [x] **BUG-151 — S3PyArrow `_extract_etag` scope too broad**
+- [x] **BUG-151 — S3PyArrow `_extract_etag` scope too broad** (v0.21.1)
   `_extract_etag` override now only affects listing paths; `get_file_info`
   extracts ETag from the HeadObject response via `_head_to_fileinfo`.
 
-- [x] **BUG-150 — S3PyArrow `get_file_info` returns no ETag and no digest**
+- [x] **BUG-150 — S3PyArrow `get_file_info` returns no ETag and no digest** (v0.21.1)
   `get_file_info` now uses `call_s3("head_object", ChecksumMode="ENABLED")`
   like `S3Backend`, returning both ETag and digest when available.
 
-- [x] **BUG-148 — S3 `client_options` shallow copy mutates caller's nested dicts**
+- [x] **BUG-148 — S3 `client_options` shallow copy mutates caller's nested dicts** (v0.21.1)
   Lazy filesystem init now uses `copy.deepcopy(client_options)` instead
   of `dict(client_options)`. Both `S3Backend` and `S3PyArrowBackend`.
 
-- [x] **BUG-147 — SFTP `delete_folder` masks `listdir` permission errors**
+- [x] **BUG-147 — SFTP `delete_folder` masks `listdir` permission errors** (v0.21.1)
   Non-recursive `delete_folder` now re-raises non-ENOENT errors from
   `listdir` instead of silently treating them as empty.
 
-- [x] **BUG-146 — SFTP listing methods silently swallow non-ENOENT errors**
+- [x] **BUG-146 — SFTP listing methods silently swallow non-ENOENT errors** (v0.21.1)
   `list_files`, `list_folders`, and `iter_children` now only suppress ENOENT
   from `listdir_attr`; other errors propagate as `RemoteStoreError`.
 
-- [x] **BUG-145 — SFTP `_ensure_parent_dirs` swallows permission errors**
+- [x] **BUG-145 — SFTP `_ensure_parent_dirs` swallows permission errors** (v0.21.1)
   Parent directory creation now only catches ENOENT on `stat` and EEXIST
   on `mkdir`; other errors propagate.
 
-- [x] **BUG-144 — SFTP SSH client leaked on connection failure**
+- [x] **BUG-144 — SFTP SSH client leaked on connection failure** (v0.21.1)
   `_connect()` now closes the `SSHClient` if the retry-wrapped connect
   exhausts attempts.
 
-- [x] **BUG-143 — SFTP `st_mode` None causes TypeError in listing/traversal**
+- [x] **BUG-143 — SFTP `st_mode` None causes TypeError in listing/traversal** (v0.21.1)
   Entries with `st_mode is None` are now skipped in listing, traversal,
   and stats methods.
 
-- [x] **BUG-142 — SFTP `read()` leaks file handle if stream wrapping fails**
+- [x] **BUG-142 — SFTP `read()` leaks file handle if stream wrapping fails** (v0.21.1)
   The paramiko file handle is now closed if `_ErrorMappingStream` or
   `BufferedReader` construction raises.
 
-- [x] **BUG-141 — partition_path allows `=` in key, round-trip fails**
+- [x] **BUG-141 — partition_path allows `=` in key, round-trip fails** (v0.21.1)
   Added `=` validation for partition keys (matching existing value
   validation). Updated PART-006 spec.
   Audit: [008 B-5](audits/audit-008-package-bugs.md#b-5)
 
-- [x] **BUG-140 — RegistryConfig.from_dict converts null fields to string "None"**
+- [x] **BUG-140 — RegistryConfig.from_dict converts null fields to string "None"** (v0.21.1)
   `type` and `backend` now validated as strings with `TypeError` on null.
   `root_path` null treated as empty string (same as omitted).
   Audit: [008 B-4](audits/audit-008-package-bugs.md#b-4)
 
-- [x] **BUG-139 — RegistryConfig.from_dict crashes on null options**
+- [x] **BUG-139 — RegistryConfig.from_dict crashes on null options** (v0.21.1)
   Changed `cfg.get("options", {})` to `cfg.get("options") or {}` so null
   values are treated as empty dict instead of crashing.
   Audit: [008 B-3](audits/audit-008-package-bugs.md#b-3)
 
-- [x] **BUG-138 — CachedStore.child() creates isolated cache**
+- [x] **BUG-138 — CachedStore.child() creates isolated cache** (v0.21.1)
   `_wrap_child()` now passes the parent's `CacheBackend` instance to the
   child instead of `None`, so child and parent share one cache. A `_prefix`
   tracks the child's path namespace so mutations through the child also
   invalidate the corresponding fully-qualified keys in the shared cache.
   Audit: [008 B-2](audits/audit-008-package-bugs.md#b-2)
 
-- [x] **BUG-137 — CachedStore write doesn't invalidate parent directory metadata**
+- [x] **BUG-137 — CachedStore write doesn't invalidate parent directory metadata** (v0.21.1)
   New `_delete_path_and_ancestors` helper invalidates cached
   `exists`/`is_file`/`is_folder` entries for every ancestor directory of
   the mutated path, not just the leaf. Called from `_invalidate_path`.
@@ -110,7 +110,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Documentation & Developer Experience
 
-- [x] **BK-137 — Post-v0.20.0 test quality: TESTING.md compliance + coverage gaps**
+- [x] **BK-137 — Post-v0.20.0 test quality: TESTING.md compliance + coverage gaps** (v0.21.0)
   Audited new async/dagster test files against `sdd/TESTING.md` rules.
   Fixed Rule 2 (sole `isinstance` → behavioral assertions) and Rule 7
   (copy-paste → parametrize) violations. Coverage improved for
@@ -131,7 +131,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Bug Fixes
 
-- [x] **BUG-136 — `config_loaders.py` example crashes on Windows**
+- [x] **BUG-136 — `config_loaders.py` example crashes on Windows** (v0.21.1)
   `Path` interpolation into TOML/YAML strings produced backslashes
   (`C:\Users\...`) which are invalid escape sequences in TOML.
   Fixed with `.as_posix()`. Extracted `demo()` function and added
@@ -169,7 +169,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Cleanup
 
-- [x] **BK-138 — Deduplicate `pyproject.toml` dependency lists**
+- [x] **BK-138 — Deduplicate `pyproject.toml` dependency lists** (v0.21.1)
   Hatch env uses `features` key instead of re-listing 43 packages.
   `dev`, `docs`, and `bench` extras compose from user-facing extras via
   self-referential dependencies. Removed cargo-culted `s3fs` from `docs`.
