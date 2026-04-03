@@ -8033,6 +8033,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-32-backend-hardening-v0211" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 32: Backend Hardening (v0.21.1)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8535,6 +8546,17 @@
     <span class="md-ellipsis">
       
         Phase 31: Async, Config, and Quality Hardening (v0.21.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-32-backend-hardening-v0211" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 32: Backend Hardening (v0.21.1)
       
     </span>
   </a>
@@ -9124,6 +9146,13 @@
 <p><strong>A hidden pandas dependency surfaced in the Parquet serializer.</strong> BUG-135 found that <code>ParquetSerializer.deserialize()</code> called <code>table.to_pandas()</code>, silently requiring pandas for <code>remote-store[dagster,arrow]</code> users. The fix returns <code>pyarrow.Table</code> directly — framework-neutral, no hidden dependencies. This was the project's first behavioral breaking change to an extension, handled via migration guide rather than a deprecation cycle (pre-v1 policy).</p>
 <p><strong>Dagster multi-partition loading completed the IO manager story.</strong> ID-124 taught <code>load_input</code> to return <code>dict[str, Any]</code> when the input context carries multiple partition keys (time-window aggregation), covering the last gap deferred from the v0.20.0 Dagster v2 work.</p>
 <p><strong>Test quality hardening was the quiet backbone.</strong> BK-137 audited the new async and Dagster tests against TESTING.md rules, fixing behavioral assertion gaps and parametrizing copy-paste tests. BK-134 replaced <code>isinstance</code>-only assertions and private attribute checks across 10 test files. BK-135 fixed 72 <code>ResourceWarning: unclosed database</code> warnings in SQL tests. Coverage for <code>_azure_common</code> went from 69% to 100%. <strong>The test suite grew from ~2,500 to ~3,100 tests while getting stricter about what each test actually proves.</strong></p>
+<h3 id="phase-32-backend-hardening-v0211">Phase 32: Backend Hardening (v0.21.1)<a class="headerlink" href="#phase-32-backend-hardening-v0211" title="Permanent link">&para;</a></h3>
+<p>v0.21.1 was a pure bugfix release — no new features, no API changes. A systematic audit examined every backend for error-handling gaps, resource leaks, and behavioral inconsistencies. The result: 22 bugs filed, 21 fixed, 1 closed as non-defect (BUG-149).</p>
+<p><strong>Defensive cleanup at the boundary.</strong> The most common pattern was resources leaking when stream-wrapping failed. SFTP (BUG-142) and Azure (BUG-158) both had code paths where <code>_ErrorMappingStream</code> or <code>BufferedReader</code> construction could fail after acquiring a file handle, leaving the underlying handle unclosed. The fix was uniform: acquire, wrap in try/except, close on failure.</p>
+<p><strong>Error suppression scope was consistently too broad.</strong> SFTP's <code>listdir_attr</code> (BUG-146), <code>_ensure_parent_dirs</code> (BUG-145), and <code>delete_folder</code> (BUG-147) all caught generic <code>IOError</code> when they should have caught only ENOENT or EEXIST. The pattern: tighten exception handling to the narrowest errno that the code path actually needs to suppress. The same discipline applied to <code>LocalBackend</code>'s <code>IsADirectoryError</code> leaks (BUG-153, BUG-154) — the fix was mapping to the correct <code>RemoteStoreError</code> subclass rather than letting platform-specific exceptions escape.</p>
+<p><strong><code>max_depth</code> was a specification gap.</strong> S3 (BUG-152) and Azure (BUG-155) both accepted <code>max_depth</code> but ignored it during listing traversal. The BFS implementations needed depth tracking at the traversal level, not post-hoc filtering. Local and Memory backends already had this right — the fix was aligning the cloud backends to match.</p>
+<p><strong><code>CachedStore</code> had two invalidation blind spots.</strong> Writing a nested path didn't invalidate ancestor directory metadata (BUG-137), and <code>child()</code> created an isolated cache instead of sharing the parent's (BUG-138). Both are subtle because they only manifest in multi-level directory structures with interleaved reads and writes.</p>
+<p><strong>Housekeeping shipped alongside.</strong> Examples were reorganized from a flat directory into seven topical subdirectories. The Pygments upper-bound pin was removed after pymdown-extensions fixed the upstream bug. <code>pyproject.toml</code> dependency lists were deduplicated via Hatch's <code>features</code> key (BK-138).</p>
 <h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>
 <p>If you want to try this approach on your own project:</p>
 <ol>
