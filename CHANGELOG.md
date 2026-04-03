@@ -17,8 +17,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `close()`, matching the async backend's `aclose()` pattern.
 - **Sync `AzureBackend.delete_folder` non-HNS materializes all blobs**
   (BUG-157): Existence check now stops after the first blob instead of
-  eagerly fetching all blobs into memory. Recursive delete no longer
-  lists blobs twice.
+  eagerly fetching all blobs into memory.
 - **Sync `AzureBackend.read()` doesn't protect downloader on stream-wrapping
   failure** (BUG-158): The downloader is now cleaned up if
   `_ErrorMappingStream` or `BufferedReader` construction fails.
