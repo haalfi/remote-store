@@ -62,6 +62,19 @@ Items graduate through the SDD pipeline:
 
 ### New Backends
 
+- [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
+  Unified backend covering OneDrive (personal & business) and SharePoint
+  document libraries via the Microsoft Graph REST API. Single `drive_id`
+  parameter selects the target drive.
+  - Capabilities: all 10 likely supportable (real folders, server-side
+    copy/move, Range-header seeks, temp-file atomic writes).
+  - Auth: OAuth 2.0 — client-credentials (daemon) and/or device-code
+    (interactive).
+  - SDK options: direct REST via `httpx` (minimal deps), `msgraph-sdk`
+    (official), or `Office365-REST-Python-Client` (mature).
+  - Reference: Azure backend (`_azure.py`) — closest architectural parallel.
+  - Next: RFC scoping auth model, path mapping, and SDK choice.
+
 - [ ] **ID-121 — CompositeStore (research complete)**
   `CompositeStore(Store)` — core Store subclass (not extension) that composes
   multiple stores into one. Deterministic fallthrough resolution for reads, union
